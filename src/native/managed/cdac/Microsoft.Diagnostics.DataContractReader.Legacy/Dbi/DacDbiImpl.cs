@@ -17,6 +17,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     private readonly Target _target;
     private readonly IDacDbiInterface? _legacy;
 
+    private enum DynamicMethodType
+    {
+        kNone,
+        kDiagnosticHidden,
+        kLCGMethod,
+    }
+
     // IStringHolder is a native C++ abstract class (not COM) with a single virtual method:
     //   virtual HRESULT AssignCopy(const WCHAR* psz) = 0;
     // The nint we receive is a pointer to the object, whose first field is the vtable pointer.
@@ -631,10 +638,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, Interop.BOOL fActive)
         => _legacy is not null ? _legacy.ConvertContextToDebuggerRegDisplay(pInContext, pOutDRD, fActive) : HResults.E_NOTIMPL;
 
-    // [cDAC] Implements IsDiagnosticsHiddenOrLCGMethod using IRuntimeTypeSystem.IsDiagnosticsHidden and IsDynamicMethod.
     public int IsDiagnosticsHiddenOrLCGMethod(ulong vmMethodDesc, int* pRetVal)
     {
-        *pRetVal = 0; // kNone
+        *pRetVal = (int)DynamicMethodType.kNone;
         int hr = HResults.S_OK;
         try
         {
@@ -642,11 +648,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
             if (rts.IsDiagnosticsHidden(md))
             {
-                *pRetVal = 1; // kDiagnosticHidden
+                *pRetVal = (int)DynamicMethodType.kDiagnosticHidden;
             }
             else if (rts.IsDynamicMethod(md))
             {
-                *pRetVal = 2; // kLCGMethod
+                *pRetVal = (int)DynamicMethodType.kLCGMethod;
             }
         }
         catch (System.Exception ex)

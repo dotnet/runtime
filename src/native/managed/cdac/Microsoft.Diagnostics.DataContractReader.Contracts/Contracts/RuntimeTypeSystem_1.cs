@@ -303,12 +303,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         internal bool HasNonVtableSlot => MethodDescOptionalSlots.HasNonVtableSlot(_desc.Flags);
         internal bool HasNativeCodeSlot => MethodDescOptionalSlots.HasNativeCodeSlot(_desc.Flags);
+        internal bool HasAsyncMethodData => MethodDescOptionalSlots.HasAsyncMethodData(_desc.Flags);
 
         internal bool HasStableEntryPoint => HasFlags(MethodDescFlags_1.MethodDescFlags3.HasStableEntryPoint);
         internal bool HasPrecode => HasFlags(MethodDescFlags_1.MethodDescFlags3.HasPrecode);
 
         internal TargetPointer GetAddressOfNonVtableSlot() => MethodDescOptionalSlots.GetAddressOfNonVtableSlot(Address, Classification, _desc.Flags, _target);
         internal TargetPointer GetAddressOfNativeCodeSlot() => MethodDescOptionalSlots.GetAddressOfNativeCodeSlot(Address, Classification, _desc.Flags, _target);
+        internal TargetPointer GetAddressOfAsyncMethodData() => MethodDescOptionalSlots.GetAddressOfAsyncMethodData(Address, Classification, _desc.Flags, _target);
 
         internal bool IsLoaderModuleAttachedToChunk => HasFlags(MethodDescChunkFlags.LoaderModuleAttachedToChunk);
 
@@ -1405,6 +1407,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return AsDynamicMethodDesc(md).IsILStub;
     }
 
+    private bool IsAsyncThunkMethod(MethodDesc md)
+    {
+        if (!md.HasAsyncMethodData)
+        {
+            return false;
+        }
+
+        Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData());
+        return ((MethodDescFlags_1.AsyncMethodFlags)asyncData.Flags).HasFlag(MethodDescFlags_1.AsyncMethodFlags.Thunk);
+    }
+
     private bool IsWrapperStub(MethodDesc md)
     {
         return md.IsUnboxingStub || IsInstantiatingStub(md);
@@ -1731,14 +1744,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return methodDesc.IsEligibleForTieredCompilation;
     }
 
-    // [cDAC] Corresponds to MethodDesc::IsDiagnosticsHidden in the native VM (method.inl).
-    // In the native VM: IsILStub() || IsAsyncThunkMethod() || IsWrapperStub().
-    // Note: IsAsyncThunkMethod is not yet implemented because the AsyncMethodData.flags field
-    // is not exposed in the data descriptor. This will be addressed when the data descriptor is updated.
     bool IRuntimeTypeSystem.IsDiagnosticsHidden(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-        return IsILStub(methodDesc) || IsWrapperStub(methodDesc);
+        return IsILStub(methodDesc) || IsAsyncThunkMethod(methodDesc) || IsWrapperStub(methodDesc);
     }
 
     private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries

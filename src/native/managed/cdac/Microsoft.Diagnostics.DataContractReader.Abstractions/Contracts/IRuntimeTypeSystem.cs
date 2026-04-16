@@ -224,10 +224,6 @@ public interface IRuntimeTypeSystem : IContract
     OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     bool IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
 
-    // [cDAC] Return true if the method should be hidden from diagnostic stack traces.
-    // In the native VM, this is: IsILStub() || IsAsyncThunkMethod() || IsWrapperStub().
-    // Note: IsAsyncThunkMethod is not yet implemented in the cDAC because the AsyncMethodData.flags
-    // field is not exposed in the data descriptor. This will be addressed when the data descriptor is updated.
     bool IsDiagnosticsHidden(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs

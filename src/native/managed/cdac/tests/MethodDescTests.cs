@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Moq;
 using Xunit;
@@ -24,7 +25,14 @@ public class MethodDescTests
             [DataType.NonVtableSlot] = new Target.TypeInfo { Size = methodDescBuilder.NonVtableSlotSize },
             [DataType.MethodImpl] = new Target.TypeInfo { Size = methodDescBuilder.MethodImplSize },
             [DataType.NativeCodeSlot] = new Target.TypeInfo { Size = methodDescBuilder.NativeCodeSlotSize },
-            [DataType.AsyncMethodData] = new Target.TypeInfo { Size = methodDescBuilder.AsyncMethodDataSize },
+            [DataType.AsyncMethodData] = new Target.TypeInfo
+            {
+                Size = methodDescBuilder.AsyncMethodDataSize,
+                Fields = new Dictionary<string, Target.FieldInfo>
+                {
+                    [nameof(Data.AsyncMethodData.Flags)] = new Target.FieldInfo { Offset = 0, Type = DataType.Unknown },
+                },
+            },
             [DataType.ArrayMethodDesc] = new Target.TypeInfo { Size = methodDescBuilder.ArrayMethodDescSize },
             [DataType.FCallMethodDesc] = new Target.TypeInfo { Size = methodDescBuilder.FCallMethodDescSize },
             [DataType.PInvokeMethodDesc] = new Target.TypeInfo { Size = methodDescBuilder.PInvokeMethodDescSize },
@@ -448,10 +456,14 @@ public class MethodDescTests
         TargetPointer lcgMethod = TargetPointer.Null;
         TargetPointer unboxingStubMethod = TargetPointer.Null;
         TargetPointer instantiatingStubMethod = TargetPointer.Null;
+        TargetPointer asyncThunkMethod = TargetPointer.Null;
+        TargetPointer asyncNonThunkMethod = TargetPointer.Null;
+        TargetPointer asyncThunkWithNativeCodeSlotMethod = TargetPointer.Null;
 
         IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
         {
             TargetPointer methodTable = AddMethodTable(methodDescBuilder.RTSBuilder);
+            TargetTestHelpers helpers = methodDescBuilder.TargetTestHelpers;
 
             // Normal IL method (not diagnostics hidden, not LCG)
             {
@@ -516,6 +528,56 @@ public class MethodDescTests
                 md.Flags2 = (ushort)RuntimeTypeSystem_1.InstantiatedMethodDescFlags2.WrapperStubWithInstantiations;
                 instantiatingStubMethod = new TargetPointer(md.Address);
             }
+
+            // Async thunk method (diagnostics hidden via IsAsyncThunkMethod, no NativeCodeSlot)
+            {
+                uint mdBaseSize = (uint)methodDescBuilder.MethodDescLayout.Size;
+                uint totalSize = mdBaseSize + methodDescBuilder.AsyncMethodDataSize;
+                byte chunkSize = (byte)(totalSize / methodDescBuilder.MethodDescAlignment);
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("asyncThunk", chunkSize);
+                chunk.MethodTable = methodTable.Value;
+                chunk.Size = chunkSize;
+                chunk.Count = 1;
+                MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+                md.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
+                asyncThunkMethod = new TargetPointer(md.Address);
+                int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)MethodDescFlags_1.AsyncMethodFlags.Thunk);
+            }
+
+            // Async non-thunk method (not diagnostics hidden, has async data but not Thunk flag)
+            {
+                uint mdBaseSize = (uint)methodDescBuilder.MethodDescLayout.Size;
+                uint totalSize = mdBaseSize + methodDescBuilder.AsyncMethodDataSize;
+                byte chunkSize = (byte)(totalSize / methodDescBuilder.MethodDescAlignment);
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("asyncNonThunk", chunkSize);
+                chunk.MethodTable = methodTable.Value;
+                chunk.Size = chunkSize;
+                chunk.Count = 1;
+                MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+                md.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
+                md.Slot = 1;
+                asyncNonThunkMethod = new TargetPointer(md.Address);
+                int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)MethodDescFlags_1.AsyncMethodFlags.None);
+            }
+
+            // Async thunk method with NativeCodeSlot (diagnostics hidden, verifies offset calculation with preceding slots)
+            {
+                uint mdBaseSize = (uint)methodDescBuilder.MethodDescLayout.Size;
+                uint totalSize = mdBaseSize + methodDescBuilder.NativeCodeSlotSize + methodDescBuilder.AsyncMethodDataSize;
+                byte chunkSize = (byte)(totalSize / methodDescBuilder.MethodDescAlignment);
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("asyncThunkWithNCS", chunkSize);
+                chunk.MethodTable = methodTable.Value;
+                chunk.Size = chunkSize;
+                chunk.Count = 1;
+                MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+                md.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
+                md.Slot = 2;
+                asyncThunkWithNativeCodeSlotMethod = new TargetPointer(md.Address);
+                int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize + (int)methodDescBuilder.NativeCodeSlotSize;
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)MethodDescFlags_1.AsyncMethodFlags.Thunk);
+            }
         });
 
         // Normal IL method: not diagnostics hidden, not LCG
@@ -551,6 +613,24 @@ public class MethodDescTests
             MethodDescHandle handle = rts.GetMethodDescHandle(instantiatingStubMethod);
             Assert.True(rts.IsDiagnosticsHidden(handle));
             Assert.False(rts.IsDynamicMethod(handle));
+        }
+
+        // Async thunk: diagnostics hidden
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(asyncThunkMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
+        }
+
+        // Async non-thunk: not diagnostics hidden
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(asyncNonThunkMethod);
+            Assert.False(rts.IsDiagnosticsHidden(handle));
+        }
+
+        // Async thunk with NativeCodeSlot: diagnostics hidden (verifies offset calculation)
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(asyncThunkWithNativeCodeSlotMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
         }
     }
 
