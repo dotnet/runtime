@@ -197,6 +197,7 @@ extern "C" int pthread_setschedparam(pthread_t, int, const struct sched_param *)
 extern "C" int pthread_getschedparam(pthread_t, int *policy, struct sched_param *param)
 {
     if (policy) *policy = 0;
+    if (param) memset(param, 0, sizeof(struct sched_param));
     return 0;
 }
 #endif // TARGET_WASI

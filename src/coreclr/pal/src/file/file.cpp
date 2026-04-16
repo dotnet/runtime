@@ -2438,7 +2438,10 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
     /* duplicate the FILE *, so that we can fclose() in FILECloseHandle without
        closing the original */
 #ifdef TARGET_WASI
-    // WASI: fcntl F_DUPFD_CLOEXEC not supported; reuse fd directly (single-threaded, no exec)
+    // WASI: fcntl F_DUPFD_CLOEXEC is not implemented at runtime.
+    // Reuse the fd directly — fd ownership is safe on WASI because there
+    // is no fork/exec, stdio fds are never closed by the PAL, and only
+    // one handle references each standard stream.
     new_fd = fileno(stream);
 #else
     new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC

@@ -2360,6 +2360,8 @@ CPalThread::GetStackBase()
 #elif defined(__EMSCRIPTEN__)
     stackBase = (void*)emscripten_stack_get_base();
 #else // WASI
+    // WASI: use current frame as approximation for stack base.
+    // The stack grows down from __stack_pointer set at link time.
     stackBase = __builtin_frame_address(0);
 #endif // TARGET_WASM
 #endif // !TARGET_APPLE
@@ -2413,7 +2415,11 @@ CPalThread::GetStackLimit()
     }
     stackLimit = (void*)stackLimitMaybe;
 #else // WASI
-    stackLimit = (void*)sizeof(size_t);
+    // WASI: estimate stack limit from current frame minus configured stack size.
+    // Stack size is set at link time via -Wl,-z,stack-size=N (default 8MB).
+    stackLimit = (void*)((size_t)__builtin_frame_address(0) - 8 * 1024 * 1024);
+    if ((size_t)stackLimit < sizeof(size_t))
+        stackLimit = (void*)sizeof(size_t);
 #endif // TARGET_WASM
 #endif // !TARGET_APPLE
 

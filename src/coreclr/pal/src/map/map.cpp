@@ -467,10 +467,10 @@ CorUnix::InternalCreateFileMapping(
             //
 
 #ifdef TARGET_WASI
-            // WASI's fcntl may not support F_DUPFD_CLOEXEC at runtime.
-            // CLOEXEC is irrelevant on WASI (no exec). Use fd_fdstat_get + path_open
-            // workaround: just reuse the fd directly without duplication since
-            // WASI doesn't support fork/exec anyway.
+            // WASI: fcntl F_DUPFD_CLOEXEC is not implemented at runtime.
+            // Reuse the fd directly — fd ownership is safe on WASI because
+            // there is no fork/exec, so CLOEXEC is irrelevant, and file
+            // mappings are long-lived alongside their source handles.
             UnixFd = pFileLocalData->unix_fd;
 #else
             UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC

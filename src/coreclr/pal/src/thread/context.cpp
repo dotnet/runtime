@@ -483,7 +483,10 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
     }
     else
     {
-#ifndef TARGET_WASI
+#ifdef TARGET_WASI
+        // WASI: cannot get context of another process
+        return FALSE;
+#else
         ucontext_t registers;
 #if HAVE_PT_REGS
         struct pt_regs ptrace_registers;

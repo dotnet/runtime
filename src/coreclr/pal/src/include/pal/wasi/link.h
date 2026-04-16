@@ -6,6 +6,7 @@
 #define _WASI_LINK_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 typedef uint32_t Elf32_Addr;
 typedef uint32_t Elf32_Word;
