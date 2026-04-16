@@ -11503,44 +11503,58 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             std::swap(op1, op2);
         }
 
-        if (((oper == GT_EQ) || (oper == GT_NE)) && op1->OperIsHWIntrinsic() && op2->IsCnsVec())
+        if ((oper == GT_EQ) || (oper == GT_NE))
         {
-            GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
-            NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
-            var_types           op1Type        = op1Intrinsic->TypeGet();
-
-            if (HWIntrinsicInfo::ReturnsPerElementMask(op1IntrinsicId) &&
-                (genTypeSize(simdBaseType) == genTypeSize(op1Intrinsic->GetSimdBaseType())))
+            if (op2->IsCnsVec() && op1->IsVectorPerElementMask(simdBaseType, simdSize))
             {
-                // This optimization is only safe if we know the other node produces
-                // AllBitsSet or Zero per element and if the outer comparison is the
-                // same size as what the other node produces for its mask
-
                 bool reverseCond = false;
 
                 if (oper == GT_EQ)
                 {
-                    // Handle `Mask == Zero` and `Zero == Mask` for integral types
+                    // Handle `Equals(Mask, Zero)` for integral types
                     if (op2->IsVectorZero())
                     {
+                        // We are comparing something that is known per element to be either
+                        // AllBitsSet or Zero, with Zero.
+                        //
+                        // In such a case:
+                        // * `AllBitsSet == Zero` is false and so produces `Zero`
+                        // * `Zero == Zero` is true and so produces `AllBitsSet`
+                        //
+                        // This means that we are just inverting the input and can reverse
+                        // the condition
+
                         reverseCond = true;
                     }
                 }
                 else if (oper == GT_NE)
                 {
-                    // Handle `Mask != AllBitsSet` and `AllBitsSet != Mask` for integral types
+                    // Handle `~Equals(Mask, AllBitsSet)` for integral types
                     if (op2->IsVectorAllBitsSet())
                     {
+                        // We are comparing something that is known per element to be either
+                        // AllBitsSet or Zero, with AllBitsSet.
+                        //
+                        // In such a case:
+                        // * `AllBitsSet != AllBitsSet` is false and so produces `Zero`
+                        // * `Zero != AllBitsSet` is true and so produces `AllBitsSet`
+                        //
+                        // This means that we are just inverting the input and can reverse
+                        // the condition
+
                         reverseCond = true;
                     }
                 }
 
                 if (reverseCond)
                 {
-                    GenTree* newNode = nullptr;
+                    GenTree*  newNode = nullptr;
+                    var_types op1Type = op1->TypeGet();
 
-                    if (op1Intrinsic->OperIsConvertVectorToMask())
+                    if (op1->OperIsConvertVectorToMask())
                     {
+                        GenTreeHWIntrinsic* op1Intrinsic = op1->AsHWIntrinsic();
+
 #if defined(TARGET_XARCH)
                         op1 = op1Intrinsic->Op(1);
 #elif defined(TARGET_ARM64)

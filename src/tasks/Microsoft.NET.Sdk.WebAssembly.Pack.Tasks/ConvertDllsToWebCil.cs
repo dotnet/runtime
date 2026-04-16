@@ -23,6 +23,8 @@ public class ConvertDllsToWebcil : Task
     [Required]
     public bool IsEnabled { get; set; }
 
+    public int WebcilVersion { get; set; }
+
     [Output]
     public ITaskItem[] WebcilCandidates { get; set; }
 
@@ -133,7 +135,7 @@ public class ConvertDllsToWebcil : Task
         {
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
-            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter);
+            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion);
             webcilWriter.ConvertToWebcil();
 
             if (!Directory.Exists(candidatePath))
