@@ -83,7 +83,14 @@ public class ManagedToNativeGenerator : Task
             log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes and InternalCall methods");
             Assembly asm = mlc.LoadFromAssemblyPath(asmPath);
             pinvoke.ScanAssembly(asm);
-            internalCallCollector.ScanAssembly(asm);
+
+            if (asmPath.Contains("System.Private.CoreLib", StringComparison.OrdinalIgnoreCase))
+            {
+                // Only scan System.Private.CoreLib, as all used InternalCall methods should be defined there,
+                // and scanning all assemblies can be expensive, and can trigger failures which should be avoided.
+                // System.Private.CoreLib is tested such that this should never fail on that binary.
+                internalCallCollector.ScanAssembly(asm);
+            }
         }
 
         // Pregenerated signatures for commonly used shapes used by R2R code to reduce duplication in generated R2R binaries.

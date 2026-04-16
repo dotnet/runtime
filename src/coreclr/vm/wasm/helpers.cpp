@@ -1087,7 +1087,6 @@ namespace
 // Called at EEStartup to initialize thunk tables
 void InitializeWasmThunkCaches()
 {
-    if (thunkCache == nullptr)
     {
         StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
         newTable->Reallocate(g_wasmThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
@@ -1095,12 +1094,9 @@ void InitializeWasmThunkCaches()
         {
             newTable->Add(g_wasmThunks[i].key, g_wasmThunks[i].value);
         }
-        if (InterlockedCompareExchangeT(&thunkCache, newTable, nullptr) != nullptr)
-        {
-            delete newTable;
-        }
+        thunkCache = newTable;
     }
-    if (portableEntrypointThunkCache == nullptr)
+
     {
         StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
         newTable->Reallocate(g_wasmPortableEntryPointThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
@@ -1108,10 +1104,7 @@ void InitializeWasmThunkCaches()
         {
             newTable->Add(g_wasmPortableEntryPointThunks[i].key, g_wasmPortableEntryPointThunks[i].value);
         }
-        if (InterlockedCompareExchangeT(&portableEntrypointThunkCache, newTable, nullptr) != nullptr)
-        {
-            delete newTable;
-        }
+        portableEntrypointThunkCache = newTable;
     }
 }
 
