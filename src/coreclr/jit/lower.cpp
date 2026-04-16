@@ -3018,6 +3018,14 @@ GenTree* Lowering::LowerCall(GenTree* node)
         }
     }
 
+    // For non-helper, managed calls, if we have portable entry points enabled, we need to lower
+    // the call according to the portable entrypoint abi
+    if (!call->IsUnmanaged() && !call->IsHelperCall() &&
+        m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
+    {
+        LowerPEPCall(call);
+    }
+
     if (varTypeIsStruct(call))
     {
         LowerCallStruct(call);
@@ -3632,6 +3640,68 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 #endif // PROFILING_SUPPORTED
 
     return result;
+}
+
+//---------------------------------------------------------------------------------------------
+// LowerPEPCall: Lower a call node dispatched through a PortableEntryPoint (PEP)
+//  
+// Given a call node with gtControlExpr representing a call target which is the address of a portable entrypoint,
+// this function lowers the call to appropriately dispatch through the portable entrypoint using the Portable
+// entrypoint calling convention.
+// To do this, it:
+//      1. Introduces a new local variable to hold the PEP address
+//      1. Adds a new well-known argument to the call passing this local
+//      2. Rewrites the control expression to indirect through the new local, since for PEP's, the actual call target
+//         must be loaded from the portable entry point address.
+//
+// Arguments:
+//    call         -  The call node to lower. It is expected that the call node has gtControlExpr set to the original
+//                      call target and that the call does not have a PEP arg already.
+//
+// Return Value:
+//    None. The call node is modified in place.
+//
+void Lowering::LowerPEPCall(GenTreeCall* call)
+{
+    DISPTREERANGE(BlockRange(), call);
+    GenTree* callTarget = call->gtControlExpr;
+    LIR::Use callTargetUse;
+    bool used = BlockRange().TryGetUse(callTarget, &callTargetUse);
+    assert(used);
+
+    unsigned int callTargetLclNum = callTargetUse.ReplaceWithLclVar(m_compiler);
+    GenTreeLclVar* callTargetLclForArg = m_compiler->gtNewLclvNode(callTargetLclNum, TYP_I_IMPL);
+
+    DISPTREERANGE(BlockRange(), call);
+
+    NewCallArg pepTargetArg = NewCallArg::Primitive(callTargetLclForArg).WellKnown(WellKnownArg::WasmPortableEntryPoint);
+    CallArg* pepArg = call->gtArgs.PushBack(m_compiler, pepTargetArg);
+
+    pepArg->SetEarlyNode(nullptr);
+    pepArg->SetLateNode(callTargetLclForArg);
+    call->gtArgs.PushLateBack(pepArg);
+
+    // Set up ABI information for this arg; PEP's should be passed as the last param to a wasm function
+    unsigned pepIndex = call->gtArgs.CountArgs() - 1;
+    regNumber pepReg   = MakeWasmReg(pepIndex, WasmValueType::I);
+    pepArg->AbiInfo =
+        ABIPassingInformation::FromSegmentByValue(m_compiler,
+                                                  ABIPassingSegment::InRegister(pepReg,
+                                                                                0, TARGET_POINTER_SIZE));
+    BlockRange().InsertBefore(call, callTargetLclForArg);
+
+    DISPTREERANGE(BlockRange(), call);
+
+    // Lower the new PEP arg now that the call abi info is updated and lcl var is inserted
+    LowerArg(call, pepArg);
+
+    // Rewrite the call's control expression to have an additional load from the PEP local
+    GenTree* controlExpr = call->gtControlExpr;
+    GenTree* target = Ind(controlExpr);
+    BlockRange().InsertAfter(controlExpr, target);
+    call->gtControlExpr = target;
+
+    DISPTREERANGE(BlockRange(), call);
 }
 
 //------------------------------------------------------------------------
@@ -6411,10 +6481,6 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
                 cellAddr->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
                 GenTree* indir = Ind(cellAddr);
-#ifdef TARGET_WASM
-                indir = Ind(indir);    // WebAssembly "function pointers" are actually PortableEntryPoint pointers, and
-                                       // actually dispatching to them requires an additional level of indirection.
-#endif
                 result         = indir;
             }
             break;

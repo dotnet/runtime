@@ -152,6 +152,7 @@ private:
     bool     LowerCallMemcmp(GenTreeCall* call, GenTree** next);
     bool     LowerCallMemset(GenTreeCall* call, GenTree** next);
     void     LowerCFGCall(GenTreeCall* call);
+    void     LowerPEPCall(GenTreeCall* call);
     void     MovePutArgNodesUpToCall(GenTreeCall* call);
     void     MovePutArgUpToCall(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
