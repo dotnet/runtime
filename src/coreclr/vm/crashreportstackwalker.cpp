@@ -14,8 +14,69 @@
 #ifdef HOST_ANDROID
 
 #include "debug/crashreport/inproccrashreporter.h"
+#include <sys/syscall.h>
+#include <signal.h>
+#include <unistd.h>
 
 extern "C" void PROCEnableInProcCrashReport();
+
+// ---------------------------------------------------------------------------
+// Crash-time thread suspension using a dedicated signal and pipe.
+//
+// At init time we install a handler for SIGUSR2 that, when armed, parks
+// the receiving thread on a pipe read.  At crash time the reporter arms
+// the gate, sends SIGUSR2 to every non-crashing managed thread, waits
+// briefly, walks stacks, then closes the pipe to release everyone.
+//
+// This approach keeps the PAL's activation signal handler untouched.
+// ---------------------------------------------------------------------------
+static volatile int s_crashSuspendArmed = 0;
+static int s_crashResumePipe[2] = { -1, -1 };
+
+static void CrashSuspendSignalHandler(int sig, siginfo_t* info, void* context)
+{
+    (void)sig;
+    (void)info;
+    (void)context;
+
+    if (!__atomic_load_n(&s_crashSuspendArmed, __ATOMIC_ACQUIRE))
+        return;
+
+    // Block until the crash reporter closes the write end.
+    // read() is async-signal-safe.
+    char buf;
+    while (read(s_crashResumePipe[0], &buf, 1) == -1 && errno == EINTR)
+        ;
+}
+
+static void CrashSuspendInstallHandler()
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_sigaction = CrashSuspendSignalHandler;
+    sa.sa_flags = SA_SIGINFO | SA_RESTART;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGUSR2, &sa, NULL);
+}
+
+static void CrashSuspendArm()
+{
+    if (pipe(s_crashResumePipe) != 0)
+    {
+        s_crashResumePipe[0] = -1;
+        s_crashResumePipe[1] = -1;
+    }
+    __atomic_store_n(&s_crashSuspendArmed, 1, __ATOMIC_RELEASE);
+}
+
+static void CrashSuspendRelease()
+{
+    if (s_crashResumePipe[1] != -1)
+    {
+        close(s_crashResumePipe[1]);
+        s_crashResumePipe[1] = -1;
+    }
+}
 
 struct WalkContext
 {
@@ -288,6 +349,34 @@ CrashReportGetException(
     return CrashReportGetExceptionForThread(pThread, exceptionTypeBuf, exceptionTypeBufSize, hresult);
 }
 
+// Suspend non-crashing threads so their managed stacks can be walked
+// reliably.  Sends SIGUSR2 to every non-crashing managed thread; the
+// handler (installed at init) parks them on a pipe read.
+static
+void
+CrashReportSuspendThreads(Thread* pCrashThread)
+{
+    CrashSuspendArm();
+
+    pid_t pid = getpid();
+    Thread* pThread = ThreadStore::GetThreadList(NULL);
+    while (pThread != NULL)
+    {
+        if (pThread != pCrashThread)
+        {
+            DWORD tid = pThread->GetOSThreadId();
+            if (tid != 0)
+            {
+                syscall(SYS_tgkill, pid, static_cast<pid_t>(tid), SIGUSR2);
+            }
+        }
+        pThread = ThreadStore::GetThreadList(pThread);
+    }
+
+    // Brief wait for threads to park in the signal handler.
+    usleep(50000);
+}
+
 static
 void
 CrashReportEnumerateThreads(
@@ -296,10 +385,10 @@ CrashReportEnumerateThreads(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
-    // This minimal lift intentionally reuses the existing ThreadStore traversal
-    // and StackWalkFrames as a best-effort source for managed thread state.
     Thread* pCrashThread = GetThreadAsyncSafe();
     bool crashThreadHandled = false;
+
+    CrashReportSuspendThreads(pCrashThread);
 
     // Emit the crashing thread first so the report keeps the most important
     // thread even if later enumeration is incomplete.
@@ -338,19 +427,32 @@ CrashReportEnumerateThreads(
         bool isCrashThread = !crashThreadHandled && osThreadId == crashingTid;
         char exceptionType[256];
         uint32_t hresult = 0;
-        int hasException = CrashReportGetExceptionForThread(pThread, exceptionType, sizeof(exceptionType), &hresult);
+        int hasException = 0;
+
+        if (isCrashThread)
+        {
+            hasException = CrashReportGetExceptionForThread(pThread, exceptionType, sizeof(exceptionType), &hresult);
+        }
 
         threadCallback(osThreadId, isCrashThread ? 1 : 0, hasException ? exceptionType : "", hresult, ctx);
+
         if (isCrashThread)
         {
             CrashReportWalkThread(pThread, frameCallback, ctx);
             crashThreadHandled = true;
         }
-        // Avoid walking live non-crashing threads here. Stack walking a running
-        // thread without suspending it is unreliable and can destabilize crash reporting.
+        else
+        {
+            // Non-crashing threads have been parked by the crash-suspend
+            // signal handler.  Their managed stacks are frozen and safe
+            // to walk regardless of their original GC mode.
+            CrashReportWalkThread(pThread, frameCallback, ctx);
+        }
 
         pThread = ThreadStore::GetThreadList(pThread);
     }
+
+    CrashSuspendRelease();
 }
 
 void
@@ -389,6 +491,9 @@ CrashReportRegisterStackWalker()
 
     // Set the PAL flag so PROCCreateCrashDumpIfEnabled knows to call the reporter.
     PROCEnableInProcCrashReport();
+
+    // Install the SIGUSR2 handler for crash-time thread suspension.
+    CrashSuspendInstallHandler();
 
     InProcCrashReportSetCurrentThreadManagedResolver(CrashReportIsCurrentThreadManaged);
     InProcCrashReportSetStackWalker(CrashReportWalkStack);
