@@ -59,7 +59,7 @@ function mergeResources(target: Assets, source: Assets): Assets {
     // no need to merge the same object
     if (target === source || source === undefined || source === null) return target;
 
-    target.hash = source.hash ?? target.hash ?? "";
+    target.hash = source.hash ?? target.hash;
     target.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly || []];
     target.assembly = [...target.assembly!, ...source.assembly || []];
     target.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly || []];
