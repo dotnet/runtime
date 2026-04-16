@@ -195,6 +195,8 @@
     <Compile Include="System\RuntimeType.NativeAot.cs" />
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />
     <Compile Include="System\Runtime\DependentHandle.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CdacFieldAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CdacTypeAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
