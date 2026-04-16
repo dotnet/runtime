@@ -109,12 +109,6 @@ namespace System.Reflection
 
             this.resolver = resolver;
 
-            if (coreAssemblyName != null)
-            {
-                // Validate now that the value is a parsable assembly name.
-                new AssemblyName(coreAssemblyName);
-            }
-
             // Resolve the core assembly now
             _coreAssembly = LoadCoreAssembly(coreAssemblyName);
             _coreTypes = new CoreTypes(_coreAssembly);
