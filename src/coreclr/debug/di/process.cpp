@@ -15357,16 +15357,7 @@ HRESULT CordbProcess::GetDesiredNGENCompilerFlags(DWORD *pdwFlags )
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(pdwFlags, DWORD*);
     *pdwFlags = 0;
-
-    CordbProcess *pProcess = GetProcess();
-    ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);
-    HRESULT  hr = S_OK;
-    EX_TRY
-    {
-        hr = pProcess->GetDAC()->GetNGENCompilerFlags(pdwFlags);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
+    return CORDBG_E_NGEN_NOT_SUPPORTED;
 }
 
 //-----------------------------------------------------------------------------
