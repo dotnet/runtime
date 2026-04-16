@@ -297,12 +297,20 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                 }
                 else if (pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
                 {
-                    // Skip the new exception handling managed code, the debugger clients are not supposed to see them
                     MethodDesc *pMD = pIter->m_crawl.GetFunction();
+                    MethodTable *pMT = pMD->GetMethodTable();
 
+                    // Skip the exception handling managed code, the debugger clients are not supposed to see them
                     // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
                     // and System.Runtime.StackFrameIterator.*
-                    if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
+                    if (pMT == g_pEHClass || pMT == g_pExceptionServicesInternalCallsClass || pMT == g_pStackFrameIteratorClass)
+                    {
+                        continue;
+                    }
+
+                    // Skip the runtime helper that invokes the main program entrypoint, the debuggers do not want to see it.
+                    // Environment.CallEntryPoint
+                    if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
                     {
                         continue;
                     }
@@ -420,6 +428,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                         if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
                         {
                             ftResult = kManagedExceptionHandlingCodeFrame;
+                        }
+                        // Environment.CallEntryPoint
+                        else if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
+                        {
+                            ftResult = kRuntimeEntryPointFrame;
                         }
                         else
                         {
@@ -1390,7 +1403,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsThreadSuspendedOrHijacked(VMPTR
     {
 
         Thread * pThread = vmThread.GetDacPtr();
-        Thread::ThreadState ts = pThread->GetSnapshotState();
+        Thread::ThreadState ts = pThread->GetState();
         if ((ts & Thread::TS_SyncSuspended) != 0)
         {
             *pResult = TRUE;

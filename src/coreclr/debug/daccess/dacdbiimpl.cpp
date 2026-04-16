@@ -1081,11 +1081,6 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
 // Function Data
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-// Workaround for https://developercommunity.visualstudio.com/t/C-compiling-hangs-building-checked-bui/10974056 . Delete
-// once MSVC compiler with a fix is released.
-#ifdef _MSC_VER
-#pragma optimize("", off)
-#endif
 
 // GetILCodeAndSig returns the function's ILCode and SigToken given
 // a module and a token. The info will come from a MethodDesc, if
@@ -1150,10 +1145,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainAssem
     EX_CATCH_HRESULT(hr);
     return hr;
 }
-
-#ifdef _MSC_VER
-#pragma optimize("", on)
-#endif
 
 //---------------------------------------------------------------------------------------
 //
@@ -1352,7 +1343,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAss
         MethodDesc* pMethodDesc = FindLoadedMethodRefOrDef(pModule, functionToken);
         if (pMethodDesc != NULL && pMethodDesc->IsAsyncThunkMethod())
         {
-            MethodDesc* pAsyncVariant = pMethodDesc->GetAsyncOtherVariantNoCreate();
+            MethodDesc* pAsyncVariant = pMethodDesc->GetAsyncVariantNoCreate();
             if (pAsyncVariant != NULL)
             {
                 pMethodDesc = pAsyncVariant;
@@ -3914,18 +3905,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsRcw(VMPTR_Object vmObject, OUT 
 #endif // FEATURE_COMINTEROP
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetRcwCachedInterfaceTypes(VMPTR_Object vmObject, VMPTR_AppDomain vmAppDomain, BOOL bIInspectableOnly, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pDacInterfaces)
-{
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        // Legacy WinRT API.
-        pDacInterfaces->Alloc(0);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs)
 {
 #ifdef FEATURE_COMINTEROP
@@ -4914,8 +4893,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateThreads(FP_THREAD_ENUMER
 
             // Don't want to publish threads via enumeration before they're ready to be inspected.
             // Use the same window that we used in whidbey.
-            Thread::ThreadState threadState = pThread->GetSnapshotState();
-            if (!((IsThreadMarkedDeadWorker(pThread)) || (threadState & Thread::TS_Unstarted)))
+            Thread::ThreadState threadState = pThread->GetState();
+            if (!((threadState & Thread::TS_Stopped) || (threadState & Thread::TS_Unstarted)))
             {
                 VMPTR_Thread vmThread = VMPTR_Thread::NullPtr();
                 vmThread.SetHostPtr(pThread);
@@ -4938,34 +4917,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsThreadMarkedDead(VMPTR_Thread v
     EX_TRY
     {
         Thread * pThread = vmThread.GetDacPtr();
-        *pResult = IsThreadMarkedDeadWorker(pThread);
+        *pResult = (pThread->GetState() & Thread::TS_Stopped) != 0;
     }
     EX_CATCH_HRESULT(hr);
     return hr;
 }
-
-// Private worker for IsThreadMarkedDead
-//
-// Arguments:
-//    pThread - valid thread to check if dead
-//
-// Returns:
-//    true iff thread is marked as dead.
-//
-// Notes:
-//    This is an internal method that skips public validation.
-//    See code:IDacDbiInterface::#IsThreadMarkedDead for purpose.
-bool DacDbiInterfaceImpl::IsThreadMarkedDeadWorker(Thread * pThread)
-{
-    _ASSERTE(pThread != NULL);
-
-    Thread::ThreadState threadState = pThread->GetSnapshotState();
-
-    bool fIsDead = (threadState & Thread::TS_Dead) != 0;
-
-    return fIsDead;
-}
-
 
 // Return the handle of the specified thread.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadHandle(VMPTR_Thread vmThread, OUT HANDLE * pRetVal)
@@ -4993,9 +4949,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadObject(VMPTR_Thread vmTh
     {
 
         Thread * pThread = vmThread.GetDacPtr();
-        Thread::ThreadState threadState = pThread->GetSnapshotState();
+        Thread::ThreadState threadState = pThread->GetState();
 
-        if ( (threadState & Thread::TS_Dead) ||
+        if ( (threadState & Thread::TS_Stopped) ||
              (threadState & Thread::TS_Unstarted) ||
              (threadState & Thread::TS_Detached) ||
              g_fProcessDetach )
@@ -5994,7 +5950,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread 
     {
 
         Thread * pThread = vmThread.GetDacPtr();
-        Thread::ThreadState ts = pThread->GetSnapshotState();
+        Thread::ThreadState ts = pThread->GetState();
 
         UINT result = 0;
         if (ts & Thread::TS_Background)
@@ -6008,7 +5964,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread 
         }
 
         // Don't report a StopRequested if the thread has actually stopped.
-        if (ts & Thread::TS_Dead)
+        if (ts & Thread::TS_Stopped)
         {
             result |= USER_STOPPED;
         }
@@ -6244,25 +6200,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObject(CORDB_ADDRESS ptr, OUT 
     }
     EX_CATCH_HRESULT(hr);
     return hr;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnableNGENPolicy(CorDebugNGENPolicy ePolicy)
-{
-    return E_NOTIMPL;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetNGENCompilerFlags(DWORD dwFlags)
-{
-    DD_ENTER_MAY_THROW;
-
-    return CORDBG_E_NGEN_NOT_SUPPORTED;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNGENCompilerFlags(DWORD *pdwFlags)
-{
-    DD_ENTER_MAY_THROW;
-
-    return CORDBG_E_NGEN_NOT_SUPPORTED;
 }
 
 typedef DPTR(OBJECTREF) PTR_ObjectRef;
@@ -7927,13 +7864,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPEFileMDInternalRW(VMPTR_PEAss
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetReJitInfo(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ReJitInfo* pvmReJitInfo)
-{
-    DD_ENTER_MAY_THROW;
-    _ASSERTE(!"You shouldn't be calling this - use GetActiveRejitILCodeVersionNode instead");
-    return S_OK;
-}
-
 #ifdef FEATURE_CODE_VERSIONING
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode)
 {
@@ -8031,13 +7961,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeVersionNodeData(VMPTR_IL
 }
 #endif // FEATURE_CODE_VERSIONING
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetReJitInfoByAddress(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_ReJitInfo* pvmReJitInfo)
-{
-    DD_ENTER_MAY_THROW;
-    _ASSERTE(!"You shouldn't be calling this - use GetNativeCodeVersionNode instead");
-    return S_OK;
-}
-
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled)
 {
     DD_ENTER_MAY_THROW;
@@ -8056,20 +7979,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Mo
     *pOptimizationsDisabled = FALSE;
 #endif
 
-    return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSharedReJitInfo(VMPTR_ReJitInfo vmReJitInfo, OUT VMPTR_SharedReJitInfo* pvmSharedReJitInfo)
-{
-    DD_ENTER_MAY_THROW;
-    _ASSERTE(!"You shouldn't be calling this - use GetILCodeVersionNode instead");
-    return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSharedReJitInfoData(VMPTR_SharedReJitInfo vmSharedReJitInfo, DacSharedReJitInfo* pData)
-{
-    DD_ENTER_MAY_THROW;
-    _ASSERTE(!"You shouldn't be calling this - use GetILCodeVersionNodeData instead");
     return S_OK;
 }
 

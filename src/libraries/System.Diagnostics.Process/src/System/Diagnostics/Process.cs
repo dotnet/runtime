@@ -1207,10 +1207,6 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out childInputHandle, out parentInputPipeHandle);
                         }
-                        else if (ProcessUtils.PlatformSupportsConsole)
-                        {
-                            childInputHandle = Console.OpenStandardInputHandle();
-                        }
 
                         if (startInfo.StandardOutputHandle is not null)
                         {
@@ -1219,10 +1215,6 @@ namespace System.Diagnostics
                         else if (startInfo.RedirectStandardOutput)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputHandle, asyncRead: OperatingSystem.IsWindows());
-                        }
-                        else if (ProcessUtils.PlatformSupportsConsole)
-                        {
-                            childOutputHandle = Console.OpenStandardOutputHandle();
                         }
 
                         if (startInfo.StandardErrorHandle is not null)
@@ -1233,10 +1225,6 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorHandle, asyncRead: OperatingSystem.IsWindows());
                         }
-                        else if (ProcessUtils.PlatformSupportsConsole)
-                        {
-                            childErrorHandle = Console.OpenStandardErrorHandle();
-                        }
                     }
                     finally
                     {
@@ -1244,6 +1232,25 @@ namespace System.Diagnostics
                         {
                             ProcessUtils.s_processStartLock.ExitWriteLock();
                         }
+                    }
+
+                    // After releasing the lock, open the null device handle once (if needed for StartDetached)
+                    // or fall back to the console handles. The null device handle will be disposed in the finally block below.
+                    if (startInfo.StartDetached)
+                    {
+                        if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
+                        {
+                            SafeFileHandle nullDeviceHandle = File.OpenNullHandle();
+                            childInputHandle ??= nullDeviceHandle;
+                            childOutputHandle ??= nullDeviceHandle;
+                            childErrorHandle ??= nullDeviceHandle;
+                        }
+                    }
+                    else if (ProcessUtils.PlatformSupportsConsole)
+                    {
+                        childInputHandle ??= Console.OpenStandardInputHandle();
+                        childOutputHandle ??= Console.OpenStandardOutputHandle();
+                        childErrorHandle ??= Console.OpenStandardErrorHandle();
                     }
 
                     ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
