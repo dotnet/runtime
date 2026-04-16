@@ -66,10 +66,13 @@ public unsafe class MetadataImportWrapperTests
         // FieldDef: _value (int)
         mb.AddFieldDefinition(FieldAttributes.Private, mb.GetOrAddString("_value"), intFieldSig);
 
-        // MethodDef: DoWork (void)
+        // MethodDef: DoWork (void) with one parameter
         mb.AddMethodDefinition(MethodAttributes.Public, MethodImplAttributes.IL,
             mb.GetOrAddString("DoWork"), voidMethodSig,
             -1, MetadataTokens.ParameterHandle(1));
+
+        // Parameter: "arg0" at sequence 1
+        mb.AddParameter(ParameterAttributes.None, mb.GetOrAddString("arg0"), 1);
 
         // Interface implementation: TestClass : IDisposable
         mb.AddInterfaceImplementation(testClassHandle, disposableRef);
@@ -89,6 +92,32 @@ public unsafe class MetadataImportWrapperTests
         // Generic parameter on TestClass
         mb.AddGenericParameter(testClassHandle, GenericParameterAttributes.None, mb.GetOrAddString("T"), 0);
 
+        // MemberRef: Object.ToString() on objectRef
+        BlobBuilder memberRefSig = new();
+        new BlobEncoder(memberRefSig).MethodSignature().Parameters(0, returnType => returnType.Void(), parameters => { });
+        mb.AddMemberReference(objectRef, mb.GetOrAddString("ToString"), mb.GetOrAddBlob(memberRefSig));
+
+        // ModuleRef: "NativeLib"
+        mb.AddModuleReference(mb.GetOrAddString("NativeLib"));
+
+        // TypeSpec: a simple type spec (int[])
+        BlobBuilder typeSpecSig = new();
+        new BlobEncoder(typeSpecSig).TypeSpecificationSignature().SZArray().Int32();
+        mb.AddTypeSpecification(mb.GetOrAddBlob(typeSpecSig));
+
+        // UserString: "Hello, World!"
+        UserStringHandle userStringHandle = mb.GetOrAddUserString("Hello, World!");
+
+        // TypeDef with explicit layout for GetClassLayout testing (row 4)
+        mb.AddTypeDefinition(
+            TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Class,
+            mb.GetOrAddString("TestNamespace"),
+            mb.GetOrAddString("LayoutClass"),
+            objectRef,
+            MetadataTokens.FieldDefinitionHandle(2),
+            MetadataTokens.MethodDefinitionHandle(2));
+        mb.AddTypeLayout(MetadataTokens.TypeDefinitionHandle(4), 8, 32);
+
         // Serialize
         BlobBuilder metadataBlob = new();
         MetadataRootBuilder root = new(mb);
@@ -107,23 +136,7 @@ public unsafe class MetadataImportWrapperTests
     }
 
     [Fact]
-    public void EnumTypeDefs_ReturnsAllTypes()
-    {
-        MetadataImportWrapper wrapper = CreateWrapper();
-
-        nint hEnum = 0;
-        uint* tokens = stackalloc uint[10];
-        uint count;
-        int hr = wrapper.EnumTypeDefs(&hEnum, tokens, 10, &count);
-
-        Assert.Equal(HResults.S_OK, hr);
-        Assert.True(count >= 3); // <Module>, TestClass, NestedType
-
-        wrapper.CloseEnum(hEnum);
-    }
-
-    [Fact]
-    public void EnumTypeDefs_Pagination()
+    public void EnumFields_Pagination()
     {
         MetadataImportWrapper wrapper = CreateWrapper();
 
@@ -131,57 +144,10 @@ public unsafe class MetadataImportWrapperTests
         uint token;
         uint count;
 
-        // Get one at a time
-        int hr = wrapper.EnumTypeDefs(&hEnum, &token, 1, &count);
+        int hr = wrapper.EnumFields(&hEnum, 0x02000002, &token, 1, &count);
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal(1u, count);
-
-        hr = wrapper.EnumTypeDefs(&hEnum, &token, 1, &count);
-        Assert.Equal(HResults.S_OK, hr);
-        Assert.Equal(1u, count);
-
-        wrapper.CloseEnum(hEnum);
-    }
-
-    [Fact]
-    public void CountEnum_ReturnsCorrectCount()
-    {
-        MetadataImportWrapper wrapper = CreateWrapper();
-
-        nint hEnum = 0;
-        uint* tokens = stackalloc uint[10];
-        uint count;
-        wrapper.EnumTypeDefs(&hEnum, tokens, 10, &count);
-
-        uint enumCount;
-        int hr = wrapper.CountEnum(hEnum, &enumCount);
-        Assert.Equal(HResults.S_OK, hr);
-        Assert.Equal(count, enumCount);
-
-        wrapper.CloseEnum(hEnum);
-    }
-
-    [Fact]
-    public void ResetEnum_ResetsPosition()
-    {
-        MetadataImportWrapper wrapper = CreateWrapper();
-
-        nint hEnum = 0;
-        uint firstToken;
-        uint count;
-        wrapper.EnumTypeDefs(&hEnum, &firstToken, 1, &count);
-
-        // Advance past first
-        uint secondToken;
-        wrapper.EnumTypeDefs(&hEnum, &secondToken, 1, &count);
-
-        // Reset to 0
-        wrapper.ResetEnum(hEnum, 0);
-
-        // Should get first token again
-        uint resetToken;
-        wrapper.EnumTypeDefs(&hEnum, &resetToken, 1, &count);
-        Assert.Equal(firstToken, resetToken);
+        Assert.Equal(0x04000001u, token);
 
         wrapper.CloseEnum(hEnum);
     }
@@ -299,22 +265,6 @@ public unsafe class MetadataImportWrapperTests
         hr = wrapper.GetMemberProps(0xFF000001, null, null, 0, null,
             null, null, null, null, null, null, null, null);
         Assert.Equal(HResults.E_INVALIDARG, hr);
-    }
-
-    [Fact]
-    public void EnumMethods_ReturnsMethodsForType()
-    {
-        MetadataImportWrapper wrapper = CreateWrapper();
-
-        nint hEnum = 0;
-        uint* tokens = stackalloc uint[10];
-        uint count;
-        int hr = wrapper.EnumMethods(&hEnum, 0x02000002, tokens, 10, &count);
-        Assert.Equal(HResults.S_OK, hr);
-        Assert.True(count >= 1);
-        Assert.Equal(0x06000001u, tokens[0]); // DoWork
-
-        wrapper.CloseEnum(hEnum);
     }
 
     [Fact]
@@ -448,21 +398,6 @@ public unsafe class MetadataImportWrapperTests
     }
 
     [Fact]
-    public void EnumTypeRefs_ReturnsTypeRefs()
-    {
-        MetadataImportWrapper wrapper = CreateWrapper();
-
-        nint hEnum = 0;
-        uint* tokens = stackalloc uint[10];
-        uint count;
-        int hr = wrapper.EnumTypeRefs(&hEnum, tokens, 10, &count);
-        Assert.Equal(HResults.S_OK, hr);
-        Assert.True(count >= 2); // System.Object and System.IDisposable
-
-        wrapper.CloseEnum(hEnum);
-    }
-
-    [Fact]
     public void InvalidToken_ReturnsError()
     {
         MetadataImportWrapper wrapper = CreateWrapper();
@@ -479,8 +414,173 @@ public unsafe class MetadataImportWrapperTests
     {
         MetadataImportWrapper wrapper = CreateWrapper();
 
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.FindTypeDefByName(null, 0, null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.GetScopeProps(null, 0, null, null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.ResolveTypeRef(0, null, null, null));
+        Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumTypeDefs(null, null, 0, null));
+        Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumTypeRefs(null, null, 0, null));
+        Assert.Equal(HResults.E_NOTIMPL, wrapper.CountEnum(0, null));
+        Assert.Equal(HResults.E_NOTIMPL, wrapper.ResetEnum(0, 0));
+    }
+
+    [Fact]
+    public void FindTypeDefByName_FindsType()
+    {
+        MetadataImportWrapper wrapper = CreateWrapper();
+
+        uint td;
+        fixed (char* name = "TestNamespace.TestClass")
+        {
+            int hr = wrapper.FindTypeDefByName(name, 0, &td);
+            Assert.Equal(HResults.S_OK, hr);
+            Assert.Equal(0x02000002u, td);
+        }
+    }
+
+    [Fact]
+    public void FindTypeDefByName_NotFound()
+    {
+        MetadataImportWrapper wrapper = CreateWrapper();
+
+        uint td;
+        fixed (char* name = "DoesNotExist")
+        {
+            int hr = wrapper.FindTypeDefByName(name, 0, &td);
+            Assert.True(hr < 0); // CLDB_E_RECORD_NOTFOUND
+        }
+    }
+
+    [Fact]
+    public void GetMemberRefProps_ReturnsNameAndParent()
+    {
+        MetadataImportWrapper wrapper = CreateWrapper();
+
+        uint memberRefToken = 0x0A000001; // MemberRef row 1
+        uint parentToken;
+        char* nameBuf = stackalloc char[256];
+        uint nameLen;
+        byte* sigBlob;
+        uint sigLen;
+
+        int hr = wrapper.GetMemberRefProps(memberRefToken, &parentToken, nameBuf, 256, &nameLen, &sigBlob, &sigLen);
+        Assert.Equal(HResults.S_OK, hr);
+
+        string name = new string(nameBuf, 0, (int)nameLen - 1);
+        Assert.Equal("ToString", name);
+        Assert.NotEqual(0u, parentToken);
+        Assert.True(sigLen > 0);
+    }
+
+    [Fact]
+    public void GetModuleRefProps_ReturnsName()
+    {
+        MetadataImportWrapper wrapper = CreateWrapper();
+
+        uint moduleRefToken = 0x1A000001; // ModuleRef row 1
+        char* nameBuf = stackalloc char[256];
+        uint nameLen;
+
+        int hr = wrapper.GetModuleRefProps(moduleRefToken, nameBuf, 256, &nameLen);
+        Assert.Equal(HResults.S_OK, hr);
+
+        string name = new string(nameBuf, 0, (int)nameLen - 1);
+        Assert.Equal("NativeLib", name);
+    }
+
+    [Fact]
+    public void GetTypeSpecFromToken_ReturnsSig()
+    {
+        MetadataImportWrapper wrapper = CreateWrapper();
+
+        uint typeSpecToken = 0x1B000001; // TypeSpec row 1
+        byte* sigBlob;
+        uint sigLen;
+
+        int hr = wrapper.GetTypeSpecFromToken(typeSpecToken, &sigBlob, &sigLen);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.True(sigLen > 0);
+        Assert.True(sigBlob is not null);
+    }
+
+    [Fact]
+    public void GetUserString_ReturnsString()
+    {
+        MetadataImportWrapper wrapper = CreateWrapper();
+
+        uint userStringToken = 0x70000001; // UserString heap offset 1
+        char* strBuf = stackalloc char[256];
+        uint strLen;
+
+        int hr = wrapper.GetUserString(userStringToken, strBuf, 256, &strLen);
+        Assert.Equal(HResults.S_OK, hr);
+
+        string value = new string(strBuf, 0, (int)strLen - 1);
+        Assert.Equal("Hello, World!", value);
+    }
+
+    [Fact]
+    public void GetParamProps_ReturnsNameAndSequence()
+    {
+        MetadataImportWrapper wrapper = CreateWrapper();
+
+        uint paramToken = 0x08000001; // Param row 1
+        uint parentMethod;
+        uint sequence;
+        char* nameBuf = stackalloc char[256];
+        uint nameLen;
+        uint attrs;
+
+        int hr = wrapper.GetParamProps(paramToken, &parentMethod, &sequence, nameBuf, 256, &nameLen,
+            &attrs, null, null, null);
+        Assert.Equal(HResults.S_OK, hr);
+
+        string name = new string(nameBuf, 0, (int)nameLen - 1);
+        Assert.Equal("arg0", name);
+        Assert.Equal(1u, sequence);
+        Assert.Equal(0x06000001u, parentMethod); // DoWork
+    }
+
+    [Fact]
+    public void GetParamForMethodIndex_FindsParam()
+    {
+        MetadataImportWrapper wrapper = CreateWrapper();
+
+        uint paramToken;
+        int hr = wrapper.GetParamForMethodIndex(0x06000001, 1, &paramToken);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(0x08000001u, paramToken);
+    }
+
+    [Fact]
+    public void GetParamForMethodIndex_NotFound()
+    {
+        MetadataImportWrapper wrapper = CreateWrapper();
+
+        uint paramToken;
+        int hr = wrapper.GetParamForMethodIndex(0x06000001, 99, &paramToken);
+        Assert.True(hr < 0); // CLDB_E_RECORD_NOTFOUND
+    }
+
+    [Fact]
+    public void GetClassLayout_ReturnsLayout()
+    {
+        MetadataImportWrapper wrapper = CreateWrapper();
+
+        uint packSize;
+        uint classSize;
+        int hr = wrapper.GetClassLayout(0x02000004, &packSize, null, 0, null, &classSize);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(8u, packSize);
+        Assert.Equal(32u, classSize);
+    }
+
+    [Fact]
+    public void GetClassLayout_NoLayout_ReturnsRecordNotFound()
+    {
+        MetadataImportWrapper wrapper = CreateWrapper();
+
+        uint packSize;
+        uint classSize;
+        int hr = wrapper.GetClassLayout(0x02000002, &packSize, null, 0, null, &classSize);
+        Assert.True(hr < 0); // CLDB_E_RECORD_NOTFOUND
     }
 }

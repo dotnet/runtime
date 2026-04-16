@@ -13,6 +13,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 {
+    private const int CLDB_E_RECORD_NOTFOUND = unchecked((int)0x80131130);
     private readonly MetadataReader _reader;
 
     public MetadataImportWrapper(MetadataReader reader)
@@ -124,40 +125,13 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
     }
 
     public int CountEnum(nint hEnum, uint* pulCount)
-    {
-        MetadataEnum? e = GetEnum(hEnum);
-        if (e is null)
-            return HResults.E_INVALIDARG;
-
-        if (pulCount is not null)
-            *pulCount = (uint)e.Tokens.Count;
-
-        return HResults.S_OK;
-    }
+        => HResults.E_NOTIMPL;
 
     public int ResetEnum(nint hEnum, uint ulPos)
-    {
-        MetadataEnum? e = GetEnum(hEnum);
-        if (e is null)
-            return HResults.E_INVALIDARG;
-
-        e.Position = (int)ulPos;
-        return HResults.S_OK;
-    }
+        => HResults.E_NOTIMPL;
 
     public int EnumTypeDefs(nint* phEnum, uint* rTypeDefs, uint cMax, uint* pcTypeDefs)
-    {
-        return CatchHR(() =>
-        {
-            if (phEnum is not null && *phEnum != 0)
-                return FillEnum(phEnum, GetEnum(*phEnum)!.Tokens, rTypeDefs, cMax, pcTypeDefs);
-
-            List<uint> tokens = new();
-            foreach (TypeDefinitionHandle h in _reader.TypeDefinitions)
-                tokens.Add((uint)MetadataTokens.GetToken(h));
-            return FillEnum(phEnum, tokens, rTypeDefs, cMax, pcTypeDefs);
-        });
-    }
+        => HResults.E_NOTIMPL;
 
     public int EnumInterfaceImpls(nint* phEnum, uint td, uint* rImpls, uint cMax, uint* pcImpls)
     {
@@ -176,52 +150,13 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
     }
 
     public int EnumTypeRefs(nint* phEnum, uint* rTypeRefs, uint cMax, uint* pcTypeRefs)
-    {
-        return CatchHR(() =>
-        {
-            if (phEnum is not null && *phEnum != 0)
-                return FillEnum(phEnum, GetEnum(*phEnum)!.Tokens, rTypeRefs, cMax, pcTypeRefs);
-
-            List<uint> tokens = new();
-            for (int i = 1, count = _reader.GetTableRowCount(TableIndex.TypeRef); i <= count; i++)
-                tokens.Add((uint)MetadataTokens.GetToken(MetadataTokens.TypeReferenceHandle(i)));
-            return FillEnum(phEnum, tokens, rTypeRefs, cMax, pcTypeRefs);
-        });
-    }
+        => HResults.E_NOTIMPL;
 
     public int EnumMembers(nint* phEnum, uint cl, uint* rMembers, uint cMax, uint* pcTokens)
-    {
-        return CatchHR(() =>
-        {
-            if (phEnum is not null && *phEnum != 0)
-                return FillEnum(phEnum, GetEnum(*phEnum)!.Tokens, rMembers, cMax, pcTokens);
-
-            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(cl & 0x00FFFFFF));
-            TypeDefinition typeDef = _reader.GetTypeDefinition(typeHandle);
-            List<uint> tokens = new();
-            foreach (MethodDefinitionHandle h in typeDef.GetMethods())
-                tokens.Add((uint)MetadataTokens.GetToken(h));
-            foreach (FieldDefinitionHandle h in typeDef.GetFields())
-                tokens.Add((uint)MetadataTokens.GetToken(h));
-            return FillEnum(phEnum, tokens, rMembers, cMax, pcTokens);
-        });
-    }
+        => HResults.E_NOTIMPL;
 
     public int EnumMethods(nint* phEnum, uint cl, uint* rMethods, uint cMax, uint* pcTokens)
-    {
-        return CatchHR(() =>
-        {
-            if (phEnum is not null && *phEnum != 0)
-                return FillEnum(phEnum, GetEnum(*phEnum)!.Tokens, rMethods, cMax, pcTokens);
-
-            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(cl & 0x00FFFFFF));
-            TypeDefinition typeDef = _reader.GetTypeDefinition(typeHandle);
-            List<uint> tokens = new();
-            foreach (MethodDefinitionHandle h in typeDef.GetMethods())
-                tokens.Add((uint)MetadataTokens.GetToken(h));
-            return FillEnum(phEnum, tokens, rMethods, cMax, pcTokens);
-        });
-    }
+        => HResults.E_NOTIMPL;
 
     public int EnumFields(nint* phEnum, uint cl, uint* rFields, uint cMax, uint* pcTokens)
     {
@@ -240,32 +175,7 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
     }
 
     public int EnumCustomAttributes(nint* phEnum, uint tk, uint tkType, uint* rCustomAttributes, uint cMax, uint* pcCustomAttributes)
-    {
-        return CatchHR(() =>
-        {
-            if (phEnum is not null && *phEnum != 0)
-                return FillEnum(phEnum, GetEnum(*phEnum)!.Tokens, rCustomAttributes, cMax, pcCustomAttributes);
-
-            EntityHandle parent = MetadataTokens.EntityHandle((int)tk);
-            List<uint> tokens = new();
-            foreach (CustomAttributeHandle h in _reader.GetCustomAttributes(parent))
-            {
-                if (tkType != 0)
-                {
-                    CustomAttribute ca = _reader.GetCustomAttribute(h);
-                    int ctorToken = MetadataTokens.GetToken(ca.Constructor);
-                    if ((uint)ctorToken != tkType)
-                    {
-                        uint ctorParent = GetCustomAttributeTypeToken(ca.Constructor);
-                        if (ctorParent != tkType)
-                            continue;
-                    }
-                }
-                tokens.Add((uint)MetadataTokens.GetToken(h));
-            }
-            return FillEnum(phEnum, tokens, rCustomAttributes, cMax, pcCustomAttributes);
-        });
-    }
+        => HResults.E_NOTIMPL;
 
     public int EnumGenericParams(nint* phEnum, uint tk, uint* rGenericParams, uint cMax, uint* pcGenericParams)
     {
@@ -499,7 +409,6 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
             if (ptdEnclosingClass is not null)
                 *ptdEnclosingClass = declaringType.IsNil ? 0 : (uint)MetadataTokens.GetToken(declaringType);
 
-            const int CLDB_E_RECORD_NOTFOUND = unchecked((int)0x80131130);
             return declaringType.IsNil ? CLDB_E_RECORD_NOTFOUND : HResults.S_OK;
         });
     }
@@ -625,21 +534,6 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         return rid <= rowCount ? 1 : 0; // TRUE or FALSE
     }
 
-    private uint GetCustomAttributeTypeToken(EntityHandle constructor)
-    {
-        if (constructor.Kind == HandleKind.MethodDefinition)
-        {
-            MethodDefinition method = _reader.GetMethodDefinition((MethodDefinitionHandle)constructor);
-            return (uint)MetadataTokens.GetToken(method.GetDeclaringType());
-        }
-        if (constructor.Kind == HandleKind.MemberReference)
-        {
-            MemberReference memberRef = _reader.GetMemberReference((MemberReferenceHandle)constructor);
-            return (uint)MetadataTokens.GetToken(memberRef.Parent);
-        }
-        return 0;
-    }
-
     private string GetCustomAttributeTypeName(EntityHandle constructor)
     {
         if (constructor.Kind == HandleKind.MethodDefinition)
@@ -667,7 +561,38 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
     }
 
     public int FindTypeDefByName(char* szTypeDef, uint tkEnclosingClass, uint* ptd)
-        => HResults.E_NOTIMPL;
+    {
+        return CatchHR(() =>
+        {
+            if (ptd is not null)
+                *ptd = 0;
+
+            string targetName = new string(szTypeDef);
+
+            foreach (TypeDefinitionHandle tdh in _reader.TypeDefinitions)
+            {
+                TypeDefinition typeDef = _reader.GetTypeDefinition(tdh);
+                string fullName = GetTypeDefFullName(typeDef);
+
+                if (!string.Equals(fullName, targetName, StringComparison.Ordinal))
+                    continue;
+
+                if (tkEnclosingClass != 0)
+                {
+                    TypeDefinitionHandle declaringType = typeDef.GetDeclaringType();
+                    if (declaringType.IsNil || (uint)MetadataTokens.GetToken(declaringType) != tkEnclosingClass)
+                        continue;
+                }
+
+                if (ptd is not null)
+                    *ptd = (uint)MetadataTokens.GetToken(tdh);
+
+                return HResults.S_OK;
+            }
+
+            return CLDB_E_RECORD_NOTFOUND;
+        });
+    }
 
     public int GetScopeProps(char* szName, uint cchName, uint* pchName, Guid* pmvid)
         => HResults.E_NOTIMPL;
@@ -713,7 +638,30 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
     public int GetMemberRefProps(uint mr, uint* ptk, char* szMember, uint cchMember, uint* pchMember,
         byte** ppvSigBlob, uint* pbSig)
-        => HResults.E_NOTIMPL;
+    {
+        return CatchHR(() =>
+        {
+            MemberReferenceHandle refHandle = MetadataTokens.MemberReferenceHandle((int)(mr & 0x00FFFFFF));
+            MemberReference memberRef = _reader.GetMemberReference(refHandle);
+
+            string name = _reader.GetString(memberRef.Name);
+            OutputBufferHelpers.CopyStringToBuffer(szMember, cchMember, pchMember, name);
+
+            if (ptk is not null)
+                *ptk = (uint)MetadataTokens.GetToken(memberRef.Parent);
+
+            if (ppvSigBlob is not null || pbSig is not null)
+            {
+                BlobReader blobReader = _reader.GetBlobReader(memberRef.Signature);
+                if (ppvSigBlob is not null)
+                    *ppvSigBlob = blobReader.StartPointer;
+                if (pbSig is not null)
+                    *pbSig = (uint)blobReader.Length;
+            }
+
+            return HResults.S_OK;
+        });
+    }
 
     public int EnumProperties(nint* phEnum, uint td, uint* rProperties, uint cMax, uint* pcProperties)
         => HResults.E_NOTIMPL;
@@ -733,7 +681,27 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         => HResults.E_NOTIMPL;
 
     public int GetClassLayout(uint td, uint* pdwPackSize, void* rFieldOffset, uint cMax, uint* pcFieldOffset, uint* pulClassSize)
-        => HResults.E_NOTIMPL;
+    {
+        return CatchHR(() =>
+        {
+            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(td & 0x00FFFFFF));
+            TypeLayout layout = _reader.GetTypeDefinition(typeHandle).GetLayout();
+
+            if (layout.IsDefault)
+                return CLDB_E_RECORD_NOTFOUND;
+
+            if (pdwPackSize is not null)
+                *pdwPackSize = (uint)layout.PackingSize;
+
+            if (pulClassSize is not null)
+                *pulClassSize = (uint)layout.Size;
+
+            if (pcFieldOffset is not null)
+                *pcFieldOffset = 0;
+
+            return HResults.S_OK;
+        });
+    }
 
     public int GetFieldMarshal(uint tk, byte** ppvNativeType, uint* pcbNativeType)
         => HResults.E_NOTIMPL;
@@ -742,13 +710,38 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         => HResults.E_NOTIMPL;
 
     public int GetModuleRefProps(uint mur, char* szName, uint cchName, uint* pchName)
-        => HResults.E_NOTIMPL;
+    {
+        return CatchHR(() =>
+        {
+            ModuleReferenceHandle modRefHandle = MetadataTokens.ModuleReferenceHandle((int)(mur & 0x00FFFFFF));
+            ModuleReference modRef = _reader.GetModuleReference(modRefHandle);
+
+            string name = _reader.GetString(modRef.Name);
+            OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
+
+            return HResults.S_OK;
+        });
+    }
 
     public int EnumModuleRefs(nint* phEnum, uint* rModuleRefs, uint cmax, uint* pcModuleRefs)
         => HResults.E_NOTIMPL;
 
     public int GetTypeSpecFromToken(uint typespec, byte** ppvSig, uint* pcbSig)
-        => HResults.E_NOTIMPL;
+    {
+        return CatchHR(() =>
+        {
+            TypeSpecificationHandle tsHandle = MetadataTokens.TypeSpecificationHandle((int)(typespec & 0x00FFFFFF));
+            TypeSpecification typeSpec = _reader.GetTypeSpecification(tsHandle);
+            BlobReader blobReader = _reader.GetBlobReader(typeSpec.Signature);
+
+            if (ppvSig is not null)
+                *ppvSig = blobReader.StartPointer;
+            if (pcbSig is not null)
+                *pcbSig = (uint)blobReader.Length;
+
+            return HResults.S_OK;
+        });
+    }
 
     public int GetNameFromToken(uint tk, byte** pszUtf8NamePtr)
         => HResults.E_NOTIMPL;
@@ -757,7 +750,16 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         => HResults.E_NOTIMPL;
 
     public int GetUserString(uint stk, char* szString, uint cchString, uint* pchString)
-        => HResults.E_NOTIMPL;
+    {
+        return CatchHR(() =>
+        {
+            UserStringHandle usHandle = MetadataTokens.UserStringHandle((int)(stk & 0x00FFFFFF));
+            string value = _reader.GetUserString(usHandle);
+            OutputBufferHelpers.CopyStringToBuffer(szString, cchString, pchString, value);
+
+            return HResults.S_OK;
+        });
+    }
 
     public int GetPinvokeMap(uint tk, uint* pdwMappingFlags, char* szImportName, uint cchImportName,
         uint* pchImportName, uint* pmrImportDLL)
@@ -773,7 +775,29 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         => HResults.E_NOTIMPL;
 
     public int GetParamForMethodIndex(uint md, uint ulParamSeq, uint* ppd)
-        => HResults.E_NOTIMPL;
+    {
+        return CatchHR(() =>
+        {
+            if (ppd is not null)
+                *ppd = 0;
+
+            MethodDefinitionHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)(md & 0x00FFFFFF));
+            MethodDefinition methodDef = _reader.GetMethodDefinition(methodHandle);
+
+            foreach (ParameterHandle ph in methodDef.GetParameters())
+            {
+                Parameter param = _reader.GetParameter(ph);
+                if (param.SequenceNumber == (int)ulParamSeq)
+                {
+                    if (ppd is not null)
+                        *ppd = (uint)MetadataTokens.GetToken(ph);
+                    return HResults.S_OK;
+                }
+            }
+
+            return CLDB_E_RECORD_NOTFOUND;
+        });
+    }
 
     public int GetCustomAttributeProps(uint cv, uint* ptkObj, uint* ptkType, void** ppBlob, uint* pcbSize)
         => HResults.E_NOTIMPL;
@@ -789,7 +813,69 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
     public int GetParamProps(uint tk, uint* pmd, uint* pulSequence, char* szName, uint cchName, uint* pchName,
         uint* pdwAttr, uint* pdwCPlusTypeFlag, void** ppValue, uint* pcchValue)
-        => HResults.E_NOTIMPL;
+    {
+        return CatchHR(() =>
+        {
+            ParameterHandle paramHandle = MetadataTokens.ParameterHandle((int)(tk & 0x00FFFFFF));
+            Parameter param = _reader.GetParameter(paramHandle);
+
+            string name = _reader.GetString(param.Name);
+            OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
+
+            if (pmd is not null)
+            {
+                *pmd = 0;
+                foreach (TypeDefinitionHandle tdh in _reader.TypeDefinitions)
+                {
+                    TypeDefinition td = _reader.GetTypeDefinition(tdh);
+                    foreach (MethodDefinitionHandle mdh in td.GetMethods())
+                    {
+                        MethodDefinition method = _reader.GetMethodDefinition(mdh);
+                        foreach (ParameterHandle ph in method.GetParameters())
+                        {
+                            if (ph == paramHandle)
+                            {
+                                *pmd = (uint)MetadataTokens.GetToken(mdh);
+                                goto FoundMethod;
+                            }
+                        }
+                    }
+                }
+                FoundMethod:;
+            }
+
+            if (pulSequence is not null)
+                *pulSequence = (uint)param.SequenceNumber;
+
+            if (pdwAttr is not null)
+                *pdwAttr = (uint)param.Attributes;
+
+            if (pdwCPlusTypeFlag is not null)
+                *pdwCPlusTypeFlag = 0;
+            if (ppValue is not null)
+                *ppValue = null;
+            if (pcchValue is not null)
+                *pcchValue = 0;
+
+            ConstantHandle constHandle = param.GetDefaultValue();
+            if (!constHandle.IsNil && (pdwCPlusTypeFlag is not null || ppValue is not null))
+            {
+                Constant constant = _reader.GetConstant(constHandle);
+                if (pdwCPlusTypeFlag is not null)
+                    *pdwCPlusTypeFlag = (uint)constant.TypeCode;
+                if (ppValue is not null || pcchValue is not null)
+                {
+                    BlobReader valueReader = _reader.GetBlobReader(constant.Value);
+                    if (ppValue is not null)
+                        *ppValue = valueReader.StartPointer;
+                    if (pcchValue is not null)
+                        *pcchValue = (uint)valueReader.Length;
+                }
+            }
+
+            return HResults.S_OK;
+        });
+    }
 
     public int GetNativeCallConvFromSig(void* pvSig, uint cbSig, uint* pCallConv)
         => HResults.E_NOTIMPL;
