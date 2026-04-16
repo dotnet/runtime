@@ -7,7 +7,7 @@ namespace System.Runtime.CompilerServices
     /// Indicates that a type is a union type.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = true)]
-    public class UnionAttribute : Attribute
+    public sealed class UnionAttribute : Attribute
     {
     }
 }
