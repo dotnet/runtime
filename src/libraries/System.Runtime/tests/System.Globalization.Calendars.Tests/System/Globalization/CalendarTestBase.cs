@@ -80,9 +80,9 @@ namespace System.Globalization.Tests
         // For now, we are using reflection to get the correct MinSupportedDateTime for JapaneseCalendar on ICU and use that for testing.
         private static DateTime JapaneseCalendaraMinSupportedDateTime { get; } = new Func<DateTime>(() =>
         {
-            JapaneseCalendar calendar = new JapaneseCalendar();
-            object[] eraInfo = (object[])calendar.GetType().GetMethod("GetEraInfo", BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null, null)!;
-            long minTicks = (long)eraInfo[eraInfo.Length - 1].GetType().GetField("ticks", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(eraInfo[eraInfo.Length - 1])!;
+            object[] eraInfo = (object[])typeof(JapaneseCalendar).GetMethod("GetEraInfo", BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null, null)!;
+            Type eraInfoType = Type.GetType("System.Globalization.EraInfo, System.Private.CoreLib")!;
+            long minTicks = (long)eraInfoType.GetField("ticks", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(eraInfo[eraInfo.Length - 1])!;
             return new DateTime(minTicks);
         })();
 
