@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -29,6 +31,32 @@ namespace System.Diagnostics.Tests
             {
                 launched.Kill();
                 launched.WaitForExit();
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StartAndForget_WithStandardOutputHandle_CapturesOutput()
+        {
+            using Process template = CreateProcess(static () =>
+            {
+                Console.Write("hello");
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputReadPipe, out SafeFileHandle outputWritePipe);
+
+            using (outputReadPipe)
+            using (outputWritePipe)
+            {
+                template.StartInfo.StandardOutputHandle = outputWritePipe;
+
+                int pid = Process.StartAndForget(template.StartInfo);
+                Assert.True(pid > 0);
+
+                outputWritePipe.Close(); // close the parent copy of child handle
+
+                using StreamReader streamReader = new(new FileStream(outputReadPipe, FileAccess.Read, bufferSize: 1, outputReadPipe.IsAsync));
+                Assert.Equal("hello", streamReader.ReadToEnd());
             }
         }
 
