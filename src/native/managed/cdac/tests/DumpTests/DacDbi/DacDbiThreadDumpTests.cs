@@ -217,7 +217,7 @@ public class DacDbiThreadDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetCurrentException_NotNull(TestConfiguration config)
+    public unsafe void GetCurrentException_AtLeastOneThreadHasException(TestConfiguration config)
     {
         InitializeDumpTest(config);
         DacDbiImpl dbi = CreateDacDbi();
@@ -228,10 +228,20 @@ public class DacDbiThreadDumpTests : DumpTestBase
         TargetPointer current = storeData.FirstThread;
         Assert.NotEqual(TargetPointer.Null, current);
 
-        ulong exception;
-        int hr = dbi.GetCurrentException(current, &exception);
-        Assert.Equal(System.HResults.S_OK, hr);
-        Assert.NotEqual(0ul, exception);
+        bool foundException = false;
+        while (current != TargetPointer.Null)
+        {
+            ulong exception;
+            int hr = dbi.GetCurrentException(current, &exception);
+            Assert.Equal(System.HResults.S_OK, hr);
+            if (exception != 0ul)
+                foundException = true;
+
+            ThreadData data = threadContract.GetThreadData(current);
+            current = data.NextThread;
+        }
+
+        Assert.True(foundException, "Expected at least one thread to have a current exception in the FailFast dump.");
     }
 
     [UnmanagedCallersOnly]
