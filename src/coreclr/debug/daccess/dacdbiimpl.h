@@ -659,9 +659,6 @@ public:
     HRESULT STDMETHODCALLTYPE GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal);
 
 
-    // Enumerate the appdomains
-    HRESULT STDMETHODCALLTYPE EnumerateAppDomains(FP_APPDOMAIN_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData);
-
     // Enumerate the assemblies in the appdomain.
     HRESULT STDMETHODCALLTYPE EnumerateAssembliesInAppDomain(VMPTR_AppDomain vmAppDomain, FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData);
 

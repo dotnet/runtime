@@ -3307,7 +3307,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSimpleType(CorElementType simp
     EX_TRY
     {
         // if we fail to get either a valid type handle or module, we will want to send back
-        // a NULL assembly too, so we'll to preinitialize this here.
+        // a NULL module too, so we'll to preinitialize this here.
         _ASSERTE(pVmModule != NULL);
         *pVmModule = VMPTR_Module::NullPtr();
         // FindLoadedElementType will return NULL if the type hasn't been loaded yet.
@@ -4514,29 +4514,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModu
     return hr;
 }
 
-
-// Enumerate all AppDomains in the process.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAppDomains(FP_APPDOMAIN_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        _ASSERTE(fpCallback != NULL);
-
-        // It's critical that we don't yield appdomains after the unload event has been sent.
-        // See code:IDacDbiInterface#Enumeration for details.
-        AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
-
-        VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
-        vmAppDomain.SetHostPtr(pAppDomain);
-        fpCallback(vmAppDomain, pUserData);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
 
 // Enumerate all Assemblies in an appdomain.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(VMPTR_AppDomain vmAppDomain, FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData)

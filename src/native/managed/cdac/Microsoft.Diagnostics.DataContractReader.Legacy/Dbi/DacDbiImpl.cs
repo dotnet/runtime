@@ -237,23 +237,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int SetCompilerFlags(ulong vmAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC)
         => _legacy is not null ? _legacy.SetCompilerFlags(vmAssembly, fAllowJitOpts, fEnableEnC) : HResults.E_NOTIMPL;
 
-    public int EnumerateAppDomains(nint fpCallback, nint pUserData)
-    {
-        int hr = HResults.S_OK;
-        try
-        {
-            TargetPointer appDomainPtr = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            ulong appDomain = _target.ReadPointer(appDomainPtr);
-            var callback = (delegate* unmanaged<ulong, nint, void>)fpCallback;
-            callback(appDomain, pUserData);
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-        return hr;
-    }
-
     public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData)
         => _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
 

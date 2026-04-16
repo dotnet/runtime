@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
@@ -59,20 +58,6 @@ public class DacDbiAppDomainDumpTests : DumpTestBase
         int hr = dbi.GetCurrentAppDomain(&appDomain);
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.NotEqual(0UL, appDomain);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void EnumerateAppDomains_CallsCallbackOnce(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        int count = 0;
-        delegate* unmanaged<ulong, nint, void> callback = &CountCallback;
-        int hr = dbi.EnumerateAppDomains((nint)callback, (nint)(&count));
-        Assert.Equal(System.HResults.S_OK, hr);
-        Assert.Equal(1, count);
     }
 
     [ConditionalTheory]
@@ -142,9 +127,4 @@ public class DacDbiAppDomainDumpTests : DumpTestBase
         Assert.Equal(System.HResults.E_NOTIMPL, hr);
     }
 
-    [UnmanagedCallersOnly]
-    private static unsafe void CountCallback(ulong addr, nint userData)
-    {
-        (*(int*)userData)++;
-    }
 }

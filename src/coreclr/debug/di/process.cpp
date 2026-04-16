@@ -361,7 +361,9 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
     }
 
     // Cache didn't have it... time to search harder
-    PrepopulateAppDomainsOrThrow();
+    VMPTR_AppDomain vmAppDomain;
+    GetDAC()->GetCurrentAppDomain(&vmAppDomain);
+    LookupOrCreateAppDomain(vmAppDomain);
 
     // There may be perf issues here. The DAC may make a lot of metadata requests, and so
     // this may be an area for potential perf optimizations if we find things running slow.
@@ -4798,53 +4800,6 @@ void CordbProcess::DispatchRCEvent()
 
 };
 
-#ifdef _DEBUG
-//---------------------------------------------------------------------------------------
-// Debug-only callback to ensure that an appdomain is not available after the ExitAppDomain event.
-//
-// Arguments:
-//    vmAppDomain - appdomain from enumeration
-//    pUserData - pointer to a DbgAssertAppDomainDeletedData which contains the VMAppDomain that was just deleted.
-// notes:
-//    see code:CordbProcess::DbgAssertAppDomainDeleted for details.
-void CordbProcess::DbgAssertAppDomainDeletedCallback(VMPTR_AppDomain vmAppDomain, void * pUserData)
-{
-    DbgAssertAppDomainDeletedData * pCallbackData = reinterpret_cast<DbgAssertAppDomainDeletedData *>(pUserData);
-    INTERNAL_DAC_CALLBACK(pCallbackData->m_pThis);
-
-    VMPTR_AppDomain vmAppDomainDeleted = pCallbackData->m_vmAppDomainDeleted;
-    CONSISTENCY_CHECK_MSGF((vmAppDomain != vmAppDomainDeleted),
-        ("An ExitAppDomain event was sent for appdomain, but it still shows up in the enumeration.\n vmAppDomain=%p\n",
-        VmPtrToCookie(vmAppDomainDeleted)));
-}
-
-//---------------------------------------------------------------------------------------
-// Debug-only helper to Assert that VMPTR is actually removed.
-//
-// Arguments:
-//    vmAppDomainDeleted - vmptr of appdomain that we just got exit event for.
-//       This should not be discoverable from the RS.
-//
-// Notes:
-//   See code:IDacDbiInterface#Enumeration for rules that we're asserting.
-//   Once the exit appdomain event is dispatched, the appdomain should not be discoverable by the RS.
-//   Else the RS may use the AppDomain* after it's deleted.
-//   This asserts that the AppDomain* is not discoverable.
-//
-//   Since this is a debug-only function, it should have no side-effects.
-void CordbProcess::DbgAssertAppDomainDeleted(VMPTR_AppDomain vmAppDomainDeleted)
-{
-    DbgAssertAppDomainDeletedData callbackData;
-    callbackData.m_pThis = this;
-    callbackData.m_vmAppDomainDeleted = vmAppDomainDeleted;
-
-    IfFailThrow(GetDAC()->EnumerateAppDomains(
-        CordbProcess::DbgAssertAppDomainDeletedCallback,
-        &callbackData));
-}
-
-#endif  // _DEBUG
-
 //---------------------------------------------------------------------------------------
 // Update state and potentially Dispatch a single event.
 //
@@ -5438,53 +5393,6 @@ void CordbProcess::RawDispatchEvent(
             {
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
                 hr = pCallback1->CreateAppDomain(this, pAppDomain);
-            }
-        }
-
-
-        break;
-
-    case DB_IPCE_EXIT_APP_DOMAIN:
-        {
-            STRESS_LOG2(LF_CORDB, LL_INFO100, "RCET::HRCE: exit appdomain on thread %#x AD:0x%08x \n",
-                 dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->vmAppDomain));
-
-            // In debug-only builds, assert that the appdomain is indeed deleted and not discoverable.
-            INDEBUG(DbgAssertAppDomainDeleted(pEvent->vmAppDomain));
-
-            // If we get an ExitAD message for which we have no AppDomain, then ignore it.
-            // This can happen if an AD gets torn down very early (before the LS AD is to the
-            // point that it can be published).
-            // This could also happen if we attach a debugger right before the Exit event is sent.
-            // In this case, the debuggee is no longer publishing the appdomain.
-            if (pAppDomain == NULL)
-            {
-                break;
-            }
-            _ASSERTE (pAppDomain != NULL);
-
-            // This will still maintain weak references so we could call Continue.
-            AddToNeuterOnContinueList(pAppDomain);
-
-            {
-                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                hr = pCallback1->ExitAppDomain(this, pAppDomain);
-            }
-
-            // @dbgtodo appdomain: This should occur before the callback.
-            // Even after ExitAppDomain, the outside world will want to continue calling
-            // Continue (and thus they may need to call CordbAppDomain::GetProcess(), which Neutering
-            // would clear). Thus we can't neuter yet.
-
-            // Remove this app domain. This means any attempt to lookup the AppDomain
-            // will fail (which we do at the top of this method).  Since any threads (incorrectly) referring
-            // to this AppDomain have been moved to the default AppDomain, no one should be
-            // interested in looking this AppDomain up anymore.
-            if (m_pAppDomain != NULL)
-            {
-                m_pAppDomain->InternalRelease();
-                m_pAppDomain = NULL;
             }
         }
 
@@ -8773,73 +8681,6 @@ CordbAppDomain * CordbProcess::GetAppDomain()
 
 //---------------------------------------------------------------------------------------
 //
-// Callback for Appdomain enumeration.
-//
-// Arguments:
-//      vmAppDomain - new appdomain to add to enumeration
-//      pUserData - data passed with callback (a 'this' ptr for CordbProcess)
-//
-//
-// Assumptions:
-//    Invoked as callback from code:CordbProcess::PrepopulateAppDomains
-//
-//
-//---------------------------------------------------------------------------------------
-
-// static
-void CordbProcess::AppDomainEnumerationCallback(VMPTR_AppDomain vmAppDomain, void * pUserData)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    CordbProcess * pProcess = static_cast<CordbProcess *> (pUserData);
-    INTERNAL_DAC_CALLBACK(pProcess);
-
-    pProcess->LookupOrCreateAppDomain(vmAppDomain);
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Traverse appdomains in the target and build up our list.
-//
-// Arguments:
-//
-// Return Value:
-//    returns on success.
-//    Throws on error. AppDomain cache may be partially populated.
-//
-// Assumptions:
-//    This is an non-invasive inspection operation called when the debuggee is stopped.
-//
-// Notes:
-//    This can be called multiple times. If the list is non-empty, it will nop.
-//---------------------------------------------------------------------------------------
-void CordbProcess::PrepopulateAppDomainsOrThrow()
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    INTERNAL_API_ENTRY(this);
-
-    if (!IsDacInitialized())
-    {
-        return;
-    }
-
-    // DD-primitive  that invokes a callback.  This may throw.
-    IfFailThrow(GetDAC()->EnumerateAppDomains(
-        CordbProcess::AppDomainEnumerationCallback,
-        this));
-}
-
-//---------------------------------------------------------------------------------------
-//
 // EnumerateAppDomains enumerates all app domains in the process.
 //
 // Arguments:
@@ -8863,7 +8704,9 @@ HRESULT CordbProcess::EnumerateAppDomains(ICorDebugAppDomainEnum **ppAppDomains)
         ValidateOrThrow(ppAppDomains);
 
         // Ensure the appdomain is populated.
-        PrepopulateAppDomainsOrThrow();
+        VMPTR_AppDomain vmAppDomain;
+        GetDAC()->GetCurrentAppDomain(&vmAppDomain);
+        LookupOrCreateAppDomain(vmAppDomain);
 
         RSSmartPtr<CordbAppDomain> rgAppDomains[1];
         DWORD count = 0;

@@ -141,7 +141,6 @@ cpp_quote("#endif")
 //
 // Callback function pointer typedefs
 //
-typedef void (*FP_APPDOMAIN_ENUMERATION_CALLBACK)(VMPTR_AppDomain vmAppDomain, CALLBACK_DATA pUserData);
 typedef void (*FP_ASSEMBLY_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
 typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
 typedef void (*FP_THREAD_ENUMERATION_CALLBACK)(VMPTR_Thread vmThread, CALLBACK_DATA pUserData);
@@ -227,7 +226,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT SetCompilerFlags([in] VMPTR_Assembly vmAssembly, [in] BOOL fAllowJitOpts, [in] BOOL fEnableEnC);
 
     // Enumeration
-    HRESULT EnumerateAppDomains([in] FP_APPDOMAIN_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
     HRESULT EnumerateAssembliesInAppDomain([in] VMPTR_AppDomain vmAppDomain, [in] FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
     HRESULT EnumerateModulesInAssembly([in] VMPTR_Assembly vmAssembly, [in] FP_MODULE_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
 

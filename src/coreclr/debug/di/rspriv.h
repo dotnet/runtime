@@ -2880,15 +2880,6 @@ public:
     UINT32         m_uIndex;                    // the next entry in the array to be filled
 };
 
-// data structure used in the callback for asserting that an appdomain has been deleted
-// (code:CordbProcess::DbgAssertAppDomainDeleted)
-struct DbgAssertAppDomainDeletedData
-{
-public:
-    CordbProcess *  m_pThis;
-    VMPTR_AppDomain m_vmAppDomainDeleted;
-};
-
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 class UnmanagedThreadTracker
 {
@@ -3685,23 +3676,7 @@ public:
     WriteableMetadataUpdateMode GetWriteableMetadataUpdateMode() { return m_writableMetadataUpdateMode; }
 private:
 
-#ifdef _DEBUG
-    // Assert that vmAppDomainDeleted doesn't show up in dac enumerations
-    void DbgAssertAppDomainDeleted(VMPTR_AppDomain vmAppDomainDeleted);
-
-    // Callback helper for DbgAssertAppDomainDeleted.
-    static void DbgAssertAppDomainDeletedCallback(VMPTR_AppDomain vmAppDomain, void * pUserData);
-#endif // _DEBUG
-
     static void ThreadEnumerationCallback(VMPTR_Thread vmThread, void * pUserData);
-
-
-    // Callback for AppDomain enumeration
-    static void AppDomainEnumerationCallback(VMPTR_AppDomain vmAppDomain, void * pUserData);
-
-    // Helper to traverse Appdomains in target and build up our cache.
-    void PrepopulateAppDomainsOrThrow();
-
 
     void ProcessFirstLogMessage (DebuggerIPCEvent *event);
     void ProcessContinuedLogMessage (DebuggerIPCEvent *event);
@@ -11087,7 +11062,7 @@ public:
 //
 // Normally we take the process lock before calling out to DAC, and every DAC API takes the DD lock on entry.
 // Moreover, normally DAC doesn't call back into the RS.  The exceptions we currently have are:
-// 1) enumeration callbacks (e.g. code:CordbProcess::AppDomainEnumerationCallback)
+// 1) enumeration callbacks (e.g. code:CordbProcess::ThreadEnumerationCallback)
 // 2) code:IDacDbiInterface::IMetaDataLookup
 // 3) code:IDacDbiInterface::IAllocator
 // 4) code:IStringHolder

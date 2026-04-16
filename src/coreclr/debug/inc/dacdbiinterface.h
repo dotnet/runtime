@@ -617,26 +617,6 @@ public:
                           BOOL             fEnableEnC) = 0;
 
     //
-    // Enumerate all AppDomains in the process.
-    //
-    // Arguments:
-    //    fpCallback   - callback to invoke on each appdomain
-    //    pUserData    - user data to supply for each callback.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //    Enumerates all appdomains in the process, including the Default-domain.
-    //    Appdomains must show up in this list before the AD Load event is sent, and before
-    //    that appdomain is discoverable from the debugger.
-    //    See enumeration rules for details.
-    //
-    typedef void (*FP_APPDOMAIN_ENUMERATION_CALLBACK)(VMPTR_AppDomain vmAppDomain, CALLBACK_DATA pUserData);
-    virtual HRESULT STDMETHODCALLTYPE EnumerateAppDomains(FP_APPDOMAIN_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
-
-
-    //
     // Eunmerate all Assemblies in an appdomain. Enumerations is in load-order
     //
     // Arguments:

@@ -205,9 +205,6 @@ public unsafe partial interface IDacDbiInterface
     int SetCompilerFlags(ulong vmAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC);
 
     [PreserveSig]
-    int EnumerateAppDomains(nint fpCallback, nint pUserData);
-
-    [PreserveSig]
     int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData);
 
     [PreserveSig]

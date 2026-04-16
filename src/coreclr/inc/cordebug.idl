@@ -4847,7 +4847,7 @@ interface ICorDebugInternalFrame : ICorDebugFrame
         STUBFRAME_U2M = 0x0000002,
 
         // AppDomain transition.
-        // STUBFRAME_APPDOMAIN_TRANSITION = 0x00000003,
+        STUBFRAME_APPDOMAIN_TRANSITION = 0x00000003,
 
         // LightWeight method calls.
         STUBFRAME_LIGHTWEIGHT_FUNCTION = 0x00000004,

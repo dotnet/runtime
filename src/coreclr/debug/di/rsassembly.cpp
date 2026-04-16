@@ -99,8 +99,7 @@ void CordbAssembly::DbgAssertAssemblyDeletedCallback(VMPTR_Assembly vmAssembly, 
 //
 // Notes:
 //   See code:IDacDbiInterface#Enumeration for rules that we're asserting.
-//   This is a debug only method. It's conceptually similar to
-//   code:CordbProcess::DbgAssertAppDomainDeleted.
+//   This is a debug only method.
 //
 void CordbAssembly::DbgAssertAssemblyDeleted()
 {
