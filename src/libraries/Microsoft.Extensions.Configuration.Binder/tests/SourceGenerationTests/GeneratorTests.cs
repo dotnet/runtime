@@ -20,6 +20,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using SourceGenerators.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
@@ -759,15 +760,16 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 new DynamicallyAccessedMembersAnalyzer(),
                 new ConfigurationBindingGenerator.Suppressor());
 
-            var globalOptions = ImmutableDictionary.CreateRange<string, string>(
-                StringComparer.OrdinalIgnoreCase,
-                [
-                    new("build_property.EnableTrimAnalyzer", "true"),
-                    new("build_property.EnableAotAnalyzer", "true"),
-                ]);
+            var trimAotAnalyzerOptions = new DictionaryAnalyzerConfigOptions(
+                ImmutableDictionary.CreateRange<string, string>(
+                    StringComparer.OrdinalIgnoreCase,
+                    [
+                        new("build_property.EnableTrimAnalyzer", "true"),
+                        new("build_property.EnableAotAnalyzer", "true"),
+                    ]));
             var analyzerOptions = new AnalyzerOptions(
                 ImmutableArray<AdditionalText>.Empty,
-                new SimpleAnalyzerConfigOptionsProvider(globalOptions));
+                new GlobalOptionsOnlyProvider(trimAotAnalyzerOptions));
             var options = new CompilationWithAnalyzersOptions(
                 analyzerOptions,
                 onAnalyzerException: null,
@@ -777,33 +779,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             return await new CompilationWithAnalyzers(compilation, analyzers, options)
                 .GetAllDiagnosticsAsync();
-        }
-
-        private sealed class SimpleAnalyzerConfigOptionsProvider : AnalyzerConfigOptionsProvider
-        {
-            private readonly SimpleOptions _globalOptions;
-
-            public SimpleAnalyzerConfigOptionsProvider(ImmutableDictionary<string, string> globalOptions)
-            {
-                _globalOptions = new SimpleOptions(globalOptions);
-            }
-
-            public override AnalyzerConfigOptions GlobalOptions => _globalOptions;
-
-            public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => SimpleOptions.Empty;
-            public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) => SimpleOptions.Empty;
-
-            private sealed class SimpleOptions : AnalyzerConfigOptions
-            {
-                public static readonly SimpleOptions Empty = new(ImmutableDictionary<string, string>.Empty);
-
-                private readonly ImmutableDictionary<string, string> _dict;
-                public SimpleOptions(ImmutableDictionary<string, string> dict) => _dict = dict;
-
-#pragma warning disable 8765 // Nullability of parameter doesn't match overridden member
-                public override bool TryGetValue(string key, out string? value) => _dict.TryGetValue(key, out value);
-#pragma warning restore 8765
-            }
         }
     }
 }
