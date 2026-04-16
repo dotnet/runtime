@@ -54,13 +54,13 @@ extern "C" __attribute__((naked)) PCODE STDCALL DelayLoad_MethodCall(TransitionB
     asm ("local.get 0\n" /* Capture pTransitionBlock onto the stack for calling DelayLoad_MethodCallImpl function. This also happens to be the callersFramePointer */
          "local.get 0\n" /* Capture callersFramePointer onto the stack for setting the __stack_pointer */
          "global.get __stack_pointer\n" /* Get current value of stack global */
-         "local.set 0\n"  /* Store current stack global into callersFramePointer local */
+         "local.set 0\n"  /* Overwrite local 0 with the previous __stack_pointer value so it can be restored after the call */
          "global.set __stack_pointer\n" /* Set stack global to the initial value of callersFramePointer, which is the current stack pointer for the interpreter call */
          "local.get 1\n" /* Load pImportThunkEntry argument onto the stack for calling DelayLoad_MethodCallImpl function*/
          "local.get 2\n" /* Load moduleBase argument onto the stack for calling DelayLoad_MethodCallImpl function*/
          "local.get 3\n" /* Load rvaOfModuleFixup argument onto the stack for calling DelayLoad_MethodCallImpl function*/
          "call %0\n" /* Call the actual implementation function */
-         "local.get 0\n" /* Restore the original callersFramePointer value into the stack global */
+         "local.get 0\n" /* Reload the saved previous __stack_pointer value for restoration into the stack global */
          "global.set __stack_pointer\n"
          "return" :: "i" (DelayLoad_MethodCallImpl));
 }

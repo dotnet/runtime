@@ -11,7 +11,6 @@ using Internal.ReadyToRunConstants;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection.Metadata;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -153,7 +152,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Const(sizeOfStoredLocals));
             // i32.sub
             expressions.Add(I32.Sub);
-            // local.tee 0
+            // local.set 0
             expressions.Add(Local.Set(0));
 
             //

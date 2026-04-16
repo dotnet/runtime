@@ -770,7 +770,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public override int EnregisteredReturnTypeIntegerMaxSize => 0;
 
-            public override int GetRetBuffArgOffset(bool hasThis) => hasThis ? 8 : 0;
+            public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? StackElemSize(PointerSize, false, false) : 0);
 
             public override bool IsArgPassedByRef(TypeHandle th)
             {
