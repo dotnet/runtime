@@ -157,6 +157,11 @@ namespace System.Diagnostics
         public void Kill(bool entireProcessTree) { }
         public static void LeaveDebugMode() { }
         protected void OnExited() { }
+        public (byte[] StandardOutput, byte[] StandardError) ReadAllBytes(System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
+        public System.Threading.Tasks.Task<(byte[] StandardOutput, byte[] StandardError)> ReadAllBytesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Collections.Generic.IAsyncEnumerable<System.Diagnostics.ProcessOutputLine> ReadAllLinesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public (string StandardOutput, string StandardError) ReadAllText(System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
+        public System.Threading.Tasks.Task<(string StandardOutput, string StandardError)> ReadAllTextAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Refresh() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
@@ -220,6 +225,14 @@ namespace System.Diagnostics
         public bool Canceled { get { throw null; } }
         public int ExitCode { get { throw null; } }
         public System.Runtime.InteropServices.PosixSignal? Signal { get { throw null; } }
+    }
+    public readonly partial struct ProcessOutputLine
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public ProcessOutputLine(string content, bool standardError) { throw null; }
+        public string Content { get { throw null; } }
+        public bool StandardError { get { throw null; } }
     }
     public enum ProcessPriorityClass
     {

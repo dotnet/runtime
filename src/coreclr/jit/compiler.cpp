@@ -577,6 +577,36 @@ bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
     return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
 }
 
+bool Compiler::isNativeHalfStructType(CORINFO_CLASS_HANDLE clsHnd)
+{
+#if defined(TARGET_XARCH)
+    if (!isIntrinsicType(clsHnd))
+    {
+        return false;
+    }
+    const char* namespaceName = nullptr;
+    const char* typeName      = getClassNameFromMetadata(clsHnd, &namespaceName);
+
+    if (strcmp(typeName, "Half") != 0)
+    {
+        return false;
+    }
+
+    if (strcmp(namespaceName, "System") != 0)
+    {
+        return false;
+    }
+
+    // We do an exact check since this impacts ABI and we want
+    // to throw out any R2R functions that mismatch here, this
+    // is similar to how we have to handle Vector<T>
+
+    return compExactlyDependsOn(InstructionSet_AVX10v1);
+#else
+    return false;
+#endif
+}
+
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct:
 //     Get the "primitive" type that is used for a struct
@@ -651,7 +681,7 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             break;
 
         case 2:
-            useType = TYP_USHORT;
+            useType = isNativeHalfStructType(clsHnd) ? TYP_HALF : TYP_USHORT;
             break;
 
 #if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
