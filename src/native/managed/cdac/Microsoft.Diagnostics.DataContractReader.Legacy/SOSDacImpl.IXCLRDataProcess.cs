@@ -22,7 +22,8 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     {
         _target.Flush();
 
-        if (LegacyFallbackHelper.CanFallback() && _legacyProcess is not null)
+        // Flush is always propagated — it's cache management, not data retrieval.
+        if (_legacyProcess is not null)
             return _legacyProcess.Flush();
 
         return HResults.S_OK;

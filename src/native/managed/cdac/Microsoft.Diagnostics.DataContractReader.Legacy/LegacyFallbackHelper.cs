@@ -6,13 +6,14 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 /// <summary>
 /// Controls whether delegation-only APIs can fall back to the legacy DAC implementation.
 /// When <c>CDAC_NO_FALLBACK=1</c> is set, only explicitly allowlisted methods may delegate.
-/// Blocked calls are tracked and written to a log file on process exit.
+/// Blocked calls are logged to stderr for capture by the test infrastructure.
 /// </summary>
 internal static class LegacyFallbackHelper
 {
@@ -25,27 +26,25 @@ internal static class LegacyFallbackHelper
     {
         // Dump creation — the cDAC does not implement memory enumeration.
         nameof(ICLRDataEnumMemoryRegions.EnumMemoryRegions),
+
+        // IMetaDataImport QI — needed until managed MetadataReader wrapper lands (PR #127028).
+        nameof(ICustomQueryInterface.GetInterface),
     };
 
-    // Tracks APIs that attempted fallback but were blocked in no-fallback mode.
-    private static readonly ConcurrentDictionary<string, int> s_blockedCalls = new();
-
-    static LegacyFallbackHelper()
-    {
-        if (s_noFallback)
-        {
-            AppDomain.CurrentDomain.ProcessExit += (_, _) => FlushBlockedCallLog();
-        }
-    }
+    // Tracks unique call sites that attempted fallback but were blocked.
+    private static readonly ConcurrentDictionary<string, bool> s_blockedCalls = new();
 
     /// <summary>
     /// Returns <c>true</c> if the calling method is allowed to delegate to the legacy DAC.
     /// In normal mode (no <c>CDAC_NO_FALLBACK</c>), always returns <c>true</c>.
     /// In no-fallback mode, returns <c>true</c> only for allowlisted methods.
-    /// Blocked calls are recorded for diagnostics.
+    /// Blocked calls are logged to stderr on first occurrence.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static bool CanFallback([CallerMemberName] string name = "")
+    internal static bool CanFallback(
+        [CallerMemberName] string name = "",
+        [CallerFilePath] string file = "",
+        [CallerLineNumber] int line = 0)
     {
         if (!s_noFallback)
             return true;
@@ -53,39 +52,19 @@ internal static class LegacyFallbackHelper
         if (s_allowlist.Contains(name))
             return true;
 
-        s_blockedCalls.AddOrUpdate(name, 1, (_, count) => count + 1);
-        return false;
-    }
-
-    private static void FlushBlockedCallLog()
-    {
-        if (s_blockedCalls.IsEmpty)
-            return;
-
-        try
+        string key = $"{name}@{Path.GetFileName(file)}:{line}";
+        if (s_blockedCalls.TryAdd(key, true))
         {
-            string logPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                "cdac_blocked_fallbacks.log");
-
-            using StreamWriter writer = new(logPath, append: false);
-            writer.WriteLine("== cDAC Blocked Legacy Fallback Calls ==");
-            writer.WriteLine($"Timestamp: {DateTime.UtcNow:O}");
-            writer.WriteLine();
-            writer.WriteLine($"{"API",-60} {"Hits",8}");
-            writer.WriteLine(new string('-', 70));
-
-            foreach (KeyValuePair<string, int> entry in s_blockedCalls)
+            try
             {
-                writer.WriteLine($"{entry.Key,-60} {entry.Value,8}");
+                Console.Error.WriteLine($"[cDAC] Blocked fallback: {name} at {Path.GetFileName(file)}:{line}");
             }
+            catch
+            {
+                // Best-effort logging — don't crash the debugger process.
+            }
+        }
 
-            writer.WriteLine();
-            writer.WriteLine($"Total: {s_blockedCalls.Count} unique APIs blocked");
-        }
-        catch
-        {
-            // Best-effort logging — don't crash the process on exit.
-        }
+        return false;
     }
 }
