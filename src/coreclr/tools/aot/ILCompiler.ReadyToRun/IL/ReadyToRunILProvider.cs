@@ -153,7 +153,7 @@ namespace Internal.IL
             Debug.Assert(!_compilationModuleGroup.VersionsWithMethodBody(method) &&
                     _compilationModuleGroup.CrossModuleInlineable(method));
 
-            if (!wrappedMethodIL.Initialize(_manifestMutableModule, EcmaMethodIL.Create((EcmaMethod)method)))
+            if (!wrappedMethodIL.Initialize(_manifestMutableModule, EcmaMethodIL.Create((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition())))
             {
                 // If we could not initialize the wrapped method IL, we should store a null.
                 // That will result in the IL code for the method being unavailable for use in
