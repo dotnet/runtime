@@ -208,7 +208,7 @@ namespace System.Reflection
         ///
         /// Typically, this assembly is named "System.Runtime", "mscorlib", or "netstandard".
         ///
-        /// The CoreAssembly is determined by passing the coreAssemblyName parameter passed to the MetadataAssemblyResolver constructor
+        /// The CoreAssembly is determined by passing the coreAssemblyName parameter passed to the MetadataLoadContext constructor
         /// to the MetadataAssemblyResolver's Resolve method.
         /// If no coreAssemblyName argument was specified in the constructor of MetadataLoadContext, then default values are used
         /// including "mscorlib", "System.Runtime" and "netstandard".
@@ -220,18 +220,7 @@ namespace System.Reflection
         /// such as DllImportAttribute. However, it can serve if you have no interest in those attributes. The CustomAttributes api
         /// will skip those attributes if the core assembly does not include the necessary types.
         ///
-        /// If a core assembly cannot be found or if the core assembly is missing types, this will affect the behavior of the MetadataLoadContext as follows:
-        ///
-        /// - Apis that need to parse signatures or typespecs and return the results as Types will throw. For example,
-        ///   MethodBase.ReturnType, MethodBase.GetParameters(), Type.BaseType, Type.GetInterfaces().
-        ///
-        /// - Apis that need to compare types to well known core types will not throw and the comparison will evaluate to "false."
-        ///   For example, if you do not specify a core assembly, Type.IsPrimitive will return false for everything,
-        ///   even types named "System.Int32". Similarly, Type.GetTypeCode() will return TypeCode.Object for everything.
-        ///
-        /// - If a metadata entity sets flags that surface as a pseudo-custom attribute, and the core assembly does not contain the pseudo-custom attribute
-        ///   type, the necessary constructor or any of the parameter types of the constructor, the MetadataLoadContext will not throw. It will omit the pseudo-custom
-        ///   attribute from the list of returned attributes.
+        /// If a core assembly cannot be found or if the core assembly is missing types, the constructor of MetadataLoadContext will throw an exception.
         /// </summary>
         public Assembly CoreAssembly
         {
