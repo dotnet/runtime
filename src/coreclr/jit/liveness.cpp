@@ -916,7 +916,7 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
                 bool modHeap = true;
                 if (call->IsHelperCall())
                 {
-                    CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+                    CorInfoHelpFunc helpFunc = call->GetHelperNum();
 
                     if (!Compiler::s_helperCallProperties.MutatesHeap(helpFunc) &&
                         !Compiler::s_helperCallProperties.MayRunCctor(helpFunc))
@@ -2452,6 +2452,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 
                             if (TryRemoveDeadStoreLIR(store, node->AsLclVarCommon(), block))
                             {
+
                                 JITDUMP("Removing dead LclVar address:\n");
                                 DISPNODE(node);
                                 blockRange.Remove(node);
@@ -2462,6 +2463,24 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                                 if (data->isIndir())
                                 {
                                     Lowering::TransformUnusedIndirection(data->AsIndir(), m_compiler, block);
+                                }
+                                else if (data->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                                {
+                                    // The unused lcl_var or lcl_field on the rhs of a removed block store may be a
+                                    // struct which cannot always be loaded onto the Wasm evaluation stack or into
+                                    // native registers, so we need to make sure to remove the node. In some cases the
+                                    // node is after us in the iteration order and will be automatically removed, but we
+                                    // may have already iterated over it without removing it, so it's necessary to clean
+                                    // up here.
+                                    JITDUMP("Removing dead store data:\n");
+                                    DISPNODE(data);
+                                    if (next == data)
+                                    {
+                                        next = data->gtPrev;
+                                    }
+                                    assert(end != data);
+                                    blockRange.Delete(m_compiler, block, data);
+                                    // fgStmtRemoved was already set by TryRemoveDeadStoreLIR
                                 }
                             }
                         }
