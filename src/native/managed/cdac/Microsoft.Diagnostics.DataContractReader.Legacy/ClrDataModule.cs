@@ -62,28 +62,40 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         // It simply returns a completely separate object. See ClrDataModule::QueryInterface in task.cpp
         if (iid == IID_IMetaDataImport)
         {
-            if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, iid, out ppv) >= 0)
-                return CustomQueryInterfaceResult.Handled;
-
-            // In no-fallback mode, create a managed wrapper over MetadataReader
             MetadataImportWrapper? wrapper = _metadataImportWrapper;
             if (wrapper is null)
             {
+                MetadataReader? reader = null;
+                IMetaDataImport? legacyImport = null;
+
                 try
                 {
                     ILoader loader = _target.Contracts.Loader;
                     Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_address);
-                    MetadataReader? reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
-                    if (reader is not null)
+                    reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+                }
+                catch
+                {
+                }
+
+                try
+                {
+                    if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, IID_IMetaDataImport, out nint ppMdi) >= 0)
                     {
-                        wrapper = new MetadataImportWrapper(reader);
-                        Interlocked.CompareExchange(ref _metadataImportWrapper, wrapper, null);
-                        wrapper = _metadataImportWrapper;
+                        StrategyBasedComWrappers cw = new();
+                        legacyImport = (IMetaDataImport)cw.GetOrCreateObjectForComInstance(ppMdi, CreateObjectFlags.None);
+                        Marshal.Release(ppMdi);
                     }
                 }
                 catch
                 {
-                    // If we can't create the wrapper, return NotHandled
+                }
+
+                if (reader is not null || legacyImport is not null)
+                {
+                    wrapper = new MetadataImportWrapper(reader, legacyImport);
+                    Interlocked.CompareExchange(ref _metadataImportWrapper, wrapper, null);
+                    wrapper = _metadataImportWrapper;
                 }
             }
 
