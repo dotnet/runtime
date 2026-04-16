@@ -753,6 +753,7 @@ namespace Microsoft.Win32.SafeHandles
 
             int error = Marshal.GetLastPInvokeError();
 
+            // If the process has already exited, TerminateProcess fails with ERROR_ACCESS_DENIED.
             if (error == Interop.Errors.ERROR_ACCESS_DENIED &&
                 Interop.Kernel32.GetExitCodeProcess(this, out int exitCode) &&
                 exitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
