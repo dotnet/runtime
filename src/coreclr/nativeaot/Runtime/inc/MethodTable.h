@@ -12,6 +12,9 @@ class MethodTable;
 class TypeManager;
 struct TypeManagerHandle;
 
+// cdac_data<T> template for exposing private members to the cDAC data descriptor.
+#include "cdacdata.h"
+
 //-------------------------------------------------------------------------------------------------
 // The subset of TypeFlags that NativeAOT knows about at runtime
 // This should match the TypeFlags enum in the managed type system.
@@ -86,6 +89,7 @@ class MethodTable
 {
     friend class AsmOffsets;
     friend void PopulateDebugHeaders();
+    friend struct ::cdac_data<MethodTable>;
 
 private:
     struct RelatedTypeUnion
@@ -344,6 +348,25 @@ public:
     uint32_t ContainsGCPointers() { return HasReferenceFields(); }
     uint32_t ContainsGCPointersOrCollectible() { return HasReferenceFields(); }
     UInt32_BOOL SanityCheck() { return Validate(); }
+};
+
+template<> struct cdac_data<MethodTable>
+{
+    static constexpr size_t Flags = offsetof(MethodTable, m_uFlags);
+    static constexpr size_t BaseSize = offsetof(MethodTable, m_uBaseSize);
+    static constexpr size_t RelatedType = offsetof(MethodTable, m_RelatedType);
+    static constexpr size_t NumVtableSlots = offsetof(MethodTable, m_usNumVtableSlots);
+    static constexpr size_t NumInterfaces = offsetof(MethodTable, m_usNumInterfaces);
+    static constexpr size_t HashCode = offsetof(MethodTable, m_uHashCode);
+    static constexpr size_t VTable = offsetof(MethodTable, m_VTable);
+
+    static constexpr uint32_t EETypeKindMask = MethodTable::EETypeKindMask;
+    static constexpr uint32_t HasComponentSizeFlag = MethodTable::HasComponentSizeFlag;
+    static constexpr uint32_t HasFinalizerFlag = MethodTable::HasFinalizerFlag;
+    static constexpr uint32_t HasPointersFlag = MethodTable::HasPointersFlag;
+    static constexpr uint32_t IsGenericFlag = MethodTable::IsGenericFlag;
+    static constexpr uint32_t ElementTypeMask = MethodTable::ElementTypeMask;
+    static constexpr uint32_t ElementTypeShift = MethodTable::ElementTypeShift;
 };
 
 #pragma warning(pop)

@@ -1,0 +1,140 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+//
+// No include guards. This file is included multiple times.
+//
+// NativeAOT data descriptor declarations for the cDAC contract system.
+// This file defines the types, fields, and globals that diagnostic tools
+// need to inspect NativeAOT runtime state.
+//
+// When modifying this file (adding/removing types, fields, or globals), you must also:
+//   1. Update the corresponding contract doc in docs/design/datacontracts/<contract>.md
+//   2. Update the managed data class in src/native/managed/cdac/.../Data/<Type>.cs
+//   3. Update the contract implementation in src/native/managed/cdac/.../Contracts/<Contract>.cs
+//   4. Update the mock descriptors and tests in src/native/managed/cdac/tests/.
+
+CDAC_BASELINE("empty")
+CDAC_TYPES_BEGIN()
+
+// ========================
+// Thread and ThreadStore
+// ========================
+
+CDAC_TYPE_BEGIN(Thread)
+CDAC_TYPE_INDETERMINATE(Thread)
+CDAC_TYPE_FIELD(Thread, T_UINT64, OSId, offsetof(RuntimeThreadLocals, m_threadId))
+CDAC_TYPE_FIELD(Thread, T_UINT32, State, offsetof(RuntimeThreadLocals, m_ThreadStateFlags))
+CDAC_TYPE_FIELD(Thread, T_POINTER, LinkNext, offsetof(RuntimeThreadLocals, m_pNext))
+CDAC_TYPE_FIELD(Thread, T_POINTER, ExceptionTracker, offsetof(RuntimeThreadLocals, m_pExInfoStackHead))
+CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackBase, offsetof(RuntimeThreadLocals, m_pStackHigh))
+CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackLimit, offsetof(RuntimeThreadLocals, m_pStackLow))
+CDAC_TYPE_FIELD(Thread, TYPE(RuntimeThreadLocals), RuntimeThreadLocals, offsetof(RuntimeThreadLocals, m_eeAllocContext))
+CDAC_TYPE_FIELD(Thread, T_POINTER, TransitionFrame, offsetof(RuntimeThreadLocals, m_pTransitionFrame))
+CDAC_TYPE_END(Thread)
+
+CDAC_TYPE_BEGIN(ThreadStore)
+CDAC_TYPE_INDETERMINATE(ThreadStore)
+CDAC_TYPE_FIELD(ThreadStore, T_POINTER, FirstThreadLink, cdac_data<ThreadStore>::FirstThreadLink)
+CDAC_TYPE_END(ThreadStore)
+
+CDAC_TYPE_BEGIN(RuntimeThreadLocals)
+CDAC_TYPE_INDETERMINATE(RuntimeThreadLocals)
+CDAC_TYPE_FIELD(RuntimeThreadLocals, TYPE(EEAllocContext), AllocContext, offsetof(RuntimeThreadLocals, m_eeAllocContext))
+CDAC_TYPE_END(RuntimeThreadLocals)
+
+// ========================
+// Allocation Context
+// ========================
+
+CDAC_TYPE_BEGIN(EEAllocContext)
+CDAC_TYPE_INDETERMINATE(EEAllocContext)
+CDAC_TYPE_FIELD(EEAllocContext, TYPE(GCAllocContext), GCAllocationContext, offsetof(ee_alloc_context, m_rgbAllocContextBuffer))
+CDAC_TYPE_END(EEAllocContext)
+
+CDAC_TYPE_BEGIN(GCAllocContext)
+CDAC_TYPE_INDETERMINATE(GCAllocContext)
+CDAC_TYPE_FIELD(GCAllocContext, T_POINTER, Pointer, offsetof(gc_alloc_context, alloc_ptr))
+CDAC_TYPE_FIELD(GCAllocContext, T_POINTER, Limit, offsetof(gc_alloc_context, alloc_limit))
+CDAC_TYPE_FIELD(GCAllocContext, T_INT64, AllocBytes, offsetof(gc_alloc_context, alloc_bytes))
+CDAC_TYPE_FIELD(GCAllocContext, T_INT64, AllocBytesLoh, offsetof(gc_alloc_context, alloc_bytes_uoh))
+CDAC_TYPE_END(GCAllocContext)
+
+// ========================
+// MethodTable (EEType)
+// ========================
+
+CDAC_TYPE_BEGIN(MethodTable)
+CDAC_TYPE_INDETERMINATE(MethodTable)
+CDAC_TYPE_FIELD(MethodTable, T_UINT32, Flags, cdac_data<MethodTable>::Flags)
+CDAC_TYPE_FIELD(MethodTable, T_UINT32, BaseSize, cdac_data<MethodTable>::BaseSize)
+CDAC_TYPE_FIELD(MethodTable, T_POINTER, RelatedType, cdac_data<MethodTable>::RelatedType)
+CDAC_TYPE_FIELD(MethodTable, T_UINT16, NumVtableSlots, cdac_data<MethodTable>::NumVtableSlots)
+CDAC_TYPE_FIELD(MethodTable, T_UINT16, NumInterfaces, cdac_data<MethodTable>::NumInterfaces)
+CDAC_TYPE_FIELD(MethodTable, T_UINT32, HashCode, cdac_data<MethodTable>::HashCode)
+CDAC_TYPE_FIELD(MethodTable, T_POINTER, VTable, cdac_data<MethodTable>::VTable)
+CDAC_TYPE_END(MethodTable)
+
+// ========================
+// Exception Info
+// ========================
+
+CDAC_TYPE_BEGIN(ExInfo)
+CDAC_TYPE_INDETERMINATE(ExInfo)
+CDAC_TYPE_FIELD(ExInfo, T_POINTER, PreviousNestedInfo, offsetof(ExInfo, m_pPrevExInfo))
+CDAC_TYPE_FIELD(ExInfo, T_POINTER, ThrownObject, offsetof(ExInfo, m_exception))
+CDAC_TYPE_END(ExInfo)
+
+// ========================
+// RuntimeInstance
+// ========================
+
+CDAC_TYPE_BEGIN(RuntimeInstance)
+CDAC_TYPE_INDETERMINATE(RuntimeInstance)
+CDAC_TYPE_FIELD(RuntimeInstance, T_POINTER, ThreadStore, cdac_data<RuntimeInstance>::ThreadStore)
+CDAC_TYPE_END(RuntimeInstance)
+
+CDAC_TYPES_END()
+
+// ========================
+// Globals
+// ========================
+
+CDAC_GLOBALS_BEGIN()
+
+CDAC_GLOBAL_POINTER(RuntimeInstance, &g_pTheRuntimeInstance)
+
+CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &g_pFreeObjectEEType)
+
+CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
+CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
+
+// NativeAOT MethodTable flag constants (accessed via cdac_data friend)
+CDAC_GLOBAL(MethodTableEETypeKindMask, uint32, cdac_data<MethodTable>::EETypeKindMask)
+CDAC_GLOBAL(MethodTableHasComponentSizeFlag, uint32, cdac_data<MethodTable>::HasComponentSizeFlag)
+CDAC_GLOBAL(MethodTableHasFinalizerFlag, uint32, cdac_data<MethodTable>::HasFinalizerFlag)
+CDAC_GLOBAL(MethodTableHasPointersFlag, uint32, cdac_data<MethodTable>::HasPointersFlag)
+CDAC_GLOBAL(MethodTableIsGenericFlag, uint32, cdac_data<MethodTable>::IsGenericFlag)
+CDAC_GLOBAL(MethodTableElementTypeMask, uint32, cdac_data<MethodTable>::ElementTypeMask)
+CDAC_GLOBAL(MethodTableElementTypeShift, uint32, cdac_data<MethodTable>::ElementTypeShift)
+
+// Thread state flag constants
+CDAC_GLOBAL(ThreadStateFlagAttached, uint32, 0x00000001)
+CDAC_GLOBAL(ThreadStateFlagDetached, uint32, 0x00000002)
+
+// Object contract globals
+#ifdef TARGET_64BIT
+CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 7)
+#else
+CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 3)
+#endif
+
+// Contracts: declare which contracts this runtime supports
+CDAC_GLOBAL_CONTRACT(Thread, 1001)
+CDAC_GLOBAL_CONTRACT(Exception, 1)
+CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1001)
+
+// GC sub-descriptor: the GC populates gc_descriptor during GC_Initialize.
+// It is important for subdescriptor pointers to be the last pointers.
+CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
+
+CDAC_GLOBALS_END()
