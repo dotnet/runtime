@@ -426,5 +426,36 @@ namespace System.Runtime.CompilerServices.Tests
             var attr = new OverloadResolutionPriorityAttribute(42);
             Assert.Equal(42, attr.Priority);
         }
+
+        [Fact]
+        public static void UnionAttributeTests()
+        {
+            var attr = new UnionAttribute();
+            Assert.NotNull(attr);
+
+            var usage = (AttributeUsageAttribute)Attribute.GetCustomAttribute(typeof(UnionAttribute), typeof(AttributeUsageAttribute))!;
+            Assert.Equal(AttributeTargets.Class | AttributeTargets.Struct, usage.ValidOn);
+            Assert.False(usage.AllowMultiple);
+        }
+
+        [Fact]
+        public static void IUnionTests()
+        {
+            Assert.True(typeof(IUnion).IsInterface);
+
+            var testUnion = new TestUnion("hello");
+            IUnion union = testUnion;
+            Assert.Equal("hello", union.Value);
+
+            var nullUnion = new TestUnion(null);
+            Assert.Null(((IUnion)nullUnion).Value);
+        }
+
+        [Union]
+        private struct TestUnion : IUnion
+        {
+            public TestUnion(object? value) => Value = value;
+            public object? Value { get; }
+        }
     }
 }
