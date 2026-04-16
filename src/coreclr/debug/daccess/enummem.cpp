@@ -1228,10 +1228,6 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
                 DacEnumHostDPtrMem(pThread);
 
                 // @TODO
-                // write TEB pointed by the thread
-                // DacEnumHostDPtrMem(pThread->GetTEB());
-
-                // @TODO
                 // If CLR is hosted, we want to write out fiber data
 
                 // Dump the managed thread object
