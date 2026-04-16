@@ -115,16 +115,4 @@ public class DacDbiAppDomainDumpTests : DumpTestBase
             break;
         }
     }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void EnableNGENPolicy_ReturnsENotImpl(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        int hr = dbi.EnableNGENPolicy(0);
-        Assert.Equal(System.HResults.E_NOTIMPL, hr);
-    }
-
 }

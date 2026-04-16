@@ -602,6 +602,11 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         STRESS_LOG1(LF_CORDB, LL_INFO1000, "CSW::GFW - managed exception handling code frame (%p)", this);
         return S_FALSE;
     }
+    else if (ft == IDacDbiInterface::kRuntimeEntryPointFrame)
+    {
+        STRESS_LOG1(LF_CORDB, LL_INFO1000, "CSW::GFW - runtime entry point frame (%p)", this);
+        return S_FALSE;
+    }
     else if (ft == IDacDbiInterface::kExplicitFrame)
     {
         STRESS_LOG1(LF_CORDB, LL_INFO1000, "CSW::GFW - explicit frame (%p)", this);

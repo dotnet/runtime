@@ -23,8 +23,6 @@ internal sealed class Thread : IData<Thread>
         CachedStackBase = target.ReadPointerField(address, type, nameof(CachedStackBase));
         CachedStackLimit = target.ReadPointerField(address, type, nameof(CachedStackLimit));
 
-        // TEB does not exist on certain platforms
-        TEB = target.ReadPointerFieldOrNull(address, type, nameof(TEB));
         LastThrownObject = target.ProcessedData.GetOrAdd<ObjectHandle>(
             target.ReadPointerField(address, type, nameof(LastThrownObject)));
         LinkNext = target.ReadPointerField(address, type, nameof(LinkNext));
@@ -46,7 +44,6 @@ internal sealed class Thread : IData<Thread>
     public TargetPointer Frame { get; init; }
     public TargetPointer CachedStackBase { get; init; }
     public TargetPointer CachedStackLimit { get; init; }
-    public TargetPointer TEB { get; init; }
     public ObjectHandle LastThrownObject { get; init; }
     public TargetPointer LinkNext { get; init; }
     public TargetPointer ExceptionTracker { get; init; }

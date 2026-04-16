@@ -1144,8 +1144,6 @@ struct Param
     bool captureException;
 } param;
 
-MethodDesc* g_pEnvironmentCallEntryPointMethodDesc = nullptr;
-
 #if defined(TARGET_BROWSER)
 extern "C" void SystemJS_ResolveMainPromise(int exitCode);
 #endif // TARGET_BROWSER

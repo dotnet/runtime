@@ -1513,8 +1513,6 @@ void Thread::InitThread()
 #ifndef TARGET_UNIX
     (void) _controlfp_s( NULL, _RC_NEAR, _RC_CHOP|_RC_UP|_RC_DOWN|_RC_NEAR );
 
-    m_pTEB = (struct _NT_TIB*)NtCurrentTeb();
-
 #endif // !TARGET_UNIX
 
     if (m_CacheStackBase == 0)
