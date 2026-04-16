@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Async-signal-safe JSON writer implementation.
-// Every function here uses only stack variables and the pre-allocated buffer.
-// No malloc, no stdio, no locks — safe to call from a signal handler.
+// Streaming JSON writer implementation for crash reports.
 
 #include "crashjsonwriter.h"
+
+#include <string.h>
 
 static
 int
@@ -19,6 +19,11 @@ int
 CrashJsonAppendStr(
     CrashJsonWriter* w,
     const char* str);
+
+static
+int
+CrashJsonFlush(
+    CrashJsonWriter* w);
 
 static
 char
@@ -38,10 +43,15 @@ CrashJsonWriteEscapedString(
 
 void
 CrashJsonInit(
-    CrashJsonWriter* w)
+    CrashJsonWriter* w,
+    CrashJsonOutputCallback outputCallback,
+    void* outputContext)
 {
     w->pos = 0;
     w->commaNeeded = false;
+    w->writeFailed = false;
+    w->outputCallback = outputCallback;
+    w->outputContext = outputContext;
     w->buffer[0] = '\0';
 }
 
@@ -103,37 +113,82 @@ CrashJsonWriteString(
     CrashJsonWriteEscapedString(w, value);
 }
 
+void
+CrashJsonFinish(
+    CrashJsonWriter* w)
+{
+    (void)CrashJsonFlush(w);
+}
+
 int
-CrashJsonGetLength(
+CrashJsonHasFailed(
     CrashJsonWriter* w)
 {
-    return w->pos;
+    return w->writeFailed ? 1 : 0;
 }
 
-const char*
-CrashJsonGetBuffer(
+int
+CrashJsonFlush(
     CrashJsonWriter* w)
 {
-    w->buffer[w->pos] = '\0';
-    return w->buffer;
+    if (w->writeFailed)
+    {
+        return 0;
+    }
+
+    if (w->pos == 0)
+    {
+        return 1;
+    }
+
+    if (w->outputCallback != NULL && !w->outputCallback(w->buffer, w->pos, w->outputContext))
+    {
+        w->writeFailed = true;
+        return 0;
+    }
+
+    w->pos = 0;
+    w->buffer[0] = '\0';
+    return 1;
 }
 
-// Append raw bytes to buffer. Returns 0 if out of space.
 int
 CrashJsonAppend(
     CrashJsonWriter* w,
     const char* str,
     int len)
 {
-    if (w->pos + len >= CRASH_JSON_BUFFER_SIZE - 16)
-        return 0;
-
-    for (int i = 0; i < len; i++)
+    if (w->writeFailed || str == NULL || len < 0)
     {
-        w->buffer[w->pos + i] = str[i];
+        return 0;
     }
 
-    w->pos += len;
+    if (len == 0)
+    {
+        return 1;
+    }
+
+    int offset = 0;
+    while (offset < len)
+    {
+        int remaining = (CRASH_JSON_BUFFER_SIZE - 1) - w->pos;
+        if (remaining == 0 && !CrashJsonFlush(w))
+        {
+            return 0;
+        }
+
+        remaining = (CRASH_JSON_BUFFER_SIZE - 1) - w->pos;
+        int chunk = len - offset;
+        if (chunk > remaining)
+        {
+            chunk = remaining;
+        }
+
+        memcpy(w->buffer + w->pos, str + offset, static_cast<size_t>(chunk));
+        w->pos += chunk;
+        offset += chunk;
+    }
+
     return 1;
 }
 
@@ -142,11 +197,12 @@ CrashJsonAppendStr(
     CrashJsonWriter* w,
     const char* str)
 {
-    int len = 0;
-    while (str[len])
-        len++;
+    if (str == NULL)
+    {
+        return 0;
+    }
 
-    return CrashJsonAppend(w, str, len);
+    return CrashJsonAppend(w, str, static_cast<int>(strlen(str)));
 }
 
 char
