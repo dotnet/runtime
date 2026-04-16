@@ -24,17 +24,8 @@ namespace Microsoft.Win32.SafeHandles
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static Microsoft.Win32.SafeHandles.SafeProcessHandle Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public bool TryWaitForExit(System.TimeSpan timeout, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Diagnostics.ProcessExitStatus? exitStatus) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public System.Diagnostics.ProcessExitStatus WaitForExit() { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]

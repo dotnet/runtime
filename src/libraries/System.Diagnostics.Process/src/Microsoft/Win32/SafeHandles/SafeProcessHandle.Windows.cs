@@ -654,7 +654,7 @@ namespace Microsoft.Win32.SafeHandles
             using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
             if (!processWaitHandle.WaitOne(milliseconds))
             {
-                wasKilledOnTimeout = KillCore();
+                wasKilledOnTimeout = TerminateProcessCore();
                 processWaitHandle.WaitOne(Timeout.Infinite);
             }
 
@@ -724,7 +724,7 @@ namespace Microsoft.Win32.SafeHandles
                         static state =>
                         {
                             var (handle, wasCancelled) = ((SafeProcessHandle, StrongBox<bool>))state!;
-                            wasCancelled.Value = handle.KillCore();
+                            wasCancelled.Value = handle.TerminateProcessCore();
                         },
                         (this, wasKilledBox));
                 }
@@ -741,10 +741,10 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         /// <summary>
-        /// Terminates the process.
+        /// Terminates the process using TerminateProcess.
         /// </summary>
         /// <returns>true if the process was terminated; false if it had already exited.</returns>
-        internal bool KillCore()
+        private bool TerminateProcessCore()
         {
             if (Interop.Kernel32.TerminateProcess(this, -1))
             {
@@ -753,7 +753,6 @@ namespace Microsoft.Win32.SafeHandles
 
             int error = Marshal.GetLastPInvokeError();
 
-            // If the process has already exited, TerminateProcess fails with ERROR_ACCESS_DENIED.
             if (error == Interop.Errors.ERROR_ACCESS_DENIED &&
                 Interop.Kernel32.GetExitCodeProcess(this, out int exitCode) &&
                 exitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)

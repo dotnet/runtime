@@ -177,9 +177,6 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         /// <returns>The exit status of the process.</returns>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         public ProcessExitStatus WaitForExit()
         {
             Validate();
@@ -196,14 +193,11 @@ namespace Microsoft.Win32.SafeHandles
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan"/>,
         /// or is greater than <see cref="int.MaxValue"/> milliseconds.</exception>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         public bool TryWaitForExit(TimeSpan timeout, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
         {
             Validate();
 
-            return TryWaitForExitCore(ToTimeoutInMilliseconds(timeout), out exitStatus);
+            return TryWaitForExitCore(ProcessUtils.ToTimeoutMilliseconds(timeout), out exitStatus);
         }
 
         /// <summary>
@@ -223,7 +217,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Validate();
 
-            return WaitForExitOrKillOnTimeoutCore(ToTimeoutInMilliseconds(timeout));
+            return WaitForExitOrKillOnTimeoutCore(ProcessUtils.ToTimeoutMilliseconds(timeout));
         }
 
         /// <summary>
@@ -238,9 +232,6 @@ namespace Microsoft.Win32.SafeHandles
         /// The process is NOT killed and continues running. If you want to kill the process on cancellation,
         /// use <see cref="WaitForExitOrKillOnCancellationAsync"/> instead.
         /// </remarks>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         public Task<ProcessExitStatus> WaitForExitAsync(CancellationToken cancellationToken = default)
         {
             Validate();
@@ -278,16 +269,6 @@ namespace Microsoft.Win32.SafeHandles
             {
                 throw new InvalidOperationException(SR.InvalidProcessHandle);
             }
-        }
-
-        internal static int ToTimeoutInMilliseconds(TimeSpan timeout)
-        {
-            long totalMilliseconds = (long)timeout.TotalMilliseconds;
-
-            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
-
-            return (int)totalMilliseconds;
         }
     }
 }

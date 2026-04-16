@@ -208,10 +208,8 @@ namespace System.Diagnostics
 
         /// <summary>Whether the associated process exited.</summary>
         private bool _exited;
-        /// <summary>If the process exited, it's exit code, or null if we were unable to determine one.</summary>
-        private int? _exitCode;
-        /// <summary>If the process was terminated by a signal, the raw signal number, or null if it was not.</summary>
-        private int? _terminatingSignal;
+        /// <summary>If the process exited, its exit status, or null if we were unable to determine one.</summary>
+        private ProcessExitStatus? _exitStatus;
         /// <summary>
         /// The approximate time the process exited.  We do not have the ability to know exact time a process
         /// exited, so we approximate it by storing the time that we discovered it exited.
@@ -312,14 +310,14 @@ namespace System.Diagnostics
             }
         }
 
-        internal bool GetExited(out int? exitCode, bool refresh)
+        internal bool GetExited(out ProcessExitStatus? exitStatus, bool refresh)
         {
             lock (_gate)
             {
                 // Have we already exited?  If so, return the cached results.
                 if (_exited)
                 {
-                    exitCode = _exitCode;
+                    exitStatus = _exitStatus;
                     return true;
                 }
 
@@ -327,7 +325,7 @@ namespace System.Diagnostics
                 // and that task owns the right to call CheckForNonChildExit.
                 if (!_waitInProgress.IsCompleted)
                 {
-                    exitCode = null;
+                    exitStatus = null;
                     return false;
                 }
 
@@ -340,20 +338,8 @@ namespace System.Diagnostics
 
                 // We now have an up-to-date snapshot for whether we've exited,
                 // and if we have, what the exit code is (if we were able to find out).
-                exitCode = _exitCode;
+                exitStatus = _exitStatus;
                 return _exited;
-            }
-        }
-
-        /// <summary>Gets the terminating signal if the process was killed by a signal.</summary>
-        internal int? TerminatingSignal
-        {
-            get
-            {
-                lock (_gate)
-                {
-                    return _terminatingSignal;
-                }
             }
         }
 
@@ -559,8 +545,8 @@ namespace System.Diagnostics
             {
                 Debug.Assert(!_exited);
 
-                _exitCode = exitCode;
-                _terminatingSignal = terminatingSignal != 0 ? terminatingSignal : null;
+                PosixSignal? signal = terminatingSignal != 0 ? (PosixSignal)terminatingSignal : null;
+                _exitStatus = new ProcessExitStatus(exitCode, canceled: false, signal);
 
                 if (_usesTerminal)
                 {

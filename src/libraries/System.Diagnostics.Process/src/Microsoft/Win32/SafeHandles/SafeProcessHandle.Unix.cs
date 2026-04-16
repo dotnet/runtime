@@ -121,7 +121,7 @@ namespace Microsoft.Win32.SafeHandles
 
             if (!waitState.WaitForExit(milliseconds))
             {
-                wasKilled = KillCore();
+                wasKilled = SignalCore(PosixSignal.SIGKILL);
                 waitState.WaitForExit(Timeout.Infinite);
             }
 
@@ -193,7 +193,7 @@ namespace Microsoft.Win32.SafeHandles
                         static state =>
                         {
                             var (handle, wasCancelled) = ((SafeProcessHandle, StrongBox<bool>))state!;
-                            wasCancelled.Value = handle.KillCore();
+                            wasCancelled.Value = handle.SignalCore(PosixSignal.SIGKILL);
                         },
                         (this, wasKilledBox));
                 }
@@ -209,28 +209,6 @@ namespace Microsoft.Win32.SafeHandles
             return CreateExitStatus(waitState, canceled: wasKilledBox.Value);
         }
 
-        /// <summary>
-        /// Terminates the process by sending SIGKILL.
-        /// </summary>
-        /// <returns>true if the process was terminated; false if it had already exited.</returns>
-        internal bool KillCore()
-        {
-            int signalNumber = Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL);
-            int killResult = Interop.Sys.Kill(ProcessId, signalNumber);
-            if (killResult == 0)
-            {
-                return true;
-            }
-
-            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-            if (errorInfo.Error == Interop.Error.ESRCH)
-            {
-                return false; // Process already exited
-            }
-
-            throw new Win32Exception(errorInfo.RawErrno);
-        }
-
         private ProcessWaitState GetWaitState()
         {
             if (_waitState is null)
@@ -243,11 +221,10 @@ namespace Microsoft.Win32.SafeHandles
 
         private static ProcessExitStatus CreateExitStatus(ProcessWaitState waitState, bool canceled)
         {
-            waitState.GetExited(out int? exitCode, refresh: false);
-            int? rawSignal = waitState.TerminatingSignal;
-            PosixSignal? signal = rawSignal.HasValue ? (PosixSignal)rawSignal.Value : null;
+            waitState.GetExited(out ProcessExitStatus? exitStatus, refresh: false);
+            PosixSignal? signal = exitStatus?.Signal;
 
-            return new ProcessExitStatus(exitCode ?? 0, canceled, signal);
+            return new ProcessExitStatus(exitStatus?.ExitCode ?? 0, canceled && signal is not null, signal);
         }
 
         private delegate SafeProcessHandle StartWithShellExecuteDelegate(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
