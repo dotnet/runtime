@@ -268,6 +268,11 @@ namespace System.Diagnostics
         /// An async enumerable of <see cref="ProcessOutputLine"/> instances representing the lines
         /// read from standard output and standard error.
         /// </returns>
+        /// <remarks>
+        /// When both standard output and standard error have data available at the same time,
+        /// standard error lines are yielded first. This is by design to ensure that error output
+        /// is not delayed behind standard output.
+        /// </remarks>
         /// <exception cref="InvalidOperationException">
         /// Standard output or standard error has not been redirected.
         /// -or-
@@ -286,73 +291,91 @@ namespace System.Diagnostics
             StreamReader outputReader = _standardOutput!;
             StreamReader errorReader = _standardError!;
 
-            Task<string?> readOutput = outputReader.ReadLineAsync(cancellationToken).AsTask();
-            Task<string?> readError = errorReader.ReadLineAsync(cancellationToken).AsTask();
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            CancellationToken linkedToken = linkedCts.Token;
+
+            Task<string?> readOutput = outputReader.ReadLineAsync(linkedToken).AsTask();
+            Task<string?> readError = errorReader.ReadLineAsync(linkedToken).AsTask();
             bool isError;
 
-            while (true)
+            try
             {
-                Task completedTask = await Task.WhenAny(readOutput, readError).ConfigureAwait(false);
-
-                // When there is data available in both, handle error first.
-                isError = completedTask == readError || (readOutput.IsCompleted && readError.IsCompleted);
-
-                string? line = isError
-                    ? await readError.ConfigureAwait(false)
-                    : await readOutput.ConfigureAwait(false);
-
-                if (line is not null)
+                while (true)
                 {
-                    yield return new ProcessOutputLine(line, isError);
+                    Task completedTask = await Task.WhenAny(readOutput, readError).ConfigureAwait(false);
 
-                    // Continue reading from the same stream while data is immediately available.
-                    StreamReader activeReader = isError ? errorReader : outputReader;
-                    while (true)
+                    // When there is data available in both, handle error first.
+                    isError = completedTask == readError || (readOutput.IsCompleted && readError.IsCompleted);
+
+                    string? line = isError
+                        ? await readError.ConfigureAwait(false)
+                        : await readOutput.ConfigureAwait(false);
+
+                    if (line is not null)
                     {
-                        ValueTask<string?> nextRead = activeReader.ReadLineAsync(cancellationToken);
+                        yield return new ProcessOutputLine(line, isError);
 
-                        if (nextRead.IsCompleted)
+                        // Continue reading from the same stream while data is immediately available.
+                        StreamReader activeReader = isError ? errorReader : outputReader;
+                        while (true)
                         {
-                            line = await nextRead.ConfigureAwait(false);
-                            if (line is null)
-                            {
-                                break;
-                            }
+                            ValueTask<string?> nextRead = activeReader.ReadLineAsync(linkedToken);
 
-                            yield return new ProcessOutputLine(line, isError);
-                        }
-                        else
-                        {
-                            if (isError)
+                            if (nextRead.IsCompleted)
                             {
-                                readError = nextRead.AsTask();
+                                line = await nextRead.ConfigureAwait(false);
+                                if (line is null)
+                                {
+                                    break;
+                                }
+
+                                yield return new ProcessOutputLine(line, isError);
                             }
                             else
                             {
-                                readOutput = nextRead.AsTask();
-                            }
+                                if (isError)
+                                {
+                                    readError = nextRead.AsTask();
+                                }
+                                else
+                                {
+                                    readOutput = nextRead.AsTask();
+                                }
 
-                            break;
+                                break;
+                            }
                         }
+                    }
+
+                    if (line is null)
+                    {
+                        break;
                     }
                 }
 
-                if (line is null)
+                // One stream ended. Drain the remaining data from the other stream.
+                // isError tells us which stream returned null, so we drain the opposite stream.
+                string? moreData = await (isError ? readOutput : readError).ConfigureAwait(false);
+                StreamReader remainingReader = isError ? outputReader : errorReader;
+                bool remainingIsError = !isError;
+
+                while (moreData is not null)
                 {
-                    break;
+                    yield return new ProcessOutputLine(moreData, remainingIsError);
+                    moreData = await remainingReader.ReadLineAsync(linkedToken).ConfigureAwait(false);
                 }
             }
-
-            // One stream ended. Drain the remaining data from the other stream.
-            // isError tells us which stream returned null, so we drain the opposite stream.
-            string? moreData = await (isError ? readOutput : readError).ConfigureAwait(false);
-            StreamReader remainingReader = isError ? outputReader : errorReader;
-            bool remainingIsError = !isError;
-
-            while (moreData is not null)
+            finally
             {
-                yield return new ProcessOutputLine(moreData, remainingIsError);
-                moreData = await remainingReader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                // Cancel any in-flight reads when the consumer stops enumerating early
+                // (e.g., breaks out of await foreach without cancellation).
+                await linkedCts.CancelAsync().ConfigureAwait(false);
+
+                try { await readOutput.ConfigureAwait(false); }
+                catch (OperationCanceledException) { }
+
+                try { await readError.ConfigureAwait(false); }
+                catch (OperationCanceledException) { }
             }
         }
 

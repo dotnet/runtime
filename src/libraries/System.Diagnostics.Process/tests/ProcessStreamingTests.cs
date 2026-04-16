@@ -312,6 +312,39 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task ReadAllLinesAsync_StopsCleanlyWhenConsumerBreaksEarly()
+        {
+            using Process process = CreateProcess(() =>
+            {
+                Console.Out.WriteLine("first");
+                Console.Out.Flush();
+                Console.Out.WriteLine("second");
+                Console.Out.Flush();
+                Console.Error.WriteLine("error1");
+                Console.Error.Flush();
+
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            ProcessOutputLine? firstLine = null;
+
+            await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+            {
+                firstLine = line;
+                break; // stop after first line
+            }
+
+            Assert.NotNull(firstLine);
+            Assert.NotNull(firstLine.Value.Content);
+
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
         private Process StartLinePrintingProcess(string stdOutText, string stdErrText)
         {
             Process process = CreateProcess((stdOut, stdErr) =>

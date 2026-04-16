@@ -18,7 +18,7 @@ namespace System.Diagnostics
         /// </param>
         public ProcessOutputLine(string content, bool standardError)
         {
-            Content = content;
+            Content = content ?? throw new ArgumentNullException(nameof(content));
             StandardError = standardError;
         }
 
