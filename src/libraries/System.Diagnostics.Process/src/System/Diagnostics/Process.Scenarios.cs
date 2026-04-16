@@ -10,8 +10,8 @@ namespace System.Diagnostics
     public partial class Process
     {
         /// <summary>
-        /// Starts the process described by <paramref name="startInfo"/>, captures its process ID,
-        /// releases all associated resources, and returns the process ID.
+        /// Starts the process described by <paramref name="startInfo"/>, releases all associated resources,
+        /// and returns the process ID.
         /// </summary>
         /// <param name="startInfo">The <see cref="ProcessStartInfo"/> that contains the information used to start the process.</param>
         /// <returns>The process ID of the started process.</returns>
@@ -29,15 +29,14 @@ namespace System.Diagnostics
         /// </exception>
         /// <remarks>
         /// <para>
-        /// This method is designed for fire-and-forget scenarios where the caller wants to launch a process
-        /// and does not need to interact with it further. It starts the process, captures its process ID,
-        /// releases all associated resources, and returns the process ID. The started process continues to
-        /// run independently.
-        /// </para>
-        /// <para>
         /// When a standard handle (<see cref="ProcessStartInfo.StandardInputHandle"/>,
         /// <see cref="ProcessStartInfo.StandardOutputHandle"/>, or <see cref="ProcessStartInfo.StandardErrorHandle"/>)
         /// is not provided, it is redirected to the null file by default.
+        /// </para>
+        /// <para>
+        /// This method is designed for fire-and-forget scenarios where the caller wants to launch a process
+        /// and does not need to interact with it further. It starts the process, releases all associated
+        /// resources, and returns the process ID. The started process continues to run independently.
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]
@@ -52,13 +51,13 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.StartAndForget_UseShellExecuteNotSupported);
             }
 
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo, redirectToNull: true);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo, fallbackToNull: true);
             return processHandle.ProcessId;
         }
 
         /// <summary>
-        /// Starts a process with the specified file name and optional arguments, captures its process ID,
-        /// releases all associated resources, and returns the process ID.
+        /// Starts a process with the specified file name and optional arguments, releases all associated resources,
+        /// and returns the process ID.
         /// </summary>
         /// <param name="fileName">The name of the application or document to start.</param>
         /// <param name="arguments">

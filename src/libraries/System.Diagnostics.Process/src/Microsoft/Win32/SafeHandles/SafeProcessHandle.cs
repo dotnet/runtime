@@ -89,13 +89,13 @@ namespace Microsoft.Win32.SafeHandles
         {
             ArgumentNullException.ThrowIfNull(startInfo);
 
-            return Start(startInfo, redirectToNull: startInfo.StartDetached);
+            return Start(startInfo, fallbackToNull: startInfo.StartDetached);
         }
 
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        internal static SafeProcessHandle Start(ProcessStartInfo startInfo, bool redirectToNull)
+        internal static SafeProcessHandle Start(ProcessStartInfo startInfo, bool fallbackToNull)
         {
             startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
 
@@ -119,7 +119,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeFileHandle? childOutputHandle = startInfo.StandardOutputHandle;
             SafeFileHandle? childErrorHandle = startInfo.StandardErrorHandle;
 
-            using SafeFileHandle? nullDeviceHandle = redirectToNull
+            using SafeFileHandle? nullDeviceHandle = fallbackToNull
                 && (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
                 ? File.OpenNullHandle()
                 : null;
