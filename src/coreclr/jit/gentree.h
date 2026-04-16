@@ -2450,7 +2450,7 @@ public:
         return OperGet() == GT_CALL;
     }
     inline bool IsHelperCall();
-    inline bool IsHelperCall(Compiler* compiler, unsigned helper);
+    inline bool IsHelperCall(unsigned helper);
 
     bool gtOverflow() const;
     bool gtOverflowEx() const;
@@ -3038,8 +3038,7 @@ class GenTreeUseEdgeIterator final
         CALL_ARGS         = 0,
         CALL_LATE_ARGS    = 1,
         CALL_CONTROL_EXPR = 2,
-        CALL_ADDRESS      = 3,
-        CALL_TERMINAL     = 4,
+        CALL_TERMINAL     = 3,
     };
 
     typedef void (GenTreeUseEdgeIterator::*AdvanceFn)();
@@ -3609,7 +3608,7 @@ public:
     GenTreeDblCon(double val, var_types type = TYP_DOUBLE)
         : GenTree(GT_CNS_DBL, type)
     {
-        assert(varTypeIsFloating(type));
+        assert(varTypeIsFloating(type) || type == TYP_HALF);
         SetDconValue(val);
     }
 #if DEBUGGABLE_GENTREE
@@ -5394,13 +5393,12 @@ struct GenTreeCall final : public GenTree
     }
     bool IsGenericVirtual(Compiler* compiler) const
     {
-        return (gtCallType == CT_INDIRECT &&
-                (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                 gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
+        return (gtCallType == CT_INDIRECT && (gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+                                              gtControlExpr->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
 #ifdef FEATURE_READYTORUN
-                 || gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
+                                              || gtControlExpr->IsHelperCall(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
 #endif
-                     ));
+                                                  ));
     }
 
     bool IsDevirtualizationCandidate(Compiler* compiler) const;
@@ -5839,13 +5837,8 @@ struct GenTreeCall final : public GenTree
     LateDevirtualizationInfo* gtLateDevirtualizationInfo; // Always available for user virtual calls
 
     // expression evaluated after args are placed which determines the control target
-    GenTree* gtControlExpr;
-
-    union
-    {
-        CORINFO_METHOD_HANDLE gtCallMethHnd; // CT_USER_FUNC or CT_HELPER
-        GenTree*              gtCallAddr;    // CT_INDIRECT
-    };
+    GenTree*              gtControlExpr; // Applicable to any call type
+    CORINFO_METHOD_HANDLE gtCallMethHnd; // CT_USER_FUNC or CT_HELPER
 
 #ifdef FEATURE_READYTORUN
     // Call target lookup info for method call from a Ready To Run module
@@ -5875,7 +5868,7 @@ struct GenTreeCall final : public GenTree
         return IsHelperCall() && (callMethHnd == gtCallMethHnd);
     }
 
-    bool IsHelperCall(Compiler* compiler, unsigned helper) const;
+    bool IsHelperCall(unsigned helper) const;
 
     bool IsRuntimeLookupHelperCall(Compiler* compiler) const;
 
@@ -7017,6 +7010,22 @@ struct GenTreeVecCon : public GenTree
                 {
                     // We expect the constant to have been already zeroed
                     assert(simdVal.i64[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_HALF:
+            {
+                if (arg->IsCnsFltOrDbl())
+                {
+                    simdVal.f16[argIdx] = FloatingPointUtils::convertDoubleToFloat16(arg->AsDblCon()->DconValue());
+                    return true;
+                }
+                else
+                {
+                    // We expect the constant to have been already zeroed
+                    // We check against the i16, rather than f16, to account for -0.0
+                    assert(simdVal.i16[argIdx] == 0);
                 }
                 break;
             }
@@ -10535,9 +10544,9 @@ inline bool GenTree::IsHelperCall()
     return IsCall() && AsCall()->IsHelperCall();
 }
 
-inline bool GenTree::IsHelperCall(Compiler* compiler, unsigned helper)
+inline bool GenTree::IsHelperCall(unsigned helper)
 {
-    return IsCall() && AsCall()->IsHelperCall(compiler, helper);
+    return IsCall() && AsCall()->IsHelperCall(helper);
 }
 
 inline var_types GenTree::CastFromType()

@@ -276,7 +276,6 @@ public class PrecodeStubsTests
             SetCodePointerFlags(descriptor);
             var typeInfo = Types[DataType.PrecodeMachineDescriptor];
             var fragment = PrecodeAllocator.Allocate((ulong)typeInfo.Size, $"{descriptor.Name} Precode Machine Descriptor");
-            Builder.AddHeapFragment(fragment);
             MachineDescriptorAddress = fragment.Address;
             Span<byte> desc = Builder.BorrowAddressRange(fragment.Address, (int)typeInfo.Size);
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.ReadWidthOfPrecodeType)].Offset, sizeof(byte)), (byte)descriptor.ReadWidthOfPrecodeType);
@@ -293,7 +292,6 @@ public class PrecodeStubsTests
             ulong stubCodeSize = (ulong)test.StubPrecodeSize;
             var stubDataTypeInfo  = Types[DataType.StubPrecodeData];
             MockMemorySpace.HeapFragment stubDataFragment = StubDataPageAllocator.Allocate(Math.Max((ulong)stubDataTypeInfo.Size, (ulong)stubCodeSize), $"Stub data for {name} on {test.Name}");
-            Builder.AddHeapFragment(stubDataFragment);
             // allocate the code one page before the stub data
             ulong stubCodeStart = stubDataFragment.Address - test.StubCodePageSize;
             MockMemorySpace.HeapFragment stubCodeFragment = new MockMemorySpace.HeapFragment {
@@ -323,11 +321,9 @@ public class PrecodeStubsTests
             ulong stubCodeSize = (ulong)test.StubPrecodeSize;
             var stubDataTypeInfo  = Types[DataType.StubPrecodeData];
             MockMemorySpace.HeapFragment stubDataFragment = StubDataPageAllocator.Allocate(Math.Max((ulong)stubDataTypeInfo.Size, (ulong)stubCodeSize), $"Stub data for {name} on {test.Name}");
-            Builder.AddHeapFragment(stubDataFragment);
 
             var thisPtrRetBufDataTypeInfo  = Types[DataType.ThisPtrRetBufPrecodeData];
             MockMemorySpace.HeapFragment thisPtrRetBufStubDataFragment = StubDataPageAllocator.Allocate((ulong)thisPtrRetBufDataTypeInfo.Size, $"ThisPtrRetBufData stub data for {name} on {test.Name}");
-            Builder.AddHeapFragment(thisPtrRetBufStubDataFragment);
 
             // allocate the code one page before the stub data
             ulong stubCodeStart = stubDataFragment.Address - test.StubCodePageSize;

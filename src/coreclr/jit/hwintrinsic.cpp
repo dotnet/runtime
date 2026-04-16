@@ -9,12 +9,12 @@
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
               /* id */ NI_##isa##_##name, \
-             /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
+             /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, \
              /* isa */ InstructionSet_##isa, \
         /* simdSize */ size, \
          /* numArgs */ numarg, \
@@ -70,7 +70,7 @@ const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
 //    The instruction for id and type
 instruction HWIntrinsicInfo::lookupIns(NamedIntrinsic id, var_types type, Compiler* comp)
 {
-    if ((type < TYP_BYTE) || (type > TYP_DOUBLE))
+    if ((type < TYP_BYTE) || (type > TYP_HALF))
     {
         assert(!"Unexpected type");
         return INS_invalid;
@@ -1007,6 +1007,11 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      Rcpc2
     { FIRST_NI_Sve, LAST_NI_Sve },                              // Sve
     { FIRST_NI_Sve2, LAST_NI_Sve2 },                            // Sve2
+    { NI_Illegal, NI_Illegal },                                 //      Sha3
+    { NI_Illegal, NI_Illegal },                                 //      Sm4
+    { NI_Illegal, NI_Illegal },                                 //      SveAes
+    { NI_Illegal, NI_Illegal },                                 //      SveSha3
+    { NI_Illegal, NI_Illegal },                                 //      SveSm4
     { FIRST_NI_ArmBase_Arm64, LAST_NI_ArmBase_Arm64 },          // ArmBase_Arm64
     { FIRST_NI_AdvSimd_Arm64, LAST_NI_AdvSimd_Arm64 },          // AdvSimd_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Aes_Arm64
@@ -1017,6 +1022,11 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      Sha256_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Sve_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Sve2_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      Sha3_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      Sm4_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      SveAes_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      SveSha3_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      SveSm4_Arm64
 #else
 #error Unsupported platform
 #endif

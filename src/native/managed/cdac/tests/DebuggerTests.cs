@@ -77,14 +77,12 @@ public class DebuggerTests
         // so ReadGlobalPointer returns the location, and ReadPointer dereferences it.
         MockMemorySpace.HeapFragment debuggerPtrFrag = allocator.Allocate((ulong)helpers.PointerSize, "g_pDebugger");
         helpers.WritePointer(debuggerPtrFrag.Data, debuggerFrag.Address);
-        memBuilder.AddHeapFragment(debuggerPtrFrag);
         builder.AddGlobals((Constants.Globals.Debugger, debuggerPtrFrag.Address));
 
         if (attachStateFlags.HasValue)
         {
             MockMemorySpace.HeapFragment attachFrag = allocator.Allocate(sizeof(uint), "CLRJitAttachState");
             helpers.Write(attachFrag.Data.AsSpan(0, sizeof(uint)), (uint)attachStateFlags.Value);
-            memBuilder.AddHeapFragment(attachFrag);
             builder.AddGlobals((Constants.Globals.CLRJitAttachState, attachFrag.Address));
         }
 
@@ -92,7 +90,6 @@ public class DebuggerTests
         {
             MockMemorySpace.HeapFragment metadataFrag = allocator.Allocate(1, "MetadataUpdatesApplied");
             helpers.Write(metadataFrag.Data.AsSpan(0, 1), metadataUpdatesApplied.Value);
-            memBuilder.AddHeapFragment(metadataFrag);
             builder.AddGlobals((Constants.Globals.MetadataUpdatesApplied, metadataFrag.Address));
         }
 
@@ -111,7 +108,6 @@ public class DebuggerTests
         // g_pDebugger is a pointer-to-Debugger that contains null.
         MockMemorySpace.HeapFragment debuggerPtrFrag = allocator.Allocate((ulong)helpers.PointerSize, "g_pDebugger");
         helpers.WritePointer(debuggerPtrFrag.Data, 0);
-        memBuilder.AddHeapFragment(debuggerPtrFrag);
         builder.AddGlobals((Constants.Globals.Debugger, debuggerPtrFrag.Address));
         builder.AddContract<IDebugger>(version: 1);
 
