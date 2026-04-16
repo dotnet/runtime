@@ -1722,7 +1722,7 @@ struct FuncInfoDsc
     };
 
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
-#endif // defined(TARGET_WASM)  
+#endif // defined(TARGET_WASM)
 
     EHblkDsc*            GetEHDesc(Compiler* comp) const;
     BasicBlock*          GetStartBlock(Compiler* comp) const;
@@ -3826,6 +3826,7 @@ public:
     void gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCostSz, bool isLikelyRegVar);
     void gtGetLclFldNodeCost(GenTreeLclFld* node, int* pCostEx, int* pCostSz);
     bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
+    bool gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile, int* pCostEx, int* pCostSz);
 
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);

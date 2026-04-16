@@ -890,7 +890,7 @@ public:
     bool gtCostsInitialized;
 #endif // DEBUG
 
-#define MAX_COST    UCHAR_MAX
+#define MAX_COST UCHAR_MAX
 
 // execution cost for an indirection
 #define IND_COST_EX 3

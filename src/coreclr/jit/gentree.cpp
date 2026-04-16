@@ -3925,123 +3925,799 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
 unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 {
     // Most HWI nodes are simple arithmetic operations.
-    //
     int      costEx = 1;
     int      costSz = 1;
     unsigned level  = 0;
 
-    bool optsEnabled = opts.OptimizationEnabled();
+    bool     optsEnabled = opts.OptimizationEnabled();
+    int      opCount     = static_cast<int>(multiOp->GetOperandCount());
+    GenTree* addrOp      = nullptr;
 
 #if defined(FEATURE_HW_INTRINSICS)
     if (multiOp->OperIs(GT_HWINTRINSIC) && optsEnabled)
     {
-        GenTreeHWIntrinsic* hwTree = multiOp->AsHWIntrinsic();
+        GenTreeHWIntrinsic* hwTree       = multiOp->AsHWIntrinsic();
+        NamedIntrinsic      intrinsicId  = hwTree->GetHWIntrinsicId();
+        var_types           retType      = hwTree->TypeGet();
+        var_types           simdBaseType = hwTree->GetSimdBaseType();
+        unsigned            simdSize     = hwTree->GetSimdSize();
+
 #if defined(TARGET_XARCH)
-        if ((hwTree->GetOperandCount() == 1) && hwTree->OperIsMemoryLoadOrStore())
+        if ((retType == TYP_SIMD64) || (simdSize == 64))
         {
-            costEx = IND_COST_EX;
-            costSz = 2;
+            costSz = 6;
+        }
+        else
+        {
+            costSz = 4;
+        }
 
-            GenTree* const addrNode = hwTree->Op(1);
-            level                   = gtSetEvalOrder(addrNode);
-            GenTree* const addr     = addrNode->gtEffectiveVal();
+        bool isLoad = hwTree->OperIsMemoryLoad(&addrOp);
 
-            // See if we can form a complex addressing mode.
-            if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, hwTree->TypeGet()))
+        if (isLoad || hwTree->OperIsMemoryStore(&addrOp))
+        {
+            if (retType == TYP_SIMD64)
             {
-                // Nothing to do, costs have been set.
+                costEx = FLT_IND_COST_EX + 2;
+            }
+            else if (retType == TYP_SIMD32)
+            {
+                costEx = FLT_IND_COST_EX + 1;
             }
             else
             {
-                costEx += addr->GetCostEx();
-                costSz += addr->GetCostSz();
+                costEx = FLT_IND_COST_EX;
             }
 
-            hwTree->SetCosts(costEx, costSz);
-            return level;
-        }
-#endif
-        switch (hwTree->GetHWIntrinsicId())
-        {
-            case NI_Vector128_Create:
-            case NI_Vector128_CreateScalar:
-            case NI_Vector128_CreateScalarUnsafe:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_Create:
-            case NI_Vector256_CreateScalar:
-            case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector512_Create:
-            case NI_Vector512_CreateScalar:
-            case NI_Vector512_CreateScalarUnsafe:
-#elif defined(TARGET_ARM64)
-            case NI_Vector64_Create:
-            case NI_Vector64_CreateScalar:
-            case NI_Vector64_CreateScalarUnsafe:
-#endif
+            if (!isLoad)
             {
-                if ((hwTree->GetOperandCount() == 1) && hwTree->Op(1)->OperIsConst())
-                {
-                    // Vector.Create(cns) is cheap but not that cheap to be (1,1)
-                    costEx = IND_COST_EX;
-                    costSz = 2;
-                    level  = gtSetEvalOrder(hwTree->Op(1));
-                    hwTree->SetCosts(costEx, costSz);
-                    return level;
-                }
-                break;
+                costEx += 2;
             }
-            default:
-                break;
+
+            switch (intrinsicId)
+            {
+                case NI_X86Base_StoreAlignedNonTemporal:
+                case NI_X86Base_StoreNonTemporal:
+                case NI_X86Base_X64_StoreNonTemporal:
+                case NI_AVX_StoreAlignedNonTemporal:
+                case NI_AVX512_StoreAlignedNonTemporal:
+                {
+                    costEx += 38;
+                    break;
+                }
+
+                case NI_AVX_MaskStore:
+                case NI_AVX2_MaskStore:
+                {
+                    costEx += 5;
+                    break;
+                }
+
+                case NI_AVX2_GatherVector128:
+                case NI_AVX2_GatherVector256:
+                case NI_AVX2_GatherMaskVector128:
+                case NI_AVX2_GatherMaskVector256:
+                {
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        costEx += (retType == TYP_SIMD32) ? 14 : 13;
+                    }
+                    else
+                    {
+                        costEx += (retType == TYP_SIMD32) ? 16 : 15;
+                    }
+                    break;
+                }
+
+                case NI_AVX2_MultiplyNoFlags:
+                case NI_AVX2_X64_MultiplyNoFlags:
+                {
+                    costEx = 4 + IND_COST_EX;
+                    break;
+                }
+
+                case NI_AVX512_CompressStoreMask:
+                case NI_AVX512_ExpandLoadMask:
+                case NI_AVX512_MaskLoadMask:
+                case NI_AVX512_MaskLoadAlignedMask:
+                case NI_AVX512_MaskStoreMask:
+                case NI_AVX512_MaskStoreAlignedMask:
+                {
+                    costEx += 3;
+                    break;
+                }
+
+                default:
+                {
+                    // The default costing is correct
+                    break;
+                }
+            }
+
+            // Can we form an addressing mode with this indirection?
+            level = gtSetEvalOrder(addrOp);
+
+            int addrCostEx = 0;
+            int addrCostSz = 0;
+
+            if (gtGetAddrNodeCost(addrOp, retType, false, &addrCostEx, &addrCostSz))
+            {
+                costEx += addrCostEx;
+                costSz += addrCostSz;
+            }
+            else
+            {
+                addrOp = nullptr;
+            }
         }
+        else
+        {
+            if (varTypeUsesIntReg(simdBaseType))
+            {
+                costEx = HWIntrinsicInfo::lookupIntCost(intrinsicId);
+            }
+            else
+            {
+                costEx = HWIntrinsicInfo::lookupFltCost(intrinsicId);
+            }
+
+            if (costEx == -1)
+            {
+                switch (intrinsicId)
+                {
+                    case NI_Vector128_ConditionalSelect:
+                    case NI_Vector256_ConditionalSelect:
+                    case NI_Vector512_ConditionalSelect:
+                    {
+                        // We either become `(o2 & op1) | (op3 & ~op1)`
+                        // or we get optimized into some kind of single
+                        // instruction variant, so average the cost at 2
+
+                        costEx = 2;
+                        costSz *= 2;
+                        break;
+                    }
+
+                    case NI_Vector128_Create:
+                    case NI_Vector256_Create:
+                    case NI_Vector512_Create:
+                    {
+                        // We shouldn't have "all constants" as they get transformed to CNS_VEC
+
+                        if (opCount == 1)
+                        {
+                            // We will end up as a broadcast
+                            costEx = (retType == TYP_SIMD16) ? 1 : 3;
+                        }
+                        else
+                        {
+                            // We will end up as a sequence of opCount inserts
+
+                            costEx = opCount;
+                            costSz *= opCount;
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                opCount *= 4;
+                            }
+                        }
+                        break;
+                    }
+
+                    case NI_Vector128_CreateScalar:
+                    case NI_Vector128_CreateScalarUnsafe:
+                    case NI_Vector256_CreateScalar:
+                    case NI_Vector256_CreateScalarUnsafe:
+                    case NI_Vector512_CreateScalar:
+                    case NI_Vector512_CreateScalarUnsafe:
+                    {
+                        // We shouldn't have "all constants" as they get transformed to CNS_VEC
+
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            costEx = 3;
+
+#if defined(TARGET_X86)
+                            if (varTypeIsLong(simdBaseType))
+                            {
+                                costEx += 4;
+                                costSz *= 2;
+                            }
+#endif // TARGET_X86
+                        }
+                        else
+                        {
+                            costEx = 1;
+                        }
+                        break;
+                    }
+
+                    case NI_Vector128_Dot:
+                    case NI_Vector256_Dot:
+                    case NI_Vector512_Dot:
+                    {
+                        size_t elementCount = 16 / genTypeSize(simdBaseType);
+
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            // We have a multiply, 0-2 additions to reduce down to
+                            // V128 and then log2(V128<T>.Count) add operations
+
+                            costEx = 5 + (3 * BitOperations::Log2(elementCount));
+                            costSz = costSz + (costSz * BitOperations::Log2(elementCount));
+                        }
+                        else
+                        {
+                            costEx = (simdBaseType == TYP_DOUBLE) ? 9 : 13;
+                        }
+
+                        if (simdSize == 64)
+                        {
+                            costEx += 2;
+                        }
+                        else if (simdSize == 32)
+                        {
+                            costEx += 1;
+                        }
+                        break;
+                    }
+
+                    case NI_Vector128_ExtractMostSignificantBits:
+                    case NI_Vector256_ExtractMostSignificantBits:
+                    case NI_Vector512_ExtractMostSignificantBits:
+                    {
+                        costEx = 3;
+
+                        if (simdSize == 64)
+                        {
+                            // Convert vector to mask, then extract
+                            costEx += 3;
+                            costSz += 6;
+                        }
+                        else if (simdSize == 32)
+                        {
+                            costEx += 2;
+                        }
+                        break;
+                    }
+
+                    case NI_Vector128_GetElement:
+                    case NI_Vector256_GetElement:
+                    case NI_Vector512_GetElement:
+                    {
+                        GenTree* op2 = hwTree->Op(2);
+
+                        if (op2->OperIsConst())
+                        {
+                            // We can extract the value, possibly
+                            // after extracting a particular V128
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx = 4;
+                            }
+                            else
+                            {
+                                costEx = 1;
+                            }
+
+                            if (op2->AsIntCon()->IconValue() >= (16 / genTypeSize(simdBaseType)))
+                            {
+                                costEx += 3;
+                                costSz *= 2;
+                            }
+                        }
+                        else
+                        {
+                            // We need a spill + load
+
+                            if (simdSize == 64)
+                            {
+                                costEx = FLT_IND_COST_EX + 2;
+                            }
+                            else if (simdSize == 32)
+                            {
+                                costEx = FLT_IND_COST_EX + 1;
+                            }
+                            else
+                            {
+                                costEx = FLT_IND_COST_EX;
+                            }
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx += IND_COST_EX + 1;
+                                costSz += 4;
+
+                                if (varTypeIsSmall(simdBaseType))
+                                {
+                                    costEx += 1;
+                                    costSz += 1;
+                                }
+                            }
+                            else
+                            {
+                                costEx = FLT_IND_COST_EX + 2;
+                                costSz += 6;
+                            }
+                        }
+                        break;
+                    }
+
+                    case NI_Vector256_GetLower:
+                    case NI_Vector512_GetLower:
+                    case NI_Vector512_GetLower128:
+                    {
+                        costEx = 1;
+                        break;
+                    }
+
+                    case NI_Vector256_GetUpper:
+                    case NI_Vector512_GetUpper:
+                    {
+                        costEx = 3;
+                        break;
+                    }
+
+                    case NI_Vector128_Shuffle:
+                    case NI_Vector128_ShuffleNative:
+                    case NI_Vector128_ShuffleNativeFallback:
+                    case NI_Vector256_Shuffle:
+                    case NI_Vector256_ShuffleNative:
+                    case NI_Vector256_ShuffleNativeFallback:
+                    case NI_Vector512_Shuffle:
+                    case NI_Vector512_ShuffleNative:
+                    case NI_Vector512_ShuffleNativeFallback:
+                    {
+                        // These are likely becoming calls
+                        costEx = 5 + (3 * IND_COST_EX);
+                        costSz = 5;
+                        break;
+                    }
+
+                    case NI_Vector128_ToScalar:
+                    case NI_Vector256_ToScalar:
+                    case NI_Vector512_ToScalar:
+                    {
+                        costEx = varTypeIsIntegral(simdBaseType) ? 3 : 1;
+                        break;
+                    }
+
+                    case NI_Vector128_ToVector512:
+                    case NI_Vector256_ToVector512:
+                    case NI_Vector128_ToVector256:
+                    case NI_Vector128_ToVector256Unsafe:
+                    case NI_Vector256_ToVector512Unsafe:
+                    {
+                        costEx = 1;
+                        break;
+                    }
+
+                    case NI_Vector128_WithElement:
+                    case NI_Vector256_WithElement:
+                    case NI_Vector512_WithElement:
+                    {
+                        GenTree* op2 = hwTree->Op(2);
+
+                        if (op2->OperIsConst())
+                        {
+                            // We can insert the value, possibly
+                            // after extracting a particular V128,
+                            // and then reinserting the V128 as well
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx = 4;
+                            }
+                            else
+                            {
+                                costEx = 1;
+                            }
+
+                            if (op2->AsIntCon()->IconValue() >= (16 / genTypeSize(simdBaseType)))
+                            {
+                                costEx += 6;
+                                costSz *= 3;
+                            }
+                        }
+                        else
+                        {
+                            // We need a spill + write + load
+
+                            if (simdSize == 64)
+                            {
+                                costEx = FLT_IND_COST_EX + 2;
+                            }
+                            else if (simdSize == 32)
+                            {
+                                costEx = FLT_IND_COST_EX + 1;
+                            }
+                            else
+                            {
+                                costEx = FLT_IND_COST_EX;
+                            }
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx += IND_COST_EX + IND_COST_EX + 1;
+                                costSz += 8;
+
+                                if (varTypeIsSmall(simdBaseType))
+                                {
+                                    costEx += 2;
+                                    costSz += 2;
+                                }
+                            }
+                            else
+                            {
+                                costEx = FLT_IND_COST_EX + FLT_IND_COST_EX + 2;
+                                costSz += 12;
+                            }
+                        }
+                        break;
+                    }
+
+                    case NI_Vector256_WithLower:
+                    case NI_Vector256_WithUpper:
+                    case NI_Vector512_WithLower:
+                    case NI_Vector512_WithUpper:
+                    {
+                        costEx = 3;
+                        break;
+                    }
+
+                    case NI_Vector128_op_Division:
+                    case NI_Vector256_op_Division:
+                    case NI_Vector512_op_Division:
+                    {
+                        // We generate a fairly complex sequence involving
+                        // comparisons, two branches, conversions, and a fp
+                        // division
+
+                        costEx = 46;
+                        costSz = (costSz * 11) + 4;
+                        break;
+                    }
+
+                    case NI_Vector128_op_Equality:
+                    case NI_Vector128_op_Inequality:
+                    case NI_Vector256_op_Equality:
+                    case NI_Vector256_op_Inequality:
+                    case NI_Vector512_op_Equality:
+                    case NI_Vector512_op_Inequality:
+                    {
+                        // We emit a simd compare, get mask, integer compare,
+                        // and a branch or setcc
+
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            costEx = 6;
+                            costSz = (costSz * 2) + 3;
+                        }
+                        else
+                        {
+                            costEx = 9;
+                            costSz = (costSz * 2) + 3;
+                        }
+                        break;
+                    }
+
+                    case NI_X86Base_Divide:
+                    case NI_X86Base_DivideScalar:
+                    case NI_AVX_Divide:
+                    case NI_AVX512_Divide:
+                    case NI_AVX512_DivideScalar:
+                    {
+                        costEx = (retType == TYP_DOUBLE) ? 14 : 11;
+                        break;
+                    }
+
+                    case NI_X86Base_DotProduct:
+                    {
+                        costEx = (retType == TYP_DOUBLE) ? 9 : 13;
+                        break;
+                    }
+
+                    case NI_X86Base_LoadFence:
+                    {
+                        costEx = 4;
+                        break;
+                    }
+
+                    case NI_X86Base_MemoryFence:
+                    {
+                        costEx = 33;
+                        break;
+                    }
+
+                    case NI_X86Base_MultiplyLow:
+                    case NI_AVX2_MultiplyLow:
+                    {
+                        costEx = varTypeIsInt(retType) ? 10 : 5;
+                        break;
+                    }
+
+                    case NI_X86Base_Pause:
+                    {
+                        costEx = 140;
+                        break;
+                    }
+
+                    case NI_X86Base_Prefetch0:
+                    case NI_X86Base_Prefetch1:
+                    case NI_X86Base_Prefetch2:
+                    case NI_X86Base_PrefetchNonTemporal:
+                    {
+                        costEx = 1;
+                        break;
+                    }
+
+                    case NI_X86Base_Sqrt:
+                    case NI_X86Base_SqrtScalar:
+                    case NI_AVX_Sqrt:
+                    case NI_AVX512_Sqrt:
+                    case NI_AVX512_SqrtScalar:
+                    {
+                        costEx = (retType == TYP_DOUBLE) ? 16 : 12;
+                        break;
+                    }
+
+                    case NI_X86Base_StoreFence:
+                    {
+                        costEx = 6;
+                        break;
+                    }
+
+                    case NI_AVX_TestC:
+                    case NI_AVX_TestNotZAndNotC:
+                    case NI_AVX_TestZ:
+                    {
+                        costEx = (retType == TYP_SIMD32) ? 5 : 3;
+                        break;
+                    }
+
+                    case NI_AVX512_AlignRight32:
+                    case NI_AVX512_AlignRight64:
+                    {
+                        costEx = (retType == TYP_SIMD16) ? 1 : 3;
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128Byte:
+                    case NI_AVX512_ConvertToVector128ByteWithSaturation:
+                    case NI_AVX512_ConvertToVector128Int16:
+                    case NI_AVX512_ConvertToVector128Int16WithSaturation:
+                    case NI_AVX512_ConvertToVector128Int32WithSaturation:
+                    case NI_AVX512_ConvertToVector128SByte:
+                    case NI_AVX512_ConvertToVector128SByteWithSaturation:
+                    case NI_AVX512_ConvertToVector128UInt16:
+                    case NI_AVX512_ConvertToVector128UInt16WithSaturation:
+                    case NI_AVX512_ConvertToVector128UInt32WithSaturation:
+                    case NI_AVX512_ConvertToVector256Byte:
+                    case NI_AVX512_ConvertToVector256ByteWithSaturation:
+                    case NI_AVX512_ConvertToVector256Int16:
+                    case NI_AVX512_ConvertToVector256Int16WithSaturation:
+                    case NI_AVX512_ConvertToVector256Int32WithSaturation:
+                    case NI_AVX512_ConvertToVector256SByte:
+                    case NI_AVX512_ConvertToVector256SByteWithSaturation:
+                    case NI_AVX512_ConvertToVector256UInt16:
+                    case NI_AVX512_ConvertToVector256UInt16WithSaturation:
+                    case NI_AVX512_ConvertToVector256UInt32WithSaturation:
+                    {
+                        costEx = (simdSize == 16) ? 2 : 4;
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128Int32:
+                    {
+                        costEx = (simdSize == 16) ? 1 : 3;
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128Double:
+                    case NI_AVX512_ConvertToVector256Double:
+                    case NI_AVX512_ConvertToVector512Double:
+                    {
+                        if (varTypeIsLong(simdBaseType))
+                        {
+                            costEx = 4;
+                        }
+                        else
+                        {
+                            costEx = (retType == TYP_SIMD16) ? 5 : 7;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128Int64:
+                    case NI_AVX512_ConvertToVector128Int64WithTruncation:
+                    {
+                        if (simdBaseType == TYP_DOUBLE)
+                        {
+                            costEx = 4;
+                        }
+                        else
+                        {
+                            costEx = (retType == TYP_SIMD16) ? 5 : 7;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128Single:
+                    case NI_AVX512_ConvertToVector256Single:
+                    {
+                        if (varTypeIsLong(simdBaseType))
+                        {
+                            costEx = (simdSize == 16) ? 5 : 7;
+                        }
+                        else
+                        {
+                            costEx = 4;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128UInt32:
+                    case NI_AVX512_ConvertToVector128UInt32WithTruncation:
+                    case NI_AVX512_ConvertToVector256Int32:
+                    case NI_AVX512_ConvertToVector256Int32WithTruncation:
+                    case NI_AVX512_ConvertToVector256UInt32:
+                    case NI_AVX512_ConvertToVector256UInt32WithTruncation:
+                    case NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation:
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            costEx = (simdSize == 16) ? 1 : 3;
+                        }
+                        else if (simdBaseType == TYP_DOUBLE)
+                        {
+                            costEx = (simdSize == 16) ? 5 : 7;
+                        }
+                        else
+                        {
+                            costEx = 4;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertToVector128UInt64:
+                    case NI_AVX512_ConvertToVector128UInt64WithTruncation:
+                    case NI_AVX512_ConvertToVector256Int64:
+                    case NI_AVX512_ConvertToVector256Int64WithTruncation:
+                    case NI_AVX512_ConvertToVector256UInt64:
+                    case NI_AVX512_ConvertToVector256UInt64WithTruncation:
+                    case NI_AVX512_ConvertToVector512Int64:
+                    case NI_AVX512_ConvertToVector512Int64WithTruncation:
+                    case NI_AVX512_ConvertToVector512UInt64:
+                    case NI_AVX512_ConvertToVector512UInt64WithTruncation:
+                    case NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation:
+                    {
+                        if (simdBaseType == TYP_FLOAT)
+                        {
+                            costEx = (retType == TYP_SIMD16) ? 5 : 7;
+                        }
+                        else
+                        {
+                            costEx = 4;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_DetectConflicts:
+                    {
+                        if (simdSize == 64)
+                        {
+                            costEx = varTypeIsLong(simdBaseType) ? 17 : 26;
+                        }
+                        else if (simdSize == 32)
+                        {
+                            costEx = varTypeIsLong(simdBaseType) ? 13 : 16;
+                        }
+                        else
+                        {
+                            costEx = varTypeIsLong(simdBaseType) ? 4 : 11;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_Reciprocal14:
+                    case NI_AVX512_Reciprocal14Scalar:
+                    case NI_AVX512_ReciprocalSqrt14:
+                    case NI_AVX512_ReciprocalSqrt14Scalar:
+                    {
+                        if (simdBaseType == TYP_FLOAT)
+                        {
+                            costEx = (simdSize == 64) ? 7 : 4;
+                        }
+                        else
+                        {
+                            costEx = 4;
+                        }
+                        break;
+                    }
+
+                    case NI_X86Serialize_Serialize:
+                    {
+                        costEx = 105;
+                        break;
+                    }
+
+                    case NI_AVX_PTEST:
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            costEx = (simdSize == 16) ? 4 : 6;
+                        }
+                        else
+                        {
+                            costEx = (simdSize == 16) ? 3 : 5;
+                        }
+                        break;
+                    }
+
+                    case NI_AVX512_ConvertMaskToVector:
+                    {
+                        costEx = varTypeIsSmall(simdBaseType) ? 3 : 1;
+                        break;
+                    }
+
+                    default:
+                    {
+                        assert(!"Unhandled costing for HWIntrinsic");
+                        costEx = varTypeIsIntegral(simdBaseType) ? 1 : 4;
+                        break;
+                    }
+                }
+            }
+        }
+#endif // TARGET_XARCH
     }
-#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#endif // FEATURE_HW_INTRINSICS
 
     // The binary case is special because of GTF_REVERSE_OPS.
-    if (multiOp->GetOperandCount() == 2)
+    if (opCount == 2)
     {
         unsigned lvl2 = 0;
 
+        GenTree* op1 = multiOp->Op(1);
+        GenTree* op2 = multiOp->Op(2);
+
+        if (op1 != addrOp)
+        {
+            level = gtSetEvalOrder(op1);
+        }
+
+        if (op2 != addrOp)
+        {
+            lvl2 = gtSetEvalOrder(op2);
+        }
+
         // This way we have "level" be the complexity of the
         // first tree to be evaluated, and "lvl2" - the second.
+
         if (multiOp->IsReverseOp())
         {
             assert(!multiOp->AsHWIntrinsic()->IsUserCall());
 
-            level = gtSetEvalOrder(multiOp->Op(2));
-            lvl2  = gtSetEvalOrder(multiOp->Op(1));
-        }
-        else
-        {
-            level = gtSetEvalOrder(multiOp->Op(1));
-            lvl2  = gtSetEvalOrder(multiOp->Op(2));
+            std::swap(op1, op2);
+            std::swap(level, lvl2);
         }
 
         // We want the more complex tree to be evaluated first.
-        if (level < lvl2)
+        if ((level < lvl2) && !multiOp->AsHWIntrinsic()->IsUserCall() && gtCanSwapOrder(op1, op2))
         {
-            bool canSwap = false;
-
-            if (!multiOp->AsHWIntrinsic()->IsUserCall())
+            if (multiOp->IsReverseOp())
             {
-                canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
-                                                 : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
+                multiOp->ClearReverseOp();
+            }
+            else
+            {
+                multiOp->SetReverseOp();
             }
 
-            if (canSwap)
-            {
-                assert(!multiOp->AsHWIntrinsic()->IsUserCall());
-
-                if (multiOp->IsReverseOp())
-                {
-                    multiOp->ClearReverseOp();
-                }
-                else
-                {
-                    multiOp->SetReverseOp();
-                }
-
-                std::swap(level, lvl2);
-            }
+            std::swap(level, lvl2);
         }
 
         if (level < 1)
@@ -4064,10 +4740,14 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
     {
         for (size_t i = multiOp->GetOperandCount(); i >= 1; i--)
         {
-            GenTree* op  = multiOp->Op(i);
-            unsigned lvl = gtSetEvalOrder(op);
+            GenTree* op = multiOp->Op(i);
 
-            level = max(lvl, level + 1);
+            if (op == addrOp)
+            {
+                continue;
+            }
+
+            level = max(gtSetEvalOrder(op), level + 1);
 
             if (optsEnabled)
             {
@@ -4383,9 +5063,8 @@ bool Compiler::gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz)
     assert(node->isIndir());
 
     // Indirections have a costEx of IND_COST_EX.
-    int  costEx           = IND_COST_EX;
-    int  costSz           = 2;
-    bool includesAddrCost = false;
+    int costEx = IND_COST_EX;
+    int costSz = 2;
 
     // If we have to sign-extend or zero-extend, bump the cost.
     if (varTypeIsSmall(node))
@@ -4393,30 +5072,96 @@ bool Compiler::gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz)
         costEx += 1;
         costSz += 1;
     }
+#if defined(TARGET_XARCH)
+    else if (!varTypeUsesIntReg(node))
+    {
+        assert(varTypeIsFloating(node) || varTypeIsSIMD(node) || varTypeIsMask(node));
 
-#ifdef TARGET_ARM
-    if (varTypeIsFloating(node))
+        if (node->TypeIs(TYP_SIMD64))
+        {
+            costEx = FLT_IND_COST_EX + 2;
+            costSz = 6;
+        }
+        else if (node->TypeIs(TYP_SIMD32))
+        {
+            costEx = FLT_IND_COST_EX + 1;
+            costSz = 4;
+        }
+        else
+        {
+            costEx = FLT_IND_COST_EX;
+            costSz = 4;
+        }
+    }
+#elif defined(TARGET_ARM)
+    else if (varTypeIsFloating(node))
     {
         costSz += 2;
     }
-#endif // TARGET_ARM
+#endif
 
     // Can we form an addressing mode with this indirection?
-    GenTree* addr = node->Addr();
+
+    int addrCostEx = 0;
+    int addrCostSz = 0;
+
+    bool includesAddrCost =
+        gtGetAddrNodeCost(node->Addr(), node->TypeGet(), node->IsVolatile(), &addrCostEx, &addrCostSz);
+
+    if (includesAddrCost)
+    {
+        costEx += addrCostEx;
+        costSz += addrCostSz;
+    }
+
+    *pCostEx = costEx;
+    *pCostSz = costSz;
+
+    return includesAddrCost;
+}
+
+//------------------------------------------------------------------------
+// gtGetAddrNodeCost: Calculate the cost for the address of an indirection node.
+//
+// Used for both loads and stores.
+//
+// Arguments:
+//    addr           - The address node in question
+//    type           - The type of the indirection
+//    isVolatile     - true if the indirection is volatile
+//    pCostEx        - [out] parameter for the execution cost
+//    pCostSz        - [out] parameter for the size cost
+//
+// Return Value:
+//    Whether the cost calculated includes that of address.
+//
+bool Compiler::gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile, int* pCostEx, int* pCostSz)
+{
+    assert(addr != nullptr);
+
+    assert(pCostEx != nullptr);
+    assert(pCostSz != nullptr);
+
+    int costEx = 0;
+    int costSz = 0;
+
+    bool includesAddrCost = false;
 
     if (addr->gtEffectiveVal()->OperIs(GT_ADD))
     {
         // See if we can form a complex addressing mode.
         bool doAddrMode = true;
+
 #ifdef TARGET_ARM64
-        if (node->IsVolatile())
+        if (isVolatile)
         {
             // For volatile store/loads when address is contained we always emit `dmb`
             // if it's not - we emit one-way barriers i.e. ldar/stlr
             doAddrMode = false;
         }
 #endif // TARGET_ARM64
-        if (doAddrMode && gtMarkAddrMode(addr, &costEx, &costSz, node->TypeGet()))
+
+        if (doAddrMode && gtMarkAddrMode(addr, &costEx, &costSz, type))
         {
             includesAddrCost = true;
         }
@@ -4438,6 +5183,7 @@ bool Compiler::gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz)
 
     *pCostEx = costEx;
     *pCostSz = costSz;
+
     return includesAddrCost;
 }
 
@@ -5714,8 +6460,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                     // vucomis*   xmm0, xmm2
                                     // cmovae     rax, rdx
 
-                                    costEx = 1 + 4 + FLT_IND_COST_EX + 4 + 7 + 7 + 1 + 1 + 1 + 1 + 1 + 3 + 1; // 32 + FLT_IND_COST_EX
-                                    costSz = 4 + 4 + 8 + 4 + 5 + 5 + 3 + 4 + 3 + 10 + 3 + 4 + 4;              // 61
+                                    costEx = 1 + 4 + FLT_IND_COST_EX + 4 + 7 + 7 + 1 + 1 + 1 + 1 + 1 + 3 +
+                                             1;                                                  // 32 + FLT_IND_COST_EX
+                                    costSz = 4 + 4 + 8 + 4 + 5 + 5 + 3 + 4 + 3 + 10 + 3 + 4 + 4; // 61
                                 }
                             }
                             else
@@ -5789,8 +6536,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 // vucomis*   xmm0, xmm2
                                 // cmovb      eax, edx
 
-                                costEx = 1 + 4 + FLT_IND_COST_EX + 4 + 4 + 4 + 1 + 1 + 3 + 3 + 1; // 26 + FLT_IND_COST_EX
-                                costSz = 4 + 4 + 8 + 4 + 4 + 4 + 6 + 5 + 4 + 4 + 3;               // 50
+                                costEx =
+                                    1 + 4 + FLT_IND_COST_EX + 4 + 4 + 4 + 1 + 1 + 3 + 3 + 1; // 26 + FLT_IND_COST_EX
+                                costSz = 4 + 4 + 8 + 4 + 4 + 4 + 6 + 5 + 4 + 4 + 3;          // 50
 
                                 if (op1Type == TYP_DOUBLE)
                                 {
