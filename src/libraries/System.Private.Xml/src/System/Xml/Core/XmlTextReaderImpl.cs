@@ -769,6 +769,22 @@ namespace System.Xml
 
             _reportedBaseUri = baseUriStr;
             _closeInput = settings.CloseInput;
+
+            // When the input is a StringReader, pre-allocate a right-sized char buffer
+            // instead of the default DefaultBufferSize allocation. For small XML strings
+            // (e.g., error messages), this avoids allocating a full 4K+ buffer when only
+            // a few hundred characters are needed. ReadToEnd() on a freshly created
+            // StringReader returns the original string reference without allocation.
+            if (!settings.Async && input is StringReader)
+            {
+                string xmlString = input.ReadToEnd();
+                if (xmlString.Length < XmlReader.DefaultBufferSize)
+                {
+                    _ps.chars = new char[xmlString.Length + 1];
+                }
+                input = new StringReader(xmlString);
+            }
+
             _laterInitParam = new LaterInitParam();
             _laterInitParam.inputTextReader = input;
             _laterInitParam.inputContext = context;
