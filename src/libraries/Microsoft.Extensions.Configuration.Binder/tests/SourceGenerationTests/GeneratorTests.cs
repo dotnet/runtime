@@ -9,10 +9,12 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
@@ -620,9 +622,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             Assert.NotNull(result.GenerationSpec);
 
-            // Collect all intercepted line numbers from the generator spec.
-            HashSet<int> interceptedLines = GetInterceptedLines(result.GenerationSpec);
-            Assert.NotEmpty(interceptedLines);
+            // Collect all intercepted (line, column) locations from the generator spec.
+            // The interceptor targets MemberAccessExpression.Name (e.g. "Get" in "c.Get<T>()").
+            HashSet<(int Line, int Column)> interceptedLocations = GetInterceptedLocations(result.GenerationSpec);
+            Assert.NotEmpty(interceptedLocations);
 
             // Run the ILLink analyzer + suppressor on the output compilation (which includes generated InterceptsLocation attributes).
             ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.OutputCompilation);
@@ -631,26 +634,50 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             // Without this, the assertions below would pass vacuously if the analyzer didn't fire.
             Assert.Contains(diagnostics, d => (d.Id is "IL2026" or "IL3050") && d.IsSuppressed);
 
-            // Every suppressed IL2026/IL3050 diagnostic should be on an intercepted line.
+            // Every suppressed IL2026/IL3050 diagnostic should be at an intercepted location.
             foreach (Diagnostic d in diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && d.IsSuppressed))
             {
-                int line = d.Location.GetLineSpan().StartLinePosition.Line + 1;
-                Assert.True(interceptedLines.Contains(line),
-                    $"Suppressed {d.Id} at line {line} but no interceptor was generated for that call site.");
+                (int line, int column) = GetMethodNameLocation(d);
+                Assert.True(interceptedLocations.Contains((line, column)),
+                    $"Suppressed {d.Id} at ({line},{column}) but no interceptor was generated for that call site.");
             }
 
-            // Every intercepted line should have its IL2026/IL3050 diagnostics suppressed.
+            // Every intercepted location should have its IL2026/IL3050 diagnostics suppressed.
             foreach (Diagnostic d in diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed))
             {
-                int line = d.Location.GetLineSpan().StartLinePosition.Line + 1;
-                Assert.False(interceptedLines.Contains(line),
-                    $"Unsuppressed {d.Id} at line {line} but an interceptor was generated for that call site.");
+                (int line, int column) = GetMethodNameLocation(d);
+                Assert.False(interceptedLocations.Contains((line, column)),
+                    $"Unsuppressed {d.Id} at ({line},{column}) but an interceptor was generated for that call site.");
             }
         }
 
-        private static HashSet<int> GetInterceptedLines(SourceGenerationSpec spec)
+        /// <summary>
+        /// Resolves a diagnostic's location to the method name position that the interceptor targets.
+        /// The ILLink analyzer reports on the MemberAccessExpression (e.g. "c.Get&lt;T&gt;"),
+        /// but the interceptor targets just the Name part (e.g. "Get"). This method walks from
+        /// the diagnostic location to the InvocationExpression's MemberAccessExpression.Name
+        /// to get the matching (line, column).
+        /// </summary>
+        private static (int Line, int Column) GetMethodNameLocation(Diagnostic diagnostic)
         {
-            var lines = new HashSet<int>();
+            Location location = diagnostic.AdditionalLocations.Count > 0
+                ? diagnostic.AdditionalLocations[0]
+                : diagnostic.Location;
+            SyntaxTree sourceTree = location.SourceTree!;
+            SyntaxNode node = sourceTree.GetRoot().FindNode(location.SourceSpan, getInnermostNodeForTie: true);
+
+            InvocationExpressionSyntax invocation = (node as InvocationExpressionSyntax
+                ?? node.Parent as InvocationExpressionSyntax)!;
+
+            var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
+            FileLinePositionSpan nameSpan = sourceTree.GetLineSpan(memberAccess.Name.Span);
+
+            return (nameSpan.StartLinePosition.Line + 1, nameSpan.StartLinePosition.Character + 1);
+        }
+
+        private static HashSet<(int Line, int Column)> GetInterceptedLocations(SourceGenerationSpec spec)
+        {
+            var locations = new HashSet<(int, int)>();
             InterceptorInfo info = spec.InterceptorInfo;
 
             AddLocations(info.ConfigBinder);
@@ -660,7 +687,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             AddTypedLocations(info.ConfigBinder_Bind_instance_BinderOptions);
             AddTypedLocations(info.ConfigBinder_Bind_key_instance);
 
-            return lines;
+            return locations;
 
             void AddLocations(IEnumerable<InvocationLocationInfo>? locationInfos)
             {
@@ -669,7 +696,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                 foreach (InvocationLocationInfo loc in locationInfos)
                 {
-                    lines.Add(GetLineNumber(loc));
+                    locations.Add(GetLocation(loc));
                 }
             }
 
@@ -685,18 +712,20 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             }
         }
 
-        private static int GetLineNumber(InvocationLocationInfo loc)
+        private static (int Line, int Column) GetLocation(InvocationLocationInfo loc)
         {
             if (loc.LineNumber != 0)
             {
-                return loc.LineNumber;
+                return (loc.LineNumber, loc.CharacterNumber);
             }
 
-            // v1 interceptor: parse line from display location, e.g. "path(line,col)"
+            // v1 interceptor: parse from display location, e.g. "path(line,col)"
             string display = loc.InterceptableLocationGetDisplayLocation();
-            int parenIndex = display.LastIndexOf('(');
-            int commaIndex = display.IndexOf(',', parenIndex);
-            return int.Parse(display.Substring(parenIndex + 1, commaIndex - parenIndex - 1));
+            Match match = Regex.Match(display, @"\((\d+),(\d+)\)$");
+            Assert.True(match.Success, $"Could not parse display location: {display}");
+
+            return (int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture),
+                    int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
         }
 
         private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsWithSuppressor(Compilation compilation)
