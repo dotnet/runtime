@@ -5049,23 +5049,6 @@ void CodeGen::genFnProlog()
 
     genBeginFnProlog();
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For some targets, emit a "phantom prolog" to account for the actions taken
-    // in the tier0 frame that impact FP and SP on entry to the OSR method.
-    //
-    // x64/arm64 handle this differently; the phantom prolog unwind is emitted in
-    // genOSRHandleTier0CalleeSavedRegistersAndFrame.
-    //
-    if (m_compiler->opts.IsOSR())
-    {
-        PatchpointInfo* patchpointInfo = m_compiler->info.compPatchpointInfo;
-        const int       tier0FrameSize = patchpointInfo->TotalFrameSize();
-
-        // SP is tier0 method's SP.
-        m_compiler->unwindAllocStack(tier0FrameSize);
-    }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
 #ifdef DEBUG
 
     if (m_compiler->compJitHaltMethod())
