@@ -476,7 +476,7 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IU
 
     if (pComMT->IsIClassX())
     {
-        pComMT->CheckParentComVisibility(FALSE);
+        pComMT->CheckParentComVisibility();
     }
 
     END_QCALL;

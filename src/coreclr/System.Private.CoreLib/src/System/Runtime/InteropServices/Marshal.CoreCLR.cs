@@ -234,7 +234,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetExceptionCode();
 
-        internal sealed class LayoutTypeMarshalerMethods
+        internal sealed class LayoutTypeMarshalerMethods : RuntimeType.IGenericCacheEntry<LayoutTypeMarshalerMethods>
         {
             private static MemberInfo ConvertToUnmanagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToUnmanaged), BindingFlags.Public | BindingFlags.Static)!;
             private static MemberInfo ConvertToManagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToManaged), BindingFlags.Public | BindingFlags.Static)!;
@@ -248,40 +248,54 @@ namespace System.Runtime.InteropServices
             private readonly ConvertToManagedDelegate _convertToManaged;
             private readonly FreeDelegate _free;
 
-            internal LayoutTypeMarshalerMethods(Type instantiatedType)
+            private readonly int _nativeSize;
+
+            internal LayoutTypeMarshalerMethods(Type instantiatedType, int nativeSize)
             {
                 _convertToUnmanaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToUnmanagedMethod)).CreateDelegate<ConvertToUnmanagedDelegate>();
                 _convertToManaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToManagedMethod)).CreateDelegate<ConvertToManagedDelegate>();
                 _free = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(FreeMethod)).CreateDelegate<FreeDelegate>();
+                _nativeSize = nativeSize;
             }
 
-            public unsafe void ConvertToManaged(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList)
+            public unsafe void ConvertToManaged(object obj, byte* native)
             {
-                _convertToManaged(obj, native, ref cleanupWorkList);
+                _convertToManaged(obj, native, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
 
-            public unsafe void ConvertToUnmanaged(object obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+            public unsafe void ConvertToUnmanaged(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList)
             {
-                _convertToUnmanaged(obj, native, nativeSize, ref cleanupWorkList);
+                _convertToUnmanaged(obj, native, _nativeSize, ref cleanupWorkList);
             }
 
-            public unsafe void Free(object? obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+            public unsafe void Free(byte* native)
             {
-                _free(obj, native, nativeSize, ref cleanupWorkList);
+                _free(null, native, _nativeSize, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
 
-            private static readonly ConditionalWeakTable<Type, LayoutTypeMarshalerMethods> s_marshalerCache = [];
+            internal static LayoutTypeMarshalerMethods GetMarshalMethodsForType(RuntimeType t)
+            {
+                return t.GetOrCreateCacheEntry<LayoutTypeMarshalerMethods>();
+            }
 
             [RequiresDynamicCode("Marshalling code for the object might not be available.")]
-            internal static LayoutTypeMarshalerMethods GetMarshalMethodsForType(Type t)
+            public static LayoutTypeMarshalerMethods Create(RuntimeType type)
             {
-                return s_marshalerCache.GetOrAdd(t, CreateMarshalMethods);
+                if (!HasLayout(new QCallTypeHandle(ref type), out _, out int size))
+                    throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(type));
 
-                static LayoutTypeMarshalerMethods CreateMarshalMethods(Type type)
-                {
-                    Type instantiatedMarshaler = typeof(BoxedLayoutTypeMarshaler<>).MakeGenericType([type]);
-                    return new LayoutTypeMarshalerMethods(instantiatedMarshaler);
-                }
+                Type instantiatedMarshaler = typeof(BoxedLayoutTypeMarshaler<>).MakeGenericType([type]);
+                return new LayoutTypeMarshalerMethods(instantiatedMarshaler, size);
+            }
+
+            public static ref LayoutTypeMarshalerMethods? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry)
+            {
+                return ref compositeEntry._marshalerMethods;
+            }
+
+            public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry)
+            {
+                compositeEntry._marshalerMethods = this;
             }
         }
 
@@ -306,23 +320,23 @@ namespace System.Runtime.InteropServices
             if (type.IsGenericType)
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
 
-            if (!HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out int size))
-                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structure));
-
-            if (isBlittable)
+            LayoutTypeMarshalerMethods methods;
+            try
             {
-                SpanHelpers.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), (nuint)size);
-                return;
+                methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
             }
-
-            LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
+            catch (ArgumentException e)
+            {
+                // COMPAT: preserve legacy ParamName for non-marshalable structure values.
+                throw new ArgumentException(e.Message, nameof(structure), e);
+            }
 
             if (fDeleteOld)
             {
-                methods.Free(structure, (byte*)ptr, size, ref Unsafe.NullRef<CleanupWorkListElement?>());
+                methods.Free((byte*)ptr);
             }
 
-            methods.ConvertToUnmanaged(structure, (byte*)ptr, size, ref Unsafe.NullRef<CleanupWorkListElement?>());
+            methods.ConvertToUnmanaged(structure, (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
 
         /// <summary>
@@ -335,18 +349,18 @@ namespace System.Runtime.InteropServices
             if (!allowValueClasses && type.IsValueType)
                 throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
 
-            if (!HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out int size))
-                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structure));
-
-            if (isBlittable)
+            LayoutTypeMarshalerMethods methods;
+            try
             {
-                SpanHelpers.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, (nuint)size);
-                return;
+                methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
+            }
+            catch (ArgumentException e)
+            {
+                // COMPAT: preserve legacy ParamName for non-marshalable structure values.
+                throw new ArgumentException(e.Message, nameof(structure), e);
             }
 
-            LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
-
-            methods.ConvertToManaged(structure, (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
+            methods.ConvertToManaged(structure, (byte*)ptr);
         }
 
         /// <summary>
@@ -366,14 +380,16 @@ namespace System.Runtime.InteropServices
             if (rt.IsGenericType)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
 
-            if (!HasLayout(new QCallTypeHandle(ref rt), out bool isBlittable, out int size))
-                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structuretype));
-
-            if (!isBlittable)
+            try
             {
-                LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(structuretype);
+                LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(rt);
 
-                methods.Free(null, (byte*)ptr, size, ref Unsafe.NullRef<CleanupWorkListElement?>());
+                methods.Free((byte*)ptr);
+            }
+            catch (ArgumentException)
+            {
+                // COMPAT: rethrow the argument exception with the correct argument name.
+                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structuretype));
             }
         }
 

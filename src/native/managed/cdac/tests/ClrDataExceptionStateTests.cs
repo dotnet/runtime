@@ -23,7 +23,6 @@ public unsafe class ExceptionStateTests
 
         MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
         helpers.WritePointer(handleFragment.Data, exceptionObjectAddr);
-        targetBuilder.MemoryBuilder.AddHeapFragment(handleFragment);
 
         TargetPointer thrownObjectHandle = new TargetPointer(handleFragment.Address);
 
@@ -85,7 +84,6 @@ public unsafe class ExceptionStateTests
             AllocContextLimit: TargetPointer.Null,
             Frame: TargetPointer.Null,
             FirstNestedException: firstNestedException,
-            TEB: TargetPointer.Null,
             LastThrownObjectHandle: lastThrownObjectHandle,
             NextThread: TargetPointer.Null));
 
@@ -450,7 +448,6 @@ public unsafe class ExceptionStateTests
 
         MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "LastThrownObjectHandle");
         helpers.WritePointer(handleFragment.Data, exceptionObjectAddr);
-        targetBuilder.MemoryBuilder.AddHeapFragment(handleFragment);
         TargetPointer lastThrownObjectHandle = new TargetPointer(handleFragment.Address);
 
         var mockThread = new Mock<IThread>();
@@ -464,7 +461,6 @@ public unsafe class ExceptionStateTests
             AllocContextLimit: TargetPointer.Null,
             Frame: TargetPointer.Null,
             FirstNestedException: firstNestedException,
-            TEB: TargetPointer.Null,
             LastThrownObjectHandle: lastThrownObjectHandle,
             NextThread: TargetPointer.Null));
 

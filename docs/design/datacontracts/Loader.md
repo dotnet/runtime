@@ -15,9 +15,12 @@ readonly struct ModuleHandle
 [Flags]
 enum ModuleFlags
 {
-    Tenured = 0x00000001, // Set once we know for sure the Module will not be freed until the appdomain itself exits
-    EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
-    ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+    Tenured = 0x1,                      // Set once we know for sure the Module will not be freed until the appdomain itself exits
+    JitOptimizationDisabled = 0x2,      // Cached flag: JIT optimizations are disabled
+    EditAndContinue = 0x8,              // Edit and Continue is enabled for this module
+    ReflectionEmit = 0x40,              // Reflection.Emit was used to create this module
+    ProfDisableOptimizations = 0x80,    // Profiler disabled JIT optimizations
+    EncCapable = 0x200,                 // Cached flag: module is Edit and Continue capable
 }
 
 [Flags]
@@ -90,6 +93,31 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
+
+DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle);
+void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits);
+```
+
+The `DebuggerAssemblyControlFlags` enum is defined as:
+```csharp
+[Flags]
+enum DebuggerAssemblyControlFlags : uint
+{
+    DACF_NONE = 0x00,
+    DACF_ALLOW_JIT_OPTS = 0x02,
+    DACF_ENC_ENABLED = 0x08,
+    DACF_CONTROL_FLAGS_MASK = 0x2E,
+}
+```
+
+The `ClrModifiableAssemblies` enum (from `EEConfig::ModifiableAssemblies`) is defined as:
+```csharp
+enum ClrModifiableAssemblies : uint
+{
+    Unset = 0,
+    None = 1,
+    Debug = 2,
+}
 ```
 
 ## Version 1
@@ -173,6 +201,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
 | `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
 | `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
+| `EEConfig` | `ModifiableAssemblies` | Controls Edit and Continue support (ClrModifiableAssemblies enum) |
 
 
 
@@ -181,6 +210,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | --- | --- | --- |
 | `AppDomain` | TargetPointer | Pointer to the global AppDomain |
 | `SystemDomain` | TargetPointer | Pointer to the global SystemDomain |
+| `EEConfig` | TargetPointer | Pointer to the global EEConfig (runtime configuration) |
 
 
 ### Contract Constants:
@@ -189,6 +219,9 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
 | `DefaultDomainFriendlyName` | string | Friendly name returned when `AppDomain.FriendlyName` is null (matches native `DEFAULT_DOMAIN_FRIENDLY_NAME`) | `"DefaultDomain"` |
 | `MaxWebcilSections` | ushort | Maximum number of COFF sections supported in a Webcil image (must stay in sync with native `WEBCIL_MAX_SECTIONS`) | `16` |
+| `DebuggerInfoMask` | uint | Mask for the debugger info bits within the Module's transient flags | `0x0000FC00` |
+| `DebuggerInfoShift` | int | Bit shift for the debugger info bits within the Module's transient flags | `10` |
+| `DEBUGGER_ALLOW_JIT_OPTS_PRIV` | uint | Debugger allows JIT optimizations (shifted in transient flags) | `0x00000800` |
 
 Contracts used:
 | Contract Name |
@@ -816,6 +849,36 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
     SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
     Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
     return /* blob entry IL address */
+}
+
+DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle)
+{
+    uint flags = // read Module::Flags at handle.Address + Flags offset
+    return (DebuggerAssemblyControlFlags)((flags & DebuggerInfoMask) >> DebuggerInfoShift);
+}
+
+void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits)
+{
+    uint currentFlags = // read Module::Flags at handle.Address + Flags offset
+    uint debuggerInfoBitsMask = DebuggerInfoMask >> DebuggerInfoShift;
+    uint updated = (currentFlags & ~DebuggerInfoMask) | (((uint)newBits & debuggerInfoBitsMask) << DebuggerInfoShift);
+
+    bool jitOptDisabled = (updated & DEBUGGER_ALLOW_JIT_OPTS_PRIV) == 0 || (updated & PROF_DISABLE_OPTIMIZATIONS) != 0;
+    // Set or clear IS_JIT_OPTIMIZATION_DISABLED accordingly.
+
+    if ((updated & IS_ENC_CAPABLE) != 0)
+    {
+        ClrModifiableAssemblies modifiable = // read EEConfig::ModifiableAssemblies from g_pConfig
+        if (modifiable != None)
+        {
+            bool encRequested = (newBits & DACF_ENC_ENABLED) != 0;
+            bool setEnC = encRequested || (modifiable == Debug && jitOptDisabled);
+            if (setEnC)
+                updated |= IS_EDIT_AND_CONTINUE;
+        }
+    }
+
+    // Write updated flags back to handle.Address + Flags offset
 }
 ```
 

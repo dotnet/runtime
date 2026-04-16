@@ -394,8 +394,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             while (currentThread != TargetPointer.Null)
             {
                 Contracts.ThreadData threadData = threadContract.GetThreadData(currentThread);
-                // Match native: skip dead and unstarted threads
-                if ((threadData.State & (Contracts.ThreadState.Dead | Contracts.ThreadState.Unstarted)) == 0)
+                // Match native: skip stopped and unstarted threads
+                if ((threadData.State & (Contracts.ThreadState.Stopped | Contracts.ThreadState.Unstarted)) == 0)
                 {
                     callback(currentThread.Value, pUserData);
 #if DEBUG
@@ -446,7 +446,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
-            *pResult = (threadData.State & Contracts.ThreadState.Dead) != 0 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            *pResult = (threadData.State & Contracts.ThreadState.Stopped) != 0 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
@@ -737,7 +737,31 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int HasTypeParams(ulong vmTypeHandle, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.HasTypeParams(vmTypeHandle, pResult) : HResults.E_NOTIMPL;
+    {
+        *pResult = Interop.BOOL.FALSE;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
+            *pResult = rts.ContainsGenericVariables(typeHandle) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal;
+            int hrLocal = _legacy.HasTypeParams(vmTypeHandle, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetClassInfo(ulong vmAppDomain, ulong thExact, nint pData)
         => _legacy is not null ? _legacy.GetClassInfo(vmAppDomain, thExact, pData) : HResults.E_NOTIMPL;
@@ -755,7 +779,43 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => _legacy is not null ? _legacy.GetObjectExpandedTypeInfoFromID(boxed, vmAppDomain, id, pTypeInfo) : HResults.E_NOTIMPL;
 
     public int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetTypeHandle(vmModule, metadataToken, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            TargetPointer module = new TargetPointer(vmModule);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
+            Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
+            switch ((EcmaMetadataUtils.TokenType)(metadataToken & EcmaMetadataUtils.TokenTypeMask))
+            {
+                case EcmaMetadataUtils.TokenType.mdtTypeDef:
+                    *pRetVal = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, metadataToken, out var _).Value;
+                    break;
+                case EcmaMetadataUtils.TokenType.mdtTypeRef:
+                    *pRetVal = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, metadataToken, out var _).Value;
+                    break;
+                default:
+                    throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.GetTypeHandle(vmModule, metadataToken, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal)
         => _legacy is not null ? _legacy.GetApproxTypeHandle(pTypeData, pRetVal) : HResults.E_NOTIMPL;
@@ -767,7 +827,37 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => _legacy is not null ? _legacy.GetMethodDescParams(vmAppDomain, vmMethodDesc, genericsToken, pcGenericClassTypeParams, pGenericTypeParams) : HResults.E_NOTIMPL;
 
     public int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetThreadStaticAddress(vmField, vmRuntimeThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TargetPointer fd = new TargetPointer(vmField);
+            if (vmRuntimeThread == 0)
+                throw new ArgumentException("vmRuntimeThread cannot be null for thread static fields");
+            if (!rts.IsFieldDescThreadStatic(fd))
+            {
+                throw new NotImplementedException();
+            }
+            *pRetVal = rts.GetFieldDescThreadStaticAddress(fd, new TargetPointer(vmRuntimeThread)).Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.GetThreadStaticAddress(vmField, vmRuntimeThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetCollectibleTypeStaticAddress(ulong vmField, ulong vmAppDomain, ulong* pRetVal)
         => _legacy is not null ? _legacy.GetCollectibleTypeStaticAddress(vmField, vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
@@ -789,9 +879,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int IsRcw(ulong vmObject, Interop.BOOL* pResult)
         => _legacy is not null ? _legacy.IsRcw(vmObject, pResult) : HResults.E_NOTIMPL;
-
-    public int GetRcwCachedInterfaceTypes(ulong vmObject, ulong vmAppDomain, Interop.BOOL bIInspectableOnly, nint pDacInterfaces)
-        => _legacy is not null ? _legacy.GetRcwCachedInterfaceTypes(vmObject, vmAppDomain, bIInspectableOnly, pDacInterfaces) : HResults.E_NOTIMPL;
 
     public int GetRcwCachedInterfacePointers(ulong vmObject, Interop.BOOL bIInspectableOnly, nint pDacItfPtrs)
         => _legacy is not null ? _legacy.GetRcwCachedInterfacePointers(vmObject, bIInspectableOnly, pDacItfPtrs) : HResults.E_NOTIMPL;
@@ -865,15 +952,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #endif
         return hr;
     }
-
-    public int EnableNGENPolicy(int ePolicy)
-        => HResults.E_NOTIMPL;
-
-    public int SetNGENCompilerFlags(uint dwFlags)
-        => _legacy is not null ? _legacy.SetNGENCompilerFlags(dwFlags) : HResults.E_NOTIMPL;
-
-    public int GetNGENCompilerFlags(uint* pdwFlags)
-        => _legacy is not null ? _legacy.GetNGENCompilerFlags(pdwFlags) : HResults.E_NOTIMPL;
 
     public int GetVmObjectHandle(ulong handleAddress, ulong* pRetVal)
     {
@@ -1182,18 +1260,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW)
         => _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
-
-    public int GetReJitInfo(ulong vmModule, uint methodTk, ulong* pReJitInfo)
-        => _legacy is not null ? _legacy.GetReJitInfo(vmModule, methodTk, pReJitInfo) : HResults.E_NOTIMPL;
-
-    public int GetReJitInfoByAddress(ulong vmMethod, ulong codeStartAddress, ulong* pReJitInfo)
-        => _legacy is not null ? _legacy.GetReJitInfoByAddress(vmMethod, codeStartAddress, pReJitInfo) : HResults.E_NOTIMPL;
-
-    public int GetSharedReJitInfo(ulong vmReJitInfo, ulong* pSharedReJitInfo)
-        => _legacy is not null ? _legacy.GetSharedReJitInfo(vmReJitInfo, pSharedReJitInfo) : HResults.E_NOTIMPL;
-
-    public int GetSharedReJitInfoData(ulong sharedReJitInfo, DacDbiSharedReJitInfo* pData)
-        => _legacy is not null ? _legacy.GetSharedReJitInfoData(sharedReJitInfo, pData) : HResults.E_NOTIMPL;
 
     public int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled)
         => _legacy is not null ? _legacy.AreOptimizationsDisabled(vmModule, methodTk, pOptimizationsDisabled) : HResults.E_NOTIMPL;

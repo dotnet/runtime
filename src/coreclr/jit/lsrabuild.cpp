@@ -834,7 +834,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #endif // TARGET_X86
     if (call->IsHelperCall())
     {
-        CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+        CorInfoHelpFunc helpFunc = call->GetHelperNum();
         killMask                 = m_compiler->compHelperCallKillSet(helpFunc);
     }
 
@@ -4382,6 +4382,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                     case TYP_VOID:
                         useCandidates = RBM_NONE;
                         break;
+                    case TYP_HALF:
                     case TYP_FLOAT:
 #ifdef TARGET_X86
                         useCandidates = RBM_FLOATRET;

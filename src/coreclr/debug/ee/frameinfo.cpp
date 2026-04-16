@@ -1842,7 +1842,7 @@ bool ShouldSendUMLeafChain(Thread * pThread)
     // - at a managed-only stop, preemptive threads are still live. Thus a thread
     // may not have this state set, run a little, try to enter the GC, and then get
     // this state set. Thus we'll lose the UM chain right out from under our noses.
-    Thread::ThreadState ts = pThread->GetSnapshotState();
+    Thread::ThreadState ts = pThread->GetState();
     if ((ts & Thread::TS_SyncSuspended) != 0)
     {
         // If we've been stopped inside the runtime (eg, at a gc-toggle) but
