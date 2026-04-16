@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
-using Xunit;
 using Xunit.Sdk;
 using Mono.Linker.Tests.Extensions;
 

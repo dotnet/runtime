@@ -8,7 +8,6 @@ using Xunit;
 
 namespace Mono.Linker.Tests
 {
-    
     public class ParseResponseFileLinesTests
     {
         [Fact]

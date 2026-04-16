@@ -213,7 +213,7 @@ namespace Mono.Linker.Tests.TestCases
             var secondOutputMvid = GetMvid(result2.OutputAssemblyPath);
             Assert.NotEqual(secondOutputMvid, originalMvid);
             // The id should match the first output since we relinked the same assembly
-            Assert.Equal(secondOutputMvid, firstOutputMvid);
+            Assert.Equal(firstOutputMvid, secondOutputMvid);
         }
 
         [Fact]
@@ -248,8 +248,8 @@ namespace Mono.Linker.Tests.TestCases
             var result2 = runner.Relink(result);
 
             var secondOutputMvid = GetMvid(result2.OutputAssemblyPath);
-            Assert.Equal(secondOutputMvid, originalMvid);
-            Assert.Equal(secondOutputMvid, firstOutputMvid);
+            Assert.Equal(originalMvid, secondOutputMvid);
+            Assert.Equal(firstOutputMvid, secondOutputMvid);
         }
 
         protected static Guid GetMvid(NPath assemblyPath)

@@ -64,14 +64,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     case null:
                         // There should be an ExportedType row for this typeref
                         var exportedType = linked.MainModule.ExportedTypes.SingleOrDefault(et => et.FullName == typeRef.FullName);
-                        Assert.NotNull(exportedType);
+                        Assert.True(exportedType is not null, $"Could not find an exported type for TypeRef '{typeRef.FullName}'");
                         // The exported type's Implementation must be an index into the File/ExportedType/AssemblyRef table
                         switch (exportedType.Scope)
                         {
                             case AssemblyNameReference:
                                 // There should be an AssemblyRef row for this assembly
                                 var assemblyRef = linked.MainModule.AssemblyReferences.Single(ar => ar.Name == exportedType.Scope.Name);
-                                Assert.NotNull(assemblyRef);
+                                Assert.True(assemblyRef is not null, $"Could not find an assembly reference for '{exportedType.Scope.Name}'");
                                 break;
                             default:
                                 throw new NotImplementedException($"Unexpected scope type '{exportedType.Scope.GetType()}' for exported type '{exportedType.FullName}'");
@@ -257,7 +257,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (TryGetCustomAttribute(original, nameof(ExpectNonZeroExitCodeAttribute), out var attr))
             {
                 var expectedExitCode = (int)attr.ConstructorArguments[0].Value;
-                Assert.Equal(expectedExitCode, linkResult.ExitCode);
+                if (linkResult.ExitCode != expectedExitCode)
+                {
+                    Assert.Fail($"Linker exited with code {linkResult.ExitCode} but expected {expectedExitCode}. Linker output:\n{FormatLinkerOutput()}");
+                }
             }
             else
             {
@@ -1209,7 +1212,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (checkRemainingErrors)
             {
                 var remainingErrors = unmatchedMessages.Where(m => Regex.IsMatch(m.ToString(), @".*(error | warning): \d{4}.*"));
-                Assert.Empty(remainingErrors);
+                Assert.True(!remainingErrors.Any(), $"Unexpected linker errors/warnings remain:{Environment.NewLine}{string.Join(Environment.NewLine, remainingErrors)}");
             }
 
             bool LogMessageHasSameOriginMember(MessageContainer mc, ICustomAttributeProvider expectedOriginProvider)
