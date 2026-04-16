@@ -574,8 +574,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
             Assert.NotNull(result.GeneratedSource);
 
-            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.OutputCompilation);
-
             await VerifySuppressedCallsMatchInterceptedCalls(result);
         }
 
@@ -606,8 +604,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
             Assert.NotNull(result.GeneratedSource);
-
-            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.OutputCompilation);
 
             await VerifySuppressedCallsMatchInterceptedCalls(result);
         }
