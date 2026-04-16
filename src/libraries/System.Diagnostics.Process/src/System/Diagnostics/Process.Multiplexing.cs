@@ -371,6 +371,8 @@ namespace System.Diagnostics
                 // (e.g., breaks out of await foreach without cancellation).
                 await linkedCts.CancelAsync().ConfigureAwait(false);
 
+                // Observe the pending tasks to prevent unobserved task exceptions.
+                // OperationCanceledException is expected from the cancellation above.
                 try { await readOutput.ConfigureAwait(false); }
                 catch (OperationCanceledException) { }
 
