@@ -1,0 +1,255 @@
+---
+description: >
+  Analyze pull request file changes and trigger the appropriate outerloop CI
+  pipelines by posting /azp run comments.
+
+concurrency:
+  group: "outerloop-trigger-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+network:
+  allowed:
+    - defaults
+
+checkout:
+  fetch-depth: 1
+
+tools:
+  github:
+    mode: remote
+    toolsets: [default]
+
+safe-outputs:
+  add-comment:
+    max: 10
+    target: "triggering"
+    discussions: false
+    issues: false
+    hide-older-comments: true
+    allowed-reasons: [outdated]
+
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+  # ###############################################################
+  # Override the COPILOT_GITHUB_TOKEN secret usage for the workflow
+  # with a randomly-selected token from a pool of secrets.
+  #
+  # As soon as organization-level billing is offered for Agentic
+  # Workflows, this stop-gap approach will be removed.
+  #
+  # See: /.github/actions/select-copilot-pat/README.md
+  # ###############################################################
+
+  # Add the pre-activation step of selecting a random PAT from the supplied secrets
+  steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      name: Checkout the select-copilot-pat action folder
+      with:
+        persist-credentials: false
+        sparse-checkout: .github/actions/select-copilot-pat
+        sparse-checkout-cone-mode: true
+        fetch-depth: 1
+
+    - id: select-copilot-pat
+      name: Select Copilot token from pool
+      uses: ./.github/actions/select-copilot-pat
+      env:
+        SECRET_0: ${{ secrets.COPILOT_PAT_0 }}
+        SECRET_1: ${{ secrets.COPILOT_PAT_1 }}
+        SECRET_2: ${{ secrets.COPILOT_PAT_2 }}
+        SECRET_3: ${{ secrets.COPILOT_PAT_3 }}
+        SECRET_4: ${{ secrets.COPILOT_PAT_4 }}
+        SECRET_5: ${{ secrets.COPILOT_PAT_5 }}
+        SECRET_6: ${{ secrets.COPILOT_PAT_6 }}
+        SECRET_7: ${{ secrets.COPILOT_PAT_7 }}
+        SECRET_8: ${{ secrets.COPILOT_PAT_8 }}
+        SECRET_9: ${{ secrets.COPILOT_PAT_9 }}
+
+# Add the pre-activation output of the randomly selected PAT
+jobs:
+  pre-activation:
+    outputs:
+      copilot_pat_number: ${{ steps.select-copilot-pat.outputs.copilot_pat_number }}
+
+# Override the COPILOT_GITHUB_TOKEN expression used in the activation job
+# Consume the PAT number from the pre-activation step and select the corresponding secret
+engine:
+  id: copilot
+  env:
+    # We cannot use line breaks in this expression as it leads to a syntax error in the compiled workflow
+    # If none of the `COPILOT_PAT_#` secrets were selected, then the default COPILOT_GITHUB_TOKEN is used
+    COPILOT_GITHUB_TOKEN: ${{ case(needs.pre_activation.outputs.copilot_pat_number == '0', secrets.COPILOT_PAT_0, needs.pre_activation.outputs.copilot_pat_number == '1', secrets.COPILOT_PAT_1, needs.pre_activation.outputs.copilot_pat_number == '2', secrets.COPILOT_PAT_2, needs.pre_activation.outputs.copilot_pat_number == '3', secrets.COPILOT_PAT_3, needs.pre_activation.outputs.copilot_pat_number == '4', secrets.COPILOT_PAT_4, needs.pre_activation.outputs.copilot_pat_number == '5', secrets.COPILOT_PAT_5, needs.pre_activation.outputs.copilot_pat_number == '6', secrets.COPILOT_PAT_6, needs.pre_activation.outputs.copilot_pat_number == '7', secrets.COPILOT_PAT_7, needs.pre_activation.outputs.copilot_pat_number == '8', secrets.COPILOT_PAT_8, needs.pre_activation.outputs.copilot_pat_number == '9', secrets.COPILOT_PAT_9, secrets.COPILOT_GITHUB_TOKEN) }}
+---
+
+# Outerloop Pipeline Trigger
+
+You are an automation agent for the dotnet/runtime repository. Your job is to
+analyze the files changed in pull request #${{ github.event.pull_request.number }}
+and determine which outerloop CI pipelines need to be triggered by posting
+`/azp run <pipeline>` comments.
+
+## Step 1: Get Changed Files
+
+Use the GitHub API to list all files changed in PR #${{ github.event.pull_request.number }}.
+Collect the full list of file paths before evaluating any rules.
+
+## Step 2: Evaluate Trigger Rules
+
+For each rule below, check whether **any** changed file matches. Collect the
+set of pipelines that need to be triggered.
+
+### Rule: `runtime-android`
+
+Trigger `/azp run runtime-android` if **any** changed file matches at least one
+of these conditions:
+
+1. The file's **basename** (the last path segment) contains `.Android.` — for
+   example `Foo.Android.cs` or `Bar.Android.Baz.csproj`.
+2. The file is inside a directory whose name is exactly `Android` — that is,
+   the path contains a `/Android/` segment (or starts with `Android/`).
+3. The file is inside the `System.Security.Cryptography.Native.Android`
+   directory — that is, the path contains
+   `System.Security.Cryptography.Native.Android/`.
+
+### Rule: `runtime-nativeaot-outerloop`
+
+Trigger `/azp run runtime-nativeaot-outerloop` if **any** changed file is part
+of the NativeAOT compiler (`ilc`) or any of its dependencies.
+
+This includes files under any of the following directories inside
+`src/coreclr/tools/aot/`:
+
+- `ILCompiler/` — the `ilc` entry-point application
+- `ILCompiler.Compiler/` — the core NativeAOT compiler library
+- `ILCompiler.RyuJit/` — the RyuJit code-generation backend
+- `ILCompiler.MetadataTransform/` — metadata transformation library
+
+It also includes files under these **shared** directories that are dependencies
+of `ilc` (even though crossgen2 also uses them):
+
+- `ILCompiler.DependencyAnalysisFramework/`
+- `ILCompiler.TypeSystem/`
+- `ILCompiler.Diagnostics/`
+
+Finally, it includes shared source files linked into the above projects from
+`src/coreclr/tools/Common/` (e.g. `Compiler/`, `TypeSystem/`,
+`Internal/Runtime/`, `JitInterface/`). If a changed file is under
+`src/coreclr/tools/Common/`, consider it a match for this rule.
+
+### Rule: `runtime-coreclr crossgen2`
+
+Trigger `/azp run runtime-coreclr crossgen2` if **any** changed file is part of
+the `crossgen2` (ReadyToRun) compiler or any of its dependencies.
+
+This includes files under any of the following directories inside
+`src/coreclr/tools/aot/`:
+
+- `crossgen2/` — the `crossgen2` entry-point application
+- `ILCompiler.ReadyToRun/` — the ReadyToRun compiler library
+- `ILCompiler.Reflection.ReadyToRun/` — ReadyToRun reflection library
+
+It also includes files under these **shared** directories that are dependencies
+of `crossgen2` (even though ilc also uses them):
+
+- `ILCompiler.DependencyAnalysisFramework/`
+- `ILCompiler.TypeSystem/`
+- `ILCompiler.Diagnostics/`
+
+And shared source files linked from `src/coreclr/tools/Common/` — if a changed
+file is under `src/coreclr/tools/Common/`, consider it a match for this rule.
+
+**Note:** A change to a shared directory (e.g. `ILCompiler.TypeSystem/` or
+`src/coreclr/tools/Common/`) should trigger **both** `runtime-nativeaot-outerloop`
+and `runtime-coreclr crossgen2`.
+
+### Rule: `runtime-libraries-coreclr outerloop`
+
+Trigger `/azp run runtime-libraries-coreclr outerloop` if **any** changed file
+is a test file under `src/libraries/` that uses the `[OuterLoop]` attribute, or
+if the change **introduces** the `[OuterLoop]` attribute to a test.
+
+To evaluate this rule, look at the **patch/diff** of each changed file under
+`src/libraries/` (use the GitHub API to get file patches). A file matches if:
+
+1. It already contains the `[OuterLoop]` attribute (in any form:
+   `[OuterLoop]`, `[OuterLoop("reason")]`, `[OuterLoop("reason", ...)]`) and
+   the change modifies that file, **OR**
+2. The diff's added lines (`+` lines) introduce an `[OuterLoop` attribute that
+   was not previously present in the file.
+
+Only consider files that are plausibly test files (e.g. under a `tests/`
+subdirectory within the library, or with `Test` / `Tests` in the path or
+filename).
+
+### Rule: `runtime-coreclr outerloop`
+
+Trigger `/azp run runtime-coreclr outerloop` if **any** changed file under
+`src/tests/` matches either of these conditions:
+
+1. **OuterLoop attribute** — The changed file uses the `[OuterLoop]` attribute
+   (in any form: `[OuterLoop]`, `[OuterLoop("reason")]`,
+   `[OuterLoop("reason", ...)]`) and the change modifies it, **OR** the diff's
+   added lines introduce an `[OuterLoop` attribute.
+
+2. **CLRTestPriority 1** — The changed file is a `.csproj` that sets
+   `<CLRTestPriority>1</CLRTestPriority>`, or the diff introduces that
+   property. Also match if a changed `.cs` test file belongs to a project
+   whose `.csproj` (in the same directory or a parent directory) already sets
+   `<CLRTestPriority>1</CLRTestPriority>` — read the `.csproj` to check.
+
+### Rule: Linked issue pipeline triggers
+
+If the PR description contains "Closes #NNN", "Fixes #NNN", or any other
+GitHub closing keyword linking to an issue, fetch each linked issue and inspect
+its title and body. If the issue describes a test failure associated with a
+specific CI pipeline name (e.g. `runtime-coreclr gcstress0x3-gcstress0xc`,
+`runtime-coreclr jitstress`, `runtime-nativeaot-outerloop`, etc.), trigger that
+pipeline.
+
+To evaluate this rule:
+
+1. Parse the PR description for GitHub issue-closing keywords (`closes`,
+   `fixes`, `resolves` — with optional `#` or full URL) to collect linked
+   issue numbers.
+2. For each linked issue, use the GitHub API to read the issue title and body.
+3. Look for Azure DevOps pipeline names in the issue. Pipeline names in
+   dotnet/runtime follow the pattern `runtime-*` (e.g.
+   `runtime-coreclr gcstress0x3-gcstress0xc`,
+   `runtime-coreclr jitstress-isas-avx2`,
+   `runtime-libraries-coreclr outerloop`). They typically appear in the issue
+   title, in CI failure links, or in `/azp run` references within the body.
+4. Add each discovered pipeline to the set of pipelines to trigger.
+
+This rule may produce pipelines that overlap with other rules — that is fine,
+duplicates are naturally deduplicated into a single set before posting.
+
+## Step 3: Post Trigger Comments
+
+Group the pipelines into batches of **up to 5 pipelines per comment**. Azure
+Pipelines supports triggering multiple pipelines from a single `/azp run`
+command using a comma-separated list.
+
+For each batch, post **one** comment on the PR with the following exact format:
+
+```
+/azp run <pipeline-1>, <pipeline-2>, <pipeline-3>
+```
+
+Replace each `<pipeline-N>` with the pipeline name (e.g. `runtime-android`).
+
+Use the `add-comment` safe output to post each batch comment.
+
+## Step 4: Report
+
+If no pipelines need triggering, call the `noop` tool with a short message
+explaining that no outerloop pipelines are needed for this change set.
+
+If pipelines were triggered (or skipped as duplicates), call the `noop` tool
+with a summary of what was triggered and what was skipped.
