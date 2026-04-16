@@ -445,7 +445,6 @@ internal partial class MockDescriptors
             where TView : TypedView, new()
         {
             MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(size, name);
-            Builder.AddHeapFragment(fragment);
             return layout.Create(fragment.Data.AsMemory(), fragment.Address);
         }
     }

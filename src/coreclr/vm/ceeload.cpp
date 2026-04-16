@@ -516,6 +516,8 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         m_dwTransientFlags = m_dwTransientFlags | PROF_DISABLE_OPTIMIZATIONS;
     }
 
+    UpdateJitOptimizationDisabledState();
+
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
     {
@@ -538,6 +540,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
               ~DEBUGGER_INFO_MASK_PRIV) == 0);
 
     SetTransientFlagInterlockedWithMask(newBits << DEBUGGER_INFO_SHIFT_PRIV, DEBUGGER_INFO_MASK_PRIV);
+    UpdateJitOptimizationDisabledState();
 
 #ifdef DEBUGGING_SUPPORTED
     if (IsEditAndContinueCapable())
@@ -611,6 +614,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
 
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(EditAndContinueModule))));
         pModule = new (pMemory) EditAndContinueModule(pAssembly, pPEAssembly);
+        pModule->SetTransientFlagInterlocked(IS_ENC_CAPABLE);
     }
     else
 #endif // FEATURE_METADATA_UPDATER
