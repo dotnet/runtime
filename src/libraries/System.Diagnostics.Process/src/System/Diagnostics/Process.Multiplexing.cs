@@ -288,13 +288,14 @@ namespace System.Diagnostics
 
             Task<string?> readOutput = outputReader.ReadLineAsync(cancellationToken).AsTask();
             Task<string?> readError = errorReader.ReadLineAsync(cancellationToken).AsTask();
+            bool isError = false;
 
             while (true)
             {
                 Task completedTask = await Task.WhenAny(readOutput, readError).ConfigureAwait(false);
 
                 // When there is data available in both, handle error first.
-                bool isError = completedTask == readError || (readOutput.IsCompleted && readError.IsCompleted);
+                isError = completedTask == readError || (readOutput.IsCompleted && readError.IsCompleted);
 
                 string? line = isError
                     ? await readError.ConfigureAwait(false)
@@ -343,12 +344,10 @@ namespace System.Diagnostics
             }
 
             // One stream ended. Drain the remaining data from the other stream.
-            bool isErrorDone = readError.IsCompleted && await readError.ConfigureAwait(false) is null;
-            StreamReader remainingReader = isErrorDone ? outputReader : errorReader;
-            bool remainingIsError = !isErrorDone;
-
-            Task<string?> remainingTask = isErrorDone ? readOutput : readError;
-            string? moreData = await remainingTask.ConfigureAwait(false);
+            // isError tells us which stream returned null, so we drain the opposite stream.
+            string? moreData = await (isError ? readOutput : readError).ConfigureAwait(false);
+            StreamReader remainingReader = isError ? outputReader : errorReader;
+            bool remainingIsError = !isError;
 
             while (moreData is not null)
             {
