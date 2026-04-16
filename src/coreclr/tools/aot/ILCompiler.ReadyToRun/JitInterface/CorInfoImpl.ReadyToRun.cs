@@ -2006,31 +2006,12 @@ namespace Internal.JitInterface
                     originalMethod = methodOnUnderlyingType;
                 }
 
-                MethodDesc directMethod;
-                if (isStaticVirtual)
-                {
-                    directMethod = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(originalMethod);
+                var dimResolution = DefaultInterfaceMethodResolution.None;
+                MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(exactType, originalMethod, out forceUseRuntimeLookup, ref dimResolution);
+                if (isStaticVirtual && directMethod != null &&
+                        !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(directMethod))
+                    directMethod = null;
 
-                    // If no implementation was found, try to resolve to a default interface method.
-                    if (directMethod == null && !constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    {
-                        DefaultInterfaceMethodResolution dimResolution =
-                            constrainedType.ResolveVariantInterfaceMethodToDefaultImplementationOnType(originalMethod, out MethodDesc dimImpl);
-                        if (dimResolution == DefaultInterfaceMethodResolution.DefaultImplementation)
-                        {
-                            directMethod = dimImpl;
-                        }
-                    }
-
-                    if (directMethod != null && !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(directMethod))
-                    {
-                        directMethod = null;
-                    }
-                }
-                else
-                {
-                    directMethod = constrainedType.TryResolveConstraintMethodApprox(exactType, originalMethod, out forceUseRuntimeLookup);
-                }
                 if (directMethod != null)
                 {
                     // Either
