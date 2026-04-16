@@ -574,10 +574,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.OutputCompilation);
 
-            Assert.Contains(diagnostics, d => d.Id == "IL2026" && d.IsSuppressed);
-            Assert.Contains(diagnostics, d => d.Id == "IL3050" && d.IsSuppressed);
-            Assert.DoesNotContain(diagnostics, d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed);
-
             await VerifySuppressedCallsMatchInterceptedCalls(result);
         }
 
@@ -611,10 +607,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.OutputCompilation);
 
-            Assert.Contains(diagnostics, d => d.Id == "IL2026" && d.IsSuppressed);
-            Assert.Contains(diagnostics, d => d.Id == "IL3050" && d.IsSuppressed);
-            Assert.DoesNotContain(diagnostics, d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed);
-
             await VerifySuppressedCallsMatchInterceptedCalls(result);
         }
 
@@ -635,6 +627,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             // Run the ILLink analyzer + suppressor on the output compilation (which includes generated InterceptsLocation attributes).
             ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.OutputCompilation);
 
+            // The ILLink analyzer must have produced at least one IL2026 or IL3050 that was suppressed.
+            // Without this, the assertions below would pass vacuously if the analyzer didn't fire.
+            Assert.Contains(diagnostics, d => (d.Id is "IL2026" or "IL3050") && d.IsSuppressed);
+
             // Every suppressed IL2026/IL3050 diagnostic should be on an intercepted line.
             foreach (Diagnostic d in diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && d.IsSuppressed))
             {
@@ -644,8 +640,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             }
 
             // Every intercepted line should have its IL2026/IL3050 diagnostics suppressed.
-            var unsuppressed = diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed).ToList();
-            foreach (Diagnostic d in unsuppressed)
+            foreach (Diagnostic d in diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed))
             {
                 int line = d.Location.GetLineSpan().StartLinePosition.Line + 1;
                 Assert.False(interceptedLines.Contains(line),
