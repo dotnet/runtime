@@ -30,6 +30,19 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
     if (target === source || source === undefined || source === null) return target;
 
     mergeResources(target.resources!, source.resources!);
+    const mergedResources = target.resources;
+    const mergedEnvironmentVariables = { ...target.environmentVariables, ...source.environmentVariables };
+    const mergedRuntimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
+    const mergedConfigProperties = { ...target.runtimeConfig!.runtimeOptions!.configProperties!, ...source.runtimeConfig!.runtimeOptions!.configProperties! };
+    // Copy all remaining simple properties from source (e.g. maxParallelDownloads,
+    // applicationCulture, disableIntegrityCheck, etc.) that don't need special merge logic.
+    Object.assign(target, source);
+    // Restore the merged values that Object.assign would have overwritten.
+    target.resources = mergedResources;
+    target.environmentVariables = mergedEnvironmentVariables;
+    target.runtimeOptions = mergedRuntimeOptions;
+    target.runtimeConfig!.runtimeOptions!.configProperties = mergedConfigProperties;
+    // For boolean/scalar fields, prefer source when defined, otherwise keep target default.
     target.appendElementOnExit = source.appendElementOnExit !== undefined ? source.appendElementOnExit : target.appendElementOnExit;
     target.logExitCode = source.logExitCode !== undefined ? source.logExitCode : target.logExitCode;
     target.exitOnUnhandledError = source.exitOnUnhandledError !== undefined ? source.exitOnUnhandledError : target.exitOnUnhandledError;
@@ -38,9 +51,6 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
     target.virtualWorkingDirectory = source.virtualWorkingDirectory !== undefined ? source.virtualWorkingDirectory : target.virtualWorkingDirectory;
     target.debugLevel = source.debugLevel !== undefined ? source.debugLevel : target.debugLevel;
     target.diagnosticTracing = source.diagnosticTracing !== undefined ? source.diagnosticTracing : target.diagnosticTracing;
-    target.environmentVariables = { ...target.environmentVariables, ...source.environmentVariables };
-    target.runtimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
-    target.runtimeConfig!.runtimeOptions!.configProperties = { ...target.runtimeConfig!.runtimeOptions!.configProperties!, ...source.runtimeConfig!.runtimeOptions!.configProperties! };
     return target;
 }
 
@@ -68,11 +78,6 @@ function mergeResources(target: Assets, source: Assets): Assets {
     target.extensions = { ...target.extensions!, ...source.extensions! };
     for (const key in source.satelliteResources) {
         target.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
-    }
-    for (const key in target.satelliteResources) {
-        if (!Object.prototype.hasOwnProperty.call(source.satelliteResources, key)) {
-            target.satelliteResources![key] = target.satelliteResources![key] || [];
-        }
     }
     return target;
 }
