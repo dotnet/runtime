@@ -2040,7 +2040,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void SignedXml_EncryptedDataWithInfiniteXslTransform()
         {
-            RSA key = RSA.Create();
+            using RSA key = RSA.Create();
             using Aes aes = Aes.Create();
 
             XmlDocument doc = new();
@@ -2147,7 +2147,8 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDocument dummyDoc = new XmlDocument();
             dummyDoc.LoadXml("<Root />");
             SignedXml signedXml = new SignedXml(dummyDoc);
-            signedXml.SigningKey = RSA.Create();
+            using RSA rsa = RSA.Create();
+            signedXml.SigningKey = rsa;
 
             // Reference to the Stream
             Reference reference = new Reference(ms);
@@ -2218,7 +2219,8 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDocument dummyDoc = new XmlDocument();
             dummyDoc.LoadXml("<Root />");
             SignedXml signedXml = new SignedXml(dummyDoc);
-            signedXml.SigningKey = RSA.Create();
+            using RSA rsa = RSA.Create();
+            signedXml.SigningKey = rsa;
 
             Reference reference = new Reference(ms);
             reference.AddTransform(new XmlDsigC14NTransform());
@@ -2233,7 +2235,8 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDocument dummyDoc = new XmlDocument();
             dummyDoc.LoadXml("<Root />");
             SignedXml signedXml = new SignedXml(dummyDoc);
-            signedXml.SigningKey = RSA.Create();
+            using RSA rsa = RSA.Create();
+            signedXml.SigningKey = rsa;
 
             Reference reference = new Reference(ms);
             reference.AddTransform(new XmlDsigC14NTransform());
