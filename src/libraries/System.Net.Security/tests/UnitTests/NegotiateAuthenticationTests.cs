@@ -347,6 +347,31 @@ namespace System.Net.Security.Tests
             Assert.Null(empty);
         }
 
+        [ConditionalTheory(typeof(NegotiateAuthenticationTests), nameof(UseManagedNtlm))]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public void NtlmWithPreExistingTargetInfoEntriesTest(bool sendPreExistingTargetName, bool sendPreExistingChannelBindings)
+        {
+            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight)
+            {
+                SendPreExistingTargetName = sendPreExistingTargetName,
+                SendPreExistingChannelBindings = sendPreExistingChannelBindings,
+            };
+            NegotiateAuthentication ntAuth = new NegotiateAuthentication(
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = s_testCredentialRight,
+                    TargetName = "HTTP/foo",
+                    RequiredProtectionLevel = ProtectionLevel.Sign
+                });
+
+            DoNtlmExchange(fakeNtlmServer, ntAuth);
+
+            Assert.True(fakeNtlmServer.IsAuthenticated);
+        }
+
         [ConditionalTheory(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         [InlineData(true, true)]
         [InlineData(true, false)]

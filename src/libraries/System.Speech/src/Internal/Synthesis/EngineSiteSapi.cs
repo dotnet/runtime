@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
@@ -110,16 +111,16 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Load a file either from a local network or from the Internet.
         /// </summary>
-        void ISpEngineSite.LoadResource(string uri, ref string mediaType, out IStream stream)
+        void ISpEngineSite.LoadResource(string uri, ref string? mediaType, out IStream? stream)
         {
             mediaType = null;
 #pragma warning disable 56518 // BinaryReader can't be disposed because underlying stream still in use.
             try
             {
                 // Get the mime type
-                Stream localStream = _site.LoadResource(new Uri(uri, UriKind.RelativeOrAbsolute), mediaType);
+                Stream localStream = _site.LoadResource(new Uri(uri, UriKind.RelativeOrAbsolute), mediaType)!;
                 BinaryReader reader = new(localStream);
-                byte[] waveFormat = System.Speech.Internal.Synthesis.AudioBase.GetWaveFormat(reader);
+                byte[]? waveFormat = System.Speech.Internal.Synthesis.AudioBase.GetWaveFormat(reader);
                 mediaType = null;
                 if (waveFormat != null)
                 {
@@ -172,7 +173,7 @@ namespace System.Speech.Internal.Synthesis
         void GetVolume(out short volume);
         void GetSkipInfo(out int type, out int count);
         void CompleteSkip(int skipped);
-        void LoadResource([MarshalAs(UnmanagedType.LPWStr)] string resource, ref string mediaType, out IStream stream);
+        void LoadResource([MarshalAs(UnmanagedType.LPWStr)] string resource, ref string? mediaType, out IStream? stream);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -188,7 +189,7 @@ namespace System.Speech.Internal.Synthesis
         public static bool operator ==(SpeechEventSapi event1, SpeechEventSapi event2) => event1.Equals(event2);
         public static bool operator !=(SpeechEventSapi event1, SpeechEventSapi event2) => !event1.Equals(event2);
 
-        public override bool Equals(object obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is SpeechEventSapi other && Equals(other);
 
         public bool Equals(SpeechEventSapi other) =>

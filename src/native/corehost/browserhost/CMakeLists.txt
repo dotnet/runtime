@@ -76,7 +76,7 @@ list(APPEND NATIVE_LIBS
     ${CMAKE_ICU_DIR}/lib/libicudata.a
     ${SHARED_LIB_DESTINATION}/libSystem.IO.Compression.Native.a
     ${SHARED_LIB_DESTINATION}/libz.a
-    # WASM-TODO respect  $(InvariantTimezone)
+    # WASM-TODO respect  $(InvariantTimezone) - https://github.com/dotnet/runtime/issues/126101
     # libSystem.Native.TimeZoneData.Invariant.a
     ${SHARED_LIB_DESTINATION}/libSystem.Native.TimeZoneData.a
 )

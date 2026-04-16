@@ -1,72 +1,90 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <Target Name="_ComputeIlcCompileInputs"
+          Condition="'$(BuildingFrameworkLibrary)' != 'true'"
           BeforeTargets="ComputeIlcCompileInputs"
-          DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
+          DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);_ComputeAssembliesToCompileToNative;_PrepareTrimConfiguration">
+
     <ItemGroup>
-      <IlcReference Include="@(_ManagedResolvedAssembliesToPublish)" />
+      <_IlcManagedInputAssemblies Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true'" />
+      <IlcReference Include="@(_IlcManagedInputAssemblies)" />
       <IlcSatelliteAssembly Include="@(_SatelliteAssembliesToPublish)" />
       <IlcSatelliteAssembly Include="@(IntermediateSatelliteAssembliesWithTargetPath)" />
     </ItemGroup>
   </Target>
 
   <!--
-    This target hooks into the dotnet CLI publish pipeline. That pipeline has
-    a target called ComputeFilesToPublish which produces the ItemGroup
-    ResolvedFileToPublish. We modify this item group to control what gets
-    published after NativeAOT optimizes the application.
+    ============================================================
+                                        NativeCompile
+
+    Redefine the SDK's empty NativeCompile placeholder target to perform the full
+    NativeAOT compilation pipeline: ILC compilation, native linking, and updating
+    ResolvedFileToPublish to replace managed assemblies with the native binary.
+
+    The SDK typically sequences this target in the publish pipeline as:
+      ComputeResolvedFilesToPublishList -> ILLink (when RunILLink is true) -> NativeCompile -> ...
+
+    This gives us a clean, explicit position after trim configuration (_PrepareTrimConfiguration),
+    regardless of whether ILLink itself runs.
+    ============================================================
   -->
-  <Target Name="ComputeLinkedFilesToPublish"
-          AfterTargets="ComputeResolvedFilesToPublishList"
+  <Target Name="NativeCompile"
           DependsOnTargets="_ComputeAssembliesToCompileToNative;LinkNative">
 
     <ItemGroup>
-      <ResolvedFileToPublish Remove="@(_AssembliesToSkipPublish)" />
+      <ResolvedFileToPublish Remove="@(_IlcManagedInputAssemblies)" />
       <!-- dotnet CLI produces managed debug symbols, which we will replace with native symbols instead -->
       <ResolvedFileToPublish Remove="@(_DebugSymbolsIntermediatePath)" />
+      <ResolvedFileToPublish Remove="@(IntermediateSatelliteAssembliesWithTargetPath)" />
       <!-- replace apphost with binary we generated during native compilation -->
       <ResolvedFileToPublish Include="$(NativeBinary)">
         <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
-      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
-      <IntermediateAssembly Include="$(NativeBinary)" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
       <_symbolExt Condition="'$(OS)' == 'Windows_NT'">$(NativeSymbolExt)</_symbolExt>
       <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
-      <_symbolSourcePath>$(NativeOutputPath)$(TargetName)$(_symbolExt)</_symbolSourcePath>
-      <_symbolTargetPath>$(PublishDir)\$(TargetName)$(_symbolExt)</_symbolTargetPath>
+      <_symbolSourcePath>$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(_symbolExt)</_symbolSourcePath>
+      <_symbolTargetPath>$(PublishDir)\$(NativeBinaryPrefix)$(TargetName)$(_symbolExt)</_symbolTargetPath>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
-      <_symbolRecursivePath Include="$(NativeOutputPath)$(TargetName)$(_symbolExt)/**/*" />
+      <_symbolRecursivePath Include="$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(_symbolExt)/**/*" />
 
       <!-- Add native symbol file if it exists. On Mac, the symbol path may be a folder-->
       <ResolvedFileToPublish Include="$(_symbolSourcePath)"
                              Condition="'$(NativeSymbolExt)' != '.dSYM' and Exists('$(_symbolSourcePath)')">
-        <RelativePath>$(TargetName)$(_symbolExt)</RelativePath>
+        <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(_symbolExt)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
 
       <!-- Add folder otherwise. If the symbol is a dSYM bundle, it's a folder not a file. -->
       <ResolvedFileToPublish Include="@(_symbolRecursivePath)"
                              Condition="'$(NativeSymbolExt)' == '.dSYM' and Exists('$(_symbolSourcePath)')">
-        <RelativePath>$(TargetName)$(_symbolExt)/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(_symbolExt)/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
     </ItemGroup>
   </Target>
 
+  <!-- Back-compat: keep ComputeLinkedFilesToPublish scheduled after NativeCompile so that
+       external targets using BeforeTargets/AfterTargets="ComputeLinkedFilesToPublish" still
+       fire at approximately the same point in the publish pipeline. -->
+  <Target Name="ComputeLinkedFilesToPublish"
+          AfterTargets="NativeCompile"
+          DependsOnTargets="NativeCompile" />
+
   <!--
-    Filter the input publish file list selecting managed assemblies for compilation.
-    Also produces _AssembliesToSkipPublish which chops out things from the publish
-    pipeline we don't want to see in the output (native images, CoreCLR artifacts)
-    until we get a proper AOT NetCore app package.
+    Classify ResolvedFileToPublish for NativeAOT, then replace CoreCLR runtime pack
+    files with DefaultFrameworkAssemblies (tagged PostprocessAssembly=true) so that
+    trim metadata and ILC input selection operate on the correct set of assemblies.
   -->
   <UsingTask TaskName="ComputeManagedAssembliesToCompileToNative" AssemblyFile="$(IlcBuildTasksPath)" />
-  <Target Name="_ComputeAssembliesToCompileToNative" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);_ComputeAssembliesToPostprocessOnPublish">
+  <Target Name="_ComputeAssembliesToCompileToNative"
+          DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);_ComputeAssembliesToPostprocessOnPublish"
+          BeforeTargets="_PrepareTrimConfiguration">
 
     <Warning Condition="Exists($(UserRuntimeConfig))" Text="The published project has a runtimeconfig.template.json that is not supported by PublishAot. Move the configuration to the project file using RuntimeHostConfigurationOption." />
     <!-- Fail with descriptive error message for common mistake. -->
@@ -104,10 +122,17 @@
       SdkAssemblies="@(PrivateSdkAssemblies)"
       FrameworkAssemblies="@(FrameworkAssemblies)">
 
-      <Output TaskParameter="ManagedAssemblies" ItemName="_ManagedResolvedAssembliesToPublish" />
       <Output TaskParameter="SatelliteAssemblies" ItemName="_SatelliteAssembliesToPublish" />
-      <Output TaskParameter="AssembliesToSkipPublish" ItemName="_AssembliesToSkipPublish" />
+      <Output TaskParameter="RuntimePackFilesToSkipPublish" ItemName="_RuntimePackFilesToSkipPublish" />
     </ComputeManagedAssembliesToCompileToNative>
+
+    <!-- Replace CoreCLR runtime pack with NativeAOT equivalents, tagged PostprocessAssembly=true. -->
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(_RuntimePackFilesToSkipPublish)" />
+      <ResolvedFileToPublish Include="@(DefaultFrameworkAssemblies)">
+        <PostprocessAssembly>true</PostprocessAssembly>
+      </ResolvedFileToPublish>
+    </ItemGroup>
 
   </Target>
 

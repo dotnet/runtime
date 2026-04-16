@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         private readonly StringComparison _comparisonType;
 
         /// <summary>
-        /// Creates a new case-sensitive InMemoryDirectoryInfo with the root directory and files given.
+        /// Initializes a new instance of the <see cref="InMemoryDirectoryInfo" /> class with the root directory and files given.
         /// </summary>
         /// <param name="rootDir">The root directory that this FileSystem will use.</param>
         /// <param name="files">Collection of file names. If relative paths <paramref name="rootDir"/> will be prepended to the paths.</param>
@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         }
 
         /// <summary>
-        /// Creates a new InMemoryDirectoryInfo with the root directory and files given.
+        /// Initializes a new instance of the <see cref="InMemoryDirectoryInfo" /> class with the root directory and files given.
         /// </summary>
         /// <param name="rootDir">The root directory that this FileSystem will use.</param>
         /// <param name="files">Collection of file names. If relative paths <paramref name="rootDir"/> will be prepended to the paths.</param>
@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         {
         }
 
-        private InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files, bool normalized, StringComparison comparisonType)
+        private InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files, bool normalized, StringComparison comparisonType, bool isParentPath = false)
         {
             if (string.IsNullOrEmpty(rootDir))
             {
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
 
             files ??= new List<string>();
 
-            Name = Path.GetFileName(rootDir);
+            Name = isParentPath ? ".." : Path.GetFileName(rootDir);
             if (normalized)
             {
                 _files = files;
@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public override string Name { get; }
 
         /// <inheritdoc />
-        public override DirectoryInfoBase? ParentDirectory =>
+        public override DirectoryInfoBase ParentDirectory =>
             new InMemoryDirectoryInfo(Path.GetDirectoryName(FullName)!, _files, true, _comparisonType);
 
         /// <inheritdoc />
@@ -143,15 +143,21 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <inheritdoc />
         public override DirectoryInfoBase GetDirectory(string path)
         {
-            if (string.Equals(path, "..", StringComparison.Ordinal))
+            bool isParentPath = string.Equals(path, "..", StringComparison.Ordinal);
+
+            string normPath;
+
+            if (isParentPath)
             {
-                return new InMemoryDirectoryInfo(Path.Combine(FullName, path), _files, true, _comparisonType);
+                normPath = Path.GetDirectoryName(FullName) ?? FullName;
             }
             else
             {
-                string normPath = Path.GetFullPath(path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
-                return new InMemoryDirectoryInfo(normPath, _files, true, _comparisonType);
+                string combinedPath = Path.Combine(FullName, path);
+                normPath = Path.GetFullPath(combinedPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
             }
+
+            return new InMemoryDirectoryInfo(normPath, _files, true, _comparisonType, isParentPath);
         }
 
         /// <summary>
@@ -161,7 +167,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <returns>Instance of <see cref="FileInfoBase"/> if the file exists, null otherwise.</returns>
         public override FileInfoBase? GetFile(string path)
         {
-            string normPath = Path.GetFullPath(path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+            string combinedPath = Path.Combine(FullName, path);
+            string normPath = Path.GetFullPath(combinedPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
             foreach (string file in _files)
             {
                 if (string.Equals(file, normPath))

@@ -113,7 +113,7 @@ namespace System.Reflection.Context.Tests
             Assert.NotNull(member);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void MetadataToken_ReturnsValue()
         {
             int token = _requiredParameter.MetadataToken;

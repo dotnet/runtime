@@ -860,17 +860,24 @@ namespace System.Reflection.Emit.Tests
             tb.DefineField("FuncPtr1", funcPtr1, FieldAttributes.Public | FieldAttributes.Static);
 
             // delegate* unmanaged[Cdecl]<int, float, double>
-            Type funcPtr4 = new ModifiedTypeHelpers.FunctionPointer(
+            Type funcPtr2 = new ModifiedTypeHelpers.FunctionPointer(
                 typeof(delegate* unmanaged[Cdecl]<int, float, double>),
                 [typeof(CallConvCdecl)]);
-            tb.DefineField("FuncPtr2", funcPtr4, FieldAttributes.Public | FieldAttributes.Static);
+            tb.DefineField("FuncPtr2", funcPtr2, FieldAttributes.Public | FieldAttributes.Static);
 
             // delegate* unmanaged[Stdcall]<string, in int, void>
-            Type funcPtr5 = new ModifiedTypeHelpers.FunctionPointer(
+            Type funcPtr3 = new ModifiedTypeHelpers.FunctionPointer(
                 typeof(delegate* unmanaged[Stdcall]<string, in int, void>),
                 [typeof(CallConvStdcall)],
                 customParameterTypes: [typeof(string), new ModifiedTypeHelpers.ModifiedType(typeof(int).MakeByRefType(), [typeof(InAttribute)], [])]);
-            tb.DefineField("FuncPtr3", funcPtr5, FieldAttributes.Public | FieldAttributes.Static);
+            tb.DefineField("FuncPtr3", funcPtr3, FieldAttributes.Public | FieldAttributes.Static);
+
+            // delegate* unmanaged[Fastcall, SuppressGCTransition]<void>
+            Type funcPtr4 = new ModifiedTypeHelpers.FunctionPointer(
+                typeof(delegate* unmanaged[Fastcall, SuppressGCTransition]<void>),
+                [typeof(CallConvFastcall), typeof(CallConvSuppressGCTransition)],
+                new ModifiedTypeHelpers.ModifiedType(typeof(void), [], [typeof(CallConvFastcall), typeof(CallConvSuppressGCTransition)]));
+            tb.DefineField("FuncPtr4", funcPtr4, FieldAttributes.Public | FieldAttributes.Static);
 
             tb.CreateType();
             ab.Save(file.Path);
@@ -889,8 +896,8 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(typeof(int).FullName, field1.FieldType.GetFunctionPointerReturnType().FullName);
 
             FieldInfo field2 = testType.GetField("FuncPtr2");
-            Type field2Type = field2.GetModifiedFieldType();
             Assert.NotNull(field2);
+            Type field2Type = field2.GetModifiedFieldType();
             Assert.True(field2Type.IsFunctionPointer);
             Assert.True(field2Type.IsUnmanagedFunctionPointer);
             Type[] paramTypes2 = field2Type.GetFunctionPointerParameterTypes();
@@ -902,8 +909,8 @@ namespace System.Reflection.Emit.Tests
             Assert.Contains(callingConventions2, t => t.FullName == typeof(CallConvCdecl).FullName);
 
             FieldInfo field3 = testType.GetField("FuncPtr3");
-            Type field3Type = field3.GetModifiedFieldType();
             Assert.NotNull(field3);
+            Type field3Type = field3.GetModifiedFieldType();
             Assert.True(field3Type.IsFunctionPointer);
             Assert.True(field3Type.IsUnmanagedFunctionPointer);
             Type[] paramTypes3 = field3Type.GetFunctionPointerParameterTypes();
@@ -914,6 +921,18 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(typeof(void).FullName, field3Type.GetFunctionPointerReturnType().FullName);
             Type[] callingConventions3 = field3Type.GetFunctionPointerCallingConventions();
             Assert.Contains(callingConventions3, t => t.FullName == typeof(CallConvStdcall).FullName);
+
+            FieldInfo field4 = testType.GetField("FuncPtr4");
+            Assert.NotNull(field4);
+            Type field4Type = field4.GetModifiedFieldType();
+            Assert.True(field4Type.IsFunctionPointer);
+            Assert.True(field4Type.IsUnmanagedFunctionPointer);
+            Type[] paramTypes4 = field4Type.GetFunctionPointerParameterTypes();
+            Assert.Equal(0, paramTypes4.Length);
+            Assert.Equal(typeof(void).FullName, field4Type.GetFunctionPointerReturnType().FullName);
+            Type[] callingConventions4 = field4Type.GetFunctionPointerCallingConventions();
+            Assert.Contains(callingConventions4, t => t.FullName == typeof(CallConvFastcall).FullName);
+            Assert.Contains(callingConventions4, t => t.FullName == typeof(CallConvSuppressGCTransition).FullName);
         }
 
         [Fact]

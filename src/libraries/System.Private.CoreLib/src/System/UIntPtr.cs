@@ -316,6 +316,16 @@ namespace System
         [Intrinsic]
         public static nuint LeadingZeroCount(nuint value) => (nuint)BitOperations.LeadingZeroCount(value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        public static nuint Log10(nuint value)
+        {
+#if TARGET_64BIT
+            return (nuint)ulong.Log10((ulong)value);
+#else
+            return (nuint)uint.Log10((uint)value);
+#endif
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         [Intrinsic]
         public static nuint PopCount(nuint value) => (nuint)BitOperations.PopCount(value);

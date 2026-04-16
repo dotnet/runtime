@@ -28,9 +28,6 @@ public:
 #ifdef TARGET_ARM64
         , m_blockIndirs(compiler->getAllocator(CMK_Lower))
 #endif
-#ifdef TARGET_WASM
-        , m_stackificationStack(compiler->getAllocator(CMK_Lower))
-#endif
     {
         m_regAlloc = static_cast<RegAllocImpl*>(regAlloc);
         assert(m_regAlloc != nullptr);
@@ -142,7 +139,7 @@ private:
     unsigned TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals);
 
     void     LowerBlock(BasicBlock* block);
-    void     AfterLowerBlock();
+    void     AfterLowerBlocks();
     GenTree* LowerNode(GenTree* node);
 
     bool IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive);
@@ -419,6 +416,7 @@ private:
 
 #ifdef TARGET_WASM
     GenTree* LowerNeg(GenTreeOp* node);
+    void     LowerIndexAddr(GenTreeIndexAddr* indexAddr);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
@@ -469,6 +467,7 @@ private:
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void     LowerBswapOp(GenTreeOp* node);
+    GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_ARM64)
     bool     IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
@@ -633,16 +632,6 @@ private:
     };
     ArrayStack<SavedIndir> m_blockIndirs;
     bool                   m_ffrTrashed;
-#endif
-
-#ifdef TARGET_WASM
-    ArrayStack<GenTree*> m_stackificationStack;
-
-    static void SetMultiplyUsed(GenTree* node)
-    {
-        assert(node->gtType != TYP_STRUCT);
-        node->gtLIRFlags |= LIR::Flags::MultiplyUsed;
-    }
 #endif
 };
 

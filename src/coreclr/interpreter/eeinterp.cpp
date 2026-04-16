@@ -118,8 +118,8 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         {
             retryData.StartCompilationAttempt();
             InterpCompiler compiler(compHnd, methodInfo, &retryData, &arenaAllocator);
-            InterpMethod *pMethod = compiler.CompileMethod();
-            if (pMethod == NULL)
+            bool success = compiler.CompileMethod();
+            if (!success)
             {
                 assert(retryData.NeedsRetry());
                 continue;
@@ -128,15 +128,12 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
             // Once we reach here we will not attempt to retry again.
             assert(!retryData.NeedsRetry());
 
-            int32_t IRCodeSize = 0;
-            int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
-
-            uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
-            uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+            // Get the total size needed for the unified method data allocation
+            uint32_t totalSize = compiler.GetTotalAllocationSize();
 
             AllocMemChunk codeChunk {};
-            codeChunk.alignment = 1;
-            codeChunk.size = sizeOfCode;
+            codeChunk.alignment = sizeof(void*);  // Align to pointer size for InterpMethod access
+            codeChunk.size = totalSize;
             codeChunk.flags = CORJIT_ALLOCMEM_HOT_CODE;
 
             AllocMemArgs args {};
@@ -145,13 +142,11 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
             args.xcptnsCount = 0;
             compHnd->allocMem(&args);
 
-            // We store first the InterpMethod pointer as the code header, followed by the actual code
-            *(InterpMethod**)codeChunk.blockRW = pMethod;
-            memcpy ((uint8_t*)codeChunk.blockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
+            // Finalize all method data into the unified allocation
+            InterpMethod* pMethod = compiler.FinalizeMethodData(codeChunk.blockRW, codeChunk.block);
 
-            compiler.UpdateWithFinalMethodByteCodeAddress((InterpByteCodeStart*)codeChunk.block);
             *entryAddress = (uint8_t*)codeChunk.block;
-            *nativeSizeOfCode = sizeOfCode;
+            *nativeSizeOfCode = totalSize;
 
             // We can't do this until we've called allocMem
             compiler.BuildGCInfo(pMethod);

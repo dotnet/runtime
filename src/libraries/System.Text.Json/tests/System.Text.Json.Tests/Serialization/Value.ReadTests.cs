@@ -352,6 +352,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("2147483647.2147483647.2147483647.2147483647")]
         [InlineData("\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037\\u002e\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037\\u002e\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037\\u002e\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037",
             "2147483647.2147483647.2147483647.2147483647")]
+        [InlineData("1.+1", "1.1")] // Plus in components should work as before
+        [InlineData("1 .1", "1.1")] // Whitespace before dot should work as before
+        [InlineData("1. 1", "1.1")] // Whitespace after dot should work as before
+        [InlineData("1 . +1", "1.1")] // Combined whitespace and plus should work as before
+        [InlineData("+1.1", "1.1")] // Leading plus should work
         public static void Version_Read_Success(string json, string? actual = null)
         {
             actual ??= json;
@@ -364,6 +369,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("")]
         [InlineData("     ")]
         [InlineData(" ")]
+        [InlineData("   1.2.3.4")] // Leading whitespace should be rejected
+        [InlineData("1.2.3.4    ")] // Trailing whitespace should be rejected
+        [InlineData("  1.2.3.4  ")] // Leading and trailing whitespace should be rejected
         [InlineData("2147483648.2147483648.2147483648.2147483648")] //int.MaxValue + 1
         [InlineData("2147483647.2147483647.2147483647.21474836477")] // Slightly bigger in size than max length of Version
         [InlineData("-2147483648.-2147483648")]
@@ -371,9 +379,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("-2147483648.-2147483648.-2147483648.-2147483648")]
         [InlineData("1.-1")]
         [InlineData("1")]
-        [InlineData("   1.2.3.4")] //Valid but has leading whitespace
-        [InlineData("1.2.3.4    ")] //Valid but has trailing whitespace
-        [InlineData("  1.2.3.4  ")] //Valid but has trailing and leading whitespaces
         [InlineData("{}", false)]
         [InlineData("[]", false)]
         [InlineData("true", false)]

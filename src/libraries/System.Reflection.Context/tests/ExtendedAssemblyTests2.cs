@@ -98,7 +98,7 @@ namespace System.Reflection.Context.Tests
             // May be null if resource doesn't exist
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void GetModule_ReturnsModule()
         {
             Module module = _customAssembly.GetModule(_customAssembly.ManifestModule.Name);
@@ -150,8 +150,16 @@ namespace System.Reflection.Context.Tests
         [Fact]
         public void GetSatelliteAssembly_ThrowsForNonExistent()
         {
-            Assert.Throws<FileNotFoundException>(() =>
-                _customAssembly.GetSatelliteAssembly(new CultureInfo("fr-FR")));
+            if (PlatformDetection.IsNativeAot)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    _customAssembly.GetSatelliteAssembly(new CultureInfo("fr-FR")));
+            }
+            else
+            {
+                Assert.Throws<FileNotFoundException>(() =>
+                    _customAssembly.GetSatelliteAssembly(new CultureInfo("fr-FR")));
+            }
         }
 
         [Fact]

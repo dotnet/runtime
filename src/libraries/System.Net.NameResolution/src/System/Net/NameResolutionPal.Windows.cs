@@ -15,19 +15,17 @@ namespace System.Net
 {
     internal static partial class NameResolutionPal
     {
-        private static volatile int s_getAddrInfoExSupported;
+        private static NullableBool s_getAddrInfoExSupported;
 
         public static bool SupportsGetAddrInfoAsync
         {
             get
             {
-                int supported = s_getAddrInfoExSupported;
-                if (supported == 0)
+                if (s_getAddrInfoExSupported == NullableBool.Undefined)
                 {
                     Initialize();
-                    supported = s_getAddrInfoExSupported;
                 }
-                return supported == 1;
+                return s_getAddrInfoExSupported == NullableBool.True;
 
                 static void Initialize()
                 {
@@ -39,7 +37,7 @@ namespace System.Net
                     // We can't just check that 'GetAddrInfoEx' exists, because it existed before supporting overlapped.
                     // The existence of 'GetAddrInfoExCancel' indicates that overlapped is supported.
                     bool supported = NativeLibrary.TryGetExport(libHandle, Interop.Winsock.GetAddrInfoExCancelFunctionName, out _);
-                    Interlocked.CompareExchange(ref s_getAddrInfoExSupported, supported ? 1 : -1, 0);
+                    s_getAddrInfoExSupported = supported ? NullableBool.True : NullableBool.False;
                 }
             }
         }

@@ -605,6 +605,7 @@ struct cdac_data<SyncBlock>
     static constexpr size_t Lock = offsetof(SyncBlock, m_Lock);
     static constexpr size_t ThinLock = offsetof(SyncBlock, m_thinLock);
     static constexpr size_t LinkNext = offsetof(SyncBlock, m_Link) + offsetof(SLink, m_pNext);
+    static constexpr size_t HashCode = offsetof(SyncBlock, m_dwHashCode);
 
 };
 
@@ -771,6 +772,7 @@ template<>
 struct cdac_data<SyncBlockCache>
 {
     static constexpr size_t FreeSyncTableIndex = offsetof(SyncBlockCache, m_FreeSyncTableIndex);
+    static constexpr size_t CleanupBlockList = offsetof(SyncBlockCache, m_pCleanupBlockList);
 };
 
 // See code:#SyncBlockOverView for more

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "enabledManagers": [
+    "custom.regex"
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": false
+  },
+  "customManagers": [
+    {
+      "description": "Pin Docker image digests in pipeline-with-resources.yml",
+      "customType": "regex",
+      "managerFilePatterns": ["/eng/pipelines/common/templates/pipeline-with-resources\\.yml$/"],
+      "matchStrings": [
+        "image:\\s*(?<depName>[^:\\s]+):(?<currentValue>[^@\\s]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
+      ],
+      "datasourceTemplate": "docker",
+      "autoReplaceStringTemplate": "image: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}"
+    },
+    {
+      "description": "Pin Docker image digests in helix-queues-setup.yml files",
+      "customType": "regex",
+      "managerFilePatterns": ["/eng/pipelines/(coreclr/templates|installer|libraries)/helix-queues-setup\\.yml$/"],
+      "matchStrings": [
+        "@(?<depName>[^:\\s]+):(?<currentValue>[^@\\s]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
+      ],
+      "datasourceTemplate": "docker",
+      "autoReplaceStringTemplate": "@{{{packageName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchFileNames": [
+        "eng/pipelines/common/templates/pipeline-with-resources.yml",
+        "eng/pipelines/coreclr/templates/helix-queues-setup.yml",
+        "eng/pipelines/installer/helix-queues-setup.yml",
+        "eng/pipelines/libraries/helix-queues-setup.yml"
+      ],
+      "pinDigests": true,
+      "commitMessageTopic": "container image dependencies"
+    }
+  ]
+}

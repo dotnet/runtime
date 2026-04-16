@@ -2,8 +2,7 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Arcade uses by default xunit as test runner, illink uses nunit instead. -->
-    <TestRunnerName>NUnit</TestRunnerName>
+    <TestRunnerName>MSTest</TestRunnerName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,6 +39,12 @@
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
       <Value>$(LinkerTestDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ExpectationsDir">
+      <Value>$(LinkerTestDir)\Mono.Linker.Tests.Cases.Expectations</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ILLinkSharedDir">
+      <Value>$(LinkerTestDir)..\src\ILLink.Shared</Value>
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFramework">
       <Value>$(TargetFramework)</Value>

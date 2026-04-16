@@ -10,9 +10,12 @@ import type { EmscriptenModule, NativePointer, TypedArray } from "./emscripten";
 export interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
+    /**
+     * @deprecated This method is no longer supported and will be removed in a future version.
+     */
+    withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
      * "command line" arguments for the Main() method.
      * @param args
@@ -432,7 +435,6 @@ export declare const enum GlobalizationMode {
 
 export type DotnetModuleConfig = {
     config?: LoaderConfig;
-    configSrc?: string;
     onConfigLoaded?: (config: LoaderConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
@@ -464,12 +466,6 @@ export type RunAPIType = {
      * @param reason could be a string or an Error object.
      */
     exit: (code: number, reason?: any) => void;
-    /**
-     * Sets the environment variable for the "process"
-     * @param name
-     * @param value
-     */
-    setEnvironmentVariable: (name: string, value: string) => void;
     /**
      * Returns the [JSExport] methods of the assembly with the given name
      * @param assemblyName

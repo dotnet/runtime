@@ -241,7 +241,7 @@ namespace System.Reflection.Context.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
         public void ExceptionHandlingClause_WithFilter_HasFilterOffset()
         {
             TypeInfo typeInfo = typeof(TypeWithFilter).GetTypeInfo();
