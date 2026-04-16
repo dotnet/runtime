@@ -54,7 +54,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux))]
         public async Task SslStream_StreamToStream_ServerInitiatedCloseNotify_Ok()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -86,7 +86,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux))]
         public async Task SslStream_StreamToStream_ClientInitiatedCloseNotify_Ok(bool sendData)
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -126,7 +126,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux))]
         public async Task SslStream_StreamToStream_DataAfterShutdown_Fail()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -211,7 +211,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux))]
         public async Task SslStream_NoCallback_UntrustedCert_SendsAlert(SslProtocols protocol)
         {
             // When no RemoteCertificateValidationCallback is set and the server's cert
@@ -271,7 +271,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux))]
         public async Task SslStream_NoCallback_UntrustedClientCert_ServerSendsAlert(SslProtocols protocol)
         {
             // When the server requires a client certificate and no
