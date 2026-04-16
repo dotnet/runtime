@@ -39,7 +39,11 @@ public class DacDbiCCWDumpTests : DumpTestBase
                 continue;
             }
 
-            List<COMInterfacePointerData> interfaces = builtInCOM.GetCCWInterfaces(ccw).ToList();
+            // Normalize to the start wrapper, matching what DacDbiImpl.GetObjectForCCW does
+            // before calling GetObjectHandle, so the expected handle in the test is consistent.
+            TargetPointer startCcw = builtInCOM.GetStartWrapper(ccw);
+
+            List<COMInterfacePointerData> interfaces = builtInCOM.GetCCWInterfaces(startCcw).ToList();
             if (interfaces.Count == 0)
                 continue;
 
@@ -47,7 +51,7 @@ public class DacDbiCCWDumpTests : DumpTestBase
             if (interfacePointer == TargetPointer.Null)
                 continue;
 
-            return (ccw, interfacePointer);
+            return (startCcw, interfacePointer);
         }
 
         throw new SkipTestException("No BuiltInCOM CCW interface pointer found in dump.");

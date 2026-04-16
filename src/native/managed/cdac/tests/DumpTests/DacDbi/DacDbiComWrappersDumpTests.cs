@@ -51,6 +51,11 @@ public class DacDbiComWrappersDumpTests : DumpTestBase
 
             Assert.Equal(System.HResults.S_OK, hr);
             Assert.Equal(expectedHandle, actualHandle);
+
+            // Verify the returned handle dereferences to a live object in the dump.
+            TargetPointer actualHandleTarget = new(actualHandle);
+            TargetPointer actualObjectAddress = Target.ReadPointer(actualHandleTarget);
+            Assert.NotEqual(TargetPointer.Null, actualObjectAddress);
             return;
         }
 
