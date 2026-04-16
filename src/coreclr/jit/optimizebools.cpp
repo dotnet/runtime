@@ -1010,8 +1010,15 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         int op1Cost = cond1->GetCostEx();
         int op2Cost = cond2->GetCostEx();
         // The cost of combing three simple conditions is 32.
+        // On ARM64 ccmp is cheap and un-predicted so allow chains with
+        // substantially more work per leaf and longer overall chains.
+#ifdef TARGET_ARM64
+        int maxOp1Cost = op1IsCondChain ? 63 : 15;
+        int maxOp2Cost = op2IsCondChain ? 63 : 15;
+#else
         int maxOp1Cost = op1IsCondChain ? 31 : 7;
         int maxOp2Cost = op2IsCondChain ? 31 : 7;
+#endif
 
         // Cost to allow for chain size of three.
         if (op1Cost > maxOp1Cost || op2Cost > maxOp2Cost)
@@ -1179,7 +1186,11 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 
     // The second condition must not be too expensive
     //
+#ifdef TARGET_ARM64
+    if (m_c2->GetCostEx() > 20)
+#else
     if (m_c2->GetCostEx() > 12)
+#endif
     {
         return false;
     }

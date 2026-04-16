@@ -436,7 +436,15 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
 
         // Cost to allow for "x = cond ? a + b : c + d".
-        if (thenCost > 7 || elseCost > 7)
+        // On ARM64 the result instruction (csel/csinc/csinv/csneg) is ~1c and
+        // not predicted, so tolerate substantially more work on both arms to
+        // turn a predicted branch into a data dependency.
+#ifdef TARGET_ARM64
+        const int maxArmCost = 15;
+#else
+        const int maxArmCost = 7;
+#endif
+        if (thenCost > maxArmCost || elseCost > maxArmCost)
         {
             JITDUMP("Skipping if-conversion that will evaluate RHS unconditionally at costs %d,%d\n", thenCost,
                     elseCost);
@@ -444,11 +452,17 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
     }
 
+#ifndef TARGET_ARM64
     if (!m_compiler->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
     {
         // Don't optimise the block if it is inside a loop. Loop-carried
         // dependencies can cause significant stalls if if-converted.
         // Detect via the block weight as that will be high when inside a loop.
+        //
+        // On ARM64 csel/csinc/ccmp turn a mispredict into a fixed 1c data
+        // dependency, which is typically a win even inside loops; skip this
+        // guard entirely there so we fold branchlessly whenever the cost
+        // budget allows.
 
         if (m_startBlock->getBBWeight(m_compiler) > BB_UNITY_WEIGHT * 1.05)
         {
@@ -470,6 +484,9 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             return false;
         }
     }
+#else
+    (void)pReachabilityBudget;
+#endif // !TARGET_ARM64
 
     // Get the select node inputs.
     var_types selectType;
@@ -832,7 +849,14 @@ PhaseStatus Compiler::optIfConversion()
     BasicBlock* block = fgLastBB;
 
     // Budget for optReachability - to avoid spending too much time detecting loops in large methods.
+    // Irrelevant on ARM64 where we no longer skip inside-loop candidates (csel
+    // has fixed latency and doesn't suffer from mispredicts), but we still
+    // keep the parameter for other targets.
+#ifdef TARGET_ARM64
+    int reachabilityBudget = INT_MAX;
+#else
     int reachabilityBudget = 20000;
+#endif
     while (block != nullptr)
     {
         OptIfConversionDsc optIfConversionDsc(this, block);
