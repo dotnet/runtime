@@ -30,18 +30,17 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
     if (target === source || source === undefined || source === null) return target;
 
     mergeResources(target.resources!, source.resources!);
-    source.appendElementOnExit = source.appendElementOnExit !== undefined ? source.appendElementOnExit : target.appendElementOnExit;
-    source.logExitCode = source.logExitCode !== undefined ? source.logExitCode : target.logExitCode;
-    source.exitOnUnhandledError = source.exitOnUnhandledError !== undefined ? source.exitOnUnhandledError : target.exitOnUnhandledError;
-    source.loadAllSatelliteResources = source.loadAllSatelliteResources !== undefined ? source.loadAllSatelliteResources : target.loadAllSatelliteResources;
-    source.mainAssemblyName = source.mainAssemblyName !== undefined ? source.mainAssemblyName : target.mainAssemblyName;
-    source.virtualWorkingDirectory = source.virtualWorkingDirectory !== undefined ? source.virtualWorkingDirectory : target.virtualWorkingDirectory;
-    source.debugLevel = source.debugLevel !== undefined ? source.debugLevel : target.debugLevel;
-    source.diagnosticTracing = source.diagnosticTracing !== undefined ? source.diagnosticTracing : target.diagnosticTracing;
-    source.environmentVariables = { ...target.environmentVariables, ...source.environmentVariables };
-    source.runtimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
-    source.runtimeConfig!.runtimeOptions!.configProperties = { ...target.runtimeConfig!.runtimeOptions!.configProperties!, ...source.runtimeConfig!.runtimeOptions!.configProperties! };
-    Object.assign(target, source);
+    target.appendElementOnExit = source.appendElementOnExit !== undefined ? source.appendElementOnExit : target.appendElementOnExit;
+    target.logExitCode = source.logExitCode !== undefined ? source.logExitCode : target.logExitCode;
+    target.exitOnUnhandledError = source.exitOnUnhandledError !== undefined ? source.exitOnUnhandledError : target.exitOnUnhandledError;
+    target.loadAllSatelliteResources = source.loadAllSatelliteResources !== undefined ? source.loadAllSatelliteResources : target.loadAllSatelliteResources;
+    target.mainAssemblyName = source.mainAssemblyName !== undefined ? source.mainAssemblyName : target.mainAssemblyName;
+    target.virtualWorkingDirectory = source.virtualWorkingDirectory !== undefined ? source.virtualWorkingDirectory : target.virtualWorkingDirectory;
+    target.debugLevel = source.debugLevel !== undefined ? source.debugLevel : target.debugLevel;
+    target.diagnosticTracing = source.diagnosticTracing !== undefined ? source.diagnosticTracing : target.diagnosticTracing;
+    target.environmentVariables = { ...target.environmentVariables, ...source.environmentVariables };
+    target.runtimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
+    target.runtimeConfig!.runtimeOptions!.configProperties = { ...target.runtimeConfig!.runtimeOptions!.configProperties!, ...source.runtimeConfig!.runtimeOptions!.configProperties! };
     return target;
 }
 
@@ -49,31 +48,33 @@ function mergeResources(target: Assets, source: Assets): Assets {
     // no need to merge the same object
     if (target === source || source === undefined || source === null) return target;
 
-    source.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly!];
-    source.assembly = [...target.assembly!, ...source.assembly!];
-    source.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly!];
-    source.corePdb = [...target.corePdb!, ...source.corePdb!];
-    source.pdb = [...target.pdb!, ...source.pdb!];
-    source.jsModuleWorker = [...target.jsModuleWorker!, ...source.jsModuleWorker!];
-    source.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative!];
-    source.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics!];
-    source.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime!];
-    source.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols!];
-    source.wasmNative = [...target.wasmNative!, ...source.wasmNative!];
-    source.icu = [...target.icu!, ...source.icu!];
-    source.vfs = [...target.vfs!, ...source.vfs!];
-    source.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded!];
-    source.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady!];
-    source.extensions = { ...target.extensions!, ...source.extensions! };
+    target.hash = source.hash ?? target.hash;
+    target.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly!];
+    target.assembly = [...target.assembly!, ...source.assembly!];
+    target.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly!];
+    target.corePdb = [...target.corePdb!, ...source.corePdb!];
+    target.pdb = [...target.pdb!, ...source.pdb!];
+    target.jsModuleWorker = [...target.jsModuleWorker!, ...source.jsModuleWorker!];
+    target.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative!];
+    target.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics!];
+    target.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime!];
+    target.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols!];
+    target.wasmNative = [...target.wasmNative!, ...source.wasmNative!];
+    target.icu = [...target.icu!, ...source.icu!];
+    target.vfs = [...target.vfs!, ...source.vfs!];
+    target.coreVfs = [...target.coreVfs!, ...source.coreVfs!];
+    target.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded!];
+    target.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady!];
+    target.extensions = { ...target.extensions!, ...source.extensions! };
     for (const key in source.satelliteResources) {
-        source.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
+        target.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
     }
     for (const key in target.satelliteResources) {
         if (!Object.prototype.hasOwnProperty.call(source.satelliteResources, key)) {
-            source.satelliteResources![key] = target.satelliteResources![key] || [];
+            target.satelliteResources![key] = target.satelliteResources![key] || [];
         }
     }
-    return Object.assign(target, source);
+    return target;
 }
 
 function defaultConfig(target: LoaderConfigInternal) {
@@ -120,4 +121,5 @@ function normalizeResources(target: Assets) {
     if (!target.satelliteResources) target.satelliteResources = {};
     if (!target.extensions) target.extensions = {};
     if (!target.vfs) target.vfs = [];
+    if (!target.coreVfs) target.coreVfs = [];
 }
