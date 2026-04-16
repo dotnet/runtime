@@ -6,7 +6,6 @@ import { InternalExchangeIndex } from "../types";
 
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 import GitHash from "consts:gitHash";
-import { SystemJS_ScheduleDiagnosticServer } from "./scheduling";
 
 export { SystemJS_RandomBytes } from "./crypto";
 export { SystemJS_GetLocaleInfo } from "./globalization-locale";
@@ -29,7 +28,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     internals[InternalExchangeIndex.NativeBrowserExportsTable] = nativeBrowserExportsToTable({
         getWasmMemory,
         getWasmTable,
-        SystemJS_ScheduleDiagnosticServer,
+        SystemJS_ScheduleDiagnosticServer: _ems_._SystemJS_ScheduleDiagnosticServer,
     });
     _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
