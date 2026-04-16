@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -13,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// <summary>
 /// Controls whether delegation-only APIs can fall back to the legacy DAC implementation.
 /// When <c>CDAC_NO_FALLBACK=1</c> is set, only explicitly allowlisted methods may delegate.
-/// Blocked calls are logged to stderr for capture by the test infrastructure.
+/// All fallback attempts are logged to stderr for capture by the test infrastructure.
 /// </summary>
 internal static class LegacyFallbackHelper
 {
@@ -31,14 +30,11 @@ internal static class LegacyFallbackHelper
         nameof(ICustomQueryInterface.GetInterface),
     };
 
-    // Tracks unique call sites that attempted fallback but were blocked.
-    private static readonly ConcurrentDictionary<string, bool> s_blockedCalls = new();
-
     /// <summary>
     /// Returns <c>true</c> if the calling method is allowed to delegate to the legacy DAC.
     /// In normal mode (no <c>CDAC_NO_FALLBACK</c>), always returns <c>true</c>.
     /// In no-fallback mode, returns <c>true</c> only for allowlisted methods.
-    /// Blocked calls are logged to stderr on first occurrence.
+    /// All fallback attempts (allowed and blocked) are logged to stderr.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static bool CanFallback(
@@ -50,19 +46,26 @@ internal static class LegacyFallbackHelper
             return true;
 
         if (s_allowlist.Contains(name))
-            return true;
-
-        string key = $"{name}@{Path.GetFileName(file)}:{line}";
-        if (s_blockedCalls.TryAdd(key, true))
         {
             try
             {
-                Console.Error.WriteLine($"[cDAC] Blocked fallback: {name} at {Path.GetFileName(file)}:{line}");
+                Console.Error.WriteLine($"[cDAC] Allowed fallback: {name} at {Path.GetFileName(file)}:{line}");
             }
             catch
             {
                 // Best-effort logging — don't crash the debugger process.
             }
+
+            return true;
+        }
+
+        try
+        {
+            Console.Error.WriteLine($"[cDAC] Blocked fallback: {name} at {Path.GetFileName(file)}:{line}");
+        }
+        catch
+        {
+            // Best-effort logging — don't crash the debugger process.
         }
 
         return false;
