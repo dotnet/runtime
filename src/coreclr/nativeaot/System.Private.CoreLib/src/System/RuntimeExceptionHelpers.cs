@@ -201,16 +201,23 @@ namespace System
             int previousState = Interlocked.CompareExchange(ref s_crashInfoPresent, -1, 0);
             if (previousState == 0)
             {
-                CrashInfo crashInfo = new();
-
-                crashInfo.Open(reason, Thread.CurrentOSThreadId, message ?? GetStringForFailFastReason(reason));
-                if (exception != null)
+                try
                 {
-                    crashInfo.WriteException(exception);
+                    CrashInfo crashInfo = new();
+
+                    crashInfo.Open(reason, Thread.CurrentOSThreadId, message ?? GetStringForFailFastReason(reason));
+                    if (exception != null)
+                    {
+                        crashInfo.WriteException(exception);
+                    }
+                    crashInfo.Close();
+                    s_triageBufferAddress = crashInfo.TriageBufferAddress;
+                    s_triageBufferSize = crashInfo.TriageBufferSize;
                 }
-                crashInfo.Close();
-                s_triageBufferAddress = crashInfo.TriageBufferAddress;
-                s_triageBufferSize = crashInfo.TriageBufferSize;
+                catch
+                {
+                    // If crash info serialization fails (for example, due to OOM), proceed without it.
+                }
 
                 s_crashInfoPresent = 1;
             }
@@ -235,7 +242,7 @@ namespace System
             ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
             if (previousThreadId == 0)
             {
-                bool minimalFailFast = (exception == PreallocatedOutOfMemoryException.Instance);
+                bool minimalFailFast = exception == PreallocatedOutOfMemoryException.Instance;
                 if (minimalFailFast)
                 {
                     // Minimal OOM fail-fast path: avoid heap allocations as much as possible, but still
@@ -277,8 +284,23 @@ namespace System
 
                     if ((exception != null) && (reason is not RhFailFastReason.AssertionFailure))
                     {
-                        Internal.Console.Error.Write(exception.ToString());
-                        Internal.Console.Error.WriteLine();
+                        try
+                        {
+                            Internal.Console.Error.Write(exception.ToString());
+                            Internal.Console.Error.WriteLine();
+                        }
+                        catch
+                        {
+                            // If ToString() fails (for example, due to OOM), fall back to printing just the type name.
+                            try
+                            {
+                                Internal.Console.Error.Write("Process is terminating due to ");
+                                Internal.Console.Error.Write(exception.GetType().FullName);
+                                Internal.Console.Error.Write(".");
+                                Internal.Console.Error.WriteLine();
+                            }
+                            catch { }
+                        }
                     }
 
 #if TARGET_WINDOWS

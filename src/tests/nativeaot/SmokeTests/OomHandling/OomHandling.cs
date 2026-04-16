@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 class OomHandlingTest
 {
@@ -19,7 +20,8 @@ class OomHandlingTest
     const int Fail = -1;
     const int TimeoutMilliseconds = 30 * 1000;
 
-    const string AllocateArg = "--allocate";
+    const string AllocateSmallArg = "--allocate-small";
+    const string AllocateLargeArg = "--allocate-large";
     // Both the minimal OOM fail-fast path ("Process is terminating due to OutOfMemoryException.")
     // and the standard unhandled-exception path ("Unhandled exception. System.OutOfMemoryException...")
     // contain this token. The test validates that some OOM diagnostic is printed rather than
@@ -28,7 +30,7 @@ class OomHandlingTest
 
     static int Main(string[] args)
     {
-        if (args.Length > 0 && args[0] == AllocateArg)
+        if (args.Length > 0 && args[0] == AllocateSmallArg)
         {
             // Subprocess mode: allocate until OOM is triggered.
             // Phase 1: fill quickly with large blocks to use most of the heap.
@@ -39,7 +41,16 @@ class OomHandlingTest
             while (true) list.Add(new object());
         }
 
-        // Controller mode: launch a subprocess with a GC heap limit and verify its output.
+        if (args.Length > 0 && args[0] == AllocateLargeArg)
+        {
+            // Subprocess mode: allocate 128 KB chunks until OOM is triggered.
+            // This leaves some free memory when OOM fires, exercising the code
+            // path where GetRuntimeException may allocate a new OutOfMemoryException.
+            var list = new List<byte[]>();
+            while (true) list.Add(new byte[128 * 1024]);
+        }
+
+        // Controller mode: launch subprocesses with a GC heap limit and verify their output.
         string? processPath = Environment.ProcessPath;
         if (processPath == null)
         {
@@ -47,29 +58,43 @@ class OomHandlingTest
             return Pass;
         }
 
-        var psi = new ProcessStartInfo(processPath, AllocateArg)
+        int result = RunSubprocess(processPath, AllocateSmallArg, "small allocations");
+        if (result != Pass)
+            return result;
+
+        result = RunSubprocess(processPath, AllocateLargeArg, "large allocations");
+        return result;
+    }
+
+    static int RunSubprocess(string processPath, string allocateArg, string description)
+    {
+        Console.WriteLine($"Testing OOM with {description}...");
+
+        var psi = new ProcessStartInfo(processPath, allocateArg)
         {
             RedirectStandardError = true,
             UseShellExecute = false,
         };
-        // A 32 MB GC heap limit is small enough to exhaust quickly but large enough for startup.
+        // 0x2000000 = 32 MB GC heap limit: small enough to exhaust quickly but large enough for startup.
         psi.Environment["DOTNET_GCHeapHardLimit"] = "2000000";
 
         using Process? p = Process.Start(psi);
-        if (p == null)
+        if (p is null)
         {
             Console.WriteLine("Failed to start subprocess.");
             return Fail;
         }
 
-        // Read stderr before waiting to avoid deadlock.
-        string stderr = p.StandardError.ReadToEnd();
+        // Read stderr asynchronously so that WaitForExit can enforce the timeout.
+        // A synchronous ReadToEnd() would block until the child exits, defeating the timeout.
+        Task<string> stderrTask = p.StandardError.ReadToEndAsync();
         if (!p.WaitForExit(TimeoutMilliseconds))
         {
             p.Kill(true);
             Console.WriteLine($"Subprocess timed out after {TimeoutMilliseconds / 1000} seconds.");
             return Fail;
         }
+        string stderr = stderrTask.GetAwaiter().GetResult();
 
         Console.WriteLine($"Subprocess exit code: {p.ExitCode}");
         Console.WriteLine($"Subprocess stderr: {stderr}");
