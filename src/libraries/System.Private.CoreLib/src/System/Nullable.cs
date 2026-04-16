@@ -107,8 +107,8 @@ namespace System
             // COMPAT: Returns null for generic type definition
             if (nullableType.IsGenericTypeDefinition)
                 return null;
+
             return nullableType.GetNullableUnderlyingType();
-            return null;
         }
 
         /// <summary>
