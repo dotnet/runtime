@@ -207,8 +207,7 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                     genericParams = _reader!.GetMethodDefinition((MethodDefinitionHandle)owner).GetGenericParameters();
                 else
                 {
-                    hr = HResults.E_INVALIDARG;
-                    goto Done;
+                    throw new ArgumentException(null, nameof(tk));
                 }
 
                 List<uint> tokens = new();
@@ -222,7 +221,6 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
             hr = ex.HResult;
         }
 
-    Done:
         return hr;
     }
 
