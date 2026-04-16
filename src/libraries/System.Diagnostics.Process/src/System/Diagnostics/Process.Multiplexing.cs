@@ -288,7 +288,7 @@ namespace System.Diagnostics
 
             Task<string?> readOutput = outputReader.ReadLineAsync(cancellationToken).AsTask();
             Task<string?> readError = errorReader.ReadLineAsync(cancellationToken).AsTask();
-            bool isError = false;
+            bool isError;
 
             while (true)
             {

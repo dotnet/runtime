@@ -306,8 +306,8 @@ namespace System.Diagnostics.Tests
                 allLines.Add(line);
             }
 
-            Assert.Contains(allLines, line => line.Content == "stdout_line" && !line.StandardError);
-            Assert.Contains(allLines, line => line.Content == "stderr_line" && line.StandardError);
+            Assert.Single(allLines, line => line.Content == "stdout_line" && !line.StandardError);
+            Assert.Single(allLines, line => line.Content == "stderr_line" && line.StandardError);
 
             Assert.True(process.WaitForExit(WaitInMS));
         }
