@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using System.Diagnostics.CodeAnalysis;
 
 
 namespace Microsoft.Diagnostics.DataContractReader;
@@ -117,6 +118,20 @@ public abstract class ContractRegistry
     public virtual IDebugger Debugger => GetContract<IDebugger>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
+
+    public bool TryGetContract<TContract>([NotNullWhen(true)] out TContract? contract) where TContract : IContract
+    {
+        try
+        {
+            contract = GetContract<TContract>();
+            return true;
+        }
+        catch (NotImplementedException)
+        {
+            contract = default;
+            return false;
+        }
+    }
 
     /// <summary>
     /// Register a contract implementation for a specific version.
