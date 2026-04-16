@@ -577,9 +577,14 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
         bool returnsValueTask = false;
         MethodReturnKind returnKind;
         {
-            // ClassifyMethodReturnKind resolves TypeRefs which may trigger GC.
-            // AddMethod runs during EnC with all managed threads suspended, so
-            // GC is safe in practice even though the contract says GC_NOTRIGGER.
+            // ClassifyMethodReturnKind calls IsTypeDefOrRefImplementedInSystemModule which
+            // does type resolution that may trigger GC. We suppress GC_NOTRIGGER here because
+            // we're only resolving well-known system types (Task/ValueTask) in practice.
+            // Note: ClassifyMethodReturnKind matches by type name without verifying the assembly
+            // reference, so a user-defined type named "Task" or "ValueTask" (e.g. via extern
+            // alias) could be misidentified and induce GC-triggering resolution paths. Accepted
+            // as Won't Fix given this requires an extremely unlikely combination of naming
+            // collision, extern alias usage, and hot reload of such a method while debugging.
             CONTRACT_VIOLATION(GCViolation);
             returnKind = ClassifyMethodReturnKind(
                 SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
