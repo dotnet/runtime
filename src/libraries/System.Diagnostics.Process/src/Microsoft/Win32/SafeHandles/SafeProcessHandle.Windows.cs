@@ -650,15 +650,17 @@ namespace Microsoft.Win32.SafeHandles
 
         private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
         {
-            bool wasKilledOnTimeout = false;
+            bool signalWasSent = false;
             using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
             if (!processWaitHandle.WaitOne(milliseconds))
             {
-                wasKilledOnTimeout = TerminateProcessCore();
+#pragma warning disable CA1416 // PosixSignal.SIGKILL is supported on Windows via SignalCore
+                signalWasSent = SignalCore(PosixSignal.SIGKILL);
+#pragma warning restore CA1416
                 processWaitHandle.WaitOne(Timeout.Infinite);
             }
 
-            return new ProcessExitStatus(GetExitCode(), wasKilledOnTimeout);
+            return new ProcessExitStatus(GetExitCode(), signalWasSent);
         }
 
         private async Task<ProcessExitStatus> WaitForExitAsyncCore(CancellationToken cancellationToken)
@@ -707,7 +709,7 @@ namespace Microsoft.Win32.SafeHandles
             TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             RegisteredWaitHandle? registeredWaitHandle = null;
             CancellationTokenRegistration ctr = default;
-            StrongBox<bool> wasKilledBox = new(false);
+            StrongBox<bool> signalWasSentBox = new(false);
 
             try
             {
@@ -723,10 +725,12 @@ namespace Microsoft.Win32.SafeHandles
                     ctr = cancellationToken.UnsafeRegister(
                         static state =>
                         {
-                            var (handle, wasCancelled) = ((SafeProcessHandle, StrongBox<bool>))state!;
-                            wasCancelled.Value = handle.TerminateProcessCore();
+                            var (handle, signalWasSent) = ((SafeProcessHandle, StrongBox<bool>))state!;
+#pragma warning disable CA1416 // PosixSignal.SIGKILL is supported on Windows via SignalCore
+                            signalWasSent.Value = handle.SignalCore(PosixSignal.SIGKILL);
+#pragma warning restore CA1416
                         },
-                        (this, wasKilledBox));
+                        (this, signalWasSentBox));
                 }
 
                 await tcs.Task.ConfigureAwait(false);
@@ -737,31 +741,7 @@ namespace Microsoft.Win32.SafeHandles
                 registeredWaitHandle?.Unregister(null);
             }
 
-            return new ProcessExitStatus(GetExitCode(), wasKilledBox.Value);
-        }
-
-        /// <summary>
-        /// Terminates the process using TerminateProcess.
-        /// </summary>
-        /// <returns>true if the process was terminated; false if it had already exited.</returns>
-        private bool TerminateProcessCore()
-        {
-            if (Interop.Kernel32.TerminateProcess(this, -1))
-            {
-                return true;
-            }
-
-            int error = Marshal.GetLastPInvokeError();
-
-            // If the process has already exited, TerminateProcess fails with ERROR_ACCESS_DENIED.
-            if (error == Interop.Errors.ERROR_ACCESS_DENIED &&
-                Interop.Kernel32.GetExitCodeProcess(this, out int exitCode) &&
-                exitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
-            {
-                return false;
-            }
-
-            throw new Win32Exception(error);
+            return new ProcessExitStatus(GetExitCode(), signalWasSentBox.Value);
         }
 
         private int GetExitCode()

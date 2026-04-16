@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Pipes;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
@@ -117,53 +116,22 @@ namespace Microsoft.Win32.SafeHandles
         private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
         {
             ProcessWaitState waitState = GetWaitState();
-            bool wasKilled = false;
+            bool signalWasSent = false;
 
             if (!waitState.WaitForExit(milliseconds))
             {
-                wasKilled = SignalCore(PosixSignal.SIGKILL);
+                signalWasSent = SignalCore(PosixSignal.SIGKILL);
                 waitState.WaitForExit(Timeout.Infinite);
             }
 
-            return CreateExitStatus(waitState, canceled: wasKilled);
+            return CreateExitStatus(waitState, canceled: signalWasSent);
         }
 
         private async Task<ProcessExitStatus> WaitForExitAsyncCore(CancellationToken cancellationToken)
         {
             ProcessWaitState waitState = GetWaitState();
-            ManualResetEvent exitedEvent = waitState.EnsureExitedEvent();
 
-            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            RegisteredWaitHandle? registeredWaitHandle = null;
-            CancellationTokenRegistration ctr = default;
-
-            try
-            {
-                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
-                    exitedEvent,
-                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
-                    tcs,
-                    Timeout.Infinite,
-                    executeOnlyOnce: true);
-
-                if (cancellationToken.CanBeCanceled)
-                {
-                    ctr = cancellationToken.UnsafeRegister(
-                        static state =>
-                        {
-                            var (taskSource, token) = ((TaskCompletionSource<bool> taskSource, CancellationToken token))state!;
-                            taskSource.TrySetCanceled(token);
-                        },
-                        (tcs, cancellationToken));
-                }
-
-                await tcs.Task.ConfigureAwait(false);
-            }
-            finally
-            {
-                ctr.Dispose();
-                registeredWaitHandle?.Unregister(null);
-            }
+            await waitState.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
 
             return CreateExitStatus(waitState, canceled: false);
         }
@@ -171,42 +139,19 @@ namespace Microsoft.Win32.SafeHandles
         private async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsyncCore(CancellationToken cancellationToken)
         {
             ProcessWaitState waitState = GetWaitState();
-            ManualResetEvent exitedEvent = waitState.EnsureExitedEvent();
-
-            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            RegisteredWaitHandle? registeredWaitHandle = null;
-            CancellationTokenRegistration ctr = default;
-            StrongBox<bool> wasKilledBox = new(false);
+            bool signalWasSent = false;
 
             try
             {
-                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
-                    exitedEvent,
-                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
-                    tcs,
-                    Timeout.Infinite,
-                    executeOnlyOnce: true);
-
-                if (cancellationToken.CanBeCanceled)
-                {
-                    ctr = cancellationToken.UnsafeRegister(
-                        static state =>
-                        {
-                            var (handle, wasCancelled) = ((SafeProcessHandle, StrongBox<bool>))state!;
-                            wasCancelled.Value = handle.SignalCore(PosixSignal.SIGKILL);
-                        },
-                        (this, wasKilledBox));
-                }
-
-                await tcs.Task.ConfigureAwait(false);
+                await waitState.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
             }
-            finally
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                ctr.Dispose();
-                registeredWaitHandle?.Unregister(null);
+                signalWasSent = SignalCore(PosixSignal.SIGKILL);
+                await waitState.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
             }
 
-            return CreateExitStatus(waitState, canceled: wasKilledBox.Value);
+            return CreateExitStatus(waitState, canceled: signalWasSent);
         }
 
         private ProcessWaitState GetWaitState()
@@ -221,10 +166,12 @@ namespace Microsoft.Win32.SafeHandles
 
         private static ProcessExitStatus CreateExitStatus(ProcessWaitState waitState, bool canceled)
         {
-            waitState.GetExited(out ProcessExitStatus? exitStatus, refresh: false);
-            PosixSignal? signal = exitStatus?.Signal;
+            bool exited = waitState.GetExited(out ProcessExitStatus? exitStatus, refresh: false);
+            Debug.Assert(exited);
+            Debug.Assert(exitStatus is not null);
+            PosixSignal? signal = exitStatus.Signal;
 
-            return new ProcessExitStatus(exitStatus?.ExitCode ?? 0, canceled && signal is not null, signal);
+            return new ProcessExitStatus(exitStatus.ExitCode, canceled && signal is not null, signal);
         }
 
         private delegate SafeProcessHandle StartWithShellExecuteDelegate(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder);

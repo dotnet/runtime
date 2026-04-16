@@ -217,6 +217,11 @@ namespace Microsoft.Win32.SafeHandles
         {
             Validate();
 
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             return WaitForExitOrKillOnTimeoutCore(ProcessUtils.ToTimeoutMilliseconds(timeout));
         }
 
@@ -259,6 +264,11 @@ namespace Microsoft.Win32.SafeHandles
         public Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken)
         {
             Validate();
+
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             return WaitForExitOrKillOnCancellationAsyncCore(cancellationToken);
         }

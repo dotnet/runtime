@@ -279,10 +279,10 @@ namespace System.Diagnostics
                         {
                             // If we haven't exited, we need to spin up an asynchronous operation that
                             // will complete the _exitedEvent when the other process exits. If there's already
-                            // another operation underway, then WaitForExitAsync will just tack ours onto the
+                            // another operation underway, then PollForNonChildExitAsync will just tack ours onto the
                             // end of it; we can't be sure it'll actually monitor the process until it exits,
                             // as it may have been created with a cancelable token.
-                            _waitInProgress = WaitForExitAsync(CancellationToken.None);
+                            _waitInProgress = PollForNonChildExitAsync(CancellationToken.None);
                         }
                     }
                 }
@@ -464,7 +464,7 @@ namespace System.Diagnostics
                             CancellationToken token = remainingTimeout == Timeout.Infinite ?
                                 CancellationToken.None :
                                 (cts = new CancellationTokenSource(remainingTimeout)).Token;
-                            _waitInProgress = waitTask = WaitForExitAsync(token);
+                            _waitInProgress = waitTask = PollForNonChildExitAsync(token);
                         }
                     } // lock(_gate)
 
@@ -492,6 +492,46 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Asynchronously waits for the process to exit.</summary>
+        /// <param name="cancellationToken">A token to cancel the wait.</param>
+        /// <returns>A task that completes when the process exits or the token is canceled.</returns>
+        internal async Task WaitForExitAsync(CancellationToken cancellationToken)
+        {
+            ManualResetEvent exitEvent = EnsureExitedEvent();
+
+            TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            CancellationTokenRegistration ctr = default;
+
+            try
+            {
+                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    exitEvent,
+                    static (state, timedOut) => ((TaskCompletionSource)state!).TrySetResult(),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    ctr = cancellationToken.UnsafeRegister(
+                        static state =>
+                        {
+                            var (taskSource, token) = ((TaskCompletionSource, CancellationToken))state!;
+                            taskSource.TrySetCanceled(token);
+                        },
+                        (tcs, cancellationToken));
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                ctr.Dispose();
+                registeredWaitHandle?.Unregister(null);
+            }
+        }
+
         /// <summary>Spawns an asynchronous polling loop for process completion.</summary>
         /// <param name="cancellationToken">A token to monitor to exit the polling loop.</param>
         /// <returns>The task representing the loop.</returns>
@@ -501,7 +541,7 @@ namespace System.Diagnostics
         /// token, so if the caller is providing a token and a previous task, it should wait on the
         /// returned task with the token in order to avoid delayed wake-ups.
         /// </remarks>
-        private async Task WaitForExitAsync(CancellationToken cancellationToken)
+        private async Task PollForNonChildExitAsync(CancellationToken cancellationToken)
         {
             Debug.Assert(Monitor.IsEntered(_gate));
             Debug.Assert(!_isChild);
