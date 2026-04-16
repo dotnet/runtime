@@ -19,9 +19,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     private enum DynamicMethodType
     {
-        kNone,
-        kDiagnosticHidden,
-        kLCGMethod,
+        kNone = 0,
+        kDiagnosticHidden = 1,
+        kLCGMethod = 2,
     }
 
     // IStringHolder is a native C++ abstract class (not COM) with a single virtual method:

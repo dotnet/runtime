@@ -4,7 +4,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
-// Non-vtable slot, native code slot, MethodImpl, and async method data slots are stored after the MethodDesc itself, packed tightly
+// Optional slots are stored after the MethodDesc itself, packed tightly
 // in the order: [non-vtable; method impl; native code; async method data].
 internal static class MethodDescOptionalSlots
 {
