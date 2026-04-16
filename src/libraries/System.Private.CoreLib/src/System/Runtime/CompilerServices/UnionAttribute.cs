@@ -55,7 +55,7 @@ namespace System.Runtime.CompilerServices
     /// </example>
     /// <seealso cref="IUnion" />
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = true)]
-    public sealed class UnionAttribute : Attribute
+    public class UnionAttribute : Attribute
     {
     }
 }
