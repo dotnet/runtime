@@ -13,7 +13,7 @@
 class PortableEntryPoint final
 {
 public: // static
-    // Returns true if the NativeEntryPoint of a given PortableEntryPoint is set to an exact target address (instead of a thunk or other auxiliary code), and that target is the provided address.
+    // Returns true if the _pActualCode field of a given PortableEntryPoint is set to a non-null address and that address is the preferred entry point instead of preferring InterpreterCode usage.
     static bool HasNativeEntryPoint(PCODE addr);
     static bool HasInterpreterData(PCODE addr);
 

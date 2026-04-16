@@ -43,7 +43,8 @@ void PortableEntryPoint::SetActualCode(PCODE addr, PCODE actualCode)
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
     _ASSERTE_ALL_BUILDS(actualCode != (PCODE)NULL);
 
-    // This is a lock free write. It can either be NULL, was already set to the same value, or be the interpreter entrypoint.
+    // This is a lock free write. The existing value can either be NULL, already set to the same value,
+    // or still be an interpreter-preferred temporary/native placeholder while PrefersInterpreterEntryPoint() is set.
     _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode) || portableEntryPoint->PrefersInterpreterEntryPoint());
 
     portableEntryPoint->_pActualCode = (void*)PCODEToPINSTR(actualCode);

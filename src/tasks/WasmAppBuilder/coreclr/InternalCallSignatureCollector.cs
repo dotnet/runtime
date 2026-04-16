@@ -53,8 +53,5 @@ internal sealed class InternalCallSignatureCollector
                 _log.Warning("WASM0001", $"Could not get signature for InternalCall method '{type.FullName}::{method.Name}' because '{ex.Message}'");
             }
         }
-
-        foreach (var nestedType in type.GetNestedTypes())
-            ScanType(nestedType);
     }
 }
