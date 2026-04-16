@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         continue;
                     }
 
-                    SyntaxNode syntaxNode = sourceTree.GetRoot().FindNode(location.SourceSpan, getInnermostNodeForTie: true);
+                    SyntaxNode syntaxNode = sourceTree.GetRoot(context.CancellationToken).FindNode(location.SourceSpan, getInnermostNodeForTie: true);
                     if ((syntaxNode as InvocationExpressionSyntax ?? syntaxNode.Parent as InvocationExpressionSyntax) is not InvocationExpressionSyntax invocation)
                     {
                         continue;
@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     // Only suppress if the generator actually intercepted this call site.
                     // The generator may skip interception for unsupported types (https://github.com/dotnet/runtime/issues/96643).
-                    interceptedLocationKeys ??= CollectInterceptedLocationKeys(context.Compilation);
+                    interceptedLocationKeys ??= CollectInterceptedLocationKeys(context.Compilation, context.CancellationToken);
 
                     string? locationKey = GetInvocationLocationKey(invocation, semanticModel, context.CancellationToken);
                     if (locationKey is null || !interceptedLocationKeys.Contains(locationKey))
@@ -107,7 +107,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             /// all intercepted locations. For v0, locations are (filePath, line, column) tuples.
             /// For v1, locations are the encoded data strings from the attribute.
             /// </summary>
-            private static HashSet<string> CollectInterceptedLocationKeys(Compilation compilation)
+            private static HashSet<string> CollectInterceptedLocationKeys(Compilation compilation, CancellationToken cancellationToken)
             {
                 var keys = new HashSet<string>();
 
@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         continue;
                     }
 
-                    SyntaxNode root = tree.GetRoot();
+                    SyntaxNode root = tree.GetRoot(cancellationToken);
                     foreach (AttributeSyntax attr in root.DescendantNodes().OfType<AttributeSyntax>())
                     {
                         if (attr.Name.ToString() != "InterceptsLocation")
