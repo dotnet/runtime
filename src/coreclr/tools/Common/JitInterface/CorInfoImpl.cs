@@ -3059,8 +3059,10 @@ namespace Internal.JitInterface
             // types, but no runtime object ever has them as its MethodTable - `this`
             // inside those methods is always a T[]. Reporting them as exact would
             // allow the JIT (e.g. VN-based invariant-load folding of GetMethodTable)
-            // to embed their MT as a constant and mis-read fields off it.
-            if (type is MetadataType mdType &&
+            // to embed their MT as a constant and mis-read fields off it. Both types
+            // are marked [Intrinsic] so that the cheap flag check filters out
+            // non-candidates before we compare names.
+            if (type.IsIntrinsic && type is MetadataType mdType &&
                 mdType.Module == _compilation.TypeSystemContext.SystemModule &&
                 mdType.Namespace.SequenceEqual("System"u8) &&
                 (mdType.Name.SequenceEqual("SZArrayHelper"u8) || mdType.Name.SequenceEqual("Array`1"u8)))
