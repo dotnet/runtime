@@ -3053,18 +3053,17 @@ namespace Internal.JitInterface
             if (type.HasTypeEquivalence || type.HasVariance)
                 return false;
 
-            // SZArrayHelper is a phantom dispatch target: CoreCLR maps generic
-            // array interface methods (IList<T>.set_Item, etc.) to sealed
-            // SZArrayHelper methods, but no runtime object ever has SZArrayHelper
-            // as its MethodTable - `this` inside those methods is always a T[].
-            // Reporting it as exact would allow the JIT (e.g. VN-based invariant-
-            // load folding of GetMethodTable) to embed SZArrayHelper's MT as a
-            // constant and mis-read fields off it. NativeAOT has no SZArrayHelper
-            // type, so the lookup below is harmless there.
+            // SZArrayHelper (CoreCLR) and Array<T> (NativeAOT) are phantom dispatch
+            // targets: the runtime maps generic array interface methods
+            // (IList<T>.set_Item, etc.) to methods on these sealed/effectively-sealed
+            // types, but no runtime object ever has them as its MethodTable - `this`
+            // inside those methods is always a T[]. Reporting them as exact would
+            // allow the JIT (e.g. VN-based invariant-load folding of GetMethodTable)
+            // to embed their MT as a constant and mis-read fields off it.
             if (type is MetadataType mdType &&
-                mdType.Name == "SZArrayHelper" &&
-                mdType.Namespace == "System" &&
-                mdType.Module == _compilation.TypeSystemContext.SystemModule)
+                mdType.Module == _compilation.TypeSystemContext.SystemModule &&
+                mdType.Namespace.SequenceEqual("System"u8) &&
+                (mdType.Name.SequenceEqual("SZArrayHelper"u8) || mdType.Name.SequenceEqual("Array`1"u8)))
             {
                 return false;
             }
