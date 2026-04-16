@@ -223,11 +223,11 @@ namespace System.Diagnostics
         /// <summary>Checks whether the process has exited and updates state accordingly.</summary>
         private void UpdateHasExited()
         {
-            int? exitCode;
-            _exited = GetWaitState().GetExited(out exitCode, refresh: true);
-            if (_exited && exitCode != null)
+            ProcessExitStatus? exitStatus;
+            _exited = GetWaitState().GetExited(out exitStatus, refresh: true);
+            if (_exited && exitStatus is not null)
             {
-                _exitCode = exitCode.Value;
+                _exitCode = exitStatus.ExitCode;
             }
         }
 

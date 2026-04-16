@@ -187,7 +187,7 @@ PALEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void);
  * 3) if the child has not yet terminated, 0 is returned
  * 4) on error, -1 is returned.
  */
-PALEXPORT int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode);
+PALEXPORT int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal);
 
 /**
  * Gets the configurable limit or variable for system path or file descriptor options.

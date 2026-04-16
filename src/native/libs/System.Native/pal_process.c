@@ -3,6 +3,7 @@
 
 #include "pal_config.h"
 #include "pal_process.h"
+#include "pal_signal.h"
 #include "pal_io.h"
 #include "pal_utilities.h"
 
@@ -929,9 +930,10 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
     return result;
 }
 
-int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
+int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal)
 {
     assert(exitCode != NULL);
+    assert(terminatingSignal != NULL);
 
     int32_t result;
     int status;
@@ -942,11 +944,16 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
         {
             // the child terminated normally.
             *exitCode = WEXITSTATUS(status);
+            *terminatingSignal = 0;
         }
         else if (WIFSIGNALED(status))
         {
             // child process was terminated by a signal.
-            *exitCode = 128 + WTERMSIG(status);
+            int sig = WTERMSIG(status);
+            *exitCode = 128 + sig;
+            PosixSignal posixSignal;
+            TryConvertSignalCodeToPosixSignal(sig, &posixSignal);
+            *terminatingSignal = (int32_t)posixSignal;
         }
         else
         {
