@@ -2010,7 +2010,9 @@ namespace Internal.JitInterface
                 MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(exactType, originalMethod, out forceUseRuntimeLookup, ref dimResolution);
                 if (isStaticVirtual && directMethod != null &&
                         !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(directMethod))
+                {
                     directMethod = null;
+                }
 
                 if (directMethod != null)
                 {
