@@ -119,6 +119,19 @@ public abstract class ContractRegistry
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
 
+    /// <summary>
+    /// Attempts to get an instance of the requested contract for the target.
+    /// </summary>
+    /// <typeparam name="TContract">The contract type to retrieve.</typeparam>
+    /// <param name="contract">
+    /// When this method returns <see langword="true"/>, contains the requested contract instance; otherwise, <see langword="null"/>.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if the requested contract is present and was retrieved successfully; <see langword="false"/> if the contract is not present or registered and <see cref="GetContract{TContract}"/> throws <see cref="NotImplementedException"/>.
+    /// </returns>
+    /// <exception cref="Exception">
+    /// Any exception thrown by <see cref="GetContract{TContract}"/> other than <see cref="NotImplementedException"/> is not handled by this method and will propagate to the caller.
+    /// </exception>
     public bool TryGetContract<TContract>([NotNullWhen(true)] out TContract? contract) where TContract : IContract
     {
         try
