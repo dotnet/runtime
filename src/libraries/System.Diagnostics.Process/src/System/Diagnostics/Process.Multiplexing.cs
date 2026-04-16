@@ -293,7 +293,7 @@ namespace System.Diagnostics
             StreamReader errorReader = _standardError!;
 
             Channel<ProcessOutputLine> channel = Channel.CreateBounded<ProcessOutputLine>(0);
-            int completedCount = 0;
+            bool firstCompleted = false;
 
             CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -302,14 +302,17 @@ namespace System.Diagnostics
 
             try
             {
-                await foreach (ProcessOutputLine line in channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+                while (await channel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    yield return line;
+                    while (channel.Reader.TryRead(out ProcessOutputLine line))
+                    {
+                        yield return line;
+                    }
                 }
             }
             finally
             {
-                await linkedCts.CancelAsync().ConfigureAwait(false);
+                linkedCts.Cancel();
 
                 // Ensure both tasks complete before disposing the CancellationTokenSource.
                 // The tasks handle all exceptions internally, so they always run to completion.
@@ -334,7 +337,7 @@ namespace System.Diagnostics
                     return;
                 }
 
-                if (Interlocked.Exchange(ref completedCount, 1) != 0)
+                if (Interlocked.Exchange(ref firstCompleted, true))
                 {
                     channel.Writer.TryComplete();
                 }
