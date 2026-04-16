@@ -1412,13 +1412,13 @@ HRESULT CordbThread::FindFrame(ICorDebugFrame ** ppFrame, FramePointer fp)
         ICorDebugFrame * pIFrame = pSSW->GetFrame(i);
         CordbFrame * pCFrame = CordbFrame::GetCordbFrameFromInterface(pIFrame);
 
-#if defined(HOST_64BIT)
-        // On 64-bit we can simply compare the FramePointer.
+#if !defined(TARGET_X86)
+        // Compare the FramePointer to determine if the frame matches
         if (pCFrame->GetFramePointer() == fp)
-#else  // !HOST_64BIT
-        // On other platforms, we need to do a more elaborate check.
+#else
+        // On x86 we need to do a more elaborate check.  The reason is that on x86, the FramePointer is always the same as the value of EBP, so we can just check if the input FramePointer is contained in the frame.  However, on other platforms, the FramePointer may not be the same as the value of RSP, so we need to check if the input FramePointer is the same as the one of the frame.
         if (pCFrame->IsContainedInFrame(fp))
-#endif // HOST_64BIT
+#endif
         {
             *ppFrame = pIFrame;
             (*ppFrame)->AddRef();
@@ -4772,6 +4772,27 @@ bool CordbFrame::IsContainedInFrame(FramePointer fp)
     _ASSERTE(SUCCEEDED(hr));
 
     CORDB_ADDRESS sp  = PTR_TO_CORDB_ADDRESS(fp.GetSPValue());
+
+#if defined(TARGET_X86)
+    // On x86, the runtime sends CallerSP - sizeof(TADDR) as the frame pointer
+    // for exception notifications (see GetSpForDiagnosticReporting). Since this
+    // does not account for the stack parameter size, we adjust for it here.
+    if (sp > stackEnd)
+    {
+        CordbNativeFrame * pNativeFrame = GetAsNativeFrame();
+        if (pNativeFrame != NULL)
+        {
+            CORDB_ADDRESS codeAddr = pNativeFrame->GetNativeCode()->GetAddress();
+            ULONG32 stackParamSize = 0;
+            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
+            if (SUCCEEDED(pDAC->GetStackParameterSize(codeAddr + m_ip, &stackParamSize))
+                && stackParamSize > 0)
+            {
+                sp -= stackParamSize;
+            }
+        }
+    }
+#endif // TARGET_X86
 
     if ((stackStart <= sp) && (sp <= stackEnd))
     {
@@ -11525,8 +11546,14 @@ void CordbAsyncFrame::LoadGenericArgs()
         {
             if (m_asyncVars[i].ilVarNum == genericArgIndex)
             {
-
-                HRESULT hr = GetProcess()->SafeReadStruct(m_continuationAddress + m_asyncVars[i].offset, &genericTypeParam);
+                // Read a target-pointer-sized value. CORDB_ADDRESS is always 8 bytes (ULONG64),
+                // but on x86 targets the generic arg field is only a 4-byte pointer. Using
+                // SIZE_T (which is pointer-sized for the DBI build, matching the target here)
+                // avoids reading adjacent memory. This mirrors how CordbJITILFrame::Init()
+                // reads the raw token via GetRegisterOrStackValue (which returns SIZE_T).
+                SIZE_T rawToken = 0;
+                HRESULT hr = GetProcess()->SafeReadStruct(m_continuationAddress + m_asyncVars[i].offset, &rawToken);
+                genericTypeParam = (CORDB_ADDRESS)rawToken;
                 IfFailThrow(hr);
                 break;
             }

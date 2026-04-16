@@ -8207,6 +8207,7 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
             return gtNewLconNode(0);
         }
 
+        case TYP_HALF:
         case TYP_FLOAT:
         case TYP_DOUBLE:
         {
@@ -11586,20 +11587,11 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         /* Then print the general purpose flags */
         GenTreeFlags flags = tree->gtFlags;
 
-        if (tree->OperIsBinary() || tree->OperIsMultiOp())
+        if (tree->IsPartOfAddressMode())
         {
-            genTreeOps oper = tree->OperGet();
-
-            // Check for GTF_ADDRMODE_NO_CSE flag on add/mul/shl Binary Operators
-            if ((oper == GT_ADD) || (oper == GT_MUL) || (oper == GT_LSH))
-            {
-                if ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0)
-                {
-                    flags |= GTF_DONT_CSE; // Force the GTF_ADDRMODE_NO_CSE flag to print out like GTF_DONT_CSE
-                }
-            }
+            flags |= GTF_DONT_CSE; // Force the GTF_ADDRMODE_NO_CSE flag to print out like GTF_DONT_CSE
         }
-        else // !(tree->OperIsBinary() || tree->OperIsMultiOp())
+        if (!(tree->OperIsBinary() || tree->OperIsMultiOp()))
         {
             // the GTF_REVERSE flag only applies to binary operations (which some MultiOp nodes are).
             flags &= ~GTF_REVERSE_OPS;
@@ -23068,6 +23060,17 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types type,
                 break;
             }
 
+            case TYP_HALF:
+            {
+                float16_t cnsVal = FloatingPointUtils::convertDoubleToFloat16(op1->AsDblCon()->DconValue());
+
+                for (unsigned i = 0; i < (simdSize / 2); i++)
+                {
+                    vecCon->gtSimdVal.f16[i] = cnsVal;
+                }
+                break;
+            }
+
             case TYP_FLOAT:
             {
                 float cnsVal = static_cast<float>(op1->AsDblCon()->DconValue());
@@ -27245,12 +27248,12 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(
 //
 GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize)
 {
-    assert(varTypeIsArithmetic(type));
+    assert(varTypeIsArithmetic(type) || TypeGet(type) == TYP_HALF);
 
     assert(op1 != nullptr);
     assert(varTypeIsSIMD(op1));
 
-    assert(varTypeIsArithmetic(simdBaseType));
+    assert(varTypeIsArithmetic(simdBaseType) || TypeGet(simdBaseType) == TYP_HALF);
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
@@ -28626,6 +28629,7 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_FusedMultiplySubtractNegated:
         case NI_AVX512_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512_FusedMultiplySubtractScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
         {
             return numArgs == 4;
         }
@@ -28643,6 +28647,13 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_X64_ConvertScalarToVector128Double:
         case NI_AVX512_X64_ConvertScalarToVector128Single:
 #endif // TARGET_AMD64
+        case NI_AVX10v1_AddScalar:
+        case NI_AVX10v1_DivideScalar:
+        case NI_AVX10v1_MultiplyScalar:
+        case NI_AVX10v1_SubtractScalar:
+        case NI_AVX10v1_ConvertScalarToVector128Half:
+        case NI_AVX10v1_ConvertScalarToVector128Single:
+        case NI_AVX10v1_ConvertScalarToVector128Double:
         {
             return numArgs == 3;
         }
@@ -28659,9 +28670,13 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_ConvertToVector512UInt32:
         case NI_AVX512_ConvertToVector512UInt64:
         case NI_AVX512_Sqrt:
+        case NI_AVX10v1_ConvertToInt32:
+        case NI_AVX10v1_ConvertToUInt32:
 #if defined(TARGET_AMD64)
         case NI_AVX512_X64_ConvertToInt64:
         case NI_AVX512_X64_ConvertToUInt64:
+        case NI_AVX10v1_ConvertToInt64:
+        case NI_AVX10v1_ConvertToUInt64:
 #endif // TARGET_AMD64
         case NI_AVX10v2_ConvertToSByteWithSaturationAndZeroExtendToInt32:
         case NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32:
@@ -31560,90 +31575,101 @@ bool GenTree::IsInvariant() const
 
 //-------------------------------------------------------------------
 // IsVectorPerElementMask: returns true if this node is a vector constant per-element mask
-//                         (every element has either all bits set or none of them).
+//                         (every element has either all bits set or none of them) for the
+//                         given simd size and base type.
 //
 // Arguments:
 //    simdBaseType - the base type of the constant being checked.
 //    simdSize     - the size of the SIMD type of the intrinsic.
 //
 // Returns:
-//     True if this node is a vector constant per-element mask.
+//     True if this node is a per-element mask compatible with simdBaseType and simdSize
 //
 bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const
 {
 #ifdef FEATURE_SIMD
+    // This should be kept in sync with ValueNumStore::IsVectorPerElementMask
+
+    var_types simdType     = TypeGet();
+    unsigned  elementCount = GenTreeVecCon::ElementCount(simdSize, simdBaseType);
+
+    assert(varTypeIsSIMD(simdType));
+    assert(genTypeSize(simdType) == simdSize);
+
     if (IsCnsVec())
     {
         const GenTreeVecCon* vecCon = AsVecCon();
-
-        int elementCount = vecCon->ElementCount(simdSize, simdBaseType);
-
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u8[0], elementCount);
-            case TYP_SHORT:
-            case TYP_USHORT:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u16[0], elementCount);
-            case TYP_INT:
-            case TYP_UINT:
-            case TYP_FLOAT:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u32[0], elementCount);
-            case TYP_LONG:
-            case TYP_ULONG:
-            case TYP_DOUBLE:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u64[0], elementCount);
-            default:
-                unreached();
-        }
+        return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal, simdBaseType, elementCount);
     }
-    else if (OperIsHWIntrinsic())
+
+    if (!OperIsHWIntrinsic())
     {
-        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
-        const NamedIntrinsic      intrinsicId = intrinsic->GetHWIntrinsicId();
-
-        if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsicId))
-        {
-            // We directly return a per-element mask
-            return true;
-        }
-
-        bool       isScalar = false;
-        genTreeOps oper     = intrinsic->GetOperForHWIntrinsicId(&isScalar);
-
-        switch (oper)
-        {
-            case GT_AND:
-            case GT_AND_NOT:
-            case GT_OR:
-            case GT_OR_NOT:
-            case GT_XOR:
-            case GT_XOR_NOT:
-            {
-                // We are a binary bitwise operation where both inputs are per-element masks
-                return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize) &&
-                       intrinsic->Op(2)->IsVectorPerElementMask(simdBaseType, simdSize);
-            }
-
-            case GT_NOT:
-            {
-                // We are an unary bitwise operation where the input is a per-element mask
-                return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize);
-            }
-
-            default:
-            {
-                assert(!GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper));
-                break;
-            }
-        }
-
         return false;
     }
-    else if (IsCnsMsk())
+
+    const GenTreeHWIntrinsic* intrinsic = AsHWIntrinsic();
+
+    NamedIntrinsic intrinsicId           = intrinsic->GetHWIntrinsicId();
+    unsigned       intrinsicSimdSize     = intrinsic->GetSimdSize();
+    var_types      intrinsicSimdBaseType = intrinsic->GetSimdBaseType();
+
+    if (intrinsicSimdSize != simdSize)
     {
-        return true;
+        return false;
+    }
+
+    if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsicId))
+    {
+        // When producing a SIMD result, we need for it to
+        // have a base type that is the same size or larger
+        // as what we expect.
+        //
+        // Consider for example us expecting `byte` and the
+        // intrinsic here produces `ushort`. In that case we
+        // expect every byte to be either `0x00` or `0xFF`
+        // and the intrinsic produces either `0x0000` or `0xFFFF`
+        // and so it meets this need.
+        //
+        // However, the inverse is not safe as we would expect
+        // `0x0000` or `0xFFFF`, but the intrinsic could produce
+        // `0x00FF` or `0xFF00` which fails the expectation.
+
+        return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
+    }
+
+    bool       isScalar = false;
+    genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
+
+    switch (oper)
+    {
+        case GT_AND:
+        case GT_AND_NOT:
+        case GT_OR:
+        case GT_OR_NOT:
+        case GT_XOR:
+        case GT_XOR_NOT:
+        {
+            // We are a binary bitwise operation where both inputs are per-element masks
+            //
+            // While some cases like OR could combine in ways that produce a usable mask
+            // there isn't any way to statically determine this for non-constants and
+            // the constant cases should've already been folded.
+
+            return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize) &&
+                   intrinsic->Op(2)->IsVectorPerElementMask(simdBaseType, simdSize);
+        }
+
+        case GT_NOT:
+        {
+            // We are an unary bitwise operation where the input is a per-element mask
+            return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize);
+        }
+
+        default:
+        {
+            assert(!GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper));
+            break;
+        }
     }
 #endif // FEATURE_SIMD
 
@@ -33002,24 +33028,24 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             break;
                         }
                     }
-                    else if (otherNode->OperIsHWIntrinsic())
+                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
                     {
-                        GenTreeHWIntrinsic* otherIntrinsic   = otherNode->AsHWIntrinsic();
-                        NamedIntrinsic      otherIntrinsicId = otherIntrinsic->GetHWIntrinsicId();
-
-                        if (HWIntrinsicInfo::ReturnsPerElementMask(otherIntrinsicId) &&
-                            (genTypeSize(simdBaseType) == genTypeSize(otherIntrinsic->GetSimdBaseType())))
+                        // Handle `Equals(PerElementMask, AllBitsSet)` and `Equals(AllBitsSet, PerElementMask)` for
+                        // integrals
+                        if (cnsNode->IsVectorAllBitsSet())
                         {
-                            // This optimization is only safe if we know the other node produces
-                            // AllBitsSet or Zero per element and if the outer comparison is the
-                            // same size as what the other node produces for its mask
+                            // We are comparing something that is known per element to be either
+                            // AllBitsSet or Zero, with AllBitsSet.
+                            //
+                            // In such a case:
+                            // * `AllBitsSet == AllBitsSet` is true and so produces `AllBitsSet`
+                            // * `AllBitsSet == Zero` is false and so produces `Zero`
+                            //
+                            // This means that we are not changing anything and can just return
+                            // the per element mask
 
-                            // Handle `(Mask == AllBitsSet) == Mask` and `(AllBitsSet == Mask) == Mask` for integrals
-                            if (cnsNode->IsVectorAllBitsSet())
-                            {
-                                resultNode = otherNode;
-                                break;
-                            }
+                            resultNode = otherNode;
+                            break;
                         }
                     }
                     break;
@@ -33187,6 +33213,25 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             int64_t allBitsSet = -1;
                             cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, allBitsSet);
                             resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                            break;
+                        }
+                    }
+                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
+                    {
+                        // Handle `~Equals(PerElementMask, Zero)` and `~Equals(Zero, PerElementMask)` for integrals
+                        if (cnsNode->IsVectorZero())
+                        {
+                            // We are comparing something that is known per element to be either
+                            // AllBitsSet or Zero, with Zero.
+                            //
+                            // In such a case:
+                            // * `AllBitsSet != Zero` is true and so produces `AllBitsSet`
+                            // * `Zero != Zero` is false and so produces `Zero`
+                            //
+                            // This means that we are not changing anything and can just return
+                            // the per element mask
+
+                            resultNode = otherNode;
                             break;
                         }
                     }

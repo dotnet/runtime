@@ -31,6 +31,7 @@
     <Compile Include="ProcessStandardConsoleTests.cs" />
     <Compile Include="ProcessStartInfoTests.cs" />
     <Compile Include="ProcessStreamReadTests.cs" />
+    <Compile Include="ProcessMultiplexingTests.cs" />
     <Compile Include="ProcessTestBase.cs" />
     <Compile Include="ProcessTestBase.NonUap.cs" />
     <Compile Include="ProcessTests.cs" />

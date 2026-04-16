@@ -219,9 +219,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <TrimmerSingleWarn Condition=" '$(TrimmerSingleWarn)' == '' ">true</TrimmerSingleWarn>
     </PropertyGroup>
 
-    <!-- Root the main assembly entry point. -->
+    <!-- Root the main assembly entry point for non-library projects. -->
     <ItemGroup>
-      <TrimmerRootAssembly Include="@(IntermediateAssembly->'%(Filename)')" RootMode="EntryPoint" />
+      <TrimmerRootAssembly Include="@(IntermediateAssembly->'%(Filename)')" RootMode="EntryPoint" Condition="'$(OutputType)' != 'Library'" />
     </ItemGroup>
 
     <ItemGroup>

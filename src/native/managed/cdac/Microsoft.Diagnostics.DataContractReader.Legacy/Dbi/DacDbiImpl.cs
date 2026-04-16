@@ -824,9 +824,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int IsRcw(ulong vmObject, Interop.BOOL* pResult)
         => _legacy is not null ? _legacy.IsRcw(vmObject, pResult) : HResults.E_NOTIMPL;
 
-    public int GetRcwCachedInterfaceTypes(ulong vmObject, ulong vmAppDomain, Interop.BOOL bIInspectableOnly, nint pDacInterfaces)
-        => _legacy is not null ? _legacy.GetRcwCachedInterfaceTypes(vmObject, vmAppDomain, bIInspectableOnly, pDacInterfaces) : HResults.E_NOTIMPL;
-
     public int GetRcwCachedInterfacePointers(ulong vmObject, Interop.BOOL bIInspectableOnly, nint pDacItfPtrs)
         => _legacy is not null ? _legacy.GetRcwCachedInterfacePointers(vmObject, bIInspectableOnly, pDacItfPtrs) : HResults.E_NOTIMPL;
 
@@ -899,15 +896,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #endif
         return hr;
     }
-
-    public int EnableNGENPolicy(int ePolicy)
-        => HResults.E_NOTIMPL;
-
-    public int SetNGENCompilerFlags(uint dwFlags)
-        => _legacy is not null ? _legacy.SetNGENCompilerFlags(dwFlags) : HResults.E_NOTIMPL;
-
-    public int GetNGENCompilerFlags(uint* pdwFlags)
-        => _legacy is not null ? _legacy.GetNGENCompilerFlags(pdwFlags) : HResults.E_NOTIMPL;
 
     public int GetVmObjectHandle(ulong handleAddress, ulong* pRetVal)
     {
@@ -1216,18 +1204,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW)
         => _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
-
-    public int GetReJitInfo(ulong vmModule, uint methodTk, ulong* pReJitInfo)
-        => _legacy is not null ? _legacy.GetReJitInfo(vmModule, methodTk, pReJitInfo) : HResults.E_NOTIMPL;
-
-    public int GetReJitInfoByAddress(ulong vmMethod, ulong codeStartAddress, ulong* pReJitInfo)
-        => _legacy is not null ? _legacy.GetReJitInfoByAddress(vmMethod, codeStartAddress, pReJitInfo) : HResults.E_NOTIMPL;
-
-    public int GetSharedReJitInfo(ulong vmReJitInfo, ulong* pSharedReJitInfo)
-        => _legacy is not null ? _legacy.GetSharedReJitInfo(vmReJitInfo, pSharedReJitInfo) : HResults.E_NOTIMPL;
-
-    public int GetSharedReJitInfoData(ulong sharedReJitInfo, DacDbiSharedReJitInfo* pData)
-        => _legacy is not null ? _legacy.GetSharedReJitInfoData(sharedReJitInfo, pData) : HResults.E_NOTIMPL;
 
     public int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled)
         => _legacy is not null ? _legacy.AreOptimizationsDisabled(vmModule, methodTk, pOptimizationsDisabled) : HResults.E_NOTIMPL;

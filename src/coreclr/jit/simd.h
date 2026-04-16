@@ -4,8 +4,14 @@
 #ifndef _SIMD_H_
 #define _SIMD_H_
 
+#include "float16.h"
+
+#ifndef SIZE_UNKNOWN
+#define SIZE_UNKNOWN UINT8_MAX
+#endif
+
 template <typename T>
-static bool ElementsAreSame(T* array, size_t size)
+static bool ElementsAreSame(const T* array, size_t size)
 {
     for (size_t i = 1; i < size; i++)
     {
@@ -16,7 +22,7 @@ static bool ElementsAreSame(T* array, size_t size)
 }
 
 template <typename T>
-static bool ElementsAreAllBitsSetOrZero(T* array, size_t size)
+static bool ElementsAreAllBitsSetOrZero(const T* array, size_t size)
 {
     for (size_t i = 0; i < size; i++)
     {
@@ -142,17 +148,18 @@ struct simd16_t
 {
     union
     {
-        float    f32[4];
-        double   f64[2];
-        int8_t   i8[16];
-        int16_t  i16[8];
-        int32_t  i32[4];
-        int64_t  i64[2];
-        uint8_t  u8[16];
-        uint16_t u16[8];
-        uint32_t u32[4];
-        uint64_t u64[2];
-        simd8_t  v64[2];
+        float16_t f16[8];
+        float     f32[4];
+        double    f64[2];
+        int8_t    i8[16];
+        int16_t   i16[8];
+        int32_t   i32[4];
+        int64_t   i64[2];
+        uint8_t   u8[16];
+        uint16_t  u16[8];
+        uint32_t  u32[4];
+        uint64_t  u64[2];
+        simd8_t   v64[2];
     };
 
     bool operator==(const simd16_t& other) const
@@ -197,18 +204,19 @@ struct simd32_t
 {
     union
     {
-        float    f32[8];
-        double   f64[4];
-        int8_t   i8[32];
-        int16_t  i16[16];
-        int32_t  i32[8];
-        int64_t  i64[4];
-        uint8_t  u8[32];
-        uint16_t u16[16];
-        uint32_t u32[8];
-        uint64_t u64[4];
-        simd8_t  v64[4];
-        simd16_t v128[2];
+        float16_t f16[16];
+        float     f32[8];
+        double    f64[4];
+        int8_t    i8[32];
+        int16_t   i16[16];
+        int32_t   i32[8];
+        int64_t   i64[4];
+        uint8_t   u8[32];
+        uint16_t  u16[16];
+        uint32_t  u32[8];
+        uint64_t  u64[4];
+        simd8_t   v64[4];
+        simd16_t  v128[2];
     };
 
     bool operator==(const simd32_t& other) const
@@ -252,19 +260,20 @@ struct simd64_t
 {
     union
     {
-        float    f32[16];
-        double   f64[8];
-        int8_t   i8[64];
-        int16_t  i16[32];
-        int32_t  i32[16];
-        int64_t  i64[8];
-        uint8_t  u8[64];
-        uint16_t u16[32];
-        uint32_t u32[16];
-        uint64_t u64[8];
-        simd8_t  v64[8];
-        simd16_t v128[4];
-        simd32_t v256[2];
+        float16_t f16[32];
+        float     f32[16];
+        double    f64[8];
+        int8_t    i8[64];
+        int16_t   i16[32];
+        int32_t   i32[16];
+        int64_t   i64[8];
+        uint8_t   u8[64];
+        uint16_t  u16[32];
+        uint32_t  u32[16];
+        uint64_t  u64[8];
+        simd8_t   v64[8];
+        simd16_t  v128[4];
+        simd32_t  v256[2];
     };
 
     bool operator==(const simd64_t& other) const
@@ -383,6 +392,45 @@ typedef simd64_t simd_t;
 #else
 typedef simd16_t simd_t;
 #endif
+
+static bool ElementsAreAllBitsSetOrZero(const simd_t* simdVal, var_types simdBaseType, unsigned elementCount)
+{
+    assert(simdVal != nullptr);
+
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u8[0], elementCount);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u16[0], elementCount);
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_FLOAT:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u32[0], elementCount);
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u64[0], elementCount);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
 
 inline bool IsUnaryBitwiseOperation(genTreeOps oper)
 {
