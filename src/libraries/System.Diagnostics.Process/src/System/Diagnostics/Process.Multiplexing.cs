@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -253,6 +254,106 @@ namespace System.Diagnostics
             {
                 ArrayPool<byte>.Shared.Return(buffer);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously reads all standard output and standard error of the process as lines of text,
+        /// interleaving them as they become available.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// A token to cancel the asynchronous operation.
+        /// </param>
+        /// <returns>
+        /// An async enumerable of <see cref="ProcessOutputLine"/> instances representing the lines
+        /// read from standard output and standard error.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// Standard output or standard error has not been redirected.
+        /// -or-
+        /// A redirected stream has already been used for synchronous or asynchronous reading.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The <paramref name="cancellationToken" /> was canceled.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        /// The process has been disposed.
+        /// </exception>
+        public async IAsyncEnumerable<ProcessOutputLine> ReadAllLinesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            ValidateReadAllState();
+
+            StreamReader outputReader = _standardOutput!;
+            StreamReader errorReader = _standardError!;
+
+            Task<string?> readOutput = outputReader.ReadLineAsync(cancellationToken).AsTask();
+            Task<string?> readError = errorReader.ReadLineAsync(cancellationToken).AsTask();
+
+            while (true)
+            {
+                Task completedTask = await Task.WhenAny(readOutput, readError).ConfigureAwait(false);
+
+                // When there is data available in both, handle error first.
+                bool isError = completedTask == readError || (readOutput.IsCompleted && readError.IsCompleted);
+
+                string? line = isError
+                    ? await readError.ConfigureAwait(false)
+                    : await readOutput.ConfigureAwait(false);
+
+                if (line is not null)
+                {
+                    yield return new ProcessOutputLine(line, isError);
+
+                    // Continue reading from the same stream while data is immediately available.
+                    StreamReader activeReader = isError ? errorReader : outputReader;
+                    while (true)
+                    {
+                        ValueTask<string?> nextRead = activeReader.ReadLineAsync(cancellationToken);
+
+                        if (nextRead.IsCompleted)
+                        {
+                            line = await nextRead.ConfigureAwait(false);
+                            if (line is null)
+                            {
+                                break;
+                            }
+
+                            yield return new ProcessOutputLine(line, isError);
+                        }
+                        else
+                        {
+                            if (isError)
+                            {
+                                readError = nextRead.AsTask();
+                            }
+                            else
+                            {
+                                readOutput = nextRead.AsTask();
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                if (line is null)
+                {
+                    break;
+                }
+            }
+
+            // One stream ended. Drain the remaining data from the other stream.
+            bool isErrorDone = readError.IsCompleted && await readError.ConfigureAwait(false) is null;
+            StreamReader remainingReader = isErrorDone ? outputReader : errorReader;
+            bool remainingIsError = !isErrorDone;
+
+            Task<string?> remainingTask = isErrorDone ? readOutput : readError;
+            string? moreData = await remainingTask.ConfigureAwait(false);
+
+            while (moreData is not null)
+            {
+                yield return new ProcessOutputLine(moreData, remainingIsError);
+                moreData = await remainingReader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 

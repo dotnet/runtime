@@ -161,6 +161,7 @@ namespace System.Diagnostics
         public System.Threading.Tasks.Task<(byte[] StandardOutput, byte[] StandardError)> ReadAllBytesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public (string StandardOutput, string StandardError) ReadAllText(System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
         public System.Threading.Tasks.Task<(string StandardOutput, string StandardError)> ReadAllTextAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Collections.Generic.IAsyncEnumerable<System.Diagnostics.ProcessOutputLine> ReadAllLinesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Refresh() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
@@ -224,6 +225,12 @@ namespace System.Diagnostics
         public bool Canceled { get { throw null; } }
         public int ExitCode { get { throw null; } }
         public System.Runtime.InteropServices.PosixSignal? Signal { get { throw null; } }
+    }
+    public readonly partial struct ProcessOutputLine
+    {
+        public ProcessOutputLine(string content, bool standardError) { throw null; }
+        public string Content { get { throw null; } }
+        public bool StandardError { get { throw null; } }
     }
     public enum ProcessPriorityClass
     {
