@@ -37,6 +37,8 @@ export class DiagnosticConnectionBase {
 }
 
 export function downloadBlob(messages: Uint8Array[]) {
+    if (!globalThis.document) return;
+
     const blob = new Blob(messages as BlobPart[], { type: "application/octet-stream" });
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");

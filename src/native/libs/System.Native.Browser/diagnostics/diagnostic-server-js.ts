@@ -22,7 +22,7 @@ let fromScenarioNameOnce = false;
 // Only the last which sent advert is receiving commands for all sessions
 export let serverSession: DiagnosticSession | undefined = undefined;
 
-// singleton wrapping the protocol with the diagnostic server in the Mono VM
+// singleton wrapping the protocol with the diagnostic server in the dotnet VM
 // there could be multiple connection at the same time.
 // DS:advert         ->1
 //                     1<- DC1: command to start tracing session
@@ -79,7 +79,7 @@ class DiagnosticSession extends DiagnosticConnectionBase implements IDiagnosticC
         return [sessionIDHi, sessionIDLo] as SessionId;
     }
 
-    // this is message from the diagnostic server, which is Mono VM in this browser
+    // this is message from the diagnostic server, which is dotnet VM in this browser
     send(message: Uint8Array): number {
         dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer();
         if (this.isAdvertMessage(message)) {
@@ -110,7 +110,7 @@ class DiagnosticSession extends DiagnosticConnectionBase implements IDiagnosticC
         return message.length;
     }
 
-    // this is message to the diagnostic server, which is Mono VM in this browser
+    // this is message to the diagnostic server, which is dotnet VM in this browser
     respond(message: Uint8Array): void {
         this.messagesReceived.push(message);
         dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer();

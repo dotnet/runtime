@@ -10,7 +10,7 @@ export const advert1 = [65, 68, 86, 82, 95, 86, 49, 0,];
 // DOTNET_IPC_V1\0
 export const dotnetIpcV1 = [68, 79, 84, 78, 69, 84, 95, 73, 80, 67, 95, 86, 49, 0];
 
-// this file contains the IPC commands that are sent by client (like dotnet-trace) to the diagnostic server (like Mono VM in the browser)
+// this file contains the IPC commands that are sent by client (like dotnet-trace) to the diagnostic server (like dotnet VM in the browser)
 // just formatting bytes, no sessions management here
 
 
