@@ -32,8 +32,6 @@
 
 #ifndef DACCESS_COMPILE
 
-extern MethodDesc* g_pEnvironmentCallEntryPointMethodDesc;
-
 //
 // Notes:
 //    If a managed debugger is attached, this should send the managed UserBreak event.

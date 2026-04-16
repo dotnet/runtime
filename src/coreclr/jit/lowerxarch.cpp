@@ -2702,9 +2702,19 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op2 = node->Op(2);
             GenTree* op3 = node->Op(3);
 
+            if (varTypeIsIntegral(simdBaseType))
+            {
+                // The integral forms are marked with NormalizeSmallTypeToInt
+                // but actually emit an instruction that operates bytewise. So
+                // fixup the base type so that the per element mask check finds
+                // the greatest number of valid matches.
+
+                simdBaseType = TYP_BYTE;
+            }
+
             // If either of the value operands is const zero and the mask is either all
             // zeros or all ones per-element, we can optimize down to AND or AND_NOT.
-            if (op3->IsVectorPerElementMask(simdBaseType, simdSize) && (op1->IsVectorZero() || op2->IsVectorZero()))
+            if (op3->IsVectorPerElementMask(TYP_BYTE, simdSize) && (op1->IsVectorZero() || op2->IsVectorZero()))
             {
                 var_types simdType = node->TypeGet();
                 GenTree*  binOp    = nullptr;
@@ -3490,53 +3500,86 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     // op1: the condition vector
     // op2: the left vector
     // op3: the right vector
+
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
     GenTree* op3 = node->Op(3);
 
-    // If the condition vector comes from a hardware intrinsic that
-    // returns a per-element mask, we can optimize the entire
-    // conditional select to a single BlendVariable instruction
-    // (if supported by the architecture)
-
-    // First, determine if the condition is a per-element mask
-    if (op1->IsVectorPerElementMask(simdBaseType, simdSize))
+    if (op1->OperIsConvertMaskToVector())
     {
+        // If op1 was originally a mask, then we want to prioritize BlendVariableMask
+        // as it not only avoids the conversion from mask to vector, but also allows
+        // embedded masking and other optimizations to kick in, improving code density
+
+        NamedIntrinsic      blendVariableId = NI_AVX512_BlendVariableMask;
+        GenTreeHWIntrinsic* cvtMaskToVector = op1->AsHWIntrinsic();
+
+        GenTree* maskNode = cvtMaskToVector->Op(1);
+        BlockRange().Remove(op1);
+        op1 = maskNode;
+
+        // We need to change the base type to match the underlying mask size to ensure
+        // the right instruction variant is picked. If the CndSel was for TYP_INT but
+        // the mask was for TYP_DOUBLE then we'd generate vpblendmd when we really want
+        // vpblendmq. Changing the size is fine since CndSel itself is bitwise and the
+        // mask is just representing entire elements at a given size.
+
+        simdBaseType = cvtMaskToVector->GetSimdBaseType();
+
+        resultNode =
+            m_compiler->gtNewSimdHWIntrinsicNode(simdType, op3, op2, op1, blendVariableId, simdBaseType, simdSize);
+    }
+    else if (op3->IsVectorZero())
+    {
+        // The operation is (op2 & op1) | (zero & ~op1), so we can drop the second half
+        BlockRange().Remove(op3);
+        resultNode = m_compiler->gtNewSimdBinOpNode(GT_AND, simdType, op1, op2, simdBaseType, simdSize);
+    }
+    else if (op2->IsVectorZero())
+    {
+        // The operation is (zero & op1) | (op3 & ~op1), so we can drop the first half
+        BlockRange().Remove(op2);
+        resultNode = m_compiler->gtNewSimdBinOpNode(GT_AND_NOT, simdType, op3, op1, simdBaseType, simdSize);
+    }
+    else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+    {
+        // TernaryLogic is always single cycle with a lot of ports available and while
+        // BlendVariable is often also a single cycle it can frequently be 2-3 instead.
+        //
+        // Additionally, for TYP_SIMD64 this avoids needing to convert from vector to mask
+        // which introduces 3-4 cycles of overhead on most hardware and would be strictly worse
+
+        GenTree* control = m_compiler->gtNewIconNode(0xCA); // (B & A) | (C & ~A)
+        newNodes.InsertAtEnd(control);
+
+        resultNode = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, op3, control, NI_AVX512_TernaryLogic,
+                                                          simdBaseType, simdSize);
+    }
+    else if (op1->IsVectorPerElementMask(TYP_BYTE, simdSize))
+    {
+        // If the condition vector comes from a hardware intrinsic that
+        // returns a per-element mask, we can optimize the entire
+        // conditional select to a single BlendVariable instruction
+        // (if supported by the architecture).
+        //
+        // We can check using `TYP_BYTE` as we can change the base type
+        // and still get correct codegen since the ConditionalSelect is
+        // itself bitwise.
+
         // Next, determine if the target architecture supports BlendVariable
         NamedIntrinsic blendVariableId = NI_Illegal;
 
-        bool isOp1CvtMaskToVector = op1->OperIsConvertMaskToVector();
-
-        if ((simdSize == 64) || isOp1CvtMaskToVector)
+        if (varTypeIsFloating(simdBaseType) && !op1->IsVectorPerElementMask(simdBaseType, simdSize))
         {
-            GenTree* maskNode;
+            // For floating-point, we want to preserve the base type if the
+            // mask is also compatible with it, otherwise we need to fixup
+            // the base type to ensure the right instruction is selected for
+            // the mask.
 
-            if (isOp1CvtMaskToVector)
-            {
-                GenTreeHWIntrinsic* cvtMaskToVector = op1->AsHWIntrinsic();
-
-                maskNode = cvtMaskToVector->Op(1);
-                BlockRange().Remove(op1);
-
-                // We need to change the base type to match the underlying mask size to ensure
-                // the right instruction variant is picked. If the CndSel was for TYP_INT but
-                // the mask was for TYP_DOUBLE then we'd generate vpblendmd when we really want
-                // vpblendmq. Changing the size is fine since CndSel itself is bitwise and the
-                // the mask is just representing entire elements at a given size.
-
-                simdBaseType = cvtMaskToVector->GetSimdBaseType();
-            }
-            else
-            {
-                maskNode = m_compiler->gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseType, simdSize);
-                newNodes.InsertAtEnd(maskNode);
-            }
-
-            assert(maskNode->TypeIs(TYP_MASK));
-            blendVariableId = NI_AVX512_BlendVariableMask;
-            op1             = maskNode;
+            simdBaseType = TYP_BYTE;
         }
-        else if (simdSize == 32)
+
+        if (simdSize == 32)
         {
             // For Vector256 (simdSize == 32), BlendVariable for floats/doubles
             // is available on AVX, whereas other types (integrals) require AVX2
@@ -3568,50 +3611,26 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 
     if (resultNode == nullptr)
     {
-        if (op3->IsVectorZero())
+        // We cannot optimize, so produce unoptimized instructions
+        assert(simdSize != 64);
+
+        // We'll need the mask twice
+        if (!op1->OperIs(GT_LCL_VAR))
         {
-            BlockRange().Remove(op3);
-
-            resultNode = m_compiler->gtNewSimdBinOpNode(GT_AND, simdType, op1, op2, simdBaseType, simdSize);
+            LIR::Use op1Use;
+            LIR::Use::MakeDummyUse(newNodes, op1, &op1Use);
+            op1Use.ReplaceWithLclVar(m_compiler);
+            op1 = op1Use.Def();
         }
-        else if (op2->IsVectorZero())
-        {
-            BlockRange().Remove(op2);
 
-            resultNode = m_compiler->gtNewSimdBinOpNode(GT_AND_NOT, simdType, op3, op1, simdBaseType, simdSize);
-        }
-        else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
-        {
-            // We can't use the mask, but we can emit a ternary logic node
-            GenTree* control = m_compiler->gtNewIconNode(0xCA); // (B & A) | (C & ~A)
-            newNodes.InsertAtEnd(control);
+        GenTree* tmp1 = m_compiler->gtClone(op1);
+        GenTree* tmp2 = m_compiler->gtNewSimdBinOpNode(GT_AND, simdType, op1, op2, simdBaseType, simdSize);
+        GenTree* tmp3 = m_compiler->gtNewSimdBinOpNode(GT_AND_NOT, simdType, op3, tmp1, simdBaseType, simdSize);
+        resultNode    = m_compiler->gtNewSimdBinOpNode(GT_OR, simdType, tmp2, tmp3, simdBaseType, simdSize);
 
-            resultNode = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, op3, control, NI_AVX512_TernaryLogic,
-                                                              simdBaseType, simdSize);
-        }
-        else
-        {
-            // We cannot optimize, so produce unoptimized instructions
-            assert(simdSize != 64);
-
-            // We'll need the mask twice
-            if (!op1->OperIs(GT_LCL_VAR))
-            {
-                LIR::Use op1Use;
-                LIR::Use::MakeDummyUse(newNodes, op1, &op1Use);
-                op1Use.ReplaceWithLclVar(m_compiler);
-                op1 = op1Use.Def();
-            }
-
-            GenTree* tmp1 = m_compiler->gtClone(op1);
-            GenTree* tmp2 = m_compiler->gtNewSimdBinOpNode(GT_AND, simdType, op1, op2, simdBaseType, simdSize);
-            GenTree* tmp3 = m_compiler->gtNewSimdBinOpNode(GT_AND_NOT, simdType, op3, tmp1, simdBaseType, simdSize);
-            resultNode    = m_compiler->gtNewSimdBinOpNode(GT_OR, simdType, tmp2, tmp3, simdBaseType, simdSize);
-
-            newNodes.InsertAtEnd(tmp1);
-            newNodes.InsertAtEnd(tmp2);
-            newNodes.InsertAtEnd(tmp3);
-        }
+        newNodes.InsertAtEnd(tmp1);
+        newNodes.InsertAtEnd(tmp2);
+        newNodes.InsertAtEnd(tmp3);
     }
 
     newNodes.InsertAtEnd(resultNode);
@@ -7288,12 +7307,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
     GenTree* ctrlExpr = call->gtControlExpr;
     if (call->gtCallType == CT_INDIRECT)
     {
-        // either gtControlExpr != null or gtCallAddr != null.
-        // Both cannot be non-null at the same time.
-        assert(ctrlExpr == nullptr);
-        assert(call->gtCallAddr != nullptr);
-        ctrlExpr = call->gtCallAddr;
-
 #ifdef TARGET_X86
         // Fast tail calls aren't currently supported on x86, but if they ever are, the code
         // below that handles indirect VSD calls will need to be fixed.

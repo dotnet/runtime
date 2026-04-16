@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -25,11 +24,14 @@ public class GCMemoryRegionTests
         (string Name, string Value)[] globalStrings,
         TestPlaceholderTarget.ReadFromTargetDelegate readFromTarget)
     {
-        var target = new TestPlaceholderTarget(arch, readFromTarget, types, globals, globalStrings);
-        var gcContract = ((IContractFactory<IGC>)new GCFactory()).CreateContract(target, 1);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.GC == gcContract));
-        return gcContract;
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader(readFromTarget)
+            .AddTypes(types)
+            .AddGlobals(globals)
+            .AddGlobalStrings(globalStrings)
+            .AddContract<IGC>(version: 1)
+            .Build();
+        return target.Contracts.GC;
     }
 
     private static (string Name, ulong Value)[] BuildGlobals(
@@ -86,33 +88,27 @@ public class GCMemoryRegionTests
         };
 
         var segFragment = allocator.Allocate(HandleSegmentSize, "Segment");
-        builder.AddHeapFragment(segFragment);
         Span<byte> segSpan = builder.BorrowAddressRange(segFragment.Address, segFragment.Data.Length);
         helpers.WritePointer(segSpan.Slice(0, ptrSize), TargetPointer.Null);
 
         var htFragment = allocator.Allocate((ulong)ptrSize, "HandleTable");
-        builder.AddHeapFragment(htFragment);
         Span<byte> htSpan = builder.BorrowAddressRange(htFragment.Address, htFragment.Data.Length);
         helpers.WritePointer(htSpan.Slice(0, ptrSize), segFragment.Address);
 
         var bucketTableFragment = allocator.Allocate((ulong)ptrSize, "BucketTable");
-        builder.AddHeapFragment(bucketTableFragment);
         Span<byte> btSpan = builder.BorrowAddressRange(bucketTableFragment.Address, bucketTableFragment.Data.Length);
         helpers.WritePointer(btSpan.Slice(0, ptrSize), htFragment.Address);
 
         var bucketFragment = allocator.Allocate((ulong)ptrSize, "Bucket");
-        builder.AddHeapFragment(bucketFragment);
         Span<byte> bSpan = builder.BorrowAddressRange(bucketFragment.Address, bucketFragment.Data.Length);
         helpers.WritePointer(bSpan.Slice(0, ptrSize), bucketTableFragment.Address);
 
         var bucketsArrayFragment = allocator.Allocate((ulong)(InitialHandleTableArraySize * ptrSize), "BucketsArray");
-        builder.AddHeapFragment(bucketsArrayFragment);
         Span<byte> baSpan = builder.BorrowAddressRange(bucketsArrayFragment.Address, bucketsArrayFragment.Data.Length);
         helpers.WritePointer(baSpan.Slice(0, ptrSize), bucketFragment.Address);
         helpers.WritePointer(baSpan.Slice(ptrSize, ptrSize), TargetPointer.Null);
 
         var mapFragment = allocator.Allocate((ulong)(2 * ptrSize), "Map");
-        builder.AddHeapFragment(mapFragment);
         Span<byte> mapSpan = builder.BorrowAddressRange(mapFragment.Address, mapFragment.Data.Length);
         helpers.WritePointer(mapSpan.Slice(0, ptrSize), bucketsArrayFragment.Address);
         helpers.WritePointer(mapSpan.Slice(ptrSize, ptrSize), TargetPointer.Null);
@@ -151,13 +147,11 @@ public class GCMemoryRegionTests
         };
 
         var bucketsArrayFragment = allocator.Allocate((ulong)(InitialHandleTableArraySize * ptrSize), "BucketsArray");
-        builder.AddHeapFragment(bucketsArrayFragment);
         Span<byte> baSpan = builder.BorrowAddressRange(bucketsArrayFragment.Address, bucketsArrayFragment.Data.Length);
         helpers.WritePointer(baSpan.Slice(0, ptrSize), TargetPointer.Null);
         helpers.WritePointer(baSpan.Slice(ptrSize, ptrSize), TargetPointer.Null);
 
         var mapFragment = allocator.Allocate((ulong)(2 * ptrSize), "Map");
-        builder.AddHeapFragment(mapFragment);
         Span<byte> mapSpan = builder.BorrowAddressRange(mapFragment.Address, mapFragment.Data.Length);
         helpers.WritePointer(mapSpan.Slice(0, ptrSize), bucketsArrayFragment.Address);
         helpers.WritePointer(mapSpan.Slice(ptrSize, ptrSize), TargetPointer.Null);
@@ -197,38 +191,31 @@ public class GCMemoryRegionTests
         };
 
         var seg2Fragment = allocator.Allocate(HandleSegmentSize, "Seg2");
-        builder.AddHeapFragment(seg2Fragment);
         Span<byte> seg2Span = builder.BorrowAddressRange(seg2Fragment.Address, seg2Fragment.Data.Length);
         helpers.WritePointer(seg2Span.Slice(0, ptrSize), TargetPointer.Null);
 
         var seg1Fragment = allocator.Allocate(HandleSegmentSize, "Seg1");
-        builder.AddHeapFragment(seg1Fragment);
         Span<byte> seg1Span = builder.BorrowAddressRange(seg1Fragment.Address, seg1Fragment.Data.Length);
         helpers.WritePointer(seg1Span.Slice(0, ptrSize), seg2Fragment.Address);
 
         var htFragment = allocator.Allocate((ulong)ptrSize, "HT");
-        builder.AddHeapFragment(htFragment);
         Span<byte> htSpan = builder.BorrowAddressRange(htFragment.Address, htFragment.Data.Length);
         helpers.WritePointer(htSpan.Slice(0, ptrSize), seg1Fragment.Address);
 
         var btFragment = allocator.Allocate((ulong)ptrSize, "BT");
-        builder.AddHeapFragment(btFragment);
         Span<byte> btSpan = builder.BorrowAddressRange(btFragment.Address, btFragment.Data.Length);
         helpers.WritePointer(btSpan.Slice(0, ptrSize), htFragment.Address);
 
         var bucketFragment = allocator.Allocate((ulong)ptrSize, "Bucket");
-        builder.AddHeapFragment(bucketFragment);
         Span<byte> bucketSpan = builder.BorrowAddressRange(bucketFragment.Address, bucketFragment.Data.Length);
         helpers.WritePointer(bucketSpan.Slice(0, ptrSize), btFragment.Address);
 
         var baFragment = allocator.Allocate((ulong)(InitialHandleTableArraySize * ptrSize), "BA");
-        builder.AddHeapFragment(baFragment);
         Span<byte> baSpan = builder.BorrowAddressRange(baFragment.Address, baFragment.Data.Length);
         helpers.WritePointer(baSpan.Slice(0, ptrSize), bucketFragment.Address);
         helpers.WritePointer(baSpan.Slice(ptrSize, ptrSize), TargetPointer.Null);
 
         var mapFragment = allocator.Allocate((ulong)(2 * ptrSize), "Map");
-        builder.AddHeapFragment(mapFragment);
         Span<byte> mapSpan = builder.BorrowAddressRange(mapFragment.Address, mapFragment.Data.Length);
         helpers.WritePointer(mapSpan.Slice(0, ptrSize), baFragment.Address);
         helpers.WritePointer(mapSpan.Slice(ptrSize, ptrSize), TargetPointer.Null);
@@ -268,7 +255,6 @@ public class GCMemoryRegionTests
         };
 
         var ctiFragment = allocator.Allocate(cardTableTypeSize, "CTI");
-        builder.AddHeapFragment(ctiFragment);
         Span<byte> ctiSpan = builder.BorrowAddressRange(ctiFragment.Address, ctiFragment.Data.Length);
         helpers.Write(ctiSpan.Slice(0, sizeof(uint)), (uint)1);
         if (ptrSize == 8)
@@ -278,7 +264,6 @@ public class GCMemoryRegionTests
         helpers.WritePointer(ctiSpan.Slice(4 + ptrSize, ptrSize), TargetPointer.Null);
 
         var bkFragment = allocator.Allocate((ulong)ptrSize, "BK");
-        builder.AddHeapFragment(bkFragment);
         Span<byte> bkSpan = builder.BorrowAddressRange(bkFragment.Address, bkFragment.Data.Length);
         helpers.WritePointer(bkSpan.Slice(0, ptrSize), ctiFragment.Address);
 
@@ -311,7 +296,6 @@ public class GCMemoryRegionTests
 
         // BookkeepingStart global pointer exists but the value at that address is null
         var bkFragment = allocator.Allocate((ulong)ptrSize, "BK");
-        builder.AddHeapFragment(bkFragment);
         Span<byte> bkSpan = builder.BorrowAddressRange(bkFragment.Address, bkFragment.Data.Length);
         helpers.WritePointer(bkSpan.Slice(0, ptrSize), TargetPointer.Null);
 
@@ -358,14 +342,12 @@ public class GCMemoryRegionTests
         TargetPointer committedAddr = new(0x1000_2000);
 
         var segFragment = allocator.Allocate(heapSegmentSize, "Seg");
-        builder.AddHeapFragment(segFragment);
         Span<byte> segSpan = builder.BorrowAddressRange(segFragment.Address, segFragment.Data.Length);
         helpers.WritePointer(segSpan.Slice(ptrSize, ptrSize), committedAddr);
         helpers.WritePointer(segSpan.Slice(4 * ptrSize, ptrSize), memAddr);
         helpers.WritePointer(segSpan.Slice(6 * ptrSize, ptrSize), TargetPointer.Null);
 
         var flFragment = allocator.Allocate(regionFreeListSize, "FL");
-        builder.AddHeapFragment(flFragment);
         Span<byte> flSpan = builder.BorrowAddressRange(flFragment.Address, flFragment.Data.Length);
         helpers.WritePointer(flSpan.Slice(5 * ptrSize, ptrSize), segFragment.Address);
 
@@ -403,7 +385,6 @@ public class GCMemoryRegionTests
         };
 
         var flFragment = allocator.Allocate(regionFreeListSize, "FL");
-        builder.AddHeapFragment(flFragment);
         Span<byte> flSpan = builder.BorrowAddressRange(flFragment.Address, flFragment.Data.Length);
         helpers.WritePointer(flSpan.Slice(5 * ptrSize, ptrSize), TargetPointer.Null);
 
@@ -447,21 +428,18 @@ public class GCMemoryRegionTests
         };
 
         var seg2Fragment = allocator.Allocate(heapSegmentSize, "Seg2");
-        builder.AddHeapFragment(seg2Fragment);
         Span<byte> seg2Span = builder.BorrowAddressRange(seg2Fragment.Address, seg2Fragment.Data.Length);
         helpers.WritePointer(seg2Span.Slice(ptrSize, ptrSize), new TargetPointer(0x2000_4000));
         helpers.WritePointer(seg2Span.Slice(4 * ptrSize, ptrSize), new TargetPointer(0x2000_0000));
         helpers.WritePointer(seg2Span.Slice(6 * ptrSize, ptrSize), TargetPointer.Null);
 
         var seg1Fragment = allocator.Allocate(heapSegmentSize, "Seg1");
-        builder.AddHeapFragment(seg1Fragment);
         Span<byte> seg1Span = builder.BorrowAddressRange(seg1Fragment.Address, seg1Fragment.Data.Length);
         helpers.WritePointer(seg1Span.Slice(ptrSize, ptrSize), new TargetPointer(0x1000_2000));
         helpers.WritePointer(seg1Span.Slice(4 * ptrSize, ptrSize), new TargetPointer(0x1000_0000));
         helpers.WritePointer(seg1Span.Slice(6 * ptrSize, ptrSize), seg2Fragment.Address);
 
         var flFragment = allocator.Allocate(regionFreeListSize, "FL");
-        builder.AddHeapFragment(flFragment);
         Span<byte> flSpan = builder.BorrowAddressRange(flFragment.Address, flFragment.Data.Length);
         helpers.WritePointer(flSpan.Slice(5 * ptrSize, ptrSize), seg1Fragment.Address);
 

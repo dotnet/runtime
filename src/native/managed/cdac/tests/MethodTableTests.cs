@@ -7,7 +7,6 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
-using Moq;
 using Xunit;
 using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
 
@@ -41,19 +40,16 @@ public class MethodTableTests
 
     internal static TestPlaceholderTarget CreateTarget(MockTarget.Architecture arch, Action<MockRTS> configure)
     {
-        TargetTestHelpers targetTestHelpers = new(arch);
-        MockMemorySpace.Builder builder = new(targetTestHelpers);
-        MockRTS rtsBuilder = new(builder);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockRTS rtsBuilder = new(targetBuilder.MemoryBuilder);
 
         configure?.Invoke(rtsBuilder);
 
-        var target = new TestPlaceholderTarget(
-            arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(rtsBuilder),
-            CreateContractGlobals(rtsBuilder));
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)));
+        var target = targetBuilder
+            .AddTypes(CreateContractTypes(rtsBuilder))
+            .AddGlobals(CreateContractGlobals(rtsBuilder))
+            .AddContract<IRuntimeTypeSystem>(version: 1)
+            .Build();
         return target;
     }
 
@@ -282,7 +278,6 @@ public class MethodTableTests
                 MockMemorySpace.HeapFragment tinyEEClass = rtsBuilder.TypeSystemAllocator.Allocate(
                     (ulong)pointerSize, "Tiny EEClass (MethodTable field only)");
                 helpers.WritePointer(tinyEEClass.Data, methodTablePtr);
-                rtsBuilder.Builder.AddHeapFragment(tinyEEClass);
                 methodTable.EEClassOrCanonMT = tinyEEClass.Address;
             });
 
@@ -361,7 +356,6 @@ public class MethodTableTests
             helpers.Write(dest.Slice(mtTypeInfo.Fields[nameof(Data.MethodTable.MTFlags2)].Offset), (uint)0);
             helpers.WritePointer(dest.Slice(eeClassOrCanonMTOffset), eeClassPtr);
 
-            rtsBuilder.Builder.AddHeapFragment(tinyMT);
             tinyMethodTableAddr = tinyMT.Address;
 
             // Point the EEClass back at the tiny MethodTable to pass validation

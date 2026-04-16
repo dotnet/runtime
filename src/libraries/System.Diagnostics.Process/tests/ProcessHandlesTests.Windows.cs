@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Pipes;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
@@ -32,11 +31,13 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void ProcessStartedWithInvalidHandles_CanStartChildProcessWithDerivedInvalidHandles(bool restrictHandles)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void ProcessStartedWithInvalidHandles_CanStartChildProcessWithDerivedInvalidHandles(bool restrictHandles, bool killOnParentExit)
         {
-            using Process process = CreateProcess(arg =>
+            using Process process = CreateProcess((inheritanceArg, killArg) =>
             {
                 using (Process childProcess = CreateProcess(() =>
                 {
@@ -47,7 +48,8 @@ namespace System.Diagnostics.Tests
                     return RemoteExecutor.SuccessExitCode;
                 }))
                 {
-                    childProcess.StartInfo.InheritedHandles = bool.Parse(arg) ? [] : null;
+                    childProcess.StartInfo.InheritedHandles = bool.Parse(inheritanceArg) ? [] : null;
+                    childProcess.StartInfo.KillOnParentExit = bool.Parse(killArg);
                     childProcess.Start();
 
                     try
@@ -60,7 +62,7 @@ namespace System.Diagnostics.Tests
                         childProcess.Kill();
                     }
                 }
-            }, restrictHandles.ToString());
+            }, restrictHandles.ToString(), killOnParentExit.ToString());
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithInvalidHandles(process.StartInfo));
         }
@@ -154,7 +156,7 @@ namespace System.Diagnostics.Tests
                 // As soon as SafeProcessHandle.WaitForExit* are implemented (#126293), we can use them instead.
                 using Process process = Process.GetProcessById(processInfo.dwProcessId);
 
-                if (ResumeThread(processInfo.hThread) == -1)
+                if (Interop.Kernel32.ResumeThread(processInfo.hThread) == 0xFFFFFFFF)
                 {
                     throw new Win32Exception();
                 }
@@ -180,7 +182,22 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [LibraryImport(Interop.Libraries.Kernel32)]
-        private static partial int ResumeThread(nint hThread);
+        private static unsafe string GetSafeFileHandleId(SafeFileHandle handle)
+        {
+            const int MaxPath = 32_767;
+            char[] buffer = new char[MaxPath];
+            uint result;
+            fixed (char* ptr = buffer)
+            {
+                result = Interop.Kernel32.GetFinalPathNameByHandle(handle, ptr, (uint)MaxPath, Interop.Kernel32.FILE_NAME_NORMALIZED);
+            }
+
+            if (result == 0)
+            {
+                throw new Win32Exception();
+            }
+
+            return new string(buffer, 0, (int)result);
+        }
     }
 }

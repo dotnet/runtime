@@ -25,7 +25,7 @@ public unsafe class ThreadTests
                 (nameof(Constants.Globals.ThreadStore), threadBuilder.ThreadStoreGlobalAddress),
                 (nameof(Constants.Globals.FinalizerThread), threadBuilder.FinalizerThreadGlobalAddress),
                 (nameof(Constants.Globals.GCThread), threadBuilder.GCThreadGlobalAddress))
-            .AddContract<IThread>(static target => ((IContractFactory<IThread>)new ThreadFactory()).CreateContract(target, 1))
+            .AddContract<IThread>(version: 1)
             .Build();
 
         return target;
@@ -226,7 +226,6 @@ public unsafe class ThreadTests
                 MockMemorySpace.BumpAllocator allocator = threadBuilder.Builder.CreateAllocator(0x1_0000, 0x2_0000);
                 MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
                 helpers.WritePointer(handleFragment.Data, expectedObject);
-                threadBuilder.Builder.AddHeapFragment(handleFragment);
                 exceptionInfo!.ThrownObjectHandle = handleFragment.Address;
             });
 
@@ -271,7 +270,6 @@ public unsafe class ThreadTests
                 MockMemorySpace.BumpAllocator allocator = threadBuilder.Builder.CreateAllocator(0x1_0000, 0x2_0000);
                 MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
                 helpers.WritePointer(handleFragment.Data, TargetPointer.Null);
-                threadBuilder.Builder.AddHeapFragment(handleFragment);
                 exceptionInfo!.ThrownObjectHandle = handleFragment.Address;
             });
 

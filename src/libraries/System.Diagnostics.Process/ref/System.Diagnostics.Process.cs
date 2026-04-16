@@ -157,6 +157,8 @@ namespace System.Diagnostics
         public void Kill(bool entireProcessTree) { }
         public static void LeaveDebugMode() { }
         protected void OnExited() { }
+        public (byte[] StandardOutput, byte[] StandardError) ReadAllBytes(System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
+        public (string StandardOutput, string StandardError) ReadAllText(System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
         public void Refresh() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
@@ -255,6 +257,8 @@ namespace System.Diagnostics
         public string FileName { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle>? InheritedHandles { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public bool KillOnParentExit { get { throw null; } set { } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool LoadUserProfile { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -270,6 +274,7 @@ namespace System.Diagnostics
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardInputHandle { get { throw null; } set { } }
         public System.Text.Encoding? StandardOutputEncoding { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardOutputHandle { get { throw null; } set { } }
+        public bool StartDetached { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool UseCredentialsForNetworkingOnly { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]

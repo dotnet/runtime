@@ -2371,7 +2371,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Generates code for an EH funclet epilog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
