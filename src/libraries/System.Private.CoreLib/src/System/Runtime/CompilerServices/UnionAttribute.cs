@@ -14,7 +14,7 @@ namespace System.Runtime.CompilerServices
     /// </para>
     /// </remarks>
     /// <seealso cref="IUnion" />
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
     public sealed class UnionAttribute : Attribute
     {
     }

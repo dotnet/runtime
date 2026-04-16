@@ -14493,7 +14493,7 @@ namespace System.Runtime.CompilerServices
     {
         public UnsafeValueTypeAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
     public sealed partial class UnionAttribute : System.Attribute
     {
         public UnionAttribute() { }

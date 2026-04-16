@@ -436,6 +436,7 @@ namespace System.Runtime.CompilerServices.Tests
             var usage = (AttributeUsageAttribute)Attribute.GetCustomAttribute(typeof(UnionAttribute), typeof(AttributeUsageAttribute))!;
             Assert.Equal(AttributeTargets.Class | AttributeTargets.Struct, usage.ValidOn);
             Assert.False(usage.AllowMultiple);
+            Assert.False(usage.Inherited);
         }
 
     }
