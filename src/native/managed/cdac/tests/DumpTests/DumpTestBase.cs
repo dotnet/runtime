@@ -178,7 +178,7 @@ public abstract class DumpTestBase : IDisposable
     }
 
     /// <summary>
-    /// Returns the dump source platform from dump-info.json (e.g., "windows/x64"),
+    /// Returns the dump source platform from dump-info.json (e.g., "windows_x64"),
     /// or null for local runs where CDAC_DUMP_ROOT is not set.
     /// </summary>
     private static string? GetDumpSource()
@@ -192,7 +192,7 @@ public abstract class DumpTestBase : IDisposable
         {
             DumpInfo? info = DumpInfo.TryLoad(Path.Combine(dumpRoot, versionDir));
             if (info is not null)
-                return $"{info.Os}/{info.Arch}";
+                return $"{info.Os}_{info.Arch}";
         }
 
         // Fall back to the directory name if dump-info.json isn't available

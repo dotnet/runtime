@@ -18,6 +18,7 @@
       TestHostPayload    — Path to testhost shared framework directory
       DumpTestsPayload   — Path to payload directory (tests/ + dumps/)
       TargetOS           — Target OS (windows, linux, osx)
+      TargetArchitecture — Target architecture (x64, x86, arm64, arm)
       SourcePlatforms    — Semicolon-separated source platform names
                            (e.g. "windows_x64;linux_x64;osx_arm64")
   -->

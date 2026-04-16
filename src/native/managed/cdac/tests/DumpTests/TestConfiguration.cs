@@ -27,7 +27,7 @@ public sealed class TestConfiguration : IXunitSerializable
     public string R2RMode { get; set; } = "r2r";
 
     /// <summary>
-    /// The platform that produced the dump (e.g., "windows/x64", "linux/arm64").
+    /// The platform that produced the dump (e.g., "windows_x64", "linux_arm64").
     /// Null for local runs where the host and dump source are the same.
     /// </summary>
     public string? DumpSource { get; set; }
@@ -42,13 +42,13 @@ public sealed class TestConfiguration : IXunitSerializable
     }
 
     public override string ToString() =>
-        DumpSource is not null ? $"{RuntimeVersion}/{R2RMode}, target: {DumpSource}" : $"{RuntimeVersion}/{R2RMode}";
+        DumpSource is not null ? $"{RuntimeVersion}/{R2RMode} ({DumpSource})" : $"{RuntimeVersion}/{R2RMode}";
 
     public void Serialize(IXunitSerializationInfo info)
     {
         info.AddValue(nameof(RuntimeVersion), RuntimeVersion);
         info.AddValue(nameof(R2RMode), R2RMode);
-        info.AddValue(nameof(DumpSource), DumpSource);
+        info.AddValue(nameof(DumpSource), DumpSource, typeof(string));
     }
 
     public void Deserialize(IXunitSerializationInfo info)
