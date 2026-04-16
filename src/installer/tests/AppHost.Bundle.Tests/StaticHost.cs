@@ -59,13 +59,14 @@ namespace AppHost.Bundle.Tests
             }
             else
             {
-                // Use nm to check for exported dynamic symbols.
-                // On macOS, nm shows all symbols; on Linux, -D shows dynamic symbols.
-                string args = OperatingSystem.IsMacOS()
-                    ? singleFileHostPath
-                    : $"-D {singleFileHostPath}";
+                // Use nm to check for exported defined symbols.
+                // On macOS, -gUj shows external defined symbol names only.
+                // On Linux, -D --defined-only shows defined dynamic symbols.
+                Command command = OperatingSystem.IsMacOS()
+                    ? Command.Create("nm", "-gUj", singleFileHostPath)
+                    : Command.Create("nm", "-D", "--defined-only", singleFileHostPath);
 
-                CommandResult result = Command.Create("nm", args)
+                CommandResult result = command
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
