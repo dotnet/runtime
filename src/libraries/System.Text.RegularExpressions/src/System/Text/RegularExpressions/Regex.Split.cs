@@ -27,8 +27,8 @@ namespace System.Text.RegularExpressions
         /// instance method <see cref="Split(string)"/>.
         /// </para>
         /// <para>
-        /// The <see cref="Regex"/>.Split methods are similar to the
-        /// <see cref="string.Split(char[])"/> method, except that <see cref="Regex"/>.Split splits
+        /// The <see cref="Regex.Split(string)">Regex.Split</see> methods are similar to the
+        /// <see cref="string.Split(char[])"/> method, except that <see cref="Regex.Split(string)">Regex.Split</see> splits
         /// the string at a delimiter determined by a regular expression instead of a set of
         /// characters. If the regular expression pattern includes capturing parentheses, the
         /// captured text is included in the resulting string array. If the pattern includes
@@ -68,8 +68,8 @@ namespace System.Text.RegularExpressions
         /// and calling the instance method <see cref="Split(string)"/>.
         /// </para>
         /// <para>
-        /// The <see cref="Regex"/>.Split methods are similar to the
-        /// <see cref="string.Split(char[])"/> method, except that <see cref="Regex"/>.Split splits
+        /// The <see cref="Regex.Split(string)">Regex.Split</see> methods are similar to the
+        /// <see cref="string.Split(char[])"/> method, except that <see cref="Regex.Split(string)">Regex.Split</see> splits
         /// the string at a delimiter determined by a regular expression instead of a set of
         /// characters. If the regular expression pattern includes capturing parentheses, the
         /// captured text is included in the resulting string array. If the pattern includes
@@ -121,8 +121,8 @@ namespace System.Text.RegularExpressions
         /// expression pattern and calling the instance method <see cref="Split(string)"/>.
         /// </para>
         /// <para>
-        /// The <see cref="Regex"/>.Split methods are similar to the
-        /// <see cref="string.Split(char[])"/> method, except that <see cref="Regex"/>.Split splits
+        /// The <see cref="Regex.Split(string)">Regex.Split</see> methods are similar to the
+        /// <see cref="string.Split(char[])"/> method, except that <see cref="Regex.Split(string)">Regex.Split</see> splits
         /// the string at a delimiter determined by a regular expression instead of a set of
         /// characters. If the regular expression pattern includes capturing parentheses, the
         /// captured text is included in the resulting string array. If the pattern includes
@@ -159,8 +159,8 @@ namespace System.Text.RegularExpressions
         /// <exception cref="RegexMatchTimeoutException">A time-out occurred.</exception>
         /// <remarks>
         /// <para>
-        /// The <see cref="Regex"/>.Split methods are similar to the
-        /// <see cref="string.Split(char[])"/> method, except that <see cref="Regex"/>.Split splits
+        /// The <see cref="Regex.Split(string)">Regex.Split</see> methods are similar to the
+        /// <see cref="string.Split(char[])"/> method, except that <see cref="Regex.Split(string)">Regex.Split</see> splits
         /// the string at a delimiter determined by a regular expression instead of a set of
         /// characters. The string is split as many times as possible. If no match is found, the
         /// return value contains one element whose value is the original input string.
@@ -202,7 +202,7 @@ namespace System.Text.RegularExpressions
         /// <exception cref="RegexMatchTimeoutException">A time-out occurred.</exception>
         /// <remarks>
         /// <para>
-        /// The <see cref="Regex"/>.Split methods are similar to
+        /// The <see cref="Regex.Split(string)">Regex.Split</see> methods are similar to
         /// <see cref="string.Split(char[])"/>. The <paramref name="count"/> parameter specifies
         /// the maximum number of substrings into which the input string can be split; the last
         /// string contains the unsplit remainder of the string. A <paramref name="count"/> value of

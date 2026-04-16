@@ -142,7 +142,10 @@ namespace System.Text.RegularExpressions
         /// <exception cref="ArgumentNullException">
         /// <paramref name="array" /> is <see langword="null" />.
         /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentException">
+        /// <paramref name="array" /> is multidimensional.
+        /// </exception>
+        /// <exception cref="IndexOutOfRangeException">
         /// <paramref name="arrayIndex" /> is outside the bounds of <paramref name="array" />.
         /// </exception>
         public void CopyTo(Array array, int arrayIndex)

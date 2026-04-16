@@ -249,13 +249,16 @@ namespace System.Text.RegularExpressions
         /// exceeds that time-out interval.
         /// </remarks>
         /// <exception cref="ArgumentException">
-        /// <paramref name="array" /> is a multi-dimensional array.
-        /// </exception>
-        /// <exception cref="IndexOutOfRangeException">
-        /// <paramref name="arrayIndex" /> is outside the bounds of <paramref name="array" />.
+        /// <paramref name="array" /> is multi-dimensional.
         /// -or-
-        /// <paramref name="arrayIndex" /> plus <see cref="Count" /> is outside the bounds of
-        /// <paramref name="array" />.
+        /// The number of elements in the source <see cref="MatchCollection" /> is greater than the
+        /// available space from <paramref name="arrayIndex" /> to the end of <paramref name="array" />.
+        /// -or-
+        /// The type of the source <see cref="MatchCollection" /> cannot be cast automatically to the
+        /// type of the destination <paramref name="array" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="arrayIndex" /> is less than the lower bound of <paramref name="array" />.
         /// </exception>
         /// <exception cref="RegexMatchTimeoutException">A time-out occurred.</exception>
         public void CopyTo(Array array, int arrayIndex)
