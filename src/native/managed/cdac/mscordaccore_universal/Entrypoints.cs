@@ -77,14 +77,9 @@ internal static class Entrypoints
         if (target == null)
             return -1;
 
-        object? legacyImpl = null;
-        if (legacyImplPtr != IntPtr.Zero)
-        {
-            legacyImpl = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
-        }
-
-        // Fallback gating is handled by LegacyFallbackHelper at each call site,
-        // so always pass the legacy impl. The helper checks CDAC_NO_FALLBACK.
+        object? legacyImpl = legacyImplPtr != IntPtr.Zero
+            ? cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None)
+            : null;
         Legacy.SOSDacImpl impl = new(target, legacyImpl);
         nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         *obj = ptr;
@@ -100,20 +95,36 @@ internal static class Entrypoints
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_dacdbi_interface")]
     private static unsafe int CreateDacDbiInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
     {
-        ComWrappers cw = new StrategyBasedComWrappers();
+        if (obj == null)
+            return HResults.E_INVALIDARG;
+        if (handle == IntPtr.Zero)
+        {
+            *obj = IntPtr.Zero;
+            return HResults.E_NOTIMPL;
+        }
+
         Target? target = GCHandle.FromIntPtr(handle).Target as Target;
         if (target is null)
-            return -1;
+        {
+            *obj = IntPtr.Zero;
+            return HResults.E_INVALIDARG;
+        }
 
+        ComWrappers cw = new StrategyBasedComWrappers();
         object? legacyObj = null;
         if (legacyImplPtr != IntPtr.Zero)
         {
             legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
+            if (legacyObj is not Legacy.IDacDbiInterface)
+            {
+                *obj = IntPtr.Zero;
+                return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
+            }
         }
 
         Legacy.DacDbiImpl impl = new(target, legacyObj);
         *obj = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
-        return 0;
+        return HResults.S_OK;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstanceWithFallback")]

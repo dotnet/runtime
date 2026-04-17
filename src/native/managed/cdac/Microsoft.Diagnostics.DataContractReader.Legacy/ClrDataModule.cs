@@ -54,7 +54,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
     {
         ppv = default;
-        if (!LegacyFallbackHelper.CanFallback() || _legacyModulePointer == 0)
+        if (_legacyModulePointer == 0 || !LegacyFallbackHelper.CanFallback())
             return CustomQueryInterfaceResult.NotHandled;
 
         // Legacy DAC implementation of IXCLRDataModule handles QIs for IMetaDataImport by creating and
