@@ -156,6 +156,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(Local.Set(0));
 
             // Initialize m_ReturnAddress to 0 at offset 0 of the transition block
+            // The 0 is a marker that the actual return address is to be computed from the m_StackPointer at offset 4.
             expressions.Add(Local.Get(0));
             expressions.Add(I32.Const(0));
             expressions.Add(I32.Store(0));
@@ -221,7 +222,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Load the helper function address and dispatch
             // global.get {module base}
             expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // Module base used to load the helper function address
-            expressions.Add(I32.LoadWithRVAOffset(_helperCell)); // Load the helper call function pointer from the helper cell, using a load with an RVA offset so that the helper cell can be left as a zero in the R2R image and fixed up at runtime without needing a relocation
+            expressions.Add(I32.LoadWithRVAOffset(_helperCell)); // Load the helper call function pointer from the helper cell, using a load with an RVA offset so that the helper cell can be left as a zero in the R2R image and fixed up at runtime. This avoids the need to emit a runtime relocation for the helper cell.
             // call_indirect (i32, i32, i32, i32) -> (i32)
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
