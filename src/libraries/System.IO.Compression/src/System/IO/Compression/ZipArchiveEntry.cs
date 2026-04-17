@@ -818,8 +818,7 @@ namespace System.IO.Compression
             {
                 long centralDirectoryHeaderLength = ZipCentralDirectoryFileHeader.FieldLocations.DynamicData
                     + _storedEntryNameBytes.Length
-                    + (zip64ExtraField != null ? zip64ExtraField.TotalSize : 0)
-                    + currExtraFieldDataLength
+                    + extraFieldLength
                     + _fileComment.Length;
 
                 _archive.ArchiveStream.Seek(centralDirectoryHeaderLength, SeekOrigin.Current);
@@ -1589,7 +1588,6 @@ namespace System.IO.Compression
                 else if (UseAesEncryption())
                 {
                     _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
-                    _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
@@ -1665,14 +1663,9 @@ namespace System.IO.Compression
             // If it's new or changed, write the header.
             if (_originallyInArchive && Changes == ZipArchive.ChangeState.Unchanged && !forceWrite)
             {
-                _archive.ArchiveStream.Seek(ZipLocalFileHeader.SizeOfLocalHeader + _storedEntryNameBytes.Length, SeekOrigin.Current);
+                _archive.ArchiveStream.Seek(ZipLocalFileHeader.SizeOfLocalHeader + _storedEntryNameBytes.Length + extraFieldLength, SeekOrigin.Current);
 
-                if (zip64ExtraField != null)
-                {
-                    _archive.ArchiveStream.Seek(zip64ExtraField.TotalSize, SeekOrigin.Current);
-                }
 
-                _archive.ArchiveStream.Seek(currExtraFieldDataLength, SeekOrigin.Current);
 
                 return false;
             }
@@ -1694,7 +1687,7 @@ namespace System.IO.Compression
                         zip64ExtraField = new() { CompressedSize = 0, UncompressedSize = 0 };
                     }
                 }
-                else
+                else if (Encryption != ZipEncryptionMethod.ZipCrypto)
                 {
                     _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
                 }
@@ -1813,7 +1806,7 @@ namespace System.IO.Compression
                             throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
                         }
 
-                        WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
+                        bool usedZip64InLH = WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
 
                         long startPosition = _archive.ArchiveStream.Position;
 
@@ -1848,7 +1841,7 @@ namespace System.IO.Compression
 
                         _compressedSize = _archive.ArchiveStream.Position - startPosition;
 
-                        WriteDataDescriptor();
+                        WriteCrcAndSizesInLocalHeader(usedZip64InLH);
 
                         _storedUncompressedData.Dispose();
                         _storedUncompressedData = null;
@@ -2385,8 +2378,17 @@ namespace System.IO.Compression
                     {
                         // go back and finish writing
                         if (_entry._archive.ArchiveStream.CanSeek)
+                        {
                             // finish writing local header if we have seek capabilities
                             _entry.WriteCrcAndSizesInLocalHeader(_usedZip64inLH);
+
+                            // ZipCrypto entries retain DataDescriptor for check byte correctness;
+                            // write the trailing descriptor so the archive is consistent.
+                            if ((_entry._generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0)
+                            {
+                                _entry.WriteDataDescriptor();
+                            }
+                        }
                         else
                             // write out data descriptor if we don't have seek capabilities
                             _entry.WriteDataDescriptor();
@@ -2422,8 +2424,17 @@ namespace System.IO.Compression
                     {
                         // go back and finish writing
                         if (_entry._archive.ArchiveStream.CanSeek)
+                        {
                             // finish writing local header if we have seek capabilities
                             await _entry.WriteCrcAndSizesInLocalHeaderAsync(_usedZip64inLH, cancellationToken: default).ConfigureAwait(false);
+
+                            // ZipCrypto entries retain DataDescriptor for check byte correctness;
+                            // write the trailing descriptor so the archive is consistent.
+                            if ((_entry._generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0)
+                            {
+                                await _entry.WriteDataDescriptorAsync(cancellationToken: default).ConfigureAwait(false);
+                            }
+                        }
                         else
                             // write out data descriptor if we don't have seek capabilities
                             await _entry.WriteDataDescriptorAsync(cancellationToken: default).ConfigureAwait(false);

@@ -760,7 +760,7 @@ public partial class ZipArchiveEntry
                 {
                     // Write local file header first (with encryption flag set)
                     // Pass isEmptyFile: false because even empty encrypted files have the 12-byte header
-                    await WriteLocalFileHeaderAsync(isEmptyFile: false, forceWrite: true, cancellationToken).ConfigureAwait(false);
+                    await WriteLocalFileHeaderAsync(isEmptyFile: false, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
 
                     // Record position before encryption data
                     long startPosition = _archive.ArchiveStream.Position;
@@ -810,7 +810,7 @@ public partial class ZipArchiveEntry
                     // 3. Keep CompressionMethod = Aes for central directory
 
                     // WriteLocalFileHeaderAsync will set CompressionMethod = Aes
-                    await WriteLocalFileHeaderAsync(isEmptyFile: false, forceWrite: true, cancellationToken).ConfigureAwait(false);
+                    bool usedZip64InLH = await WriteLocalFileHeaderAsync(isEmptyFile: false, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
 
                     // Record position before encryption data
                     long startPosition = _archive.ArchiveStream.Position;
@@ -861,8 +861,8 @@ public partial class ZipArchiveEntry
                     // (includes salt + password verifier + encrypted data + HMAC)
                     _compressedSize = _archive.ArchiveStream.Position - startPosition;
 
-                    // Write data descriptor since we used streaming mode
-                    await WriteDataDescriptorAsync(cancellationToken).ConfigureAwait(false);
+                    // Patch CRC and sizes back into the local header
+                    await WriteCrcAndSizesInLocalHeaderAsync(usedZip64InLH, cancellationToken).ConfigureAwait(false);
 
                     await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
                     _storedUncompressedData = null;
