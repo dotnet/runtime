@@ -90,6 +90,11 @@ partial interface IRuntimeTypeSystem : IContract
     // HasTypeParam will return true for cases where this is the interop view, and false for normal valuetypes.
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
 
+    // Internal element type of the type. Unlike GetSignatureCorElementType, this returns the underlying
+    // primitive type for enums and PrimitiveValueType categories (e.g. I4 for an enum with int underlying type).
+    // For arrays, reference types, and TypeDescs, behaves identically to GetSignatureCorElementType.
+    public virtual CorElementType GetInternalCorElementType(TypeHandle typeHandle);
+
     // return true if the TypeHandle represents an enum type.
     bool IsEnum(TypeHandle typeHandle);
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
@@ -745,6 +750,20 @@ Contracts used:
             return (CorElementType)(TypeAndFlags & 0xFF);
         }
         return default(CorElementType);
+    }
+
+    // Internal element type: returns the underlying primitive type for enums and
+    // PrimitiveValueType categories. For all other types, identical to GetSignatureCorElementType.
+    public CorElementType GetInternalCorElementType(TypeHandle typeHandle)
+    {
+        CorElementType sigType = GetSignatureCorElementType(typeHandle);
+        if (sigType == CorElementType.ValueType && typeHandle.IsMethodTable())
+        {
+            CorElementType internalType = (CorElementType)GetClassData(typeHandle).InternalCorElementType;
+            if (internalType != CorElementType.ValueType)
+                return internalType;
+        }
+        return sigType;
     }
 
     // Enums have Category_PrimitiveValueType in their MethodTable flags and their

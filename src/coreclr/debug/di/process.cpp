@@ -2484,7 +2484,7 @@ COM_METHOD CordbProcess::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLayout
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this);
 
-    hr = GetProcess()->GetDAC()->GetArrayLayout(id, pLayout);
+    hr = GetProcess()->GetDAC()->GetArrayLayout((CORDB_ADDRESS)id.token1, pLayout);
 
     PUBLIC_API_END(hr);
     return hr;
@@ -2498,7 +2498,7 @@ COM_METHOD CordbProcess::GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT *pLayout)
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this);
 
-    hr = GetProcess()->GetDAC()->GetTypeLayout(id, pLayout);
+    hr = GetProcess()->GetDAC()->GetTypeLayout((CORDB_ADDRESS)id.token1, pLayout);
 
     PUBLIC_API_END(hr);
     return hr;

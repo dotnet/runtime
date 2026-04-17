@@ -139,6 +139,18 @@ internal sealed class MockEEClass : TypedView
         set => WriteUInt16Field(NumMethodsFieldName, value);
     }
 
+    public byte InternalCorElementType
+    {
+        get => ReadByteField(InternalCorElementTypeFieldName);
+        set => WriteByteField(InternalCorElementTypeFieldName, value);
+    }
+
+    public ushort NumInstanceFields
+    {
+        get => ReadUInt16Field(NumInstanceFieldsFieldName);
+        set => WriteUInt16Field(NumInstanceFieldsFieldName, value);
+    }
+
     public ushort NumNonVirtualSlots
     {
         get => ReadUInt16Field(NumNonVirtualSlotsFieldName);
