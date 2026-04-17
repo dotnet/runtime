@@ -14628,11 +14628,13 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_4BYTE:
 #ifdef TARGET_AMD64
             case EA_8BYTE:
+                // EVEX.MOVBE is assigned with RM opcode that does not follow the following rule.
+                if (ins != INS_movbe_apx)
 #endif
-
-                /* Set the 'w' bit to get the large version */
-
-                code |= 0x1;
+                {
+                    /* Set the 'w' bit to get the large version */
+                    code |= 0x1;
+                }
                 break;
 
 #ifdef TARGET_X86
