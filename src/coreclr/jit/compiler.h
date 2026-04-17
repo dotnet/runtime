@@ -981,16 +981,48 @@ private:
 public:
     int GetStackOffset() const
     {
+        assert(lvValueSize().IsExact());
         return lvStkOffs;
     }
 
     void SetStackOffset(int offset)
     {
+        assert(lvValueSize().IsExact());
         lvStkOffs = offset;
     }
 
     unsigned  lvExactSize() const;
     ValueSize lvValueSize() const;
+
+    // SetUnknownSizeFrameIndex: Set the index that has been assigned to this
+    //    local on the UnknownSizeFrame.
+    //
+    //    This is only used for locals that have an unknown size, such as TYP_SIMD/TYP_MASK.
+    //    These locals do not have an absolute stack offset.
+    //
+    // Arguments:
+    //     index -- The index on the UnknownSizeFrame to assign to this local.
+    //
+    void SetUnknownSizeFrameIndex(int index)
+    {
+        assert(!lvValueSize().IsExact());
+        lvStkOffs = index;
+    }
+
+    // GetUnknownSizeFrameIndex: Get the index that has been assigned to this
+    //    local on the UnknownSizeFrame.
+    //
+    //    This is only used for locals that have an unknown size, such as TYP_SIMD/TYP_MASK.
+    //    These locals do not have an absolute stack offset.
+    //
+    // Returns:
+    //     The index of this local on the UnknownSizeFrame.
+    //
+    int GetUnknownSizeFrameIndex() const
+    {
+        assert(!lvValueSize().IsExact());
+        return lvStkOffs;
+    }
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
@@ -4468,7 +4500,7 @@ public:
         // needs to be scaled by VL/PL to produce an absolute address value.
         int GetAddressingOffset(LclVarDsc* varDsc)
         {
-            return GetOffset(varDsc->GetStackOffset(), varDsc->TypeIs(TYP_MASK));
+            return GetOffset(varDsc->GetUnknownSizeFrameIndex(), varDsc->TypeIs(TYP_MASK));
         }
 
         // This system ensures we don't try and generate an address on the frame

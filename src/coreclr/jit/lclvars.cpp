@@ -897,7 +897,14 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     }
 
 #ifdef DEBUG
-    varDsc->SetStackOffset(BAD_STK_OFFS);
+    if (varDsc->lvValueSize().IsExact())
+    {
+        varDsc->SetStackOffset(BAD_STK_OFFS);
+    }
+    else
+    {
+        varDsc->SetUnknownSizeFrameIndex(BAD_STK_OFFS);
+    }
 #endif
 }
 
@@ -5560,11 +5567,11 @@ void Compiler::lvaAllocUnknownSizeLocal(unsigned varNum)
 #if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
     if (varDsc->TypeIs(TYP_SIMD))
     {
-        varDsc->SetStackOffset((int)unkSizeFrame.AllocVector());
+        varDsc->SetUnknownSizeFrameIndex((int)unkSizeFrame.AllocVector());
     }
     else if (varDsc->TypeIs(TYP_MASK))
     {
-        varDsc->SetStackOffset((int)unkSizeFrame.AllocMask());
+        varDsc->SetUnknownSizeFrameIndex((int)unkSizeFrame.AllocMask());
     }
     else
 #endif
