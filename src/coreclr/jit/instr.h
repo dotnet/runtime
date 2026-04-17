@@ -566,7 +566,9 @@ enum insOpts : unsigned
 
 enum insBarrier : unsigned
 {
-    INS_BARRIER_FULL  =  0x33,
+    INS_BARRIER_FULL       = 0x33, // fence rw, rw
+    INS_BARRIER_LOAD_ONLY  = 0x23, // fence r, rw
+    INS_BARRIER_STORE_ONLY = 0x31, // fence rw, w
 };
 #elif defined(TARGET_WASM)
 enum insOpts : unsigned

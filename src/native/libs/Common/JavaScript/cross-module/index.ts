@@ -177,6 +177,7 @@ export function dotnetUpdateInternalsSubscriber() {
         const interopLocal: NativeBrowserExports = {
             getWasmMemory: table[0],
             getWasmTable: table[1],
+            SystemJS_ScheduleDiagnosticServer: table[2],
         };
         Object.assign(interop, interopLocal);
     }
@@ -186,6 +187,11 @@ export function dotnetUpdateInternalsSubscriber() {
         const interopLocal: DiagnosticsExports = {
             symbolicateStackTrace: table[0],
             installNativeSymbols: table[1],
+            ds_rt_websocket_create: table[2],
+            ds_rt_websocket_send: table[3],
+            ds_rt_websocket_poll: table[4],
+            ds_rt_websocket_recv: table[5],
+            ds_rt_websocket_close: table[6],
         };
         Object.assign(interop, interopLocal);
     }
