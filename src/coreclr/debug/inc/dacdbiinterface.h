@@ -1415,7 +1415,6 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive) = 0;
 
-    // [cDAC] [DacDbiImpl]: Contract depends on these values.
     typedef enum
     {
         kNone,

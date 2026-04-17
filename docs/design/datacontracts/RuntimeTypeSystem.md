@@ -218,7 +218,7 @@ partial interface IRuntimeTypeSystem : IContract
     // Returns true if the method is eligible for tiered compilation
     public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
 
-    // [cDAC] Return true if the method should be hidden from diagnostic stack traces.
+    // Return true if the method should be hidden from diagnostic stack traces.
     public virtual bool IsDiagnosticsHidden(MethodDescHandle methodDesc);
 
 }
