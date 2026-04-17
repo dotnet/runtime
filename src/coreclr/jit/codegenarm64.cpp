@@ -5581,7 +5581,7 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
     assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
     PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
-    regMaskTP const       tier0CalleeSaves(patchpointInfo->CalleeSaveRegisters());
+    regMaskTP const       tier0CalleeSaves((regMaskSmall)patchpointInfo->CalleeSaveRegisters());
 
     JITDUMP("--OSR--- tier0 has already saved ");
     JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
@@ -5596,29 +5596,61 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
     regMaskTP restoreRegsFloat = tier0CalleeSaves & RBM_ALLFLOAT;
     regMaskTP restoreRegsInt   = tier0CalleeSaves & ~restoreRegsFrame & ~restoreRegsFloat;
 
-    // FP is pointing to the FP/LR pair. That pair is always saved at the top.
-    int calleeSavesTop  = 2 * REGSIZE_BYTES;
-    int frameRegsBottom = calleeSavesTop - 2 * REGSIZE_BYTES;
-    int intRegsTop      = frameRegsBottom;
-    int floatRegsTop    = intRegsTop - genCountBits(restoreRegsInt) * REGSIZE_BYTES;
+    regNumber baseReg;
+    int       topOfCalleeSaves;
+    if (restoreRegsFrame != RBM_NONE)
+    {
+        // FP/LR was saved with the callee saves. It is always at the top.
+        // Restore rest of callee saves with the offset from FP.
+        baseReg          = REG_FP;
+        topOfCalleeSaves = 0;
+    }
+    else
+    {
+        // FP/LR was not saved with the callee saves. Here we do not actually
+        // know the offset from FP to the callee saves, but we do know the
+        // offset from SP.
+        baseReg          = REG_SP;
+        topOfCalleeSaves = patchpointInfo->TotalFrameSize();
+        if (m_compiler->info.compIsVarArgs)
+        {
+            topOfCalleeSaves -= MAX_REG_ARG * REGSIZE_BYTES;
+        }
+
+        if (topOfCalleeSaves > 504)
+        {
+            // Too far to encode ldp with sp directly. Compute top into another register.
+            baseReg          = REG_IP0;
+            topOfCalleeSaves = 0;
+            // Note: not reporting unwind nops for this as we will pad below anyway.
+            genInstrWithConstant(INS_add, EA_PTRSIZE, REG_IP0, REG_SP, topOfCalleeSaves, REG_IP0,
+                                 /* inUnwindRegion */ false);
+        }
+    }
 
     if (restoreRegsInt != RBM_NONE)
     {
-        genRestoreCalleeSavedRegisterGroup(restoreRegsInt, REG_FPBASE, 0, intRegsTop, /* reportUnwindData */ false);
+        genRestoreCalleeSavedRegisterGroup(restoreRegsInt, baseReg, 0, topOfCalleeSaves, /* reportUnwindData */ false);
+        topOfCalleeSaves -= genCountBits(restoreRegsInt) * REGSIZE_BYTES;
     }
 
     if (restoreRegsFloat != RBM_NONE)
     {
-        genRestoreCalleeSavedRegisterGroup(restoreRegsFloat, REG_FPBASE, 0, floatRegsTop, /* reportUnwindData */ false);
+        genRestoreCalleeSavedRegisterGroup(restoreRegsFloat, baseReg, 0, topOfCalleeSaves,
+                                           /* reportUnwindData */ false);
+        topOfCalleeSaves -= genCountBits(restoreRegsFloat) * REGSIZE_BYTES;
     }
 
-    assert(restoreRegsFrame == (RBM_FP | RBM_LR));
-    genRestoreRegPair(REG_FP, REG_LR, REG_FPBASE, frameRegsBottom, 0, false, REG_IP1, nullptr,
+    // Regardless of frame type fp always points to the saved fp/lr for frame
+    // pointer chaining purposes, so restoring them is trivial.
+    genRestoreRegPair(REG_FP, REG_LR, REG_FP, 0, 0, false, REG_IP1, nullptr,
                       /* reportUnwindData */ false);
 
-    m_compiler->unwindPadding();
-
+    // Emit phantom unwind data for the tier0 frame.
     m_compiler->unwindAllocStack(patchpointInfo->TotalFrameSize());
+    // Emit nops to make the prolog 1:1 in unwind codes to instructions. This
+    // is needed for win-arm64.
+    m_compiler->unwindPadding();
 }
 
 #ifdef PROFILING_SUPPORTED
