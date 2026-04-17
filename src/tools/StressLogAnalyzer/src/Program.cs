@@ -484,7 +484,7 @@ public static class Program
             throw new InvalidOperationException("Invalid memory-mapped stress log.");
         }
 
-        string contractVersion = ((int)(header->version & 0xFFFF)).ToString();
+        string contractVersion = $"c{(int)(header->version & 0xFFFF)}";
 
         return (CreateTarget, header->moduleTable, header->logs);
 
