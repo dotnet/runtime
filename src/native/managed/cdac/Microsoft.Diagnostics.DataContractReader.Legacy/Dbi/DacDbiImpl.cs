@@ -488,22 +488,18 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             TargetPointer objectHandle = TargetPointer.Null;
             TargetPointer ccwAddress = new(ccwPtr);
+            bool comWrappersSuccess = false;
 
-            try
+            if (_target.Contracts.TryGetContract<IComWrappers>(out IComWrappers? comWrappers))
             {
-                IComWrappers comWrappers = _target.Contracts.ComWrappers;
                 TargetPointer managedObjectWrapper = comWrappers.GetManagedObjectWrapperFromCCW(ccwAddress);
                 if (managedObjectWrapper != TargetPointer.Null)
                 {
-                    objectHandle = _target.ReadPointer(managedObjectWrapper);
+                    comWrappersSuccess = _target.TryReadPointer(managedObjectWrapper, out objectHandle);
                 }
             }
-            catch (NotImplementedException)
-            {
-                // Targets without ComWrappers support should still try BuiltInCOM.
-            }
 
-            if (objectHandle == TargetPointer.Null)
+            if (!comWrappersSuccess || objectHandle == TargetPointer.Null)
             {
                 IBuiltInCOM builtInCOM = _target.Contracts.BuiltInCOM;
                 TargetPointer ccw = builtInCOM.GetCCWFromInterfacePointer(ccwAddress);
