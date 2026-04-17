@@ -485,8 +485,6 @@ namespace System.Diagnostics.Tests
                 {
                     yield return line;
                 }
-
-                await Task.CompletedTask; // Ensure the method is valid async
             }
         }
     }

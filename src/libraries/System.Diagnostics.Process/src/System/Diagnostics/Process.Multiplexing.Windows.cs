@@ -19,19 +19,18 @@ namespace System.Diagnostics
         /// <summary>
         /// Reads from both standard output and standard error pipes as lines of text using Windows
         /// overlapped IO with wait handles for single-threaded synchronous multiplexing.
-        /// The caller provides initially-rented buffers; this method takes ownership and returns them
-        /// to the pool when enumeration completes.
+        /// Buffers are rented from the pool and returned when enumeration completes.
         /// </summary>
         private IEnumerable<ProcessOutputLine> ReadPipesToLines(
             int timeoutMs,
             Encoding outputEncoding,
-            Encoding errorEncoding,
-            byte[] outputBuffer,
-            byte[] errorBuffer)
+            Encoding errorEncoding)
         {
             SafeFileHandle outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
             SafeFileHandle errorHandle = GetSafeHandleFromStreamReader(_standardError!);
 
+            byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
             bool outputRefAdded = false, errorRefAdded = false;
             PinnedGCHandle<byte[]> outputPin = default, errorPin = default;
             nint outputOverlappedNint = 0, errorOverlappedNint = 0;

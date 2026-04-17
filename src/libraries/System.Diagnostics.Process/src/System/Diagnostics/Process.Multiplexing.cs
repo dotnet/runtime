@@ -152,10 +152,7 @@ namespace System.Diagnostics
             Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();
             Encoding errorEncoding = _startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding();
 
-            byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
-            byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
-
-            return ReadPipesToLines(timeoutMs, outputEncoding, errorEncoding, outputBuffer, errorBuffer);
+            return ReadPipesToLines(timeoutMs, outputEncoding, errorEncoding);
         }
 
         /// <summary>
