@@ -192,6 +192,7 @@
     <TestEnvironment Include="jitcfg_dispatcher_never" JitForceControlFlowGuard="1" JitCFGUseDispatcher="0" />
     <TestEnvironment Include="jitcfg_gcstress0xc" JitForceControlFlowGuard="1" GCStress="0xC" />
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
+    <TestEnvironment Include="managedilasmroundtrip" RunningIlasmRoundTrip="1" IlasmRoundTripUseManagedIlasm="1" />
     <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitProfileCasts="1"/>
