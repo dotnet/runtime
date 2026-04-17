@@ -4208,7 +4208,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                                 costEx = 1;
                             }
 
-                            if (op2->AsIntCon()->IconValue() >= (16 / genTypeSize(simdBaseType)))
+                            if (op2->AsIntCon()->IconValue() >= static_cast<ssize_t>(16 / genTypeSize(simdBaseType)))
                             {
                                 costEx += 3;
                                 costSz *= 2;
@@ -4321,7 +4321,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                                 costEx = 1;
                             }
 
-                            if (op2->AsIntCon()->IconValue() >= (16 / genTypeSize(simdBaseType)))
+                            if (op2->AsIntCon()->IconValue() >= static_cast<ssize_t>(16 / genTypeSize(simdBaseType)))
                             {
                                 costEx += 6;
                                 costSz *= 3;
