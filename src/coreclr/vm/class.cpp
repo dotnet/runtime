@@ -586,8 +586,9 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
             // as Won't Fix given this requires an extremely unlikely combination of naming
             // collision, extern alias usage, and hot reload of such a method while debugging.
             CONTRACT_VIOLATION(GCViolation);
+            ULONG elementTypeLength = 0;
             returnKind = ClassifyMethodReturnKind(
-                SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
+                SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &elementTypeLength, &returnsValueTask);
         }
 
         if (!IsTaskReturning(returnKind))
@@ -727,8 +728,9 @@ HRESULT EEClass::AddAsyncVariant(
 
     ULONG offsetOfAsyncDetails = 0;
     bool returnsValueTask = false;
+    ULONG elementTypeLength = 0;
     MethodReturnKind returnKind = ClassifyMethodReturnKind(
-        SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
+        SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &elementTypeLength, &returnsValueTask);
 
     if (!IsTaskReturning(returnKind))
     {

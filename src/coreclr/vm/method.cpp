@@ -1719,12 +1719,12 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
         // type-def and use FCAMD to trigger lazy creation.
         if (resultMD == NULL && IsEnCAddedMethod() && IsAsyncVariantMethod())
         {
-            MethodDesc* pPrimaryOnTypeDef = pMT->GetParallelMethodDesc(this, AsyncVariantLookup::AsyncOtherVariant);
+            MethodDesc* pPrimaryOnTypeDef = pMT->GetParallelMethodDesc(this, AsyncVariantLookup::Ordinary);
             if (pPrimaryOnTypeDef != NULL)
             {
                 resultMD = FindOrCreateAssociatedMethodDesc(
-                    pPrimaryOnTypeDef, pMT, FALSE, Instantiation(), TRUE, FALSE, TRUE,
-                    AsyncVariantLookup::AsyncOtherVariant);
+                    pPrimaryOnTypeDef, pMT, FALSE, Instantiation(), TRUE,
+                    AsyncVariantLookup::Async, FALSE, TRUE);
             }
         }
 #endif // FEATURE_METADATA_UPDATER

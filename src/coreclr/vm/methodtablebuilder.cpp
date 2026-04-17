@@ -3415,6 +3415,10 @@ MethodTableBuilder::EnumerateClassMethods()
                 // the token for T or inserting void instead.
                 // The rest of the signature stays exactly the same.
                 ULONG taskTokenLen = 0;
+                ULONG cAsyncThunkMemberSignature;
+                ULONG taskTokenOffsetFromAsyncDetailsOffset;
+                ULONG taskTypePrefixSize;
+                ULONG taskTypePrefixReplacementSize;
 
                 if (insertCount == 2)
                 {

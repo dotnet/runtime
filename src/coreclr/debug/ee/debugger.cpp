@@ -12914,9 +12914,9 @@ HRESULT Debugger::UpdateFunction(MethodDesc* pMD, SIZE_T encVersion)
     // async variant (runs on resumption after await). Each has its own JIT info with
     // different sequence points. Without planting breakpoints on both, remap during
     // async resumption won't fire because the breakpoints only cover the entry variant.
-    if (pMD->HasAsyncOtherVariant())
+    if (pMD->IsAsyncThunkMethod())
     {
-        MethodDesc* pAsyncOther = pMD->GetAsyncOtherVariantNoCreate();
+        MethodDesc* pAsyncOther = pMD->GetAsyncVariantNoCreate();
         if (pAsyncOther != NULL)
         {
             DebuggerJitInfo *pAsyncJitInfo = GetLatestJitInfoFromMethodDesc(pAsyncOther);

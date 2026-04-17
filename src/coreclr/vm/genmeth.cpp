@@ -846,15 +846,13 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 #ifndef DACCESS_COMPILE
         // Lazy async variant creation for EnC-added async methods
         // (see "EnC async variants" in the block comment above).
-        if (asyncVariantLookup == AsyncVariantLookup::AsyncOtherVariant
+        if (asyncVariantLookup == AsyncVariantLookup::Async
             && allowCreate
             && pDefMD->IsEnCAddedMethod()
             && pMDescInCanonMT == NULL)
         {
-            _ASSERTE(pMDescInCanonMT == NULL || pMDescInCanonMT->GetMethodTable() == pExactMT->GetCanonicalMethodTable());
-
             MethodTable* pCanonMT = pExactMT->GetCanonicalMethodTable();
-            MethodDesc* pPrimaryOnCanonMT = pCanonMT->GetParallelMethodDesc(pDefMD, AsyncVariantLookup::MatchingAsyncVariant);
+            MethodDesc* pPrimaryOnCanonMT = pCanonMT->GetParallelMethodDesc(pDefMD, AsyncVariantLookup::Ordinary);
 
             if (pPrimaryOnCanonMT != NULL && pPrimaryOnCanonMT->IsEnCAddedMethod()
                 && pPrimaryOnCanonMT->IsAsyncThunkMethod())
