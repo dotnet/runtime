@@ -198,12 +198,14 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF16Ptr: table[2],
             stringToUTF8Ptr: table[3],
             stringToUTF8: table[4],
-            zeroRegion: table[5],
-            isSharedArrayBuffer: table[6],
-            abortBackgroundTimers: table[7],
-            abortPosix: table[8],
-            getExitStatus: table[9],
-            runBackgroundTimers: table[10],
+            utf8ToStringRelaxed: table[5],
+            zeroRegion: table[6],
+            isSharedArrayBuffer: table[7],
+            viewOrCopy: table[8],
+            abortBackgroundTimers: table[9],
+            abortPosix: table[10],
+            getExitStatus: table[11],
+            runBackgroundTimers: table[12],
         };
         Object.assign(interop, interopLocal);
     }

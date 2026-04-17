@@ -351,6 +351,11 @@ struct MethodTableAuxiliaryData
         };
     };
 
+    // Lazily initialized cache for the version-resilient hash code of this MethodTable.
+    // A stored value of 0 indicates the field hasn't been set yet.
+    // Placed here to fill the 4-byte alignment padding between m_dwFlags and m_pLoaderModule,
+    // so this field adds no extra size to the struct on 64-bit platforms.
+    int m_cachedVersionResilientHashCode;
 
     PTR_Module m_pLoaderModule;
 
@@ -1805,8 +1810,10 @@ public:
     // Returns MethodTable that GetRestoredSlot get its values from
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
-    // Used to map methods on the same slot between instantiations.
-    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD, AsyncVariantLookup asyncVariantLookup = (AsyncVariantLookup)0);
+    // Used to map to "the same" method between instantiations. 
+    MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD);
+    // Maps methods between instantiations + filters/adjusts the result according to the lookup.
+    MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantLookup asyncVariantLookup);
 
     //-------------------------------------------------------------------
     // BoxedEntryPoint MethodDescs.
@@ -2049,6 +2056,12 @@ public:
     // The managed and unmanaged HFA type can differ for types with layout. The following two methods return the unmanaged HFA type.
     bool IsNativeHFA();
     CorInfoHFAElemType GetNativeHFAType();
+
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+    // Returns true if this is the System.Half type, which is passed and returned
+    // in floating point registers on xarch platforms.
+    bool IsNativeHalfType();
+#endif // TARGET_XARCH
 
 #ifdef UNIX_AMD64_ABI
     inline bool IsRegPassedStruct()
@@ -3806,7 +3819,7 @@ private:
         // enum_flag_unused                   = 0x00400000,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
-        enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
+        enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly) [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 #endif
 
         enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references. [cDAC] [RuntimeTypeSystem]: Contract depends on this value

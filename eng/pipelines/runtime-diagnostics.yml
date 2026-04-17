@@ -10,9 +10,11 @@ parameters:
   type: object
   default:
     - windows_x64
+    - windows_x86
     - linux_x64
     - windows_arm64
     - linux_arm64
+    - linux_arm
     # TODO: Re-enable osx once disk space issue is resolved.
     # macOS full dumps are ~5.7GB each; with 8+ full-dump debuggees the Helix
     # machines run out of disk space (~45GB total). See PR #124782 for details.
@@ -102,6 +104,7 @@ extends:
           jobParameters:
             name: cDAC
             useCdac: true
+            classFilter: SOS
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
@@ -154,6 +157,7 @@ extends:
           jobParameters:
             name: DAC
             useCdac: false
+            classFilter: SOS
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
@@ -209,7 +213,7 @@ extends:
             shouldContinueOnError: true
             jobParameters:
               nameSuffix: CdacDumpTest
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc $(_BuildConfig) -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
               timeoutInMinutes: 180
               postBuildSteps:
               - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml
@@ -221,6 +225,13 @@ extends:
                     _Creator: dotnet-bot
                     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
                     NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
+              - task: PublishPipelineArtifact@1
+                inputs:
+                  targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
+                  artifactName: CdacDumps_$(osGroup)_$(archType)
+                displayName: 'Publish Dump Artifacts'
+                condition: and(always(), ne(variables['Agent.JobStatus'], 'Succeeded'))
+                continueOnError: true
               - pwsh: |
                   if ("$(Agent.JobStatus)" -ne "Succeeded") {
                     Write-Error "One or more cDAC dump test failures were detected. Failing the job."
@@ -246,7 +257,7 @@ extends:
             shouldContinueOnError: true
             jobParameters:
               nameSuffix: CdacXPlatDumpGen
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc $(_BuildConfig) -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
               timeoutInMinutes: 180
               postBuildSteps:
               - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml
@@ -293,7 +304,7 @@ extends:
             shouldContinueOnError: true
             jobParameters:
               nameSuffix: CdacXPlatDumpTest
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc $(_BuildConfig) -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
               timeoutInMinutes: 180
               postBuildSteps:
               - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml

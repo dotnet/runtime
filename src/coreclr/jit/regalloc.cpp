@@ -412,7 +412,19 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
     if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
     {
         compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+        return false;
     }
+
+#if defined(TARGET_WASM)
+    // Wasm RA currently does not support EH write-thru, so any local live in or out
+    // of a handler must be located only on the stack.
+    //
+    if (varDsc->lvLiveInOutOfHndlr)
+    {
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+        return false;
+    }
+#endif // defined(TARGET_WASM)
 
     if (varDsc->lvDoNotEnregister)
     {
@@ -421,6 +433,7 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
 
     switch (genActualType(varDsc->TypeGet()))
     {
+        case TYP_HALF:
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return !compiler->opts.compDbgCode;

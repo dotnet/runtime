@@ -487,19 +487,6 @@ void CodeGen::instGen(instruction ins)
 {
 
     GetEmitter()->emitIns(ins);
-
-#ifdef TARGET_XARCH
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    // A workaround necessitated by limitations of emitter
-    // if we are scheduled to insert a nop here, we have to delay it
-    // hopefully we have not missed any other prefix instructions or places
-    // they could be inserted
-    if (ins == INS_lock && GetEmitter()->emitNextNop == 0)
-    {
-        GetEmitter()->emitNextNop = 1;
-    }
-#endif // PSEUDORANDOM_NOP_INSERTION
-#endif
 }
 
 /*****************************************************************************
@@ -2233,7 +2220,12 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_XARCH)
     unsigned srcSize = genTypeSize(srcType);
 
-    if (srcSize == 4)
+    if (srcSize == 2)
+    {
+        assert(srcType == TYP_HALF);
+        return INS_vmovsh;
+    }
+    else if (srcSize == 4)
     {
         return INS_movss;
     }
@@ -2321,6 +2313,10 @@ instruction CodeGen::ins_Copy(var_types dstType)
     assert(varTypeUsesFloatReg(dstType));
 
 #if defined(TARGET_XARCH)
+    if (dstType == TYP_HALF)
+    {
+        return INS_vmovsh;
+    }
     return INS_movaps;
 #elif defined(TARGET_ARM64)
     if (varTypeIsSIMD(dstType))
@@ -2590,7 +2586,12 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #if defined(TARGET_XARCH)
     unsigned dstSize = genTypeSize(dstType);
 
-    if (dstSize == 4)
+    if (dstSize == 2)
+    {
+        assert(dstType == TYP_HALF);
+        return INS_vmovsh;
+    }
+    else if (dstSize == 4)
     {
         return INS_movss;
     }

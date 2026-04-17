@@ -5196,16 +5196,1081 @@ unsigned emitter::get_curTotalCodeSize()
 //
 // Notes:
 //    The instruction latencies and throughput values returned by this function
-//    are NOT accurate and just a function feature.
+//    is based on 3A6000.
+//
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
     insExecutionCharacteristics result;
+    instruction                 ins = id->idIns();
+    assert(ins != INS_invalid);
 
-    // TODO-LoongArch64: support this function.
-    result.insThroughput       = PERFSCORE_THROUGHPUT_ZERO;
-    result.insLatency          = PERFSCORE_LATENCY_ZERO;
+    result.insThroughput       = PERFSCORE_THROUGHPUT_ILLEGAL;
+    result.insLatency          = PERFSCORE_LATENCY_ILLEGAL;
     result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
 
+    // Calculate merge emit instructions cost.
+    unsigned CombinedInsCnt = id->idCodeSize() / sizeof(code_t);
+    assert(CombinedInsCnt >= 1);
+    if (CombinedInsCnt > 1)
+    {
+        if (id->idInsOpt() == INS_OPTS_RC)
+        {
+            assert((CombinedInsCnt == 2) || (CombinedInsCnt == 3));
+            if (id->idInsIs(INS_b, INS_bl))
+            { // pcalau12i/pcaddu12i + addi.d or lu12i.w + ori + lu32i.d
+                result.insLatency    = (CombinedInsCnt == 2) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C;
+                result.insThroughput = (CombinedInsCnt == 2) ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_9C;
+            }
+            else // ins == load
+            {    // pcaddu12i + load or lu12i.w + lu32i.d + load
+                result.insMemoryAccessKind = PERFSCORE_MEMORY_READ;
+                result.insThroughput       = (CombinedInsCnt == 2) ? PERFSCORE_THROUGHPUT_4C : PERFSCORE_THROUGHPUT_7C;
+                if ((INS_ld_b <= ins) && (ins <= INS_ld_wu))
+                {
+                    result.insLatency = (CombinedInsCnt == 2) ? PERFSCORE_LATENCY_5C : PERFSCORE_LATENCY_6C;
+                }
+                else if (id->idInsIs(INS_fld_s, INS_fld_d))
+                {
+                    result.insLatency = (CombinedInsCnt == 2) ? PERFSCORE_LATENCY_6C : PERFSCORE_LATENCY_7C;
+                }
+#ifdef FEATURE_SIMD
+                else if (id->idInsIs(INS_vld, INS_xvld))
+                {
+                    result.insLatency = (CombinedInsCnt == 2) ? PERFSCORE_LATENCY_6C : PERFSCORE_LATENCY_7C;
+                }
+#endif
+                else
+                {
+                    assert(!"perfscore: unexpected load ins of INS_OPTS_RC.");
+                }
+            }
+        }
+        else if (id->idInsOpt() == INS_OPTS_RL)
+        { // pcaddu12i + addi.d or lu12i.w + ori +lu32i.d
+            assert((CombinedInsCnt == 2) || (CombinedInsCnt == 3));
+            result.insLatency    = (CombinedInsCnt == 2) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C;
+            result.insThroughput = (CombinedInsCnt == 2) ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_9C;
+        }
+        else if (id->idInsOpt() == INS_OPTS_JIRL)
+        { // xor + bnez/beqz or bnez/beqz + pcaddi + jirl
+            assert((CombinedInsCnt == 2) || (CombinedInsCnt == 3));
+            result.insLatency    = (CombinedInsCnt == 2) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C;
+            result.insThroughput = (CombinedInsCnt == 2) ? 5.5f : PERFSCORE_THROUGHPUT_5C;
+        }
+        else if (id->idInsOpt() == INS_OPTS_I)
+        { // addi.d, srli.d, lu12i.w, ori, lu32i.d, lu52i.d
+            result.insLatency    = PERFSCORE_LATENCY_1C * CombinedInsCnt;
+            result.insThroughput = (CombinedInsCnt < 3)
+                                       ? PERFSCORE_THROUGHPUT_4C * CombinedInsCnt
+                                       : PERFSCORE_THROUGHPUT_4C * (CombinedInsCnt - 1) + PERFSCORE_THROUGHPUT_1C;
+        }
+        else if (id->idInsOpt() == INS_OPTS_C)
+        { // pcaddu18i + jirl or lu12i.w + ori + lu32i.d + jirl
+            assert((CombinedInsCnt == 2) || (CombinedInsCnt == 4));
+            result.insLatency    = (CombinedInsCnt == 2) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_4C;
+            result.insThroughput = (CombinedInsCnt == 2) ? 3.5f : 10.5f;
+        }
+        else if (id->idInsOpt() == INS_OPTS_RELOC)
+        { // pcalau12i + (addi.d or ld.d)
+            result.insLatency          = id->idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
+            result.insThroughput       = id->idIsCnsReloc() ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_4C;
+            result.insMemoryAccessKind = id->idIsCnsReloc() ? PERFSCORE_MEMORY_NONE : PERFSCORE_MEMORY_READ;
+        }
+        else
+        {
+            perfScoreUnhandledInstruction(id, &result);
+        }
+
+        return result;
+    }
+
+    assert(ins != INS_lea);
+
+    if (emitInsIsLoadOrStore(ins))
+    {
+        if (emitInsIsLoad(ins))
+        {
+            result.insMemoryAccessKind = emitInsIsStore(ins) ? PERFSCORE_MEMORY_READ_WRITE : PERFSCORE_MEMORY_READ;
+        }
+        else
+        {
+            assert(emitInsIsStore(ins));
+            result.insMemoryAccessKind = PERFSCORE_MEMORY_WRITE;
+        }
+    }
+
+    switch (emitGetInsFmt(ins))
+    {
+        case DF_G_ALIAS:  // nop(andi), mov(ori), dneg(sub.d), neg(sub.w), not(nor)
+        case DF_G_2R5IU:  // slli.w, srli.w, srai.w, rotri.w
+        case DF_G_2R6IU:  // slli.d, srli.d, srai.d, rotri.d
+        case DF_G_2R16I:  // addu16i.d
+        case DF_G_2R12IU: // andi, ori, xori
+        case DF_G_2R5IW:  // bstrins.w, bstrpick.w
+        case DF_G_2R6ID:  // bstrins.d, bstrpick.d
+        case DF_G_3R2IU:  // alsl.w, alsl.wu, alsl.d
+        case DF_G_3RX:    // bytepick.w, bytepick.d
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            break;
+
+        case DF_G_B2: // beq, bne, blt, bge, bltu, bgeu, jirl
+        case DF_G_B1: // beqz, bnez
+        case DF_F_B1: // bceqz, bcnez
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insThroughput = (PERFSCORE_THROUGHPUT_1C + PERFSCORE_THROUGHPUT_2C) / 2;
+            break;
+
+        case DF_G_B0: // b, bl
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case DF_G_15I: // dbar, ibar, syscall, break
+            switch (ins)
+            {
+                case INS_dbar:
+                case INS_ibar:
+                    result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                    result.insThroughput = (ins == INS_dbar) ? 0.09f : 0.06f;
+                    break;
+                case INS_break:
+                    result.insLatency = result.insThroughput = PERFSCORE_LATENCY_ZERO;
+                    break;
+
+                default:
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case DF_G_R20I: // lu12i.w, lu32i.d, pcaddi, pcaddu12i, pcalau12i, pcaddu18i
+            result.insLatency = PERFSCORE_LATENCY_1C;
+            switch (ins)
+            {
+                case INS_lu12i_w:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                    break;
+
+                case INS_lu32i_d:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    break;
+
+                case INS_pcaddi:
+                case INS_pcaddu12i:
+                case INS_pcalau12i:
+                case INS_pcaddu18i:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    break;
+
+                default:
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case DF_G_2R: // ext.w.{b/h}, clo.{w/d}, clz.{w/d}, cto.{w/d}, ctz.{w/d}, revb.{2h/4h/2w/d}
+                      // revh.{2w/d}, bitrev.{4b/8b/w/d}, rdtime{l/h}.w, rdtime.d, cpucfg
+            if ((INS_ext_w_b <= ins) && (ins <= INS_bitrev_d))
+            {
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else
+            {
+                assert((INS_rdtimel_w <= ins) && (ins <= INS_cpucfg));
+                result.insLatency    = PERFSCORE_LATENCY_4C;
+                result.insThroughput = (ins == INS_cpucfg) ? PERFSCORE_THROUGHPUT_1C : (0.5f + 1.0f) / 2;
+            }
+            break;
+
+        case DF_G_2R12I: // ld.{b[u]/h[u]/w[u]/d}, addi.{w/d}, lu52i.d, slti, sltui, st.{b/h/w/d}, preld
+            if ((INS_ld_b <= ins) && (ins <= INS_ld_wu))
+            {
+                result.insLatency    = PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if ((INS_addi_w <= ins) && (ins <= INS_sltui))
+            {
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if ((INS_st_b <= ins) && (ins <= INS_st_d))
+            {
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            {
+                assert(ins == INS_preld);
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case DF_G_2R14I: // ldptr.{w/d}, ll.{w/d}, stptr.{w/d}, sc.{w/d}
+            switch (ins)
+            {
+                case INS_ldptr_w:
+                case INS_ldptr_d:
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    break;
+
+                case INS_ll_w:
+                case INS_ll_d:
+                    result.insLatency    = PERFSCORE_LATENCY_9C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_9X;
+                    break;
+
+                case INS_stptr_w:
+                case INS_stptr_d:
+                    result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    break;
+
+                case INS_sc_w:
+                case INS_sc_d:
+                    result.insLatency    = PERFSCORE_LATENCY_15C;
+                    result.insThroughput = 0.0667f;
+                    break;
+
+                default:
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case DF_G_3R:
+            if (((INS_add_w <= ins) && (ins <= INS_orn)) || ((INS_sll_w <= ins) && (ins <= INS_sltu)))
+            { // add.{w/d}, sub.{w/d}, and, or, nor, xor, andn, orn
+              // sll.w, srl.w, sra.w, rotr.w, sll.d, srl.d, sra.d, rotr.d, maskeqz, masknez, slt, sltu
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if (((INS_mul_w <= ins) && (ins <= INS_mulw_d_wu)) || ((INS_ldx_b <= ins) && (ins <= INS_ldx_wu)))
+            { // mul.{w/d}, mulh.{w[u]/d[u]}, mulw.d.w[u], ldx.{b[u]/h[u]/w[u]/d}
+                result.insLatency    = PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if ((INS_crc_w_b_w <= ins) && (ins <= INS_crcc_w_d_w))
+            { // crc[c].w.{b/h/w/d}.w
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if ((INS_ldgt_b <= ins) && (ins <= INS_ldle_d))
+            { // ld{gt/le}.{b/h/w/d}
+                result.insLatency    = PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            else if ((INS_stx_b <= ins) && (ins <= INS_preldx))
+            { // stx.{b/h/w/d}, st{gt/le}.{b/h/w/d}, preldx
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                result.insThroughput = (ins <= INS_stx_d) ? PERFSCORE_THROUGHPUT_2C : PERFSCORE_THROUGHPUT_1C;
+            }
+            else if ((INS_amcas_b <= ins) && (ins <= INS_ammin_du))
+            { // amcas.{b/h/w/d}, amswap.{b/h/w/d} amadd.{b/h/w/d}, amand.{w/d}, amor.{w/d}, amxor.{w/d}
+              // ammax.w, ammax.d, ammin.w, ammin.d, ammax.wu, ammax.du, ammin.wu, ammin.du
+                result.insLatency    = PERFSCORE_LATENCY_13C;
+                result.insThroughput = 0.0769f;
+            }
+            else if ((INS_amcas_db_b <= ins) && (ins <= INS_ammin_db_du))
+            { // amcas_db.{b/h/w/d}, amswap_db.{b/h/w/d}, amadd_db.{b/h/w/d}, amand_db.{w/d}, amor_db.{w/d}
+              // amxor_db.w, amxor_db.d, ammax_db.w, ammax_db.d, ammin_db.w, ammin_db.d, ammax_db.wu, ammax_db.du
+              // ammin_db.wu, ammin_db.du
+                result.insLatency    = PERFSCORE_LATENCY_16C;
+                result.insThroughput = 0.0625f;
+            }
+            else
+            { // div.w, mod.w, div.wu, mod.wu, div.d, mod.d, div.du, mod.du
+                assert((INS_div_w <= ins) && (ins <= INS_mod_du));
+                if ((INS_div_w <= ins) && (ins <= INS_mod_wu))
+                {
+                    result.insLatency =
+                        (ins <= INS_mod_w) ? (4.0f + 19.0f) / 2 : (PERFSCORE_LATENCY_4C + PERFSCORE_LATENCY_20C) / 2;
+                    result.insThroughput = (0.08f + 0.25f) / 2;
+                }
+                else
+                {
+                    result.insLatency    = (ins <= INS_mod_d) ? (4.0f + 32.0f) / 2 : (4.0f + 33.0f) / 2;
+                    result.insThroughput = (0.05f + 0.25f) / 2;
+                }
+            }
+            break;
+
+        case DF_F_GR: // movfr2gr.s, movfr2gr.d, movfrh2gr.s
+        case DF_F_RG: // movgr2fr.w, movgr2fr.d, movgr2frh.w
+        case DF_F_CG: // movgr2cf
+        case DF_F_GC: // movcf2gr
+            result.insLatency    = (ins == INS_movgr2frh_w) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case DF_F_RG12I: // fld.s, fld.d, fst.s, fst.d
+            result.insLatency =
+                ((ins == INS_fld_s) || (ins == INS_fld_d)) ? PERFSCORE_LATENCY_5C : PERFSCORE_LATENCY_ZERO;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+
+        case DF_F_FG: // movgr2fcsr
+            result.insLatency    = PERFSCORE_LATENCY_15C;
+            result.insThroughput = 0.0667f;
+            break;
+
+        case DF_F_GF: // movfcsr2gr
+            result.insLatency    = PERFSCORE_LATENCY_7C;
+            result.insThroughput = 0.14f;
+            break;
+
+        case DF_F_CR:   // movfr2cf
+        case DF_F_RC:   // movcf2fr
+        case DF_F_C2R:  // fcmp.cond.s, fcom.cond.d
+        case DF_F_3RX3: // fsel
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+
+        case DF_F_2R: // fabs.{s/d}, fneg.{s/d}, fsqrt.{s/d}, frsqrt.{s/d}, frsqrte.{s/d}
+                      // frecip.{s/d}, frecipe.{s/d}, flogb.{s/d}, fclass.{s/d}, fcvt.s.d, fcvt.d.s
+                      // ffint.{s/d}.{w/l}, ftint.{w/l}.{s/d}, ftint{rm/rp/rz/rne}.{w/l}.{s/d}
+                      // frint.{s/d}, fmov.{s/d}
+            if (id->idInsIs(INS_fabs_s, INS_fabs_d, INS_fneg_s, INS_fneg_d, INS_fmov_s, INS_fmov_d))
+            {
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if (id->idInsIs(INS_fsqrt_s))
+            {
+                result.insLatency    = (PERFSCORE_LATENCY_8C + PERFSCORE_LATENCY_22C) / 2;
+                result.insThroughput = (0.2f + 0.667f) / 2;
+            }
+            else if (id->idInsIs(INS_fsqrt_d))
+            {
+                result.insLatency    = (8.0f + 36.0f) / 2;
+                result.insThroughput = (0.12f + 0.667f) / 2;
+            }
+            else if (id->idInsIs(INS_frsqrt_s))
+            {
+                result.insLatency    = (11.0f + 33.0f) / 2;
+                result.insThroughput = (0.129f + 0.445f) / 2;
+            }
+            else if (id->idInsIs(INS_frsqrt_d))
+            {
+                result.insLatency    = (11.0f + 54.0f) / 2;
+                result.insThroughput = (0.077f + 0.445f) / 2;
+            }
+            else if (id->idInsIs(INS_frsqrte_s, INS_frsqrte_d, INS_frecipe_s, INS_frecipe_d))
+            {
+                result.insLatency    = PERFSCORE_LATENCY_5C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if (id->idInsIs(INS_frecip_s))
+            {
+                result.insLatency    = (PERFSCORE_LATENCY_8C + PERFSCORE_LATENCY_16C) / 2;
+                result.insThroughput = (0.29f + 0.667f) / 2;
+            }
+            else if (id->idInsIs(INS_frecip_d))
+            {
+                result.insLatency    = (PERFSCORE_LATENCY_8C + PERFSCORE_LATENCY_23C) / 2;
+                result.insThroughput = (0.19f + 0.667f) / 2;
+            }
+            else if (id->idInsIs(INS_flogb_s, INS_flogb_d) || ((INS_ffint_s_w <= ins) && (ins <= INS_frint_d)))
+            {
+                result.insLatency    = PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else
+            {
+                assert((INS_fclass_s <= ins) && (ins <= INS_fcvt_d_s));
+                result.insLatency    = PERFSCORE_LATENCY_2C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            break;
+
+        case DF_F_R2G: // fldx.{s/d}, fstx.{s/d}, fldgt.{s/d}, fldle.{s/d}, fstgt.{s/d}, fstle.{s/d}
+            if ((INS_fldx_s <= ins) && (ins <= INS_fstx_d))
+            {
+                result.insLatency    = (ins <= INS_fldx_d) ? PERFSCORE_LATENCY_5C : PERFSCORE_LATENCY_ZERO;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            {
+                assert((INS_fldgt_s <= ins) && (ins <= INS_fstle_d));
+                result.insLatency    = (ins <= INS_fldle_d) ? PERFSCORE_LATENCY_5C : PERFSCORE_LATENCY_ZERO;
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case DF_F_3R:
+            if ((INS_fadd_s <= ins) && (ins <= INS_fsub_d))
+            { // fadd.{s/d}, fsub.{s/d}
+                result.insLatency    = PERFSCORE_LATENCY_3C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if ((INS_fmul_s <= ins) && (ins <= INS_fmul_d))
+            { // fmul.{s/d}
+                result.insLatency    = PERFSCORE_LATENCY_5C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if ((INS_fdiv_s <= ins) && (ins <= INS_fdiv_d))
+            { // fdiv.{s/d}
+                result.insLatency =
+                    (ins == INS_fdiv_s) ? (PERFSCORE_LATENCY_6C + PERFSCORE_LATENCY_13C) / 2 : (6.0f + 19.0f) / 2;
+                result.insThroughput = (ins == INS_fdiv_s) ? (0.28f + 0.667f) / 2 : (0.2f + 0.667f) / 2;
+            }
+            else if ((INS_fmax_s <= ins) && (ins <= INS_fmina_d))
+            { // fmax.{s/d}, fmin.{s/d}, fmaxa.{s/d}, fmina.{s/d}
+                result.insLatency    = PERFSCORE_LATENCY_2C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if ((INS_fscaleb_s <= ins) && (ins <= INS_fscaleb_d))
+            { // fscaleb.{s/d}
+                result.insLatency    = PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else
+            { // fcopysign.{s/d}
+                assert((ins == INS_fcopysign_s) || (ins == INS_fcopysign_d));
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            break;
+
+        case DF_F_4R: // fmadd.{s/d}, fmsub.{s/d}, fnmadd.{s/d}, fnmsub.{s/d}
+            result.insLatency    = PERFSCORE_LATENCY_5C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+
+#ifdef FEATURE_SIMD
+        case DF_S_4R: // [x]vf{madd/msub/nmadd/nmsub}.{s/d}, [x]vbitsel.v, [x]vshuf.b
+        case DF_A_4R:
+            result.insLatency    = id->idInsIs(INS_vbitsel_v, INS_vshuf_b, INS_xvbitsel_v, INS_xvshuf_b)
+                                       ? PERFSCORE_LATENCY_1C
+                                       : PERFSCORE_LATENCY_5C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+
+        case DF_S_3R:
+            if (id->idInsIs(INS_vldx, INS_vstx, INS_vfmul_s, INS_vfmul_d) ||
+                ((INS_vffint_s_l <= ins) && (ins <= INS_vftintrne_w_d)))
+            { // vldx, vstx, vfmul.{s/d}, vffint.s.l, vftint[{rne/rz/rp/rm}].w.d
+                result.insLatency    = (ins == INS_vstx) ? PERFSCORE_LATENCY_ZERO : PERFSCORE_LATENCY_5C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if (((INS_vfcmp_caf_s <= ins) && (ins <= INS_vfcmp_sune_d)) ||
+                     ((INS_vfadd_s <= ins) && (ins <= INS_vfsub_d)) || ((INS_vfmax_s <= ins) && (ins <= INS_vfmina_d)))
+            { // vfcmp.cond.s, vfcmp.cond.d, vfadd.{s/d}, vfsub.{s/d}, vfmax.{s/d}, vfmin.{s/d}, vfmaxa.{s/d},
+              // vfmina.{s/d}
+                result.insLatency    = id->idInsIs(INS_vfadd_s, INS_vfadd_d, INS_vfsub_s, INS_vfsub_d)
+                                           ? PERFSCORE_LATENCY_3C
+                                           : PERFSCORE_LATENCY_2C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if (((INS_vseq_b <= ins) && (ins <= INS_vsub_d)) || ((INS_vsadd_b <= ins) && (ins <= INS_vssub_du)) ||
+                     ((INS_vavg_b <= ins) && (ins <= INS_vmin_du)) || ((INS_vsll_b <= ins) && (ins <= INS_vrotr_d)) ||
+                     ((INS_vpackev_b <= ins) && (ins <= INS_vpickod_d)) || ((INS_vand_v <= ins) && (ins <= INS_vorn_v)))
+            { // vseq.{b/h/w/d}, vsle.{b/h/w/d}[u], vslt.{b/h/w/d}[u], vadd.{b/h/w/d}, vsub.{b/h/w/d},
+              // vsadd.{b/h/w/d}[u], vssub.{b/h/w/d}[u] vavg.{b/h/w/d}[u], vavgr.{b//w/d}[u], vmax.{b/h/w/d}[u],
+              // vmin.{b/h/w/d}[u] vsll.{b/h/w/d}, vsrl.{b/h/w/d}, vsra.{b/h/w/d}, vrotr.{b/h/w/d}
+              // vpack{ev/od}.{b/h/w/d}, vilvl.{b/h/w/d}, vilvh.{b/h/w/d}, vpick{ev/od}.{b/h/w/d}
+              // vand.v, vor.v, vxor.v, vnor.v, vandn.v, vorn.v
+                result.insLatency =
+                    id->idInsIs(INS_vsle_d, INS_vsle_du, INS_vslt_d, INS_vslt_du, INS_vavg_d, INS_vavg_du, INS_vavgr_d,
+                                INS_vavgr_du, INS_vmax_d, INS_vmin_d, INS_vmax_du, INS_vmin_du)
+                        ? PERFSCORE_LATENCY_2C
+                        : PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if (((INS_vaddwev_h_b <= ins) && (ins <= INS_vaddwod_q_du_d)) ||
+                     ((INS_vaddwev_h_b <= ins) && (ins <= INS_vaddwod_q_du_d)) ||
+                     ((INS_vhaddw_h_b <= ins) && (ins <= INS_vabsd_du)) ||
+                     ((INS_vsrlr_b <= ins) && (ins <= INS_vsran_w_d)) ||
+                     ((INS_vbitclr_b <= ins) && (ins <= INS_vbitrev_d)) ||
+                     ((INS_vfrstp_b <= ins) && (ins <= INS_vsub_q)) ||
+                     ((INS_vfcvt_h_s <= ins) && (ins <= INS_vfcvt_s_d)))
+            { // vaddw{ev/od}.{h.b/w.h/d.w/q.d}, vsubw{ev/od}.{h.b/w.h/d.w/q.d}, vaddw{ev/od}.{h.b/w.h/d.w/q.d}u
+              // vsubw{ev/od}.{h.b/w.h/d.w/q.d}u, vaddw{ev/od}.{h.bu.b/w.hu.h/d.wu.w/q.du.d}
+              // vhaddw.{h.b/w.h/d.w/q.d/hu.bu/wu.hu/du.wu/qu.du}, vhsubw.{h.b/w.h/d.w/q.d/hu.bu/wu.hu/du.wu/qu.du}
+              // vadda.{b/h/w/d}, vabsd.{b/h/w/d}[u], vsrlr.{b/h/w/d}, vsrar.{b/h/w/d}, vsrln.{b.h/h.w/w.d},
+              // vsran.{b.h/h.w/w.d} vbitclr.{b/h/w/d}, vbitset.{b/h/w/d}, vbitrev.{b/h/w/d}, vfrstp.{b/h}, vadd.q,
+              // vsub.q, vfcvt.{h.s/s.d}
+                result.insLatency =
+                    id->idInsIs(INS_vaddwev_q_d, INS_vsubwev_q_d, INS_vaddwod_q_d, INS_vsubwod_q_d, INS_vaddwev_q_du,
+                                INS_vsubwev_q_du, INS_vaddwod_q_du, INS_vsubwod_q_du, INS_vaddwev_q_du_d,
+                                INS_vaddwod_q_du_d, INS_vhaddw_q_d, INS_vhsubw_q_d, INS_vhaddw_qu_du, INS_vhsubw_qu_du,
+                                INS_vfcvt_h_s, INS_vfcvt_s_d, INS_vadda_b, INS_vadda_h, INS_vadda_w, INS_vadda_d,
+                                INS_vsrlr_b, INS_vsrlr_h, INS_vsrlr_w, INS_vsrlr_d, INS_vsrar_b, INS_vsrar_h,
+                                INS_vsrar_w, INS_vsrar_d, INS_vadd_q, INS_vsub_q)
+                        ? PERFSCORE_LATENCY_3C
+                        : PERFSCORE_LATENCY_2C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if (((INS_vmul_b <= ins) && (ins <= INS_vmaddwod_q_du_d)) ||
+                     ((INS_vsrlrn_b_h <= ins) && (ins <= INS_vssrarn_wu_d)))
+            { // vmul.{b/h/w/d}, vmuh.{b/h/w/d}[u], vmulw{ev/od}.{h.b/w.h/d.w/q.d}[u],
+              // vmulw{ev/od}.{h.bu.b/w.hu.h/d.wu.w/q.du.d} vmadd.{b/h/w/d}, vmsub.{b/h/w/d},
+              // vmaddw{ev/od}.{h.b/w.h/d.w/q.d}[u], vmaddw{ev/od}.{h.bu.b/w.hu.h/d.wu.w/q.du.d} vsrlrn.{b.h/h.w/w.d},
+              // vsrarn.{b.h/h.w/w.d}, vssrln.{b.h/h.w/w.d}, vssran.{b.h/h.w/w.d}, vssrlrn.{b.h/h.w/w.d}
+              // vssrarn.{b.h/h.w/w.d}, vssrln.{bu.h/hu.w/wu.d}, vssran.{bu.h/hu.w/wu.d}, vssrlrn.{bu.h/hu.w/wu.d},
+              // vssrarn.{bu.h/hu.w/wu.d}
+                result.insLatency =
+                    id->idInsIs(INS_vmulwev_q_d, INS_vmulwod_q_d, INS_vmulwev_q_du, INS_vmulwod_q_du,
+                                INS_vmulwev_q_du_d, INS_vmulwod_q_du_d, INS_vmaddwev_q_d, INS_vmaddwod_q_d,
+                                INS_vmaddwev_q_du, INS_vmaddwod_q_du, INS_vmaddwev_q_du_d, INS_vmaddwod_q_du_d)
+                        ? PERFSCORE_LATENCY_7C
+                        : PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if (((INS_vsigncov_b <= ins) && (ins <= INS_vsigncov_d)) ||
+                     ((INS_vshuf_h <= ins) && (ins <= INS_vshuf_d)))
+            { // vsigncov.{b/h/w/d}, vshuf.{h/w/d}
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            { // vdiv.{b/h/w/d} , vmod.{b/h/w/d}, vdiv.{bu/hu/wu/du}, vmod.{bu/hu/wu/du}, vfdiv.{s/d}
+                assert(((INS_vdiv_b <= ins) && (ins <= INS_vmod_du)) || id->idInsIs(INS_vfdiv_s, INS_vfdiv_d));
+                if (id->idInsIs(INS_vdiv_b, INS_vmod_b, INS_vdiv_bu, INS_vmod_bu))
+                {
+                    result.insLatency = id->idInsIs(INS_vdiv_b, INS_vmod_b) ? (24.0f + 52.0f) / 2 : (25.0f + 52.0f) / 2;
+                    result.insThroughput =
+                        id->idInsIs(INS_vdiv_b, INS_vmod_b) ? (0.03f + 0.074f) / 2 : (0.03f + 0.07f) / 2;
+                }
+                else if (id->idInsIs(INS_vdiv_h, INS_vmod_h, INS_vdiv_hu, INS_vmod_hu))
+                {
+                    result.insLatency    = (14.0f + 35.0f) / 2;
+                    result.insThroughput = (0.05f + 0.13f) / 2;
+                }
+                else if (id->idInsIs(INS_vdiv_w, INS_vmod_w, INS_vdiv_wu, INS_vmod_wu))
+                {
+                    result.insLatency = (9.0f + 26.0f) / 2;
+                    result.insThroughput =
+                        id->idInsIs(INS_vdiv_w, INS_vmod_w) ? (0.07f + 0.22f) / 2 : (0.065f + 0.22f) / 2;
+                }
+                else if (id->idInsIs(INS_vdiv_d, INS_vmod_d, INS_vdiv_du, INS_vmod_du))
+                {
+                    result.insLatency    = (6.0f + 22.0f) / 2;
+                    result.insThroughput = (0.08f + 0.33f) / 2;
+                }
+                else if (id->idInsIs(INS_vfdiv_s))
+                {
+                    result.insLatency    = (9.0f + 23.0f) / 2;
+                    result.insThroughput = (0.08f + 0.22f) / 2;
+                }
+                else if (id->idInsIs(INS_vfdiv_d))
+                {
+                    result.insLatency    = (6.0f + 19.0f) / 2;
+                    result.insThroughput = (0.095f + 0.33f) / 2;
+                }
+            }
+            break;
+
+        case DF_S_RG:  // vreplgr2vr.{b/h/w/d}
+        case DF_S_GRX: // vpickve2gr.{b/h/w/d}[u]
+        case DF_S_2RG: // vreplve.{b/h/w/d}
+        case DF_A_RG:  // xvreplgr2vr.{b/h/w/d}
+        case DF_A_2RG: // xvreplve.{b/h/w/d}
+            result.insLatency    = id->idInsIs(INS_vreplgr2vr_w, INS_vreplgr2vr_d, INS_xvreplgr2vr_w, INS_xvreplgr2vr_d)
+                                       ? PERFSCORE_LATENCY_2C
+                                       : PERFSCORE_LATENCY_3C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case DF_S_2R:
+            if (((INS_vclo_b <= ins) && (ins <= INS_vmsknz_b)) || ((INS_vexth_h_b <= ins) && (ins <= INS_vextl_qu_du)))
+            { // vclo.{b/h/w/d}, vclz.{b/h/w/d}, vpcnt.{b/h/w/d}, vneg.{b/h/w/d}, vmskltz.{b/h/w/d}, vmskgez.b, vmsknz.b
+              // vexth.h.b, vexth.w.h, vexth.d.w, vexth.q.d, vexth.hu.bu, vexth.wu.hu, vexth.du.wu, vexth.qu.du,
+              // vextl.q.d, vextl.qu.du
+                result.insLatency =
+                    ((INS_vclo_b <= ins) && (ins <= INS_vpcnt_d)) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
+                result.insThroughput = id->idInsIs(INS_vpcnt_b, INS_vpcnt_h, INS_vpcnt_w, INS_vpcnt_d)
+                                           ? PERFSCORE_THROUGHPUT_2C
+                                           : PERFSCORE_THROUGHPUT_4C;
+            }
+            else if ((INS_vflogb_s <= ins) && (ins <= INS_vfclass_d))
+            { // vflogb.{s/d}, vfclass.{s/d}
+                result.insLatency =
+                    id->idInsIs(INS_vfclass_s, INS_vfclass_d) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if ((INS_vfrint_s <= ins) && (ins <= INS_vffint_d_lu))
+            { // vfrint[{rne/rz/rp/rm}].{s/d}, vfcvt{l/h}.{s.h/d.s}, vffint.{s.w/d.l}[u]
+                result.insLatency    = id->idInsIs(INS_vfcvtl_s_h, INS_vfcvth_s_h, INS_vfcvtl_d_s, INS_vfcvth_d_s)
+                                           ? PERFSCORE_LATENCY_3C
+                                           : PERFSCORE_LATENCY_4C;
+                result.insThroughput = id->idInsIs(INS_vffint_s_w, INS_vffint_s_wu, INS_vffint_d_l, INS_vffint_d_lu)
+                                           ? PERFSCORE_THROUGHPUT_4C
+                                           : PERFSCORE_THROUGHPUT_2C;
+            }
+            else if ((INS_vftint_w_s <= ins) && (ins <= INS_vftintrz_lu_d))
+            { // vftint[{rne/rz/rp/rm}].{w.s/l.d}, vftint[rz].{wu.s/lu.d}
+                result.insLatency    = PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if (((INS_vftintl_l_s <= ins) && (ins <= INS_vftintrneh_l_s)) ||
+                     id->idInsIs(INS_vffintl_d_w, INS_vffinth_d_w) ||
+                     ((INS_vfrecipe_s <= ins) && (ins <= INS_vfrsqrte_d)))
+            { // vftint[{rne/rz/rp/rm}]{l/h}.l.s, vffint{l/h}.d.w, vfrecipe.{s/d}, vfrsqrte.{s/d}
+                result.insLatency    = PERFSCORE_LATENCY_5C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            { // vfsqrt.{s/d}, vfrecip.{s/d}, vfrsqrt.{s/d}
+                assert((INS_vfsqrt_s <= ins) && (ins <= INS_vfrsqrt_d));
+                if (id->idInsIs(INS_vfsqrt_s, INS_vfsqrt_d))
+                {
+                    result.insLatency    = id->idInsIs(INS_vfsqrt_s) ? (11.0f + 39.0f) / 2 : (8.0f + 36.0f) / 2;
+                    result.insThroughput = id->idInsIs(INS_vfsqrt_s) ? (0.054f + 0.222f) / 2 : (0.059f + 0.333f) / 2;
+                }
+                else if (id->idInsIs(INS_vfrecip_s, INS_vfrecip_d))
+                {
+                    result.insLatency    = id->idInsIs(INS_vfrecip_s) ? (11.0f + 27.0f) / 2 : (8.0f + 23.0f) / 2;
+                    result.insThroughput = id->idInsIs(INS_vfrecip_s) ? (0.08f + 0.222f) / 2 : (0.095f + 0.333f) / 2;
+                }
+                else if (id->idInsIs(INS_vfrsqrt_s, INS_vfrsqrt_d))
+                {
+                    result.insLatency    = id->idInsIs(INS_vfrsqrt_s) ? (17.0f + 61.0f) / 2 : (11.0f + 54.0f) / 2;
+                    result.insThroughput = id->idInsIs(INS_vfrsqrt_s) ? (0.034f + 0.133f) / 2 : (0.038f + 0.222f) / 2;
+                }
+            }
+            break;
+
+        case DF_S_2RX:   // vreplvei.d, vreplvei.w
+        case DF_S_R13IU: // vldi
+        case DF_S_2R8IU: // vextrins.{b/h/w/d}, vshuf4i.{b/h/w/d}, vbitseli.b, vandi.b, vori.b, vxori.b, vnori.b,
+                         // vpermi.w
+        case DF_S_2R5I:  // vseqi.{b/h/w/d}, vslei.{b/h/w/d}, vslti.{b/h/w/d}, vmaxi.{b/h/w/d}, vmini.{b/h/w/d}
+            result.insLatency = id->idInsIs(INS_vslei_d, INS_vslti_d, INS_vmaxi_d, INS_vmini_d) ? PERFSCORE_LATENCY_2C
+                                                                                                : PERFSCORE_LATENCY_1C;
+            result.insThroughput = id->idInsIs(INS_vbitseli_b) ? PERFSCORE_THROUGHPUT_2C : PERFSCORE_THROUGHPUT_4C;
+            break;
+
+        case DF_S_CR: // vseteqz.v, vsetnez.v, vsetanyeqz.{b/h/w/d}, vsetallnez.{b/h/w/d}
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+
+        case DF_S_RGX:
+            if (id->idInsIs(INS_vinsgr2vr_d, INS_vinsgr2vr_w, INS_vinsgr2vr_h, INS_vinsgr2vr_b))
+            { // vinsgr2vr.{b/h/w/d}
+                result.insLatency    = PERFSCORE_LATENCY_3C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            else
+            { // vldrepl.{b/h/w/d}, vld, vst
+                assert(id->idInsIs(INS_vldrepl_d, INS_vldrepl_w, INS_vldrepl_h, INS_vldrepl_b, INS_vld, INS_vst));
+                result.insLatency    = id->idInsIs(INS_vst) ? PERFSCORE_LATENCY_ZERO : PERFSCORE_LATENCY_5C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            break;
+
+        case DF_S_2R3IU:
+            if ((INS_vsllwil_h_b <= ins) && (ins <= INS_vsat_bu))
+            { // vsllwil.h.b, vsllwil.hu.bu, vbitclri.b, vbitseti.b, vbitrevi.b, vsat.b, vsat.bu
+                result.insLatency    = PERFSCORE_LATENCY_2C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            { // vslli.b, vsrli.b, vsrai.b, vsrlri.b, vsrari.b, vrotri.b, vreplvei.h
+                assert(id->idInsIs(INS_vslli_b, INS_vsrli_b, INS_vsrai_b, INS_vsrlri_b, INS_vsrari_b, INS_vrotri_b,
+                                   INS_vreplvei_h));
+                result.insLatency =
+                    id->idInsIs(INS_vsrlri_b, INS_vsrari_b) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
+                result.insThroughput =
+                    id->idInsIs(INS_vsrlri_b, INS_vsrari_b) ? PERFSCORE_THROUGHPUT_2C : PERFSCORE_THROUGHPUT_4C;
+            }
+            break;
+
+        case DF_S_2R4IU:
+            if ((INS_vsllwil_w_h <= ins) && (ins <= INS_vsat_hu))
+            { // vsllwil.w.h, vsllwil.wu.hu, vsrlni.b.h, vsrlrni.b.h, vssrlni.b.h, vssrlni.bu.h, vssrlrni.b.h,
+              // vssrlrni.bu.h, vsrani.b.h vsrarni.b.h, vssrani.b.h, vssrani.bu.h, vssrarni.b.h, vssrarni.bu.h,
+              // vbitclri.h, vbitseti.h, vbitrevi.h, vsat.h, vsat.hu
+                result.insLatency    = ((INS_vsrlni_b_h <= ins) && (ins <= INS_vssrarni_bu_h)) ? PERFSCORE_LATENCY_4C
+                                                                                               : PERFSCORE_LATENCY_2C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            { // vslli.h, vsrli.h, vsrai.h, vsrlri.h, vsrari.h, vrotri.h, vreplvei.b
+                assert(id->idInsIs(INS_vslli_h, INS_vsrli_h, INS_vsrai_h, INS_vsrlri_h, INS_vsrari_h, INS_vrotri_h,
+                                   INS_vreplvei_b));
+                result.insLatency =
+                    id->idInsIs(INS_vsrlri_h, INS_vsrari_h) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
+                result.insThroughput =
+                    id->idInsIs(INS_vsrlri_h, INS_vsrari_h) ? PERFSCORE_THROUGHPUT_2C : PERFSCORE_THROUGHPUT_4C;
+            }
+            break;
+
+        case DF_S_2R5IU:
+            if (((INS_vslei_bu <= ins) && (ins <= INS_vrotri_w)) || ((INS_vmaxi_bu <= ins) && (ins <= INS_vmini_du)))
+            {
+                if (id->idInsIs(INS_vsrlri_w, INS_vsrari_w))
+                { // vsrlri.w, vsrari.w
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                }
+                else
+                { // vslei.{bu/hu/wu/du}, vslti.{bu/hu/wu/du}, vaddi.{bu/hu/wu/du}, vsubi.{bu/hu/wu/du}
+                  // vslli.w, vsrli.w, vsrai.w, vbsll.v vbsrl.v, vrotri.w, vmaxi.{bu/hu/wu/du}, vmini.{bu/hu/wu/du}
+                    result.insLatency    = id->idInsIs(INS_vslei_du, INS_vslti_du, INS_vmaxi_du, INS_vmini_du)
+                                               ? PERFSCORE_LATENCY_2C
+                                               : PERFSCORE_LATENCY_1C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                }
+            }
+            else
+            { // vsllwil.d.w, vsllwil.du.wu, vsrlni.h.w, vsrlrni.h.w, vssrlni.{h/hu}.w, vssrlrni.{h/hu}.w, vsrani.h.w
+              // vsrarni.h.w, vssrani.{h/hu}.w, vssrarni.{h/hu}.w, vbitclri.w, vbitseti.w, vbitrevi.w, vfrstpi.{b/h},
+              // vsat.{w/wu}
+                result.insLatency    = id->idInsIs(INS_vsllwil_d_w, INS_vsllwil_du_wu, INS_vbitclri_w, INS_vbitseti_w,
+                                                   INS_vbitrevi_w, INS_vfrstpi_b, INS_vfrstpi_h, INS_vsat_w, INS_vsat_wu)
+                                           ? PERFSCORE_LATENCY_2C
+                                           : PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            break;
+
+        case DF_S_2R6IU: // vslli.d, vsrli.d, vsrai.d, vrotri.d, 1 4 | vsrlri.d, vsrari.d, 3 2
+            if ((INS_vsrlni_w_d <= ins) && (ins <= INS_vsat_du))
+            { // vsrlni.w.d, vsrlrni.w.d, vssrlni.{w/wu}.d, vssrlrni.{w/wu}.d, vsrani.w.d, vsrarni.w.d
+              // vssrani.{w/wu}.d, vssrarni.{w/wu}.d, vbitclri.d, vbitseti.d, vbitrevi.d, vsat.{d/du}
+                result.insLatency = id->idInsIs(INS_vbitclri_d, INS_vbitseti_d, INS_vbitrevi_d, INS_vsat_d, INS_vsat_du)
+                                        ? PERFSCORE_LATENCY_2C
+                                        : PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            { // vslli.d, vsrli.d, vsrai.d, vrotri.d, vsrlri.d, vsrari.d
+                assert((INS_vslli_d <= ins) && (ins <= INS_vsrari_d));
+                result.insLatency =
+                    id->idInsIs(INS_vsrlri_d, INS_vsrari_d) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
+                result.insThroughput =
+                    id->idInsIs(INS_vsrlri_d, INS_vsrari_d) ? PERFSCORE_THROUGHPUT_2C : PERFSCORE_THROUGHPUT_4C;
+            }
+            break;
+
+        case DF_S_2R7IU: // vsrlni.d.q, vsrlrni.d.q, vssrlni.d.q, vssrlni.du.q, vssrlrni.d.q, vssrlrni.du.q
+                         // vsrani.d.q, vsrarni.d.q, vssrani.d.q, vssrani.du.q, vssrarni.d.q, vssrarni.du.q
+        case DF_A_2R7IU: // xvsrlni.d.q, xvsrlrni.d.q, xvssrlni.d.q, xvssrlni.du.q, xvssrlrni.d.q, xvssrlrni.du.q
+                         // xvsrani.d.q, xvsrarni.d.q, xvssrani.d.q, xvssrani.du.q, xvssrarni.d.q, xvssrarni.du.q
+        case DF_A_CR:    // xvseteqz.v, xvsetnez.v, xvsetanyeqz.{b/h/w/d}, xvsetallnez.{b/h/w/d}
+            result.insLatency    = PERFSCORE_LATENCY_3C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+
+        case DF_A_3R:
+            if (((INS_xvfcmp_caf_s <= ins) && (ins <= INS_xvfcmp_sune_d)) ||
+                ((INS_xvfadd_s <= ins) && (ins <= INS_xvfsub_d)) || ((INS_xvfmax_s <= ins) && (ins <= INS_xvfmina_d)) ||
+                (ins == INS_xvperm_w))
+            { // xvfcmp.cond.{s/d}, xvfadd.{s/d}, xvfsub.{s/d}, xvfmax.{s/d}, xvfmin.{s/d}, xvfmaxa.{s/d},
+              // xvfmina.{s/d}, xvperm.w
+                result.insLatency    = id->idInsIs(INS_xvfadd_s, INS_xvfadd_d, INS_xvfsub_s, INS_xvfsub_d, INS_xvperm_w)
+                                           ? PERFSCORE_LATENCY_3C
+                                           : PERFSCORE_LATENCY_2C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if (((INS_xvseq_b <= ins) && (ins <= INS_xvsub_d)) ||
+                     ((INS_xvsadd_b <= ins) && (ins <= INS_xvssub_du)) ||
+                     ((INS_xvavg_b <= ins) && (ins <= INS_xvmin_du)) ||
+                     ((INS_xvsll_b <= ins) && (ins <= INS_xvrotr_d)) ||
+                     ((INS_xvpackev_b <= ins) && (ins <= INS_xvorn_v)) ||
+                     ((INS_xvsigncov_b <= ins) && (ins <= INS_xvsigncov_d)) ||
+                     ((INS_xvshuf_h <= ins) && (ins <= INS_xvshuf_d)))
+            { // xvseq.{b/h/w/d}, xvsle.{b/h/w/d}[u], xvslt{b/h/w/d}[u], xvadd.{b/h/w/d}, xvsub.{b/h/w/d},
+              // xvsadd.{b/h/w/d}[u] xvssub.{b/h/w/d}[u], xvavg.{b/h/w/d}[u], xvavgr.{b/h/w/d}[u], xvmax.{b/h/w/d}[u],
+              // xvmin.{b/h/w/d}[u] xvsll.{b/h/w/d}, xvsrl.{b/h/w/d}, xvsra.{b/h/w/d}, xvrotr.{b/h/w/d},
+              // xvpack{ev/od}.{b/h/w/d} xvilvl.{b/h/w/d}, xvilvh.{b/h/w/d}, xvpick{ev/od}.{b/h/w/d}, xvand.v, xvor.v,
+              // xvxor.v, xvnor.v, xvandn.v, xvorn.v xvsigncov.{b/h/w/d}, xvshuf.{h/w/d}
+                result.insLatency =
+                    id->idInsIs(INS_xvsle_d, INS_xvsle_du, INS_xvslt_d, INS_xvslt_du, INS_xvavg_d, INS_xvavg_du,
+                                INS_xvavgr_d, INS_xvavgr_du, INS_xvmax_d, INS_xvmin_d, INS_xvmax_du, INS_xvmin_du)
+                        ? PERFSCORE_LATENCY_2C
+                        : PERFSCORE_LATENCY_1C;
+                result.insThroughput = id->idInsIs(INS_xvsigncov_b, INS_xvsigncov_h, INS_xvsigncov_w, INS_xvsigncov_d,
+                                                   INS_xvshuf_h, INS_xvshuf_w, INS_xvshuf_d)
+                                           ? PERFSCORE_THROUGHPUT_2C
+                                           : PERFSCORE_THROUGHPUT_4C;
+            }
+            else if (((INS_xvaddwev_h_b <= ins) && (ins <= INS_xvaddwod_q_du_d)) ||
+                     ((INS_xvhaddw_h_b <= ins) && (ins <= INS_xvabsd_du)) ||
+                     ((INS_xvsrlr_b <= ins) && (ins <= INS_xvsran_w_d)) ||
+                     ((INS_xvbitclr_b <= ins) && (ins <= INS_xvbitrev_d)) ||
+                     ((INS_xvfrstp_b <= ins) && (ins <= INS_xvsub_q)) ||
+                     ((INS_xvfcvt_h_s <= ins) && (ins <= INS_xvfcvt_s_d)))
+            { // xvaddw{ev/od}.{h.b/w.h/d.w/q.d}, xvsubw{ev/od}.{h.b/w.h/d.w/q.d}, xvaddw{ev/od}.{h.b/w.h/d.w/q.d}u
+              // xvsubw{ev/od}.{h.b/w.h/d.w/q.d}u, xvaddw{ev/od}.{h.bu.b/w.hu.h/d.wu.w/q.du.d}
+              // xvhaddw.{h.b/w.h/d.w/q.d/hu.bu/wu.hu/du.wu/qu.du}, xvhsubw.{h.b/w.h/d.w/q.d/hu.bu/wu.hu/du.wu/qu.du}
+              // xvadda.{b/h/w/d}, xvabsd.{b/h/w/d}[u], xvsrlr.{b/h/w/d}, xvsrar.{b/h/w/d}, xvsrln.{b.h/h.w/w.d},
+              // xvsran.{b.h/h.w/w.d} xvbitclr.{b/h/w/d}, xvbitset.{b/h/w/d}, xvbitrev.{b/h/w/d}, xvfrstp.{b/h},
+              // xvadd.q, xvsub.q, xvfcvt.{h.s/s.d}
+                result.insLatency =
+                    id->idInsIs(INS_xvaddwev_q_d, INS_xvsubwev_q_d, INS_xvaddwod_q_d, INS_xvsubwod_q_d,
+                                INS_xvaddwev_q_du, INS_xvsubwev_q_du, INS_xvaddwod_q_du, INS_xvsubwod_q_du,
+                                INS_xvaddwev_q_du_d, INS_xvaddwod_q_du_d, INS_xvhaddw_q_d, INS_xvhsubw_q_d,
+                                INS_xvhaddw_qu_du, INS_xvhsubw_qu_du, INS_xvadda_b, INS_xvadda_h, INS_xvadda_w,
+                                INS_xvadda_d, INS_xvsrlr_b, INS_xvsrlr_h, INS_xvsrlr_w, INS_xvsrlr_d, INS_xvsrar_b,
+                                INS_xvsrar_h, INS_xvsrar_w, INS_xvsrar_d, INS_xvadd_q, INS_xvsub_q, INS_xvfcvt_h_s,
+                                INS_xvfcvt_s_d)
+                        ? PERFSCORE_LATENCY_3C
+                        : PERFSCORE_LATENCY_2C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if (((INS_xvmul_b <= ins) && (ins <= INS_xvmaddwod_q_du_d)) ||
+                     ((INS_xvsrlrn_b_h <= ins) && (ins <= INS_xvssrarn_wu_d)))
+            { // xvmul.{b/h/w/d}, xvmuh.{b/h/w/d}[u], xvmulw{ev/od}.{h.b/w.h/d.w/q.d}[u],
+              // xvmulw{ev/od}.{h.bu.b/w.hu.h/d.wu.w/q.du.d} xvmadd.{b/h/w/d}, xvmsub.{b/h/w/d},
+              // xvmadd{ev/od}.{h.b/w.h/d.w/q.d}[u], xvmadd{ev/od}.{h.bu.b/w.hu.h/d.wu.w/q.du.d} xvsrlrn.{b.h/h.w/w.d},
+              // xvsrarn.{b.h/h.w/w.d}, xvssrln.{b.h/h.w/w.d}, xvssran.{b.h/h.w/w.d}, xvssrlrn.{b.h/h.w/w.d}
+              // xvssrarn.{b.h/h.w/w.d}, xvssrln.{bu.h/hu.w/wu.d}, xvssran.{bu.h/hu.w/wu.d}, xvssrlrn.{bu.h/hu.w/wu.d},
+              // xvssrarn.{bu.h/hu.w/wu.d},
+                result.insLatency =
+                    id->idInsIs(INS_xvmulwev_q_d, INS_xvmulwod_q_d, INS_xvmulwev_q_du, INS_xvmulwod_q_du,
+                                INS_xvmulwev_q_du_d, INS_xvmulwod_q_du_d, INS_xvmaddwev_q_d, INS_xvmaddwod_q_d,
+                                INS_xvmaddwev_q_du, INS_xvmaddwod_q_du, INS_xvmaddwev_q_du_d, INS_xvmaddwod_q_du_d)
+                        ? PERFSCORE_LATENCY_7C
+                        : PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if (((INS_xvfmul_s <= ins) && (ins <= INS_xvfmul_d)) ||
+                     ((INS_xvffint_s_l <= ins) && (ins <= INS_xvftintrne_w_d)) || (ins == INS_xvldx) ||
+                     (ins == INS_xvstx))
+            { // xvfmul.{s/d}, xvffint.s.l, xvftint[{rne/rz/rp/rm}].w.d, xvldx, xvstx
+                result.insLatency    = id->idInsIs(INS_xvstx) ? PERFSCORE_LATENCY_ZERO : PERFSCORE_LATENCY_5C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            { // xvdiv.{b/h/w/d}[u], xvmod.{b/h/w/d}[u]
+                assert(((INS_xvdiv_b <= ins) && (ins <= INS_xvmod_du)) || id->idInsIs(INS_xvfdiv_s, INS_xvfdiv_d));
+                if (id->idInsIs(INS_xvdiv_b, INS_xvmod_b, INS_xvdiv_bu, INS_xvmod_bu))
+                {
+                    result.insLatency    = (24.5f + 52.0f) / 2;
+                    result.insThroughput = (0.03f + 0.074f) / 2;
+                }
+                else if (id->idInsIs(INS_xvdiv_h, INS_xvmod_h, INS_xvdiv_hu, INS_xvmod_hu))
+                {
+                    result.insLatency    = (14.0f + 35.0f) / 2;
+                    result.insThroughput = (0.05f + 0.133f) / 2;
+                }
+                else if (id->idInsIs(INS_xvdiv_w, INS_xvmod_w, INS_xvdiv_wu, INS_xvmod_wu))
+                {
+                    result.insLatency    = (9.0f + 26.0f) / 2;
+                    result.insThroughput = (0.065f + 0.22f) / 2;
+                }
+                else if (id->idInsIs(INS_xvdiv_d, INS_xvmod_d, INS_xvdiv_du, INS_xvmod_du))
+                {
+                    result.insLatency    = (6.6f + 22.0f) / 2;
+                    result.insThroughput = (0.08f + 0.33f) / 2;
+                }
+                else
+                { // xvfdiv.s, xvfdiv.d
+                    result.insLatency    = id->idInsIs(INS_xvfdiv_s) ? (8.6f + 22.4f) / 2 : (6.0f + 19.0f) / 2;
+                    result.insThroughput = id->idInsIs(INS_xvfdiv_s) ? (0.08f + 0.22f) / 2 : (0.095f + 0.33f) / 2;
+                }
+            }
+            break;
+
+        case DF_A_2R:
+            if ((INS_xvclo_b <= ins) && (ins <= INS_xvmsknz_b))
+            { // xvclo.{b/h/w/d}, xvclz.{b/h/w/d}, xvpcnt.{b/h/w/d}, xvneg.{b/h/w/d}, xvmskltz.{b/h/w/d}, xvmskgez.b,
+              // xvmsknz.b
+                result.insLatency =
+                    ((INS_xvclo_b <= ins) && (ins <= INS_xvpcnt_d)) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
+                result.insThroughput = id->idInsIs(INS_xvpcnt_b, INS_xvpcnt_h, INS_xvpcnt_w, INS_xvpcnt_d)
+                                           ? PERFSCORE_THROUGHPUT_2C
+                                           : PERFSCORE_THROUGHPUT_4C;
+            }
+            else if ((INS_xvflogb_s <= ins) && (ins <= INS_xvfclass_d))
+            { // xvflogb.{s/d}, xvfclass.{s/d}
+                result.insLatency =
+                    id->idInsIs(INS_xvfclass_s, INS_xvfclass_d) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if ((INS_xvfrint_s <= ins) && (ins <= INS_xvfcvth_d_s))
+            { // xvfrint[{rne/rz/rp/rm}].{s/d}, xvfcvt{l/h}.{s.h/d.s}
+                result.insLatency    = id->idInsIs(INS_xvfcvtl_s_h, INS_xvfcvth_s_h, INS_xvfcvtl_d_s, INS_xvfcvth_d_s)
+                                           ? PERFSCORE_LATENCY_3C
+                                           : PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if (((INS_xvfrecipe_s <= ins) && (ins <= INS_xvfrsqrte_d)) ||
+                     ((INS_xvffint_s_w <= ins) && (ins <= INS_xvftintrneh_l_s)))
+            { // xvfrecipe.{s/d}, xvfrsqrte.{s/d}, xvffint.{s.w/d.l}[u], xvftint[{rne/rz/rp/rm}].{w.s/l.d}
+              // xvftint[rz].{wu.s/lu.d}, xvftint[{rne/rz/rp/rm}]{l/h}.l.s
+                result.insLatency    = (id->idInsIs(INS_xvffintl_d_w, INS_xvffinth_d_w) ||
+                                     ((INS_xvftintl_l_s <= ins) && (ins <= INS_xvftintrneh_l_s)) ||
+                                     ((INS_xvfrecipe_s <= ins) && (ins <= INS_xvfrsqrte_d)))
+                                           ? PERFSCORE_LATENCY_5C
+                                           : PERFSCORE_LATENCY_4C;
+                result.insThroughput = (id->idInsIs(INS_xvffintl_d_w, INS_xvffinth_d_w) ||
+                                        ((INS_xvftintl_l_s <= ins) && (ins <= INS_xvftintrneh_l_s)) ||
+                                        ((INS_xvfrecipe_s <= ins) && (ins <= INS_xvfrsqrte_d)))
+                                           ? PERFSCORE_THROUGHPUT_2C
+                                           : PERFSCORE_THROUGHPUT_4C;
+            }
+            else if ((INS_xvexth_h_b <= ins) && (ins <= INS_xvextl_qu_du))
+            { // xvexth.h.b, xvexth.w.h, xvexth.d.w, xvexth.q.d, xvexth.hu.bu, xvexth.wu.hu, xvexth.du.wu, xvexth.qu.du
+              // vext2xv.{h/w/d}.b, vext2xv.{hu/wu/du}.bu, vext2xv.{w/d}.h, vext2xv.{wu/du}.hu, vext2xv.d.w,
+              // vext2xv.du.wu xvreplve0.{b/h/w/d/q}, xvextl.q.d, xvextl.qu.du
+                result.insLatency    = ((INS_vext2xv_h_b <= ins) && (ins <= INS_xvreplve0_q)) ? PERFSCORE_LATENCY_3C
+                                                                                              : PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else
+            { // xvfsqrt.{s/d}, xvfrecip.{s/d}, xvfrsqrt.{s/d}
+                if (id->idInsIs(INS_xvfsqrt_s, INS_xvfsqrt_d))
+                {
+                    result.insLatency    = id->idInsIs(INS_xvfsqrt_s) ? (11.0f + 39.0f) / 2 : (8.0f + 36.0f) / 2;
+                    result.insThroughput = id->idInsIs(INS_xvfsqrt_s) ? (0.054f + 0.222f) / 2 : (0.059f + 0.333f) / 2;
+                }
+                else if (id->idInsIs(INS_xvfrecip_s, INS_xvfrecip_d))
+                {
+                    result.insLatency    = id->idInsIs(INS_xvfrecip_s) ? (11.0f + 27.0f) / 2 : (8.0f + 23.0f) / 2;
+                    result.insThroughput = id->idInsIs(INS_xvfrecip_s) ? (0.08f + 0.222f) / 2 : (0.095f + 0.333f) / 2;
+                }
+                else
+                {
+                    assert(id->idInsIs(INS_xvfrsqrt_s, INS_xvfrsqrt_d));
+                    result.insLatency    = id->idInsIs(INS_xvfrsqrt_s) ? (17.0f + 61.0f) / 2 : (11.0f + 54.0f) / 2;
+                    result.insThroughput = id->idInsIs(INS_xvfrsqrt_s) ? (0.034f + 0.133f) / 2 : (0.038f + 0.222f) / 2;
+                }
+            }
+            break;
+
+        case DF_A_RGX:
+            if ((INS_xvldrepl_d <= ins) && (ins <= INS_xvst))
+            { // xvldrepl.{b/h/w/d}, xvld, xvst
+                result.insLatency    = id->idInsIs(INS_xvst) ? PERFSCORE_LATENCY_ZERO : PERFSCORE_LATENCY_5C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            { // xvinsgr2vr.{w/d}
+                assert(id->idInsIs(INS_xvinsgr2vr_d, INS_xvinsgr2vr_w));
+                result.insLatency    = (PERFSCORE_LATENCY_3C + PERFSCORE_LATENCY_5C) / 2;
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case DF_A_GRX: // xvpickve2gr.{w/d}[u]
+            result.insLatency    = PERFSCORE_LATENCY_5C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case DF_A_2RX: // xvrepl128vei.{w/d}, xvinsve0.d, xvpickve.d
+            if (id->idInsIs(INS_xvinsve0_d))
+            { // TODO: 1C when ui2=0,1; 3C when ui2=2,3;
+                result.insLatency = (PERFSCORE_LATENCY_1C + PERFSCORE_LATENCY_3C) / 2;
+            }
+            else
+            {
+                assert(id->idInsIs(INS_xvrepl128vei_w, INS_xvrepl128vei_d, INS_xvpickve_d));
+                result.insLatency = id->idInsIs(INS_xvpickve_d) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
+            }
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            break;
+
+        case DF_A_2R3IU:
+            if ((INS_xvsrlni_b_h <= ins) && (ins <= INS_xvssrarni_bu_h))
+            { // xvsrlni.b.h, xvsrlrni.b.h, xvssrlni.{b/bu}.h, xvssrlrni.{b/bu}.h
+              // xvsrani.b.h, xvsrarni.b.h, xvssrani.{b/bu}.h, xvssrarni.{b/bu}.h
+                result.insLatency    = PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if (id->idInsIs(INS_xvslli_b, INS_xvsrli_b, INS_xvsrai_b, INS_xvrotri_b, INS_xvrepl128vei_h))
+            { // xvslli.b, xvsrli.b, xvsrai.b, xvrotri.b, xvrepl128vei.h
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else if (id->idInsIs(INS_xvinsve0_w))
+            { // xvinsve0.w TODO: LATENCY_1C when ui3=0,1,2,3; LATENCY_3C when ui3=4,5,6,7
+                result.insLatency    = (PERFSCORE_LATENCY_1C + PERFSCORE_LATENCY_3C) / 2;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            else
+            { // xvsrlri.b, xvsrari.b, xvsllwil.h.b, xvsllwil.hu.bu, xvpickve.w, xvbitclri.b, xvbitseti.b, xvbitrevi.b
+              // xvsat.{b/bu}
+                assert(id->idInsIs(INS_xvsrlri_b, INS_xvsrari_b, INS_xvsllwil_h_b, INS_xvsllwil_hu_bu, INS_xvpickve_w,
+                                   INS_xvbitclri_b, INS_xvbitseti_b, INS_xvbitrevi_b, INS_xvsat_b, INS_xvsat_bu));
+                result.insLatency    = id->idInsIs(INS_xvsrlri_b, INS_xvsrari_b, INS_xvpickve_w) ? PERFSCORE_LATENCY_3C
+                                                                                                 : PERFSCORE_LATENCY_2C;
+                result.insThroughput = id->idInsIs(INS_xvpickve_w) ? PERFSCORE_THROUGHPUT_4C : PERFSCORE_THROUGHPUT_2C;
+            }
+            break;
+
+        case DF_A_2R4IU:
+        case DF_A_2R5I:
+            if ((INS_xvsrlri_h <= ins) && (ins <= INS_xvsat_hu))
+            { // xvsrlri.h, xvsrari.h, xvsllwil.w.h, xvsllwil.wu.hu, xvbitclri.h, xvbitseti.h, xvbitrevi.h, xvsat.{h/hu}
+                result.insLatency =
+                    id->idInsIs(INS_xvsrlri_h, INS_xvsrari_h) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            { // xvslli.h, xvsrli.h, xvsrai.h, xvrotri.h, xvrepl128vei.b
+              // xvseqi.{b/h/w/d}, xvslei.{b/h/w/d}, xvslti.{b/h/w/d}, xvmaxi.{b/h/w/d}, xvmini.{b/h/w/d}
+                assert(((INS_xvslli_h <= ins) && (ins <= INS_xvrepl128vei_b)) ||
+                       ((INS_xvseqi_b <= ins) && (ins <= INS_xvmini_d)));
+                result.insLatency    = id->idInsIs(INS_xvslei_d, INS_xvslti_d, INS_xvmaxi_d, INS_xvmini_d)
+                                           ? PERFSCORE_LATENCY_2C
+                                           : PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            break;
+
+        case DF_A_2R5IU:
+        case DF_A_2R6IU:
+            if (id->idInsIs(INS_xvsrlri_w, INS_xvsrari_w, INS_xvsrlri_d, INS_xvsrari_d))
+            { // xvsrlri.{w/d}, xvsrari.{w/d}
+                result.insLatency    = PERFSCORE_LATENCY_3C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if (id->idInsIs(INS_xvfrstpi_b, INS_xvfrstpi_h, INS_xvsllwil_d_w, INS_xvsllwil_du_wu) ||
+                     ((INS_xvbitclri_w <= ins) && (ins <= INS_xvsat_wu)) ||
+                     ((INS_xvbitclri_d <= ins) && (ins <= INS_xvsat_du)))
+            { // xvfrstpi.{b/h}, xvsllwil.d.w, xvsllwil.du.wu, xvbitclri.{w/d}, xvbitseti.{w/d}, xvbitrevi.{w/d},
+              // xvsat.{w/d}[u]
+                result.insLatency    = PERFSCORE_LATENCY_2C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else if (((INS_xvsrlni_h_w <= ins) && (ins <= INS_xvssrarni_hu_w)) ||
+                     ((INS_xvsrlni_w_d <= ins) && (ins <= INS_xvssrarni_wu_d)))
+            { // xvsrlni.{h.w/w.d}, xvsrlrni.{h.w/w.d}, xvssrlni.{h.w/w.d}, xvssrlni.{hu.w/wu.d}, xvssrlrni.{h.w/w.d},
+              // xvssrlrni.{hu.w/wu.d} xvsrani.{h.w/w.d}, xvsrarni.{h.w/w.d}, xvssrani.{h.w/w.d}, xvssrani.{hu.w/wu.d},
+              // xvssrarni.{h.w/w.d}, xvssrarni.{hu.w/wu.d}
+                result.insLatency    = PERFSCORE_LATENCY_4C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            }
+            else
+            { // xvslei.{bu/hu/wu/du}, xvslti.{bu/hu/wu/du}, xvaddi.{bu/hu/wu/du}, xvsubi.{bu/hu/wu/du},
+              // xvmaxi.{bu/hu/wu/du} xvmini.{bu/hu/wu/du}, xvslli.{w/d}, xvsrli.{w/d}, xvsrai.{w/d}, xvrotri.{w/d},
+              // xvbsll.v, xvbsrl.v
+                assert(((INS_xvslei_bu <= ins) && (ins <= INS_xvmini_du)) ||
+                       ((INS_xvslli_w <= ins) && (ins <= INS_xvbsrl_v)) ||
+                       ((INS_xvslli_d <= ins) && (ins <= INS_xvrotri_d)) || (ins == INS_xvrotri_w));
+                result.insLatency    = id->idInsIs(INS_xvslei_du, INS_xvslti_du, INS_xvmaxi_du, INS_xvmini_du)
+                                           ? PERFSCORE_LATENCY_2C
+                                           : PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            }
+            break;
+
+        case DF_A_2R8IU: // xvextrins.{b/h/w/d}, xvshuf4i.{b/h/w/d}, xvbitseli.b, xvandi.b, xvori.b, xvxori.b, xvnori.b,
+                         // xvpermi.{w/d/q}
+        case DF_A_R13IU: // xvldi
+            result.insLatency = id->idInsIs(INS_xvpermi_d, INS_xvpermi_q) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
+            result.insThroughput = id->idInsIs(INS_xvbitseli_b) ? PERFSCORE_THROUGHPUT_2C : PERFSCORE_THROUGHPUT_4C;
+            break;
+
+        case DF_S_2R8IX: // [x]vstelm.{b/h/w/d}
+        case DF_A_RG8IX:
+            result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+#endif
+
+        default:
+            perfScoreUnhandledInstruction(id, &result);
+            break;
+    }
     return result;
 }
 

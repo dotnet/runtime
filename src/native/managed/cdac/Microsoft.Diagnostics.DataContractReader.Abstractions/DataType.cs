@@ -42,6 +42,7 @@ public enum DataType
     Module,
     ModuleLookupMap,
     AppDomain,
+    Debugger,
     SystemDomain,
     Assembly,
     LoaderAllocator,
@@ -107,6 +108,9 @@ public enum DataType
     RangeSection,
     RealCodeHeader,
     CodeHeapListNode,
+    CodeHeap,
+    LoaderCodeHeap,
+    HostCodeHeap,
     MethodDescVersioningState,
     ILCodeVersioningState,
     NativeCodeVersionNode,
@@ -137,6 +141,7 @@ public enum DataType
     PatchpointInfo,
     PortableEntryPoint,
     VirtualCallStubManager,
+    EEConfig,
 
     TransitionBlock,
     DebuggerEval,
@@ -163,7 +168,7 @@ public enum DataType
     InterfaceEntry,
     ComInterfaceEntry,
     InternalComInterfaceDispatch,
-
+    AuxiliarySymbolInfo,
 
     /* GC Data Types */
 
@@ -176,4 +181,6 @@ public enum DataType
     HandleTableBucket,
     HandleTable,
     TableSegment,
+    CardTableInfo,
+    RegionFreeList,
 }

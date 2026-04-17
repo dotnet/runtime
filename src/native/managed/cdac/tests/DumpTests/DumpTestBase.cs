@@ -25,18 +25,23 @@ public abstract class DumpTestBase : IDisposable
     private DumpInfo? _dumpInfo;
 
     /// <summary>
-    /// The set of runtime versions to test against.
+    /// The set of runtime versions and R2R modes to test against.
     /// Each entry produces a separate test invocation via <c>[MemberData]</c>.
+    /// R2R modes are provided by <see cref="GetR2RModes"/>, which currently yields
+    /// both <c>"r2r"</c> and <c>"jit"</c> for each runtime version.
     /// </summary>
     public static IEnumerable<object[]> TestConfigurations
     {
         get
         {
-            if (!IsVersionSkipped("local"))
-                yield return [new TestConfiguration("local")];
+            foreach (string r2rMode in GetR2RModes())
+            {
+                if (!IsVersionSkipped("local"))
+                    yield return [new TestConfiguration("local", r2rMode)];
 
-            if (!IsVersionSkipped("net10.0"))
-                yield return [new TestConfiguration("net10.0")];
+                if (!IsVersionSkipped("net10.0"))
+                    yield return [new TestConfiguration("net10.0", r2rMode)];
+            }
         }
     }
 
@@ -83,9 +88,15 @@ public abstract class DumpTestBase : IDisposable
 
         EvaluateSkipAttributes(config, callerName, dumpType);
 
-        string dumpPath = Path.Combine(versionDir, dumpType, debuggeeName, $"{debuggeeName}.dmp");
+        string dumpPath = Path.Combine(versionDir, dumpType, config.R2RMode, debuggeeName, $"{debuggeeName}.dmp");
 
-        Assert.True(File.Exists(dumpPath), $"Dump file not found: {dumpPath}");
+        if (!File.Exists(dumpPath))
+        {
+            if (_dumpInfo is not null && _dumpInfo.IsDumpExpected(debuggeeName, dumpType, config.R2RMode))
+                Assert.Fail($"Expected {config.R2RMode}/{dumpType} dump for {debuggeeName} but not found: {dumpPath}");
+
+            throw new SkipTestException($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
+        }
 
         _host = ClrMdDumpHost.Open(dumpPath);
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
@@ -95,7 +106,7 @@ public abstract class DumpTestBase : IDisposable
             _host.ReadFromTarget,
             writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
-            additionalFactories: [],
+            [Contracts.CoreCLRContracts.Register],
             out _target);
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
@@ -143,6 +154,12 @@ public abstract class DumpTestBase : IDisposable
                         throw new SkipTestException($"[{_dumpInfo.Os}] {attr.Reason}");
                 }
             }
+
+            foreach (SkipOnArchAttribute attr in method.GetCustomAttributes<SkipOnArchAttribute>())
+            {
+                if (string.Equals(attr.Arch, _dumpInfo.Arch, StringComparison.OrdinalIgnoreCase))
+                    throw new SkipTestException($"[{_dumpInfo.Arch}] {attr.Reason}");
+            }
         }
     }
 
@@ -157,6 +174,16 @@ public abstract class DumpTestBase : IDisposable
             throw new InvalidOperationException("Could not locate the repository root.");
 
         return Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
+    }
+
+    /// <summary>
+    /// Returns the R2R modes to test against. Both modes are always tested;
+    /// dumps that don't exist for a given mode are skipped via <see cref="SkipTestException"/>.
+    /// </summary>
+    private static IEnumerable<string> GetR2RModes()
+    {
+        yield return "r2r";
+        yield return "jit";
     }
 
     /// <summary>
