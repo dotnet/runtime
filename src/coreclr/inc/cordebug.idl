@@ -2328,22 +2328,6 @@ interface ICorDebugGuidToTypeEnum : ICorDebugEnum
 ]
 interface ICorDebugAppDomain3 : IUnknown
 {
-    /*
-     * Returns an enumeration of types corresponding to the IIDs passed in
-     * guidsToResolve. The enumeration will have the same cReqTypes elements
-     * with NULL values corresponding to unknown IIDs.
-     */
-    HRESULT GetCachedWinRTTypesForIIDs(
-                        [in]                      ULONG32              cReqTypes,
-                        [in, size_is(cReqTypes)]  GUID               * iidsToResolve,
-                        [out]                     ICorDebugTypeEnum ** ppTypesEnum);
-
-    /*
-     * Returns an enumeration of IID / Type pairs. This is the exhaustive
-     * list of pairs as they were cached in the current app domain.
-     */
-    HRESULT GetCachedWinRTTypes(
-                        [out] ICorDebugGuidToTypeEnum ** ppGuidToTypeEnum);
 };
 
 [

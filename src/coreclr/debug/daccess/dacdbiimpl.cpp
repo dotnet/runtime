@@ -3853,31 +3853,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetRcwCachedInterfacePointers(VMP
 #endif // FEATURE_COMINTEROP
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCachedWinRTTypesForIIDs(VMPTR_AppDomain vmAppDomain, DacDbiArrayList<GUID> * pIids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
-{
-    if (pIids == NULL || pTypes == NULL)
-        return E_POINTER;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        pTypes->Alloc(0);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCachedWinRTTypes(VMPTR_AppDomain vmAppDomain, OUT DacDbiArrayList<GUID> * piids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
-{
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        pTypes->Alloc(0);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::FindField
 // Finds information for a particular class field

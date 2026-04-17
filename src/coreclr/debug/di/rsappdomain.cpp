@@ -1017,24 +1017,6 @@ HRESULT CordbAppDomain::GetFunctionPointerType(ULONG32 cTypeArgs,
 
 }
 
-//
-// ICorDebugAppDomain3
-//
-
-HRESULT CordbAppDomain::GetCachedWinRTTypesForIIDs(
-                        ULONG32               cGuids,
-                        GUID                * iids,
-                        ICorDebugTypeEnum * * ppTypesEnum)
-{
-    return E_NOTIMPL;
-}
-
-HRESULT CordbAppDomain::GetCachedWinRTTypes(
-                        ICorDebugGuidToTypeEnum * * ppTypesEnum)
-{
-    return E_NOTIMPL;
-}
-
 //-----------------------------------------------------------
 // ICorDebugAppDomain4
 //-----------------------------------------------------------

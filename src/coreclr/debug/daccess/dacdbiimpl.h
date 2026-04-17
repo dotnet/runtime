@@ -325,15 +325,6 @@ public:
     // in the runtime)
     HRESULT STDMETHODCALLTYPE GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs);
 
-    // retrieves a list of interface types corresponding to the passed in
-    // list of IIDs. the interface types are retrieved from an app domain
-    // IID / Type cache, that is updated as new types are loaded. will
-    // have NULL entries corresponding to unknown IIDs in "iids"
-    HRESULT STDMETHODCALLTYPE GetCachedWinRTTypesForIIDs(VMPTR_AppDomain vmAppDomain, DacDbiArrayList<GUID> * pIids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes);
-
-    // retrieves the whole app domain cache of IID / Type mappings.
-    HRESULT STDMETHODCALLTYPE GetCachedWinRTTypes(VMPTR_AppDomain vmAppDomain, OUT DacDbiArrayList<GUID> * piids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes);
-
 private:
     // Helper to enumerate all possible memory ranges help by a loader allocator.
     void EnumerateMemRangesForLoaderAllocator(

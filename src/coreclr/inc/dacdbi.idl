@@ -342,8 +342,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetStackFramesFromException([in] VMPTR_Object vmObject, [out] DacDbiArrayList_DacExceptionCallStackData * pDacStackFrames);
     HRESULT IsRcw([in] VMPTR_Object vmObject, [out] BOOL * pResult);
     HRESULT GetRcwCachedInterfacePointers([in] VMPTR_Object vmObject, [in] BOOL bIInspectableOnly, [out] DacDbiArrayList_CORDB_ADDRESS * pDacItfPtrs);
-    HRESULT GetCachedWinRTTypesForIIDs([in] VMPTR_AppDomain vmAppDomain, [in] DacDbiArrayList_GUID * pIids, [out] DacDbiArrayList_ExpandedTypeData * pTypes);
-    HRESULT GetCachedWinRTTypes([in] VMPTR_AppDomain vmAppDomain, [out] DacDbiArrayList_GUID * piids, [out] DacDbiArrayList_ExpandedTypeData * pTypes);
 
     // Object Data
     HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [out] struct DebuggerIPCE_ObjectData * pObjectData);
