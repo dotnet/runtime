@@ -6017,7 +6017,18 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        if (pMD->ShouldSuppressGCTransition())
+        {
+            // SupressGCTransition P/Invokes that are resolved
+            // at runtime will be in COOP mode.
+            // SuppressGCTransition P/Invokes that are resolved
+            // at R2R load time will be in PREEMP mode.
+            MODE_ANY;
+        }
+        else
+        {
+            MODE_PREEMPTIVE;
+        }
     }
     CONTRACTL_END;
 
@@ -6046,6 +6057,9 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
                 || pMD->ShouldSuppressGCTransition());
 
             CONSISTENCY_CHECK(pMD->IsPInvoke());
+
+            GCX_PREEMP();
+
             //
             // With IL stubs, we don't have to do anything but ensure the DLL is loaded.
             //
