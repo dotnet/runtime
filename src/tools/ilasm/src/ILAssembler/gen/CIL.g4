@@ -26,12 +26,12 @@ INT64_: 'int64';
 FLOAT32: 'float32';
 FLOAT64_: 'float64';
 fragment UNSIGNED: 'unsigned';
-UINT8: 'uint8' | (UNSIGNED INT8);
-UINT16: 'uint16' | (UNSIGNED INT16);
-UINT32: 'uint32' | (UNSIGNED INT32_);
-UINT64: 'uint64' | (UNSIGNED INT64_);
+UINT8: 'uint8';
+UINT16: 'uint16';
+UINT32: 'uint32';
+UINT64: 'uint64';
 INT: 'int';
-UINT: 'uint' | (UNSIGNED 'int');
+UINT: 'uint';
 TYPE: 'type';
 OBJECT: 'object';
 MODULE: '.module';
@@ -59,11 +59,9 @@ IDISPATCH: 'idispatch';
 STRUCT: 'struct';
 INTERFACE: 'interface';
 SAFEARRAY: 'safearray';
-NESTEDSTRUCT: 'nested' STRUCT;
-VARIANTBOOL: VARIANT BOOL;
+// NESTEDSTRUCT, VARIANTBOOL, ANSIBSTR are now parser rules to handle whitespace
 BYVALSTR: 'byvalstr';
 ANSI: 'ansi';
-ANSIBSTR: ANSI BSTR;
 TBSTR: 'tbstr';
 METHOD: 'method';
 ANY: 'any';
@@ -94,8 +92,8 @@ FASTCALL: 'fastcall';
 TYPE_PARAMETER: '!';
 METHOD_TYPE_PARAMETER: '!' '!';
 TYPEDREF: 'typedref';
-NATIVE_INT: 'native' 'int';
-NATIVE_UINT: ('native' 'unsigned' 'int') | ('native' 'uint');
+// NATIVE_INT and NATIVE_UINT are now parser rules (nativeInt, nativeUint)
+// to handle whitespace between 'native' and 'int'/'uint'.
 PARAM: '.param';
 CONSTRAINT: 'constraint';
 
@@ -397,7 +395,7 @@ id:
 	| 'async'
 	| 'extended'
 	| SQSTRING;
-dottedName: DOTTEDNAME | ((ID '.')* ID);
+dottedName: DOTTEDNAME | ((ID '.')* ID) | SQSTRING;
 compQstring: (QSTRING PLUS)* QSTRING;
 
 
@@ -768,11 +766,11 @@ nativeTypeElement:
 	| marshalType=SAFEARRAY variantType ',' compQstring
 	| marshalType=INT
 	| marshalType=UINT
-	| marshalType=NESTEDSTRUCT
+	| 'nested' marshalType=STRUCT
 	| marshalType=BYVALSTR
-	| marshalType=ANSIBSTR
+	| ANSI marshalType=BSTR
 	| marshalType=TBSTR
-	| marshalType=VARIANTBOOL
+	| VARIANT marshalBool=BOOL
 	| marshalType=METHOD
 	| marshalType=LPSTRUCT
 	| 'as' marshalType=ANY
@@ -830,7 +828,8 @@ variantTypeElement:
 type: elementType typeModifiers*;
 
 typeModifiers:
-	'[' ']'						# SZArrayModifier
+	ARRAY_TYPE_NO_BOUNDS			# SZArrayModifier
+	| '[' ']'						# SZArrayModifier
 	| bounds					# ArrayModifier
 	| REF						# ByRefModifier
 	| PTR  				# PtrModifier
@@ -851,8 +850,8 @@ elementType:
 	| TYPE_PARAMETER dottedName
 	| TYPEDREF
 	| VOID
-	| NATIVE_INT
-	| NATIVE_UINT
+	| nativeInt
+	| nativeUint
 	| simpleType
 	| dottedName /* typedef */
 	| ELLIPSIS type;
@@ -870,13 +869,21 @@ simpleType:
 	| UINT8
 	| UINT16
 	| UINT32
-	| UINT64;
+	| UINT64
+	| 'unsigned' INT8
+	| 'unsigned' INT16
+	| 'unsigned' INT32_
+	| 'unsigned' INT64_;
 
 bound:
 	| ELLIPSIS
 	| int32
 	| int32 ELLIPSIS int32
 	| int32 ELLIPSIS;
+
+/* Parser rules for multi-word type tokens that need whitespace handling */
+nativeInt: 'native' INT;
+nativeUint: 'native' ('unsigned' INT | UINT);
 
 /*  Security declarations  */
 PERMISSION: '.permission';
@@ -1088,7 +1095,7 @@ propDecl:
 
 marshalClause: /* EMPTY */ | 'marshal' '(' marshalBlob ')';
 
-marshalBlob: nativeType | '{' hexbytes '}';
+marshalBlob: nativeType | '{' hexbyte+ '}';
 
 paramAttr: paramAttrElement*;
 
@@ -1288,9 +1295,9 @@ fieldSerInit:
 	| BOOL '(' truefalse ')'
 	| 'bytearray' '(' bytes ')';
 
-bytes: hexbytes*;
+bytes: hexbyte*;
 
-hexbytes: HEXBYTE+;
+hexbyte: HEXBYTE | INT32;
 /*  Field/parameter initialization  */
 fieldInit: fieldSerInit | compQstring | NULLREF;
 

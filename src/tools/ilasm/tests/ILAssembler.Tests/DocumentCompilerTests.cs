@@ -2504,5 +2504,134 @@ namespace ILAssembler.Tests
             var moduleDef = reader.GetModuleDefinition();
             Assert.True(moduleDef.Name.IsNil);
         }
+
+        [Fact]
+        public void CustomAttribute_HexByteBlob_ParsedCorrectly()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly
+                {
+                    .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
+                }
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            // Verify the custom attribute was emitted on the assembly
+            var asmDef = reader.GetAssemblyDefinition();
+            var attrs = asmDef.GetCustomAttributes();
+            Assert.NotEmpty(attrs);
+        }
+
+        [Fact]
+        public void NativeInt_FieldType_ParsedCorrectly()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .field public static native int f1
+                    .field public static native uint f2
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            var fields = typeDef.GetFields().ToArray();
+            Assert.Equal(2, fields.Length);
+            // native int → IntPtr (SignatureTypeCode 0x18)
+            var sig1 = reader.GetBlobReader(reader.GetFieldDefinition(fields[0]).Signature);
+            Assert.Equal(0x06, sig1.ReadByte()); // FIELD calling convention
+            Assert.Equal(0x18, sig1.ReadByte()); // ELEMENT_TYPE_I (IntPtr)
+            // native uint → UIntPtr (SignatureTypeCode 0x19)
+            var sig2 = reader.GetBlobReader(reader.GetFieldDefinition(fields[1]).Signature);
+            Assert.Equal(0x06, sig2.ReadByte());
+            Assert.Equal(0x19, sig2.ReadByte()); // ELEMENT_TYPE_U (UIntPtr)
+        }
+
+        [Fact]
+        public void SqstringAssemblyName_ParsedCorrectly()
+        {
+            string source = """
+                .assembly 'My-Assembly_123' { }
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            // No errors — the SQSTRING assembly name should be accepted
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void ArrayType_InMethodSignature_ParsedCorrectly()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void M(int32[] arr) cil managed { ret }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            var methods = typeDef.GetMethods().ToArray();
+            Assert.Single(methods);
+            var methodDef = reader.GetMethodDefinition(methods[0]);
+            var sig = reader.GetBlobReader(methodDef.Signature);
+            Assert.Equal(0x00, sig.ReadByte()); // DEFAULT calling convention
+            Assert.Equal(1, sig.ReadCompressedInteger()); // param count
+            Assert.Equal(0x01, sig.ReadByte()); // return type: void
+            Assert.Equal(0x1D, sig.ReadByte()); // ELEMENT_TYPE_SZARRAY
+            Assert.Equal(0x08, sig.ReadByte()); // ELEMENT_TYPE_I4 (int32)
+        }
+
+        [Fact]
+        public void UnsignedIntTypes_ParsedCorrectly()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .field public static unsigned int8 f1
+                    .field public static unsigned int16 f2
+                    .field public static unsigned int32 f3
+                    .field public static unsigned int64 f4
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            var fields = typeDef.GetFields().ToArray();
+            Assert.Equal(4, fields.Length);
+            // unsigned int8 → Byte (0x05)
+            var sig1 = reader.GetBlobReader(reader.GetFieldDefinition(fields[0]).Signature);
+            Assert.Equal(0x06, sig1.ReadByte()); // FIELD
+            Assert.Equal(0x05, sig1.ReadByte()); // ELEMENT_TYPE_U1
+            // unsigned int16 → UInt16 (0x07)
+            var sig2 = reader.GetBlobReader(reader.GetFieldDefinition(fields[1]).Signature);
+            Assert.Equal(0x06, sig2.ReadByte());
+            Assert.Equal(0x07, sig2.ReadByte()); // ELEMENT_TYPE_U2
+            // unsigned int32 → UInt32 (0x09)
+            var sig3 = reader.GetBlobReader(reader.GetFieldDefinition(fields[2]).Signature);
+            Assert.Equal(0x06, sig3.ReadByte());
+            Assert.Equal(0x09, sig3.ReadByte()); // ELEMENT_TYPE_U4
+            // unsigned int64 → UInt64 (0x0B)
+            var sig4 = reader.GetBlobReader(reader.GetFieldDefinition(fields[3]).Signature);
+            Assert.Equal(0x06, sig4.ReadByte());
+            Assert.Equal(0x0B, sig4.ReadByte()); // ELEMENT_TYPE_U8
+        }
     }
 }

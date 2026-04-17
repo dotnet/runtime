@@ -821,9 +821,9 @@ namespace ILAssembler
         {
             var builder = ImmutableArray.CreateBuilder<byte>();
 
-            foreach (var item in context.hexbytes())
+            foreach (var item in context.hexbyte())
             {
-                builder.AddRange(VisitHexbytes(item).Value);
+                builder.Add(VisitHexbyte(item));
             }
 
             return new(builder.ToImmutable());
@@ -2045,11 +2045,11 @@ namespace ILAssembler
             {
                 blob.WriteByte((byte)SignatureTypeCode.Void);
             }
-            else if (context.NATIVE_INT() is not null)
+            else if (context.nativeInt() is not null)
             {
                 blob.WriteByte((byte)SignatureTypeCode.IntPtr);
             }
-            else if (context.NATIVE_UINT() is not null)
+            else if (context.nativeUint() is not null)
             {
                 blob.WriteByte((byte)SignatureTypeCode.UIntPtr);
             }
@@ -2805,21 +2805,20 @@ namespace ILAssembler
             throw new UnreachableException();
         }
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitHexbytes(CILParser.HexbytesContext context)
+        GrammarResult ICILVisitor<GrammarResult>.VisitHexbyte(CILParser.HexbyteContext context)
         {
-            return VisitHexbytes(context);
+            return new GrammarResult.Literal<byte>(VisitHexbyte(context));
         }
 
-        public static GrammarResult.Sequence<byte> VisitHexbytes(CILParser.HexbytesContext context)
+        public static byte VisitHexbyte(CILParser.HexbyteContext context)
         {
-            ITerminalNode[] bytes = context.HEXBYTE();
-            var builder = ImmutableArray.CreateBuilder<byte>(bytes.Length);
-            foreach (var @byte in bytes)
-            {
-                builder.Add(byte.Parse(@byte.Symbol.Text, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture));
-            }
-            return new(builder.MoveToImmutable());
+            // hexbyte can be either HEXBYTE or INT32 token (due to lexer ambiguity)
+            string text = context.GetText();
+            return byte.Parse(text, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
         }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitNativeInt(CILParser.NativeIntContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitNativeUint(CILParser.NativeUintContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
         GrammarResult ICILVisitor<GrammarResult>.VisitI16seq(CILParser.I16seqContext context) => VisitI16seq(context);
         public GrammarResult.FormattedBlob VisitI16seq(CILParser.I16seqContext context)
         {
@@ -3534,11 +3533,14 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitMarshalBlob(CILParser.MarshalBlobContext context) => VisitMarshalBlob(context);
         public GrammarResult.FormattedBlob VisitMarshalBlob(CILParser.MarshalBlobContext context)
         {
-            if (context.hexbytes() is CILParser.HexbytesContext hexBytes)
+            var hexBytes = context.hexbyte();
+            if (hexBytes.Length > 0)
             {
-                var bytes = VisitHexbytes(hexBytes).Value;
-                var blob = new BlobBuilder(bytes.Length);
-                blob.WriteBytes(bytes);
+                var blob = new BlobBuilder(hexBytes.Length);
+                foreach (var hb in hexBytes)
+                {
+                    blob.WriteByte(VisitHexbyte(hb));
+                }
                 return new(blob);
             }
 
@@ -4254,7 +4256,15 @@ namespace ILAssembler
                     blob.WriteByte(NATIVE_TYPE_VOID);
                     break;
                 case CILParser.BOOL:
-                    blob.WriteByte((byte)UnmanagedType.Bool);
+                    // Distinguish 'variant bool' (VariantBool) from plain 'bool' (Bool)
+                    if (context.marshalBool is not null)
+                    {
+                        blob.WriteByte((byte)UnmanagedType.VariantBool);
+                    }
+                    else
+                    {
+                        blob.WriteByte((byte)UnmanagedType.Bool);
+                    }
                     break;
                 case CILParser.INT8:
                     blob.WriteByte((byte)UnmanagedType.I1);
@@ -4304,7 +4314,17 @@ namespace ILAssembler
                     blob.WriteByte(NATIVE_TYPE_DATE);
                     break;
                 case CILParser.BSTR:
-                    blob.WriteByte((byte)UnmanagedType.BStr);
+                    // Distinguish 'ansi bstr' (AnsiBStr) from plain 'bstr' (BStr)
+                    if (context.ANSI() is not null)
+                    {
+#pragma warning disable CS0618 // Type or member is obsolete
+                        blob.WriteByte((byte)UnmanagedType.AnsiBStr);
+#pragma warning restore CS0618
+                    }
+                    else
+                    {
+                        blob.WriteByte((byte)UnmanagedType.BStr);
+                    }
                     break;
                 case CILParser.LPSTR:
                     blob.WriteByte((byte)UnmanagedType.LPStr);
@@ -4341,7 +4361,19 @@ namespace ILAssembler
                         break;
                     }
                 case CILParser.STRUCT:
-                    blob.WriteByte((byte)UnmanagedType.Struct);
+                    // Distinguish 'nested struct' from plain 'struct'
+                    if (context.GetChild(0)?.GetText() == "nested")
+                    {
+                        ReportWarning(DiagnosticIds.DeprecatedNativeType,
+                            string.Format(DiagnosticMessageTemplates.DeprecatedNativeType, "NESTEDSTRUCT"),
+                            context);
+                        const int NATIVE_TYPE_NESTEDSTRUCT = 0x21;
+                        blob.WriteByte(NATIVE_TYPE_NESTEDSTRUCT);
+                    }
+                    else
+                    {
+                        blob.WriteByte((byte)UnmanagedType.Struct);
+                    }
                     break;
                 case CILParser.INTERFACE:
                     {
@@ -4371,27 +4403,14 @@ namespace ILAssembler
                 case CILParser.UINT:
                     blob.WriteByte((byte)UnmanagedType.SysUInt);
                     break;
-                case CILParser.NESTEDSTRUCT:
-                    ReportWarning(DiagnosticIds.DeprecatedNativeType,
-                        string.Format(DiagnosticMessageTemplates.DeprecatedNativeType, "NESTEDSTRUCT"),
-                        context);
-                    const int NATIVE_TYPE_NESTEDSTRUCT = 0x21;
-                    blob.WriteByte(NATIVE_TYPE_NESTEDSTRUCT);
-                    break;
 #pragma warning disable CS0618 // Type or member is obsolete
                 case CILParser.BYVALSTR:
                     blob.WriteByte((byte)UnmanagedType.VBByRefStr);
-                    break;
-                case CILParser.ANSIBSTR:
-                    blob.WriteByte((byte)UnmanagedType.AnsiBStr);
                     break;
                 case CILParser.TBSTR:
                     blob.WriteByte((byte)UnmanagedType.TBStr);
                     break;
 #pragma warning restore CS0618 // Type or member is obsolete
-                case CILParser.VARIANTBOOL:
-                    blob.WriteByte((byte)UnmanagedType.VariantBool);
-                    break;
                 case CILParser.METHOD:
                     blob.WriteByte((byte)UnmanagedType.FunctionPtr);
                     break;
@@ -4896,6 +4915,19 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitSimpleType(CILParser.SimpleTypeContext context) => VisitSimpleType(context);
         public GrammarResult.Literal<SignatureTypeCode> VisitSimpleType(CILParser.SimpleTypeContext context)
         {
+            // Handle 'unsigned intN' forms (2 children: 'unsigned' + intN keyword)
+            if (context.ChildCount == 2)
+            {
+                return new(context.GetChild<ITerminalNode>(1).Symbol.Type switch
+                {
+                    CILParser.INT8 => SignatureTypeCode.Byte,
+                    CILParser.INT16 => SignatureTypeCode.UInt16,
+                    CILParser.INT32_ => SignatureTypeCode.UInt32,
+                    CILParser.INT64_ => SignatureTypeCode.UInt64,
+                    _ => throw new UnreachableException()
+                });
+            }
+
             return new(context.GetChild<ITerminalNode>(0).Symbol.Type switch
             {
                 CILParser.CHAR => SignatureTypeCode.Char,
