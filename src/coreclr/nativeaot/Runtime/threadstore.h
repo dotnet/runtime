@@ -20,6 +20,7 @@ extern "C" void PopulateDebugHeaders();
 
 class ThreadStore
 {
+    friend class RuntimeInstance;
     friend void PopulateDebugHeaders();
     friend struct ::cdac_data<ThreadStore>;
 
@@ -31,6 +32,7 @@ private:
     ThreadStore();
 
 public:
+    SPTR_DECL(ThreadStore, s_pThreadStore);
     void                    LockThreadStore();
     void                    UnlockThreadStore();
 

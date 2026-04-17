@@ -92,7 +92,7 @@ CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
 
-CDAC_GLOBAL_POINTER(ThreadStore, &g_pThreadStore)
+CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &g_pFreeObjectEEType)
 
