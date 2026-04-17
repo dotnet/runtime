@@ -228,9 +228,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetAddressType(ulong address, int* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAddressType(address, pRetVal) : HResults.E_NOTIMPL;
 
-    public int IsTransitionStub(ulong address, Interop.BOOL* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsTransitionStub(address, pResult) : HResults.E_NOTIMPL;
-
     public int GetCompilerFlags(ulong vmAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetCompilerFlags(vmAssembly, pfAllowJITOpts, pfEnableEnC) : HResults.E_NOTIMPL;
 
@@ -548,9 +545,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int EnumerateInternalFrames(ulong vmThread, nint fpCallback, nint pUserData)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateInternalFrames(vmThread, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
-    public int IsMatchingParentFrame(ulong fpToCheck, ulong fpParent, Interop.BOOL* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsMatchingParentFrame(fpToCheck, fpParent, pResult) : HResults.E_NOTIMPL;
-
     public int GetStackParameterSize(ulong controlPC, uint* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackParameterSize(controlPC, pRetVal) : HResults.E_NOTIMPL;
 
@@ -806,12 +800,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetBasicObjectInfo(ulong objectAddress, int type, nint pObjectData)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetBasicObjectInfo(objectAddress, type, pObjectData) : HResults.E_NOTIMPL;
-
-    public int TestCrst(ulong vmCrst)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.TestCrst(vmCrst) : HResults.E_NOTIMPL;
-
-    public int TestRWLock(ulong vmRWLock)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.TestRWLock(vmRWLock) : HResults.E_NOTIMPL;
 
     public int GetDebuggerControlBlockAddress(ulong* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetDebuggerControlBlockAddress(pRetVal) : HResults.E_NOTIMPL;

@@ -1949,30 +1949,6 @@ struct MSLAYOUT DebuggerIPCEvent
             VMPTR_Assembly vmAssembly;
         } AssemblyData;
 
-#ifdef TEST_DATA_CONSISTENCY
-        // information necessary for testing whether the LS holds a lock on data
-        // the RS needs to inspect. See code:DataTest::TestDataSafety and
-        // code:IDacDbiInterface::TestCrst for more information
-        struct MSLAYOUT
-        {
-            // the lock to be tested
-            VMPTR_Crst vmCrst;
-            // indicates whether the LS holds the lock
-            bool       fOkToTake;
-        } TestCrstData;
-
-        // information necessary for testing whether the LS holds a lock on data
-        // the RS needs to inspect. See code:DataTest::TestDataSafety and
-        // code:IDacDbiInterface::TestCrst for more information
-        struct MSLAYOUT
-        {
-            // the lock to be tested
-            VMPTR_SimpleRWLock vmRWLock;
-            // indicates whether the LS holds the lock
-            bool               fOkToTake;
-        } TestRWLockData;
-#endif // TEST_DATA_CONSISTENCY
-
         // Debug event that a module has been loaded
         struct MSLAYOUT
         {
