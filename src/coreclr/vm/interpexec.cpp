@@ -2726,7 +2726,6 @@ SWITCH_OPCODE:
 
                     _ASSERTE(helperFtn != NULL);
 
-
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
                     break;
