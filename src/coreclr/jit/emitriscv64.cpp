@@ -1376,6 +1376,37 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
+/*****************************************************************************
+ *
+ *  Add a label instruction referencing an instruction group directly.
+ *  This is used by genFtnEntry to load the address of the function entry point
+ *  (prolog) into a register.
+ */
+
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(dst != nullptr);
+
+    // 2-ins:
+    //   auipc reg, offset-hi20
+    //   addi  reg, reg, offset-lo12
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsOpt(INS_OPTS_RL);
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound(); // Mark as bound since we already have the target insGroup directly
+
+    if (m_compiler->opts.compReloc)
+        id->idSetIsDspReloc();
+
+    id->idCodeSize(2 * sizeof(code_t));
+    id->idReg1(reg);
+
+    appendToCurIG(id);
+}
+
 //------------------------------------------------------------------------
 // emitIns_R_R_Addr: emit instruction sequence for a long (address pointer) immediate
 //

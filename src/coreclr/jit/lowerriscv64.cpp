@@ -1222,6 +1222,10 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
     assert(node->OperIs(GT_MOD, GT_UMOD, GT_DIV, GT_UDIV));
 }
 
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
+{
+}
+
 //------------------------------------------------------------------------
 // ContainCheckShiftRotate: Determine whether a mul op's operands should be contained.
 //

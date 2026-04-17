@@ -2341,6 +2341,42 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genFtnEntry: emits address of the current function being compiled
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+// Notes:
+//   Uses emitIns_R_L directly with the prolog instruction group. This is
+//   cleaner than using a pseudo field handle because the lea instruction is
+//   inherently a PC-relative label reference, fitting naturally with the
+//   existing emitIns_R_L mechanism.
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genNonLocalJmp: Generate code for a non-local jump (indirect branch)
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    // Non-local jumps cannot handle the case where this function has been
+    // hijacked, since the VM may not restore the original LR at the right
+    // location in the new frame.
+    SetHasTailCalls(true);
+
+    genConsumeOperands(tree->AsOp());
+    // jirl with rd=r0 is an indirect jump (no link)
+    GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, tree->gtGetOp1()->GetRegNum(), 0);
+}
+
+//------------------------------------------------------------------------
 // genLockedInstructions: Generate code for a GT_XADD or GT_XCHG node.
 //
 // Arguments:

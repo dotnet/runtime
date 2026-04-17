@@ -3814,9 +3814,33 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 // Parameters:
 //   treeNode - the GT_FTN_ENTRY node
 //
+// Notes:
+//   Uses emitIns_R_L directly with the prolog instruction group. This is
+//   cleaner than using a pseudo field handle because the adr instruction is
+//   inherently a PC-relative label reference, fitting naturally with the
+//   existing emitIns_R_L mechanism.
+//
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
-    NYI_ARM64("FTN_ENTRY");
+    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genNonLocalJmp: Generate code for a non-local jump (indirect branch)
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    // Non-local jumps cannot handle the case where this function has been
+    // hijacked, since the VM may not restore the original LR at the right
+    // location in the new frame.
+    SetHasTailCalls(true);
+
+    genConsumeOperands(tree->AsOp());
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, tree->gtGetOp1()->GetRegNum());
 }
 
 //------------------------------------------------------------------------

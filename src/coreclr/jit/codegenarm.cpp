@@ -643,6 +643,17 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     GetEmitter()->emitIns_R_ARX(INS_ldr, EA_4BYTE, REG_PC, baseReg, idxReg, TARGET_POINTER_SIZE, 0);
 }
 
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    // Non-local jumps cannot handle the case where this function has been
+    // hijacked, since the VM may not restore the original LR at the right
+    // location in the new frame.
+    SetHasTailCalls(true);
+
+    genConsumeOperands(tree->AsOp());
+    inst_Mov(TYP_I_IMPL, REG_PC, tree->gtGetOp1()->GetRegNum(), /* canSkip */ false);
+}
+
 //------------------------------------------------------------------------
 // genJumpTable: emits the table and an instruction to get the address of the first element
 //
