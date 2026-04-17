@@ -589,7 +589,6 @@ public unsafe class LoaderTests
         MockMemorySpace.HeapFragment Allocate(uint size, string name)
         {
             MockMemorySpace.HeapFragment frag = allocator.Allocate(size, name);
-            builder.AddHeapFragment(frag);
             return frag;
         }
 
