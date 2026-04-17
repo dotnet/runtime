@@ -321,6 +321,11 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(srcCount == 2);
             break;
 
+        case GT_NONLOCAL_JMP:
+            assert(dstCount == 0);
+            srcCount = BuildOperandUses(tree->gtGetOp1());
+            break;
+
         case GT_ADD_LO:
         case GT_ADD_HI:
         case GT_SUB_LO:

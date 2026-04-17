@@ -2899,6 +2899,10 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
     // ARM doesn't have a div instruction with an immediate operand
 }
 
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
+{
+}
+
 //------------------------------------------------------------------------
 // ContainCheckShiftRotate: Determine whether a mul op's operands should be contained.
 //

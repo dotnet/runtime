@@ -2741,9 +2741,12 @@ AGAIN:
                 }
                 return true;
 
+            case GT_ASYNC_RESUME_INFO:
+                return op1->AsVal()->gtVal1 == op2->AsVal()->gtVal1;
+
             case GT_NOP:
             case GT_LABEL:
-            case GT_ASYNC_RESUME_INFO:
+            case GT_FTN_ENTRY:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
             case GT_WASM_THROW_REF:
@@ -6808,6 +6811,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
+        case GT_FTN_ENTRY:
         case GT_RET_EXPR:
         case GT_CNS_INT:
         case GT_CNS_LNG:
@@ -6869,6 +6873,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_RETURN:
         case GT_RETFILT:
         case GT_RETURN_SUSPEND:
+        case GT_NONLOCAL_JMP:
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
@@ -7140,6 +7145,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_KEEPALIVE:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_NONLOCAL_JMP:
             return true;
 
         case GT_SWIFT_ERROR:
@@ -7483,6 +7489,7 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_KEEPALIVE:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_NONLOCAL_JMP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
             return true;
@@ -7548,6 +7555,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_NONLOCAL_JMP:
         case GT_SWIFT_ERROR:
             return true;
         default:
@@ -9709,6 +9717,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_NO_OP:
             case GT_NOP:
             case GT_LABEL:
+            case GT_FTN_ENTRY:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
             case GT_WASM_THROW_REF:
@@ -10459,6 +10468,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
+        case GT_FTN_ENTRY:
         case GT_RET_EXPR:
         case GT_CNS_INT:
         case GT_CNS_LNG:
@@ -10523,6 +10533,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_INC_SATURATE:
         case GT_RETURNTRAP:
         case GT_RETURN_SUSPEND:
+        case GT_NONLOCAL_JMP:
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;
@@ -12496,6 +12507,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_PROF_HOOK:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_FTN_ENTRY:
         case GT_MEMORYBARRIER:
         case GT_JMPTABLE:
         case GT_SWIFT_ERROR:

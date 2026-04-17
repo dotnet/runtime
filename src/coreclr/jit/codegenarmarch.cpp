@@ -518,6 +518,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genAsyncResumeInfo(treeNode->AsVal());
             break;
 
+        case GT_FTN_ENTRY:
+            genFtnEntry(treeNode);
+            break;
+
         case GT_LABEL:
             genPendingCallLabel = genCreateTempLabel();
 #if defined(TARGET_ARM)
