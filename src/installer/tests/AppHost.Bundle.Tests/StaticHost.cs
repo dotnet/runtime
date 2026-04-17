@@ -36,6 +36,7 @@ namespace AppHost.Bundle.Tests
                 "DotNetRuntimeInfo",
                 "g_dacTable",
                 "MetaDataGetDispenser",
+                "DotNetRuntimeContractDescriptor",
             ];
 
             string singleFileHostPath = Binaries.SingleFileHost.FilePath;
