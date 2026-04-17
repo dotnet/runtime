@@ -10028,7 +10028,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
 #if DEBUG
     // OSR root frames must handle this differently. See
-    //   genOSRRecordTier0CalleeSavedRegisters()
+    //   genOSRHandleTier0CalleeSavedRegistersAndFrame()
     //   genOSRSaveRemainingCalleeSavedRegisters()
     //
     if (m_compiler->opts.IsOSR())
