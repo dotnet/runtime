@@ -1363,7 +1363,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
         {
             // Validate that the token is the assembly definition token
             if (mda != 0x20000001)
-                return CLDB_E_RECORD_NOTFOUND;
+                throw Marshal.GetExceptionForHR(CLDB_E_RECORD_NOTFOUND)!;
 
             AssemblyDefinition assemblyDef = _reader.GetAssemblyDefinition();
             string name = _reader.GetString(assemblyDef.Name);
@@ -1416,13 +1416,25 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 #if DEBUG
         if (_legacyAssemblyImport is not null)
         {
-            uint pchLocal = 0;
-            int hrLegacy = _legacyAssemblyImport.GetAssemblyProps(mda, null, null, null, null, 0, &pchLocal, null, null);
+            uint pchLocal = 0, hashAlgLocal = 0, flagsLocal = 0;
+            ASSEMBLYMETADATA metaLocal = default;
+            int hrLegacy = _legacyAssemblyImport.GetAssemblyProps(mda, null, null, &hashAlgLocal, null, 0, &pchLocal, &metaLocal, &flagsLocal);
             Debug.ValidateHResult(hr, hrLegacy);
             if (hr >= 0 && hrLegacy >= 0)
             {
                 if (pchName is not null)
                     Debug.Assert(*pchName == pchLocal, $"Name length mismatch: cDAC={*pchName}, DAC={pchLocal}");
+                if (pulHashAlgId is not null)
+                    Debug.Assert(*pulHashAlgId == hashAlgLocal, $"HashAlgId mismatch: cDAC=0x{*pulHashAlgId:X}, DAC=0x{hashAlgLocal:X}");
+                if (pdwAssemblyFlags is not null)
+                    Debug.Assert(*pdwAssemblyFlags == flagsLocal, $"Flags mismatch: cDAC=0x{*pdwAssemblyFlags:X}, DAC=0x{flagsLocal:X}");
+                if (pMetaData is not null)
+                {
+                    Debug.Assert(pMetaData->usMajorVersion == metaLocal.usMajorVersion, $"MajorVersion mismatch: cDAC={pMetaData->usMajorVersion}, DAC={metaLocal.usMajorVersion}");
+                    Debug.Assert(pMetaData->usMinorVersion == metaLocal.usMinorVersion, $"MinorVersion mismatch: cDAC={pMetaData->usMinorVersion}, DAC={metaLocal.usMinorVersion}");
+                    Debug.Assert(pMetaData->usBuildNumber == metaLocal.usBuildNumber, $"BuildNumber mismatch: cDAC={pMetaData->usBuildNumber}, DAC={metaLocal.usBuildNumber}");
+                    Debug.Assert(pMetaData->usRevisionNumber == metaLocal.usRevisionNumber, $"RevisionNumber mismatch: cDAC={pMetaData->usRevisionNumber}, DAC={metaLocal.usRevisionNumber}");
+                }
             }
         }
 #endif
@@ -1496,13 +1508,23 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 #if DEBUG
         if (_legacyAssemblyImport is not null)
         {
-            uint pchLocal = 0;
-            int hrLegacy = _legacyAssemblyImport.GetAssemblyRefProps(mdar, null, null, null, 0, &pchLocal, null, null, null, null);
+            uint pchLocal = 0, flagsLocal = 0;
+            ASSEMBLYMETADATA metaLocal = default;
+            int hrLegacy = _legacyAssemblyImport.GetAssemblyRefProps(mdar, null, null, null, 0, &pchLocal, &metaLocal, null, null, &flagsLocal);
             Debug.ValidateHResult(hr, hrLegacy);
             if (hr >= 0 && hrLegacy >= 0)
             {
                 if (pchName is not null)
                     Debug.Assert(*pchName == pchLocal, $"Name length mismatch: cDAC={*pchName}, DAC={pchLocal}");
+                if (pdwAssemblyRefFlags is not null)
+                    Debug.Assert(*pdwAssemblyRefFlags == flagsLocal, $"Flags mismatch: cDAC=0x{*pdwAssemblyRefFlags:X}, DAC=0x{flagsLocal:X}");
+                if (pMetaData is not null)
+                {
+                    Debug.Assert(pMetaData->usMajorVersion == metaLocal.usMajorVersion, $"MajorVersion mismatch: cDAC={pMetaData->usMajorVersion}, DAC={metaLocal.usMajorVersion}");
+                    Debug.Assert(pMetaData->usMinorVersion == metaLocal.usMinorVersion, $"MinorVersion mismatch: cDAC={pMetaData->usMinorVersion}, DAC={metaLocal.usMinorVersion}");
+                    Debug.Assert(pMetaData->usBuildNumber == metaLocal.usBuildNumber, $"BuildNumber mismatch: cDAC={pMetaData->usBuildNumber}, DAC={metaLocal.usBuildNumber}");
+                    Debug.Assert(pMetaData->usRevisionNumber == metaLocal.usRevisionNumber, $"RevisionNumber mismatch: cDAC={pMetaData->usRevisionNumber}, DAC={metaLocal.usRevisionNumber}");
+                }
             }
         }
 #endif
