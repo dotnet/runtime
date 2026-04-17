@@ -1011,7 +1011,7 @@ ep_rt_queue_job (
 	// see if it's done or needs to be scheduled again
 	if (!done) {
 		// self schedule again
-		mono_schedule_ds_job (cb, params);
+		SystemJS_DiagnosticServerQueueJob (cb, params);
 	}
 
 	return true;
@@ -1045,7 +1045,7 @@ ep_rt_thread_sleep (uint64_t ns)
 		g_usleep ((gulong)(ns / 1000));
 		MONO_EXIT_GC_SAFE;
 	}
-#endif
+#endif // PERFTRACING_DISABLE_THREADS
 }
 
 static
