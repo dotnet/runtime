@@ -2629,21 +2629,11 @@ PROCAbortInitialize()
     CLRConfigNoCache enabledCfg = CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
 
     DWORD enabled = 0;
-    bool enableMiniDump = enabledCfg.IsSet() && enabledCfg.TryAsInteger(10, enabled) && enabled != 0;
-
-    CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
-    const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
-
-    CLRConfigNoCache enabledReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
-    DWORD reportEnabled = 0;
-    bool enableCrashReport = enabledReportCfg.IsSet() && enabledReportCfg.TryAsInteger(10, reportEnabled) && reportEnabled == 1;
-
-    CLRConfigNoCache enabledReportOnlyCfg = CLRConfigNoCache::Get("EnableCrashReportOnly", /*noprefix*/ false, &getenv);
-    DWORD reportOnlyEnabled = 0;
-    bool enableCrashReportOnly = enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, reportOnlyEnabled) && reportOnlyEnabled == 1;
-
-    if (enableMiniDump)
+    if (enabledCfg.IsSet() && enabledCfg.TryAsInteger(10, enabled) && enabled)
     {
+        CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
+        const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
+
         CLRConfigNoCache dmpLogToFileCfg = CLRConfigNoCache::Get("CreateDumpLogToFile", /*noprefix*/ false, &getenv);
         const char* logFilePath = dmpLogToFileCfg.IsSet() ? dmpLogToFileCfg.AsString() : nullptr;
 
@@ -2671,11 +2661,15 @@ PROCAbortInitialize()
         {
             flags |= GenerateDumpFlagsVerboseLoggingEnabled;
         }
-        if (enableCrashReport)
+        CLRConfigNoCache enabledReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
+        val = 0;
+        if (enabledReportCfg.IsSet() && enabledReportCfg.TryAsInteger(10, val) && val == 1)
         {
             flags |= GenerateDumpFlagsCrashReportEnabled;
         }
-        if (enableCrashReportOnly)
+        CLRConfigNoCache enabledReportOnlyCfg = CLRConfigNoCache::Get("EnableCrashReportOnly", /*noprefix*/ false, &getenv);
+        val = 0;
+        if (enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, val) && val == 1)
         {
             flags |= GenerateDumpFlagsCrashReportOnlyEnabled;
         }
