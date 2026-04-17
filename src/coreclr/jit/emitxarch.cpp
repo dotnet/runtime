@@ -20253,60 +20253,60 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         // Model a read from stack location, possible def to use latency from L0 cache
         case IF_SRD:
             result.insLatency = PERFSCORE_LATENCY_RD_STACK;
-            memAccessKind     = PERFSCORE_MEMORY_READ;
+            memAccessKind     = PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ;
             break;
 
         case IF_SWR:
             result.insLatency = PERFSCORE_LATENCY_WR_STACK;
-            memAccessKind     = PERFSCORE_MEMORY_WRITE;
+            memAccessKind     = PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_WRITE;
             break;
 
         case IF_SRW:
             result.insLatency = PERFSCORE_LATENCY_RD_WR_STACK;
-            memAccessKind     = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind     = PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ_WRITE;
             break;
 
         // Model a read from a constant location, possible def to use latency from L0 cache
         case IF_MRD:
             result.insLatency = PERFSCORE_LATENCY_RD_CONST_ADDR;
-            memAccessKind     = PERFSCORE_MEMORY_READ;
+            memAccessKind     = PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ;
             break;
 
         case IF_MWR:
             result.insLatency = PERFSCORE_LATENCY_WR_CONST_ADDR;
-            memAccessKind     = PERFSCORE_MEMORY_WRITE;
+            memAccessKind     = PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_WRITE;
             break;
 
         case IF_MRW:
             result.insLatency = PERFSCORE_LATENCY_RD_WR_CONST_ADDR;
-            memAccessKind     = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind     = PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ_WRITE;
             break;
 
         // Model a read from memory location, possible def to use latency from L0 or L1 cache
         case IF_ARD:
             result.insLatency = PERFSCORE_LATENCY_RD_GENERAL;
-            memAccessKind     = PERFSCORE_MEMORY_READ;
+            memAccessKind     = PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ;
             break;
 
         case IF_AWR:
             result.insLatency = PERFSCORE_LATENCY_WR_GENERAL;
-            memAccessKind     = PERFSCORE_MEMORY_WRITE;
+            memAccessKind     = PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_WRITE;
             break;
 
         case IF_ARW:
             result.insLatency = PERFSCORE_LATENCY_RD_WR_GENERAL;
-            memAccessKind     = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind     = PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ_WRITE;
             break;
 
         case IF_NONE:
             result.insLatency = PERFSCORE_LATENCY_ZERO;
-            memAccessKind     = PERFSCORE_MEMORY_NONE;
+            memAccessKind     = PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_NONE;
             break;
 
         default:
             assert(!"Unhandled insFmt for switch (memFmt)");
             result.insLatency = PERFSCORE_LATENCY_ZERO;
-            memAccessKind     = PERFSCORE_MEMORY_NONE;
+            memAccessKind     = PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_NONE;
             break;
     }
     result.insMemoryAccessKind = memAccessKind;
@@ -20455,7 +20455,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_4X;
             }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ)
+            else if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 if (ins == INS_cmp || ins == INS_test || insIsCMOV(ins))
@@ -20473,7 +20473,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else // writes
             {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                assert(memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_WRITE);
                 assert(ins == INS_mov);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
@@ -20483,7 +20483,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_adc:
         case INS_sbb:
         {
-            if (memAccessKind != PERFSCORE_MEMORY_READ_WRITE)
+            if (memAccessKind != PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ_WRITE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency += PERFSCORE_LATENCY_1C;
@@ -20508,7 +20508,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insThroughput = PERFSCORE_THROUGHPUT_4X;
                 result.insLatency    = PERFSCORE_LATENCY_1C;
             }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ_WRITE)
+            else if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ_WRITE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 // no additional R/W latency
@@ -20716,7 +20716,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else
             {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE); // _SHF form never emitted
+                assert(memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_WRITE); // _SHF form never emitted
                 result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             }
             break;
@@ -20866,7 +20866,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_fstp:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_NONE)
             {
                 result.insLatency = PERFSCORE_LATENCY_1C;
             }
@@ -20878,7 +20878,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movd64:
         case INS_movq:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_NONE)
             {
                 if (isFloatReg(id->idReg1()) && isFloatReg(id->idReg2()))
                 {
@@ -20893,7 +20893,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_3C;
                 }
             }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ)
+            else if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ)
             {
                 // ins   xmm, m32/64
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -20902,7 +20902,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             else
             {
                 // ins   m32/64, xmm
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                assert(memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency += PERFSCORE_LATENCY_2C;
             }
@@ -20922,13 +20922,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movapd:
         case INS_movupd:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_NONE)
             {
                 // ins   reg, reg
                 result.insThroughput = PERFSCORE_THROUGHPUT_4X;
                 result.insLatency    = PERFSCORE_LATENCY_ZERO;
             }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ)
+            else if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ)
             {
                 // ins   reg, mem
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -20937,7 +20937,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             else
             {
                 // ins   mem, reg
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                assert(memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency += PERFSCORE_LATENCY_2C;
             }
@@ -20950,13 +20950,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movlpd:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ)
             {
                 result.insLatency += PERFSCORE_LATENCY_3C;
             }
             else
             {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                assert(memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_WRITE);
                 result.insLatency += PERFSCORE_LATENCY_2C;
             }
             break;
@@ -20964,7 +20964,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_movntdqa:
         {
-            assert(memAccessKind == PERFSCORE_MEMORY_READ);
+            assert(memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ);
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
             break;
@@ -20975,12 +20975,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movddup:
         case INS_vmovsh:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency    = PERFSCORE_LATENCY_1C;
             }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ)
+            else if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
@@ -21139,7 +21139,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpblendd:
         {
             result.insLatency += PERFSCORE_LATENCY_1C;
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_3X;
             }
@@ -21312,7 +21312,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vbroadcastss:
         case INS_vbroadcastsd:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency    = opSize == EA_16BYTE ? PERFSCORE_LATENCY_1C : PERFSCORE_LATENCY_3C;
@@ -21334,7 +21334,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pinsrd:
         case INS_pinsrq:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 result.insLatency    = PERFSCORE_LATENCY_4C;
@@ -21352,14 +21352,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpmaskmovd:
         case INS_vpmaskmovq:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_4C : PERFSCORE_LATENCY_3C;
             }
             else
             {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                assert(memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency += PERFSCORE_LATENCY_12C;
             }
@@ -21391,14 +21391,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movbe_apx:
 #endif
         {
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
             }
             else
             {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                assert(memAccessKind == PerfScoreMemoryAccessKind::PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
             }

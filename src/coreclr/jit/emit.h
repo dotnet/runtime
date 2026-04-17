@@ -2026,7 +2026,7 @@ protected:
         }
     }; // End of  struct instrDesc
 
-    enum PerfScoreMemoryAccessKind : unsigned
+    enum class PerfScoreMemoryAccessKind : unsigned
     {
         PERFSCORE_MEMORY_NONE       = 0,
         PERFSCORE_MEMORY_READ       = 1,
