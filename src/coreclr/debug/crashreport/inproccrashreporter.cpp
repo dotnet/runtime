@@ -172,11 +172,6 @@ BuildReportPath(
     int bufferSize,
     const char* dumpPath);
 
-static
-const char*
-GetExceptionTypeCode(
-    int signal);
-
 void
 InProcCrashReportGenerate(
     int signal,
@@ -333,7 +328,9 @@ InProcCrashReportGenerate(
     CrashJsonCloseObject(&s_jsonWriter);
 
     CrashJsonOpenObject(&s_jsonWriter, "parameters");
-    CrashJsonWriteString(&s_jsonWriter, "ExceptionType", hasException ? "0x05000000" : GetExceptionTypeCode(signal));
+    char signalBuf[16];
+    (void)snprintf(signalBuf, sizeof(signalBuf), "%d", signal);
+    CrashJsonWriteString(&s_jsonWriter, "signal", signalBuf);
 #ifdef __APPLE__
     CrashJsonWriteString(&s_jsonWriter, "OSVersion", "");
     CrashJsonWriteString(&s_jsonWriter, "SystemModel", "");
@@ -970,30 +967,5 @@ JsonThreadCallback(
     if (isCrashThread)
     {
         WriteCrashSiteFrameToJson(threadContext->writer, threadContext->signalContext);
-    }
-}
-
-const char*
-GetExceptionTypeCode(
-    int signal)
-{
-    switch (signal)
-    {
-        case SIGSEGV:
-            return "0x20000000";
-        case SIGABRT:
-            return "0x30000000";
-        case SIGBUS:
-            return "0x60000000";
-        case SIGILL:
-            return "0x50000000";
-        case SIGFPE:
-            return "0x70000000";
-        case SIGTRAP:
-            return "0x03000000";
-        case SIGTERM:
-            return "0x02000000";
-        default:
-            return "0x00000000";
     }
 }
