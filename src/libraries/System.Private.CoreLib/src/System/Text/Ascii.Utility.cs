@@ -1789,6 +1789,49 @@ namespace System.Text
             Debug.Assert(elementCount - currentOffsetInElements >= SizeOfVector128, "We should be able to run at least one whole vector.");
 
             nuint finalOffsetWhereCanRunLoop = elementCount - SizeOfVector128;
+
+            // On Arm64, unroll the main loop 2x (process 2 * Vector128 = 32 chars -> 32 bytes
+            // per iteration). Neoverse-class cores have 2x 128-bit NEON load pipes and 2x store
+            // pipes, so the unrolled body lets the OOO engine overlap two independent
+            // load/narrow/store chains per cycle. On x64 the 256-bit and 512-bit specialized
+            // variants are preferred, so this unroll only fires when we ended up on the 128-bit
+            // path (i.e., arm64, or x64 with only SSE2).
+            if (AdvSimd.Arm64.IsSupported && (elementCount - currentOffsetInElements) >= 2 * SizeOfVector128)
+            {
+                nuint finalOffsetWhereCanRunUnrolledLoop = elementCount - 2 * SizeOfVector128;
+                do
+                {
+                    // Four unaligned 128-bit loads (ideally fused into two ldp q,q on arm64),
+                    // OR-reduction to detect any non-ASCII, two narrows, two aligned stores.
+
+                    Vector128<ushort> utf16Vector0 = Vector128.LoadUnsafe(ref utf16Buffer, currentOffsetInElements);
+                    Vector128<ushort> utf16Vector1 = Vector128.LoadUnsafe(ref utf16Buffer, currentOffsetInElements + SizeOfVector128 / sizeof(short));
+                    Vector128<ushort> utf16Vector2 = Vector128.LoadUnsafe(ref utf16Buffer, currentOffsetInElements + 2 * SizeOfVector128 / sizeof(short));
+                    Vector128<ushort> utf16Vector3 = Vector128.LoadUnsafe(ref utf16Buffer, currentOffsetInElements + 3 * SizeOfVector128 / sizeof(short));
+                    Vector128<ushort> combinedVector = (utf16Vector0 | utf16Vector1) | (utf16Vector2 | utf16Vector3);
+
+                    if (VectorContainsNonAsciiChar(combinedVector))
+                    {
+                        // Fall through to the single-step loop; it will re-scan this 32-char
+                        // window and detect the non-ASCII position precisely.
+                        break;
+                    }
+
+                    Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % SizeOfVector128 == 0, "Write should be aligned.");
+                    Vector128<byte> asciiVector0 = ExtractAsciiVector(utf16Vector0, utf16Vector1);
+                    Vector128<byte> asciiVector1 = ExtractAsciiVector(utf16Vector2, utf16Vector3);
+                    asciiVector0.StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
+                    asciiVector1.StoreUnsafe(ref asciiBuffer, currentOffsetInElements + SizeOfVector128);
+
+                    currentOffsetInElements += 2 * SizeOfVector128;
+                } while (currentOffsetInElements <= finalOffsetWhereCanRunUnrolledLoop);
+
+                if (currentOffsetInElements > finalOffsetWhereCanRunLoop)
+                {
+                    goto Finish;
+                }
+            }
+
             do
             {
                 // In a loop, perform two unaligned reads, narrow to a single vector, then aligned write one vector.
