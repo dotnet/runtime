@@ -222,13 +222,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // global.get {module base}
             expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // Module base used to load the helper function address
             expressions.Add(I32.LoadWithRVAOffset(_helperCell)); // Load the helper call function pointer from the helper cell, using a load with an RVA offset so that the helper cell can be left as a zero in the R2R image and fixed up at runtime without needing a relocation
-            // call_indirect (i32, i32, i32, i32) (returns i32)
+            // call_indirect (i32, i32, i32, i32) -> (i32)
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
             // local.set (PortableEntrypointThunk)  / At this point we can overwrite with the incoming portable entrypoint local, since the old value it will no longer be used
             expressions.Add(Local.Set(portableEntrypointLocalIndex));
             //
-             // ;Setup sp arg for the final call, with the call address now coming from the portable entrypoint
+            // ;Setup sp arg for the final call, with the call address now coming from the portable entrypoint
             // local.get 0
             expressions.Add(Local.Get(0));
             // i32.const {sizeofstoredlocals}
