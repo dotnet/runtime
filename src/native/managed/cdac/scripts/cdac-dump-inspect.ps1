@@ -26,6 +26,12 @@ $dotnet = Join-Path $dotnetDir $dotnetExe
 $projFile = Join-Path $scriptDir "cdac-dump-inspect.csproj"
 $config = if ($Release) { "Release" } else { "Debug" }
 
+if (-not (Test-Path $dotnet)) {
+    $buildScript = if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6) { "build.cmd" } else { "build.sh" }
+    Write-Error "Repo-local dotnet SDK not found at '$dotnet'. Run '$buildScript' from the repository root to install the local SDK, then retry."
+    exit 1
+}
+
 if (-not $Command -or -not $DumpPath) {
     Write-Host "Usage: ./cdac-dump-inspect.ps1 <command> <dump-path>"
     Write-Host ""

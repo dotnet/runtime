@@ -70,4 +70,4 @@ Or run directly with `dotnet run`:
 
 - [cDAC overview](../README.md)
 - [cDAC tests](../tests/README.md)
-- [Contract descriptor format](../../../../docs/design/datacontracts/contract-descriptor.md)
+- [Contract descriptor format](../../../../../docs/design/datacontracts/contract-descriptor.md)

@@ -49,7 +49,7 @@ try
 }
 catch (System.Exception ex)
 {
-    Console.Error.WriteLine($"Error: {ex.Message}");
+    Console.Error.WriteLine(ex.ToString());
     return 1;
 }
 
@@ -115,18 +115,30 @@ static void DumpDescriptor(string dumpPath)
     ulong addr = contractAddr;
 
     byte[] magic = new byte[8];
-    dt.DataReader.Read(addr, magic);
+    if (dt.DataReader.Read(addr, magic) != magic.Length)
+    {
+        Console.Error.WriteLine($"Failed to read contract descriptor magic at 0x{addr:x}. Dump may be truncated or corrupted.");
+        return;
+    }
     Console.WriteLine($"Magic: {System.Text.Encoding.ASCII.GetString(magic).TrimEnd('\0')}");
     addr += 8;
 
     Span<byte> buf4 = stackalloc byte[4];
-    dt.DataReader.Read(addr, buf4);
+    if (dt.DataReader.Read(addr, buf4) != buf4.Length)
+    {
+        Console.Error.WriteLine($"Failed to read contract descriptor flags at 0x{addr:x}. Dump may be truncated or corrupted.");
+        return;
+    }
     uint flags = BitConverter.ToUInt32(buf4);
     int targetPtrSize = (flags & 0x2) == 0 ? 8 : 4;
     Console.WriteLine($"Flags: 0x{flags:x} (target pointer size: {targetPtrSize})");
     addr += 4;
 
-    dt.DataReader.Read(addr, buf4);
+    if (dt.DataReader.Read(addr, buf4) != buf4.Length)
+    {
+        Console.Error.WriteLine($"Failed to read contract descriptor size at 0x{addr:x}. Dump may be truncated or corrupted.");
+        return;
+    }
     uint descriptorSize = BitConverter.ToUInt32(buf4);
     if (descriptorSize > 10 * 1024 * 1024)
     {
@@ -136,8 +148,17 @@ static void DumpDescriptor(string dumpPath)
     addr += 4;
 
     Span<byte> bufPtr = stackalloc byte[ptrSize];
-    dt.DataReader.Read(addr, bufPtr);
+    if (dt.DataReader.Read(addr, bufPtr) != bufPtr.Length)
+    {
+        Console.Error.WriteLine($"Failed to read descriptor pointer at 0x{addr:x}. Dump may be truncated or corrupted.");
+        return;
+    }
     ulong descriptorPtr = ptrSize == 8 ? BitConverter.ToUInt64(bufPtr) : BitConverter.ToUInt32(bufPtr);
+    if (descriptorPtr == 0)
+    {
+        Console.Error.WriteLine("Descriptor pointer is null. Dump may be corrupted.");
+        return;
+    }
 
     byte[] jsonBytes = new byte[descriptorSize];
     int jsonRead = dt.DataReader.Read(descriptorPtr, jsonBytes);
