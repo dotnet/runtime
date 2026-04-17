@@ -4099,7 +4099,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 
                             if (varTypeIsIntegral(simdBaseType))
                             {
-                                opCount *= 4;
+                                costEx *= 4;
                             }
                         }
                         break;
@@ -4694,8 +4694,31 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 
         unsigned addrLevel = level;
 
-        level = (op1 != addrOp) ? gtSetEvalOrder(op1) : addrLevel;
-        lvl2  = (op2 != addrOp) ? gtSetEvalOrder(op2) : addrLevel;
+        if (op1 != addrOp)
+        {
+            level = gtSetEvalOrder(op1);
+
+            if (optsEnabled)
+            {
+                costEx += op1->GetCostEx();
+                costSz += op1->GetCostSz();
+            }
+        }
+
+        if (op2 != addrOp)
+        {
+            lvl2 = gtSetEvalOrder(op2);
+
+            if (optsEnabled)
+            {
+                costEx += op2->GetCostEx();
+                costSz += op2->GetCostSz();
+            }
+        }
+        else
+        {
+            lvl2 = addrLevel;
+        }
 
         // This way we have "level" be the complexity of the
         // first tree to be evaluated, and "lvl2" - the second.
@@ -4730,13 +4753,6 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         else if (level == lvl2)
         {
             level += 1;
-        }
-
-        if (optsEnabled)
-        {
-            // We don't need/have costs in MinOpts
-            costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
-            costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
         }
     }
     else
@@ -6415,7 +6431,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                     // vcvtpd2ps xmm0, xmm0
 
                                     costEx += 5; // 15 + FLT_IND_COST_EX
-                                    costEx += 4; // 26
+                                    costSz += 4; // 26
                                 }
 #endif
                             }
