@@ -70,7 +70,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         {
                             case AssemblyNameReference:
                                 // There should be an AssemblyRef row for this assembly
-                                var assemblyRef = linked.MainModule.AssemblyReferences.Single(ar => ar.Name == exportedType.Scope.Name);
+                                var assemblyRef = linked.MainModule.AssemblyReferences.SingleOrDefault(ar => ar.Name == exportedType.Scope.Name);
                                 Assert.True(assemblyRef is not null, $"Could not find an assembly reference for '{exportedType.Scope.Name}'");
                                 break;
                             default:
@@ -80,8 +80,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     case AssemblyNameReference:
                     {
                         // There should be an AssemblyRef row for this assembly
-                        var assemblyRef = linked.MainModule.AssemblyReferences.Single(ar => ar.Name == typeRef.Scope.Name);
-                        Assert.NotNull(assemblyRef);
+                        var assemblyRef = linked.MainModule.AssemblyReferences.SingleOrDefault(ar => ar.Name == typeRef.Scope.Name);
+                        Assert.True(assemblyRef is not null, $"Could not find an assembly reference for '{typeRef.Scope.Name}'");
                         continue;
                     }
                     case ModuleDefinition:
@@ -864,9 +864,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
             var originalTypes = original.AllDefinedTypes().ToDictionary(t => t.FullName);
             var linkedTypes = linked.AllDefinedTypes().ToDictionary(t => t.FullName);
 
-            var missingInLinked = originalTypes.Keys.Except(linkedTypes.Keys);
+            var missingInLinked = originalTypes.Keys.Except(linkedTypes.Keys).ToList();
 
-            Assert.Empty(missingInLinked);
+            Assert.True(missingInLinked.Count == 0, $"Missing types in linked assembly '{linked.MainModule.Assembly.Name.Name}': {string.Join(", ", missingInLinked)}");
 
             foreach (var originalKvp in originalTypes)
             {
@@ -875,9 +875,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 var originalMembers = originalKvp.Value.AllMembers().Select(m => m.FullName);
                 var linkedMembers = linkedType.AllMembers().Select(m => m.FullName);
 
-                var missingMembersInLinked = originalMembers.Except(linkedMembers);
+                var missingMembersInLinked = originalMembers.Except(linkedMembers).ToList();
 
-                Assert.Empty(missingMembersInLinked);
+                Assert.True(missingMembersInLinked.Count == 0, $"Missing members in type '{originalKvp.Key}' in linked assembly '{linked.MainModule.Assembly.Name.Name}': {string.Join(", ", missingMembersInLinked)}");
             }
         }
 
