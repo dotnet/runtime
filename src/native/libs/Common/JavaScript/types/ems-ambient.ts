@@ -28,6 +28,8 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemJS_ExecuteTimerCallback: () => void;
     _SystemJS_ExecuteBackgroundJobCallback: () => void;
     _SystemJS_ExecuteFinalizationCallback: () => void;
+    _SystemJS_ExecuteDiagnosticServerCallback: () => void;
+    _SystemJS_ScheduleDiagnosticServer: () => void;
     _BrowserHost_CreateHostContract: () => VoidPtr;
     _BrowserHost_InitializeDotnet: (propertiesCount: number, propertyKeys: CharPtrPtr, propertyValues: CharPtrPtr) => number;
     _BrowserHost_ExecuteAssembly: (mainAssemblyNamePtr: number, argsLength: number, argsPtr: number) => number;
@@ -51,6 +53,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
         lastScheduledTimerId?: number;
         lastScheduledThreadPoolId?: number;
         lastScheduledFinalizationId?: number;
+        lastScheduledDiagnosticServerId?: number;
         cryptoWarnOnce?: boolean;
         isAborting?: boolean;
         isAsyncMain?: boolean;
