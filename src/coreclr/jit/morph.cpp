@@ -5046,7 +5046,9 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
                 // (int -> ubyte -> int for bool-return-calls, for example)
                 // In the jit the callee is responsible for normalizing, so a tailcall
                 // can freely bypass this extra cast
-                assert(ValidateUse(tree) && "Unexpected non-normalizing cast of tailcall result");
+                assert(!m_compiler->fgCastNeeded(m_tailcall, tree->AsCast()->CastToType()) &&
+                       ValidateUse(tree->AsCast()->CastOp()) &&
+                       "Expected normalizing cast of tailcall result");
             }
             else if (IsCommaNop(tree))
             {
@@ -5073,7 +5075,7 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
 
         bool ValidateUse(GenTree* node)
         {
-            if (node->OperIs(GT_CAST) && !m_compiler->fgCastNeeded(m_tailcall, node->AsCast()->CastToType()))
+            if (node->OperIs(GT_CAST))
             {
                 node = node->AsCast()->CastOp();
             }
