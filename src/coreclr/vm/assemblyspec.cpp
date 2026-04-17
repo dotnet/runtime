@@ -279,7 +279,7 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
 
     if(pParentAssembly != NULL)
     {
-        // Get the PEAssembly associated with the parent's domain assembly
+        // Get the PEAssembly associated with the parent's assembly
         PEAssembly *pParentPEAssembly = pParentAssembly->GetPEAssembly();
         pParentAssemblyBinder = pParentPEAssembly->GetAssemblyBinder();
     }
@@ -297,11 +297,10 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
         // If the parent assembly binder is not available, then we maybe dealing with one of the following
         // assembly scenarios:
         //
-        // 1) Domain Neutral assembly
-        // 2) Entrypoint assembly
-        // 3) AssemblyLoadContext.LoadFromAssemblyName
+        // 1) Entrypoint assembly
+        // 2) AssemblyLoadContext.LoadFromAssemblyName
         //
-        // For (1) and (2), we will need to bind against the DefaultContext binder (aka TPA Binder). This happens
+        // For (2), we will need to bind against the DefaultContext binder (aka TPA Binder). This happens
         // below if we do not find the parent assembly binder.
         //
         // For (3), fetch the fallback load context binder reference.
@@ -311,8 +310,7 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
 
     if (!pParentAssemblyBinder)
     {
-        // We can be here when loading assemblies via the host (e.g. ICLRRuntimeHost2::ExecuteAssembly) or dealing with assemblies
-        // whose parent is a domain neutral assembly (see comment above for details).
+        // We can be here when loading assemblies via the host (e.g. ICLRRuntimeHost2::ExecuteAssembly) (see comment above for details).
         //
         // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be
         // used as the parent assembly binder.

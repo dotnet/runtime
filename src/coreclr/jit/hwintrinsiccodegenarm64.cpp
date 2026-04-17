@@ -1965,8 +1965,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, /* imm */ 0,
-                                            INS_OPTS_NONE);
+                if (varTypeIsLong(intrin.baseType))
+                {
+                    // Use fmov for 64-bit integer types instead of umov
+                    GetEmitter()->emitIns_Mov(INS_fmov, EA_8BYTE, targetReg, op1Reg, /* canSkip */ false);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, /* imm */ 0,
+                                                INS_OPTS_NONE);
+                }
             }
             break;
 
