@@ -112,11 +112,7 @@ public class BuildPublishTests : BlazorWasmTestBase
             if (UseWebcil)
                 return Path.Combine(objDir, "webcil");
 
-            string fxBaseDir = Path.Combine(objDir, "fx");
-            string[] fxSubDirs = Directory.GetDirectories(fxBaseDir);
-            Assert.True(fxSubDirs.Length == 1,
-                $"Expected exactly one subdirectory under {fxBaseDir}, found: {string.Join(", ", fxSubDirs.Select(Path.GetFileName))}");
-            return Path.Combine(fxSubDirs[0], "_framework");
+            return WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(objDir);
         }
 
         void AssertResourcesDlls(string basePath)

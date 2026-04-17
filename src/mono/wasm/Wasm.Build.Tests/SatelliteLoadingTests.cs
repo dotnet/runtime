@@ -114,19 +114,9 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         // bin/_framework/. When webcil is enabled they're in obj/{config}/{tfm}/webcil/{locale}/;
         // when disabled they're materialized in obj/{config}/{tfm}/fx/{name}/_framework/{locale}/.
         string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework);
-        string satelliteBaseDir;
-        if (UseWebcil)
-        {
-            satelliteBaseDir = Path.Combine(objDir, "webcil");
-        }
-        else
-        {
-            string fxBaseDir = Path.Combine(objDir, "fx");
-            string[] fxSubDirs = Directory.GetDirectories(fxBaseDir);
-            Assert.True(fxSubDirs.Length == 1,
-                $"Expected exactly one subdirectory under {fxBaseDir}, found: {string.Join(", ", fxSubDirs.Select(Path.GetFileName))}");
-            satelliteBaseDir = Path.Combine(fxSubDirs[0], "_framework");
-        }
+        string satelliteBaseDir = UseWebcil
+            ? Path.Combine(objDir, "webcil")
+            : WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(objDir);
 
         // Microsoft.CodeAnalysis.CSharp has satellite assemblies for multiple locales
         string[] expectedLocales = ["cs", "de", "es", "fr", "it", "ja", "ko", "pl", "pt-BR", "ru", "tr", "zh-Hans", "zh-Hant"];

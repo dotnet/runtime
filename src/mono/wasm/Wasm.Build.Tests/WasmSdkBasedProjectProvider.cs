@@ -208,8 +208,14 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         {
             AssertBuildBundle(config, buildOptions, isUsingWorkloads, isNativeBuild);
         }
-        // When NonDefaultFrameworkDir is set (e.g. UseArtifactsOutput), the obj/ layout
-        // may not follow the standard path convention, so skip build bundle assertions.
+        else
+        {
+            // When NonDefaultFrameworkDir is set (e.g. UseArtifactsOutput), the obj/ layout
+            // may not follow the standard path convention, so skip build bundle assertions.
+            _testOutput.WriteLine(
+                $"Skipping build bundle assertions: NonDefaultFrameworkDir='{buildOptions.NonDefaultFrameworkDir}' " +
+                "points to a non-standard obj/ layout. File-layout verification is not performed for this build.");
+        }
     }
 
     /// <summary>
@@ -271,6 +277,10 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
         if (buildOptions.RuntimeType == RuntimeVariant.MultiThreaded)
         {
+            // dotnet.native.worker.mjs is validated for location only and not compared against
+            // the runtime pack — the publish-path AssertBundle skips the runtime-pack comparison
+            // for the same reason (the runtime-pack file has the same size as the relinked file,
+            // so the check is not meaningful).
             const string multiThreadedWorkerFile = "dotnet.native.worker.mjs";
             AssertFileExists(nativeDir, multiThreadedWorkerFile);
             AssertFileNotExists(objDir, multiThreadedWorkerFile, "obj root");

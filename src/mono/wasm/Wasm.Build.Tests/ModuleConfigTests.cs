@@ -136,11 +136,11 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         else
         {
             string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework);
+            string fxBaseDir = Path.Combine(objDir, "fx");
             string[] searchDirs = [
                 Path.Combine(objDir, "wasm", "for-build"),
-                .. Directory.Exists(Path.Combine(objDir, "fx"))
-                    ? Directory.GetDirectories(Path.Combine(objDir, "fx"))
-                        .Select(d => Path.Combine(d, "_framework"))
+                .. Directory.Exists(fxBaseDir)
+                    ? Directory.GetDirectories(fxBaseDir).Select(d => Path.Combine(d, "_framework"))
                     : Array.Empty<string>()
             ];
             symbolsFileExists = searchDirs
