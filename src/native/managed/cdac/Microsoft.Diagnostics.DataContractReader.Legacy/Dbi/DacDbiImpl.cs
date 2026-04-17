@@ -795,12 +795,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetRcwCachedInterfacePointers(ulong vmObject, Interop.BOOL bIInspectableOnly, nint pDacItfPtrs)
         => _legacy is not null ? _legacy.GetRcwCachedInterfacePointers(vmObject, bIInspectableOnly, pDacItfPtrs) : HResults.E_NOTIMPL;
 
-    public int GetCachedWinRTTypesForIIDs(ulong vmAppDomain, nint pIids, nint pTypes)
-        => _legacy is not null ? _legacy.GetCachedWinRTTypesForIIDs(vmAppDomain, pIids, pTypes) : HResults.E_NOTIMPL;
-
-    public int GetCachedWinRTTypes(ulong vmAppDomain, nint piids, nint pTypes)
-        => _legacy is not null ? _legacy.GetCachedWinRTTypes(vmAppDomain, piids, pTypes) : HResults.E_NOTIMPL;
-
     public int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData)
         => _legacy is not null ? _legacy.GetTypedByRefInfo(pTypedByRef, pObjectData) : HResults.E_NOTIMPL;
 
