@@ -2383,7 +2383,7 @@ emitter::code_t emitter::AddRex2Prefix(instruction ins, code_t code)
         code &= 0xFFFFFFFFULL;
     }
 #endif
-    
+
     // Note that there are cases that some register field might be filled before adding prefix,
     // So we don't check if the code has REX2 prefix already or not.
     code |= DEFAULT_2BYTE_REX2_PREFIX;
@@ -14657,7 +14657,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
-            // The build-in REX has been zero-ed out in AddX86PrefixIfNeededAndNotPresent, need to add the register addressing bits in the prefix.
+            // The build-in REX has been zero-ed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
+            // addressing bits in the prefix.
             insEncodeReg345(id, inst3opImulReg(ins), size, &code);
         }
 #endif // TARGET_AMD64
@@ -15553,7 +15554,8 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
-            // The build-in REX has been zero-ed out in AddX86PrefixIfNeededAndNotPresent, need to add the register addressing bits in the prefix.
+            // The build-in REX has been zero-ed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
+            // addressing bits in the prefix.
             insEncodeReg345(id, inst3opImulReg(ins), size, &code);
         }
 #endif // TARGET_AMD64
@@ -17374,7 +17376,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             {
                 insEncodeReg345(id, inst3opImulReg(ins), size, &code);
             }
-#endif  // TARGET_AMD64
+#endif // TARGET_AMD64
         }
     }
 

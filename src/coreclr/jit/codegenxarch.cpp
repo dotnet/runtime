@@ -10082,7 +10082,8 @@ void CodeGen::genPushCalleeSavedRegisters()
         if ((regBit & rsPushRegs) != 0)
         {
 #ifdef TARGET_AMD64
-            insOpts instOptions = (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX()) ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
+            insOpts instOptions =
+                (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX()) ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
             GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, reg, instOptions);
 #else
             inst_RV(INS_push, reg, TYP_REF);
@@ -10221,7 +10222,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
 {
     unsigned popCount = 0;
-    insOpts instOptions = (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX()) ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
+    insOpts  instOptions =
+        (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX()) ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
     if ((rsPopRegs & RBM_EBX) != 0)
     {
         popCount++;
@@ -10271,7 +10273,7 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
         popCount++;
         GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R15, instOptions);
     }
-        if ((rsPopRegs & RBM_R16) != 0)
+    if ((rsPopRegs & RBM_R16) != 0)
     {
         popCount++;
         GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R16, instOptions);
