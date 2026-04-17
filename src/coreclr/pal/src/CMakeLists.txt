@@ -37,7 +37,9 @@ endif(CORECLR_SET_RPATH)
 # Include directories
 
 include_directories(include)
-include_directories(${CLR_DIR})
+if(CLR_CMAKE_TARGET_ANDROID)
+  include_directories(${CLR_DIR})
+endif(CLR_CMAKE_TARGET_ANDROID)
 
 # Compile options
 
