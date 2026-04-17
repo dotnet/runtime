@@ -54,6 +54,5 @@
   <ItemGroup>
     <ProjectReference Include="..\src\System.Formats.Cbor.csproj" />
     <PackageReference Include="FsCheck" Version="$(FsCheckVersion)" />
-    <PackageReference Include="FsCheck.Xunit.V3" Version="$(FsCheckVersion)" />
   </ItemGroup>
 </Project>

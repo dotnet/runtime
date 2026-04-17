@@ -600,14 +600,22 @@ namespace System.Tests
         [InlineData("Outside`1", typeof(Outside<>))]
         [InlineData("Outside`1+Inside`1", typeof(Outside<>.Inside<>))]
         [InlineData("Outside[]", typeof(Outside[]))]
-        [InlineData("Outside[,,]", typeof(Outside[,,]))]
         [InlineData("Outside[][]", typeof(Outside[][]))]
         [InlineData("Outside`1[System.Nullable`1[System.Boolean]]", typeof(Outside<bool?>))]
         [InlineData(".Outside`1", typeof(Outside<>))]
+        [MemberData(nameof(GetTypeByName_ValidType_MultiDimensionalArray))]
         public void GetTypeByName_ValidType_ReturnsExpected(string typeName, Type expectedType)
         {
             Assert.Equal(expectedType, Type.GetType(typeName, throwOnError: false, ignoreCase: false));
             Assert.Equal(expectedType, Type.GetType(typeName.ToLower(), throwOnError: false, ignoreCase: true));
+        }
+
+        public static TheoryData<string, Type> GetTypeByName_ValidType_MultiDimensionalArray()
+        {
+            return new TheoryData<string, Type>
+            {
+                { "Outside[,,]", typeof(Outside[,,]) }
+            };
         }
 
         public static IEnumerable<object[]> GetTypeByName_InvalidElementType()
