@@ -50,7 +50,7 @@ void Compiler::unwindReserve()
 }
 
 //------------------------------------------------------------------------
-// Compiler::unwindReserveFuncHelper: Reserve the unwind information from the VM for
+// Compiler::unwindReserveFunc: Reserve the unwind information from the VM for
 //  the main function or funclet.
 //
 // Arguments:

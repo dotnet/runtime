@@ -2229,11 +2229,11 @@ PhaseStatus Compiler::fgWasmEhFlow()
     // Allocate an exposed int local to hold the catchret number.
     // We do not want any opts acting on this local (eg jump threading)
     //
-    unsigned const catchRetIndexLocalNum      = lvaGrabTemp(true DEBUGARG("Wasm EH catchret index"));
-    lvaGetDesc(catchRetIndexLocalNum)->lvType = TYP_INT;
-    lvaSetVarAddrExposed(catchRetIndexLocalNum DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
+    unsigned const resumeIPLocalNum      = lvaGrabTemp(true DEBUGARG("Wasm Resume IP"));
+    lvaGetDesc(resumeIPLocalNum)->lvType = TYP_INT;
+    lvaSetVarAddrExposed(resumeIPLocalNum DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
 
-    lvaWasmResumeIP = catchRetIndexLocalNum;
+    lvaWasmResumeIP = resumeIPLocalNum;
 
     // Now for each region with continuations, add a branch at region entry that
     // branches to a switch to transfer control to the continuations.
@@ -2243,7 +2243,7 @@ PhaseStatus Compiler::fgWasmEhFlow()
     {
         if (catchRetBlocks != nullptr)
         {
-            fgWasmEhTransformTry(catchRetBlocks, regionIndex, catchRetIndexLocalNum);
+            fgWasmEhTransformTry(catchRetBlocks, regionIndex, resumeIPLocalNum);
         }
 
         regionIndex++;
@@ -2260,10 +2260,10 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
         for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
         {
-            JITDUMP("Setting control variable V%02u to %u in " FMT_BB "\n", catchRetIndexLocalNum,
+            JITDUMP("Setting control variable V%02u to %u in " FMT_BB "\n", resumeIPLocalNum,
                     catchRetBlock->bbPreorderNum, catchRetBlock->bbNum);
             GenTree* const valueNode = gtNewIconNode(catchRetBlock->bbPreorderNum);
-            GenTree* const storeNode = gtNewStoreLclVarNode(catchRetIndexLocalNum, valueNode);
+            GenTree* const storeNode = gtNewStoreLclVarNode(resumeIPLocalNum, valueNode);
 
             LIR::Range range = LIR::SeqTree(this, storeNode);
             LIR::InsertBeforeTerminator(catchRetBlock, std::move(range));
@@ -2281,11 +2281,11 @@ PhaseStatus Compiler::fgWasmEhFlow()
 // Arguments:
 //    catchRetBlocks        - the catch-return blocks for this try region
 //    regionIndex           - the EH region index of the try
-//    catchRetIndexLocalNum - the local variable number holding the catchret index
+//    resumeIPLocalNum      - the local variable number holding the resume IP
 //
 void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
                                     unsigned                 regionIndex,
-                                    unsigned                 catchRetIndexLocalNum)
+                                    unsigned                 resumeIPLocalNum)
 {
     assert(catchRetBlocks->Height() > 0);
 
@@ -2446,7 +2446,7 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     // Build the IR for the switch
     //
     GenTree* const biasValue          = gtNewIconNode(caseBias);
-    GenTree* const controlVar2        = gtNewLclvNode(catchRetIndexLocalNum, TYP_INT);
+    GenTree* const controlVar2        = gtNewLclvNode(resumeIPLocalNum, TYP_INT);
     GenTree* const adjustedControlVar = gtNewOperNode(GT_SUB, TYP_INT, controlVar2, biasValue);
     GenTree* const switchNode         = gtNewOperNode(GT_SWITCH, TYP_VOID, adjustedControlVar);
     {
@@ -2566,6 +2566,8 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             if ((hndDsc != nullptr) && hndDsc->HasFilter() && (block == hndDsc->ebdFilter))
             {
                 virtualIP++;
+                // For filters we store the offset in the class token field.
+                //
                 clauses[block->getHndIndex()].clause.ClassToken = virtualIP;
             }
 
@@ -2693,7 +2695,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
     {
         // Describe the EH clause info...
         //
-        JITDUMP("EH virtual IP ranges\n")
+        JITDUMP("EH virtual IP ranges\n");
         for (EHblkDsc* const dsc : EHClauses(this))
         {
             const unsigned index = ehGetIndex(dsc);
