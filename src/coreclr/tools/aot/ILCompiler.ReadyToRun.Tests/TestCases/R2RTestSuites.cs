@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -49,10 +48,11 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "InlineableLib");
-            R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetValue", "GetValue");
-            R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetString", "GetString");
-            R2RAssert.HasCrossModuleInliningInfo(reader);
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "InlineableLib", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetValue", "GetValue", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetString", "GetString", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
         }
     }
 
@@ -90,9 +90,10 @@ public class R2RTestSuites
                 {
                     Validate = reader =>
                     {
-                        R2RAssert.HasManifestRef(reader, "InlineableLibTransitive");
-                        R2RAssert.HasManifestRef(reader, "ExternalLib");
-                        R2RAssert.HasCrossModuleInlinedMethod(reader, "TestTransitiveValue", "GetExternalValue");
+                        string diag;
+                        Assert.True(R2RAssert.HasManifestRef(reader, "InlineableLibTransitive", out diag), diag);
+                        Assert.True(R2RAssert.HasManifestRef(reader, "ExternalLib", out diag), diag);
+                        Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestTransitiveValue", "GetExternalValue", out diag), diag);
                     },
                 },
             ]));
@@ -132,8 +133,9 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "AsyncInlineableLib");
-            R2RAssert.HasCrossModuleInlinedMethod(reader, "TestAsyncInline", "GetValueAsync");
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncInlineableLib", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestAsyncInline", "GetValueAsync", out diag), diag);
         }
     }
 
@@ -168,7 +170,8 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "CompositeLib");
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "CompositeLib", out diag), diag);
         }
     }
 
@@ -197,9 +200,10 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasAsyncVariant(reader, "SimpleAsyncMethod");
-            R2RAssert.HasAsyncVariant(reader, "AsyncVoidReturn");
-            R2RAssert.HasAsyncVariant(reader, "ValueTaskMethod");
+            string diag;
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "SimpleAsyncMethod", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncVoidReturn", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "ValueTaskMethod", out diag), diag);
         }
     }
 
@@ -233,11 +237,12 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasAsyncVariant(reader, "CaptureObjectAcrossAwait");
-            R2RAssert.HasAsyncVariant(reader, "CaptureMultipleRefsAcrossAwait");
-            R2RAssert.HasContinuationLayout(reader, "CaptureObjectAcrossAwait");
-            R2RAssert.HasContinuationLayout(reader, "CaptureMultipleRefsAcrossAwait");
-            R2RAssert.HasResumptionStubFixup(reader, "CaptureObjectAcrossAwait");
+            string diag;
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CaptureObjectAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CaptureMultipleRefsAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureObjectAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureMultipleRefsAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.HasResumptionStubFixup(reader, "CaptureObjectAcrossAwait", out diag), diag);
         }
     }
 
@@ -270,7 +275,8 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasAsyncVariant(reader, "GetValueAsync");
+            string diag;
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "GetValueAsync", out diag), diag);
         }
     }
 
@@ -303,8 +309,9 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasAsyncVariant(reader, "AsyncButNoAwait");
-            R2RAssert.HasAsyncVariant(reader, "AsyncWithConditionalAwait");
+            string diag;
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncButNoAwait", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncWithConditionalAwait", out diag), diag);
         }
     }
 
@@ -356,8 +363,9 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "AsyncDepLib");
-            R2RAssert.HasAsyncVariant(reader, "CallCrossModuleAsync");
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncDepLib", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallCrossModuleAsync", out diag), diag);
         }
     }
 
@@ -401,8 +409,60 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "InlineableLib");
-            R2RAssert.HasInlinedMethod(reader, "TestGetValue", "GetValue");
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "InlineableLib", out diag), diag);
+            Assert.True(R2RAssert.HasInlinedMethod(reader, "TestGetValue", "GetValue", out diag), diag);
+        }
+    }
+
+    /// <summary>
+    /// Negative test: composite mode does NOT produce a CrossModuleInlineInfo section.
+    /// True cross-module inlining (recorded in CrossModuleInlineInfo) requires the inlinee
+    /// to live in a module OUTSIDE the version bubble (added via --opt-cross-module on a
+    /// reference assembly). In composite mode, all input modules are part of the same
+    /// version bubble, so cross-module inlining info is never produced — inlining between
+    /// composite inputs is recorded in the per-module InliningInfo2 section instead.
+    /// Compare with <see cref="BasicCrossModuleInlining"/>, which uses the same source modules
+    /// in a non-composite layout and DOES produce CrossModuleInlineInfo entries.
+    /// </summary>
+    [Fact]
+    public void CompositeDoesNotProduceCrossModuleInliningInfo()
+    {
+        var inlineableLib = new CompiledAssembly
+        {
+            AssemblyName = "InlineableLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlineableLib.cs"],
+        };
+        var compositeMain = new CompiledAssembly
+        {
+            AssemblyName = nameof(CompositeDoesNotProduceCrossModuleInliningInfo),
+            SourceResourceNames = ["CrossModuleInlining/BasicInlining.cs"],
+            References = [inlineableLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeDoesNotProduceCrossModuleInliningInfo),
+            [
+                new(nameof(CompositeDoesNotProduceCrossModuleInliningInfo),
+                [
+                    new CrossgenAssembly(inlineableLib),
+                    new CrossgenAssembly(compositeMain),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            // Inlining still happens in composite mode — recorded in InliningInfo2 — confirming
+            // the assertion below is meaningful (we are not just looking at a no-op compilation).
+            Assert.True(R2RAssert.HasInlinedMethod(reader, "TestGetValue", "GetValue", out diag), diag);
+
+            // But no CrossModuleInlineInfo section/entries should be present in composite output.
+            Assert.False(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
         }
     }
 
@@ -410,7 +470,6 @@ public class R2RTestSuites
     /// Composite mode with runtime-async methods in both assemblies.
     /// Validates async variants exist in composite output.
     /// </summary>
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/125337")]
     [Fact]
     public void CompositeAsync()
     {
@@ -444,9 +503,10 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "AsyncCompositeLib");
-            R2RAssert.HasAsyncVariant(reader, "CallCompositeAsync");
-            R2RAssert.HasAsyncVariant(reader, "GetValueAsync");
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncCompositeLib", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallCompositeAsync", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "GetValueAsync", out diag), diag);
         }
     }
 
@@ -456,31 +516,41 @@ public class R2RTestSuites
     /// within a composite image, exercising MutableModule token encoding for
     /// cross-module async continuation layouts.
     /// </summary>
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/125337")]
+    /// <summary>
+    /// Composite + runtime-async + intra-bubble inlining matrix test.
+    /// Verifies that, in composite mode, awaitless async candidates ARE inlined into
+    /// their callers (recorded in InliningInfo2 — composite inputs share a version
+    /// bubble, so true CrossModuleInlineInfo entries are not produced for them), while
+    /// candidates whose body contains a real <c>await</c> are NOT inlined. The latter
+    /// is a JIT-level limitation: <c>Compiler::impSetupAsyncCall</c> in
+    /// importercalls.cpp issues a FATAL <c>CALLEE_AWAIT</c> observation as soon as it
+    /// sees an async call inside an inlining candidate (see also <c>CALLEE_ASYNC_SUSPEND</c>).
+    /// The matrix covers Task, Task&lt;primitive&gt;, and Task&lt;class&gt; return shapes.
+    /// </summary>
     [Fact]
-    public void CompositeAsyncCrossModuleInlining()
+    public void CompositeAsyncInliningMatrix()
     {
-        var asyncCompositeLib = new CompiledAssembly
+        var asyncInlineCandidatesLib = new CompiledAssembly
         {
-            AssemblyName = "AsyncCompositeLib",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/AsyncCompositeLib.cs"],
+            AssemblyName = "AsyncInlineCandidatesLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/AsyncInlineCandidatesLib.cs"],
             Features = { RuntimeAsyncFeature },
         };
-        var compositeAsyncMain = new CompiledAssembly
+        var asyncInlineCallers = new CompiledAssembly
         {
-            AssemblyName = "CompositeAsyncMain",
-            SourceResourceNames = ["CrossModuleInlining/CompositeAsync.cs"],
+            AssemblyName = "AsyncInlineCallers",
+            SourceResourceNames = ["CrossModuleInlining/AsyncInlineCallers.cs"],
             Features = { RuntimeAsyncFeature },
-            References = [asyncCompositeLib]
+            References = [asyncInlineCandidatesLib]
         };
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
-            nameof(CompositeAsyncCrossModuleInlining),
+            nameof(CompositeAsyncInliningMatrix),
             [
-                new(nameof(CompositeAsyncCrossModuleInlining),
+                new(nameof(CompositeAsyncInliningMatrix),
                 [
-                    new CrossgenAssembly(asyncCompositeLib),
-                    new CrossgenAssembly(compositeAsyncMain),
+                    new CrossgenAssembly(asyncInlineCandidatesLib),
+                    new CrossgenAssembly(asyncInlineCallers),
                 ])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
@@ -490,10 +560,84 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "AsyncCompositeLib");
-            R2RAssert.HasAsyncVariant(reader, "CallCompositeAsync");
-            R2RAssert.HasInlinedMethod(reader, "CallCompositeAsync", "GetValueAsync");
-            R2RAssert.HasContinuationLayout(reader, "CallCompositeAsync");
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncInlineCandidatesLib", out diag), diag);
+
+            // Awaitless async candidates: should be inlined into their callers.
+            Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskNoAwait", "ReturnTaskNoAwait", out diag), diag);
+            Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskPrimitiveNoAwait", "ReturnTaskPrimitiveNoAwait", out diag), diag);
+            Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskClassNoAwait", "ReturnTaskClassNoAwait", out diag), diag);
+
+            // Async candidates that contain a real await: cannot be inlined by the JIT.
+            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskWithAwait", "ReturnTaskWithAwait", out diag), diag);
+            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskPrimitiveWithAwait", "ReturnTaskPrimitiveWithAwait", out diag), diag);
+            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskClassWithAwait", "ReturnTaskClassWithAwait", out diag), diag);
+        }
+    }
+
+    /// <summary>
+    /// Composite mode with runtime-async methods that capture GC refs across await
+    /// points, exercising ContinuationLayout and RESUME stub emission in composite images.
+    /// Validates that both the library and main assembly's async methods produce
+    /// [ASYNC] variants, [RESUME] stubs, and ContinuationLayout fixups.
+    /// </summary>
+    [Fact]
+    public void CompositeAsyncContinuationAndResume()
+    {
+        var asyncCompositeContLib = new CompiledAssembly
+        {
+            AssemblyName = "AsyncCompositeContLib",
+            SourceResourceNames =
+            [
+                "RuntimeAsync/Dependencies/AsyncCompositeContLib.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+        var compositeAsyncContMain = new CompiledAssembly
+        {
+            AssemblyName = "CompositeAsyncContinuationMain",
+            SourceResourceNames =
+            [
+                "RuntimeAsync/CompositeAsyncContinuationMain.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+            References = [asyncCompositeContLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeAsyncContinuationAndResume),
+            [
+                new(nameof(CompositeAsyncContinuationAndResume),
+                [
+                    new CrossgenAssembly(asyncCompositeContLib),
+                    new CrossgenAssembly(compositeAsyncContMain),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            // Library methods produce async variants and resume stubs
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CaptureRefComposite", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CaptureArrayComposite", out diag), diag);
+            Assert.True(R2RAssert.HasResumptionStub(reader, "CaptureRefComposite", out diag), diag);
+            Assert.True(R2RAssert.HasResumptionStub(reader, "CaptureArrayComposite", out diag), diag);
+
+            // Main assembly methods produce async variants and resume stubs
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallCaptureRefComposite", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "LocalCaptureAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.HasResumptionStub(reader, "CallCaptureRefComposite", out diag), diag);
+            Assert.True(R2RAssert.HasResumptionStub(reader, "LocalCaptureAcrossAwait", out diag), diag);
+
+            // ContinuationLayout fixups are present for methods with GC refs across awaits
+            Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureRefComposite", out diag), diag);
+            Assert.True(R2RAssert.HasContinuationLayout(reader, "LocalCaptureAcrossAwait", out diag), diag);
         }
     }
 
@@ -546,9 +690,10 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "AsyncDepLibContinuation");
-            R2RAssert.HasAsyncVariant(reader, "CallCrossModuleCaptureRef");
-            R2RAssert.HasAsyncVariant(reader, "CallCrossModuleCaptureArray");
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncDepLibContinuation", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallCrossModuleCaptureRef", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallCrossModuleCaptureArray", out diag), diag);
         }
     }
 
@@ -589,7 +734,8 @@ public class R2RTestSuites
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
                     Validate = reader =>
                     {
-                        R2RAssert.HasManifestRef(reader, "MultiStepLibA");
+                        string diag;
+                        Assert.True(R2RAssert.HasManifestRef(reader, "MultiStepLibA", out diag), diag);
                     },
                 },
                 new("NonCompositeStep",
@@ -604,8 +750,9 @@ public class R2RTestSuites
                 {
                     Validate = reader =>
                     {
-                        R2RAssert.HasManifestRef(reader, "MultiStepLibA");
-                        R2RAssert.HasCrossModuleInlinedMethod(reader, "GetValueFromLibA", "GetValue");
+                        string diag;
+                        Assert.True(R2RAssert.HasManifestRef(reader, "MultiStepLibA", out diag), diag);
+                        Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "GetValueFromLibA", "GetValue", out diag), diag);
                     },
                 },
             ]));
@@ -619,7 +766,6 @@ public class R2RTestSuites
     /// Composite + runtime-async + cross-module devirtualization.
     /// Interface defined in AsyncInterfaceLib, call sites in CompositeAsyncDevirtMain.
     /// </summary>
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/125337")]
     [Fact]
     public void CompositeAsyncDevirtualize()
     {
@@ -657,8 +803,9 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "AsyncInterfaceLib");
-            R2RAssert.HasAsyncVariant(reader, "CallOnSealed");
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncInterfaceLib", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallOnSealed", out diag), diag);
         }
     }
 
@@ -704,8 +851,9 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "InlineableLibTransitive");
-            R2RAssert.HasManifestRef(reader, "ExternalLib");
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "InlineableLibTransitive", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "ExternalLib", out diag), diag);
         }
     }
 
@@ -764,8 +912,9 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "AsyncTransitiveLib");
-            R2RAssert.HasAsyncVariant(reader, "CallTransitiveValueAsync");
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncTransitiveLib", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallTransitiveValueAsync", out diag), diag);
         }
     }
 
@@ -773,7 +922,6 @@ public class R2RTestSuites
     /// Composite + runtime-async + transitive (3 assemblies).
     /// Full combination of composite, async, and transitive references.
     /// </summary>
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/125337")]
     [Fact]
     public void CompositeAsyncTransitive()
     {
@@ -822,8 +970,9 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "AsyncTransitiveLib");
-            R2RAssert.HasAsyncVariant(reader, "CallTransitiveValueAsync");
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncTransitiveLib", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallTransitiveValueAsync", out diag), diag);
         }
     }
 
@@ -832,22 +981,20 @@ public class R2RTestSuites
     /// Step 1: Composite of async libs. Step 2: Non-composite consumer
     /// with cross-module inlining of async methods.
     /// </summary>
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/125337")]
     [Fact]
     public void MultiStepCompositeAndNonCompositeAsync()
     {
+        var asyncDepLib = new CompiledAssembly
+        {
+            AssemblyName = "AsyncDepLibContinuation",
+            SourceResourceNames = ["RuntimeAsync/Dependencies/AsyncDepLibContinuation.cs"],
+            Features = { RuntimeAsyncFeature },
+        };
         var asyncCompositeLib = new CompiledAssembly
         {
             AssemblyName = "AsyncCompositeLib",
             SourceResourceNames = ["CrossModuleInlining/Dependencies/AsyncCompositeLib.cs"],
             Features = { RuntimeAsyncFeature },
-        };
-        var compositeAsyncMain = new CompiledAssembly
-        {
-            AssemblyName = "CompositeAsyncMain",
-            SourceResourceNames = ["CrossModuleInlining/CompositeAsync.cs"],
-            Features = { RuntimeAsyncFeature },
-            References = [asyncCompositeLib]
         };
         var asyncConsumer = new CompiledAssembly
         {
@@ -858,7 +1005,7 @@ public class R2RTestSuites
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
-            References = [asyncCompositeLib]
+            References = [asyncDepLib]
         };
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
@@ -866,21 +1013,22 @@ public class R2RTestSuites
             [
                 new("CompositeAsyncStep",
                 [
+                    new CrossgenAssembly(asyncDepLib),
                     new CrossgenAssembly(asyncCompositeLib),
-                    new CrossgenAssembly(compositeAsyncMain),
                 ])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
                     Validate = reader =>
                     {
-                        R2RAssert.HasManifestRef(reader, "AsyncCompositeLib");
-                        R2RAssert.HasAsyncVariant(reader, "CallCompositeAsync");
+                        string diag;
+                        Assert.True(R2RAssert.HasManifestRef(reader, "AsyncDepLibContinuation", out diag), diag);
+                        Assert.True(R2RAssert.HasAsyncVariant(reader, "CaptureRefAcrossAwait", out diag), diag);
                     },
                 },
                 new("NonCompositeAsyncStep",
                 [
                     new CrossgenAssembly(asyncConsumer),
-                    new CrossgenAssembly(asyncCompositeLib)
+                    new CrossgenAssembly(asyncDepLib)
                     {
                         Kind = Crossgen2InputKind.Reference,
                         Options = [Crossgen2AssemblyOption.CrossModuleOptimization],
@@ -889,8 +1037,9 @@ public class R2RTestSuites
                 {
                     Validate = reader =>
                     {
-                        R2RAssert.HasManifestRef(reader, "AsyncCompositeLib");
-                        R2RAssert.HasAsyncVariant(reader, "CallCrossModuleCaptureRef");
+                        string diag;
+                        Assert.True(R2RAssert.HasManifestRef(reader, "AsyncDepLibContinuation", out diag), diag);
+                        Assert.True(R2RAssert.HasAsyncVariant(reader, "CallCrossModuleCaptureRef", out diag), diag);
                     },
                 },
             ]));
@@ -937,14 +1086,15 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasManifestRef(reader, "CrossModuleGenericLib");
-            R2RAssert.HasCrossModuleInliningInfo(reader);
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "CrossModuleGenericLib", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
 
             // Verify that GetValue has cross-module inliners from both GenericWrapperA and GenericWrapperB.
             // This exercises the cross-module inliner parsing path where indices
             // must be read as absolute values, not delta-accumulated, and validates
             // that the resolved method names match the expected inliners.
-            R2RAssert.HasCrossModuleInliners(reader, "GetValue", "GenericWrapperA", "GenericWrapperB");
+            Assert.True(R2RAssert.HasCrossModuleInliners(reader, "GetValue", ["GenericWrapperA", "GenericWrapperB"], out diag), diag);
         }
     }
 }
