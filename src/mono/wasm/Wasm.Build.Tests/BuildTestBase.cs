@@ -66,6 +66,7 @@ namespace Wasm.Build.Tests
         public static bool IsMonoRuntime => s_buildEnv.IsMonoRuntime;
         public static bool IsCoreClrRuntime => s_buildEnv.IsCoreClrRuntime;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
+        public static bool UseJavascriptBundler => EnvironmentVariables.UseJavascriptBundler;
         public static string GetNuGetConfigPath()
             => Path.Combine(BuildEnvironment.TestDataPath, "nuget.config");
 
