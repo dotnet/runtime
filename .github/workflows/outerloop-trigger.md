@@ -118,6 +118,53 @@ of these conditions:
    directory — that is, the path contains
    `System.Security.Cryptography.Native.Android/`.
 
+### Rule: `runtime-ioslike`
+
+Trigger `/azp run runtime-ioslike` if **any** changed file matches at least one
+of these conditions:
+
+1. The file's **basename** contains `.iOS.` — for example
+   `Interop.TimeZoneInfo.iOS.cs` or `Environment.iOS.cs`.
+2. The file is inside a directory whose name is exactly `iOS` or `tvOS` — that
+   is, the path contains a `/iOS/` or `/tvOS/` segment (or starts with one).
+3. The file is inside the `System.Security.Cryptography.Native.Apple`
+   directory — that is, the path contains
+   `System.Security.Cryptography.Native.Apple/`.
+4. The file's **basename** contains `.Apple.` — for example
+   `AesGcm.Apple.cs` or `ChainPal.Apple.cs`.
+5. The file is under `src/mono/msbuild/apple/` or `src/mono/sample/iOS/`.
+6. The file is under `src/tasks/MobileBuildTasks/Apple/`.
+7. The file is under `src/native/libs/System.Native/ios/`.
+8. The file is under `src/tests/FunctionalTests/iOS/` or
+   `src/tests/FunctionalTests/tvOS/`.
+
+### Rule: `runtime-ioslikesimulator`
+
+Trigger `/azp run runtime-ioslikesimulator` whenever `runtime-ioslike` is
+triggered — the same matching conditions apply. Both pipelines should always
+be triggered together.
+
+### Rule: `runtime-maccatalyst`
+
+Trigger `/azp run runtime-maccatalyst` if **any** changed file matches at least
+one of these conditions:
+
+1. The file's **basename** contains `.MacCatalyst.` — for example
+   `Environment.OSVersion.MacCatalyst.cs`.
+2. The file is inside a directory whose name is exactly `MacCatalyst`.
+3. The file is inside the `System.Security.Cryptography.Native.Apple`
+   directory (shared with iOS).
+4. The file's **basename** contains `.Apple.` (shared with iOS).
+5. The file is under `src/mono/msbuild/apple/` (shared Apple build
+   infrastructure).
+6. The file is under `src/tasks/MobileBuildTasks/Apple/`.
+
+**Note:** Changes to shared Apple infrastructure (`.Apple.` files,
+`System.Security.Cryptography.Native.Apple/`, `src/mono/msbuild/apple/`,
+`src/tasks/MobileBuildTasks/Apple/`) should trigger **all three** Apple
+pipelines: `runtime-ioslike`, `runtime-ioslikesimulator`, and
+`runtime-maccatalyst`.
+
 ### Rule: `runtime-nativeaot-outerloop`
 
 Trigger `/azp run runtime-nativeaot-outerloop` if **any** changed file is part
@@ -229,6 +276,30 @@ To evaluate this rule:
 
 This rule may produce pipelines that overlap with other rules — that is fine,
 duplicates are naturally deduplicated into a single set before posting.
+
+### Rule: Re-trigger contributor-requested pipelines
+
+If a repository contributor (someone with write/maintain/admin permission) has
+previously posted a `/azp run` comment on this PR requesting specific outerloop
+pipelines, those same pipelines should be re-triggered on every subsequent push.
+
+To evaluate this rule:
+
+1. List all comments on the PR using the GitHub API.
+2. For each comment that contains `/azp run`, check whether the comment author
+   has write access to the repository. Use the GitHub API to check the
+   author's permission level (look for `permission` of `write`, `maintain`, or
+   `admin`). **Ignore** comments from bots (e.g. `github-actions[bot]`,
+   `azure-pipelines[bot]`) — only consider human contributors.
+3. Parse the `/azp run` line(s) to extract pipeline names. The format is
+   `/azp run <name1>, <name2>, ...` (comma-separated) or one pipeline per
+   `/azp run` line.
+4. Collect all pipeline names from all qualifying contributor comments and add
+   them to the set of pipelines to trigger.
+
+This ensures that when a contributor manually requests a specialized pipeline
+(e.g. `runtime-coreclr jitstress`), it continues to run on future pushes
+without the contributor having to re-comment each time.
 
 ## Step 3: Post Trigger Comments
 
