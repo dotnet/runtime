@@ -5042,9 +5042,11 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             }
             else if (tree->OperIs(GT_CAST))
             {
-                // A normalizing cast (e.g., int -> ubyte -> int for bool returns)
-                // in a shared return block is safe to ignore.
-                assert(IsNormalizingReturnCast(tree) &&
+                // The inliner can insert small-type-normalizing casts before the return
+                // (int -> ubyte -> int for bool-return-calls, for example)
+                // In the jit the callee is responsible for normalizing, so a tailcall
+                // can freely bypass this extra cast
+                assert(IsNormalizingCast(tree) &&
                        ValidateUse(tree->AsCast()->CastOp()) &&
                        "Expected normalizing cast of tailcall result");
             }
@@ -5071,23 +5073,22 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             return node->AsOp()->gtGetOp1()->OperIs(GT_NOP) && node->AsOp()->gtGetOp2()->OperIs(GT_NOP);
         }
 
-        static bool IsNormalizingReturnCast(GenTree* node)
+        bool IsNormalizingCast(GenTree* node)
         {
-            if (!node->OperIs(GT_CAST) || node->gtOverflow())
+            if (!node->OperIs(GT_CAST))
             {
                 return false;
             }
 
             GenTreeCast* cast = node->AsCast();
-            return varTypeIsSmall(cast->gtCastType) &&
+            return varTypeIsSmall(cast->CastToType()) &&
                    genActualType(cast->CastOp()) == TYP_INT &&
                    genActualType(cast) == TYP_INT;
         }
 
         bool ValidateUse(GenTree* node)
         {
-            // Peel through normalizing casts (e.g., int -> ubyte -> int for bool returns).
-            while (IsNormalizingReturnCast(node))
+            if (IsNormalizingCast(node))
             {
                 node = node->AsCast()->CastOp();
             }
