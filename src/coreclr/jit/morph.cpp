@@ -5040,6 +5040,14 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             {
                 assert(ValidateUse(tree) && "Expected use of local to be tailcall value");
             }
+            else if (tree->OperIs(GT_CAST))
+            {
+                // A normalizing cast (e.g., int -> ubyte -> int for bool returns)
+                // in a shared return block is safe to ignore.
+                assert(IsNormalizingReturnCast(tree) &&
+                       ValidateUse(tree->AsCast()->CastOp()) &&
+                       "Expected normalizing cast of tailcall result");
+            }
             else if (IsCommaNop(tree))
             {
                 // COMMA(NOP,NOP)
@@ -5063,8 +5071,27 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             return node->AsOp()->gtGetOp1()->OperIs(GT_NOP) && node->AsOp()->gtGetOp2()->OperIs(GT_NOP);
         }
 
+        static bool IsNormalizingReturnCast(GenTree* node)
+        {
+            if (!node->OperIs(GT_CAST) || node->gtOverflow())
+            {
+                return false;
+            }
+
+            GenTreeCast* cast = node->AsCast();
+            return varTypeIsSmall(cast->gtCastType) &&
+                   genActualType(cast->CastOp()) == TYP_INT &&
+                   genActualType(cast) == TYP_INT;
+        }
+
         bool ValidateUse(GenTree* node)
         {
+            // Peel through normalizing casts (e.g., int -> ubyte -> int for bool returns).
+            while (IsNormalizingReturnCast(node))
+            {
+                node = node->AsCast()->CastOp();
+            }
+
             if (m_lclNum != BAD_VAR_NUM)
             {
                 return node->OperIs(GT_LCL_VAR) && (node->AsLclVar()->GetLclNum() == m_lclNum);
