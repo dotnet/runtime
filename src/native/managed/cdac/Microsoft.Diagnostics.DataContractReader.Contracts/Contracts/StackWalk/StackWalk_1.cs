@@ -97,6 +97,15 @@ internal readonly struct StackWalk_1 : IStackWalk
                 {
                     handle.FrameIter.Next();
                 }
+                else if (!IsManaged(handle.Context.InstructionPointer, out _))
+                {
+                    // The InlinedCallFrame has an active call but the caller's IP is not
+                    // in a known managed code range (e.g. partial dump without JIT code
+                    // heaps). Advance past the frame to prevent an infinite loop — without
+                    // managed code range data the walker would repeatedly re-process the
+                    // same InlinedCallFrame.
+                    handle.FrameIter.Next();
+                }
                 break;
             case StackWalkState.SW_ERROR:
             case StackWalkState.SW_COMPLETE:
