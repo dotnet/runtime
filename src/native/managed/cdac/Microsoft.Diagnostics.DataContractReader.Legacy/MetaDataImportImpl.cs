@@ -12,18 +12,20 @@ using System.Runtime.InteropServices.Marshalling;
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
-internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
+internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMetaDataAssemblyImport
 {
     private const int CLDB_E_RECORD_NOTFOUND = unchecked((int)0x80131130);
     private readonly MetadataReader? _reader;
     private readonly IMetaDataImport? _legacyImport;
     private readonly IMetaDataImport2? _legacyImport2;
+    private readonly IMetaDataAssemblyImport? _legacyAssemblyImport;
 
     public MetaDataImportImpl(MetadataReader? reader, IMetaDataImport? legacyImport = null)
     {
         _reader = reader;
         _legacyImport = legacyImport;
         _legacyImport2 = legacyImport as IMetaDataImport2;
+        _legacyAssemblyImport = legacyImport as IMetaDataAssemblyImport;
     }
 
     // Helper: get the full name of a type definition (Namespace.Name).
@@ -1342,5 +1344,228 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
 
     public int EnumMethodSpecs(nint* phEnum, uint tk, uint* rMethodSpecs, uint cMax, uint* pcMethodSpecs)
         => _legacyImport2 is not null ? _legacyImport2.EnumMethodSpecs(phEnum, tk, rMethodSpecs, cMax, pcMethodSpecs) : HResults.E_NOTIMPL;
+
+    // =============================================
+    // IMetaDataAssemblyImport
+    // =============================================
+
+    int IMetaDataAssemblyImport.GetAssemblyProps(uint mda, byte** ppbPublicKey, uint* pcbPublicKey,
+        uint* pulHashAlgId, char* szName, uint cchName, uint* pchName,
+        ASSEMBLYMETADATA* pMetaData, uint* pdwAssemblyFlags)
+    {
+        if (_reader is null)
+            return _legacyAssemblyImport is not null
+                ? _legacyAssemblyImport.GetAssemblyProps(mda, ppbPublicKey, pcbPublicKey, pulHashAlgId, szName, cchName, pchName, pMetaData, pdwAssemblyFlags)
+                : HResults.E_NOTIMPL;
+
+        int hr = HResults.S_OK;
+        try
+        {
+            // Validate that the token is the assembly definition token
+            if (mda != 0x20000001)
+                return CLDB_E_RECORD_NOTFOUND;
+
+            AssemblyDefinition assemblyDef = _reader.GetAssemblyDefinition();
+            string name = _reader.GetString(assemblyDef.Name);
+
+            if (pchName is not null)
+                *pchName = (uint)(name.Length + 1);
+
+            if (szName is not null && cchName > 0)
+            {
+                int copyLen = Math.Min(name.Length, (int)cchName - 1);
+                name.AsSpan(0, copyLen).CopyTo(new Span<char>(szName, copyLen));
+                szName[copyLen] = '\0';
+            }
+
+            if (ppbPublicKey is not null)
+                *ppbPublicKey = null;
+            if (pcbPublicKey is not null)
+                *pcbPublicKey = 0;
+            if (pulHashAlgId is not null)
+                *pulHashAlgId = (uint)assemblyDef.HashAlgorithm;
+
+            if (pMetaData is not null)
+            {
+                System.Version version = assemblyDef.Version;
+                pMetaData->usMajorVersion = (ushort)version.Major;
+                pMetaData->usMinorVersion = (ushort)version.Minor;
+                pMetaData->usBuildNumber = (ushort)version.Build;
+                pMetaData->usRevisionNumber = (ushort)version.Revision;
+
+                string culture = _reader.GetString(assemblyDef.Culture);
+                if (pMetaData->szLocale is not null && pMetaData->cbLocale > 0)
+                {
+                    int locCopyLen = Math.Min(culture.Length, (int)pMetaData->cbLocale - 1);
+                    culture.AsSpan(0, locCopyLen).CopyTo(new Span<char>(pMetaData->szLocale, locCopyLen));
+                    pMetaData->szLocale[locCopyLen] = '\0';
+                }
+                pMetaData->cbLocale = (uint)(culture.Length + 1);
+                pMetaData->ulProcessor = 0;
+                pMetaData->ulOS = 0;
+            }
+
+            if (pdwAssemblyFlags is not null)
+                *pdwAssemblyFlags = (uint)assemblyDef.Flags;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyAssemblyImport is not null)
+        {
+            uint pchLocal = 0;
+            int hrLegacy = _legacyAssemblyImport.GetAssemblyProps(mda, null, null, null, null, 0, &pchLocal, null, null);
+            Debug.ValidateHResult(hr, hrLegacy);
+            if (hr >= 0 && hrLegacy >= 0)
+            {
+                if (pchName is not null)
+                    Debug.Assert(*pchName == pchLocal, $"Name length mismatch: cDAC={*pchName}, DAC={pchLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    int IMetaDataAssemblyImport.GetAssemblyRefProps(uint mdar, byte** ppbPublicKeyOrToken, uint* pcbPublicKeyOrToken,
+        char* szName, uint cchName, uint* pchName, ASSEMBLYMETADATA* pMetaData,
+        byte** ppbHashValue, uint* pcbHashValue, uint* pdwAssemblyRefFlags)
+    {
+        if (_reader is null)
+            return _legacyAssemblyImport is not null
+                ? _legacyAssemblyImport.GetAssemblyRefProps(mdar, ppbPublicKeyOrToken, pcbPublicKeyOrToken, szName, cchName, pchName, pMetaData, ppbHashValue, pcbHashValue, pdwAssemblyRefFlags)
+                : HResults.E_NOTIMPL;
+
+        int hr = HResults.S_OK;
+        try
+        {
+            AssemblyReferenceHandle refHandle = MetadataTokens.AssemblyReferenceHandle((int)(mdar & 0x00FFFFFF));
+            AssemblyReference assemblyRef = _reader.GetAssemblyReference(refHandle);
+            string name = _reader.GetString(assemblyRef.Name);
+
+            if (pchName is not null)
+                *pchName = (uint)(name.Length + 1);
+
+            if (szName is not null && cchName > 0)
+            {
+                int copyLen = Math.Min(name.Length, (int)cchName - 1);
+                name.AsSpan(0, copyLen).CopyTo(new Span<char>(szName, copyLen));
+                szName[copyLen] = '\0';
+            }
+
+            if (ppbPublicKeyOrToken is not null)
+                *ppbPublicKeyOrToken = null;
+            if (pcbPublicKeyOrToken is not null)
+                *pcbPublicKeyOrToken = 0;
+
+            if (pMetaData is not null)
+            {
+                System.Version version = assemblyRef.Version;
+                pMetaData->usMajorVersion = (ushort)version.Major;
+                pMetaData->usMinorVersion = (ushort)version.Minor;
+                pMetaData->usBuildNumber = (ushort)version.Build;
+                pMetaData->usRevisionNumber = (ushort)version.Revision;
+
+                string culture = _reader.GetString(assemblyRef.Culture);
+                if (pMetaData->szLocale is not null && pMetaData->cbLocale > 0)
+                {
+                    int locCopyLen = Math.Min(culture.Length, (int)pMetaData->cbLocale - 1);
+                    culture.AsSpan(0, locCopyLen).CopyTo(new Span<char>(pMetaData->szLocale, locCopyLen));
+                    pMetaData->szLocale[locCopyLen] = '\0';
+                }
+                pMetaData->cbLocale = (uint)(culture.Length + 1);
+                pMetaData->ulProcessor = 0;
+                pMetaData->ulOS = 0;
+            }
+
+            if (ppbHashValue is not null)
+                *ppbHashValue = null;
+            if (pcbHashValue is not null)
+                *pcbHashValue = 0;
+
+            if (pdwAssemblyRefFlags is not null)
+                *pdwAssemblyRefFlags = (uint)assemblyRef.Flags;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyAssemblyImport is not null)
+        {
+            uint pchLocal = 0;
+            int hrLegacy = _legacyAssemblyImport.GetAssemblyRefProps(mdar, null, null, null, 0, &pchLocal, null, null, null, null);
+            Debug.ValidateHResult(hr, hrLegacy);
+            if (hr >= 0 && hrLegacy >= 0)
+            {
+                if (pchName is not null)
+                    Debug.Assert(*pchName == pchLocal, $"Name length mismatch: cDAC={*pchName}, DAC={pchLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    int IMetaDataAssemblyImport.GetFileProps(uint mdf, char* szName, uint cchName, uint* pchName,
+        byte** ppbHashValue, uint* pcbHashValue, uint* pdwFileFlags)
+        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.GetFileProps(mdf, szName, cchName, pchName, ppbHashValue, pcbHashValue, pdwFileFlags) : HResults.E_NOTIMPL;
+
+    int IMetaDataAssemblyImport.GetExportedTypeProps(uint mdct, char* szName, uint cchName, uint* pchName,
+        uint* ptkImplementation, uint* ptkTypeDef, uint* pdwExportedTypeFlags)
+        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.GetExportedTypeProps(mdct, szName, cchName, pchName, ptkImplementation, ptkTypeDef, pdwExportedTypeFlags) : HResults.E_NOTIMPL;
+
+    int IMetaDataAssemblyImport.GetManifestResourceProps(uint mdmr, char* szName, uint cchName, uint* pchName,
+        uint* ptkImplementation, uint* pdwOffset, uint* pdwResourceFlags)
+        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.GetManifestResourceProps(mdmr, szName, cchName, pchName, ptkImplementation, pdwOffset, pdwResourceFlags) : HResults.E_NOTIMPL;
+
+    int IMetaDataAssemblyImport.EnumAssemblyRefs(nint* phEnum, uint* rAssemblyRefs, uint cMax, uint* pcTokens)
+        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumAssemblyRefs(phEnum, rAssemblyRefs, cMax, pcTokens) : HResults.E_NOTIMPL;
+
+    int IMetaDataAssemblyImport.EnumFiles(nint* phEnum, uint* rFiles, uint cMax, uint* pcTokens)
+        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumFiles(phEnum, rFiles, cMax, pcTokens) : HResults.E_NOTIMPL;
+
+    int IMetaDataAssemblyImport.EnumExportedTypes(nint* phEnum, uint* rExportedTypes, uint cMax, uint* pcTokens)
+        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumExportedTypes(phEnum, rExportedTypes, cMax, pcTokens) : HResults.E_NOTIMPL;
+
+    int IMetaDataAssemblyImport.EnumManifestResources(nint* phEnum, uint* rManifestResources, uint cMax, uint* pcTokens)
+        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumManifestResources(phEnum, rManifestResources, cMax, pcTokens) : HResults.E_NOTIMPL;
+
+    int IMetaDataAssemblyImport.GetAssemblyFromScope(uint* ptkAssembly)
+    {
+        if (_reader is null)
+            return _legacyAssemblyImport is not null ? _legacyAssemblyImport.GetAssemblyFromScope(ptkAssembly) : HResults.E_NOTIMPL;
+
+        if (ptkAssembly is not null)
+            *ptkAssembly = 0x20000001; // TokenFromRid(1, mdtAssembly)
+
+        int hr = HResults.S_OK;
+#if DEBUG
+        if (_legacyAssemblyImport is not null)
+        {
+            uint tkLocal = 0;
+            int hrLegacy = _legacyAssemblyImport.GetAssemblyFromScope(&tkLocal);
+            Debug.ValidateHResult(hr, hrLegacy);
+            if (hr >= 0 && hrLegacy >= 0 && ptkAssembly is not null)
+                Debug.Assert(*ptkAssembly == tkLocal, $"Assembly token mismatch: cDAC=0x{*ptkAssembly:X}, DAC=0x{tkLocal:X}");
+        }
+#endif
+        return hr;
+    }
+
+    int IMetaDataAssemblyImport.FindExportedTypeByName(char* szName, uint mdtExportedType, uint* ptkExportedType)
+        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.FindExportedTypeByName(szName, mdtExportedType, ptkExportedType) : HResults.E_NOTIMPL;
+
+    int IMetaDataAssemblyImport.FindManifestResourceByName(char* szName, uint* ptkManifestResource)
+        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.FindManifestResourceByName(szName, ptkManifestResource) : HResults.E_NOTIMPL;
+
+    void IMetaDataAssemblyImport.CloseEnum(nint hEnum)
+        => ((IMetaDataImport)this).CloseEnum(hEnum);
+
+    int IMetaDataAssemblyImport.FindAssembliesByName(char* szAppBase, char* szPrivateBin, char* szAssemblyName,
+        nint* ppIUnk, uint cMax, uint* pcAssemblies)
+        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.FindAssembliesByName(szAppBase, szPrivateBin, szAssemblyName, ppIUnk, cMax, pcAssemblies) : HResults.E_NOTIMPL;
 
 }

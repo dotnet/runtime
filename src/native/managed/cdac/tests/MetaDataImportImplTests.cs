@@ -645,4 +645,117 @@ public unsafe class MetaDataImportImplTests
         string name = new string(nameBuf, 0, (int)nameLen - 1);
         Assert.Equal("TestNamespace.TestClass", name);
     }
+
+    [Fact]
+    public void GetAssemblyFromScope_ReturnsAssemblyToken()
+    {
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        _testProvider = provider;
+        MetaDataImportImpl wrapper = new(reader, legacyImport: null);
+        IMetaDataAssemblyImport assemblyImport = wrapper;
+
+        uint tkAssembly;
+        int hr = assemblyImport.GetAssemblyFromScope(&tkAssembly);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(0x20000001u, tkAssembly);
+    }
+
+    [Fact]
+    public void GetAssemblyProps_ReturnsNameAndVersion()
+    {
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        _testProvider = provider;
+        MetaDataImportImpl wrapper = new(reader, legacyImport: null);
+        IMetaDataAssemblyImport assemblyImport = wrapper;
+
+        char* nameBuf = stackalloc char[256];
+        uint nameLen;
+        ASSEMBLYMETADATA metadata = default;
+        uint flags;
+
+        int hr = assemblyImport.GetAssemblyProps(0x20000001, null, null, null, nameBuf, 256, &nameLen, &metadata, &flags);
+        Assert.Equal(HResults.S_OK, hr);
+
+        string name = new string(nameBuf, 0, (int)nameLen - 1);
+        Assert.Equal("TestAssembly", name);
+        Assert.Equal(1, metadata.usMajorVersion);
+        Assert.Equal(0, metadata.usMinorVersion);
+        Assert.Equal(0, metadata.usBuildNumber);
+        Assert.Equal(0, metadata.usRevisionNumber);
+        Assert.Equal((uint)AssemblyFlags.PublicKey, flags);
+    }
+
+    [Fact]
+    public void GetAssemblyRefProps_ReturnsRefNameAndVersion()
+    {
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        _testProvider = provider;
+        MetaDataImportImpl wrapper = new(reader, legacyImport: null);
+        IMetaDataAssemblyImport assemblyImport = wrapper;
+
+        // mscorlib assembly ref is token 0x23000001
+        char* nameBuf = stackalloc char[256];
+        uint nameLen;
+        ASSEMBLYMETADATA metadata = default;
+        uint flags;
+
+        int hr = assemblyImport.GetAssemblyRefProps(0x23000001, null, null, nameBuf, 256, &nameLen, &metadata, null, null, &flags);
+        Assert.Equal(HResults.S_OK, hr);
+
+        string name = new string(nameBuf, 0, (int)nameLen - 1);
+        Assert.Equal("mscorlib", name);
+        Assert.Equal(4, metadata.usMajorVersion);
+        Assert.Equal(0, metadata.usMinorVersion);
+        Assert.Equal(0, metadata.usBuildNumber);
+        Assert.Equal(0, metadata.usRevisionNumber);
+    }
+
+    [Fact]
+    public void GetAssemblyProps_SmallBuffer_Truncates()
+    {
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        _testProvider = provider;
+        MetaDataImportImpl wrapper = new(reader, legacyImport: null);
+        IMetaDataAssemblyImport assemblyImport = wrapper;
+
+        char* nameBuf = stackalloc char[5];
+        uint nameLen;
+
+        int hr = assemblyImport.GetAssemblyProps(0x20000001, null, null, null, nameBuf, 5, &nameLen, null, null);
+        Assert.Equal(HResults.S_OK, hr);
+        // Full name is "TestAssembly" (12 chars + null = 13)
+        Assert.Equal(13u, nameLen);
+        // Buffer should contain "Test\0"
+        string truncated = new string(nameBuf, 0, 4);
+        Assert.Equal("Test", truncated);
+    }
+
+    [Fact]
+    public void GetAssemblyProps_InvalidToken_ReturnsRecordNotFound()
+    {
+        var builder = new MetadataBuilder();
+        builder.AddModule(0, builder.GetOrAddString("TestModule"), builder.GetOrAddGuid(Guid.NewGuid()), default, default);
+        builder.AddAssembly(
+            builder.GetOrAddString("TestAssembly"),
+            new Version(1, 0, 0, 0),
+            default,
+            default,
+            default,
+            default);
+
+        var metadataBuilder = new BlobBuilder();
+        new MetadataRootBuilder(builder).Serialize(metadataBuilder, 0, 0);
+        var metadata = metadataBuilder.ToImmutableArray();
+
+        fixed (byte* ptr = metadata.AsSpan())
+        {
+            var reader = new MetadataReader(ptr, metadata.Length);
+            var impl = new MetaDataImportImpl(reader);
+            var assemblyImport = (IMetaDataAssemblyImport)impl;
+
+            // Pass an invalid assembly token (wrong RID)
+            int hr = assemblyImport.GetAssemblyProps(0x20000002, null, null, null, null, 0, null, null, null);
+            Assert.Equal(unchecked((int)0x80131130), hr); // CLDB_E_RECORD_NOTFOUND
+        }
+    }
 }

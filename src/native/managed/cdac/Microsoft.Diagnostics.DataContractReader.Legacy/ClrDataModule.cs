@@ -50,6 +50,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     private const uint CORDEBUG_JIT_DEFAULT = 0x1;
     private const uint CORDEBUG_JIT_DISABLE_OPTIMIZATION = 0x3;
     private static readonly Guid IID_IMetaDataImport = Guid.Parse("7DAC8207-D3AE-4c75-9B67-92801A497D44");
+    private static readonly Guid IID_IMetaDataAssemblyImport = Guid.Parse("EE62470B-E94B-424E-9B7C-2F00C9249F93");
     private MetaDataImportImpl? _metaDataImportImpl;
 
     CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
@@ -59,7 +60,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         // Legacy DAC implementationof IXCLRDataModule handles QIs for IMetaDataImport by creating and
         // passing out an implementation of IMetaDataImport. Note that it does not do COM aggregation.
         // It simply returns a completely separate object. See ClrDataModule::QueryInterface in task.cpp
-        if (iid == IID_IMetaDataImport)
+        // The underlying RegMeta also implements IMetaDataAssemblyImport, so we handle that IID too.
+        if (iid == IID_IMetaDataImport || iid == IID_IMetaDataAssemblyImport)
         {
             MetaDataImportImpl? wrapper = _metaDataImportImpl;
             if (wrapper is null)

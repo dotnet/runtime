@@ -244,3 +244,74 @@ public unsafe partial interface IMetaDataImport2 : IMetaDataImport
     [PreserveSig]
     int EnumMethodSpecs(nint* phEnum, uint tk, uint* rMethodSpecs, uint cMax, uint* pcMethodSpecs);
 }
+
+// ASSEMBLYMETADATA from cor.h — version + locale info for assemblies.
+// rProcessor and rOS are deprecated and always null/0 in modern usage.
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct ASSEMBLYMETADATA
+{
+    public ushort usMajorVersion;
+    public ushort usMinorVersion;
+    public ushort usBuildNumber;
+    public ushort usRevisionNumber;
+    public char* szLocale;
+    public uint cbLocale;
+    public uint* rProcessor;
+    public uint ulProcessor;
+    public nint rOS;
+    public uint ulOS;
+}
+
+[GeneratedComInterface]
+[Guid("EE62470B-E94B-424E-9B7C-2F00C9249F93")]
+public unsafe partial interface IMetaDataAssemblyImport
+{
+    [PreserveSig]
+    int GetAssemblyProps(uint mda, byte** ppbPublicKey, uint* pcbPublicKey, uint* pulHashAlgId,
+        char* szName, uint cchName, uint* pchName, ASSEMBLYMETADATA* pMetaData, uint* pdwAssemblyFlags);
+
+    [PreserveSig]
+    int GetAssemblyRefProps(uint mdar, byte** ppbPublicKeyOrToken, uint* pcbPublicKeyOrToken,
+        char* szName, uint cchName, uint* pchName, ASSEMBLYMETADATA* pMetaData,
+        byte** ppbHashValue, uint* pcbHashValue, uint* pdwAssemblyRefFlags);
+
+    [PreserveSig]
+    int GetFileProps(uint mdf, char* szName, uint cchName, uint* pchName,
+        byte** ppbHashValue, uint* pcbHashValue, uint* pdwFileFlags);
+
+    [PreserveSig]
+    int GetExportedTypeProps(uint mdct, char* szName, uint cchName, uint* pchName,
+        uint* ptkImplementation, uint* ptkTypeDef, uint* pdwExportedTypeFlags);
+
+    [PreserveSig]
+    int GetManifestResourceProps(uint mdmr, char* szName, uint cchName, uint* pchName,
+        uint* ptkImplementation, uint* pdwOffset, uint* pdwResourceFlags);
+
+    [PreserveSig]
+    int EnumAssemblyRefs(nint* phEnum, uint* rAssemblyRefs, uint cMax, uint* pcTokens);
+
+    [PreserveSig]
+    int EnumFiles(nint* phEnum, uint* rFiles, uint cMax, uint* pcTokens);
+
+    [PreserveSig]
+    int EnumExportedTypes(nint* phEnum, uint* rExportedTypes, uint cMax, uint* pcTokens);
+
+    [PreserveSig]
+    int EnumManifestResources(nint* phEnum, uint* rManifestResources, uint cMax, uint* pcTokens);
+
+    [PreserveSig]
+    int GetAssemblyFromScope(uint* ptkAssembly);
+
+    [PreserveSig]
+    int FindExportedTypeByName(char* szName, uint mdtExportedType, uint* ptkExportedType);
+
+    [PreserveSig]
+    int FindManifestResourceByName(char* szName, uint* ptkManifestResource);
+
+    [PreserveSig]
+    void CloseEnum(nint hEnum);
+
+    [PreserveSig]
+    int FindAssembliesByName(char* szAppBase, char* szPrivateBin, char* szAssemblyName,
+        nint* ppIUnk, uint cMax, uint* pcAssemblies);
+}
