@@ -87,7 +87,7 @@ namespace
             return false;
 
         // See docs/design/features/sharedfx-lookup.md#sdk-search
-        typedef int (*dotnet_execute_fn)(
+        typedef int (__cdecl *dotnet_execute_fn)(
             const pal::char_t* host_path,
             const pal::char_t* dotnet_root,
             const pal::char_t* sdk_dir,

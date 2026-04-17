@@ -11,7 +11,7 @@ std::vector<char> tostr(const pal::char_t* value)
     return vect;
 }
 
-SHARED_API int dotnet_execute(
+SHARED_API int __cdecl dotnet_execute(
     const pal::char_t* host_path,
     const pal::char_t* dotnet_root,
     const pal::char_t* sdk_dir,
