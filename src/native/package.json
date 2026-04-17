@@ -44,7 +44,7 @@
   },
   "overrides": {
     "cross-spawn": "7.0.6",
-    "serialize-javascript": "~6.0.2"
+    "serialize-javascript": "6.0.2"
   },
   "dependencies": {
     "wasm-feature-detect": "1.8.0"
