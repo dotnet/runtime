@@ -153,19 +153,14 @@ public class CodeVersionsTests
         mockExecutionManager ??= new Mock<IExecutionManager>();
         mockRuntimeTypeSystem ??= new Mock<IRuntimeTypeSystem>();
 
-        TestPlaceholderTarget target = new TestPlaceholderTarget(
-            arch,
-            builder.Builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(builder));
-
-        IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
-        ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.CodeVersions == cvfactory.CreateContract(target, 1)
-                && c.RuntimeTypeSystem == mockRuntimeTypeSystem.Object
-                && c.ExecutionManager == mockExecutionManager.Object
-                && c.Loader == mockLoader.Object);
-        target.SetContracts(reg);
-        return target;
+        return new TestPlaceholderTarget.Builder(arch)
+            .UseReader(builder.Builder.GetMemoryContext().ReadFromTarget)
+            .AddTypes(CreateContractTypes(builder))
+            .AddContract<ICodeVersions>(version: 1)
+            .AddMockContract(mockRuntimeTypeSystem)
+            .AddMockContract(mockExecutionManager)
+            .AddMockContract(mockLoader)
+            .Build();
     }
 
     [Theory]

@@ -43,6 +43,7 @@ enum { OPT_BLENDED,
     OPT_RANDOM,
     OPT_DEFAULT = OPT_BLENDED };
 
+// [cDAC] [Loader]: Contract depends on these values.
 enum ClrModifiableAssemblies {
     /* modifiable assemblies are implicitly disabled */
     MODIFIABLE_ASSM_UNSET = 0,
@@ -59,6 +60,7 @@ enum ParseCtl {
 
 class EEConfig
 {
+    friend struct ::cdac_data<EEConfig>;
 public:
     static HRESULT Setup();
 
@@ -715,6 +717,11 @@ public:
     { return dwSleepOnExit; }
 };
 
+template<>
+struct cdac_data<EEConfig>
+{
+    static constexpr size_t ModifiableAssemblies = offsetof(EEConfig, modifiableAssemblies);
+};
 
 
 #ifdef _DEBUG_IMPL

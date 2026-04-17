@@ -66,6 +66,11 @@ parameters:
         src/native/libs/Common/JavaScript/*
         src/native/libs/System.Native.Browser/*
         src/native/libs/System.Runtime.InteropServices.JavaScript.Native/*
+        src/native/package.json
+        src/native/package-lock.json
+        src/native/tsconfig.json
+        src/native/.npmrc
+        src/native/rollup.config*
     ]
     _wasm_chrome: [
         eng/testing/bump-chrome-version.proj
