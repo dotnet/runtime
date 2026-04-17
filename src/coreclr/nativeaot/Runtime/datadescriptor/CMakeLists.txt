@@ -15,7 +15,6 @@ include(${CLR_DIR}/clrdatadescriptors.cmake)
 add_library(nativeaot_descriptor_interface INTERFACE)
 target_include_directories(nativeaot_descriptor_interface INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_definitions(nativeaot_descriptor_interface INTERFACE SKIP_TRACING_DEFINITIONS)
 generate_data_descriptors(
     LIBRARY_NAME nativeaot_cdac_contract_descriptor
     CONTRACT_NAME "DotNetRuntimeContractDescriptor"
