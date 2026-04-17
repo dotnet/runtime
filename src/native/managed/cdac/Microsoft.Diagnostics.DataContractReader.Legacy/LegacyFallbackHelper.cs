@@ -52,7 +52,6 @@ internal static class LegacyFallbackHelper
     /// In no-fallback mode, returns <c>true</c> only for allowlisted methods.
     /// All fallback attempts (allowed and blocked) are logged to stderr.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static bool CanFallback(
         [CallerMemberName] string name = "",
         [CallerFilePath] string file = "",
