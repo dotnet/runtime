@@ -3541,6 +3541,29 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
             RecordAppearance(lclNum, block, stmt, use);
         }
     }
+    else
+    {
+        // Store to a potentially tracked enumerator local from an unrecognized
+        // source (e.g. a virtual call whose result is not a tracked ALLOCOBJ,
+        // nor a copy from a tracked local). If lclNum is a tracked enumerator
+        // local, record this as an appearance so that CheckCanClone detects
+        // multiple definitions and bails out of unsafe cloning.
+        //
+        // See https://github.com/dotnet/runtime/issues/127075.
+        //
+        unsigned pseudoIndex = BAD_VAR_NUM;
+        if (m_EnumeratorLocalToPseudoIndexMap.TryGetValue(lclNum, &pseudoIndex))
+        {
+            CloneInfo* info = nullptr;
+            if (m_CloneMap.Lookup(pseudoIndex, &info))
+            {
+                JITDUMP("Enumerator V%02u has an unrecognized def at [%06u]; "
+                        "recording to prevent unsafe cloning\n",
+                        lclNum, m_compiler->dspTreeID(tree));
+                RecordAppearance(lclNum, block, stmt, use);
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
