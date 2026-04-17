@@ -95,6 +95,23 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("bundler-friendly")]
+    public async Task BufferedAssetsTest()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(
+            config,
+            aot: false,
+            TestAsset.WasmBasicTestApp,
+            "ModuleConfigTests_BufferedAssetsTest",
+            extraProperties: "<WasmEmitSymbolMap>true</WasmEmitSymbolMap>");
+        PublishProject(info, config);
+        await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "BufferedAssetsTest"
+        ));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

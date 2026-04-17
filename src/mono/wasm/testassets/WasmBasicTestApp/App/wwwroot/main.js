@@ -178,6 +178,25 @@ switch (testCase) {
     case "MainWithArgs":
         dotnet.withApplicationArgumentsFromQuery();
         break;
+    case "BufferedAssetsTest":
+        const originalFetch3 = globalThis.fetch.bind(globalThis);
+        dotnet.withModuleConfig({
+            onConfigLoaded: (config) => {
+                const bufferedAssets = [
+                    ...config.resources.wasmNative,
+                    ...config.resources.coreAssembly,
+                    ...config.resources.assembly,
+                    ...config.resources.corePdb,
+                    ...config.resources.pdb,
+                    ...config.resources.wasmSymbols,
+                ];
+                for (const asset of bufferedAssets) {
+                    const url = new URL(`./_framework/${asset.name}`, location.href);
+                    asset.buffer = originalFetch3(url).then(r => r.arrayBuffer());
+                }
+            }
+        });
+        break;
 }
 
 const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
@@ -356,6 +375,9 @@ try {
 
             exit(foundB && retB == 42 ? 0 : 1);
 
+            break;
+        case "BufferedAssetsTest":
+            await dotnet.runMainAndExit();
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);
