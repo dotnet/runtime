@@ -8,20 +8,24 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 public static class OutputBufferHelpers
 {
-    public static unsafe void CopyStringToBuffer(char* stringBuf, uint bufferSize, uint* neededBufferSize, string str)
+    public static unsafe bool CopyStringToBuffer(char* stringBuf, uint bufferSize, uint* neededBufferSize, string str)
     {
         ReadOnlySpan<char> strSpan = str.AsSpan();
         if (neededBufferSize != null)
             *neededBufferSize = checked((uint)(strSpan.Length + 1));
 
+        bool truncated = false;
         if (stringBuf != null && bufferSize > 0)
         {
             Span<char> target = new Span<char>(stringBuf, checked((int)bufferSize));
             int nullTerminatorLocation = strSpan.Length > bufferSize - 1 ? checked((int)(bufferSize - 1)) : strSpan.Length;
+            truncated = strSpan.Length + 1 > bufferSize;
             strSpan = strSpan.Slice(0, nullTerminatorLocation);
             strSpan.CopyTo(target);
             target[nullTerminatorLocation] = '\0';
         }
+
+        return truncated;
     }
 
     public static unsafe void CopyUtf8StringToBuffer(byte* stringBuf, uint bufferSize, uint* neededBufferSize, string str)

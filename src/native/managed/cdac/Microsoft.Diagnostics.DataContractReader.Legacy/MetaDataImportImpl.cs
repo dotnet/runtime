@@ -15,6 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMetaDataAssemblyImport
 {
     private const int CLDB_E_RECORD_NOTFOUND = unchecked((int)0x80131130);
+    private const int CLDB_S_TRUNCATION = 0x00131106;
     private readonly MetadataReader? _reader;
     private readonly IMetaDataImport? _legacyImport;
     private readonly IMetaDataImport2? _legacyImport2;
@@ -266,7 +267,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             TypeDefinition typeDef = _reader!.GetTypeDefinition(typeHandle);
 
             string fullName = GetTypeDefFullName(typeDef);
-            OutputBufferHelpers.CopyStringToBuffer(szTypeDef, cchTypeDef, pchTypeDef, fullName);
+            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szTypeDef, cchTypeDef, pchTypeDef, fullName);
 
             if (pdwTypeDefFlags is not null)
                 *pdwTypeDefFlags = (uint)typeDef.Attributes;
@@ -277,7 +278,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                 *ptkExtends = baseType.IsNil ? 0 : (uint)MetadataTokens.GetToken(baseType);
             }
 
-            hr = HResults.S_OK;
+            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -316,7 +317,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             TypeReference typeRef = _reader!.GetTypeReference(refHandle);
 
             string fullName = GetTypeRefFullName(typeRef);
-            OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, fullName);
+            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, fullName);
 
             if (ptkResolutionScope is not null)
             {
@@ -324,7 +325,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                 *ptkResolutionScope = scope.IsNil ? 0 : (uint)MetadataTokens.GetToken(scope);
             }
 
-            hr = HResults.S_OK;
+            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -362,7 +363,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             MethodDefinition methodDef = _reader!.GetMethodDefinition(methodHandle);
 
             string name = _reader!.GetString(methodDef.Name);
-            OutputBufferHelpers.CopyStringToBuffer(szMethod, cchMethod, pchMethod, name);
+            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szMethod, cchMethod, pchMethod, name);
 
             if (pClass is not null)
                 *pClass = (uint)MetadataTokens.GetToken(methodDef.GetDeclaringType());
@@ -386,7 +387,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             if (pdwImplFlags is not null)
                 *pdwImplFlags = (uint)methodDef.ImplAttributes;
 
-            hr = HResults.S_OK;
+            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -436,7 +437,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             FieldDefinition fieldDef = _reader!.GetFieldDefinition(fieldHandle);
 
             string name = _reader!.GetString(fieldDef.Name);
-            OutputBufferHelpers.CopyStringToBuffer(szField, cchField, pchField, name);
+            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szField, cchField, pchField, name);
 
             if (pClass is not null)
                 *pClass = (uint)MetadataTokens.GetToken(fieldDef.GetDeclaringType());
@@ -477,7 +478,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                 }
             }
 
-            hr = HResults.S_OK;
+            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -655,9 +656,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                 *reserved = 0;
 
             string name = _reader!.GetString(genericParam.Name);
-            OutputBufferHelpers.CopyStringToBuffer(wzname, cchName, pchName, name);
+            bool truncated = OutputBufferHelpers.CopyStringToBuffer(wzname, cchName, pchName, name);
 
-            hr = HResults.S_OK;
+            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -1005,7 +1006,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             MemberReference memberRef = _reader!.GetMemberReference(refHandle);
 
             string name = _reader!.GetString(memberRef.Name);
-            OutputBufferHelpers.CopyStringToBuffer(szMember, cchMember, pchMember, name);
+            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szMember, cchMember, pchMember, name);
 
             if (ptk is not null)
                 *ptk = (uint)MetadataTokens.GetToken(memberRef.Parent);
@@ -1019,7 +1020,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                     *pbSig = (uint)blobReader.Length;
             }
 
-            hr = HResults.S_OK;
+            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -1136,9 +1137,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             ModuleReference modRef = _reader!.GetModuleReference(modRefHandle);
 
             string name = _reader!.GetString(modRef.Name);
-            OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
+            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
 
-            hr = HResults.S_OK;
+            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -1220,9 +1221,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
         {
             UserStringHandle usHandle = MetadataTokens.UserStringHandle((int)(stk & 0x00FFFFFF));
             string value = _reader!.GetUserString(usHandle);
-            OutputBufferHelpers.CopyStringToBuffer(szString, cchString, pchString, value);
+            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szString, cchString, pchString, value);
 
-            hr = HResults.S_OK;
+            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -1328,7 +1329,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             Parameter param = _reader!.GetParameter(paramHandle);
 
             string name = _reader!.GetString(param.Name);
-            OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
+            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
 
             if (pmd is not null)
             {
@@ -1381,7 +1382,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                 }
             }
 
-            hr = HResults.S_OK;
+            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -1456,6 +1457,8 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             AssemblyDefinition assemblyDef = _reader.GetAssemblyDefinition();
             string name = _reader.GetString(assemblyDef.Name);
 
+            bool truncated = false;
+
             if (pchName is not null)
                 *pchName = (uint)(name.Length + 1);
 
@@ -1464,6 +1467,8 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                 int copyLen = Math.Min(name.Length, (int)cchName - 1);
                 name.AsSpan(0, copyLen).CopyTo(new Span<char>(szName, copyLen));
                 szName[copyLen] = '\0';
+                if (name.Length + 1 > cchName)
+                    truncated = true;
             }
 
             if (!assemblyDef.PublicKey.IsNil)
@@ -1498,6 +1503,8 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                     int locCopyLen = Math.Min(culture.Length, (int)pMetaData->cbLocale - 1);
                     culture.AsSpan(0, locCopyLen).CopyTo(new Span<char>(pMetaData->szLocale, locCopyLen));
                     pMetaData->szLocale[locCopyLen] = '\0';
+                    if (culture.Length + 1 > pMetaData->cbLocale)
+                        truncated = true;
                 }
                 pMetaData->cbLocale = (uint)(culture.Length + 1);
                 pMetaData->ulProcessor = 0;
@@ -1506,6 +1513,8 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 
             if (pdwAssemblyFlags is not null)
                 *pdwAssemblyFlags = (uint)assemblyDef.Flags;
+
+            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -1561,6 +1570,8 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             AssemblyReference assemblyRef = _reader.GetAssemblyReference(refHandle);
             string name = _reader.GetString(assemblyRef.Name);
 
+            bool truncated = false;
+
             if (pchName is not null)
                 *pchName = (uint)(name.Length + 1);
 
@@ -1569,6 +1580,8 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                 int copyLen = Math.Min(name.Length, (int)cchName - 1);
                 name.AsSpan(0, copyLen).CopyTo(new Span<char>(szName, copyLen));
                 szName[copyLen] = '\0';
+                if (name.Length + 1 > cchName)
+                    truncated = true;
             }
 
             if (!assemblyRef.PublicKeyOrToken.IsNil)
@@ -1601,6 +1614,8 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                     int locCopyLen = Math.Min(culture.Length, (int)pMetaData->cbLocale - 1);
                     culture.AsSpan(0, locCopyLen).CopyTo(new Span<char>(pMetaData->szLocale, locCopyLen));
                     pMetaData->szLocale[locCopyLen] = '\0';
+                    if (culture.Length + 1 > pMetaData->cbLocale)
+                        truncated = true;
                 }
                 pMetaData->cbLocale = (uint)(culture.Length + 1);
                 pMetaData->ulProcessor = 0;
@@ -1625,6 +1640,8 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 
             if (pdwAssemblyRefFlags is not null)
                 *pdwAssemblyRefFlags = (uint)assemblyRef.Flags;
+
+            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {

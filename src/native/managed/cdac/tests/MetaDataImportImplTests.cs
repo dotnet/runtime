@@ -794,7 +794,7 @@ public unsafe class MetaDataImportImplTests
         uint nameLen;
 
         int hr = assemblyImport.GetAssemblyProps(0x20000001, null, null, null, nameBuf, 5, &nameLen, null, null);
-        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(0x00131106, hr); // CLDB_S_TRUNCATION
         // Full name is "TestAssembly" (12 chars + null = 13)
         Assert.Equal(13u, nameLen);
         // Buffer should contain "Test\0"
