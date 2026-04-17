@@ -51,6 +51,7 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
     uint64_t previousSp = 0;
     uint64_t previousIp = 0;
     int ipMatchCount = 0;
+    bool previousFrameWasSignal = false;
 
     // For each native frame, add a page around the IP and any unwind info not already
     // added in VisitProgramHeader (Linux) and VisitSection (MacOS) to the dump.
@@ -70,6 +71,18 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
         }
 #endif
         if (ip == 0 || sp <= previousSp) {
+            // When a signal handler uses SA_ONSTACK (alternate signal stack), the SP can legitimately
+            // decrease when unwinding crosses the signal trampoline back to the original thread stack.
+            // This commonly happens on secondary threads where both the thread stack and alt stack are
+            // mmap'd, with the alt stack at a higher address. Allow one SP decrease if the previous
+            // frame was a signal trampoline.
+            if (ip != 0 && sp != 0 && sp < previousSp && previousFrameWasSignal) {
+                TRACE("Unwind: signal trampoline crossing detected sp %p -> %p\n", (void*)previousSp, (void*)sp);
+                previousSp = sp - 1;
+                previousIp = ip;
+                previousFrameWasSignal = false;
+                continue;
+            }
             TRACE_VERBOSE("Unwind: sp not increasing or ip == 0 sp %p ip %p\n", (void*)sp, (void*)ip);
             break;
         }
@@ -104,10 +117,12 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
 
         // Unwind the native frame adding all the memory accessed to the core dump via the read memory adapter.
         ULONG64 functionStart;
-        if (!PAL_VirtualUnwindOutOfProc(pContext, &functionStart, baseAddress, ReadMemoryAdapter)) {
+        BOOL isSignalFrame = FALSE;
+        if (!PAL_VirtualUnwindOutOfProc(pContext, &functionStart, baseAddress, ReadMemoryAdapter, &isSignalFrame)) {
             TRACE("Unwind: PAL_VirtualUnwindOutOfProc returned false\n");
             break;
         }
+        previousFrameWasSignal = (isSignalFrame != FALSE);
 
         if (m_crashInfo.GatherFrames())
         {

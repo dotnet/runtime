@@ -2337,13 +2337,18 @@ Parameters:
 --*/
 BOOL
 PALAPI
-PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, BOOL *isSignalFrame)
 {
     unw_addr_space_t addrSpace = 0;
     unw_cursor_t cursor;
     libunwindInfo info;
     BOOL result = FALSE;
     int st;
+
+    if (isSignalFrame)
+    {
+        *isSignalFrame = FALSE;
+    }
 
     info.BaseAddress = baseAddress;
     info.Context = context;
@@ -2407,6 +2412,20 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T base
     {
         result = FALSE;
         goto exit;
+    }
+
+    // Check if the current frame is a signal trampoline before stepping. When the signal handler
+    // uses SA_ONSTACK, stepping past a signal frame crosses from the alternate signal stack to the
+    // original thread stack, which can cause the SP to decrease.
+    // Note: unw_is_signal_frame requires the cursor's proc_info to be populated. unw_init_remote
+    // does not call find_proc_info, so we force it via unw_get_proc_info first.
+    if (isSignalFrame)
+    {
+        unw_proc_info_t procInfo;
+        if (unw_get_proc_info(&cursor, &procInfo) == 0 && unw_is_signal_frame(&cursor) > 0)
+        {
+            *isSignalFrame = TRUE;
+        }
     }
 
     st = unw_step(&cursor);
@@ -2578,7 +2597,7 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
 
 BOOL
 PALAPI
-PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, BOOL *isSignalFrame)
 {
     return FALSE;
 }
