@@ -64,25 +64,11 @@ internal class IOServices
             if (!IsReady(otherDrive))
                 continue;
 
-            if (!IsDriveNTFS(otherDrive))
-                continue;
-
-            // Filter out drives that don't support volume mount point operations
-            // (e.g., SUBST drives, Azure resource disks without volume GUIDs).
-            // These report as Fixed/NTFS/Ready but GetVolumeNameForVolumeMountPoint fails.
-            if (!HasVolumeGuid(otherDrive))
-                continue;
-
-            return otherDrive;
+            if (IsDriveNTFS(otherDrive))
+                return otherDrive;
         }
 
         return null;
-    }
-
-    private static bool HasVolumeGuid(string drive)
-    {
-        char[] volumeName = new char[260];
-        return DllImports.GetVolumeNameForVolumeMountPoint(drive, volumeName, volumeName.Length);
     }
 
     public static string GetNonNtfsDriveOtherThanCurrent()

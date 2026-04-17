@@ -1009,10 +1009,6 @@ check_include_files(
     IOKit/serial/ioss.h
     HAVE_IOSS_H)
 
-check_include_files(
-    OS.h
-    HAVE_OS_H)
-
 check_symbol_exists(
     getpeereid
     "unistd.h;sys/types.h;sys/socket.h"
