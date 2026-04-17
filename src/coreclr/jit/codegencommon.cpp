@@ -7409,7 +7409,7 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
     }
 
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
-    assert(!varTypeIsStruct(treeNode));
+    assert(!varTypeIsStruct(treeNode) || treeNode->TypeGet() == TYP_HALF);
     return false;
 #else
     return varTypeIsStruct(treeNode) && (m_compiler->info.compRetNativeType == TYP_STRUCT);

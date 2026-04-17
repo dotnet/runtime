@@ -510,6 +510,9 @@ private:
 
     static bool GetCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFileFieldName)
     {
+        if (s_memory_cgroup_path == nullptr)
+            return false;
+
         // Use the same way to calculate memory load as popular container tools (Docker, Kubernetes, Containerd etc.)
         // For cgroup v1: value of 'memory.usage_in_bytes' minus 'total_inactive_file' value of 'memory.stat'
         // For cgroup v2: value of 'memory.current' minus 'inactive_file' value of 'memory.stat'
@@ -533,9 +536,6 @@ private:
 
         if (!result)
             return result;
-
-        if (s_memory_cgroup_path == nullptr)
-            return false;
 
         uint64_t inactiveFileValue = 0;
         if (GetCGroupMemoryStatField(inactiveFileFieldName, &inactiveFileValue))

@@ -173,6 +173,8 @@ configuration:
         - labelAdded:
             label: area-GC-mono
         - labelAdded:
+            label: area-Host
+        - labelAdded:
             label: area-ILTools-coreclr
         - labelAdded:
             label: area-Tools-ILVerification
@@ -296,6 +298,8 @@ configuration:
             label: area-System.Runtime
         - labelAdded:
             label: area-System.Runtime.CompilerServices
+        - labelAdded:
+            label: area-System.Runtime.InteropServices
         - labelAdded:
             label: area-System.Runtime.Intrinsics
         - labelAdded:
@@ -1407,6 +1411,18 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-system-runtime-compilerservices
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Runtime.InteropServices
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/interop-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 

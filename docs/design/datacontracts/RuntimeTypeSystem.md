@@ -54,6 +54,8 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool IsString(TypeHandle typeHandle);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
+    // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
+    public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
     public virtual bool IsContinuation(TypeHandle typeHandle);
     public virtual bool IsDynamicStatics(TypeHandle typeHandle);
@@ -273,6 +275,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000,
+        RequiresAlign8 = 0x00800000,
         ContainsGCPointers = 0x01000000,
         ContainsGenericVariables = 0x20000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
@@ -319,6 +322,7 @@ internal partial struct RuntimeTypeSystem_1
         public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
+        public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
         public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
@@ -539,6 +543,8 @@ Contracts used:
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
 
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
+
+    public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
 
     public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
 

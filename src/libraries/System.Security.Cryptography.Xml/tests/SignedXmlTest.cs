@@ -9,7 +9,6 @@
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // Copyright (C) 2004-2005, 2008 Novell, Inc (http://www.novell.com)
 
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net;
@@ -20,6 +19,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.XPath;
+using Microsoft.DotNet.RemoteExecutor;
 using Test.Cryptography;
 using Xunit;
 
@@ -194,7 +194,9 @@ namespace System.Security.Cryptography.Xml.Tests
 
             Assert.Null(signedXml.SigningKeyName);
 
+#if NET
             Assert.Equal("http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", signedXml.SignatureMethod);
+#endif
 
             Assert.Equal(key.KeySize / 8, signedXml.SignatureValue.Length);
             Assert.Null(signedXml.SigningKeyName);
@@ -1721,6 +1723,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
+#if NET
         [Fact]
         public void CoreFxSignedXmlUsesSha256ByDefault()
         {
@@ -1770,6 +1773,7 @@ namespace System.Security.Cryptography.Xml.Tests
                     xp.SelectSingleNode("/ds:SignedInfo/ds:Reference/ds:DigestMethod/@Algorithm", nsMgr)?.Value);
             }
         }
+#endif
 
         // To reduce running time, the test data is a pre-calculated string. For anyone that want to
         // make adjustments to it, this is the small program that was used to generate the data.
@@ -2031,5 +2035,286 @@ namespace System.Security.Cryptography.Xml.Tests
 
             Assert.Equal(isValid, signedXml.CheckSignature());
         }
+
+#if NET
+        [Fact]
+        public void SignedXml_EncryptedDataWithInfiniteXslTransform()
+        {
+            using RSA key = RSA.Create();
+            using Aes aes = Aes.Create();
+
+            XmlDocument doc = new();
+            doc.LoadXml("""
+                <Root>
+                  <Container Id="container">
+                    <EncryptedData Type="http://www.w3.org/2001/04/xmlenc#Element" xmlns="http://www.w3.org/2001/04/xmlenc#">
+                      <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc" />
+                      <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+                        <KeyName>mykey</KeyName>
+                      </KeyInfo>
+                      <CipherData>
+                        <CipherValue>QUFCQkNDRERFRUZGR0dISA==</CipherValue>
+                      </CipherData>
+                    </EncryptedData>
+                  </Container>
+                </Root>
+                """);
+
+            SignedXml signedXml = new(doc)
+            {
+                SigningKey = key
+            };
+
+            signedXml.EncryptedXml.AddKeyNameMapping("mykey", aes);
+
+            Reference reference = new("#container");
+            reference.AddTransform(new XmlDecryptionTransform());
+            signedXml.AddReference(reference);
+
+            signedXml.ComputeSignature();
+            doc.DocumentElement!.AppendChild(signedXml.GetXml());
+
+            string encryptedDataWithXsltTransform = $"""
+                <EncryptedData Type="http://www.w3.org/2001/04/xmlenc#Element" xmlns="http://www.w3.org/2001/04/xmlenc#">
+                  <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc" />
+                  <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+                    <KeyName>mykey</KeyName>
+                  </KeyInfo>
+                  <CipherData>
+                    <CipherReference URI="#data">
+                      <Transforms>
+                        <Transform Algorithm="http://www.w3.org/TR/1999/REC-xslt-19991116" xmlns="http://www.w3.org/2000/09/xmldsig#">
+                            {GenerateBillionLaughsXSLT()}
+                        </Transform>
+                      </Transforms>
+                    </CipherReference>
+                  </CipherData>
+                </EncryptedData>
+                """;
+
+            XmlElement dataElem = doc.CreateElement("Data");
+            dataElem.SetAttribute("Id", "data");
+            dataElem.InnerText = "RefData";
+            doc.DocumentElement.AppendChild(dataElem);
+
+            XmlNamespaceManager nsm = new XmlNamespaceManager(doc.NameTable);
+            nsm.AddNamespace("enc", "http://www.w3.org/2001/04/xmlenc#");
+            XmlNode edNode = doc.SelectSingleNode("//enc:EncryptedData", nsm)!;
+
+            XmlDocument fragment = new();
+            fragment.LoadXml(encryptedDataWithXsltTransform);
+            edNode.ParentNode!.ReplaceChild(doc.ImportNode(fragment.DocumentElement!, true), edNode);
+
+            // 2. Verify the signature
+            SignedXml verifierSignedXml = new(doc);
+            XmlNodeList signatures = doc.GetElementsByTagName("Signature");
+            verifierSignedXml.LoadXml((XmlElement)signatures[0]!);
+            verifierSignedXml.EncryptedXml.AddKeyNameMapping("mykey", aes);
+            CryptographicException ex = Assert.Throws<CryptographicException>(() => verifierSignedXml.CheckSignature(key));
+            Assert.Equal("The specified cryptographic transform is not supported.", ex.Message);
+
+            static string GenerateBillionLaughsXSLT()
+            {
+                // 32 chars
+                string vars = $"""<xsl:variable name="v0" select="'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'"/>{Environment.NewLine}""";
+
+                // 32 * 2^28 is roughly 8GB
+                int iterations = 28;
+                for (int i = 1; i <= iterations; i++)
+                {
+                    vars += $"""<xsl:variable name="v{i}" select="concat($v{i - 1}, $v{i - 1})"/>{Environment.NewLine}""";
+                }
+
+                return $"""
+                    <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                    <xsl:template match="/">
+                    {vars}
+                    <xsl:value-of select="$v{iterations}"/>
+                    </xsl:template>
+                    </xsl:stylesheet>
+                    """;
+            }
+        }
+
+        [Theory]
+        [InlineData(64, false)]   // at the default limit - should pass
+        [InlineData(65, true)]    // one over the default limit - should fail
+        [InlineData(1000, true)]  // way over - should fail
+        public void SignedXml_DeepXmlDocument_ComputeSignature(int depth, bool shouldThrow)
+        {
+            MemoryStream ms = CreateDeepXmlStream(depth);
+
+            XmlDocument dummyDoc = new XmlDocument();
+            dummyDoc.LoadXml("<Root />");
+            SignedXml signedXml = new SignedXml(dummyDoc);
+            using RSA rsa = RSA.Create();
+            signedXml.SigningKey = rsa;
+
+            // Reference to the Stream
+            Reference reference = new Reference(ms);
+            // We need a transform that processes the stream.
+            // XmlDsigC14NTransform handles Stream input.
+            reference.AddTransform(new XmlDsigC14NTransform());
+            signedXml.AddReference(reference);
+
+            if (shouldThrow)
+            {
+                CryptographicException ex = Assert.Throws<CryptographicException>(() => signedXml.ComputeSignature());
+                Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", ex.Message);
+            }
+            else
+            {
+                signedXml.ComputeSignature(); // Should not throw
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SignedXml_DeepXmlDocument_ComputeSignature_Depth65_PassesWithIncreasedLimit()
+        {
+            // A document of depth 65 exceeds the default limit of 64.
+            // Raising the limit to 100 should allow it to pass.
+            // Also verify the boundary is exact: depth 100 passes, depth 101 fails.
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetData("System.Security.Cryptography.Xml.DangerousMaxRecursionDepth", 100);
+                ComputeSignatureOnDeepStream(depth: 65);
+                ComputeSignatureOnDeepStream(depth: 100);
+                ComputeSignatureOnDeepStreamExpectFailure(depth: 101);
+            }).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(0)]      // 0 means no limit
+        [InlineData(100)]    // limit exactly equal to depth
+        [InlineData(10000)]  // large explicit limit
+        public void SignedXml_DeepXmlDocument_ComputeSignature_LargeDocument_PassesWithLargeOrUnlimitedDepth(int maxDepth)
+        {
+            // Setting the depth to 0 (unlimited) or a value above the document depth should
+            // allow documents with deep nesting to be signed successfully.
+            RemoteExecutor.Invoke(static (string maxDepthStr) =>
+            {
+                int maxDepth = int.Parse(maxDepthStr);
+                AppContext.SetData("System.Security.Cryptography.Xml.DangerousMaxRecursionDepth", maxDepth);
+                ComputeSignatureOnDeepStream(depth: 100);
+            }, maxDepth.ToString()).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SignedXml_DeepXmlDocument_ComputeSignature_NegativeDepthFallsBackToDefault()
+        {
+            // Negative values are rejected by GetInt32Config (allowNegative: false)
+            // and fall back to the default limit of 64.
+            // Depth 64 should pass, depth 65 should fail.
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetData("System.Security.Cryptography.Xml.DangerousMaxRecursionDepth", -1);
+                ComputeSignatureOnDeepStream(depth: 64);
+                ComputeSignatureOnDeepStreamExpectFailure(depth: 65);
+            }).Dispose();
+        }
+
+        private static void ComputeSignatureOnDeepStream(int depth)
+        {
+            MemoryStream ms = CreateDeepXmlStream(depth);
+            XmlDocument dummyDoc = new XmlDocument();
+            dummyDoc.LoadXml("<Root />");
+            SignedXml signedXml = new SignedXml(dummyDoc);
+            using RSA rsa = RSA.Create();
+            signedXml.SigningKey = rsa;
+
+            Reference reference = new Reference(ms);
+            reference.AddTransform(new XmlDsigC14NTransform());
+            signedXml.AddReference(reference);
+
+            signedXml.ComputeSignature(); // Should not throw
+        }
+
+        private static void ComputeSignatureOnDeepStreamExpectFailure(int depth)
+        {
+            MemoryStream ms = CreateDeepXmlStream(depth);
+            XmlDocument dummyDoc = new XmlDocument();
+            dummyDoc.LoadXml("<Root />");
+            SignedXml signedXml = new SignedXml(dummyDoc);
+            using RSA rsa = RSA.Create();
+            signedXml.SigningKey = rsa;
+
+            Reference reference = new Reference(ms);
+            reference.AddTransform(new XmlDsigC14NTransform());
+            signedXml.AddReference(reference);
+
+            CryptographicException ex = Assert.Throws<CryptographicException>(() => signedXml.ComputeSignature());
+            Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", ex.Message);
+        }
+
+
+        private static MemoryStream CreateDeepXmlStream(int depth)
+        {
+            MemoryStream ms = new();
+            using (XmlWriter xw = XmlWriter.Create(ms))
+            {
+                xw.WriteStartDocument();
+                xw.WriteStartElement("Root");
+                for (int i = 0; i < depth; i++)
+                {
+                    xw.WriteStartElement("a");
+                }
+                for (int i = 0; i < depth; i++)
+                {
+                    xw.WriteEndElement();
+                }
+                xw.WriteEndElement();
+                xw.WriteEndDocument();
+            }
+            ms.Position = 0;
+            return ms;
+        }
+
+        [Fact]
+        public void SignedXml_DeepXmlDocument_CheckSignature()
+        {
+            using RSA rsa = RSA.Create();
+
+            XmlDocument xmlDocument = new();
+            xmlDocument.LoadXml("<Root Id='target'><Data>Safe</Data></Root>");
+            SignedXml signer = new(xmlDocument)
+            {
+                SigningKey = rsa
+            };
+
+            Reference reference = new()
+            {
+                Uri = "#target"
+            };
+
+            reference.AddTransform(new XmlDsigC14NTransform());
+            signer.AddReference(reference);
+            signer.ComputeSignature();
+            XmlElement signatureElement = signer.GetXml();
+            XmlDocument deepXmlDoc = new();
+            deepXmlDoc.LoadXml(GenerateDeepXmlString(depth: 4500, "target"));
+            SignedXml verifier = new(deepXmlDoc);
+            verifier.LoadXml(signatureElement);
+
+            CryptographicException ex = Assert.Throws<CryptographicException>(() => verifier.CheckSignature(rsa));
+            Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", ex.Message);
+
+            static string GenerateDeepXmlString(int depth, string id)
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.Append($"<Root Id='{id}'>");
+                for (int i = 0; i < depth; i++)
+                {
+                    sb.Append("<N>");
+                }
+                sb.Append("Leaf");
+                for (int i = 0; i < depth; i++)
+                {
+                    sb.Append("</N>");
+                }
+                sb.Append("</Root>");
+                return sb.ToString();
+            }
+        }
+#endif
     }
 }

@@ -1064,9 +1064,15 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
         // We had a normal return, so copy out the return value
         if (returnValueSize > 0)
         {
-            if (pSuspendData->asyncMethodReturnType != NULL && pSuspendData->asyncMethodReturnType->ContainsGCPointers())
+            if (pSuspendData->asyncMethodReturnType != NULL && !pSuspendData->asyncMethodReturnType->IsValueType())
             {
-                // GC refs need to be written with write barriers
+                // asyncMethodReturnType is set only for CORINFO_TYPE_VALUECLASS/STRING/CLASS
+                // so we can make the assumption that the return is an object reference if not valuetype
+                SetObjectReference((OBJECTREF*)resultStorage, ObjectToOBJECTREF(*(Object**)returnValueLocation));
+            }
+            else if (pSuspendData->asyncMethodReturnType != NULL && pSuspendData->asyncMethodReturnType->ContainsGCPointers())
+            {
+                // ValueType containing gc refs, needs to be written with write barriers
                 memmoveGCRefs(resultStorage, returnValueLocation, returnValueSize);
             }
             else

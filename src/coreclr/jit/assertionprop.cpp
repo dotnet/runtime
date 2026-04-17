@@ -4205,10 +4205,10 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
     // Check if we have an assertion that exactly matches the relop.
     ValueNum relopVN = optConservativeNormalVN(tree);
+    ValueNum op1VN   = optConservativeNormalVN(op1);
+    ValueNum op2VN   = optConservativeNormalVN(op2);
     if (!BitVecOps::IsEmpty(apTraits, assertions))
     {
-        ValueNum op1VN   = optConservativeNormalVN(op1);
-        ValueNum op2VN   = optConservativeNormalVN(op2);
         ValueNum falseVN = vnStore->VNZeroForType(TYP_INT);
 
         BitVecOps::Iter iter(apTraits, assertions);
@@ -4262,6 +4262,25 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         Range relopRange = RangeCheck::GetRangeFromAssertions(this, relopVN, assertions);
 
         int relopResult;
+        if (!relopRange.IsSingleValueConstant(&relopResult))
+        {
+            // Retry by obtaining operand ranges individually. This accounts for cases where the
+            // relopVN's operands differ from the physical op1 and op2 due to optimization passes.
+            VNFuncApp relopFuncApp;
+            if (vnStore->IsVNRelop(relopVN, &relopFuncApp) &&
+                (((relopFuncApp.m_args[0] == op1VN) && (relopFuncApp.m_args[1] == op2VN)) ||
+                 ((relopFuncApp.m_args[0] == op2VN) && (relopFuncApp.m_args[1] == op1VN))))
+            {
+                // VNs match - we'll find nothing new by looking at individual operand ranges.
+            }
+            else
+            {
+                Range op1Range = RangeCheck::GetRangeFromAssertions(this, op1VN, assertions);
+                Range op2Range = RangeCheck::GetRangeFromAssertions(this, op2VN, assertions);
+                relopRange     = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Range, op2Range);
+            }
+        }
+
         if (relopRange.IsSingleValueConstant(&relopResult))
         {
             assert((relopResult == 0) || (relopResult == 1));
