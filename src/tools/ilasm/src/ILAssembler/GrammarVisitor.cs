@@ -133,6 +133,12 @@ namespace ILAssembler
 
         public (ImmutableArray<Diagnostic> Diagnostics, PEBuilder? Image) BuildImage()
         {
+            // Default module name to output filename if no .module directive was provided
+            if (_entityRegistry.Module.Name is null && _options.OutputFileName is not null)
+            {
+                _entityRegistry.Module.Name = _options.OutputFileName;
+            }
+
             // Return early if there are structural errors that prevent building valid metadata.
             // However, allow errors in method bodies (ILA0016-0019) to pass through so we can
             // emit the assembly with the errors reported.

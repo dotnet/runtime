@@ -134,6 +134,11 @@ namespace ILAssembler
         public bool Fold { get; set; }
 
         /// <summary>
+        /// Output file name (filename only, no directory). Used as default module name when no .module directive is present.
+        /// </summary>
+        public string? OutputFileName { get; set; }
+
+        /// <summary>
         /// Try to create output file despite errors (results may be invalid).
         /// </summary>
         public bool ErrorTolerant { get; set; }
