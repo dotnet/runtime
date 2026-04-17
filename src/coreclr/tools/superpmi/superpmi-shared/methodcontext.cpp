@@ -4608,11 +4608,6 @@ PatchpointInfo* MethodContext::repGetOSRInfo(unsigned* ilOffset)
 
     *ilOffset = value.ilOffset;
     PatchpointInfo* ppi = (PatchpointInfo*)GetOSRInfo->GetBuffer(value.index);
-    if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64)
-    {
-        // Set FP | LR since old collections do not have it and that makes things assert.
-        ppi->SetCalleeSaveRegisters(ppi->CalleeSaveRegisters() | (1UL << 29) | (1UL << 30));
-    }
     return ppi;
 }
 
