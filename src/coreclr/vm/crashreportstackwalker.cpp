@@ -14,6 +14,8 @@
 #ifdef HOST_ANDROID
 
 #include "debug/crashreport/inproccrashreporter.h"
+#include "threadsuspend.h"
+#include "gcenv.h"
 
 extern "C" void PROCEnableInProcCrashReport();
 
@@ -288,6 +290,54 @@ CrashReportGetException(
     return CrashReportGetExceptionForThread(pThread, exceptionTypeBuf, exceptionTypeBufSize, hresult);
 }
 
+// Suspend non-crashing managed threads via SuspendEE so their stacks
+// can be walked from runtime-known safe points. SuspendEE acquires the
+// thread store lock and waits for every other managed thread to reach a
+// safe point (and for any in-progress GC to complete), so skip it when
+// a known pre-condition would prevent forward progress:
+//
+//  * g_fFatalErrorOccurredOnGCThread: GC thread faulted mid-GC, so GC
+//    will never finish and SuspendEE's GC wait would hang.
+//  * GCHeapUtilities::IsGCInProgress(): a GC is already running; if it
+//    is wedged (common in runtime-internal crashes) SuspendEE hangs.
+//  * IsGCSpecialThread(): we are a GC thread ourselves; the GC wait
+//    would wait on us.
+//  * ThreadStore::HoldingThreadStore(pCrashThread): SuspendEE's
+//    LockThreadStore asserts the holder is unknown, so it would
+//    assert-fail in checked builds (undefined in release).
+//
+// The crash reporter is best-effort; on hang the Android watchdog
+// kills the process and we keep whatever crash report JSON was flushed
+// beforehand.
+static bool s_runtimeSuspendedForCrashReport = false;
+
+static
+void
+CrashReportSuspendThreads(Thread* pCrashThread)
+{
+    if (g_fFatalErrorOccurredOnGCThread
+        || GCHeapUtilities::IsGCInProgress()
+        || IsGCSpecialThread()
+        || ThreadStore::HoldingThreadStore(pCrashThread))
+    {
+        return;
+    }
+
+    ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
+    s_runtimeSuspendedForCrashReport = true;
+}
+
+static
+void
+CrashReportResumeThreads()
+{
+    if (s_runtimeSuspendedForCrashReport)
+    {
+        s_runtimeSuspendedForCrashReport = false;
+        ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+    }
+}
+
 static
 void
 CrashReportEnumerateThreads(
@@ -296,10 +346,9 @@ CrashReportEnumerateThreads(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
-    // This minimal lift intentionally reuses the existing ThreadStore traversal
-    // and StackWalkFrames as a best-effort source for managed thread state.
     Thread* pCrashThread = GetThreadAsyncSafe();
-    bool crashThreadHandled = false;
+
+    CrashReportSuspendThreads(pCrashThread);
 
     // Emit the crashing thread first so the report keeps the most important
     // thread even if later enumeration is incomplete.
@@ -315,42 +364,30 @@ CrashReportEnumerateThreads(
             threadCallback(crashOsId, 1, hasException ? exceptionType : "", hresult, ctx);
 
             CrashReportWalkThread(pCrashThread, frameCallback, ctx);
-            crashThreadHandled = true;
         }
     }
 
-    Thread* pThread = ThreadStore::GetThreadList(NULL);
-    while (pThread != NULL)
+    // Walk the remaining managed threads only when the runtime was
+    // successfully suspended; otherwise the walker is not guaranteed
+    // to be at a safe point for them.
+    if (s_runtimeSuspendedForCrashReport)
     {
-        if (crashThreadHandled && pThread == pCrashThread)
+        Thread* pThread = NULL;
+        while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
         {
-            pThread = ThreadStore::GetThreadList(pThread);
-            continue;
-        }
+            if (pThread == pCrashThread)
+                continue;
 
-        uint64_t osThreadId = static_cast<uint64_t>(pThread->GetOSThreadId());
-        if (osThreadId == 0)
-        {
-            pThread = ThreadStore::GetThreadList(pThread);
-            continue;
-        }
+            uint64_t osThreadId = static_cast<uint64_t>(pThread->GetOSThreadId());
+            if (osThreadId == 0 || osThreadId == crashingTid)
+                continue;
 
-        bool isCrashThread = !crashThreadHandled && osThreadId == crashingTid;
-        char exceptionType[256];
-        uint32_t hresult = 0;
-        int hasException = CrashReportGetExceptionForThread(pThread, exceptionType, sizeof(exceptionType), &hresult);
-
-        threadCallback(osThreadId, isCrashThread ? 1 : 0, hasException ? exceptionType : "", hresult, ctx);
-        if (isCrashThread)
-        {
+            threadCallback(osThreadId, 0, "", 0, ctx);
             CrashReportWalkThread(pThread, frameCallback, ctx);
-            crashThreadHandled = true;
         }
-        // Avoid walking live non-crashing threads here. Stack walking a running
-        // thread without suspending it is unreliable and can destabilize crash reporting.
-
-        pThread = ThreadStore::GetThreadList(pThread);
     }
+
+    CrashReportResumeThreads();
 }
 
 void
