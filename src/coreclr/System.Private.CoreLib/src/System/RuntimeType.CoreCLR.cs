@@ -3598,7 +3598,7 @@ namespace System
             if (!th.IsTypeDesc)
             {
                 MethodTable* pMT = th.AsMethodTable();
-                if (pMT->IsNullable)
+                if (pMT->IsNullable && !pMT->IsGenericTypeDefinition)
                 {
                     RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->InstantiationArg0());
                     GC.KeepAlive(this);

@@ -607,7 +607,7 @@ namespace System
         /// </summary>
         /// <returns>
         /// The type argument of the <see cref="Nullable{T}"/> type if the current type represents
-        /// a closed generic <see cref="Nullable{T}"/>; otherwise, <see langword="null"/>.
+        /// a <see cref="Nullable{T}"/> or its instantiation; otherwise, <see langword="null"/>.
         /// </returns>
         public virtual Type? GetNullableUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 

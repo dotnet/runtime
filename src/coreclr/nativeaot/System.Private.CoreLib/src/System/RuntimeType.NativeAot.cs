@@ -124,15 +124,15 @@ namespace System
 
         public override Type? GetNullableUnderlyingType()
         {
-            if (IsConstructedGenericType)
+            MethodTable* pEEType = _pUnderlyingEEType;
+            if (pEEType != null)
             {
-                MethodTable* pEEType = _pUnderlyingEEType;
-                if (pEEType != null && pEEType->NullableType != null)
+                if (!pEEType->IsNullable)
+                    return null;
+                if (!pEEType->IsGenericTypeDefinition)
                     return GetTypeFromMethodTable(pEEType->NullableType);
-                if (typeof(Nullable<>) == GetGenericTypeDefinition())
-                    return GetGenericArguments()[0];
             }
-            return null;
+            return GetRuntimeTypeInfo().GetNullableUnderlyingType();
         }
 
         public override bool IsEnumDefined(object value)

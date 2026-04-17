@@ -331,7 +331,7 @@ namespace System.Reflection.TypeLoading
 #if NET11_0_OR_GREATER
         public sealed override Type? GetNullableUnderlyingType()
         {
-            if (IsGenericType)
+            if (IsConstructedGenericType)
             {
                 RoType? nullableOfT = Loader.TryGetCoreType(CoreType.NullableT);
                 if (nullableOfT is not null && GetGenericTypeDefinition() == nullableOfT)
