@@ -249,7 +249,7 @@ namespace System
                     // report that OOM is the reason for the crash.
                     try
                     {
-                        Internal.Console.Error.Write("Process is terminating due to OutOfMemoryException.");
+                        Internal.Console.Error.Write("Process terminated. System.OutOfMemoryException.");
                         Internal.Console.Error.WriteLine();
                     }
                     catch { }
@@ -294,7 +294,6 @@ namespace System
                             // If ToString() fails (for example, due to OOM), fall back to printing just the type name.
                             try
                             {
-                                Internal.Console.Error.Write("Process is terminating due to ");
                                 Internal.Console.Error.Write(exception.GetType().FullName);
                                 Internal.Console.Error.Write(".");
                                 Internal.Console.Error.WriteLine();
