@@ -163,19 +163,17 @@ namespace Microsoft.Win32.SafeHandles
             ProcessWaitState.Holder holder = new ProcessWaitState.Holder(processId, isNewChild: false, usesTerminal: false);
             waitState = holder._state;
 
-            if (Interlocked.CompareExchange(ref _waitState, waitState, null) is null)
+            ProcessWaitState? existing = Interlocked.CompareExchange(ref _waitState, waitState, null);
+            if (existing is null)
             {
                 // We won the race — store the holder so its ref count is released in ReleaseHandle.
                 _lazyWaitStateHolder = holder;
-            }
-            else
-            {
-                // Another thread initialized first — release our holder.
-                holder.Dispose();
-                waitState = _waitState;
+                return waitState;
             }
 
-            return waitState;
+            // Another thread initialized first — release our holder and use theirs.
+            holder.Dispose();
+            return existing;
         }
 
         private static ProcessExitStatus CreateExitStatus(ProcessWaitState waitState, bool canceled)

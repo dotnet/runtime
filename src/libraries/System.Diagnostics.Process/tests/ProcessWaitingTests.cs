@@ -709,7 +709,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void ProcessSafeHandle_WaitForExitOrKillOnTimeout_ReturnsExitCode()
+        public void ProcessSafeHandle_WaitForExitOrKillOnTimeout_KillsOnTimeout()
         {
             Process process = CreateProcessLong();
             process.Start();
@@ -720,7 +720,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task ProcessSafeHandle_WaitForExitOrKillOnCancellationAsync_ReturnsExitCode()
+        public async Task ProcessSafeHandle_WaitForExitOrKillOnCancellationAsync_KillsOnCancellation()
         {
             Process process = CreateProcessLong();
             process.Start();
