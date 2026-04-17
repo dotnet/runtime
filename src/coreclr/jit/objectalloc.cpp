@@ -3552,7 +3552,7 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
         //
         // See https://github.com/dotnet/runtime/issues/127075.
         //
-        RecordAppearance(lclNum, block, stmt, use);
+        // RecordAppearance(lclNum, block, stmt, use);
     }
 }
 
