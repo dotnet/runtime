@@ -66,7 +66,7 @@ namespace System.Text.RegularExpressions
             _balancing = false;
         }
 
-        /// <summary>Gets the empty group. All failed matches return this empty match.</summary>
+        /// <summary>Gets the empty match. All failed matches return this empty match.</summary>
         /// <value>An empty match.</value>
         /// <remarks>
         /// This property should not be used to determine if a match is successful. Instead, use the
