@@ -297,6 +297,9 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_SIMD64:
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
+#if defined(TARGET_XARCH)
+        case TYP_HALF:
+#endif
 #ifdef TARGET_64BIT
         case TYP_LONG:
         case TYP_DOUBLE:
@@ -407,6 +410,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 #endif // !TARGET_64BIT
 
 #ifdef TARGET_64BIT
+        case TYP_HALF:
         case TYP_FLOAT:
         case TYP_DOUBLE:
             // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
@@ -416,7 +420,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
             break;
 
 #else // !TARGET_64BIT
-
+        case TYP_HALF:
         case TYP_FLOAT:
         case TYP_DOUBLE:
             if (isFloatRegType(type))
