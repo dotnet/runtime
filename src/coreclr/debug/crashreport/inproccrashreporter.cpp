@@ -31,9 +31,7 @@ static volatile InProcCrashReportIsManagedThreadCallback g_isManagedThreadCallba
 static volatile InProcCrashReportWalkStackCallback g_walkStackCallback = NULL;
 static volatile InProcCrashReportGetExceptionCallback g_getExceptionCallback = NULL;
 static volatile InProcCrashReportEnumerateThreadsCallback g_enumerateThreadsCallback = NULL;
-static volatile int g_writeReportToFile = 0;
 static char g_reportPath[256];
-static char g_defaultReportDirectory[256];
 
 struct MultiThreadJsonContext
 {
@@ -172,8 +170,7 @@ int
 BuildReportPath(
     char* buffer,
     int bufferSize,
-    const char* dumpPath,
-    const char* defaultDirectory);
+    const char* dumpPath);
 
 static
 const char*
@@ -195,7 +192,7 @@ InProcCrashReportGenerate(
     char reportPath[256];
     reportPath[0] = '\0';
 
-    if (g_writeReportToFile == 0 || !BuildReportPath(reportPath, sizeof(reportPath), g_reportPath, g_defaultReportDirectory))
+    if (g_reportPath[0] == '\0' || !BuildReportPath(reportPath, sizeof(reportPath), g_reportPath))
     {
         return;
     }
@@ -362,15 +359,10 @@ InProcCrashReportGenerate(
 
 void
 InProcCrashReportInitialize(
-    int writeToFile,
-    const char* dumpPath,
-    const char* defaultDirectory)
+    const char* dumpPath)
 {
     CopyString(g_reportPath, sizeof(g_reportPath), dumpPath);
-    CopyString(g_defaultReportDirectory, sizeof(g_defaultReportDirectory), defaultDirectory);
-
     __sync_synchronize();
-    g_writeReportToFile = writeToFile;
 }
 
 void
@@ -519,36 +511,21 @@ int
 BuildReportPath(
     char* buffer,
     int bufferSize,
-    const char* dumpPath,
-    const char* defaultDirectory)
+    const char* dumpPath)
 {
-    if (buffer == NULL || bufferSize <= 0)
+    if (buffer == NULL || bufferSize <= 0 || dumpPath == NULL || dumpPath[0] == '\0')
     {
         return 0;
     }
 
-    if (dumpPath != NULL && dumpPath[0] != '\0')
+    char expanded[256];
+    int expandedLen = ExpandDumpTemplate(expanded, sizeof(expanded), dumpPath);
+    if (expandedLen <= 0)
     {
-        // Expand template patterns in the configured dump path, then append
-        // the crashreport.json suffix.
-        char expanded[256];
-        int expandedLen = ExpandDumpTemplate(expanded, sizeof(expanded), dumpPath);
-        if (expandedLen <= 0)
-        {
-            return 0;
-        }
-
-        int written = snprintf(buffer, static_cast<size_t>(bufferSize), "%s.crashreport.json", expanded);
-        return written > 0 && written < bufferSize;
+        return 0;
     }
 
-    const char* directory = (defaultDirectory != NULL && defaultDirectory[0] != '\0') ? defaultDirectory : "/tmp";
-    size_t directoryLength = strnlen(directory, static_cast<size_t>(bufferSize));
-    const char* separator = (directoryLength > 0 && directory[directoryLength - 1] == '/') ? "" : "/";
-    int written = snprintf(buffer, static_cast<size_t>(bufferSize), "%s%sdotnet_crash_%u.crashreport.json",
-        directory,
-        separator,
-        static_cast<unsigned>(getpid()));
+    int written = snprintf(buffer, static_cast<size_t>(bufferSize), "%s.crashreport.json", expanded);
     return written > 0 && written < bufferSize;
 }
 

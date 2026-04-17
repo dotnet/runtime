@@ -11,7 +11,7 @@
 #include <signal.h>
 #include <stdint.h>
 
-void InProcCrashReportInitialize(int writeToFile, const char* dumpPath, const char* defaultDirectory);
+void InProcCrashReportInitialize(const char* dumpPath);
 
 // Generate an in-proc crash report. Called from PROCCreateCrashDumpIfEnabled.
 // All arguments come from the signal handler and are signal-safe to read.

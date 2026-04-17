@@ -411,18 +411,32 @@ CrashReportRegisterStackWalker()
 
     CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
     const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
-
-    const char* defaultReportDirectory = getenv("HOME");
-    if (defaultReportDirectory == nullptr || defaultReportDirectory[0] == '\0')
+    if (dumpName == nullptr || dumpName[0] == '\0')
     {
-        defaultReportDirectory = getenv("TMPDIR");
-    }
-    if (defaultReportDirectory == nullptr || defaultReportDirectory[0] == '\0')
-    {
-        defaultReportDirectory = "/data/local/tmp";
+        return;
     }
 
-    InProcCrashReportInitialize(1, dumpName, defaultReportDirectory);
+    // If DbgMiniDumpName is just a filename (no directory component), write
+    // the crash report under TMPDIR / /tmp so it lands somewhere writable.
+    char dumpPathBuf[256];
+    if (strchr(dumpName, '/') == nullptr)
+    {
+        const char* tmpDir = getenv("TMPDIR");
+        if (tmpDir == nullptr || tmpDir[0] == '\0')
+        {
+            tmpDir = "/tmp";
+        }
+        size_t tmpLen = strlen(tmpDir);
+        const char* separator = (tmpLen > 0 && tmpDir[tmpLen - 1] == '/') ? "" : "/";
+        int written = snprintf(dumpPathBuf, sizeof(dumpPathBuf), "%s%s%s", tmpDir, separator, dumpName);
+        if (written <= 0 || static_cast<size_t>(written) >= sizeof(dumpPathBuf))
+        {
+            return;
+        }
+        dumpName = dumpPathBuf;
+    }
+
+    InProcCrashReportInitialize(dumpName);
 
     // Set the PAL flag so PROCCreateCrashDumpIfEnabled knows to call the reporter.
     PROCEnableInProcCrashReport();
