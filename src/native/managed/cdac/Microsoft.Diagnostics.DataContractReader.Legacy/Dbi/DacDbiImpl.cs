@@ -1211,7 +1211,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
             ModuleLookupTables lookupTables = loader.GetLookupTables(module);
-            TargetPointer methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out _);
+            TargetPointer methodDesc = TargetPointer.Null;
+            try
+            {
+                methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out _);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // Invalid method token
+            }
             if (methodDesc != TargetPointer.Null)
             {
                 ICodeVersions codeVersions = _target.Contracts.CodeVersions;
