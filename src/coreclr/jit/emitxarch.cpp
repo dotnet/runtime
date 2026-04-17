@@ -129,8 +129,7 @@ bool emitter::Is3OpRmwInstruction(instruction ins)
             return ((ins >= FIRST_FMA_INSTRUCTION) && (ins <= LAST_FMA_INSTRUCTION)) ||
                    (IsAVXVNNIFamilyInstruction(ins)) ||
                    ((ins >= FIRST_AVX512BMM_INSTRUCTION) && (ins <= LAST_AVX512BMM_INSTRUCTION)) ||
-                   ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION)) ||
-                   ((ins >= FIRST_AVX10V1_FMA_INSTR) && (ins <= LAST_AVX10V1_FMA_INSTR));
+                   ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION));
         }
     }
 }
@@ -3077,9 +3076,9 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         }
         // Now the byte in the 22 position should be either of the below:
         //                          1. An escape byte 0F (For isa before AVX10.2)
-        //                          2. A map number from 0 to 7 (For AVX10.1 and above)
+        //                          2. A map number from 0 to 7 (For AVX10.2 and above)
         leadingBytes = check;
-        assert((leadingBytes == 0x0F) || ((m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) ||
+        assert((leadingBytes == 0x0F) || ((m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
                                            (m_compiler->compIsaSupportedDebugOnly(InstructionSet_APX))) &&
                                           (leadingBytes >= 0x00) && (leadingBytes <= 0x07)));
 
@@ -3162,15 +3161,14 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
         case 0x05:
         {
-            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
             evexPrefix |= (0x05 << 16);
             break;
         }
 
         case 0x06:
         {
-            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM) ||
-                   m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM));
             evexPrefix |= (0x6 << 16);
             break;
         }
@@ -5398,9 +5396,10 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 
         assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE)                               // Only for x64
                || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) || (attrSize == EA_64BYTE) // only for x64
-               || (ins == INS_movzx) || (ins == INS_movsx) || (ins == INS_vmovsh) || (ins == INS_cmpxchg) ||
+               || (ins == INS_movzx) || (ins == INS_movsx) ||
+               (ins == INS_cmpxchg)
                // kmov instructions reach this path with EA_8BYTE size, even on x86
-               IsKMOVInstruction(ins)
+               || IsKMOVInstruction(ins)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
                || isPrefetch(ins));
 
@@ -7433,7 +7432,6 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_kmovw_gpr:
         case INS_kmovd_gpr:
         case INS_kmovq_gpr:
-        case INS_vmovsh:
         {
             return true;
         }
@@ -7628,13 +7626,6 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         case INS_kmovq_gpr:
         {
             // Zero-extends the source
-            hasSideEffect = true;
-            break;
-        }
-
-        case INS_vmovsh:
-        {
-            // Clears the upper bits
             hasSideEffect = true;
             break;
         }
@@ -7909,12 +7900,6 @@ bool emitter::emitIns_Mov(
         case INS_kmovq_gpr:
         {
             assert(isGeneralRegister(dstReg) || isGeneralRegister(srcReg));
-            break;
-        }
-
-        case INS_vmovsh:
-        {
-            assert(isFloatReg(dstReg) && isFloatReg(srcReg));
             break;
         }
 
@@ -11820,10 +11805,6 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
 
         case EA_2BYTE:
         {
-            if (IsXMMReg(reg))
-            {
-                return emitXMMregName(reg);
-            }
 #if defined(TARGET_AMD64)
             if (reg > REG_RDI)
             {
@@ -14549,7 +14530,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Is this a 'big' opcode?
     else if (code & 0xFF000000)
     {
-        if (size == EA_2BYTE && !IsSimdInstruction(ins))
+        if (size == EA_2BYTE)
         {
             assert(ins == INS_movbe);
 
@@ -15417,7 +15398,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Is this a 'big' opcode?
     else if (code & 0xFF000000)
     {
-        if (size == EA_2BYTE && !IsSimdInstruction(ins))
+        if (size == EA_2BYTE)
         {
             assert(ins == INS_movbe);
 
@@ -20973,7 +20954,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movss:
         case INS_movsd_simd:
         case INS_movddup:
-        case INS_vmovsh:
         {
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
@@ -21410,85 +21390,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vbitrev:
         {
             result.insLatency    = PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
-        case INS_vaddsh:
-        case INS_vsubsh:
-        case INS_vmulsh:
-        case INS_vfmadd213sh:
-        case INS_vmaxsh:
-        case INS_vminsh:
-        case INS_vcvtsh2ss:
-        {
-            result.insLatency    = PERFSCORE_LATENCY_4C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            break;
-        }
-
-        case INS_vdivsh:
-        {
-            result.insLatency    = PERFSCORE_LATENCY_14C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
-            break;
-        }
-
-        case INS_vsqrtsh:
-        {
-            result.insLatency    = PERFSCORE_LATENCY_14C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_4P5C;
-            break;
-        }
-
-        case INS_vrsqrtsh:
-        case INS_vcomish:
-        case INS_vucomish:
-        case INS_vrcpsh:
-        {
-            result.insLatency    = PERFSCORE_LATENCY_4C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
-        case INS_vrndscalesh:
-        {
-            result.insLatency    = PERFSCORE_LATENCY_8C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
-        case INS_vcvtss2sh:
-        {
-            result.insLatency    = PERFSCORE_LATENCY_6C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1P5X;
-            break;
-        }
-
-        case INS_vcvtsd2sh:
-        {
-            result.insLatency    = PERFSCORE_LATENCY_7C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
-        case INS_vcvtsh2sd:
-        {
-            result.insLatency    = PERFSCORE_LATENCY_10C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
-        case INS_vcvtsi2sh32:
-        case INS_vcvtsi2sh64:
-        case INS_vcvtsh2si32:
-        case INS_vcvtsh2si64:
-        case INS_vcvtusi2sh32:
-        case INS_vcvtusi2sh64:
-        case INS_vcvtsh2usi32:
-        case INS_vcvtsh2usi64:
-        {
-            result.insLatency    = PERFSCORE_LATENCY_7C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
         }
