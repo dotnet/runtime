@@ -47,6 +47,19 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
         return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
     }
 
+#if DEBUG
+    private static void ValidateBlobsEqual(byte* cdacBlob, uint cdacLen, byte* dacBlob, uint dacLen, string name)
+    {
+        Debug.Assert(cdacLen == dacLen, $"{name} length mismatch: cDAC={cdacLen}, DAC={dacLen}");
+        if (cdacLen == dacLen && cdacLen > 0 && cdacBlob is not null && dacBlob is not null)
+        {
+            ReadOnlySpan<byte> cdacSpan = new(cdacBlob, (int)cdacLen);
+            ReadOnlySpan<byte> dacSpan = new(dacBlob, (int)dacLen);
+            Debug.Assert(cdacSpan.SequenceEqual(dacSpan), $"{name} content mismatch (length={cdacLen})");
+        }
+    }
+#endif
+
     private Dictionary<int, uint> BuildInterfaceImplLookup()
     {
         Dictionary<int, uint> lookup = new();
@@ -383,8 +396,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 #if DEBUG
         if (_legacyImport is not null)
         {
-            uint classLocal = 0, attrLocal = 0, rvaLocal = 0, implLocal = 0, pchLocal = 0;
-            int hrLegacy = _legacyImport.GetMethodProps(mb, &classLocal, null, 0, &pchLocal, &attrLocal, null, null, &rvaLocal, &implLocal);
+            uint classLocal = 0, attrLocal = 0, rvaLocal = 0, implLocal = 0, pchLocal = 0, cbSigLocal = 0;
+            byte* sigLocal = null;
+            int hrLegacy = _legacyImport.GetMethodProps(mb, &classLocal, null, 0, &pchLocal, &attrLocal, &sigLocal, &cbSigLocal, &rvaLocal, &implLocal);
             Debug.ValidateHResult(hr, hrLegacy);
             if (hr >= 0 && hrLegacy >= 0)
             {
@@ -392,6 +406,16 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                     Debug.Assert(*pClass == classLocal, $"Class mismatch: cDAC=0x{*pClass:X}, DAC=0x{classLocal:X}");
                 if (pdwAttr is not null)
                     Debug.Assert(*pdwAttr == attrLocal, $"Attr mismatch: cDAC=0x{*pdwAttr:X}, DAC=0x{attrLocal:X}");
+                if (pchMethod is not null)
+                    Debug.Assert(*pchMethod == pchLocal, $"Name length mismatch: cDAC={*pchMethod}, DAC={pchLocal}");
+                if (pulCodeRVA is not null)
+                    Debug.Assert(*pulCodeRVA == rvaLocal, $"RVA mismatch: cDAC=0x{*pulCodeRVA:X}, DAC=0x{rvaLocal:X}");
+                if (pdwImplFlags is not null)
+                    Debug.Assert(*pdwImplFlags == implLocal, $"ImplFlags mismatch: cDAC=0x{*pdwImplFlags:X}, DAC=0x{implLocal:X}");
+                if (ppvSigBlob is not null)
+                    ValidateBlobsEqual(*ppvSigBlob, pcbSigBlob is not null ? *pcbSigBlob : cbSigLocal, sigLocal, cbSigLocal, "MethodSig");
+                else if (pcbSigBlob is not null)
+                    Debug.Assert(*pcbSigBlob == cbSigLocal, $"SigBlob length mismatch: cDAC={*pcbSigBlob}, DAC={cbSigLocal}");
             }
         }
 #endif
@@ -463,8 +487,10 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 #if DEBUG
         if (_legacyImport is not null)
         {
-            uint classLocal = 0, attrLocal = 0;
-            int hrLegacy = _legacyImport.GetFieldProps(mb, &classLocal, null, 0, null, &attrLocal, null, null, null, null, null);
+            uint classLocal = 0, attrLocal = 0, pchLocal = 0, cbSigLocal = 0, cpTypeLocal = 0, cchValueLocal = 0;
+            byte* sigLocal = null;
+            void* valueLocal = null;
+            int hrLegacy = _legacyImport.GetFieldProps(mb, &classLocal, null, 0, &pchLocal, &attrLocal, &sigLocal, &cbSigLocal, &cpTypeLocal, &valueLocal, &cchValueLocal);
             Debug.ValidateHResult(hr, hrLegacy);
             if (hr >= 0 && hrLegacy >= 0)
             {
@@ -472,6 +498,18 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                     Debug.Assert(*pClass == classLocal, $"Class mismatch: cDAC=0x{*pClass:X}, DAC=0x{classLocal:X}");
                 if (pdwAttr is not null)
                     Debug.Assert(*pdwAttr == attrLocal, $"Attr mismatch: cDAC=0x{*pdwAttr:X}, DAC=0x{attrLocal:X}");
+                if (pchField is not null)
+                    Debug.Assert(*pchField == pchLocal, $"Name length mismatch: cDAC={*pchField}, DAC={pchLocal}");
+                if (pdwCPlusTypeFlag is not null)
+                    Debug.Assert(*pdwCPlusTypeFlag == cpTypeLocal, $"CPlusTypeFlag mismatch: cDAC=0x{*pdwCPlusTypeFlag:X}, DAC=0x{cpTypeLocal:X}");
+                if (ppvSigBlob is not null)
+                    ValidateBlobsEqual(*ppvSigBlob, pcbSigBlob is not null ? *pcbSigBlob : cbSigLocal, sigLocal, cbSigLocal, "FieldSig");
+                else if (pcbSigBlob is not null)
+                    Debug.Assert(*pcbSigBlob == cbSigLocal, $"SigBlob length mismatch: cDAC={*pcbSigBlob}, DAC={cbSigLocal}");
+                if (ppValue is not null)
+                    ValidateBlobsEqual((byte*)*ppValue, pcchValue is not null ? *pcchValue : cchValueLocal, (byte*)valueLocal, cchValueLocal, "FieldConstant");
+                else if (pcchValue is not null)
+                    Debug.Assert(*pcchValue == cchValueLocal, $"Constant length mismatch: cDAC={*pcchValue}, DAC={cchValueLocal}");
             }
         }
 #endif
@@ -689,6 +727,13 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             uint rvaLocal = 0, implLocal = 0;
             int hrLegacy = _legacyImport.GetRVA(tk, &rvaLocal, &implLocal);
             Debug.ValidateHResult(hr, hrLegacy);
+            if (hr >= 0 && hrLegacy >= 0)
+            {
+                if (pulCodeRVA is not null)
+                    Debug.Assert(*pulCodeRVA == rvaLocal, $"RVA mismatch: cDAC=0x{*pulCodeRVA:X}, DAC=0x{rvaLocal:X}");
+                if (pdwImplFlags is not null)
+                    Debug.Assert(*pdwImplFlags == implLocal, $"ImplFlags mismatch: cDAC=0x{*pdwImplFlags:X}, DAC=0x{implLocal:X}");
+            }
         }
 #endif
         return hr;
@@ -722,10 +767,16 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
         if (_legacyImport is not null)
         {
             uint cbLocal = 0;
-            int hrLegacy = _legacyImport.GetSigFromToken(mdSig, null, &cbLocal);
+            byte* sigLocal = null;
+            int hrLegacy = _legacyImport.GetSigFromToken(mdSig, &sigLocal, &cbLocal);
             Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0 && pcbSig is not null)
-                Debug.Assert(*pcbSig == cbLocal, $"Sig length mismatch: cDAC={*pcbSig}, DAC={cbLocal}");
+            if (hr >= 0 && hrLegacy >= 0)
+            {
+                if (ppvSig is not null)
+                    ValidateBlobsEqual(*ppvSig, pcbSig is not null ? *pcbSig : cbLocal, sigLocal, cbLocal, "StandaloneSig");
+                else if (pcbSig is not null)
+                    Debug.Assert(*pcbSig == cbLocal, $"Sig length mismatch: cDAC={*pcbSig}, DAC={cbLocal}");
+            }
         }
 #endif
         return hr;
@@ -776,8 +827,16 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
         if (_legacyImport is not null)
         {
             uint cbLocal = 0;
-            int hrLegacy = _legacyImport.GetCustomAttributeByName(tkObj, szName, null, &cbLocal);
+            void* dataLocal = null;
+            int hrLegacy = _legacyImport.GetCustomAttributeByName(tkObj, szName, &dataLocal, &cbLocal);
             Debug.ValidateHResult(hr, hrLegacy);
+            if (hr >= 0 && hrLegacy >= 0)
+            {
+                if (ppData is not null)
+                    ValidateBlobsEqual((byte*)*ppData, pcbData is not null ? *pcbData : cbLocal, (byte*)dataLocal, cbLocal, "CustomAttribute");
+                else if (pcbData is not null)
+                    Debug.Assert(*pcbData == cbLocal, $"CustomAttribute length mismatch: cDAC={*pcbData}, DAC={cbLocal}");
+            }
         }
 #endif
         return hr;
@@ -970,11 +1029,21 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 #if DEBUG
         if (_legacyImport is not null)
         {
-            uint tkLocal = 0;
-            int hrLegacy = _legacyImport.GetMemberRefProps(mr, &tkLocal, null, 0, null, null, null);
+            uint tkLocal = 0, pchLocal = 0, cbSigLocal = 0;
+            byte* sigLocal = null;
+            int hrLegacy = _legacyImport.GetMemberRefProps(mr, &tkLocal, null, 0, &pchLocal, &sigLocal, &cbSigLocal);
             Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0 && ptk is not null)
-                Debug.Assert(*ptk == tkLocal, $"Parent mismatch: cDAC=0x{*ptk:X}, DAC=0x{tkLocal:X}");
+            if (hr >= 0 && hrLegacy >= 0)
+            {
+                if (ptk is not null)
+                    Debug.Assert(*ptk == tkLocal, $"Parent mismatch: cDAC=0x{*ptk:X}, DAC=0x{tkLocal:X}");
+                if (pchMember is not null)
+                    Debug.Assert(*pchMember == pchLocal, $"Name length mismatch: cDAC={*pchMember}, DAC={pchLocal}");
+                if (ppvSigBlob is not null)
+                    ValidateBlobsEqual(*ppvSigBlob, pbSig is not null ? *pbSig : cbSigLocal, sigLocal, cbSigLocal, "MemberRefSig");
+                else if (pbSig is not null)
+                    Debug.Assert(*pbSig == cbSigLocal, $"SigBlob length mismatch: cDAC={*pbSig}, DAC={cbSigLocal}");
+            }
         }
 #endif
         return hr;
@@ -1120,10 +1189,16 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
         if (_legacyImport is not null)
         {
             uint cbLocal = 0;
-            int hrLegacy = _legacyImport.GetTypeSpecFromToken(typespec, null, &cbLocal);
+            byte* sigLocal = null;
+            int hrLegacy = _legacyImport.GetTypeSpecFromToken(typespec, &sigLocal, &cbLocal);
             Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0 && pcbSig is not null)
-                Debug.Assert(*pcbSig == cbLocal, $"Sig length mismatch: cDAC={*pcbSig}, DAC={cbLocal}");
+            if (hr >= 0 && hrLegacy >= 0)
+            {
+                if (ppvSig is not null)
+                    ValidateBlobsEqual(*ppvSig, pcbSig is not null ? *pcbSig : cbLocal, sigLocal, cbLocal, "TypeSpec");
+                else if (pcbSig is not null)
+                    Debug.Assert(*pcbSig == cbLocal, $"Sig length mismatch: cDAC={*pcbSig}, DAC={cbLocal}");
+            }
         }
 #endif
         return hr;
@@ -1440,9 +1515,10 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 #if DEBUG
         if (_legacyAssemblyImport is not null)
         {
-            uint pchLocal = 0, hashAlgLocal = 0, flagsLocal = 0;
+            uint pchLocal = 0, hashAlgLocal = 0, flagsLocal = 0, cbPublicKeyLocal = 0;
+            byte* publicKeyLocal = null;
             ASSEMBLYMETADATA metaLocal = default;
-            int hrLegacy = _legacyAssemblyImport.GetAssemblyProps(mda, null, null, &hashAlgLocal, null, 0, &pchLocal, &metaLocal, &flagsLocal);
+            int hrLegacy = _legacyAssemblyImport.GetAssemblyProps(mda, &publicKeyLocal, &cbPublicKeyLocal, &hashAlgLocal, null, 0, &pchLocal, &metaLocal, &flagsLocal);
             Debug.ValidateHResult(hr, hrLegacy);
             if (hr >= 0 && hrLegacy >= 0)
             {
@@ -1452,6 +1528,10 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                     Debug.Assert(*pulHashAlgId == hashAlgLocal, $"HashAlgId mismatch: cDAC=0x{*pulHashAlgId:X}, DAC=0x{hashAlgLocal:X}");
                 if (pdwAssemblyFlags is not null)
                     Debug.Assert(*pdwAssemblyFlags == flagsLocal, $"Flags mismatch: cDAC=0x{*pdwAssemblyFlags:X}, DAC=0x{flagsLocal:X}");
+                if (ppbPublicKey is not null)
+                    ValidateBlobsEqual(*ppbPublicKey, pcbPublicKey is not null ? *pcbPublicKey : cbPublicKeyLocal, publicKeyLocal, cbPublicKeyLocal, "AssemblyPublicKey");
+                else if (pcbPublicKey is not null)
+                    Debug.Assert(*pcbPublicKey == cbPublicKeyLocal, $"PublicKey length mismatch: cDAC={*pcbPublicKey}, DAC={cbPublicKeyLocal}");
                 if (pMetaData is not null)
                 {
                     Debug.Assert(pMetaData->usMajorVersion == metaLocal.usMajorVersion, $"MajorVersion mismatch: cDAC={pMetaData->usMajorVersion}, DAC={metaLocal.usMajorVersion}");
@@ -1554,9 +1634,10 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 #if DEBUG
         if (_legacyAssemblyImport is not null)
         {
-            uint pchLocal = 0, flagsLocal = 0;
+            uint pchLocal = 0, flagsLocal = 0, cbPublicKeyLocal = 0, cbHashLocal = 0;
+            byte* publicKeyLocal = null, hashLocal = null;
             ASSEMBLYMETADATA metaLocal = default;
-            int hrLegacy = _legacyAssemblyImport.GetAssemblyRefProps(mdar, null, null, null, 0, &pchLocal, &metaLocal, null, null, &flagsLocal);
+            int hrLegacy = _legacyAssemblyImport.GetAssemblyRefProps(mdar, &publicKeyLocal, &cbPublicKeyLocal, null, 0, &pchLocal, &metaLocal, &hashLocal, &cbHashLocal, &flagsLocal);
             Debug.ValidateHResult(hr, hrLegacy);
             if (hr >= 0 && hrLegacy >= 0)
             {
@@ -1564,6 +1645,14 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                     Debug.Assert(*pchName == pchLocal, $"Name length mismatch: cDAC={*pchName}, DAC={pchLocal}");
                 if (pdwAssemblyRefFlags is not null)
                     Debug.Assert(*pdwAssemblyRefFlags == flagsLocal, $"Flags mismatch: cDAC=0x{*pdwAssemblyRefFlags:X}, DAC=0x{flagsLocal:X}");
+                if (ppbPublicKeyOrToken is not null)
+                    ValidateBlobsEqual(*ppbPublicKeyOrToken, pcbPublicKeyOrToken is not null ? *pcbPublicKeyOrToken : cbPublicKeyLocal, publicKeyLocal, cbPublicKeyLocal, "AssemblyRefPublicKey");
+                else if (pcbPublicKeyOrToken is not null)
+                    Debug.Assert(*pcbPublicKeyOrToken == cbPublicKeyLocal, $"PublicKey length mismatch: cDAC={*pcbPublicKeyOrToken}, DAC={cbPublicKeyLocal}");
+                if (ppbHashValue is not null)
+                    ValidateBlobsEqual(*ppbHashValue, pcbHashValue is not null ? *pcbHashValue : cbHashLocal, hashLocal, cbHashLocal, "AssemblyRefHash");
+                else if (pcbHashValue is not null)
+                    Debug.Assert(*pcbHashValue == cbHashLocal, $"Hash length mismatch: cDAC={*pcbHashValue}, DAC={cbHashLocal}");
                 if (pMetaData is not null)
                 {
                     Debug.Assert(pMetaData->usMajorVersion == metaLocal.usMajorVersion, $"MajorVersion mismatch: cDAC={pMetaData->usMajorVersion}, DAC={metaLocal.usMajorVersion}");
