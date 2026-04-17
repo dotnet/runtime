@@ -34,11 +34,4 @@ internal static class MethodDescFlags_1
     {
         TemporaryEntryPointAssigned = 0x04,
     }
-
-    [Flags]
-    internal enum AsyncMethodFlags : uint
-    {
-        None = 0,
-        Thunk = 16,
-    }
 }

@@ -542,7 +542,7 @@ public class MethodDescTests
                 md.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
                 asyncThunkMethod = new TargetPointer(md.Address);
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
-                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)MethodDescFlags_1.AsyncMethodFlags.Thunk);
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags.Thunk);
             }
 
             // Async non-thunk method (not diagnostics hidden, has async data but not Thunk flag)
@@ -559,7 +559,7 @@ public class MethodDescTests
                 md.Slot = 1;
                 asyncNonThunkMethod = new TargetPointer(md.Address);
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
-                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)MethodDescFlags_1.AsyncMethodFlags.None);
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags.None);
             }
 
             // Async thunk method with NativeCodeSlot (diagnostics hidden, verifies offset calculation with preceding slots)
@@ -576,61 +576,65 @@ public class MethodDescTests
                 md.Slot = 2;
                 asyncThunkWithNativeCodeSlotMethod = new TargetPointer(md.Address);
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize + (int)methodDescBuilder.NativeCodeSlotSize;
-                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)MethodDescFlags_1.AsyncMethodFlags.Thunk);
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags.Thunk);
             }
         });
 
-        // Normal IL method: not diagnostics hidden, not LCG
+        // Normal IL method: not hidden by any primitive
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(normalMethod);
-            Assert.False(rts.IsDiagnosticsHidden(handle));
+            Assert.False(rts.IsILStub(handle));
+            Assert.False(rts.IsAsyncThunkMethod(handle));
+            Assert.False(rts.IsWrapperStub(handle));
             Assert.False(rts.IsDynamicMethod(handle));
         }
 
-        // IL stub: diagnostics hidden
+        // IL stub: hidden via IsILStub
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(ilStubMethod);
-            Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.True(rts.IsILStub(handle));
             Assert.False(rts.IsDynamicMethod(handle));
         }
 
-        // LCG method: not diagnostics hidden, is LCG
+        // LCG method: not hidden, is LCG
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(lcgMethod);
-            Assert.False(rts.IsDiagnosticsHidden(handle));
+            Assert.False(rts.IsILStub(handle));
+            Assert.False(rts.IsAsyncThunkMethod(handle));
+            Assert.False(rts.IsWrapperStub(handle));
             Assert.True(rts.IsDynamicMethod(handle));
         }
 
-        // Unboxing stub: diagnostics hidden (wrapper stub)
+        // Unboxing stub: hidden via IsWrapperStub
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(unboxingStubMethod);
-            Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.True(rts.IsWrapperStub(handle));
             Assert.False(rts.IsDynamicMethod(handle));
         }
 
-        // Instantiating stub: diagnostics hidden (wrapper stub)
+        // Instantiating stub: hidden via IsWrapperStub
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(instantiatingStubMethod);
-            Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.True(rts.IsWrapperStub(handle));
             Assert.False(rts.IsDynamicMethod(handle));
         }
 
-        // Async thunk: diagnostics hidden
+        // Async thunk: hidden via IsAsyncThunkMethod
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncThunkMethod);
-            Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.True(rts.IsAsyncThunkMethod(handle));
         }
 
-        // Async non-thunk: not diagnostics hidden
+        // Async non-thunk: not hidden
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncNonThunkMethod);
-            Assert.False(rts.IsDiagnosticsHidden(handle));
+            Assert.False(rts.IsAsyncThunkMethod(handle));
         }
 
-        // Async thunk with NativeCodeSlot: diagnostics hidden (verifies offset calculation)
+        // Async thunk with NativeCodeSlot: hidden via IsAsyncThunkMethod (verifies offset calculation)
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncThunkWithNativeCodeSlotMethod);
-            Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.True(rts.IsAsyncThunkMethod(handle));
         }
     }
 

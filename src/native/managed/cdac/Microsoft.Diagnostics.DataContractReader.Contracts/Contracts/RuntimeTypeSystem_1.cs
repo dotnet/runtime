@@ -152,6 +152,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     [Flags]
+    internal enum AsyncMethodFlags : uint
+    {
+        None = 0,
+        Thunk = 16,
+    }
+
+    [Flags]
     internal enum ILStubType : uint
     {
         StubPInvokeVarArg = 0x4,
@@ -1322,8 +1329,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsILStub(MethodDescHandle methodDescHandle)
     {
-        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-        return IsILStub(methodDesc);
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        if (md.Classification != MethodClassification.Dynamic)
+        {
+            return false;
+        }
+
+        return AsDynamicMethodDesc(md).IsILStub;
     }
 
     public bool HasMDContextArg(MethodDescHandle methodDescHandle)
@@ -1396,27 +1408,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             TargetPointer nonVirtualSlotsArray = auxDataPtr + (ulong)auxData.OffsetToNonVirtualSlots;
             return nonVirtualSlotsArray - ((1 + (slotNum - mt.NumVirtuals)) * (ulong)_target.PointerSize);
         }
-    }
-
-    private bool IsILStub(MethodDesc md)
-    {
-        if (md.Classification != MethodClassification.Dynamic)
-        {
-            return false;
-        }
-
-        return AsDynamicMethodDesc(md).IsILStub;
-    }
-
-    private bool IsAsyncThunkMethod(MethodDesc md)
-    {
-        if (!md.HasAsyncMethodData)
-        {
-            return false;
-        }
-
-        Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData());
-        return ((MethodDescFlags_1.AsyncMethodFlags)asyncData.Flags).HasFlag(MethodDescFlags_1.AsyncMethodFlags.Thunk);
     }
 
     private bool IsWrapperStub(MethodDesc md)
@@ -1745,10 +1736,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return methodDesc.IsEligibleForTieredCompilation;
     }
 
-    bool IRuntimeTypeSystem.IsDiagnosticsHidden(MethodDescHandle methodDescHandle)
+    public bool IsAsyncThunkMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        if (!md.HasAsyncMethodData)
+        {
+            return false;
+        }
+
+        Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData());
+        return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.Thunk);
+    }
+
+    public bool IsWrapperStub(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-        return IsILStub(methodDesc) || IsAsyncThunkMethod(methodDesc) || IsWrapperStub(methodDesc);
+        return IsWrapperStub(methodDesc);
     }
 
     private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries

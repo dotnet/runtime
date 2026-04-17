@@ -17,13 +17,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     private readonly Target _target;
     private readonly IDacDbiInterface? _legacy;
 
-    private enum DynamicMethodType
-    {
-        kNone = 0,
-        kDiagnosticHidden = 1,
-        kLCGMethod = 2,
-    }
-
     // IStringHolder is a native C++ abstract class (not COM) with a single virtual method:
     //   virtual HRESULT AssignCopy(const WCHAR* psz) = 0;
     // The nint we receive is a pointer to the object, whose first field is the vtable pointer.
@@ -581,7 +574,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
-            if (rts.IsDiagnosticsHidden(md))
+            if (rts.IsILStub(md) || rts.IsAsyncThunkMethod(md) || rts.IsWrapperStub(md))
             {
                 *pRetVal = (int)DynamicMethodType.kDiagnosticHidden;
             }
