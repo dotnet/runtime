@@ -265,6 +265,11 @@ InProcCrashReportGenerate(
             // enumeration callback.
             CrashJsonCloseArray(&s_jsonWriter);
             CrashJsonCloseObject(&s_jsonWriter);
+
+            // Flush the final thread so it reaches the crash report file
+            // even if any later work (e.g. synthesizing a crash thread
+            // fallback) hangs or faults.
+            (void)CrashJsonFlush(&s_jsonWriter);
         }
 
         if (threadContext.threadCount == 0 || !threadContext.sawCrashThread)
@@ -944,6 +949,8 @@ JsonThreadCallback(
     {
         CrashJsonCloseArray(threadContext->writer);
         CrashJsonCloseObject(threadContext->writer);
+
+        (void)CrashJsonFlush(threadContext->writer);
     }
 
     if (isCrashThread)

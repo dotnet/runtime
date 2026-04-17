@@ -21,11 +21,6 @@ CrashJsonAppendStr(
     const char* str);
 
 static
-int
-CrashJsonFlush(
-    CrashJsonWriter* w);
-
-static
 char
 ToHexChar(
     unsigned value);

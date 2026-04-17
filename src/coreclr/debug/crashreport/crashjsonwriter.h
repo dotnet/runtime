@@ -32,4 +32,5 @@ void CrashJsonOpenArray(CrashJsonWriter* w, const char* key);
 void CrashJsonCloseArray(CrashJsonWriter* w);
 void CrashJsonWriteString(CrashJsonWriter* w, const char* key, const char* value);
 void CrashJsonFinish(CrashJsonWriter* w);
+int CrashJsonFlush(CrashJsonWriter* w);
 int CrashJsonHasFailed(CrashJsonWriter* w);
