@@ -209,7 +209,7 @@ namespace System.Net.Security.Tests
         {
             bool validationCallbackCalled = false;
             var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = _serverCertificate, ClientCertificateRequired = true, };
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false) };
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false), AllowTlsResume = false };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
             serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
             {
@@ -241,7 +241,7 @@ namespace System.Net.Security.Tests
         {
             bool validationCallbackCalled = false;
             var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = _serverCertificate, ClientCertificateRequired = true, };
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false) };
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false), AllowTlsResume = false };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();

@@ -15,11 +15,18 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class LoaderTests
 {
+    private const uint IsJitOptimizationDisabled = 0x00000002;
+    private const uint IsEditAndContinue = 0x00000008;
+    private const uint IsEncCapable = 0x00000200;
+    private const uint DebuggerAllowJitOptsPriv = 0x00000800;
+    private const uint DebuggerEncEnabledPriv = 0x00002000;
+
     internal static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockLoaderBuilder loader)
         => new()
         {
             [DataType.Module] = TargetTestHelpers.CreateTypeInfo(loader.ModuleLayout),
             [DataType.Assembly] = TargetTestHelpers.CreateTypeInfo(loader.AssemblyLayout),
+            [DataType.EEConfig] = TargetTestHelpers.CreateTypeInfo(loader.EEConfigLayout),
         };
 
     private static ILoader CreateLoaderContract(MockTarget.Architecture arch, Action<MockLoaderBuilder> configure)
@@ -34,6 +41,21 @@ public unsafe class LoaderTests
             .AddContract<ILoader>(version: 1)
             .Build();
         return target.Contracts.Loader;
+    }
+
+    private static (ILoader Contract, TestPlaceholderTarget Target) CreateLoaderContractWithTarget(
+        MockTarget.Architecture arch,
+        Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
+    {
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockLoaderBuilder loader = new(targetBuilder.MemoryBuilder);
+
+        configure(loader, targetBuilder);
+
+        targetBuilder.AddTypes(CreateContractTypes(loader));
+        targetBuilder.AddContract<ILoader>(version: 1);
+        var target = targetBuilder.Build();
+        return (target.Contracts.Loader, target);
     }
 
     [Theory]
@@ -507,5 +529,186 @@ public unsafe class LoaderTests
 
         // RVA in second section: offset = (0x4500 - 0x4000) + 0x2200 = 0x2700
         Assert.Equal((TargetPointer)(imageBase + 0x2700u), contract.GetILAddr(peAssemblyAddr, 0x4500));
+    }
+
+    public static IEnumerable<object[]> GetDebuggerInfoBitsData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [0u, DebuggerAssemblyControlFlags.DACF_NONE, arch[0]];
+            yield return [DebuggerAllowJitOptsPriv, DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS, arch[0]];
+            yield return [DebuggerEncEnabledPriv, DebuggerAssemblyControlFlags.DACF_ENC_ENABLED, arch[0]];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetDebuggerInfoBitsData))]
+    public void GetDebuggerInfoBits(uint rawFlags, DebuggerAssemblyControlFlags expectedBits, MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            moduleAddr = loader.AddModule(flags: rawFlags).Address;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        DebuggerAssemblyControlFlags actual = contract.GetDebuggerInfoBits(handle);
+        Assert.Equal(expectedBits, actual);
+    }
+
+    public static IEnumerable<object[]> SetDebuggerInfoBitsData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            // IS_JIT_OPTIMIZATION_DISABLED is set when DACF_ALLOW_JIT_OPTS is absent
+            yield return [DebuggerAssemblyControlFlags.DACF_NONE, IsJitOptimizationDisabled, arch[0]];
+            yield return [DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS, DebuggerAllowJitOptsPriv, arch[0]];
+            yield return [DebuggerAssemblyControlFlags.DACF_ENC_ENABLED, DebuggerEncEnabledPriv | IsJitOptimizationDisabled, arch[0]];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SetDebuggerInfoBitsData))]
+    public void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits, uint expectedRawFlags, MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (contract, target) = CreateLoaderContractWithTarget(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.None);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            moduleAddr = loader.AddModule().Address;
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        contract.SetDebuggerInfoBits(handle, newBits);
+
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.Equal(expectedRawFlags, rawFlags);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetDebuggerInfoBits_PreservesOtherFlags(MockTarget.Architecture arch)
+    {
+        uint initialFlags = (uint)(ModuleFlags.Tenured | ModuleFlags.ReflectionEmit);
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (contract, target) = CreateLoaderContractWithTarget(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.None);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            moduleAddr = loader.AddModule(flags: initialFlags).Address;
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+
+        DebuggerAssemblyControlFlags debuggerBits = DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS;
+        int debuggerInfoShift = 10;
+        contract.SetDebuggerInfoBits(handle, debuggerBits);
+
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.Equal(initialFlags | ((uint)debuggerBits << debuggerInfoShift), rawFlags);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetDebuggerInfoBits_UpdatesJitOptimizationDisabledState(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (contract, target) = CreateLoaderContractWithTarget(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.None);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            moduleAddr = loader.AddModule().Address;
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+
+        // Setting debugger bits without DACF_ALLOW_JIT_OPTS should set IS_JIT_OPTIMIZATION_DISABLED
+        contract.SetDebuggerInfoBits(handle, DebuggerAssemblyControlFlags.DACF_NONE);
+
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.True((rawFlags & IsJitOptimizationDisabled) != 0, "IS_JIT_OPTIMIZATION_DISABLED should be set when DACF_ALLOW_JIT_OPTS is not set");
+
+        // Setting debugger bits WITH DACF_ALLOW_JIT_OPTS should clear IS_JIT_OPTIMIZATION_DISABLED
+        contract.SetDebuggerInfoBits(handle, DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS);
+
+        rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.True((rawFlags & IsJitOptimizationDisabled) == 0, "IS_JIT_OPTIMIZATION_DISABLED should be cleared when DACF_ALLOW_JIT_OPTS is set");
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetDebuggerInfoBits_DoesNotEnableEnC(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (contract, target) = CreateLoaderContractWithTarget(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.Debug);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            moduleAddr = loader.AddModule().Address;
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        contract.SetDebuggerInfoBits(handle, DebuggerAssemblyControlFlags.DACF_NONE);
+
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.True((rawFlags & IsEditAndContinue) == 0, "IS_EDIT_AND_CONTINUE should NOT be set when module is not EnC-capable");
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetDebuggerInfoBits_EnablesEnC_DisabledJitOpts(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (contract, target) = CreateLoaderContractWithTarget(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.Debug);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            moduleAddr = loader.AddModule(flags: IsEncCapable).Address;
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        contract.SetDebuggerInfoBits(handle, DebuggerAssemblyControlFlags.DACF_NONE);
+
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.True((rawFlags & IsEditAndContinue) != 0, "IS_EDIT_AND_CONTINUE should be set when module is EnC-capable, config is Debug, and JIT opts are disabled");
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetDebuggerInfoBits_EnablesEnC_ExplicitFlag(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
+
+        var (contract, target) = CreateLoaderContractWithTarget(arch, (loader, builder) =>
+        {
+            var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.Debug);
+            builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
+            moduleAddr = loader.AddModule(flags: IsEncCapable).Address;
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        contract.SetDebuggerInfoBits(handle, DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS | DebuggerAssemblyControlFlags.DACF_ENC_ENABLED);
+
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.True((rawFlags & IsEditAndContinue) != 0, "IS_EDIT_AND_CONTINUE should be set when DACF_ENC_ENABLED is explicitly requested");
     }
 }
