@@ -144,7 +144,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZer
 
 //------------------------------------------------------------------------
 // genOSRHandleTier0CalleeSavedRegistersAndFrame:
-//   No-op for asm without OSR support.
+//   Not called for WASM without OSR support.
 //
 void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {

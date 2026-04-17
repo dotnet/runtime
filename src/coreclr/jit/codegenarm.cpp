@@ -1855,7 +1855,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 //------------------------------------------------------------------------
 // genOSRHandleTier0CalleeSavedRegistersAndFrame:
-//   No-op for arm without OSR support.
+//   Not called for arm without OSR support.
 //
 void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {

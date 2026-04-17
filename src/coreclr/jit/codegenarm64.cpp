@@ -5620,11 +5620,11 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
         if (topOfCalleeSaves > 504)
         {
             // Too far to encode ldp with sp directly. Compute top into another register.
-            baseReg          = REG_IP0;
-            topOfCalleeSaves = 0;
             // Note: not reporting unwind nops for this as we will pad below anyway.
             genInstrWithConstant(INS_add, EA_PTRSIZE, REG_IP0, REG_SP, topOfCalleeSaves, REG_IP0,
                                  /* inUnwindRegion */ false);
+            baseReg          = REG_IP0;
+            topOfCalleeSaves = 0;
         }
     }
 

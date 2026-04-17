@@ -10010,7 +10010,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
 
 //------------------------------------------------------------------------
 // genOSRHandleTier0CalleeSavedRegistersAndFrame:
-//   No-op for x86 without OSR support.
+//   Not called for x86 without OSR support.
 //
 void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
