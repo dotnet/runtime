@@ -2473,22 +2473,20 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void ModuleName_ExplicitModuleDirective_SetsModuleName()
+        public void ModuleName_ExplicitModuleDirective_OverridesOutputFileName()
         {
-            // When .module directive is present with just the keyword (no name),
-            // the module name still falls back to OutputFileName
             string source = """
                 .assembly TestAssembly { }
-                .module
+                .module Explicit.dll
                 .class public auto ansi beforefieldinit Test
                 {
                 }
                 """;
 
-            using var pe = CompileAndGetReader(source, new Options { OutputFileName = "Fallback.dll" });
+            using var pe = CompileAndGetReader(source, new Options { OutputFileName = "DifferentName.dll" });
             var reader = pe.GetMetadataReader();
             var moduleDef = reader.GetModuleDefinition();
-            Assert.Equal("Fallback.dll", reader.GetString(moduleDef.Name));
+            Assert.Equal("Explicit.dll", reader.GetString(moduleDef.Name));
         }
 
         [Fact]
