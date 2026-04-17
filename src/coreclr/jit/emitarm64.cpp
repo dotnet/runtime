@@ -15199,11 +15199,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
 #if defined(DEBUG) || defined(LATE_DISASM)
 
-void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess)
+void emitter::getMemoryOperation(instrDesc* id, PerfScoreMemoryAccessKind* pMemAccessKind, bool* pIsLocalAccess)
 {
-    unsigned    memAccessKind = PERFSCORE_MEMORY_NONE;
-    bool        isLocalAccess = false;
-    instruction ins           = id->idIns();
+    PerfScoreMemoryAccessKind memAccessKind = PERFSCORE_MEMORY_NONE;
+    bool                      isLocalAccess = false;
+    instruction               ins           = id->idIns();
 
     if (emitInsIsLoadOrStore(ins))
     {
@@ -15386,8 +15386,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     instruction                 ins    = id->idIns();
     insFormat                   insFmt = id->idInsFmt();
 
-    unsigned memAccessKind;
-    bool     isLocalAccess;
+    PerfScoreMemoryAccessKind memAccessKind;
+    bool                      isLocalAccess;
     getMemoryOperation(id, &memAccessKind, &isLocalAccess);
 
     result.insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;

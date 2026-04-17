@@ -2026,11 +2026,19 @@ protected:
         }
     }; // End of  struct instrDesc
 
+    enum PerfScoreMemoryAccessKind : unsigned
+    {
+        PERFSCORE_MEMORY_NONE       = 0,
+        PERFSCORE_MEMORY_READ       = 1,
+        PERFSCORE_MEMORY_WRITE      = 2,
+        PERFSCORE_MEMORY_READ_WRITE = 3,
+    };
+
 #if defined(TARGET_XARCH)
     insFormat getMemoryOperation(instrDesc* id) const;
     insFormat ExtractMemoryFormat(insFormat insFmt) const;
 #elif defined(TARGET_ARM64)
-    void getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess);
+    void getMemoryOperation(instrDesc* id, PerfScoreMemoryAccessKind* pMemAccessKind, bool* pIsLocalAccess);
 #endif
 
 #if defined(DEBUG) || defined(LATE_DISASM)
@@ -2198,18 +2206,11 @@ protected:
 #error Unknown TARGET
 #endif
 
-// Make this an enum:
-//
-#define PERFSCORE_MEMORY_NONE       0
-#define PERFSCORE_MEMORY_READ       1
-#define PERFSCORE_MEMORY_WRITE      2
-#define PERFSCORE_MEMORY_READ_WRITE 3
-
     struct insExecutionCharacteristics
     {
-        float    insThroughput;
-        float    insLatency;
-        unsigned insMemoryAccessKind;
+        float                     insThroughput;
+        float                     insLatency;
+        PerfScoreMemoryAccessKind insMemoryAccessKind;
     };
 
     float insEvaluateExecutionCost(instrDesc* id);

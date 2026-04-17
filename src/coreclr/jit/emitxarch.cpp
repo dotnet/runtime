@@ -20242,7 +20242,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     insFormat                   insFmt = id->idInsFmt();
     emitAttr                    opSize = id->idOpSize();
     insFormat                   memFmt = getMemoryOperation(id);
-    unsigned                    memAccessKind;
+    PerfScoreMemoryAccessKind   memAccessKind;
 
     result.insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
     result.insLatency    = PERFSCORE_LATENCY_ILLEGAL;

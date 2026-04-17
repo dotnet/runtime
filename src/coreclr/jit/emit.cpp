@@ -1393,7 +1393,7 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
     insExecutionCharacteristics result        = getInsExecutionCharacteristics(id);
     float                       throughput    = result.insThroughput;
     float                       latency       = result.insLatency;
-    unsigned                    memAccessKind = result.insMemoryAccessKind;
+    PerfScoreMemoryAccessKind   memAccessKind = result.insMemoryAccessKind;
 
     // Check for PERFSCORE_THROUGHPUT_ILLEGAL and PERFSCORE_LATENCY_ILLEGAL.
     // Note that 0.0 throughput is allowed for pseudo-instructions in the instrDesc list that won't actually
