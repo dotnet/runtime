@@ -23,6 +23,13 @@
     #error "Platform doesn't support malloc_usable_size or malloc_size"
 #endif
 
+// These functions look like simple wrappers around the standard C library functions, but they are actually
+// exports to managed code and not allocation functions for unmanaged code. Therefore we suppress the warnings.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wallocator-wrappers"
+#endif // __clang__
+
 void* SystemNative_AlignedAlloc(uintptr_t alignment, uintptr_t size)
 {
 #if HAVE_ALIGNED_ALLOC
@@ -77,3 +84,7 @@ void* SystemNative_Realloc(void* ptr, uintptr_t new_size)
 {
     return realloc(ptr, new_size);
 }
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif // __clang__
