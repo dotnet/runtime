@@ -1326,11 +1326,29 @@ namespace System.Buffers
             public static Vector128<byte> NegateIfNeeded(Vector128<byte> result) => result;
             public static Vector256<byte> NegateIfNeeded(Vector256<byte> result) => result;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int IndexOfFirstMatch(Vector128<byte> result) => Vector128.IndexOfFirstMatch(~Vector128.Equals(result, Vector128<byte>.Zero));
+            public static int IndexOfFirstMatch(Vector128<byte> result)
+            {
+                // On Arm64 the default lowering of `~Equals(result, Zero)` is `cmeq v, result, #0 ; mvn v, v`
+                // (two dependent vector ops feeding the serial shrn/fmov/rbit/clz chain that extracts the
+                // first-set-byte index). `CompareTest(result, result)` produces the same "is-nonzero" mask
+                // in a single `cmtst` instruction, shortening the critical path by one cycle.
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    return Vector128.IndexOfFirstMatch(AdvSimd.CompareTest(result, result));
+                }
+                return Vector128.IndexOfFirstMatch(~Vector128.Equals(result, Vector128<byte>.Zero));
+            }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int IndexOfFirstMatch(Vector256<byte> result) => Vector256.IndexOfFirstMatch(~Vector256.Equals(result, Vector256<byte>.Zero));
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int IndexOfLastMatch(Vector128<byte> result) => Vector128.IndexOfLastMatch(~Vector128.Equals(result, Vector128<byte>.Zero));
+            public static int IndexOfLastMatch(Vector128<byte> result)
+            {
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    return Vector128.IndexOfLastMatch(AdvSimd.CompareTest(result, result));
+                }
+                return Vector128.IndexOfLastMatch(~Vector128.Equals(result, Vector128<byte>.Zero));
+            }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int IndexOfLastMatch(Vector256<byte> result) => Vector256.IndexOfLastMatch(~Vector256.Equals(result, Vector256<byte>.Zero));
         }
