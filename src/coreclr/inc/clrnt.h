@@ -541,9 +541,8 @@ RtlpGetFunctionEndAddress (
 #define RUNTIME_FUNCTION__SetUnwindInfoAddress(prf,address)         do { (prf)->UnwindData = (address); } while (0)
 
 typedef struct _UNWIND_INFO {
-    ULONG FrameSize;
-} UNWIND_INFO, * PUNWIND_INFO;
-
+    // dummy
+} UNWIND_INFO, *PUNWIND_INFO;
 #endif
 
 #endif  // CLRNT_H_

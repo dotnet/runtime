@@ -58,10 +58,11 @@ void Compiler::unwindReserve()
 //
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
-    bool isFunclet  = (func->funKind != FUNC_ROOT);
-    bool isColdCode = false;
+    bool  isFunclet   = (func->funKind != FUNC_ROOT);
+    bool  isColdCode  = false;
+    ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize);
 
-    eeReserveUnwindInfo(isFunclet, isColdCode, sizeof(UNWIND_INFO));
+    eeReserveUnwindInfo(isFunclet, isColdCode, encodedSize);
 }
 
 //------------------------------------------------------------------------
@@ -93,6 +94,8 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 //
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
+    bool const isFunclet = func->funKind != FUNC_ROOT;
+
     UNATIVE_OFFSET startOffset;
     UNATIVE_OFFSET endOffset;
 
@@ -124,9 +127,13 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     //
     pColdCode = nullptr;
 
-    UNWIND_INFO unwindInfo;
-    unwindInfo.FrameSize = func->funWasmFrameSize;
+    // Unwind info is just the frame size.
+    // Record frame size with ULEB128 compression.
+    //
+    uint8_t buffer[5];
+    ULONG   encodedSize = (ULONG)GetEmitter()->emitOutputULEB128(buffer, func->funWasmFrameSize);
+    assert(encodedSize <= sizeof(buffer));
 
-    eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, sizeof(UNWIND_INFO),
-                      (BYTE*)&unwindInfo, (CorJitFuncKind)func->funKind);
+    eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, encodedSize, (BYTE*)&buffer,
+                      (CorJitFuncKind)func->funKind);
 }
