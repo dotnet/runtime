@@ -378,7 +378,7 @@ namespace ILAssembler
             {
                 builder.AddAssemblyReference(
                     builder.GetOrAddString(asmRef.Name),
-                    asmRef.Version ?? new Version(),
+                    asmRef.Version ?? new Version(0, 0, 0, 0),
                     asmRef.Culture is null ? default : builder.GetOrAddString(asmRef.Culture),
                     asmRef.PublicKeyOrToken is null ? default : builder.GetOrAddBlob(asmRef.PublicKeyOrToken),
                     asmRef.Flags,
@@ -396,7 +396,7 @@ namespace ILAssembler
                 var assemblyFlags = Assembly.Flags | (AssemblyFlags)((int)Assembly.ProcessorArchitecture << 4);
                 builder.AddAssembly(
                     builder.GetOrAddString(Assembly.Name),
-                    Assembly.Version ?? new Version(),
+                    Assembly.Version ?? new Version(0, 0, 0, 0),
                     Assembly.Culture is null ? default : builder.GetOrAddString(Assembly.Culture),
                     Assembly.PublicKeyOrToken is null ? default : builder.GetOrAddBlob(Assembly.PublicKeyOrToken),
                     assemblyFlags,
@@ -572,7 +572,7 @@ namespace ILAssembler
                 ?? FindAssemblyReference("System.Runtime")
                 ?? FindAssemblyReference("mscorlib")
                 ?? FindAssemblyReference("netstandard")
-                ?? GetOrCreateAssemblyReference("mscorlib", new Version(4, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
+                ?? GetOrCreateAssemblyReference("mscorlib", new Version(4, 0, 0, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
         }
 
         public interface IHasHandle
