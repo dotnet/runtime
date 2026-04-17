@@ -4404,7 +4404,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // Can't be relative to EBP unless we have an EBP
         noway_assert(!varDsc->lvFramePointerBased || codeGen->doubleAlignOrFramePointerUsed());
 
-        if (lvaIsAllocatedOnUnknownSizeFrame(lclNum))
+        if (lvaIsUnknownSizeLocal(lclNum))
         {
             continue;
         }
@@ -4604,7 +4604,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         int startOffset;
         if (lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(lclNum, &startOffset))
         {
-            assert(!lvaIsAllocatedOnUnknownSizeFrame(lclNum));
+            assert(!lvaIsUnknownSizeLocal(lclNum));
 
             dsc->SetStackOffset(startOffset + relativeZero);
             JITDUMP("Set V%02u to offset %d\n", lclNum, startOffset);
@@ -5216,7 +5216,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
                 continue;
             }
-            else if (lvaIsAllocatedOnUnknownSizeFrame(lclNum))
+            else if (lvaIsUnknownSizeLocal(lclNum))
             {
                 // Reserve dynamic stack space for this variable.
                 lvaAllocUnknownSizeLocal(lclNum);
@@ -5580,36 +5580,6 @@ void Compiler::lvaAllocUnknownSizeLocal(unsigned varNum)
     // should set this and inherit all of its behaviour, e.g. guarantee we get
     // a frame pointer.
     compLocallocUsed = true;
-}
-
-//------------------------------------------------------------------------
-// lvaIsAllocatedOnUnknownSizeFrame: Check if a local should be allocated on the
-// UnknownSizeFrame, instead of the usual stack space.
-//
-// Arguments:
-//   varNum - the variable number
-//
-// Return Value:
-//   true if the local should be allocated on the UnknownSizeFrame.
-//   On ARM64, this applies to:
-//       * variables of TYP_SIMD
-//       * variables of TYP_MASK
-//       * promoted struct fields with either of the above 2 types,
-//         when the structure is NOT address exposed.
-//
-bool Compiler::lvaIsAllocatedOnUnknownSizeFrame(unsigned varNum)
-{
-    const LclVarDsc* varDsc = lvaGetDesc(varNum);
-
-    // If a promoted field is address exposed, we need to preserve the
-    // layout of the structure. Therefore we can't allocate variable size
-    // fields to a different part of the stack frame.
-    if (varDsc->lvIsStructField && varDsc->IsAddressExposed())
-    {
-        return false;
-    }
-
-    return lvaIsUnknownSizeLocal(varNum);
 }
 
 //------------------------------------------------------------------------
@@ -6138,7 +6108,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
     int       printed = 0;
 
 #ifdef TARGET_ARM64
-    if (lvaIsAllocatedOnUnknownSizeFrame(lclNum))
+    if (lvaIsUnknownSizeLocal(lclNum))
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
         offset            = unkSizeFrame.GetAddressingOffset(varDsc);

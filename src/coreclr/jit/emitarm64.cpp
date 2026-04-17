@@ -8209,7 +8209,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     assert(offs >= 0);
 
-    if (varx >= 0 && m_compiler->lvaIsAllocatedOnUnknownSizeFrame((unsigned)varx))
+    if (varx >= 0 && m_compiler->lvaIsUnknownSizeLocal(varx))
     {
         // SVE locals are TYP_SIMD or TYP_MASK, both should be placed on the UnknownSizeFrame.
         // The base address of these locals should be REG_UNKBASE (x19).
@@ -8522,7 +8522,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     regNumber reg2          = REG_NA;
     ssize_t   imm           = 0;
 
-    if (varx >= 0 && m_compiler->lvaIsAllocatedOnUnknownSizeFrame((unsigned)varx))
+    if (varx >= 0 && m_compiler->lvaIsUnknownSizeLocal(varx))
     {
         // SVE locals are TYP_SIMD or TYP_MASK, both should be placed on the UnknownSizeFrame.
         // The base address of these locals should be REG_UNKBASE (x19).
