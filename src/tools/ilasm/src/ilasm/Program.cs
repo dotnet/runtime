@@ -166,6 +166,7 @@ internal sealed class Program
             options.KeyFile = Get(_command.KeyFile);
             options.Optimize = Get(_command.Optimize);
             options.Fold = Get(_command.Fold);
+            options.OutputFileName = Path.GetFileName(outputPath);
 
             // Set up include path for #include directive resolution
             string? includePath = Get(_command.IncludePath);
