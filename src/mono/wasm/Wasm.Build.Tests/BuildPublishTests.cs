@@ -62,13 +62,9 @@ namespace Wasm.Build.Tests
             BuildPaths paths = GetBuildPaths(config, forPublish: isPublish);
             // With CopyToOutputDirectory=Never, framework files aren't copied to bin/_framework/
             // during build. They live in obj subdirs: dotnet.native.* in obj/wasm/for-build/
-            // (for native rebuilds like Release+AOT), and JS/source maps in obj/{config}/{tfm}/fx/{name}/_framework/.
+            // (for native rebuilds like Release+AOT), and JS/source maps in obj/{config}/{tfm}/fx/{source-id}/_framework/.
             // The boot config (dotnet.js) is at obj/{config}/{tfm}/dotnet.js.
-            string fxBaseDir = Path.Combine(paths.ObjDir, "fx");
-            string[] fxSubDirs = Directory.GetDirectories(fxBaseDir);
-            Assert.True(fxSubDirs.Length == 1,
-                $"Expected exactly one subdirectory under {fxBaseDir}, found: {string.Join(", ", fxSubDirs.Select(Path.GetFileName))}");
-            string fxFrameworkDir = Path.Combine(fxSubDirs[0], "_framework");
+            string fxFrameworkDir = WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(paths.ObjDir);
 
             BuildPaths buildObjPaths = paths with { BinFrameworkDir = fxFrameworkDir };
             IDictionary<string, (string fullPath, bool unchanged)> pathsDict =

@@ -26,6 +26,26 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
     protected override string BundleDirName { get { return "wwwroot"; } }
 
+    /// <summary>
+    /// Discovers the single materialized framework directory produced by
+    /// UpdatePackageStaticWebAssets for a built (non-published) project:
+    /// <paramref name="objDir"/>/fx/&lt;source-id&gt;/_framework/.
+    ///
+    /// The per-project folder name under obj/.../fx/ is derived from static web assets
+    /// metadata (SourceId / PackageId), so tests should not assume it matches the
+    /// project directory name.
+    /// </summary>
+    public static string GetMaterializedFrameworkDir(string objDir)
+    {
+        string fxBaseDir = Path.Combine(objDir, "fx");
+        Assert.True(Directory.Exists(fxBaseDir), $"Expected materialized framework base directory: {fxBaseDir}");
+        string[] fxSubDirs = Directory.GetDirectories(fxBaseDir);
+        Assert.True(fxSubDirs.Length == 1, $"Expected exactly one subdirectory under {fxBaseDir}, found: {string.Join(", ", fxSubDirs.Select(Path.GetFileName))}");
+        string fxFrameworkDir = Path.Combine(fxSubDirs[0], "_framework");
+        Assert.True(Directory.Exists(fxFrameworkDir), $"Expected materialized framework dir: {fxFrameworkDir}");
+        return fxFrameworkDir;
+    }
+
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptions assertOptions)
     {
         var result = new SortedDictionary<string, bool>()
@@ -210,13 +230,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         string objDir = Path.Combine(ProjectDir!, "obj", config.ToString(), tfm);
         string webcilDir = Path.Combine(objDir, "webcil");
 
-        // Discover the materialized framework directory: obj/{config}/{tfm}/fx/{ProjectName}/_framework/
-        string fxBaseDir = Path.Combine(objDir, "fx");
-        Assert.True(Directory.Exists(fxBaseDir), $"Expected materialized framework base directory: {fxBaseDir}");
-        string[] fxSubDirs = Directory.GetDirectories(fxBaseDir);
-        Assert.True(fxSubDirs.Length == 1, $"Expected exactly one subdirectory under {fxBaseDir}, found: {string.Join(", ", fxSubDirs.Select(Path.GetFileName))}");
-        string fxFrameworkDir = Path.Combine(fxSubDirs[0], "_framework");
-        Assert.True(Directory.Exists(fxFrameworkDir), $"Expected materialized framework dir: {fxFrameworkDir}");
+        // Discover the materialized framework directory: obj/{config}/{tfm}/fx/{source-id}/_framework/
+        string fxFrameworkDir = GetMaterializedFrameworkDir(objDir);
 
         // --- Computed assets: dotnet.js lives in objDir root ---
         AssertFileExists(objDir, "dotnet.js");

@@ -150,15 +150,14 @@ public class MiscTests : BlazorWasmTestBase
         {
             // With CopyToOutputDirectory=Never, framework files are no longer copied to
             // bin/_framework/ during build. UpdatePackageStaticWebAssets materializes them
-            // to obj/<config>/<tfm>/fx/<ProjectName>/_framework/ instead, and the static
-            // web assets middleware serves them from there during dotnet run.
-            string client1Framework = Path.Combine(client1Dir, "obj", config.ToString(),
-                DefaultTargetFrameworkForBlazor, "fx", "Client1", "_framework");
-            string client2Framework = Path.Combine(client2Dir, "obj", config.ToString(),
-                DefaultTargetFrameworkForBlazor, "fx", "Client2", "_framework");
-
-            Assert.True(Directory.Exists(client1Framework), $"Client1 obj framework dir missing: {client1Framework}");
-            Assert.True(Directory.Exists(client2Framework), $"Client2 obj framework dir missing: {client2Framework}");
+            // under obj/<config>/<tfm>/fx/<source-id>/_framework/ instead (the source-id
+            // folder name comes from static web assets metadata and isn't necessarily the
+            // project directory name), and the static web assets middleware serves them
+            // from there during dotnet run.
+            string client1ObjDir = Path.Combine(client1Dir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor);
+            string client2ObjDir = Path.Combine(client2Dir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor);
+            string client1Framework = WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(client1ObjDir);
+            string client2Framework = WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(client2ObjDir);
 
             var client1Files = Directory.GetFiles(client1Framework);
             var client2Files = Directory.GetFiles(client2Framework);
