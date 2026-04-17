@@ -49,19 +49,18 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
     private const uint CORDEBUG_JIT_DEFAULT = 0x1;
     private const uint CORDEBUG_JIT_DISABLE_OPTIMIZATION = 0x3;
-    private static readonly Guid IID_IMetaDataImport = typeof(IMetaDataImport).GUID;
     private MetaDataImportImpl? _metaDataImportImpl;
 
     CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
     {
         ppv = default;
 
-        // Legacy DAC implementationof IXCLRDataModule handles QIs for IMetaDataImport by creating and
+        // Legacy DAC implementation of IXCLRDataModule handles QIs for IMetaDataImport by creating and
         // passing out an implementation of IMetaDataImport. Note that it does not do COM aggregation.
         // It simply returns a completely separate object. See ClrDataModule::QueryInterface in task.cpp
         // The returned MetaDataImportImpl also implements IMetaDataAssemblyImport, so consumers can QI
         // the returned object for that interface as well.
-        if (iid == IID_IMetaDataImport)
+        if (iid == typeof(IMetaDataImport).GUID)
         {
             MetaDataImportImpl? wrapper = _metaDataImportImpl;
             if (wrapper is null)
@@ -81,7 +80,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
                 try
                 {
-                    if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, IID_IMetaDataImport, out nint ppMdi) >= 0)
+                    Guid iidMetaDataImport = typeof(IMetaDataImport).GUID;
+                    if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, iidMetaDataImport, out nint ppMdi) >= 0)
                     {
                         StrategyBasedComWrappers cw = new();
                         legacyImport = (IMetaDataImport)cw.GetOrCreateObjectForComInstance(ppMdi, CreateObjectFlags.None);
@@ -91,6 +91,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 catch
                 {
                 }
+
+                if (reader is null && legacyImport is null)
+                    return CustomQueryInterfaceResult.NotHandled;
 
                 wrapper = new MetaDataImportImpl(reader, legacyImport);
                 // Not thread-safe: multiple wrappers may be created concurrently, but only one is retained.

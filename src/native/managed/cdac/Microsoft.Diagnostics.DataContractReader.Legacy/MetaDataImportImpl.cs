@@ -19,6 +19,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
     private readonly IMetaDataImport? _legacyImport;
     private readonly IMetaDataImport2? _legacyImport2;
     private readonly IMetaDataAssemblyImport? _legacyAssemblyImport;
+    private Dictionary<int, uint>? _interfaceImplToTypeDef;
 
     public MetaDataImportImpl(MetadataReader? reader, IMetaDataImport? legacyImport = null)
     {
@@ -44,6 +45,20 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
         string name = _reader!.GetString(typeRef.Name);
         string ns = _reader!.GetString(typeRef.Namespace);
         return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
+    }
+
+    private Dictionary<int, uint> BuildInterfaceImplLookup()
+    {
+        Dictionary<int, uint> lookup = new();
+        foreach (TypeDefinitionHandle tdh in _reader!.TypeDefinitions)
+        {
+            uint typeToken = (uint)MetadataTokens.GetToken(tdh);
+            foreach (InterfaceImplementationHandle ih in _reader!.GetTypeDefinition(tdh).GetInterfaceImplementations())
+            {
+                lookup[MetadataTokens.GetRowNumber(ih)] = typeToken;
+            }
+        }
+        return lookup;
     }
 
     private sealed class MetadataEnum
@@ -509,20 +524,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 
             if (pClass is not null)
             {
-                *pClass = 0;
-                foreach (TypeDefinitionHandle tdh in _reader!.TypeDefinitions)
-                {
-                    TypeDefinition td = _reader!.GetTypeDefinition(tdh);
-                    foreach (InterfaceImplementationHandle ih in td.GetInterfaceImplementations())
-                    {
-                        if (ih == implHandle)
-                        {
-                            *pClass = (uint)MetadataTokens.GetToken(tdh);
-                            goto FoundClass;
-                        }
-                    }
-                }
-                FoundClass:;
+                _interfaceImplToTypeDef ??= BuildInterfaceImplLookup();
+                *pClass = _interfaceImplToTypeDef.TryGetValue((int)(iiImpl & 0x00FFFFFF), out uint ownerToken)
+                    ? ownerToken : 0;
             }
 
             if (ptkIface is not null)
@@ -785,15 +789,22 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             return _legacyImport is not null ? _legacyImport.IsValidToken(tk) : 0;
 
         int rid = (int)(tk & 0x00FFFFFF);
-        int table = (int)(tk >> 24);
+        int tokenType = (int)(tk >> 24);
 
         if (rid == 0)
             return 0; // FALSE
 
-        if (table < 0 || table > (int)TableIndex.CustomDebugInformation)
+        const int UserStringTokenType = 0x70;
+        if (tokenType == UserStringTokenType)
+        {
+            int heapSize = _reader!.GetHeapSize(HeapIndex.UserString);
+            return rid < heapSize ? 1 : 0;
+        }
+
+        if (tokenType < 0 || tokenType > (int)TableIndex.CustomDebugInformation)
             return 0; // FALSE
 
-        int rowCount = _reader!.GetTableRowCount((TableIndex)table);
+        int rowCount = _reader!.GetTableRowCount((TableIndex)tokenType);
         return rid <= rowCount ? 1 : 0; // TRUE or FALSE
     }
 
@@ -1380,10 +1391,21 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                 szName[copyLen] = '\0';
             }
 
-            if (ppbPublicKey is not null)
-                *ppbPublicKey = null;
-            if (pcbPublicKey is not null)
-                *pcbPublicKey = 0;
+            if (!assemblyDef.PublicKey.IsNil)
+            {
+                BlobReader publicKeyReader = _reader.GetBlobReader(assemblyDef.PublicKey);
+                if (ppbPublicKey is not null)
+                    *ppbPublicKey = publicKeyReader.CurrentPointer;
+                if (pcbPublicKey is not null)
+                    *pcbPublicKey = (uint)publicKeyReader.Length;
+            }
+            else
+            {
+                if (ppbPublicKey is not null)
+                    *ppbPublicKey = null;
+                if (pcbPublicKey is not null)
+                    *pcbPublicKey = 0;
+            }
             if (pulHashAlgId is not null)
                 *pulHashAlgId = (uint)assemblyDef.HashAlgorithm;
 
@@ -1469,10 +1491,21 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                 szName[copyLen] = '\0';
             }
 
-            if (ppbPublicKeyOrToken is not null)
-                *ppbPublicKeyOrToken = null;
-            if (pcbPublicKeyOrToken is not null)
-                *pcbPublicKeyOrToken = 0;
+            if (!assemblyRef.PublicKeyOrToken.IsNil)
+            {
+                BlobReader publicKeyReader = _reader.GetBlobReader(assemblyRef.PublicKeyOrToken);
+                if (ppbPublicKeyOrToken is not null)
+                    *ppbPublicKeyOrToken = publicKeyReader.CurrentPointer;
+                if (pcbPublicKeyOrToken is not null)
+                    *pcbPublicKeyOrToken = (uint)publicKeyReader.Length;
+            }
+            else
+            {
+                if (ppbPublicKeyOrToken is not null)
+                    *ppbPublicKeyOrToken = null;
+                if (pcbPublicKeyOrToken is not null)
+                    *pcbPublicKeyOrToken = 0;
+            }
 
             if (pMetaData is not null)
             {
@@ -1494,10 +1527,21 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                 pMetaData->ulOS = 0;
             }
 
-            if (ppbHashValue is not null)
-                *ppbHashValue = null;
-            if (pcbHashValue is not null)
-                *pcbHashValue = 0;
+            if (!assemblyRef.HashValue.IsNil)
+            {
+                BlobReader hashReader = _reader.GetBlobReader(assemblyRef.HashValue);
+                if (ppbHashValue is not null)
+                    *ppbHashValue = hashReader.CurrentPointer;
+                if (pcbHashValue is not null)
+                    *pcbHashValue = (uint)hashReader.Length;
+            }
+            else
+            {
+                if (ppbHashValue is not null)
+                    *ppbHashValue = null;
+                if (pcbHashValue is not null)
+                    *pcbHashValue = 0;
+            }
 
             if (pdwAssemblyRefFlags is not null)
                 *pdwAssemblyRefFlags = (uint)assemblyRef.Flags;
