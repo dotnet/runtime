@@ -5413,7 +5413,8 @@ void CodeGen::genFnProlog()
             inst_RV(INS_push, REG_FPBASE, TYP_REF);
             m_compiler->unwindPush(REG_FPBASE);
         }
-#ifdef TARGET_X86 // On AMD64, establish the frame pointer after the "sub rsp"
+#ifdef TARGET_X86
+        // On x86 establish frame pointer now. For x64 we establish it after the "sub rsp".
         genEstablishFramePointer(0, /*reportUnwindData*/ true);
 #endif // TARGET_X86
 
@@ -5433,10 +5434,9 @@ void CodeGen::genFnProlog()
 #ifdef TARGET_AMD64
     // For OSR x64 we need canonical epilogs (sequence of pops). Hence we do
     // not push any register in the prolog, we rather store them in the area
-    // allocated by the tier0 method.
-    // For OSR on other platforms we have no such requirement, instead we
-    // restore tier0 saved callee saves from its area, but then push the additional
-    // callee saves in the OSR method prologs as normal.
+    // allocated by the tier0 method. For OSR on other platforms we have no
+    // such requirement, instead we restore tier0 saved callee saves from its
+    // area on entry and then run the prolog as normal.
     pushesCalleeSaves = !inheritsCalleeSaves;
 #endif
 
