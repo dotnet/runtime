@@ -725,12 +725,19 @@ namespace Microsoft.Win32.SafeHandles
                     ctr = cancellationToken.UnsafeRegister(
                         static state =>
                         {
-                            var (handle, signalWasSent) = ((SafeProcessHandle, StrongBox<bool>))state!;
+                            var (handle, signalWasSent, tcs) = ((SafeProcessHandle, StrongBox<bool>, TaskCompletionSource<bool>))state!;
+                            try
+                            {
 #pragma warning disable CA1416 // PosixSignal.SIGKILL is supported on Windows via SignalCore
-                            signalWasSent.Value = handle.SignalCore(PosixSignal.SIGKILL);
+                                signalWasSent.Value = handle.SignalCore(PosixSignal.SIGKILL);
 #pragma warning restore CA1416
+                            }
+                            catch (Exception ex)
+                            {
+                                tcs.TrySetException(ex);
+                            }
                         },
-                        (this, signalWasSentBox));
+                        (this, signalWasSentBox, tcs));
                 }
 
                 await tcs.Task.ConfigureAwait(false);

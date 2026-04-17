@@ -192,10 +192,17 @@ namespace Microsoft.Win32.SafeHandles
                     ctr = cancellationToken.UnsafeRegister(
                         static state =>
                         {
-                            var (handle, signalWasSent) = ((SafeProcessHandle, StrongBox<bool>))state!;
-                            signalWasSent.Value = handle.SignalCore(PosixSignal.SIGKILL);
+                            var (handle, signalWasSent, tcs) = ((SafeProcessHandle, StrongBox<bool>, TaskCompletionSource<bool>))state!;
+                            try
+                            {
+                                signalWasSent.Value = handle.SignalCore(PosixSignal.SIGKILL);
+                            }
+                            catch (Exception ex)
+                            {
+                                tcs.TrySetException(ex);
+                            }
                         },
-                        (this, signalWasSentBox));
+                        (this, signalWasSentBox, tcs));
                 }
 
                 await tcs.Task.ConfigureAwait(false);

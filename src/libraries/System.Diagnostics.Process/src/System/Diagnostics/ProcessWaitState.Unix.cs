@@ -337,7 +337,7 @@ namespace System.Diagnostics
                 }
 
                 // We now have an up-to-date snapshot for whether we've exited,
-                // and if we have, what the exit code is (if we were able to find out).
+                // and if we have, what the exit status is (if we were able to find out).
                 exitStatus = _exitStatus;
                 return _exited;
             }
