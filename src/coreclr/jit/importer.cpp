@@ -2807,7 +2807,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 //----------------------------------------------------------------------------------------------
 // Compiler::impSimdCreateScalarHalf: Creates a new Vector128.CreateScalar node for a System.Half value
 //
-//  Arguments:d
+//  Arguments:
 //    op1 - The System.Half value
 //
 // Returns:
