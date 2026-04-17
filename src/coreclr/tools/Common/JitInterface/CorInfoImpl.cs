@@ -3066,8 +3066,7 @@ namespace Internal.JitInterface
             {
                 ReadOnlySpan<byte> name = mdType.Name;
                 if ((name.SequenceEqual("SZArrayHelper"u8) || name.SequenceEqual("Array`1"u8)) &&
-                    mdType.Namespace.SequenceEqual("System"u8) &&
-                    mdType.Module == _compilation.TypeSystemContext.SystemModule)
+                    mdType.Namespace.SequenceEqual("System"u8))
                 {
                     return false;
                 }
