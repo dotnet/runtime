@@ -659,10 +659,8 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                     *pulCodeRVA = (uint)methodDef.RelativeVirtualAddress;
                 if (pdwImplFlags is not null)
                     *pdwImplFlags = (uint)methodDef.ImplAttributes;
-                hr = HResults.S_OK;
             }
-
-            if (tableIndex == 0x04) // FieldDef
+            else if (tableIndex == 0x04) // FieldDef
             {
                 FieldDefinitionHandle fieldHandle = MetadataTokens.FieldDefinitionHandle((int)(tk & 0x00FFFFFF));
                 FieldDefinition fieldDef = _reader!.GetFieldDefinition(fieldHandle);
@@ -670,10 +668,11 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                     *pulCodeRVA = (uint)fieldDef.GetRelativeVirtualAddress();
                 if (pdwImplFlags is not null)
                     *pdwImplFlags = 0;
-                hr = HResults.S_OK;
             }
-
-            hr = HResults.E_INVALIDARG;
+            else
+            {
+                hr = HResults.E_INVALIDARG;
+            }
         }
         catch (System.Exception ex)
         {
@@ -743,6 +742,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 
             string targetName = new string(szName);
             EntityHandle parent = MetadataTokens.EntityHandle((int)tkObj);
+            bool found = false;
 
             foreach (CustomAttributeHandle caHandle in _reader!.GetCustomAttributes(parent))
             {
@@ -755,11 +755,13 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                         *ppData = blobReader.StartPointer;
                     if (pcbData is not null)
                         *pcbData = (uint)blobReader.Length;
-                    hr = HResults.S_OK;
+                    found = true;
+                    break;
                 }
             }
 
-            hr = HResults.S_FALSE;
+            if (!found)
+                hr = HResults.S_FALSE;
         }
         catch (System.Exception ex)
         {

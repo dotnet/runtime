@@ -66,12 +66,12 @@ public unsafe class MetaDataImportImplTests
         // FieldDef: _value (int)
         mb.AddFieldDefinition(FieldAttributes.Private, mb.GetOrAddString("_value"), intFieldSig);
 
-        // MethodDef: DoWork (void) with one parameter
+        // MethodDef: DoWork (void) with no parameters
         mb.AddMethodDefinition(MethodAttributes.Public, MethodImplAttributes.IL,
             mb.GetOrAddString("DoWork"), voidMethodSig,
             -1, MetadataTokens.ParameterHandle(1));
 
-        // Parameter: "arg0" at sequence 1
+        // Parameter: "arg0" at sequence 1 (associated with DoWork for parameter enumeration testing)
         mb.AddParameter(ParameterAttributes.None, mb.GetOrAddString("arg0"), 1);
 
         // Interface implementation: TestClass : IDisposable
@@ -94,7 +94,7 @@ public unsafe class MetaDataImportImplTests
 
         // MemberRef: Object.ToString() on objectRef
         BlobBuilder memberRefSig = new();
-        new BlobEncoder(memberRefSig).MethodSignature().Parameters(0, returnType => returnType.Void(), parameters => { });
+        new BlobEncoder(memberRefSig).MethodSignature().Parameters(0, returnType => returnType.Type().String(), parameters => { });
         mb.AddMemberReference(objectRef, mb.GetOrAddString("ToString"), mb.GetOrAddBlob(memberRefSig));
 
         // ModuleRef: "NativeLib"
@@ -117,6 +117,14 @@ public unsafe class MetaDataImportImplTests
             MetadataTokens.FieldDefinitionHandle(2),
             MetadataTokens.MethodDefinitionHandle(2));
         mb.AddTypeLayout(MetadataTokens.TypeDefinitionHandle(4), 8, 32);
+
+        // Custom attribute on TestClass: [System.ObsoleteAttribute("test message")]
+        MemberReferenceHandle obsoleteCtor = mb.AddMemberReference(
+            mb.AddTypeReference(mscorlibRef, mb.GetOrAddString("System"), mb.GetOrAddString("ObsoleteAttribute")),
+            mb.GetOrAddString(".ctor"),
+            mb.GetOrAddBlob(new byte[] { 0x20, 0x01, 0x0E, 0x00 })); // instance void(string)
+        mb.AddCustomAttribute(testClassHandle, obsoleteCtor,
+            mb.GetOrAddBlob(new byte[] { 0x01, 0x00, 0x0C, 0x74, 0x65, 0x73, 0x74, 0x20, 0x6D, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x00, 0x00 }));
 
         // Serialize
         BlobBuilder metadataBlob = new();
@@ -644,6 +652,70 @@ public unsafe class MetaDataImportImplTests
 
         string name = new string(nameBuf, 0, (int)nameLen - 1);
         Assert.Equal("TestNamespace.TestClass", name);
+    }
+
+    [Fact]
+    public void GetRVA_MethodDef_ReturnsRVA()
+    {
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        _testProvider = provider;
+        MetaDataImportImpl wrapper = new(reader, legacyImport: null);
+
+        uint rva, implFlags;
+        // DoWork is MethodDef token 0x06000001
+        int hr = wrapper.GetRVA(0x06000001, &rva, &implFlags);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal((uint)MethodImplAttributes.IL, implFlags);
+    }
+
+    [Fact]
+    public void GetRVA_InvalidTable_ReturnsEInvalidArg()
+    {
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        _testProvider = provider;
+        MetaDataImportImpl wrapper = new(reader, legacyImport: null);
+
+        uint rva;
+        // TypeDef token (0x02) is not MethodDef or FieldDef
+        int hr = wrapper.GetRVA(0x02000001, &rva, null);
+        Assert.Equal(HResults.E_INVALIDARG, hr);
+    }
+
+    [Fact]
+    public void GetCustomAttributeByName_Found_ReturnsSok()
+    {
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        _testProvider = provider;
+        MetaDataImportImpl wrapper = new(reader, legacyImport: null);
+
+        void* pData;
+        uint cbData;
+        fixed (char* attrName = "System.ObsoleteAttribute")
+        {
+            // TestClass (0x02000002) has [Obsolete("test message")]
+            int hr = wrapper.GetCustomAttributeByName(0x02000002, attrName, &pData, &cbData);
+            Assert.Equal(HResults.S_OK, hr);
+            Assert.True(pData is not null);
+            Assert.True(cbData > 0);
+        }
+    }
+
+    [Fact]
+    public void GetCustomAttributeByName_NotFound_ReturnsSFalse()
+    {
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        _testProvider = provider;
+        MetaDataImportImpl wrapper = new(reader, legacyImport: null);
+
+        void* pData;
+        uint cbData;
+        fixed (char* attrName = "System.NonExistentAttribute")
+        {
+            int hr = wrapper.GetCustomAttributeByName(0x02000002, attrName, &pData, &cbData);
+            Assert.Equal(HResults.S_FALSE, hr);
+            Assert.True(pData is null);
+            Assert.Equal(0u, cbData);
+        }
     }
 
     [Fact]

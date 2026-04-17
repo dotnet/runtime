@@ -247,6 +247,8 @@ public unsafe partial interface IMetaDataImport2 : IMetaDataImport
 
 // ASSEMBLYMETADATA from cor.h — version + locale info for assemblies.
 // rProcessor and rOS are deprecated and always null/0 in modern usage.
+// This struct contains pointer-sized fields (szLocale, rProcessor, rOS) which is safe because
+// it is only used in same-process COM interop where bitness always matches the caller.
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct ASSEMBLYMETADATA
 {
