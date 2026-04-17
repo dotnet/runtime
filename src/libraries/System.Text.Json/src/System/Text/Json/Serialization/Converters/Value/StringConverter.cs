@@ -9,6 +9,12 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class StringConverter : JsonPrimitiveConverter<string?>
     {
+        // Use 1 MB segments as a performance tradeoff when writing strings larger than MaxSafeStringLength:
+        // large enough to keep the number of WriteStringValueSegment calls low, but small enough to avoid
+        // pushing extremely large spans through a single segmented write. This is not a correctness or
+        // protocol limit; it can be tuned if profiling shows a better size for writer throughput/allocation behavior.
+        private const int ChunkSize = 1024 * 1024;
+
         public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetString();
@@ -23,8 +29,36 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                writer.WriteStringValue(value.AsSpan());
+
+                ReadOnlySpan<char> remaining = value.AsSpan();
+                if (remaining.Length < ComputeMaxSafeStringLength(writer))
+                {
+                    writer.WriteStringValue(remaining);
+                }
+                else
+                {
+                    WriteStringValueSegment(writer, remaining);
+                }
             }
+        }
+
+        private static void WriteStringValueSegment(Utf8JsonWriter writer, ReadOnlySpan<char> value)
+        {
+            int chunkSize = ChunkSize;
+            while (value.Length > chunkSize)
+            {
+                ReadOnlySpan<char> chunk = value.Slice(0, chunkSize);
+                writer.WriteStringValueSegment(chunk, isFinalSegment: false);
+                value = value.Slice(chunk.Length);
+            }
+
+            writer.WriteStringValueSegment(value, isFinalSegment: true);
+        }
+
+        private static int ComputeMaxSafeStringLength(Utf8JsonWriter writer)
+        {
+            int indentOverhead = writer.Options.Indented ? writer.CurrentDepth * writer.Options.IndentSize + writer.Options.NewLine.Length : 0;
+            return (int.MaxValue / (JsonConstants.MaxExpansionFactorWhileEscaping * JsonConstants.MaxExpansionFactorWhileTranscoding)) - (3 + indentOverhead);
         }
 
         internal override string ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

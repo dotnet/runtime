@@ -22,6 +22,95 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotEqual(expected, JsonSerializer.Serialize(inputString));
         }
 
+        [Theory]
+        [OuterLoop]
+        [InlineData(119_304_643)] // (int.MaxValue / (MaxExpansionFactorWhileEscaping * MaxExpansionFactorWhileTranscoding)) - 4
+        [InlineData(119_304_644)] // (int.MaxValue / (MaxExpansionFactorWhileEscaping * MaxExpansionFactorWhileTranscoding)) - 3
+        [InlineData(120_000_000)]
+        public static void WriteExtremelyLargeStrings(int strLength)
+        {
+            const char InputCharacter = '\u007F';
+            const string EscapedCharacter = "\\u007F";
+
+            string value = new string(InputCharacter, strLength);
+            string json = JsonSerializer.Serialize(value, JsonSerializerOptions.Default);
+
+            int expectedJsonLength = 2 + (strLength * EscapedCharacter.Length);
+            int middleSegmentStart = 1 + ((strLength / 2) * EscapedCharacter.Length);
+            int lastSegmentStart = 1 + ((strLength - 1) * EscapedCharacter.Length);
+
+            Assert.Equal(expectedJsonLength, json.Length);
+            Assert.Equal('"', json[0]);
+            Assert.Equal(EscapedCharacter, json.AsSpan(1, EscapedCharacter.Length).ToString());
+            Assert.Equal(EscapedCharacter, json.AsSpan(middleSegmentStart, EscapedCharacter.Length).ToString());
+            Assert.Equal(EscapedCharacter, json.AsSpan(lastSegmentStart, EscapedCharacter.Length).ToString());
+            Assert.Equal('"', json[^1]);
+#if NET
+            Assert.False(json.AsSpan(1, json.Length - 2).ContainsAnyExcept(['\\', 'u', '0', '7', 'F']));
+#endif
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void WriteExtremelyLargeStringsIndentedRootLevel()
+        {
+            const int IndentSize = 127;
+            const string NewLine = "\n";
+            const int StrLength = 120_000_000;
+            const char InputCharacter = '\u007F';
+            const string EscapedCharacter = "\\u007F";
+
+            string value = new string(InputCharacter, StrLength);
+            var options = new JsonSerializerOptions { WriteIndented = true, IndentSize = IndentSize, NewLine = NewLine };
+            string json = JsonSerializer.Serialize(value, options);
+
+            int expectedJsonLength = 2 + StrLength * EscapedCharacter.Length;
+            int middleSegmentStart = 1 + (StrLength / 2) * EscapedCharacter.Length;
+            int lastSegmentStart = 1 + (StrLength - 1) * EscapedCharacter.Length;
+
+            Assert.Equal(expectedJsonLength, json.Length);
+            Assert.Equal('"', json[0]);
+            Assert.Equal(EscapedCharacter, json.AsSpan(1, EscapedCharacter.Length).ToString());
+            Assert.Equal(EscapedCharacter, json.AsSpan(middleSegmentStart, EscapedCharacter.Length).ToString());
+            Assert.Equal(EscapedCharacter, json.AsSpan(lastSegmentStart, EscapedCharacter.Length).ToString());
+            Assert.Equal('"', json[^1]);
+#if NET
+            Assert.False(json.AsSpan(1, json.Length - 2).ContainsAnyExcept(['\\', 'u', '0', '7', 'F']));
+#endif
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void WriteExtremelyLargeStringsIndentedAsArrayElement()
+        {
+            const int IndentSize = 127;
+            const string NewLine = "\n";
+            const int StrLength = 120_000_000;
+            const char InputCharacter = '\u007F';
+            const string EscapedCharacter = "\\u007F";
+
+            string value = new string(InputCharacter, StrLength);
+            var options = new JsonSerializerOptions { WriteIndented = true, IndentSize = IndentSize, NewLine = NewLine };
+            string[] arr = new[] { value };
+            string json = JsonSerializer.Serialize(arr, options);
+
+            // Indented single-element array layout: [ newLine indent "escapedStr" newLine ]
+            int indent = 1 * IndentSize;
+            int escapedStrLength = 2 + StrLength * EscapedCharacter.Length;
+            int expectedJsonLength = 1 + NewLine.Length + indent + escapedStrLength + NewLine.Length + 1;
+
+            Assert.Equal(expectedJsonLength, json.Length);
+            Assert.Equal('[', json[0]);
+            Assert.Equal('"', json[1 + NewLine.Length + indent]);
+            Assert.Equal(EscapedCharacter, json.AsSpan(1 + NewLine.Length + indent + 1, EscapedCharacter.Length).ToString());
+            Assert.Equal('"', json[1 + NewLine.Length + indent + escapedStrLength - 1]);
+            Assert.Equal(']', json[^1]);
+
+            string[] result = JsonSerializer.Deserialize<string[]>(json, options)!;
+            Assert.Single(result);
+            Assert.Equal(value, result[0]);
+        }
+
         [Fact]
         public static void WritePrimitives()
         {
