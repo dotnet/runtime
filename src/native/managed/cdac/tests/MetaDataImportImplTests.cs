@@ -525,7 +525,7 @@ public unsafe class MetaDataImportImplTests
         int hr = wrapper.GetUserString(userStringToken, strBuf, 256, &strLen);
         Assert.Equal(HResults.S_OK, hr);
 
-        string value = new string(strBuf, 0, (int)strLen - 1);
+        string value = new string(strBuf, 0, (int)strLen);
         Assert.Equal("Hello, World!", value);
     }
 

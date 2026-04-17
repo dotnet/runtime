@@ -16,6 +16,8 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
 {
     private const int CLDB_E_RECORD_NOTFOUND = unchecked((int)0x80131130);
     private const int CLDB_S_TRUNCATION = 0x00131106;
+    private const uint ELEMENT_TYPE_VOID = 0x01;
+    private const uint ELEMENT_TYPE_STRING = 0x0E;
     private readonly MetadataReader? _reader;
     private readonly IMetaDataImport? _legacyImport;
     private readonly IMetaDataImport2? _legacyImport2;
@@ -46,6 +48,14 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
         string name = _reader!.GetString(typeRef.Name);
         string ns = _reader!.GetString(typeRef.Namespace);
         return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
+    }
+
+    // Native RegMeta maps the global <Module> type (TypeDef RID 1) to mdTypeDefNil (0x00000000)
+    // when returning parent tokens from GetMethodProps, GetFieldProps, and GetMemberRefProps.
+    private static uint MapGlobalParentToken(uint token)
+    {
+        // TypeDef RID 1 has token 0x02000001
+        return token == 0x02000001 ? 0 : token;
     }
 
 #if DEBUG
@@ -366,7 +376,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             bool truncated = OutputBufferHelpers.CopyStringToBuffer(szMethod, cchMethod, pchMethod, name);
 
             if (pClass is not null)
-                *pClass = (uint)MetadataTokens.GetToken(methodDef.GetDeclaringType());
+                *pClass = MapGlobalParentToken((uint)MetadataTokens.GetToken(methodDef.GetDeclaringType()));
 
             if (pdwAttr is not null)
                 *pdwAttr = (uint)methodDef.Attributes;
@@ -440,7 +450,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             bool truncated = OutputBufferHelpers.CopyStringToBuffer(szField, cchField, pchField, name);
 
             if (pClass is not null)
-                *pClass = (uint)MetadataTokens.GetToken(fieldDef.GetDeclaringType());
+                *pClass = MapGlobalParentToken((uint)MetadataTokens.GetToken(fieldDef.GetDeclaringType()));
 
             if (pdwAttr is not null)
                 *pdwAttr = (uint)fieldDef.Attributes;
@@ -456,7 +466,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             }
 
             if (pdwCPlusTypeFlag is not null)
-                *pdwCPlusTypeFlag = 0;
+                *pdwCPlusTypeFlag = ELEMENT_TYPE_VOID;
             if (ppValue is not null)
                 *ppValue = null;
             if (pcchValue is not null)
@@ -474,7 +484,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                     if (ppValue is not null)
                         *ppValue = valueReader.StartPointer;
                     if (pcchValue is not null)
-                        *pcchValue = (uint)valueReader.Length;
+                        *pcchValue = (uint)constant.TypeCode == ELEMENT_TYPE_STRING ? (uint)valueReader.Length / sizeof(char) : (uint)valueReader.Length;
                 }
             }
 
@@ -1009,7 +1019,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             bool truncated = OutputBufferHelpers.CopyStringToBuffer(szMember, cchMember, pchMember, name);
 
             if (ptk is not null)
-                *ptk = (uint)MetadataTokens.GetToken(memberRef.Parent);
+                *ptk = MapGlobalParentToken((uint)MetadataTokens.GetToken(memberRef.Parent));
 
             if (ppvSigBlob is not null || pbSig is not null)
             {
@@ -1221,7 +1231,22 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
         {
             UserStringHandle usHandle = MetadataTokens.UserStringHandle((int)(stk & 0x00FFFFFF));
             string value = _reader!.GetUserString(usHandle);
-            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szString, cchString, pchString, value);
+
+            // GetUserString differs from other string-returning methods:
+            // native returns character count WITHOUT null terminator (userString.GetSize() / sizeof(WCHAR)).
+            if (pchString is not null)
+                *pchString = (uint)value.Length;
+
+            bool truncated = false;
+            if (szString is not null && cchString > 0)
+            {
+                ReadOnlySpan<char> strSpan = value.AsSpan();
+                int copyLen = Math.Min(value.Length, (int)cchString);
+                truncated = (uint)value.Length > cchString;
+                strSpan.Slice(0, copyLen).CopyTo(new Span<char>(szString, copyLen));
+                if ((uint)value.Length < cchString)
+                    szString[value.Length] = '\0';
+            }
 
             hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
@@ -1360,7 +1385,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                 *pdwAttr = (uint)param.Attributes;
 
             if (pdwCPlusTypeFlag is not null)
-                *pdwCPlusTypeFlag = 0;
+                *pdwCPlusTypeFlag = ELEMENT_TYPE_VOID;
             if (ppValue is not null)
                 *ppValue = null;
             if (pcchValue is not null)
@@ -1378,7 +1403,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
                     if (ppValue is not null)
                         *ppValue = valueReader.StartPointer;
                     if (pcchValue is not null)
-                        *pcchValue = (uint)valueReader.Length;
+                        *pcchValue = (uint)constant.TypeCode == ELEMENT_TYPE_STRING ? (uint)valueReader.Length / sizeof(char) : (uint)valueReader.Length;
                 }
             }
 
@@ -1512,7 +1537,13 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
             }
 
             if (pdwAssemblyFlags is not null)
-                *pdwAssemblyFlags = (uint)assemblyDef.Flags;
+            {
+                uint flags = (uint)assemblyDef.Flags;
+                // Native RegMeta ORs afPublicKey (0x0001) into flags when public key blob is non-empty
+                if (!assemblyDef.PublicKey.IsNil && _reader.GetBlobReader(assemblyDef.PublicKey).Length > 0)
+                    flags |= 0x0001;
+                *pdwAssemblyFlags = flags;
+            }
 
             hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
         }
