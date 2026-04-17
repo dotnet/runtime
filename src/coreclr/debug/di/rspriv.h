@@ -2449,6 +2449,17 @@ public:
                                       ICorDebugType ** ppResultType);
 
     //-----------------------------------------------------------
+    // ICorDebugAppDomain3 APIs
+    //-----------------------------------------------------------
+    COM_METHOD GetCachedWinRTTypesForIIDs(
+                        ULONG32               cGuids,
+                        GUID                * guids,
+                        ICorDebugTypeEnum * * ppTypesEnum);
+
+    COM_METHOD GetCachedWinRTTypes(
+                        ICorDebugGuidToTypeEnum * * ppType);
+
+    //-----------------------------------------------------------
     // ICorDebugAppDomain4
     //-----------------------------------------------------------
     COM_METHOD GetObjectForCCW(CORDB_ADDRESS ccwPointer, ICorDebugValue **ppManagedObject);

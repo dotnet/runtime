@@ -5894,6 +5894,14 @@ EXTERN_C const IID IID_ICorDebugAppDomain3;
     ICorDebugAppDomain3 : public IUnknown
     {
     public:
+        virtual HRESULT STDMETHODCALLTYPE GetCachedWinRTTypesForIIDs(
+            /* [in] */ ULONG32 cReqTypes,
+            /* [size_is][in] */ GUID *iidsToResolve,
+            /* [out] */ ICorDebugTypeEnum **ppTypesEnum) = 0;
+
+        virtual HRESULT STDMETHODCALLTYPE GetCachedWinRTTypes(
+            /* [out] */ ICorDebugGuidToTypeEnum **ppGuidToTypeEnum) = 0;
+
     };
 
 
@@ -5918,6 +5926,18 @@ EXTERN_C const IID IID_ICorDebugAppDomain3;
         ULONG ( STDMETHODCALLTYPE *Release )(
             ICorDebugAppDomain3 * This);
 
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain3, GetCachedWinRTTypesForIIDs)
+        HRESULT ( STDMETHODCALLTYPE *GetCachedWinRTTypesForIIDs )(
+            ICorDebugAppDomain3 * This,
+            /* [in] */ ULONG32 cReqTypes,
+            /* [size_is][in] */ GUID *iidsToResolve,
+            /* [out] */ ICorDebugTypeEnum **ppTypesEnum);
+
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain3, GetCachedWinRTTypes)
+        HRESULT ( STDMETHODCALLTYPE *GetCachedWinRTTypes )(
+            ICorDebugAppDomain3 * This,
+            /* [out] */ ICorDebugGuidToTypeEnum **ppGuidToTypeEnum);
+
         END_INTERFACE
     } ICorDebugAppDomain3Vtbl;
 
@@ -5939,6 +5959,13 @@ EXTERN_C const IID IID_ICorDebugAppDomain3;
 
 #define ICorDebugAppDomain3_Release(This)   \
     ( (This)->lpVtbl -> Release(This) )
+
+
+#define ICorDebugAppDomain3_GetCachedWinRTTypesForIIDs(This,cReqTypes,iidsToResolve,ppTypesEnum)    \
+    ( (This)->lpVtbl -> GetCachedWinRTTypesForIIDs(This,cReqTypes,iidsToResolve,ppTypesEnum) )
+
+#define ICorDebugAppDomain3_GetCachedWinRTTypes(This,ppGuidToTypeEnum)  \
+    ( (This)->lpVtbl -> GetCachedWinRTTypes(This,ppGuidToTypeEnum) )
 
 #endif /* COBJMACROS */
 
@@ -20485,4 +20512,5 @@ EmbeddedCLRCorDebug;
 #endif
 
 #endif
+
 
