@@ -412,12 +412,6 @@ public unsafe partial interface IDacDbiInterface
     int GetRcwCachedInterfacePointers(ulong vmObject, Interop.BOOL bIInspectableOnly, nint pDacItfPtrs);
 
     [PreserveSig]
-    int GetCachedWinRTTypesForIIDs(ulong vmAppDomain, nint pIids, nint pTypes);
-
-    [PreserveSig]
-    int GetCachedWinRTTypes(ulong vmAppDomain, nint piids, nint pTypes);
-
-    [PreserveSig]
     int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData);
 
     [PreserveSig]

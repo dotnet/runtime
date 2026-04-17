@@ -124,6 +124,7 @@ namespace
             case DynamicMethodDesc::StubPInvokeVarArg:      return "IL_STUB_PInvoke";
             case DynamicMethodDesc::StubReversePInvoke:     return "IL_STUB_ReversePInvoke";
             case DynamicMethodDesc::StubCLRToCOMInterop:    return "IL_STUB_CLRtoCOM";
+            case DynamicMethodDesc::StubCLRToCOMEvent:      return "IL_STUB_CLRtoCOM_Event";
             case DynamicMethodDesc::StubCOMToCLRInterop:    return "IL_STUB_COMtoCLR";
             case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
             case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";

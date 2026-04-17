@@ -1017,7 +1017,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX10v2_X64:
         case InstructionSet_AVXVNNIINT:
         case InstructionSet_AVXVNNIINT_V512:
-        case InstructionSet_AVX10v1:
         {
             genAvxFamilyIntrinsic(node, instOptions);
             break;
@@ -1811,7 +1810,6 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
         case NI_AVX512_FusedMultiplySubtractNegated:
         case NI_AVX512_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512_FusedMultiplySubtractScalar:
-        case NI_AVX10v1_FusedMultiplyAddScalar:
         {
             // For FMA intrinsics, since it is not possible to get any contained operand in this case: embedded rounding
             // is limited in register-to-register form, and the control byte is dynamic, we don't need to do any swap.
@@ -1855,7 +1853,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
     regNumber      targetReg   = node->GetRegNum();
     var_types      baseType    = node->GetSimdBaseType();
 
-    assert((baseType >= TYP_BYTE) && (baseType <= TYP_HALF));
+    assert((baseType >= TYP_BYTE) && (baseType <= TYP_DOUBLE));
 
     GenTree* op1 = (node->GetOperandCount() >= 1) ? node->Op(1) : nullptr;
     GenTree* op2 = (node->GetOperandCount() >= 2) ? node->Op(2) : nullptr;
@@ -1929,7 +1927,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             }
             else
             {
-                assert(varTypeIsFloating(baseType) || TypeGet(baseType) == TYP_HALF);
+                assert(varTypeIsFloating(baseType));
 
                 attr = emitTypeSize(baseType);
 
@@ -2223,7 +2221,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             }
             else
             {
-                assert(varTypeIsFloating(baseType) || TypeGet(baseType) == TYP_HALF);
+                assert(varTypeIsFloating(baseType));
                 assert(instOptions == INS_OPTS_NONE);
 
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs

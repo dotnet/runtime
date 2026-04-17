@@ -39,6 +39,7 @@
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />
     <Compile Include="RemotelyInvokable.cs" />
+    <Compile Include="StartAndForget.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="SafeProcessHandleTests.cs" />
     <Compile Include="KillOnParentExitTests.cs" />

@@ -2057,12 +2057,6 @@ public:
     bool IsNativeHFA();
     CorInfoHFAElemType GetNativeHFAType();
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-    // Returns true if this is the System.Half type, which is passed and returned
-    // in floating point registers on xarch platforms.
-    bool IsNativeHalfType();
-#endif // TARGET_XARCH
-
 #ifdef UNIX_AMD64_ABI
     inline bool IsRegPassedStruct()
     {
@@ -3819,7 +3813,7 @@ private:
         // enum_flag_unused                   = 0x00400000,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
-        enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
+        enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly) [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 #endif
 
         enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
