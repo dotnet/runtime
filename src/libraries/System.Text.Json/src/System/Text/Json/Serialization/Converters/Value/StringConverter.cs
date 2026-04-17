@@ -9,10 +9,11 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class StringConverter : JsonPrimitiveConverter<string?>
     {
-        // Use 1 MB segments as a performance tradeoff when writing strings larger than MaxSafeStringLength:
-        // large enough to keep the number of WriteStringValueSegment calls low, but small enough to avoid
-        // pushing extremely large spans through a single segmented write. This is not a correctness or
-        // protocol limit; it can be tuned if profiling shows a better size for writer throughput/allocation behavior.
+        // Use 1 MB segments as a performance tradeoff when writing strings larger than the threshold computed by
+        // ComputeMaxSafeStringLength(writer): large enough to keep the number of WriteStringValueSegment calls low,
+        // but small enough to avoid pushing extremely large spans through a single segmented write. This is not a
+        // correctness or protocol limit; it can be tuned if profiling shows a better size for writer throughput/
+        // allocation behavior.
         private const int ChunkSize = 1024 * 1024;
 
         public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
