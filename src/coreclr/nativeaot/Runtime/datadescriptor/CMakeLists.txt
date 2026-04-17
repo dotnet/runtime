@@ -6,15 +6,17 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 # src/coreclr/debug/datadescriptor-shared/ to generate a
 # DotNetRuntimeContractDescriptor symbol in the NativeAOT runtime.
 #
-# Include directories and compile definitions are inherited from the parent
-# Runtime/CMakeLists.txt directory scope. The interface targets below only
-# need to add the datadescriptor-specific include path.
+# The nativeaot_runtime_includes interface library (created in the parent
+# Runtime/CMakeLists.txt) provides the same include directories used by
+# the regular NativeAOT Runtime build.
 
 include(${CLR_DIR}/clrdatadescriptors.cmake)
 
 add_library(nativeaot_descriptor_interface INTERFACE)
 target_include_directories(nativeaot_descriptor_interface INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(nativeaot_descriptor_interface INTERFACE nativeaot_runtime_includes)
+add_dependencies(nativeaot_descriptor_interface aot_eventing_headers)
 generate_data_descriptors(
     LIBRARY_NAME nativeaot_cdac_contract_descriptor
     CONTRACT_NAME "DotNetRuntimeContractDescriptor"
@@ -27,8 +29,9 @@ set(GC_DESCRIPTOR_DIR "${CLR_DIR}/gc/datadescriptor")
 
 add_library(nativeaot_gc_wks_descriptor_interface INTERFACE)
 target_include_directories(nativeaot_gc_wks_descriptor_interface INTERFACE
-    ${GC_DESCRIPTOR_DIR}
-    ${GC_DIR})
+    ${GC_DESCRIPTOR_DIR})
+target_link_libraries(nativeaot_gc_wks_descriptor_interface INTERFACE nativeaot_runtime_includes)
+add_dependencies(nativeaot_gc_wks_descriptor_interface aot_eventing_headers)
 generate_data_descriptors(
     LIBRARY_NAME nativeaot_gc_wks_descriptor
     CONTRACT_NAME "GCContractDescriptorWKS"
@@ -36,8 +39,9 @@ generate_data_descriptors(
 
 add_library(nativeaot_gc_svr_descriptor_interface INTERFACE)
 target_include_directories(nativeaot_gc_svr_descriptor_interface INTERFACE
-    ${GC_DESCRIPTOR_DIR}
-    ${GC_DIR})
+    ${GC_DESCRIPTOR_DIR})
+target_link_libraries(nativeaot_gc_svr_descriptor_interface INTERFACE nativeaot_runtime_includes)
+add_dependencies(nativeaot_gc_svr_descriptor_interface aot_eventing_headers)
 target_compile_definitions(nativeaot_gc_svr_descriptor_interface INTERFACE -DSERVER_GC)
 generate_data_descriptors(
     LIBRARY_NAME nativeaot_gc_svr_descriptor
