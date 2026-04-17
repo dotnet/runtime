@@ -10,7 +10,7 @@ internal sealed class PEImage : IData<PEImage>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.PEImage);
 
-        LoadedImageLayout = target.ReadPointer(address + (ulong)type.Fields[nameof(LoadedImageLayout)].Offset);
+        LoadedImageLayout = target.ReadPointerField(address, type, nameof(LoadedImageLayout));
         ProbeExtensionResult = target.ProcessedData.GetOrAdd<ProbeExtensionResult>(address + (ulong)type.Fields[nameof(ProbeExtensionResult)].Offset);
     }
 

@@ -42,6 +42,7 @@
     <Compile Include="FileStream\ctor_options.cs" />
     <Compile Include="FileStream\Handle.cs" />
     <Compile Include="Directory\GetLogicalDrives.cs" />
+    <Compile Include="DumpDriveInformation.cs" />
     <Compile Include="FileStream\LockUnlock.cs" />
     <Compile Include="FileSystemTest.cs" />
     <Compile Include="File\AppendAllBytesAsync.cs" />

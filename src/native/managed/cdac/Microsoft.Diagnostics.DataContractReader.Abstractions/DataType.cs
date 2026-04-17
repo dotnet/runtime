@@ -139,6 +139,7 @@ public enum DataType
     PatchpointInfo,
     PortableEntryPoint,
     VirtualCallStubManager,
+    EEConfig,
 
     TransitionBlock,
     DebuggerEval,

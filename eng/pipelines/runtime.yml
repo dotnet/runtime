@@ -814,7 +814,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: CLR_Tools_Tests
-            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests+tools.cdac+tools.cdactests -c $(_BuildConfig) -test
+            buildArgs: -s clr.aot+clr.iltools+clr.corelib+clr.nativecorelib+libs.sfx+clr.toolstests+tools.cdac+tools.cdactests -c $(_BuildConfig) -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
@@ -1151,8 +1151,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/125522
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1198,8 +1197,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/125522
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1242,8 +1240,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/125522
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange

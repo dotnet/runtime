@@ -22,6 +22,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public ParameterSpec? MatchingCtorParam { get; set; }
 
+        public bool IsIgnored { get; init; }
+
         public bool IsStatic { get; }
 
         public bool SetOnInit { get; }

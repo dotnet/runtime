@@ -1032,9 +1032,10 @@ namespace System.Text.Json.SourceGeneration
                         string openDeclaringTypeFQN = firstProperty.OpenDeclaringTypeFQN!;
                         string refPrefix = typeGenerationSpec.TypeRef.IsValueType ? "ref " : "";
                         string typeParamList = string.Join(", ", typeParams);
+                        string constraintClauses = firstProperty.DeclaringTypeParameterConstraintClauses is { } c ? $" {c}" : "";
 
                         writer.WriteLine();
-                        writer.WriteLine($"private static class __GenericAccessors_{typeFriendlyName}<{typeParamList}>");
+                        writer.WriteLine($"private static class __GenericAccessors_{typeFriendlyName}<{typeParamList}>{constraintClauses}");
                         writer.WriteLine('{');
                         writer.Indentation++;
 
