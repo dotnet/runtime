@@ -154,13 +154,10 @@ extends:
           variables:
             - name: AllowPtrToDetectTestRunRetryFiles
               value: false
-            - name: DOTNET_ENABLE_CDAC
-              value: '1'
-            - name: CDAC_NO_FALLBACK
-              value: '1'
           jobParameters:
             name: cDAC_no_fallback
             useCdac: true
+            noFallback: true
             classFilter: SOS
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime

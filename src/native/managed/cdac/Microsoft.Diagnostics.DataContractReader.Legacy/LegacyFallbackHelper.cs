@@ -63,27 +63,11 @@ internal static class LegacyFallbackHelper
 
         if (s_allowlist.Contains(name) || s_fileAllowlist.Contains(Path.GetFileName(file)))
         {
-            try
-            {
-                Console.Error.WriteLine($"[cDAC] Allowed fallback: {name} at {Path.GetFileName(file)}:{line}");
-            }
-            catch
-            {
-                // Best-effort logging — don't crash the debugger process.
-            }
-
+            Console.Error.WriteLine($"[cDAC] Allowed fallback: {name} at {Path.GetFileName(file)}:{line}");
             return true;
         }
 
-        try
-        {
-            Console.Error.WriteLine($"[cDAC] Blocked fallback: {name} at {Path.GetFileName(file)}:{line}");
-        }
-        catch
-        {
-            // Best-effort logging — don't crash the debugger process.
-        }
-
+        Console.Error.WriteLine($"[cDAC] Blocked fallback: {name} at {Path.GetFileName(file)}:{line}");
         return false;
     }
 }
