@@ -3018,6 +3018,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
         }
     }
 
+#ifdef TARGET_WASM
     // For non-helper, managed calls, if we have portable entry points enabled, we need to lower
     // the call according to the portable entrypoint abi
     if (!call->IsUnmanaged() && !call->IsHelperCall() &&
@@ -3025,6 +3026,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     {
         LowerPEPCall(call);
     }
+#endif // TARGET_WASM 
 
     if (varTypeIsStruct(call))
     {
@@ -3642,6 +3644,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     return result;
 }
 
+#ifdef TARGET_WASM
 //---------------------------------------------------------------------------------------------
 // LowerPEPCall: Lower a call node dispatched through a PortableEntryPoint (PEP)
 //  
@@ -3663,6 +3666,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 //
 void Lowering::LowerPEPCall(GenTreeCall* call)
 {
+    JITDUMP("Lowering PEP call\n");
     DISPTREERANGE(BlockRange(), call);
     GenTree* callTarget = call->gtControlExpr;
     LIR::Use callTargetUse;
@@ -3672,7 +3676,8 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
     unsigned int callTargetLclNum = callTargetUse.ReplaceWithLclVar(m_compiler);
     GenTreeLclVar* callTargetLclForArg = m_compiler->gtNewLclvNode(callTargetLclNum, TYP_I_IMPL);
 
-    DISPTREERANGE(BlockRange(), call);
+    JITDUMP("Created new local variable for PEP call target: V%02u\n", callTargetLclNum);
+    DISPTREE(call)
 
     NewCallArg pepTargetArg = NewCallArg::Primitive(callTargetLclForArg).WellKnown(WellKnownArg::WasmPortableEntryPoint);
     CallArg* pepArg = call->gtArgs.PushBack(m_compiler, pepTargetArg);
@@ -3690,8 +3695,8 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
                                                                                 0, TARGET_POINTER_SIZE));
     BlockRange().InsertBefore(call, callTargetLclForArg);
 
+    JITDUMP("Lowered PEP call with new arg for PEP target and local variable to hold PEP target\n");
     DISPTREERANGE(BlockRange(), call);
-
     // Lower the new PEP arg now that the call abi info is updated and lcl var is inserted
     LowerArg(call, pepArg);
 
@@ -3701,8 +3706,10 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
     BlockRange().InsertAfter(controlExpr, target);
     call->gtControlExpr = target;
 
+    JITDUMP("Rewrote PEP call's control expression to indirect through the new local variable\n");
     DISPTREERANGE(BlockRange(), call);
 }
+#endif // TARGET_WASM    
 
 //------------------------------------------------------------------------
 // LowerCFGCall: Potentially lower a call to use control-flow guard. This
