@@ -4272,9 +4272,36 @@ namespace
         PCCOR_SIGNATURE pvNativeType;
     };
 
-    ILStubHashBlob* CreateHashBlob(PInvokeStubParameters* pParams)
+    ILStubHashBlob* CreateHashBlob(PInvokeStubParameters* pParams, MethodDesc* pTargetMD)
     {
         STANDARD_VM_CONTRACT;
+
+        // Some stubs each target a specific method.
+        // The hash blob for an unshared stub is just the target MethodDesc pointer and the stub flags.
+        constexpr size_t unsharedStubHashBlobSize = sizeof(ILStubHashBlobBase) + sizeof(DWORD) + sizeof(MethodDesc*);
+
+        DWORD dwStubFlags = pParams->m_dwStubFlags;
+
+        bool isNonSharedStub = false;
+
+        if (SF_IsCOMLateBoundStub(dwStubFlags))
+        {
+            isNonSharedStub = true;
+        }
+
+        if (isNonSharedStub)
+        {
+            _ASSERTE(pTargetMD != NULL);
+            const size_t blobSize = unsharedStubHashBlobSize;
+            NewArrayHolder<BYTE> pBytes = new BYTE[blobSize];
+            ZeroMemory(pBytes, blobSize);
+            ILStubHashBlob* pBlob = (ILStubHashBlob*)(BYTE*)pBytes;
+            pBlob->m_cbSizeOfBlob = blobSize;
+            memcpy(pBlob->m_rgbBlobData, &dwStubFlags, sizeof(dwStubFlags));
+            memcpy(pBlob->m_rgbBlobData + sizeof(dwStubFlags), &pTargetMD, sizeof(pTargetMD));
+            pBytes.SuppressRelease();
+            return pBlob;
+        }
 
         PInvokeStubHashBlob*    pBlob;
 
@@ -4329,6 +4356,8 @@ namespace
 
         if (cbSizeOfBlob.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
+
+        _ASSERTE(cbSizeOfBlob.Value() != unsharedStubHashBlobSize);
 
         static_assert(nltMaxValue   <= 0xFF);
         static_assert(nlfMaxValue   <= 0xFF);
@@ -5072,7 +5101,7 @@ namespace
             m_bILStubCreator(false)
         {
             STANDARD_VM_CONTRACT;
-            m_pHashParams = CreateHashBlob(m_pParams);
+            m_pHashParams = CreateHashBlob(m_pParams, pTargetMD);
         }
 
         ~ILStubCreatorHelper()
