@@ -139,7 +139,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             argit.Reset();
 
             // The arguments are $sp, ARG0-ARGN, PortableEntrypointThunk.
-            // The general logic is...
             // Compute stack offset needed.
 
             // Align total allocation (args + transition block) to 16 byte boundaries
@@ -226,7 +225,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // call_indirect (i32, i32, i32, i32) -> (i32)
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
-            // local.set (PortableEntrypointThunk)  / At this point we can overwrite with the incoming portable entrypoint local, since the old value it will no longer be used
+            // local.set (PortableEntrypointThunk)  / At this point we can overwrite with the incoming portable entrypoint local, since the old value will no longer be used
             expressions.Add(Local.Set(portableEntrypointLocalIndex));
             //
             // ;Setup sp arg for the final call, with the call address now coming from the portable entrypoint
