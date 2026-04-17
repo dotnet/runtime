@@ -90,26 +90,21 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 {
                 }
 
-                if (reader is not null || legacyImport is not null)
-                {
-                    wrapper = new MetaDataImportImpl(reader, legacyImport);
-                    _metaDataImportImpl ??= wrapper;
-                }
+                wrapper = new MetaDataImportImpl(reader, legacyImport);
+                _metaDataImportImpl ??= wrapper;
+                wrapper = _metaDataImportImpl;
             }
 
-            if (wrapper is not null)
+            StrategyBasedComWrappers comWrappers = new();
+            nint pUnk = comWrappers.GetOrCreateComInterfaceForObject(wrapper, CreateComInterfaceFlags.None);
+            try
             {
-                StrategyBasedComWrappers cw = new();
-                nint pUnk = cw.GetOrCreateComInterfaceForObject(wrapper, CreateComInterfaceFlags.None);
-                try
-                {
-                    if (Marshal.QueryInterface(pUnk, iid, out ppv) >= 0)
-                        return CustomQueryInterfaceResult.Handled;
-                }
-                finally
-                {
-                    Marshal.Release(pUnk);
-                }
+                if (Marshal.QueryInterface(pUnk, iid, out ppv) >= 0)
+                    return CustomQueryInterfaceResult.Handled;
+            }
+            finally
+            {
+                Marshal.Release(pUnk);
             }
         }
 

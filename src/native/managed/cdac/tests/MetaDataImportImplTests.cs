@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 public unsafe class MetaDataImportImplTests
 {
     // Build a minimal assembly metadata with types, methods, and fields.
-    private static MetadataReader CreateTestMetadata()
+    private static (MetadataReader reader, MetadataReaderProvider provider) CreateTestMetadata()
     {
         MetadataBuilder mb = new();
 
@@ -124,14 +124,18 @@ public unsafe class MetaDataImportImplTests
         root.Serialize(metadataBlob, 0, 0);
         byte[] bytes = metadataBlob.ToArray();
 
-        // Create provider and reader
+        // Create provider and reader — provider must stay alive as long as the reader is used
         MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(bytes));
-        return provider.GetMetadataReader();
+        return (provider.GetMetadataReader(), provider);
     }
+
+    // Provider is stored alongside wrapper to prevent GC from collecting pinned metadata memory.
+    private static MetadataReaderProvider? _testProvider;
 
     private static MetaDataImportImpl CreateWrapper()
     {
-        MetadataReader reader = CreateTestMetadata();
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        _testProvider = provider;
         return new MetaDataImportImpl(reader);
     }
 
@@ -627,7 +631,8 @@ public unsafe class MetaDataImportImplTests
     public void ReaderOnly_MethodsWork()
     {
         // When only reader is available (no legacy), implemented methods should still work
-        MetadataReader reader = CreateTestMetadata();
+        (MetadataReader reader, MetadataReaderProvider provider) = CreateTestMetadata();
+        _testProvider = provider;
         MetaDataImportImpl wrapper = new(reader, legacyImport: null);
 
         uint flags;
