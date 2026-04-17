@@ -1788,16 +1788,6 @@ public:
     // in the runtime)
     virtual HRESULT STDMETHODCALLTYPE GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs) = 0;
 
-    // retrieves a list of interface types corresponding to the passed in
-    // list of IIDs. the interface types are retrieved from an app domain
-    // IID / Type cache, that is updated as new types are loaded. will
-    // have NULL entries corresponding to unknown IIDs in "iids"
-    virtual HRESULT STDMETHODCALLTYPE GetCachedWinRTTypesForIIDs(VMPTR_AppDomain vmAppDomain, DacDbiArrayList<GUID> * pIids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes) = 0;
-
-    // retrieves the whole app domain cache of IID / Type mappings.
-    virtual HRESULT STDMETHODCALLTYPE GetCachedWinRTTypes(VMPTR_AppDomain vmAppDomain, OUT DacDbiArrayList<GUID> * piids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes) = 0;
-
-
     // ----------------------------------------------------------------------------
     // functions to get information about reference/handle referents for ICDValue
     // ----------------------------------------------------------------------------
