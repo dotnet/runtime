@@ -549,9 +549,10 @@ private:
             return E_POINTER;
 
         HRESULT hr = S_OK;
-        RETURN_IF_FAILED(::VariantChangeType(pVarResult, pVarResult, 0, VT_BSTR));
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
         BSTR result = nullptr;
         RETURN_IF_FAILED(GetDispIdAsString(&result));
+        V_VT(pVarResult) = VT_BSTR;
         V_BSTR(pVarResult) = result;
         return S_OK;
     }
@@ -562,9 +563,10 @@ private:
             return E_POINTER;
 
         HRESULT hr = S_OK;
-        RETURN_IF_FAILED(::VariantChangeType(pVarResult, pVarResult, 0, VT_BSTR));
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
         BSTR result = nullptr;
         RETURN_IF_FAILED(GetDispIdAsString2(&result));
+        V_VT(pVarResult) = VT_BSTR;
         V_BSTR(pVarResult) = result;
         return S_OK;
     }
