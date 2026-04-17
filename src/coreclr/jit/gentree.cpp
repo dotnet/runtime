@@ -6778,7 +6778,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     if (isflt)
                     {
                         // vxorp* xmm0, xmm0, [reloc @RWD00]
-                        costEx = 1 + IND_COST_EX;
+                        costEx = 1 + FLT_IND_COST_EX;
                         costSz = 8;
                     }
 #endif
