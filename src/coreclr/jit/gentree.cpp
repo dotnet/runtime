@@ -4755,6 +4755,21 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             level += 1;
         }
     }
+    else if (opCount == 1)
+    {
+        GenTree* op1 = multiOp->Op(1);
+
+        if (op1 != addrOp)
+        {
+            level = gtSetEvalOrder(op1);
+
+            if (optsEnabled)
+            {
+                costEx += op1->GetCostEx();
+                costSz += op1->GetCostSz();
+            }
+        }
+    }
     else
     {
         for (size_t i = multiOp->GetOperandCount(); i >= 1; i--)
