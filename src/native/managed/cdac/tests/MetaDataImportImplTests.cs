@@ -22,9 +22,10 @@ public unsafe class MetaDataImportImplTests
         // Module
         mb.AddModule(0, mb.GetOrAddString("TestModule"), mb.GetOrAddGuid(Guid.NewGuid()), default, default);
 
-        // Assembly
+        // Assembly with a public key blob (to test afPublicKey flag OR)
+        byte[] publicKey = [0x00, 0x24, 0x00, 0x00, 0x04, 0x80, 0x00, 0x00];
         mb.AddAssembly(mb.GetOrAddString("TestAssembly"), new Version(1, 0, 0, 0),
-            default, default, AssemblyFlags.PublicKey, AssemblyHashAlgorithm.None);
+            default, mb.GetOrAddBlob(publicKey), AssemblyFlags.PublicKey, AssemblyHashAlgorithm.Sha1);
 
         // mscorlib assembly ref (for System.Object base type)
         AssemblyReferenceHandle mscorlibRef = mb.AddAssemblyReference(
@@ -50,23 +51,36 @@ public unsafe class MetaDataImportImplTests
         new BlobEncoder(fieldSigBlob).Field().Type().Int32();
         BlobHandle intFieldSig = mb.GetOrAddBlob(fieldSigBlob);
 
-        // TypeDef: <Module> (required, row 1)
+        // TypeDef: <Module> (required, row 1) — owns the global method (method 1) and no fields
         mb.AddTypeDefinition(default, default, mb.GetOrAddString("<Module>"), default,
             MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
 
-        // TypeDef: TestNamespace.TestClass (row 2)
+        // Global method on <Module>: GlobalHelper (void) — method row 1
+        mb.AddMethodDefinition(MethodAttributes.Static | MethodAttributes.Public, MethodImplAttributes.IL,
+            mb.GetOrAddString("GlobalHelper"), voidMethodSig,
+            -1, MetadataTokens.ParameterHandle(1));
+
+        // TypeDef: TestNamespace.TestClass (row 2) — owns field 1+, method 2+
         TypeDefinitionHandle testClassHandle = mb.AddTypeDefinition(
             TypeAttributes.Public | TypeAttributes.Class,
             mb.GetOrAddString("TestNamespace"),
             mb.GetOrAddString("TestClass"),
             objectRef,
             MetadataTokens.FieldDefinitionHandle(1),
-            MetadataTokens.MethodDefinitionHandle(1));
+            MetadataTokens.MethodDefinitionHandle(2));
 
-        // FieldDef: _value (int)
+        // FieldDef: _value (int) — field row 1, no constant
         mb.AddFieldDefinition(FieldAttributes.Private, mb.GetOrAddString("_value"), intFieldSig);
 
-        // MethodDef: DoWork (void) with no parameters
+        // FieldDef: StringConst (string) — field row 2, with string constant
+        FieldDefinitionHandle stringConstField = mb.AddFieldDefinition(
+            FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault,
+            mb.GetOrAddString("StringConst"), intFieldSig);
+
+        // Add a string constant value for StringConst — MetadataBuilder encodes as UTF-16LE
+        mb.AddConstant(stringConstField, "test");
+
+        // MethodDef: DoWork (void) with no parameters — method row 2
         mb.AddMethodDefinition(MethodAttributes.Public, MethodImplAttributes.IL,
             mb.GetOrAddString("DoWork"), voidMethodSig,
             -1, MetadataTokens.ParameterHandle(1));
@@ -83,8 +97,8 @@ public unsafe class MetaDataImportImplTests
             default,
             mb.GetOrAddString("NestedType"),
             objectRef,
-            MetadataTokens.FieldDefinitionHandle(2),
-            MetadataTokens.MethodDefinitionHandle(2));
+            MetadataTokens.FieldDefinitionHandle(3),
+            MetadataTokens.MethodDefinitionHandle(3));
 
         // Nested class relationship
         mb.AddNestedType(nestedHandle, testClassHandle);
@@ -114,8 +128,8 @@ public unsafe class MetaDataImportImplTests
             mb.GetOrAddString("TestNamespace"),
             mb.GetOrAddString("LayoutClass"),
             objectRef,
-            MetadataTokens.FieldDefinitionHandle(2),
-            MetadataTokens.MethodDefinitionHandle(2));
+            MetadataTokens.FieldDefinitionHandle(3),
+            MetadataTokens.MethodDefinitionHandle(3));
         mb.AddTypeLayout(MetadataTokens.TypeDefinitionHandle(4), 8, 32);
 
         // Custom attribute on TestClass: [System.ObsoleteAttribute("test message")]
@@ -208,8 +222,8 @@ public unsafe class MetaDataImportImplTests
     {
         MetaDataImportImpl wrapper = CreateWrapper();
 
-        // DoWork should be MethodDef row 1 = 0x06000001
-        uint methodToken = 0x06000001;
+        // DoWork should be MethodDef row 2 = 0x06000002
+        uint methodToken = 0x06000002;
         uint parentClass;
         char* nameBuf = stackalloc char[256];
         uint nameLen;
@@ -261,8 +275,8 @@ public unsafe class MetaDataImportImplTests
         char* nameBuf = stackalloc char[256];
         uint nameLen;
 
-        // Method token
-        int hr = wrapper.GetMemberProps(0x06000001, &parentClass, nameBuf, 256, &nameLen,
+        // Method token (DoWork = 0x06000002)
+        int hr = wrapper.GetMemberProps(0x06000002, &parentClass, nameBuf, 256, &nameLen,
             null, null, null, null, null, null, null, null);
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal("DoWork", new string(nameBuf, 0, (int)nameLen - 1));
@@ -290,7 +304,7 @@ public unsafe class MetaDataImportImplTests
         int hr = wrapper.EnumFields(&hEnum, 0x02000002, tokens, 10, &count);
         Assert.Equal(HResults.S_OK, hr);
         Assert.True(count >= 1);
-        Assert.Equal(0x04000001u, tokens[0]); // _value
+        Assert.Contains(0x04000001u, new ReadOnlySpan<uint>(tokens, (int)count).ToArray()); // _value
 
         wrapper.CloseEnum(hEnum);
     }
@@ -548,7 +562,7 @@ public unsafe class MetaDataImportImplTests
         string name = new string(nameBuf, 0, (int)nameLen - 1);
         Assert.Equal("arg0", name);
         Assert.Equal(1u, sequence);
-        Assert.Equal(0x06000001u, parentMethod); // DoWork
+        Assert.Equal(0x06000002u, parentMethod); // DoWork
     }
 
     [Fact]
@@ -557,7 +571,7 @@ public unsafe class MetaDataImportImplTests
         MetaDataImportImpl wrapper = CreateWrapper();
 
         uint paramToken;
-        int hr = wrapper.GetParamForMethodIndex(0x06000001, 1, &paramToken);
+        int hr = wrapper.GetParamForMethodIndex(0x06000002, 1, &paramToken);
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal(0x08000001u, paramToken);
     }
@@ -568,7 +582,7 @@ public unsafe class MetaDataImportImplTests
         MetaDataImportImpl wrapper = CreateWrapper();
 
         uint paramToken;
-        int hr = wrapper.GetParamForMethodIndex(0x06000001, 99, &paramToken);
+        int hr = wrapper.GetParamForMethodIndex(0x06000002, 99, &paramToken);
         Assert.True(hr < 0); // CLDB_E_RECORD_NOTFOUND
     }
 
@@ -662,8 +676,8 @@ public unsafe class MetaDataImportImplTests
         MetaDataImportImpl wrapper = new(reader, legacyImport: null);
 
         uint rva, implFlags;
-        // DoWork is MethodDef token 0x06000001
-        int hr = wrapper.GetRVA(0x06000001, &rva, &implFlags);
+        // DoWork is MethodDef token 0x06000002
+        int hr = wrapper.GetRVA(0x06000002, &rva, &implFlags);
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal((uint)MethodImplAttributes.IL, implFlags);
     }
@@ -829,5 +843,150 @@ public unsafe class MetaDataImportImplTests
             int hr = assemblyImport.GetAssemblyProps(0x20000002, null, null, null, null, 0, null, null, null);
             Assert.Equal(unchecked((int)0x80131130), hr); // CLDB_E_RECORD_NOTFOUND
         }
+    }
+
+    [Fact]
+    public void GetFieldProps_NoConstant_ReturnsElementTypeVoid()
+    {
+        MetaDataImportImpl wrapper = CreateWrapper();
+
+        // _value (field row 1) has no constant
+        uint fieldToken = 0x04000001;
+        uint cplusTypeFlag;
+        void* pValue;
+        uint cchValue;
+
+        int hr = wrapper.GetFieldProps(fieldToken, null, null, 0, null, null, null, null, &cplusTypeFlag, &pValue, &cchValue);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(1u, cplusTypeFlag); // ELEMENT_TYPE_VOID
+        Assert.True(pValue is null);
+        Assert.Equal(0u, cchValue);
+    }
+
+    [Fact]
+    public void GetFieldProps_StringConstant_ReturnsCharCount()
+    {
+        MetaDataImportImpl wrapper = CreateWrapper();
+
+        // StringConst (field row 2) has a string constant "test"
+        uint fieldToken = 0x04000002;
+        uint cplusTypeFlag;
+        void* pValue;
+        uint cchValue;
+
+        int hr = wrapper.GetFieldProps(fieldToken, null, null, 0, null, null, null, null, &cplusTypeFlag, &pValue, &cchValue);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(0x0Eu, cplusTypeFlag); // ELEMENT_TYPE_STRING
+        Assert.True(pValue is not null);
+        Assert.Equal(4u, cchValue); // "test" = 4 characters, not 8 bytes
+    }
+
+    [Fact]
+    public void GetMethodProps_GlobalMethod_ReturnsMdTypeDefNil()
+    {
+        MetaDataImportImpl wrapper = CreateWrapper();
+
+        // GlobalHelper (method row 1) is on <Module> — parent should be mdTypeDefNil (0)
+        uint methodToken = 0x06000001;
+        uint parentClass;
+
+        int hr = wrapper.GetMethodProps(methodToken, &parentClass, null, 0, null, null, null, null, null, null);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(0u, parentClass); // mdTypeDefNil, not 0x02000001
+    }
+
+    [Fact]
+    public void GetMethodProps_NonGlobalMethod_ReturnsParentClass()
+    {
+        MetaDataImportImpl wrapper = CreateWrapper();
+
+        // DoWork (method row 2) is on TestClass — parent should be TestClass token
+        uint methodToken = 0x06000002;
+        uint parentClass;
+
+        int hr = wrapper.GetMethodProps(methodToken, &parentClass, null, 0, null, null, null, null, null, null);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(0x02000002u, parentClass); // TestClass
+    }
+
+    [Fact]
+    public void GetFieldProps_GlobalField_ReturnsMdTypeDefNil()
+    {
+        // Create metadata with a global field on <Module>
+        MetadataBuilder mb = new();
+        mb.AddModule(0, mb.GetOrAddString("Mod"), mb.GetOrAddGuid(Guid.NewGuid()), default, default);
+        mb.AddAssembly(mb.GetOrAddString("Asm"), new Version(1, 0, 0, 0), default, default, default, default);
+
+        BlobBuilder fieldSig = new();
+        new BlobEncoder(fieldSig).Field().Type().Int32();
+        BlobHandle intFieldSig = mb.GetOrAddBlob(fieldSig);
+
+        // <Module> owns field 1
+        mb.AddTypeDefinition(default, default, mb.GetOrAddString("<Module>"), default,
+            MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
+        mb.AddFieldDefinition(FieldAttributes.Static | FieldAttributes.Public, mb.GetOrAddString("GlobalField"), intFieldSig);
+
+        BlobBuilder blob = new();
+        new MetadataRootBuilder(mb).Serialize(blob, 0, 0);
+        var bytes = blob.ToImmutableArray();
+
+        fixed (byte* ptr = bytes.AsSpan())
+        {
+            var reader = new MetadataReader(ptr, bytes.Length);
+            var impl = new MetaDataImportImpl(reader);
+
+            uint parentClass;
+            int hr = impl.GetFieldProps(0x04000001, &parentClass, null, 0, null, null, null, null, null, null, null);
+            Assert.Equal(HResults.S_OK, hr);
+            Assert.Equal(0u, parentClass); // mdTypeDefNil
+        }
+    }
+
+    [Fact]
+    public void GetUserString_ReturnsCharCountWithoutNull()
+    {
+        MetaDataImportImpl wrapper = CreateWrapper();
+
+        uint userStringToken = 0x70000001;
+        uint pchString;
+
+        // Query length only (no buffer)
+        int hr = wrapper.GetUserString(userStringToken, null, 0, &pchString);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(13u, pchString); // "Hello, World!" = 13 chars, NO null terminator
+    }
+
+    [Fact]
+    public void GetAssemblyProps_IncludesAfPublicKeyFlag()
+    {
+        MetaDataImportImpl wrapper = CreateWrapper();
+        var assemblyImport = (IMetaDataAssemblyImport)wrapper;
+
+        uint flags;
+        byte* pubKey;
+        uint pubKeyLen;
+
+        int hr = assemblyImport.GetAssemblyProps(0x20000001, &pubKey, &pubKeyLen, null, null, 0, null, null, &flags);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.True(pubKeyLen > 0);
+        Assert.True((flags & 0x0001) != 0, "afPublicKey flag should be set when public key blob is non-empty");
+    }
+
+    [Fact]
+    public void GetParamProps_NoConstant_ReturnsElementTypeVoid()
+    {
+        MetaDataImportImpl wrapper = CreateWrapper();
+
+        // arg0 (param row 1) has no constant
+        uint paramToken = 0x08000001;
+        uint cplusTypeFlag;
+        void* pValue;
+        uint cchValue;
+
+        int hr = wrapper.GetParamProps(paramToken, null, null, null, 0, null, null, &cplusTypeFlag, &pValue, &cchValue);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(1u, cplusTypeFlag); // ELEMENT_TYPE_VOID
+        Assert.True(pValue is null);
+        Assert.Equal(0u, cchValue);
     }
 }
