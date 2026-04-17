@@ -60,8 +60,30 @@ namespace Wasm.Build.Tests
             (_, string output) = BuildProject(info, config, new BuildOptions(Label: "first_build", AOT: aot), isNativeBuild: aot);
             
             BuildPaths paths = GetBuildPaths(config, forPublish: isPublish);
+            // With CopyToOutputDirectory=Never, framework files aren't copied to bin/_framework/
+            // during build. They live in obj subdirs: dotnet.native.* in obj/wasm/for-build/
+            // (for native rebuilds like Release+AOT), and JS/source maps in obj/{config}/{tfm}/fx/{name}/_framework/.
+            // The boot config (dotnet.js) is at obj/{config}/{tfm}/dotnet.js.
+            string fxBaseDir = Path.Combine(paths.ObjDir, "fx");
+            string[] fxSubDirs = Directory.GetDirectories(fxBaseDir);
+            Assert.True(fxSubDirs.Length == 1,
+                $"Expected exactly one subdirectory under {fxBaseDir}, found: {string.Join(", ", fxSubDirs.Select(Path.GetFileName))}");
+            string fxFrameworkDir = Path.Combine(fxSubDirs[0], "_framework");
+
+            BuildPaths buildObjPaths = paths with { BinFrameworkDir = fxFrameworkDir };
             IDictionary<string, (string fullPath, bool unchanged)> pathsDict =
-                GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
+                GetFilesTable(info.ProjectName, aot, buildObjPaths, unchanged: false, bootConfigDir: paths.ObjDir);
+
+            // dotnet.native.* are produced by the native rebuild into obj/wasm/for-build/ using
+            // their canonical (non-fingerprinted) names — fingerprinting is applied later when
+            // publishing to bin.
+            foreach (var nativeName in new[] { "dotnet.native.wasm", "dotnet.native.js" })
+            {
+                if (pathsDict.TryGetValue(nativeName, out var entry))
+                {
+                    pathsDict[nativeName] = (Path.Combine(paths.ObjWasmDir, nativeName), entry.unchanged);
+                }
+            }
             
             string mainDll = $"{info.ProjectName}.dll";
             var firstBuildStat = StatFiles(pathsDict);

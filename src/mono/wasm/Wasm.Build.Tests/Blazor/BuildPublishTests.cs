@@ -95,13 +95,29 @@ public class BuildPublishTests : BlazorWasmTestBase
 
         Utils.DirectoryCopy(resxSourcePath, Path.Combine(_projectDir, "resx"));
 
-        // Build and assert resource dlls
+        // Build and assert resource dlls. With CopyToOutputDirectory=Never, framework files
+        // (including satellite assemblies) are no longer copied to bin/_framework/ during build.
+        // Webcil-converted assemblies live under obj/{config}/{tfm}/webcil/{locale}/; when webcil
+        // is disabled they're materialized under obj/{config}/{tfm}/fx/{name}/_framework/{locale}/.
         BlazorBuild(info, config);
-        AssertResourcesDlls(GetBlazorBinFrameworkDir(config, forPublish: false));
+        AssertResourcesDlls(GetBuildSatelliteBaseDir());
 
         // Publish and assert resource dlls
         BlazorPublish(info, config, new PublishOptions(UseCache: false));
         AssertResourcesDlls(GetBlazorBinFrameworkDir(config, forPublish: true));
+
+        string GetBuildSatelliteBaseDir()
+        {
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor);
+            if (UseWebcil)
+                return Path.Combine(objDir, "webcil");
+
+            string fxBaseDir = Path.Combine(objDir, "fx");
+            string[] fxSubDirs = Directory.GetDirectories(fxBaseDir);
+            Assert.True(fxSubDirs.Length == 1,
+                $"Expected exactly one subdirectory under {fxBaseDir}, found: {string.Join(", ", fxSubDirs.Select(Path.GetFileName))}");
+            return Path.Combine(fxSubDirs[0], "_framework");
+        }
 
         void AssertResourcesDlls(string basePath)
         {
