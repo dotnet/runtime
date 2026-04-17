@@ -295,7 +295,6 @@ namespace System
                             try
                             {
                                 Internal.Console.Error.Write(exception.GetType().FullName);
-                                Internal.Console.Error.Write(".");
                                 Internal.Console.Error.WriteLine();
                             }
                             catch { }
