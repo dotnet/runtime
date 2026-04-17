@@ -416,12 +416,15 @@ public class R2RTestSuites
     }
 
     /// <summary>
-    /// Negative test: composite mode does NOT produce a CrossModuleInlineInfo section.
-    /// True cross-module inlining (recorded in CrossModuleInlineInfo) requires the inlinee
-    /// to live in a module OUTSIDE the version bubble (added via --opt-cross-module on a
-    /// reference assembly). In composite mode, all input modules are part of the same
-    /// version bubble, so cross-module inlining info is never produced — inlining between
-    /// composite inputs is recorded in the per-module InliningInfo2 section instead.
+    /// Negative test: a composite image whose only inputs are the inlinee and the inliner
+    /// does NOT produce a CrossModuleInlineInfo section. CrossModuleInlineInfo only records
+    /// inlining where the inlinee module is OUTSIDE the compiled image's version bubble
+    /// (typically added via <c>--opt-cross-module</c> on a reference assembly). Here both
+    /// modules are composite inputs and therefore in the same version bubble, so any
+    /// inlining between them is recorded in the per-module InliningInfo2 section instead.
+    /// A different setup — composite output plus an external reference passed via
+    /// <c>--opt-cross-module</c> — could still produce CrossModuleInlineInfo entries; this
+    /// test only covers the "all inlinees are composite inputs" case.
     /// Compare with <see cref="BasicCrossModuleInlining"/>, which uses the same source modules
     /// in a non-composite layout and DOES produce CrossModuleInlineInfo entries.
     /// </summary>
@@ -638,6 +641,79 @@ public class R2RTestSuites
             // ContinuationLayout fixups are present for methods with GC refs across awaits
             Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureRefComposite", out diag), diag);
             Assert.True(R2RAssert.HasContinuationLayout(reader, "LocalCaptureAcrossAwait", out diag), diag);
+        }
+    }
+
+    /// <summary>
+    /// Composite-mode regression coverage for async thunk emission of methods on
+    /// generic types (and generic methods on generic types). The parent PR's
+    /// description specifically calls these out as the case that originally
+    /// broke <c>MethodWithToken..ctor()</c> owning-type computation when the
+    /// async-thunk ILStub forced a strip-instantiation in
+    /// <c>CorInfoImpl.HandleToModuleToken</c>. The follow-up "Get IL for the
+    /// (possibly instantiated) method, not the definition" fix in
+    /// <c>ReadyToRunCodegenCompilation.EnsureAsyncThunkTokensAreAvailable</c>
+    /// is also exercised by this test (it only matters for instantiated
+    /// methods/types). Both reference-type and value-type instantiations are
+    /// covered because token resolution differs between the two.
+    /// </summary>
+    [Fact]
+    public void CompositeAsyncGenericTypes()
+    {
+        var asyncGenericTypeLib = new CompiledAssembly
+        {
+            AssemblyName = "AsyncGenericTypeLib",
+            SourceResourceNames =
+            [
+                "RuntimeAsync/Dependencies/AsyncGenericTypeLib.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+        var compositeAsyncGenericTypesMain = new CompiledAssembly
+        {
+            AssemblyName = "CompositeAsyncGenericTypesMain",
+            SourceResourceNames =
+            [
+                "RuntimeAsync/CompositeAsyncGenericTypesMain.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+            References = [asyncGenericTypeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeAsyncGenericTypes),
+            [
+                new(nameof(CompositeAsyncGenericTypes),
+                [
+                    new CrossgenAssembly(asyncGenericTypeLib),
+                    new CrossgenAssembly(compositeAsyncGenericTypesMain),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            // Async thunks for the consumer's instantiated callers.
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallGenericContainerInt", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallGenericContainerString", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallGenericMethodOnGenericTypeIntLong", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallGenericMethodOnGenericTypeStringObject", out diag), diag);
+
+            // Async thunks for the library's generic-type methods, asserted with their
+            // generic-arg instantiations to ensure we aren't matching only the open
+            // (unspecialized) method signature. Reference-type instantiations are shared
+            // through the canonical (__Canon) form, so the string consumer's calls also
+            // produce the __Canon variant rather than a separate <String> entry.
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "GenericContainer`1<int>.GetValueAsync", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "GenericContainer`1<__Canon>.GetValueAsync", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "GenericContainer`1<int>.CombineAsync<long>", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "GenericContainer`1<__Canon>.CombineAsync<__Canon>", out diag), diag);
         }
     }
 
