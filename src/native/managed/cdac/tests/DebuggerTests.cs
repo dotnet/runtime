@@ -62,7 +62,6 @@ public class DebuggerTests
         {
             MockMemorySpace.HeapFragment debuggerControlFlagsFrag = allocator.Allocate(sizeof(uint), "g_CORDebuggerControlFlags");
             helpers.Write(debuggerControlFlagsFrag.Data.AsSpan(0, sizeof(uint)), debuggerControlFlags.Value);
-            memBuilder.AddHeapFragment(debuggerControlFlagsFrag);
             builder.AddGlobals((Constants.Globals.CORDebuggerControlFlags, debuggerControlFlagsFrag.Address));
         }
 
