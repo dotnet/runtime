@@ -5073,8 +5073,7 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
 
         bool ValidateUse(GenTree* node)
         {
-            if (node->OperIs(GT_CAST) &&
-                !m_compiler->fgCastNeeded(m_tailcall, node->AsCast()->CastToType()))
+            if (node->OperIs(GT_CAST) && !m_compiler->fgCastNeeded(m_tailcall, node->AsCast()->CastToType()))
             {
                 node = node->AsCast()->CastOp();
             }
