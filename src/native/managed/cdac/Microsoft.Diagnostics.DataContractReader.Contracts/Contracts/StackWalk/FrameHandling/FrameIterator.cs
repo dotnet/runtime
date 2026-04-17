@@ -600,28 +600,17 @@ internal sealed class FrameIterator
             return;
 
         MethodSignature<GcTypeKind> methodSig;
-        byte[] sigArray = signature.ToArray();
-        unsafe
+        try
         {
-            fixed (byte* ptr = sigArray)
-            {
-                BlobReader blobReader = new(ptr, sigArray.Length);
-                SignatureDecoder<GcTypeKind, object?> decoder = new(GcSignatureTypeProvider.Instance, metadataReader: null!, genericContext: null);
-                try
-                {
-                    methodSig = decoder.DecodeMethodSignature(ref blobReader);
-                }
-                catch (BadImageFormatException)
-                {
-                    // Runtime-internal signatures may contain ELEMENT_TYPE_INTERNAL (0x21)
-                    // which the SRM SignatureDecoder doesn't handle. These appear in
-                    // dynamically generated stubs (IL marshalling stubs, unsafe accessors, etc.)
-                    // where the runtime replaces type references with raw TypeHandle pointers.
-                    // Fall back to not reporting GC refs for this frame — the GCRefMap path
-                    // should handle these cases when available.
-                    return;
-                }
-            }
+            RuntimeSignatureDecoder<GcTypeKind, object?, SpanSignatureReader> decoder = new(
+                GcSignatureTypeProvider.Instance, target, genericContext: null, new SpanSignatureReader(signature, target.IsLittleEndian));
+            methodSig = decoder.DecodeMethodSignature();
+        }
+        catch (System.Exception)
+        {
+            // If signature decoding fails for any reason, skip this frame.
+            // The GCRefMap path handles these cases when available.
+            return;
         }
 
         if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
