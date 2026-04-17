@@ -11,8 +11,10 @@ public class Runtime_127075
 {
     public interface I;
     public sealed class A : I;
+    public sealed class B : I;
 
-    private static readonly IReadOnlyCollection<I> s_tail = [new A(), new A()];
+    private static readonly I[] s_tailItems = [new B(), new B()];
+    private static readonly IReadOnlyCollection<I> s_tail = s_tailItems;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static I[] Combine(IReadOnlyCollection<I> head)
@@ -23,14 +25,18 @@ public class Runtime_127075
     [Fact]
     public static void TestEntryPoint()
     {
-        I[] input = [new A(), new A(), new A(), new A()];
+        I[] head = [new A(), new A(), new A(), new A()];
         for (int i = 0; i < 300; i++)
         {
-            I[] result = Combine(input);
-            Assert.Equal(input.Length + s_tail.Count, result.Length);
-            foreach (I item in result)
+            I[] result = Combine(head);
+            Assert.Equal(head.Length + s_tailItems.Length, result.Length);
+            for (int j = 0; j < head.Length; j++)
             {
-                Assert.NotNull(item);
+                Assert.Same(head[j], result[j]);
+            }
+            for (int j = 0; j < s_tailItems.Length; j++)
+            {
+                Assert.Same(s_tailItems[j], result[head.Length + j]);
             }
             Thread.Sleep(1);
         }
