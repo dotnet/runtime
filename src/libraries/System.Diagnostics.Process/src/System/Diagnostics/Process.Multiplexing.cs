@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
@@ -253,6 +255,92 @@ namespace System.Diagnostics
             {
                 ArrayPool<byte>.Shared.Return(buffer);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously reads all standard output and standard error of the process as lines of text,
+        /// interleaving them as they become available.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// A token to cancel the asynchronous operation.
+        /// </param>
+        /// <returns>
+        /// An async enumerable of <see cref="ProcessOutputLine"/> instances representing the lines
+        /// read from standard output and standard error.
+        /// </returns>
+        /// <remarks>
+        /// Lines from standard output and standard error are yielded as they become available.
+        /// When the consumer stops enumerating early (for example, by breaking out of
+        /// <see langword="await foreach" />), any pending read operations are canceled.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Standard output or standard error has not been redirected.
+        /// -or-
+        /// A redirected stream has already been used for synchronous or asynchronous reading.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The <paramref name="cancellationToken" /> was canceled.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        /// The process has been disposed.
+        /// </exception>
+        public async IAsyncEnumerable<ProcessOutputLine> ReadAllLinesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            ValidateReadAllState();
+
+            StreamReader outputReader = _standardOutput!;
+            StreamReader errorReader = _standardError!;
+
+            Channel<ProcessOutputLine> channel = Channel.CreateBounded<ProcessOutputLine>(0);
+            bool firstCompleted = false;
+
+            CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+            Task outputTask = ReadToChannelAsync(outputReader, standardError: false, linkedCts.Token);
+            Task errorTask = ReadToChannelAsync(errorReader, standardError: true, linkedCts.Token);
+
+            try
+            {
+                while (await channel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    while (channel.Reader.TryRead(out ProcessOutputLine line))
+                    {
+                        yield return line;
+                    }
+                }
+            }
+            finally
+            {
+                linkedCts.Cancel();
+
+                // Ensure both tasks complete before disposing the CancellationTokenSource.
+                // The tasks handle all exceptions internally, so they always run to completion.
+                await outputTask.ConfigureAwait(false);
+                await errorTask.ConfigureAwait(false);
+
+                linkedCts.Dispose();
+            }
+
+            async Task ReadToChannelAsync(StreamReader reader, bool standardError, CancellationToken ct)
+            {
+                try
+                {
+                    while (await reader.ReadLineAsync(ct).ConfigureAwait(false) is string line)
+                    {
+                        await channel.Writer.WriteAsync(new ProcessOutputLine(line, standardError), ct).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    channel.Writer.TryComplete(ex);
+                    return;
+                }
+
+                if (Interlocked.Exchange(ref firstCompleted, true))
+                {
+                    channel.Writer.TryComplete();
+                }
             }
         }
 
