@@ -7194,7 +7194,7 @@ void emitter::emitIns_R_I(instruction         ins,
 
     if (ins == INS_test && reg == REG_EAX && TakesRex2Prefix(id))
     {
-        // test ax will use ACC form, which is not REX2 compatiable.
+        // test eax/rax will use ACC form, which is not REX2 compatible.
         if (size == EA_8BYTE)
         {
             sz -= 1;
@@ -14657,7 +14657,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
-            // The build-in REX has been zero-ed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
+            // The built-in REX has been zeroed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
             // addressing bits in the prefix.
             insEncodeReg345(id, inst3opImulReg(ins), size, &code);
         }

@@ -10343,11 +10343,6 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
         popCount++;
         GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R29, instOptions);
     }
-    if ((rsPopRegs & RBM_R29) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R29, instOptions);
-    }
     if ((rsPopRegs & RBM_R30) != 0)
     {
         popCount++;
