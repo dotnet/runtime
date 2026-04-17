@@ -28,6 +28,22 @@ internal static class LegacyFallbackHelper
 
         // IMetaDataImport QI — needed until managed MetadataReader wrapper lands (PR #127028).
         nameof(ICustomQueryInterface.GetInterface),
+
+        // IXCLRDataModule — not yet implemented in the cDAC.
+        nameof(IXCLRDataModule.GetMethodDefinitionByToken),
+
+        // GC heap analysis — not yet implemented in the cDAC (PR #125895).
+        nameof(ISOSDacInterface11.IsTrackedType),
+
+        // Loader heap traversal — not yet implemented in the cDAC (PR #125129).
+        nameof(ISOSDacInterface.TraverseLoaderHeap),
+    };
+
+    // Files whose methods are all allowed to fall back.
+    // The entire DBI interface is deferred — the cDAC does not implement ICorDebug data access yet.
+    private static readonly HashSet<string> s_fileAllowlist = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "DacDbiImpl.cs",
     };
 
     /// <summary>
@@ -45,7 +61,7 @@ internal static class LegacyFallbackHelper
         if (!s_noFallback)
             return true;
 
-        if (s_allowlist.Contains(name))
+        if (s_allowlist.Contains(name) || s_fileAllowlist.Contains(Path.GetFileName(file)))
         {
             try
             {
