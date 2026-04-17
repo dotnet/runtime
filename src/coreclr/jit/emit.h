@@ -2028,10 +2028,10 @@ protected:
 
     enum class PerfScoreMemoryAccessKind : unsigned
     {
-        PERFSCORE_MEMORY_NONE       = 0,
-        PERFSCORE_MEMORY_READ       = 1,
-        PERFSCORE_MEMORY_WRITE      = 2,
-        PERFSCORE_MEMORY_READ_WRITE = 3,
+        None       = 0,
+        Read       = 1,
+        Write      = 2,
+        ReadWrite  = 3,
     };
 
 #if defined(TARGET_XARCH)
