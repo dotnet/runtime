@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
@@ -12,6 +15,183 @@ namespace System.Diagnostics
     public partial class Process
     {
         private static SafePipeHandle GetSafeHandleFromStreamReader(StreamReader reader) => ((AnonymousPipeClientStream)reader.BaseStream).SafePipeHandle;
+
+        /// <summary>
+        /// Reads from both standard output and standard error pipes as lines of text using Unix
+        /// poll-based multiplexing with non-blocking reads.
+        /// The caller provides initially-rented buffers; this method takes ownership and returns them
+        /// to the pool when enumeration completes.
+        /// </summary>
+        private IEnumerable<ProcessOutputLine> ReadPipesToLines(
+            int timeoutMs,
+            Encoding outputEncoding,
+            Encoding errorEncoding,
+            byte[] outputBuffer,
+            byte[] errorBuffer)
+        {
+            SafePipeHandle outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
+            SafePipeHandle errorHandle = GetSafeHandleFromStreamReader(_standardError!);
+
+            bool outputRefAdded = false, errorRefAdded = false;
+
+            try
+            {
+                outputHandle.DangerousAddRef(ref outputRefAdded);
+                errorHandle.DangerousAddRef(ref errorRefAdded);
+
+                int outputFd = outputHandle.DangerousGetHandle().ToInt32();
+                int errorFd = errorHandle.DangerousGetHandle().ToInt32();
+
+                if (Interop.Sys.Fcntl.DangerousSetIsNonBlocking(outputFd, 1) != 0
+                    || Interop.Sys.Fcntl.DangerousSetIsNonBlocking(errorFd, 1) != 0)
+                {
+                    throw new Win32Exception();
+                }
+
+                // Cannot use stackalloc in an iterator method; use a regular array.
+                Interop.PollEvent[] pollFds = new Interop.PollEvent[2];
+
+                long deadline = timeoutMs >= 0 ? Environment.TickCount64 + timeoutMs : long.MaxValue;
+
+                int outputStartIndex = 0, outputEndIndex = 0;
+                int errorStartIndex = 0, errorEndIndex = 0;
+                bool outputDone = false, errorDone = false;
+
+                List<ProcessOutputLine> lines = new();
+
+                while (!outputDone || !errorDone)
+                {
+                    int numFds = 0;
+                    int outputIndex = -1;
+                    int errorIndex = -1;
+
+                    if (!errorDone)
+                    {
+                        errorIndex = numFds;
+                        pollFds[numFds].FileDescriptor = errorFd;
+                        pollFds[numFds].Events = Interop.PollEvents.POLLIN;
+                        pollFds[numFds].TriggeredEvents = Interop.PollEvents.POLLNONE;
+                        numFds++;
+                    }
+
+                    if (!outputDone)
+                    {
+                        outputIndex = numFds;
+                        pollFds[numFds].FileDescriptor = outputFd;
+                        pollFds[numFds].Events = Interop.PollEvents.POLLIN;
+                        pollFds[numFds].TriggeredEvents = Interop.PollEvents.POLLNONE;
+                        numFds++;
+                    }
+
+                    if (!TryGetRemainingTimeout(deadline, timeoutMs, out int pollTimeout))
+                    {
+                        throw new TimeoutException();
+                    }
+
+                    Interop.Error pollError = PollPipes(pollFds, numFds, pollTimeout, out uint triggered);
+                    if (pollError != Interop.Error.SUCCESS)
+                    {
+                        if (pollError == Interop.Error.EINTR)
+                        {
+                            continue;
+                        }
+
+                        throw new Win32Exception(Interop.Sys.ConvertErrorPalToPlatform(pollError));
+                    }
+
+                    if (triggered == 0)
+                    {
+                        throw new TimeoutException();
+                    }
+
+                    // Process error pipe first (lower index) when both have data available.
+                    for (int i = 0; i < numFds; i++)
+                    {
+                        if (pollFds[i].TriggeredEvents == Interop.PollEvents.POLLNONE)
+                        {
+                            continue;
+                        }
+
+                        bool isError = i == errorIndex;
+                        SafePipeHandle currentHandle = isError ? errorHandle : outputHandle;
+                        Encoding currentEncoding = isError ? errorEncoding : outputEncoding;
+
+                        // Use explicit branching to avoid ref locals across yield points.
+                        if (isError)
+                        {
+                            int bytesRead = ReadNonBlocking(currentHandle, errorBuffer, errorEndIndex);
+                            if (bytesRead > 0)
+                            {
+                                errorEndIndex += bytesRead;
+                                ParseLinesFromBuffer(errorBuffer, ref errorStartIndex, errorEndIndex, currentEncoding, true, lines);
+                                CompactOrGrowLineBuffer(ref errorBuffer, ref errorStartIndex, ref errorEndIndex);
+                            }
+                            else if (bytesRead == 0)
+                            {
+                                EmitRemainingAsLine(errorBuffer, ref errorStartIndex, ref errorEndIndex, currentEncoding, true, lines);
+                                errorDone = true;
+                            }
+                            // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.
+                        }
+                        else
+                        {
+                            int bytesRead = ReadNonBlocking(currentHandle, outputBuffer, outputEndIndex);
+                            if (bytesRead > 0)
+                            {
+                                outputEndIndex += bytesRead;
+                                ParseLinesFromBuffer(outputBuffer, ref outputStartIndex, outputEndIndex, currentEncoding, false, lines);
+                                CompactOrGrowLineBuffer(ref outputBuffer, ref outputStartIndex, ref outputEndIndex);
+                            }
+                            else if (bytesRead == 0)
+                            {
+                                EmitRemainingAsLine(outputBuffer, ref outputStartIndex, ref outputEndIndex, currentEncoding, false, lines);
+                                outputDone = true;
+                            }
+                            // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.
+                        }
+                    }
+
+                    // Yield parsed lines outside of any ref-local scope.
+                    foreach (ProcessOutputLine line in lines)
+                    {
+                        yield return line;
+                    }
+
+                    lines.Clear();
+                }
+            }
+            finally
+            {
+                if (outputRefAdded)
+                {
+                    outputHandle.DangerousRelease();
+                }
+
+                if (errorRefAdded)
+                {
+                    errorHandle.DangerousRelease();
+                }
+
+                ArrayPool<byte>.Shared.Return(outputBuffer);
+                ArrayPool<byte>.Shared.Return(errorBuffer);
+            }
+        }
+
+        /// <summary>
+        /// Calls poll(2) on the provided array of poll events.
+        /// </summary>
+        private static unsafe Interop.Error PollPipes(Interop.PollEvent[] pollFds, int numFds, int timeoutMs, out uint triggered)
+        {
+            uint localTriggered = 0;
+            Interop.Error result;
+            fixed (Interop.PollEvent* pPollFds = pollFds)
+            {
+                result = Interop.Sys.Poll(pPollFds, (uint)numFds, timeoutMs, &localTriggered);
+            }
+
+            triggered = localTriggered;
+            return result;
+        }
 
         /// <summary>
         /// Reads from both standard output and standard error pipes using Unix poll-based multiplexing

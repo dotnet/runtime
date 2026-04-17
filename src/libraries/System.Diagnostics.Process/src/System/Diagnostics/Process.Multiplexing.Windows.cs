@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -12,6 +15,211 @@ namespace System.Diagnostics
     public partial class Process
     {
         private static SafeFileHandle GetSafeHandleFromStreamReader(StreamReader reader) => ((FileStream)reader.BaseStream).SafeFileHandle;
+
+        /// <summary>
+        /// Reads from both standard output and standard error pipes as lines of text using Windows
+        /// overlapped IO with wait handles for single-threaded synchronous multiplexing.
+        /// The caller provides initially-rented buffers; this method takes ownership and returns them
+        /// to the pool when enumeration completes.
+        /// </summary>
+        private IEnumerable<ProcessOutputLine> ReadPipesToLines(
+            int timeoutMs,
+            Encoding outputEncoding,
+            Encoding errorEncoding,
+            byte[] outputBuffer,
+            byte[] errorBuffer)
+        {
+            SafeFileHandle outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
+            SafeFileHandle errorHandle = GetSafeHandleFromStreamReader(_standardError!);
+
+            bool outputRefAdded = false, errorRefAdded = false;
+            PinnedGCHandle<byte[]> outputPin = default, errorPin = default;
+            nint outputOverlappedNint = 0, errorOverlappedNint = 0;
+            EventWaitHandle? outputEvent = null, errorEvent = null;
+
+            try
+            {
+                outputHandle.DangerousAddRef(ref outputRefAdded);
+                errorHandle.DangerousAddRef(ref errorRefAdded);
+
+                outputPin = new PinnedGCHandle<byte[]>(outputBuffer);
+                errorPin = new PinnedGCHandle<byte[]>(errorBuffer);
+
+                outputEvent = new EventWaitHandle(initialState: false, EventResetMode.ManualReset);
+                errorEvent = new EventWaitHandle(initialState: false, EventResetMode.ManualReset);
+
+                unsafe
+                {
+                    outputOverlappedNint = (nint)AllocateOverlapped(outputEvent);
+                    errorOverlappedNint = (nint)AllocateOverlapped(errorEvent);
+                }
+
+                // Error output gets index 0 so WaitAny services it first when both are signaled.
+                WaitHandle[] waitHandles = [errorEvent, outputEvent];
+
+                int outputStartIndex = 0, outputEndIndex = 0;
+                int errorStartIndex = 0, errorEndIndex = 0;
+
+                bool outputDone, errorDone;
+                unsafe
+                {
+                    outputDone = !QueueRead(outputHandle, outputPin.GetAddressOfArrayData(),
+                        outputBuffer.Length, (NativeOverlapped*)outputOverlappedNint, outputEvent);
+                    errorDone = !QueueRead(errorHandle, errorPin.GetAddressOfArrayData(),
+                        errorBuffer.Length, (NativeOverlapped*)errorOverlappedNint, errorEvent);
+                }
+
+                long deadline = timeoutMs >= 0 ? Environment.TickCount64 + timeoutMs : long.MaxValue;
+                List<ProcessOutputLine> lines = new();
+
+                while (!outputDone || !errorDone)
+                {
+                    int waitResult = TryGetRemainingTimeout(deadline, timeoutMs, out int remainingMilliseconds)
+                        ? WaitHandle.WaitAny(waitHandles, remainingMilliseconds)
+                        : WaitHandle.WaitTimeout;
+
+                    if (waitResult == WaitHandle.WaitTimeout)
+                    {
+                        unsafe
+                        {
+                            CancelPendingIOIfNeeded(outputHandle, outputDone, (NativeOverlapped*)outputOverlappedNint);
+                            CancelPendingIOIfNeeded(errorHandle, errorDone, (NativeOverlapped*)errorOverlappedNint);
+                        }
+
+                        throw new TimeoutException();
+                    }
+
+                    bool isError = waitResult == 0;
+                    nint currentOverlappedNint = isError ? errorOverlappedNint : outputOverlappedNint;
+                    SafeFileHandle currentHandle = isError ? errorHandle : outputHandle;
+                    Encoding currentEncoding = isError ? errorEncoding : outputEncoding;
+                    EventWaitHandle currentEvent = isError ? errorEvent! : outputEvent!;
+
+                    int bytesRead;
+                    unsafe
+                    {
+                        bytesRead = GetOverlappedResultForPipe(currentHandle, (NativeOverlapped*)currentOverlappedNint);
+                    }
+
+                    if (bytesRead > 0)
+                    {
+                        // Scoped block for ref locals that must not cross yield points.
+                        {
+                            ref int currentStartIndex = ref (isError ? ref errorStartIndex : ref outputStartIndex);
+                            ref int currentEndIndex = ref (isError ? ref errorEndIndex : ref outputEndIndex);
+                            ref byte[] currentBuffer = ref (isError ? ref errorBuffer : ref outputBuffer);
+
+                            currentEndIndex += bytesRead;
+
+                            ParseLinesFromBuffer(currentBuffer, ref currentStartIndex, currentEndIndex, currentEncoding, isError, lines);
+                            CompactOrGrowLineBuffer(ref currentBuffer, ref currentStartIndex, ref currentEndIndex);
+
+                            // Update pin in case the buffer was replaced by growth.
+                            if (isError)
+                            {
+                                errorPin.Target = errorBuffer;
+                            }
+                            else
+                            {
+                                outputPin.Target = outputBuffer;
+                            }
+
+                            unsafe
+                            {
+                                ResetOverlapped(currentEvent, (NativeOverlapped*)currentOverlappedNint);
+
+                                byte* pinPointer = isError
+                                    ? errorPin.GetAddressOfArrayData()
+                                    : outputPin.GetAddressOfArrayData();
+
+                                if (!QueueRead(currentHandle, pinPointer + currentEndIndex,
+                                    currentBuffer.Length - currentEndIndex,
+                                    (NativeOverlapped*)currentOverlappedNint, currentEvent))
+                                {
+                                    EmitRemainingAsLine(currentBuffer, ref currentStartIndex, ref currentEndIndex,
+                                        currentEncoding, isError, lines);
+
+                                    if (isError)
+                                    {
+                                        errorDone = true;
+                                    }
+                                    else
+                                    {
+                                        outputDone = true;
+                                    }
+
+                                    currentEvent.Reset();
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // EOF: pipe write end was closed.
+                        {
+                            ref int currentStartIndex = ref (isError ? ref errorStartIndex : ref outputStartIndex);
+                            ref int currentEndIndex = ref (isError ? ref errorEndIndex : ref outputEndIndex);
+                            ref byte[] currentBuffer = ref (isError ? ref errorBuffer : ref outputBuffer);
+
+                            EmitRemainingAsLine(currentBuffer, ref currentStartIndex, ref currentEndIndex,
+                                currentEncoding, isError, lines);
+                        }
+
+                        if (isError)
+                        {
+                            errorDone = true;
+                        }
+                        else
+                        {
+                            outputDone = true;
+                        }
+
+                        currentEvent.Reset();
+                    }
+
+                    // Yield parsed lines outside of any unsafe or ref-local scope.
+                    foreach (ProcessOutputLine line in lines)
+                    {
+                        yield return line;
+                    }
+
+                    lines.Clear();
+                }
+            }
+            finally
+            {
+                unsafe
+                {
+                    if (outputOverlappedNint != 0)
+                    {
+                        NativeMemory.Free((void*)outputOverlappedNint);
+                    }
+
+                    if (errorOverlappedNint != 0)
+                    {
+                        NativeMemory.Free((void*)errorOverlappedNint);
+                    }
+                }
+
+                outputEvent?.Dispose();
+                errorEvent?.Dispose();
+                outputPin.Dispose();
+                errorPin.Dispose();
+
+                if (outputRefAdded)
+                {
+                    outputHandle.DangerousRelease();
+                }
+
+                if (errorRefAdded)
+                {
+                    errorHandle.DangerousRelease();
+                }
+
+                ArrayPool<byte>.Shared.Return(outputBuffer);
+                ArrayPool<byte>.Shared.Return(errorBuffer);
+            }
+        }
 
         /// <summary>
         /// Reads from both standard output and standard error pipes using Windows overlapped IO

@@ -114,6 +114,147 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Reads all standard output and standard error of the process as lines of text,
+        /// interleaving them as they become available.
+        /// </summary>
+        /// <param name="timeout">
+        /// The maximum amount of time to wait for the streams to be fully read.
+        /// When <see langword="null" />, waits indefinitely.
+        /// </param>
+        /// <returns>
+        /// An enumerable of <see cref="ProcessOutputLine"/> instances representing the lines
+        /// read from standard output and standard error.
+        /// </returns>
+        /// <remarks>
+        /// Lines from standard output and standard error are yielded as they become available.
+        /// When data is available in both standard output and standard error, standard error
+        /// is processed first.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Standard output or standard error has not been redirected.
+        /// -or-
+        /// A redirected stream has already been used for synchronous or asynchronous reading.
+        /// </exception>
+        /// <exception cref="TimeoutException">
+        /// The operation did not complete within the specified <paramref name="timeout" />.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        /// The process has been disposed.
+        /// </exception>
+        public IEnumerable<ProcessOutputLine> ReadAllLines(TimeSpan? timeout = default)
+        {
+            ValidateReadAllState();
+
+            int timeoutMs = timeout.HasValue
+                ? ToTimeoutMilliseconds(timeout.Value)
+                : Timeout.Infinite;
+
+            Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();
+            Encoding errorEncoding = _startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding();
+
+            byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+
+            return ReadPipesToLines(timeoutMs, outputEncoding, errorEncoding, outputBuffer, errorBuffer);
+        }
+
+        /// <summary>
+        /// Scans the buffer from <paramref name="startIndex"/> to <paramref name="endIndex"/> for complete lines
+        /// (delimited by <c>\n</c>), adds each as a <see cref="ProcessOutputLine"/> to <paramref name="lines"/>,
+        /// and advances <paramref name="startIndex"/> past the consumed data. Handles both <c>\r\n</c> and <c>\n</c>
+        /// line endings.
+        /// </summary>
+        private static void ParseLinesFromBuffer(
+            byte[] buffer,
+            ref int startIndex,
+            int endIndex,
+            Encoding encoding,
+            bool standardError,
+            List<ProcessOutputLine> lines)
+        {
+            while (startIndex < endIndex)
+            {
+                int remaining = endIndex - startIndex;
+                int lineEnd = buffer.AsSpan(startIndex, remaining).IndexOf((byte)'\n');
+                if (lineEnd == -1)
+                {
+                    break;
+                }
+
+                int contentLength = lineEnd;
+                if (contentLength > 0 && buffer[startIndex + contentLength - 1] == (byte)'\r')
+                {
+                    contentLength--;
+                }
+
+                lines.Add(new ProcessOutputLine(
+                    encoding.GetString(buffer, startIndex, contentLength),
+                    standardError));
+
+                startIndex += lineEnd + 1;
+            }
+        }
+
+        /// <summary>
+        /// Emits any remaining data in the buffer as a final line when an EOF is reached.
+        /// </summary>
+        private static void EmitRemainingAsLine(
+            byte[] buffer,
+            ref int startIndex,
+            ref int endIndex,
+            Encoding encoding,
+            bool standardError,
+            List<ProcessOutputLine> lines)
+        {
+            if (startIndex < endIndex)
+            {
+                int length = endIndex - startIndex;
+                if (length > 0 && buffer[startIndex + length - 1] == (byte)'\r')
+                {
+                    length--;
+                }
+
+                if (length > 0)
+                {
+                    lines.Add(new ProcessOutputLine(
+                        encoding.GetString(buffer, startIndex, length),
+                        standardError));
+                }
+
+                startIndex = 0;
+                endIndex = 0;
+            }
+        }
+
+        /// <summary>
+        /// After line parsing, compacts remaining data to the front of the buffer if it has reached
+        /// the end, or rents a larger buffer if the entire buffer is filled with a single incomplete line.
+        /// </summary>
+        private static void CompactOrGrowLineBuffer(ref byte[] buffer, ref int startIndex, ref int endIndex)
+        {
+            if (endIndex < buffer.Length)
+            {
+                return;
+            }
+
+            int remaining = endIndex - startIndex;
+
+            if (remaining == buffer.Length)
+            {
+                // The buffer is too small to hold a single line — grow it.
+                RentLargerBuffer(ref buffer, remaining);
+            }
+            else
+            {
+                // Compact: move remaining data to the start of the buffer.
+                Buffer.BlockCopy(buffer, startIndex, buffer, 0, remaining);
+            }
+
+            startIndex = 0;
+            endIndex = remaining;
+        }
+
+        /// <summary>
         /// Asynchronously reads all standard output and standard error of the process as text.
         /// </summary>
         /// <param name="cancellationToken">

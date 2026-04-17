@@ -13,8 +13,10 @@ namespace System.Diagnostics.Tests
     {
         private const string DontPrintAnything = "DO_NOT_PRINT";
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task ReadAllLinesAsync_ThrowsAfterDispose()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAllLines_ThrowsAfterDispose(bool useAsync)
         {
             Process process = CreateProcess(RemotelyInvokable.Dummy);
             process.Start();
@@ -22,54 +24,96 @@ namespace System.Diagnostics.Tests
 
             process.Dispose();
 
-            await Assert.ThrowsAsync<ObjectDisposedException>(async () =>
+            if (useAsync)
             {
-                await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                await Assert.ThrowsAsync<ObjectDisposedException>(async () =>
                 {
-                }
-            });
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task ReadAllLinesAsync_ThrowsWhenNoStreamsRedirected()
-        {
-            Process process = CreateProcess(RemotelyInvokable.Dummy);
-            process.Start();
-
-            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                    await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                    {
+                    }
+                });
+            }
+            else
             {
-                await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                Assert.Throws<ObjectDisposedException>(() =>
                 {
-                }
-            });
-
-            Assert.True(process.WaitForExit(WaitInMS));
+                    foreach (ProcessOutputLine line in process.ReadAllLines())
+                    {
+                    }
+                });
+            }
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task ReadAllLinesAsync_ThrowsWhenOnlyOutputOrErrorIsRedirected(bool standardOutput)
+        public async Task ReadAllLines_ThrowsWhenNoStreamsRedirected(bool useAsync)
+        {
+            Process process = CreateProcess(RemotelyInvokable.Dummy);
+            process.Start();
+
+            if (useAsync)
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                    {
+                    }
+                });
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() =>
+                {
+                    foreach (ProcessOutputLine line in process.ReadAllLines())
+                    {
+                    }
+                });
+            }
+
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task ReadAllLines_ThrowsWhenOnlyOutputOrErrorIsRedirected(bool standardOutput, bool useAsync)
         {
             Process process = CreateProcess(RemotelyInvokable.Dummy);
             process.StartInfo.RedirectStandardOutput = standardOutput;
             process.StartInfo.RedirectStandardError = !standardOutput;
             process.Start();
 
-            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            if (useAsync)
             {
-                await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 {
-                }
-            });
+                    await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                    {
+                    }
+                });
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() =>
+                {
+                    foreach (ProcessOutputLine line in process.ReadAllLines())
+                    {
+                    }
+                });
+            }
 
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReadAllLinesAsync_ThrowsWhenOutputOrErrorIsInSyncMode(bool standardOutput)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task ReadAllLines_ThrowsWhenOutputOrErrorIsInSyncMode(bool standardOutput, bool useAsync)
         {
             Process process = CreateProcess(RemotelyInvokable.Dummy);
             process.StartInfo.RedirectStandardOutput = true;
@@ -79,20 +123,34 @@ namespace System.Diagnostics.Tests
             // Access the StreamReader property to set the stream to sync mode
             _ = standardOutput ? process.StandardOutput : process.StandardError;
 
-            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            if (useAsync)
             {
-                await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 {
-                }
-            });
+                    await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                    {
+                    }
+                });
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() =>
+                {
+                    foreach (ProcessOutputLine line in process.ReadAllLines())
+                    {
+                    }
+                });
+            }
 
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReadAllLinesAsync_ThrowsWhenOutputOrErrorIsInAsyncMode(bool standardOutput)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task ReadAllLines_ThrowsWhenOutputOrErrorIsInAsyncMode(bool standardOutput, bool useAsync)
         {
             Process process = CreateProcess(RemotelyInvokable.StreamBody);
             process.StartInfo.RedirectStandardOutput = true;
@@ -108,12 +166,24 @@ namespace System.Diagnostics.Tests
                 process.BeginErrorReadLine();
             }
 
-            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            if (useAsync)
             {
-                await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 {
-                }
-            });
+                    await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                    {
+                    }
+                });
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() =>
+                {
+                    foreach (ProcessOutputLine line in process.ReadAllLines())
+                    {
+                    }
+                });
+            }
 
             if (standardOutput)
             {
@@ -128,11 +198,15 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("hello", "world")]
-        [InlineData("just output", "")]
-        [InlineData("", "just error")]
-        [InlineData("", "")]
-        public async Task ReadAllLinesAsync_ReadsBothOutputAndError(string standardOutput, string standardError)
+        [InlineData("hello", "world", true)]
+        [InlineData("hello", "world", false)]
+        [InlineData("just output", "", true)]
+        [InlineData("just output", "", false)]
+        [InlineData("", "just error", true)]
+        [InlineData("", "just error", false)]
+        [InlineData("", "", true)]
+        [InlineData("", "", false)]
+        public async Task ReadAllLines_ReadsBothOutputAndError(string standardOutput, string standardError, bool useAsync)
         {
             using Process process = StartLinePrintingProcess(
                 string.IsNullOrEmpty(standardOutput) ? DontPrintAnything : standardOutput,
@@ -141,7 +215,7 @@ namespace System.Diagnostics.Tests
             List<string> capturedOutput = new();
             List<string> capturedError = new();
 
-            await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
             {
                 if (line.StandardError)
                 {
@@ -174,8 +248,10 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task ReadAllLinesAsync_ReadsInterleavedOutput()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAllLines_ReadsInterleavedOutput(bool useAsync)
         {
             const int iterations = 100;
             using Process process = CreateProcess(() =>
@@ -198,7 +274,7 @@ namespace System.Diagnostics.Tests
             List<string> capturedOutput = new();
             List<string> capturedError = new();
 
-            await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
             {
                 if (line.StandardError)
                 {
@@ -224,8 +300,10 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task ReadAllLinesAsync_ReadsLargeOutput()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAllLines_ReadsLargeOutput(bool useAsync)
         {
             const int lineCount = 1000;
             using Process process = CreateProcess(() =>
@@ -245,7 +323,7 @@ namespace System.Diagnostics.Tests
             List<string> capturedOutput = new();
             List<string> capturedError = new();
 
-            await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
             {
                 if (line.StandardError)
                 {
@@ -266,8 +344,10 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task ReadAllLinesAsync_ThrowsOperationCanceledOnCancellation()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAllLines_ThrowsOnCancellationOrTimeout(bool useAsync)
         {
             Process process = CreateProcess(RemotelyInvokable.ReadLine);
             process.StartInfo.RedirectStandardOutput = true;
@@ -277,14 +357,26 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                using CancellationTokenSource cts = new(TimeSpan.FromMilliseconds(100));
-
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                if (useAsync)
                 {
-                    await foreach (ProcessOutputLine line in process.ReadAllLinesAsync(cts.Token))
+                    using CancellationTokenSource cts = new(TimeSpan.FromMilliseconds(100));
+
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                     {
-                    }
-                });
+                        await foreach (ProcessOutputLine line in process.ReadAllLinesAsync(cts.Token))
+                        {
+                        }
+                    });
+                }
+                else
+                {
+                    Assert.Throws<TimeoutException>(() =>
+                    {
+                        foreach (ProcessOutputLine line in process.ReadAllLines(TimeSpan.FromMilliseconds(100)))
+                        {
+                        }
+                    });
+                }
             }
             finally
             {
@@ -294,14 +386,16 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task ReadAllLinesAsync_ProcessOutputLineProperties()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAllLines_ProcessOutputLineProperties(bool useAsync)
         {
             using Process process = StartLinePrintingProcess("stdout_line", "stderr_line");
 
             List<ProcessOutputLine> allLines = new();
 
-            await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
             {
                 allLines.Add(line);
             }
@@ -312,8 +406,10 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task ReadAllLinesAsync_StopsCleanlyWhenConsumerBreaksEarly()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAllLines_StopsCleanlyWhenConsumerBreaksEarly(bool useAsync)
         {
             using Process process = CreateProcess(() =>
             {
@@ -333,7 +429,7 @@ namespace System.Diagnostics.Tests
 
             ProcessOutputLine? firstLine = null;
 
-            await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
             {
                 firstLine = line;
                 break; // stop after first line
@@ -367,6 +463,31 @@ namespace System.Diagnostics.Tests
             process.Start();
 
             return process;
+        }
+
+        /// <summary>
+        /// Helper that wraps both the sync and async line-reading APIs into an
+        /// <see cref="IAsyncEnumerable{ProcessOutputLine}"/> so callers can always
+        /// use <c>await foreach</c>.
+        /// </summary>
+        private static async IAsyncEnumerable<ProcessOutputLine> EnumerateLines(Process process, bool useAsync)
+        {
+            if (useAsync)
+            {
+                await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                {
+                    yield return line;
+                }
+            }
+            else
+            {
+                foreach (ProcessOutputLine line in process.ReadAllLines())
+                {
+                    yield return line;
+                }
+
+                await Task.CompletedTask; // Ensure the method is valid async
+            }
         }
     }
 }
