@@ -529,9 +529,9 @@ serializTypeElement:
 
 /*  Module declaration */
 moduleHead:
-	MODULE
+	MODULE 'extern' dottedName
 	| MODULE dottedName
-	| MODULE 'extern' dottedName;
+	| MODULE;
 
 /*  VTable Fixup table declaration  */
 vtfixupDecl: '.vtfixup' '[' int32 ']' vtfixupAttr 'at' id;
