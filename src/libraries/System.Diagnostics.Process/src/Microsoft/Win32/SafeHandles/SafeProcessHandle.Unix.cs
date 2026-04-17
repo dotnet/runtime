@@ -31,6 +31,7 @@ namespace Microsoft.Win32.SafeHandles
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
         private ProcessWaitState? _waitState;
+        private ProcessWaitState.Holder? _lazyWaitStateHolder;
 
         private SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
@@ -57,6 +58,7 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_handle != null);
                 _handle.DangerousRelease();
             }
+            _lazyWaitStateHolder?.Dispose();
             return true;
         }
 
@@ -134,12 +136,46 @@ namespace Microsoft.Win32.SafeHandles
 
         private ProcessWaitState GetWaitState()
         {
-            if (_waitState is null)
+            ProcessWaitState? waitState = _waitState;
+            if (waitState is not null)
+            {
+                return waitState;
+            }
+
+            return EnsureWaitStateInitialized();
+        }
+
+        private ProcessWaitState EnsureWaitStateInitialized()
+        {
+            // Double-check: another thread may have initialized it.
+            ProcessWaitState? waitState = _waitState;
+            if (waitState is not null)
+            {
+                return waitState;
+            }
+
+            int processId = ProcessId;
+            if (processId == 0)
             {
                 throw new InvalidOperationException(SR.InvalidProcessHandle);
             }
 
-            return _waitState;
+            ProcessWaitState.Holder holder = new ProcessWaitState.Holder(processId, isNewChild: false, usesTerminal: false);
+            waitState = holder._state;
+
+            if (Interlocked.CompareExchange(ref _waitState, waitState, null) is null)
+            {
+                // We won the race — store the holder so its ref count is released in ReleaseHandle.
+                _lazyWaitStateHolder = holder;
+            }
+            else
+            {
+                // Another thread initialized first — release our holder.
+                holder.Dispose();
+                waitState = _waitState;
+            }
+
+            return waitState;
         }
 
         private static ProcessExitStatus CreateExitStatus(ProcessWaitState waitState, bool canceled)

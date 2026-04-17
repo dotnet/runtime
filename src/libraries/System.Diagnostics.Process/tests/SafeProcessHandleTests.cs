@@ -486,9 +486,11 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.Windows, "Signal property is Unix-specific")]
-        public void WaitForExit_ProcessKilledBySignal_ReportsSignal()
+        [InlineData(PosixSignal.SIGKILL)]
+        [InlineData(PosixSignal.SIGTERM)]
+        public void WaitForExit_ProcessKilledBySignal_ReportsSignal(PosixSignal signal)
         {
             Process process = CreateProcess(static () =>
             {
@@ -497,12 +499,12 @@ namespace System.Diagnostics.Tests
             });
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
-            processHandle.Kill();
+            processHandle.Signal(signal);
 
             ProcessExitStatus exitStatus = processHandle.WaitForExit();
 
             Assert.NotNull(exitStatus.Signal);
-            Assert.Equal(PosixSignal.SIGKILL, exitStatus.Signal);
+            Assert.Equal(signal, exitStatus.Signal);
         }
     }
 }
