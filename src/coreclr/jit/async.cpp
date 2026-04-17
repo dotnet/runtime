@@ -3014,7 +3014,7 @@ void AsyncTransformation::CreateResumptionSwitch()
 
         JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", jmpOSR->bbNum);
 
-        BasicBlock* onContinuationBB = newEntryBB->GetTrueTarget();
+        BasicBlock* onContinuationBB  = newEntryBB->GetTrueTarget();
         BasicBlock* checkOSRAddressBB = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
 
         JITDUMP("    Created " FMT_BB " to check whether we should transition immediately to OSR\n",
