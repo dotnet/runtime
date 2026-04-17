@@ -92,7 +92,7 @@ static ContractDescriptorTarget CreateCdacTarget(DataTarget dt)
             dt.DataReader.Read,
             (ulong address, Span<byte> buffer) => throw new NotSupportedException("Read-only dump."),
             (uint threadId, uint contextFlags, Span<byte> buffer) =>
-                dt.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? buffer.Length : -1,
+                dt.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? 0 : -1,
             [CoreCLRContracts.Register],
             out ContractDescriptorTarget? target))
     {
