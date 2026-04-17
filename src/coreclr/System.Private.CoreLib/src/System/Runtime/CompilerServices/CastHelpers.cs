@@ -451,7 +451,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void StelemRef(object?[] array, nint index, object? obj)
         {
             // This will throw NullReferenceException if array is null.
