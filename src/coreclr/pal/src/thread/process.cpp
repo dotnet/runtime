@@ -195,7 +195,10 @@ Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalC
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
 #ifdef HOST_ANDROID
-static bool g_inProcCrashReportEnabled = false;
+// Read from the fatal-signal path (PROCCreateCrashDumpIfEnabled) and written
+// once during startup (PROCEnableInProcCrashReport); use Volatile<bool> to
+// match the signal-path publication of g_logManagedCallstackForSignalCallback.
+static Volatile<bool> g_inProcCrashReportEnabled = false;
 #endif
 
 //
