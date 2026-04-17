@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization.Converters
             {
 
                 ReadOnlySpan<char> remaining = value.AsSpan();
-                if (remaining.Length < ComputeMaxSafeStringLength(writer))
+                if (remaining.Length <= ChunkSize || remaining.Length < ComputeMaxSafeStringLength(writer))
                 {
                     writer.WriteStringValue(remaining);
                 }
