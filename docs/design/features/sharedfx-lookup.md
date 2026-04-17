@@ -53,7 +53,7 @@ int dotnet_execute(
     const char_t *sdk_dir,       // path to the resolved SDK directory
     const char_t *hostfxr_path,  // path to the hostfxr library
     int argc,                    // user's command-line arguments (excluding dotnet executable itself)
-    const char_t **argv)
+    const char_t **argv);
 ```
 
 If the `dotnet-aot` library is not found or does not have the expected entry point, the muxer falls back to running the managed `dotnet.dll` as a framework-dependent app.
