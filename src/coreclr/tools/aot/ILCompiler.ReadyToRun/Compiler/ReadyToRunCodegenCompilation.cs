@@ -786,9 +786,7 @@ namespace ILCompiler
                     return;
                 }
                 var ilProvider = (ReadyToRunILProvider)_methodILCache.ILProvider;
-                MethodIL il = null!;
-                var methodDef = method.GetTypicalMethodDefinition();
-                il = ilProvider.GetMethodIL(methodDef);
+                MethodIL il = ilProvider.GetMethodIL(method);
                 // We shouldn't get null IL, but just in case, handle it gracefully
                 Debug.Assert(il is not null);
                 if (il is null)
@@ -805,7 +803,7 @@ namespace ILCompiler
                         switch(il.GetObject(tok))
                         {
                             case TypeSystemEntity tse:
-                                _tokenManager.EnsureDefTokensAreAvailable(tse, ((EcmaMethod)methodDef.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
+                                _tokenManager.EnsureDefTokensAreAvailable(tse, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
                                 break;
                             default:
                                 // We don't need to worry about string handles
@@ -821,12 +819,12 @@ namespace ILCompiler
                         if (region.Kind == ILExceptionRegionKind.Catch)
                         {
                             TypeSystemEntity catchType = (TypeSystemEntity)il.GetObject(region.ClassToken);
-                            _tokenManager.EnsureDefTokensAreAvailable(catchType, ((EcmaMethod)methodDef.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
+                            _tokenManager.EnsureDefTokensAreAvailable(catchType, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
                         }
                     }
                     foreach (var local in il.GetLocals())
                     {
-                        _tokenManager.EnsureDefTokensAreAvailable(local.Type, ((EcmaMethod)methodDef.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
+                        _tokenManager.EnsureDefTokensAreAvailable(local.Type, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
                     }
                 }
                 finally
