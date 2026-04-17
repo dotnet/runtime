@@ -220,7 +220,6 @@ public:
         TT_NONE,
         TT_M2U, // we can safely cast to a FramedMethodFrame
         TT_U2M, // we can safely cast to a DebuggerU2MCatchHandlerFrame
-        TT_AppDomain, // transitioniting between AppDomains.
         TT_InternalCall, // calling into the CLR (ecall/fcall).
     };
 

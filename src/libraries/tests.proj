@@ -430,6 +430,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/126673 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj"
+        Condition="'$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'arm64' "/>
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\ComInterfaceGenerator.Tests\ComInterfaceGenerator.Tests.csproj"
+        Condition="'$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'arm64'" />
+
     <!-- https://github.com/dotnet/runtime/issues/119380 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj"
                       Condition="'$(TargetOS)' == 'osx' and '$(TargetArchitecture)' == 'arm64'" />

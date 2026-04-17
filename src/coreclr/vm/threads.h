@@ -129,7 +129,6 @@ class     PInvoke;
 class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
-class     DomainAssembly;
 class     DeadlockAwareLock;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
@@ -4045,7 +4044,6 @@ typedef StateHolder<ThreadStore::LockThreadStore,ThreadStore::UnlockThreadStore>
 
 
 // This class dispenses small thread ids for the thin lock mechanism.
-// Recently we started using this class to dispense domain neutral module IDs as well.
 class IdDispenser
 {
 private:
