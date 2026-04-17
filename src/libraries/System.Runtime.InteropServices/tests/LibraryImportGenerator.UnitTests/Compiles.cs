@@ -730,7 +730,7 @@ namespace LibraryImportGenerator.UnitTests
                 LocalFunctionStatementSyntax innerDllImport = Assert.Single(localFunctions);
                 AttributeSyntax dllImportAttr = innerDllImport.AttributeLists
                     .SelectMany(al => al.Attributes)
-                    .Single(a => a.Name.ToString().Contains("DllImport"));
+                    .Single(a => a.Name.ToString().EndsWith("DllImportAttribute") || a.Name.ToString() == "DllImport");
 
                 AttributeArgumentSyntax? charSetArgument = dllImportAttr.ArgumentList!.Arguments
                     .SingleOrDefault(a => a.NameEquals?.Name.Identifier.Text == nameof(DllImportAttribute.CharSet));

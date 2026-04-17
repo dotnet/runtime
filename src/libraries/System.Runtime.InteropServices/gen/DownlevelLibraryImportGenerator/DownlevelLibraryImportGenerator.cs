@@ -346,10 +346,7 @@ namespace Microsoft.Interop
                 dllImportArgs.Add(AttributeArgument(
                     NameEquals(nameof(DllImportAttribute.CharSet)),
                     null,
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        AliasQualifiedName("global", IdentifierName(typeof(CharSet).FullName)),
-                        IdentifierName(nameof(CharSet.Unicode)))));
+                    CreateEnumExpressionSyntax(CharSet.Unicode)));
             }
 
             (ParameterListSyntax parameterList, TypeSyntax returnType, AttributeListSyntax returnTypeAttributes) = stubGenerator.GenerateTargetMethodSignatureData();
@@ -395,10 +392,7 @@ namespace Microsoft.Interop
             {
                 Debug.Assert(target.StringMarshalling == StringMarshalling.Utf16);
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.CharSet));
-                ExpressionSyntax value = MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    AliasQualifiedName("global", IdentifierName(typeof(CharSet).FullName)),
-                    IdentifierName(nameof(CharSet.Unicode)));
+                ExpressionSyntax value = CreateEnumExpressionSyntax(CharSet.Unicode);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
 
@@ -428,6 +422,14 @@ namespace Microsoft.Interop
                     SyntaxKind.StringLiteralExpression,
                     Literal(str));
             }
+        }
+
+        private static MemberAccessExpressionSyntax CreateEnumExpressionSyntax<T>(T value) where T : Enum
+        {
+            return MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression,
+                AliasQualifiedName("global", IdentifierName(typeof(T).FullName)),
+                IdentifierName(value.ToString()));
         }
 
     }
