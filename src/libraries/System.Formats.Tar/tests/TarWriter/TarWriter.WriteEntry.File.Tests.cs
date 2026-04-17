@@ -207,7 +207,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
         [InlineData(TarEntryFormat.V7, TarHardLinkMode.PreserveLink)]
         [InlineData(TarEntryFormat.Ustar, TarHardLinkMode.PreserveLink)]
         [InlineData(TarEntryFormat.Pax, TarHardLinkMode.PreserveLink)]

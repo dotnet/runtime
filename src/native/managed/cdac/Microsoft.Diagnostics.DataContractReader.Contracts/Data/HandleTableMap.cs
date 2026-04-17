@@ -14,14 +14,14 @@ internal sealed class HandleTableMap : IData<HandleTableMap>
     public HandleTableMap(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HandleTableMap);
-        TargetPointer bucketsPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(BucketsPtr)].Offset);
+        TargetPointer bucketsPtr = target.ReadPointerField(address, type, nameof(BucketsPtr));
         uint arrayLength = target.ReadGlobal<uint>(Constants.Globals.InitialHandleTableArraySize);
         for (int i = 0; i < arrayLength; i++)
         {
             TargetPointer bucketPtr = target.ReadPointer(bucketsPtr + (ulong)(i * target.PointerSize));
             BucketsPtr.Add(bucketPtr);
         }
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
+        Next = target.ReadPointerField(address, type, nameof(Next));
     }
 
     public List<TargetPointer> BucketsPtr { get; init; } = new List<TargetPointer>();

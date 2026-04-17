@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>ILCompiler.ReadyToRun.Tests</AssemblyName>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
+  </ItemGroup>
+
+  <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time.
+       Exclude subdirectory sources from compilation since they are compiled in-memory by R2RTestCaseCompiler. -->
+  <ItemGroup>
+    <Compile Remove="TestCases/*/**/*.cs" />
+    <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- Pass build-time paths to test runtime via RuntimeHostConfigurationOption -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="R2RTest.Crossgen2Dir">
+      <Value>$(RuntimeBinDir)/$(BuildArchitecture)/crossgen2</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackDir">
+      <Value>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackNativeDir">
+      <Value>$(MicrosoftNetCoreAppRuntimePackNativeDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.RefPackDir">
+      <Value>$(MicrosoftNetCoreAppRefPackRefDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRArtifactsDir">
+      <Value>$(CoreCLRArtifactsPath)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.TargetArchitecture">
+      <Value>$(TargetArchitecture)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.TargetOS">
+      <Value>$(TargetOS)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.Configuration">
+      <Value>$(Configuration)</Value>
+    </RuntimeHostConfigurationOption>
+  </ItemGroup>
+
+</Project>
