@@ -2379,7 +2379,7 @@ emitter::code_t emitter::AddRex2Prefix(instruction ins, code_t code)
 #ifdef TARGET_AMD64
     if (ins >= INS_imul_08 && ins <= INS_imul_15)
     {
-        // These instructions has built-in REX prefix, need to zero them out when adding prefix.
+        // These instructions have a built-in REX prefix, so it needs to be zeroed out when adding the prefix.
         code &= 0xFFFFFFFFULL;
     }
 #endif
@@ -15554,7 +15554,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
-            // The build-in REX has been zero-ed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
+            // The built-in REX has been zero-ed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
             // addressing bits in the prefix.
             insEncodeReg345(id, inst3opImulReg(ins), size, &code);
         }
