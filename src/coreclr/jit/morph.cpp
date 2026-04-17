@@ -10460,7 +10460,8 @@ GenTree* Compiler::fgOptimizeDistributiveArithemtic(GenTreeOp* tree)
         if (GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
         {
             tree->AsOp()->gtOp1 = op1->gtGetOp1();
-            tree->AsOp()->gtOp2 = gtNewOperNode(tree->OperGet(), tree->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2());
+            tree->AsOp()->gtOp2 =
+                gtFoldExpr(gtNewOperNode(tree->OperGet(), tree->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2()));
             tree->SetOper(op1->OperGet(), GenTree::PRESERVE_VN);
             fgMorphTreeDone(tree->gtGetOp2());
         }

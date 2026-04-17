@@ -7118,6 +7118,8 @@ private:
 public:
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphCopyBlock(GenTree* tree);
+
+    GenTree* fgOptimizeDistributiveArithemtic(GenTreeOp* tree);
 private:
     GenTree* fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone = nullptr);
     bool fgTryReplaceStructLocalWithFields(GenTree** use);
@@ -7135,7 +7137,6 @@ private:
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
-    GenTree* fgOptimizeDistributiveArithemtic(GenTreeOp* tree);
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
     GenTree* fgOptimizeAddition(GenTreeOp* add);

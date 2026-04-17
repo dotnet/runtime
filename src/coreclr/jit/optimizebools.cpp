@@ -346,9 +346,6 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     optOptimizeBoolsUpdateTrees();
 
-    // There may be new opportunities for distributive arithmetic optimization
-    m_compiler->fgMorphBlockStmt(m_b1, s1 DEBUGARG(__FUNCTION__), false);
-
 #ifdef DEBUG
     if (m_compiler->verbose)
     {
@@ -1200,6 +1197,12 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     assert(m_cmpOp != GT_NONE && m_c1 != nullptr && m_c2 != nullptr);
 
     GenTree* cmpOp1 = m_foldOp == GT_NONE ? m_c1 : m_compiler->gtNewOperNode(m_foldOp, m_foldType, m_c1, m_c2);
+
+    // There may be new opportunities for distributive arithmetic optimization
+    if (m_foldOp == GT_OR || m_foldOp == GT_AND)
+    {
+        cmpOp1 = m_compiler->fgOptimizeDistributiveArithemtic(cmpOp1->AsOp());
+    }
 
     GenTree* t1Comp = m_testInfo1.compTree;
     t1Comp->SetOper(m_cmpOp);
