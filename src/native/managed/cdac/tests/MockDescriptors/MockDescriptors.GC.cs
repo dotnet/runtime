@@ -302,7 +302,6 @@ internal sealed class MockGCBuilder
             generation.AllocationStart = generations[i].AllocationStart;
         }
 
-        Builder.AddHeapFragment(generationTable);
         return generationTable.Address;
     }
 
@@ -357,7 +356,6 @@ internal sealed class MockGCBuilder
             (ulong)Builder.TargetTestHelpers.PointerSize,
             $"[global pointer] {name}");
         Builder.TargetTestHelpers.WritePointer(fragment.Data, pointsTo);
-        Builder.AddHeapFragment(fragment);
         return fragment.Address;
     }
 
@@ -367,7 +365,6 @@ internal sealed class MockGCBuilder
             (ulong)Builder.TargetTestHelpers.PointerSize,
             $"[{name}]");
         Builder.TargetTestHelpers.Write(fragment.Data.AsSpan(0, sizeof(int)), value);
-        Builder.AddHeapFragment(fragment);
         return fragment.Address;
     }
 
@@ -377,7 +374,6 @@ internal sealed class MockGCBuilder
             (ulong)Builder.TargetTestHelpers.PointerSize,
             $"[{name}]");
         Builder.TargetTestHelpers.Write(fragment.Data.AsSpan(0, sizeof(uint)), value);
-        Builder.AddHeapFragment(fragment);
         return fragment.Address;
     }
 
@@ -402,7 +398,6 @@ internal sealed class MockGCBuilder
     private ulong AddDataRegion(ulong size, string name)
     {
         MockMemorySpace.HeapFragment fragment = GCAllocator.Allocate(size, name);
-        Builder.AddHeapFragment(fragment);
         return fragment.Address;
     }
 
@@ -414,7 +409,6 @@ internal sealed class MockGCBuilder
         where TView : TypedView, new()
     {
         MockMemorySpace.HeapFragment fragment = GCAllocator.Allocate(size, name);
-        Builder.AddHeapFragment(fragment);
         return layout.Create(fragment.Data.AsMemory(), fragment.Address);
     }
 }

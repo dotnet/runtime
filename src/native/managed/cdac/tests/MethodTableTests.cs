@@ -38,6 +38,15 @@ public class MethodTableTests
             (nameof(Constants.Globals.ArrayBaseSize), rtsBuilder.ArrayBaseSize),
         ];
 
+    public static IEnumerable<object[]> StdArchBool()
+    {
+        foreach (object[] arch in new MockTarget.StdArch())
+        {
+            yield return [.. arch, true];
+            yield return [.. arch, false];
+        }
+    }
+
     internal static TestPlaceholderTarget CreateTarget(MockTarget.Architecture arch, Action<MockRTS> configure)
     {
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
@@ -278,7 +287,6 @@ public class MethodTableTests
                 MockMemorySpace.HeapFragment tinyEEClass = rtsBuilder.TypeSystemAllocator.Allocate(
                     (ulong)pointerSize, "Tiny EEClass (MethodTable field only)");
                 helpers.WritePointer(tinyEEClass.Data, methodTablePtr);
-                rtsBuilder.Builder.AddHeapFragment(tinyEEClass);
                 methodTable.EEClassOrCanonMT = tinyEEClass.Address;
             });
 
@@ -357,7 +365,6 @@ public class MethodTableTests
             helpers.Write(dest.Slice(mtTypeInfo.Fields[nameof(Data.MethodTable.MTFlags2)].Offset), (uint)0);
             helpers.WritePointer(dest.Slice(eeClassOrCanonMTOffset), eeClassPtr);
 
-            rtsBuilder.Builder.AddHeapFragment(tinyMT);
             tinyMethodTableAddr = tinyMT.Address;
 
             // Point the EEClass back at the tiny MethodTable to pass validation
@@ -607,5 +614,39 @@ public class MethodTableTests
         Assert.False(contract.IsValueType(contract.GetTypeHandle(systemObjectMethodTablePtr)));
         Assert.False(contract.IsValueType(contract.GetTypeHandle(interfaceMTPtr)));
         Assert.False(contract.IsValueType(contract.GetTypeHandle(arrayMTPtr)));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchBool))]
+    public void RequiresAlign8(MockTarget.Architecture arch, bool flagSet)
+    {
+        TargetPointer methodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                if (flagSet)
+                {
+                    MockEEClass eeClass = rtsBuilder.AddEEClass("Align8Type");
+                    eeClass.CorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
+
+                    MockMethodTable methodTable = rtsBuilder.AddMethodTable("Align8Type");
+                    methodTable.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.Category_ValueType | MethodTableFlags_1.WFLAGS_HIGH.RequiresAlign8);
+                    methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                    methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                    methodTable.NumVirtuals = 3;
+                    methodTablePtr = methodTable.Address;
+                    eeClass.MethodTable = methodTable.Address;
+                    methodTable.EEClassOrCanonMT = eeClass.Address;
+                }
+                else
+                {
+                    methodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
+                }
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(methodTablePtr);
+        Assert.Equal(flagSet, contract.RequiresAlign8(typeHandle));
     }
 }

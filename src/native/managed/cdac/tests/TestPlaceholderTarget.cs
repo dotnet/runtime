@@ -24,12 +24,14 @@ internal class TestPlaceholderTarget : Target
     private readonly (string Name, string Value)[] _globalStrings;
 
     internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
+    internal delegate int WriteToTargetDelegate(ulong address, Span<byte> buffer);
 
     private readonly ReadFromTargetDelegate _dataReader;
+    private readonly WriteToTargetDelegate? _dataWriter;
     private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
-    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null, WriteToTargetDelegate? writer = null)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
@@ -37,6 +39,7 @@ internal class TestPlaceholderTarget : Target
         _dataCache = new DefaultDataCache(this);
         _typeInfoCache = types ?? [];
         _dataReader = reader;
+        _dataWriter = writer;
         _globals = globals ?? [];
         _globalStrings = globalStrings ?? [];
     }
@@ -137,12 +140,14 @@ internal class TestPlaceholderTarget : Target
 
         public TestPlaceholderTarget Build()
         {
+            var memoryContext = _memBuilder.GetMemoryContext();
             var target = new TestPlaceholderTarget(
                 _arch,
-                _readerOverride ?? _memBuilder.GetMemoryContext().ReadFromTarget,
+                _readerOverride ?? memoryContext.ReadFromTarget,
                 _types,
                 _globals.ToArray(),
-                _globalStrings.ToArray());
+                _globalStrings.ToArray(),
+                memoryContext.WriteToTarget);
 
             var registry = new TestContractRegistry();
             registry.SetTarget(target);
@@ -206,7 +211,13 @@ internal class TestPlaceholderTarget : Target
         if (_dataReader(address, buffer) < 0)
             throw new VirtualReadException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
     }
-    public override void WriteBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
+    public override void WriteBuffer(ulong address, Span<byte> buffer)
+    {
+        if (_dataWriter is null)
+            throw new NotImplementedException();
+        if (_dataWriter(address, buffer) < 0)
+            throw new InvalidOperationException($"Failed to write {buffer.Length} bytes at 0x{address:x8}.");
+    }
 
     public override string ReadUtf8String(ulong address, bool strict = false)
     {
@@ -325,7 +336,19 @@ internal class TestPlaceholderTarget : Target
         return true;
     }
 
-    public override void Write<T>(ulong address, T value) => throw new NotImplementedException();
+    public override void Write<T>(ulong address, T value)
+    {
+        if (_dataWriter is null)
+            throw new NotImplementedException();
+        Span<byte> buffer = stackalloc byte[Unsafe.SizeOf<T>()];
+        bool success = IsLittleEndian
+            ? value.TryWriteLittleEndian(buffer, out int bytesWritten)
+            : value.TryWriteBigEndian(buffer, out bytesWritten);
+
+        if (!success || bytesWritten != buffer.Length)
+            throw new InvalidOperationException($"Failed to write {typeof(T)} to buffer.");
+        WriteBuffer(address, buffer);
+    }
 
     #region subclass reader helpers
 
@@ -521,30 +544,40 @@ internal class TestPlaceholderTarget : Target
         public override void Register<TContract>(int version, Func<Target, TContract> creator)
             => _creators[(typeof(TContract), version)] = t => creator(t);
 
-        public override TContract GetContract<TContract>()
+        public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
         {
+            contract = default!;
+            failureReason = null;
             if (_resolved.TryGetValue(typeof(TContract), out var cached))
-                return (TContract)cached;
+            {
+                contract = (TContract)cached;
+                return true;
+            }
 
-            IContract contract;
+            IContract resolved;
             if (_mocks.TryGetValue(typeof(TContract), out var mock))
             {
-                contract = mock;
+                resolved = mock;
             }
             else if (_versions.TryGetValue(typeof(TContract), out int version))
             {
                 if (!_creators.TryGetValue((typeof(TContract), version), out var creator))
-                    throw new NotImplementedException($"No implementation registered for contract '{typeof(TContract).Name}' version {version}.");
+                {
+                    failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
+                    return false;
+                }
 
-                contract = creator(_target);
+                resolved = creator(_target);
             }
             else
             {
-                throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered. Use SetVersion<T>(version) or SetMock<T>(mock) to configure contracts.");
+                failureReason = $"Contract '{typeof(TContract).Name}' is not supported by the target.";
+                return false;
             }
 
-            _resolved[typeof(TContract)] = contract;
-            return (TContract)contract;
+            _resolved[typeof(TContract)] = resolved;
+            contract = (TContract)resolved;
+            return true;
         }
 
         public override void Flush() { }
