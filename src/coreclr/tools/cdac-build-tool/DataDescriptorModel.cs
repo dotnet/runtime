@@ -426,7 +426,7 @@ public class DataDescriptorModel
         // the JSON serialization coincides with what we want.
         public string Build()
         {
-            if (_version == null)
+            if (_version is null)
             {
                 throw new InvalidOperationException("Version must be set for contract");
             }

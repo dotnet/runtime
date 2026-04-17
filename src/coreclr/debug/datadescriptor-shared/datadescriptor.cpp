@@ -57,7 +57,7 @@ struct GlobalStringSpec
 struct GlobalContractSpec
 {
     uint32_t Name;
-    uint32_t VersionIdx;
+    uint32_t Version;
 };
 
 #define CONCAT(token1,token2) token1 ## token2
@@ -387,7 +387,7 @@ struct MagicAndBlob BlobDataDescriptor = {
         },
 
         /* .GlobalContractValues = */ {
-#define CDAC_GLOBAL_CONTRACT(name,value) { /* .Name = */ GET_GLOBALCONTRACT_NAME(name), /* .VersionIdx = */ GET_GLOBALCONTRACT_VALUE(name) },
+#define CDAC_GLOBAL_CONTRACT(name,value) { /* .Name = */ GET_GLOBALCONTRACT_NAME(name), /* .Version = */ GET_GLOBALCONTRACT_VALUE(name) },
 #include "wrappeddatadescriptor.inc"
         },
 
