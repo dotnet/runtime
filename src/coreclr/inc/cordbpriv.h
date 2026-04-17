@@ -33,7 +33,6 @@ enum DebuggerLaunchSetting
 enum DebuggerControlFlag
 {
     DBCF_NORMAL_OPERATION           = 0x0000,
-//    DBCF_ACTIVATE_REMOTE_DEBUGGING  = 0x0040,  Deprecated.  DO NOT USE
     DBCF_PENDING_ATTACH             = 0x0100, // [cDAC] [Debugger] : Contract depends on this value.
     DBCF_ATTACHED                   = 0x0200, // [cDAC] [Debugger] : Contract depends on this value.
 };
