@@ -190,7 +190,7 @@ namespace System.Text.RegularExpressions
         /// The <paramref name="replacement"/> parameter is a standard regular expression replacement
         /// pattern. It can consist of literal characters and regular expression substitutions. For more
         /// information, see
-        /// <see href="/dotnet/standard/base-types/substitutions-in-regular-expressions">Substitutions</see>.
+        /// <see href="https://github.com/dotnet/docs/blob/main/docs/standard/base-types/substitutions-in-regular-expressions.md">Substitutions</see>.
         /// </para>
         /// </remarks>
         public virtual string Result(string replacement)

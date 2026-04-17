@@ -8,11 +8,6 @@ namespace System.Text.RegularExpressions
     /// <summary>
     /// Provides information about a regular expression that is used to compile a regular expression to a stand-alone assembly.
     /// </summary>
-    /// <remarks>
-    /// This class was used with <see cref="Regex.CompileToAssembly(RegexCompilationInfo[], System.Reflection.AssemblyName)"/>
-    /// to define regular expressions to be compiled into an assembly. That API is not supported in .NET Core.
-    /// Use <see cref="GeneratedRegexAttribute"/> with the regular expression source generator instead.
-    /// </remarks>
     [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public class RegexCompilationInfo
     {

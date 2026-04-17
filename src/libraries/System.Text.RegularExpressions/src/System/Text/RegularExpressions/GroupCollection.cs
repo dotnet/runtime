@@ -71,7 +71,7 @@ namespace System.Text.RegularExpressions
         /// <value>The member of the collection specified by <paramref name="groupnum" />.</value>
         /// <remarks>
         /// <para>
-        /// The <see cref="this[int]" /> property is the indexer of the <see cref="GroupCollection" />
+        /// This property is the indexer of the <see cref="GroupCollection" />
         /// class. It allows you to enumerate the members of the collection by using a <c>foreach</c>
         /// statement.
         /// </para>

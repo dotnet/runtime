@@ -26,8 +26,9 @@ namespace System.Text.RegularExpressions
     /// </para>
     /// <list type="bullet">
     /// <item>
+    /// <term>Direct evaluation</term>
     /// <description>
-    /// <b>Direct evaluation.</b> The <see cref="MatchCollection" /> object is populated all at once,
+    /// The <see cref="MatchCollection" /> object is populated all at once,
     /// with all matches resulting from a particular call to the <see cref="Regex.Matches(string)" />
     /// method. This technique is used when the collection's <see cref="Count" /> property is accessed.
     /// It typically is the more expensive method of populating the collection and entails a greater
@@ -35,8 +36,9 @@ namespace System.Text.RegularExpressions
     /// </description>
     /// </item>
     /// <item>
+    /// <term>Lazy evaluation</term>
     /// <description>
-    /// <b>Lazy evaluation.</b> The <see cref="MatchCollection" /> object is populated as needed on a
+    /// The <see cref="MatchCollection" /> object is populated as needed on a
     /// match-by-match basis. It is equivalent to the regular expression engine calling the
     /// <see cref="Regex.Match(string)" /> method repeatedly and adding each match to the collection.
     /// This technique is used when the collection is accessed through its <see cref="GetEnumerator" />

@@ -26,16 +26,11 @@ namespace System.Text.RegularExpressions
     /// to extract, edit, replace, or delete text substrings; and to add the extracted strings to a
     /// collection to generate a report.
     /// </para>
-    /// <para>
-    /// For more information, see the following articles:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><see href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-language-quick-reference">.NET Regular Expression Language</see></item>
-    /// <item><see href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-options">Regular Expression Options</see></item>
-    /// <item><see href="https://learn.microsoft.com/dotnet/standard/base-types/best-practices">Best Practices for Regular Expressions</see></item>
-    /// <item><see href="https://learn.microsoft.com/dotnet/standard/base-types/backtracking-in-regular-expressions">Backtracking</see></item>
-    /// </list>
     /// </remarks>
+    /// <related type="Article" href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-language-quick-reference">.NET Regular Expression Language</related>
+    /// <related type="Article" href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-options">Regular Expression Options</related>
+    /// <related type="Article" href="https://learn.microsoft.com/dotnet/standard/base-types/best-practices">Best Practices for Regular Expressions</related>
+    /// <related type="Article" href="https://learn.microsoft.com/dotnet/standard/base-types/backtracking-in-regular-expressions">Backtracking</related>
     public partial class Regex : ISerializable
     {
         /// <summary>The regular expression pattern that was passed to the constructor.</summary>
@@ -71,6 +66,7 @@ namespace System.Text.RegularExpressions
 
         private volatile RegexRunner? _runner;                // cached runner
 
+        /// <summary>Initializes a new instance of the <see cref="Regex" /> class.</summary>
 #if DEBUG
         // These members aren't used from Regex(), but we want to keep them in debug builds for now,
         // so this is a convenient place to include them rather than needing a debug-only illink file.
@@ -79,7 +75,6 @@ namespace System.Text.RegularExpressions
         [DynamicDependency(nameof(SampleMatches))]
         [DynamicDependency(nameof(Explore))]
 #endif
-        /// <summary>Initializes a new instance of the <see cref="Regex" /> class.</summary>
         protected Regex()
         {
             internalMatchTimeout = s_defaultMatchTimeout;
@@ -294,7 +289,7 @@ namespace System.Text.RegularExpressions
         /// Compiles one or more specified <see cref="Regex" /> objects to a named assembly.
         /// </summary>
         /// <exception cref="PlatformNotSupportedException">
-        /// .NET Core and .NET 5+: Creating an assembly of compiled regular expressions is not supported.
+        /// Creating an assembly of compiled regular expressions is not supported.
         /// </exception>
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname) =>
@@ -304,7 +299,7 @@ namespace System.Text.RegularExpressions
         /// Compiles one or more specified <see cref="Regex" /> objects to a named assembly with the specified attributes.
         /// </summary>
         /// <exception cref="PlatformNotSupportedException">
-        /// .NET Core and .NET 5+: Creating an assembly of compiled regular expressions is not supported.
+        /// Creating an assembly of compiled regular expressions is not supported.
         /// </exception>
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes) =>
@@ -315,7 +310,7 @@ namespace System.Text.RegularExpressions
         /// to a named assembly with the specified attributes.
         /// </summary>
         /// <exception cref="PlatformNotSupportedException">
-        /// .NET Core and .NET 5+: Creating an assembly of compiled regular expressions is not supported.
+        /// Creating an assembly of compiled regular expressions is not supported.
         /// </exception>
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)

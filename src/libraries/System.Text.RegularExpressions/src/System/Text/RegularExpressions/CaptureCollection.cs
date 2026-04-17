@@ -18,7 +18,6 @@ namespace System.Text.RegularExpressions
     /// </para>
     /// <list type="bullet">
     /// <item>
-    /// <description>
     /// The <see cref="Group.Captures" /> property. Each member of the collection represents a substring
     /// captured by a capturing group. If a quantifier is not applied to a capturing group, the
     /// <see cref="CaptureCollection" /> includes a single <see cref="Capture" /> object that represents
@@ -26,15 +25,12 @@ namespace System.Text.RegularExpressions
     /// capturing group, the <see cref="CaptureCollection" /> includes one <see cref="Capture" /> object
     /// for each captured substring, and the <see cref="Group" /> object provides information only about
     /// the last captured substring.
-    /// </description>
     /// </item>
     /// <item>
-    /// <description>
     /// The <c>Match.Captures</c> property. In this case, the collection consists of a single
     /// <see cref="Capture" /> object that provides information about the match as a whole. That is, the
     /// <see cref="CaptureCollection" /> object provides the same information as the <see cref="Match" />
     /// object.
-    /// </description>
     /// </item>
     /// </list>
     /// <para>
@@ -66,7 +62,7 @@ namespace System.Text.RegularExpressions
         public int Count => _capcount;
 
         /// <summary>Gets an individual member of the collection.</summary>
-        /// <param name="i">Index into the capture collection.</param>
+        /// <param name="i">The index into the capture collection.</param>
         /// <value>The captured substring at position <paramref name="i" /> in the collection.</value>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="i" /> is less than 0 or greater than or equal to

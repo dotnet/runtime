@@ -8,7 +8,7 @@ namespace System.Text.RegularExpressions
     /// <para>
     /// A capturing group can capture zero, one, or more strings in a single match because of
     /// quantifiers. (For more information, see
-    /// <see href="/dotnet/standard/base-types/quantifiers-in-regular-expressions">Quantifiers</see>.)
+    /// <see href="https://github.com/dotnet/docs/blob/main/docs/standard/base-types/quantifiers-in-regular-expressions.md">Quantifiers</see>.)
     /// All the substrings matched by a single capturing group are available from the
     /// <see cref="Captures"/> property. Information about the last substring captured can be accessed
     /// directly from the <c>Value</c> and <c>Index</c> properties. (That is, the <see cref="Group"/>

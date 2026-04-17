@@ -32,7 +32,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// The position in the original string where the first character of the captured substring is found.
+        /// Gets the position in the original string where the first character of the captured substring is found.
         /// </summary>
         /// <value>The zero-based starting position in the original string where the captured substring is found.</value>
         public int Index { get; private protected set; }

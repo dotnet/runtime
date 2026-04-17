@@ -444,7 +444,7 @@ namespace System.Text.RegularExpressions
         /// <exception cref="RegexMatchTimeoutException">A time-out occurred.</exception>
         /// <remarks>
         /// For more information about <paramref name="startat"/>, see
-        /// <see href="/dotnet/fundamentals/runtime-libraries/system-text-regularexpressions-regex-match">
+        /// <see href="https://github.com/dotnet/docs/blob/main/docs/fundamentals/runtime-libraries/system-text-regularexpressions-regex-match.md">
         /// Supplemental API remarks for Regex.Match</see>.
         /// </remarks>
         public Match Match(string input, int startat)

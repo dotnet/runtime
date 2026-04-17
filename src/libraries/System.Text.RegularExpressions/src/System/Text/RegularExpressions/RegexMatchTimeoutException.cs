@@ -17,15 +17,11 @@ namespace System.Text.RegularExpressions
     /// </para>
     /// <list type="bullet">
     ///   <item>
-    ///     <description>
     ///       The regular expression engine is backtracking excessively as it attempts to match the input
     ///       text to the regular expression pattern.
-    ///     </description>
     ///   </item>
     ///   <item>
-    ///     <description>
     ///       The time-out interval has been set too low, especially given high machine load.
-    ///     </description>
     ///   </item>
     /// </list>
     /// <para>
