@@ -32,7 +32,7 @@ public enum AssemblyIterationFlags
     IncludeLoading = 0x00000002, // include assemblies that are still in the process of loading
                                  // (all m_level values)
     IncludeAvailableToProfilers = 0x00000020, // include assemblies available to profilers
-                                              // See comment at code:DomainAssembly::IsAvailableToProfilers
+                                              // See comment at code:Assembly::IsAvailableToProfilers
 
     // Execution / introspection flags
     IncludeExecution = 0x00000004, // include assemblies that are loaded for execution only
@@ -166,7 +166,7 @@ enum ClrModifiableAssemblies : uint
 | `CGrowableSymbolStream` | `Buffer` | Pointer to the raw symbol stream buffer start |
 | `CGrowableSymbolStream` | `Size` | Size of the raw symbol stream buffer |
 | `AppDomain` | `RootAssembly` | Pointer to the root assembly |
-| `AppDomain` | `DomainAssemblyList` | ArrayListBase of assemblies in the AppDomain |
+| `AppDomain` | `AssemblyList` | ArrayListBase of assemblies in the AppDomain |
 | `AppDomain` | `FriendlyName` | Friendly name of the AppDomain |
 | `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
 | `SystemDomain` | `SystemAssembly` | pointer to the system Assembly |
@@ -272,13 +272,10 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
 
     // ArrayListBase encapsulates the data structure defined in arraylist.h
     // It handles reading each contained pointer and exposing them as a C# List
-    ArrayListBase arrayList = // read ArrayListBase starting at appDomain + AppDomain::DomainAssemblyList offset
+    ArrayListBase arrayList = // read ArrayListBase starting at appDomain + AppDomain::AssemblyList offset
 
-    foreach (TargetPointer domainAssembly in arrayList.Elements)
+    foreach (TargetPointer pAssembly in arrayList.Elements)
     {
-        // We have a list of DomainAssemblies, this class contains a single pointer to an Assembly.
-        // Therefore we can read a pointer at the DomainAssembly to access the actual Assembly.
-        TargetPointer pAssembly = target.ReadPointer(domainAssembly);
         Assembly assembly = // read Assembly object at pAssembly
 
         // The Assemblies map 1:1 to Modules, however we must filter them based on the iterationFlags before returning.
@@ -345,8 +342,7 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
             if (((ModuleFlags)module.Flags).HasFlag(ModuleFlags.Tenured))
             {
                 // Un-tenured collectible assemblies should not be returned. (This can only happen in a brief
-                // window during collectible assembly creation. No thread should need to have a pointer
-                // to the just allocated DomainAssembly at this stage.)
+                // window during collectible assembly creation.
                 // the assemblies Module is not Tenured, skip
                 continue;
             }

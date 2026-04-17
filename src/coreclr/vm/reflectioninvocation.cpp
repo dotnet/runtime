@@ -554,15 +554,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         _ASSERTE(ofs != TransitionBlock::InvalidOffset);
 
 #ifdef CALLDESCR_REGTYPEMAP
-        {
-            CorElementType regMapType = argit.GetArgType();
-#if defined(TARGET_AMD64) || defined(TARGET_X86) 
-            // System.Half is passed in floating point registers like a float
-            if (regMapType == ELEMENT_TYPE_VALUETYPE && th.IsNativeHalfType())
-                regMapType = ELEMENT_TYPE_R4;
-#endif // TARGET_XARCH
-            FillInRegTypeMap(ofs, regMapType, (BYTE *)&callDescrData.dwRegTypeMap);
-        }
+        FillInRegTypeMap(ofs, argit.GetArgType(), (BYTE *)&callDescrData.dwRegTypeMap);
 #endif
 
 #ifdef CALLDESCR_FPARGREGS

@@ -34,13 +34,14 @@ public abstract class DumpTestBase : IDisposable
     {
         get
         {
+            string? dumpSource = GetDumpSource();
             foreach (string r2rMode in GetR2RModes())
             {
                 if (!IsVersionSkipped("local"))
-                    yield return [new TestConfiguration("local", r2rMode)];
+                    yield return [new TestConfiguration("local", r2rMode, dumpSource)];
 
                 if (!IsVersionSkipped("net10.0"))
-                    yield return [new TestConfiguration("net10.0", r2rMode)];
+                    yield return [new TestConfiguration("net10.0", r2rMode, dumpSource)];
             }
         }
     }
@@ -174,6 +175,28 @@ public abstract class DumpTestBase : IDisposable
             throw new InvalidOperationException("Could not locate the repository root.");
 
         return Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
+    }
+
+    /// <summary>
+    /// Returns the dump source platform from dump-info.json (e.g., "windows_x64"),
+    /// or null for local runs where CDAC_DUMP_ROOT is not set.
+    /// </summary>
+    private static string? GetDumpSource()
+    {
+        string? dumpRoot = Environment.GetEnvironmentVariable("CDAC_DUMP_ROOT");
+        if (string.IsNullOrEmpty(dumpRoot))
+            return null;
+
+        // Try loading dump-info.json from any version directory to get OS/Arch
+        foreach (string versionDir in new[] { "local", "net10.0" })
+        {
+            DumpInfo? info = DumpInfo.TryLoad(Path.Combine(dumpRoot, versionDir));
+            if (info is not null)
+                return $"{info.Os}_{info.Arch}";
+        }
+
+        // Fall back to the directory name if dump-info.json isn't available
+        return Path.GetFileName(dumpRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
     }
 
     /// <summary>
