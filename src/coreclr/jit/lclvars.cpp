@@ -1044,7 +1044,7 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
             // ; callee saved regs
             bool startsAtR0 = (doubleAlignMask & 1) == 1;
             bool r2XorR3    = ((codeGen->regSet.rsMaskPreSpillRegArg & RBM_R2) == 0) !=
-                              ((codeGen->regSet.rsMaskPreSpillRegArg & RBM_R3) == 0);
+                           ((codeGen->regSet.rsMaskPreSpillRegArg & RBM_R3) == 0);
             if (startsAtR0 && r2XorR3)
             {
                 codeGen->regSet.rsMaskPreSpillAlign =
