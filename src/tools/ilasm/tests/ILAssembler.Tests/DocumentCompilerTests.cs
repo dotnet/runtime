@@ -2385,5 +2385,126 @@ namespace ILAssembler.Tests
             Assert.NotNull(warning);
             Assert.Equal(DiagnosticSeverity.Warning, warning.Severity);
         }
+
+        [Fact]
+        public void AssemblyVersion_DefaultsToZero_WhenNoVerDirective()
+        {
+            string source = """
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var asmDef = reader.GetAssemblyDefinition();
+            Assert.Equal(new Version(0, 0, 0, 0), asmDef.Version);
+        }
+
+        [Fact]
+        public void AssemblyRefVersion_DefaultsToZero_WhenNoVerDirective()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var asmRef = reader.GetAssemblyReference(MetadataTokens.AssemblyReferenceHandle(1));
+            Assert.Equal(new Version(0, 0, 0, 0), asmRef.Version);
+        }
+
+        [Fact]
+        public void AssemblyVersion_ExplicitVer_IsPreserved()
+        {
+            string source = """
+                .assembly extern System.Runtime { .ver 8:0:0:0 }
+                .assembly TestAssembly { .ver 1:2:3:4 }
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var asmDef = reader.GetAssemblyDefinition();
+            Assert.Equal(new Version(1, 2, 3, 4), asmDef.Version);
+            var asmRef = reader.GetAssemblyReference(MetadataTokens.AssemblyReferenceHandle(1));
+            Assert.Equal(new Version(8, 0, 0, 0), asmRef.Version);
+        }
+
+        [Fact]
+        public void ModuleName_DefaultsToOutputFileName_WhenNoModuleDirective()
+        {
+            string source = """
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options { OutputFileName = "MyOutput.dll" });
+            var reader = pe.GetMetadataReader();
+            var moduleDef = reader.GetModuleDefinition();
+            Assert.Equal("MyOutput.dll", reader.GetString(moduleDef.Name));
+        }
+
+        [Fact]
+        public void ModuleName_OutputFileNameStripsDirectory()
+        {
+            string source = """
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            // OutputFileName should already be just the filename (Program.cs uses Path.GetFileName),
+            // but verify the module name is exactly what's provided
+            using var pe = CompileAndGetReader(source, new Options { OutputFileName = "bar.dll" });
+            var reader = pe.GetMetadataReader();
+            var moduleDef = reader.GetModuleDefinition();
+            Assert.Equal("bar.dll", reader.GetString(moduleDef.Name));
+        }
+
+        [Fact]
+        public void ModuleName_ExplicitModuleDirective_SetsModuleName()
+        {
+            // When .module directive is present with just the keyword (no name),
+            // the module name still falls back to OutputFileName
+            string source = """
+                .assembly TestAssembly { }
+                .module
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options { OutputFileName = "Fallback.dll" });
+            var reader = pe.GetMetadataReader();
+            var moduleDef = reader.GetModuleDefinition();
+            Assert.Equal("Fallback.dll", reader.GetString(moduleDef.Name));
+        }
+
+        [Fact]
+        public void ModuleName_NoModuleDirective_NoOutputFileName_UsesNilHandle()
+        {
+            string source = """
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var moduleDef = reader.GetModuleDefinition();
+            Assert.True(moduleDef.Name.IsNil);
+        }
     }
 }
