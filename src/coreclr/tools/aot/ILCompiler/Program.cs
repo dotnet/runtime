@@ -263,7 +263,7 @@ namespace ILCompiler
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                    compilationRoots.Add(new ManagedDataDescriptorProvider(typeSystemContext));
+                    compilationRoots.Add(new ManagedDataDescriptorProvider());
                     if (SplitExeInitialization)
                     {
                         compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: false));
@@ -275,7 +275,7 @@ namespace ILCompiler
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                    compilationRoots.Add(new ManagedDataDescriptorProvider(typeSystemContext));
+                    compilationRoots.Add(new ManagedDataDescriptorProvider());
                     if (SplitExeInitialization)
                     {
                         compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));

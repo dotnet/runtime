@@ -11,18 +11,10 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     /// <remarks>
     /// Fields to include must be individually annotated with <see cref="CdacFieldAttribute"/>.
+    /// The type and field names used in the descriptor match the actual managed names.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
     internal sealed class CdacTypeAttribute : Attribute
     {
-        public CdacTypeAttribute(string name)
-        {
-            Name = name;
-        }
-
-        /// <summary>
-        /// The cDAC descriptor type name (e.g., "ManagedThread").
-        /// </summary>
-        public string Name { get; }
     }
 }

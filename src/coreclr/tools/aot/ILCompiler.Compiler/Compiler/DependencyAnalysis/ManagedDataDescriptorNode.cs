@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Text;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -15,33 +15,17 @@ namespace ILCompiler.DependencyAnalysis
     /// can consume as a sub-descriptor. ILC knows managed type layouts at compile time,
     /// so it can emit field offsets that would otherwise require runtime metadata resolution.
     ///
-    /// The NativeAOT runtime C++ code declares an extern pointer to this symbol and references
-    /// it via CDAC_GLOBAL_SUB_DESCRIPTOR in datadescriptor.inc, enabling the cDAC reader to
-    /// merge managed type information into its unified type map.
+    /// Types are discovered by scanning MetadataManager.GetTypesWithEETypes() for types
+    /// annotated with [CdacType], ensuring only types that actually have a MethodTable
+    /// in the binary are included.
     /// </summary>
-    /// <remarks>
-    /// The emitted structure matches the ContractDescriptor format:
-    /// <code>
-    /// struct ContractDescriptor {
-    ///     uint64_t magic;           // 0x0043414443434e44 "DNCCDAC\0"
-    ///     uint32_t flags;           // Platform flags
-    ///     uint32_t descriptor_size; // JSON blob size
-    ///     char* descriptor;         // Pointer to JSON string
-    ///     uint32_t pointer_data_count;
-    ///     uint32_t pad0;
-    ///     void** pointer_data;      // Pointer to auxiliary data array
-    /// };
-    /// </code>
-    /// The JSON descriptor follows the cDAC contract descriptor schema:
-    /// <code>
-    /// { "version": 0, "types": { "TypeName": [size, { "Field": offset }] }, "globals": {} }
-    /// </code>
-    /// </remarks>
     public class ManagedDataDescriptorNode : ObjectNode, ISymbolDefinitionNode
     {
-        public const string SymbolName = "DotNetManagedContractDescriptor";
+        private const string CdacTypeAttributeNamespace = "System.Runtime.CompilerServices";
+        private const string CdacTypeAttributeName = "CdacTypeAttribute";
+        private const string CdacFieldAttributeName = "CdacFieldAttribute";
 
-        private readonly List<ManagedTypeDescriptor> _typeDescriptors = new List<ManagedTypeDescriptor>();
+        public const string SymbolName = "DotNetManagedContractDescriptor";
 
         public override ObjectNodeSection GetSection(NodeFactory factory) =>
             factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection;
@@ -58,22 +42,16 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        /// <summary>
-        /// Register a managed type to be included in the descriptor.
-        /// </summary>
-        /// <param name="descriptorTypeName">The cDAC type name (e.g., "ManagedIdDispenser")</param>
-        /// <param name="type">The resolved managed type from ILC's type system</param>
-        /// <param name="fieldMappings">Optional field name remapping: cDAC field name → managed field name.
-        /// If null, all instance fields are included with their original names.</param>
-        public void AddType(string descriptorTypeName, MetadataType type, Dictionary<string, string> fieldMappings = null)
-        {
-            _typeDescriptors.Add(new ManagedTypeDescriptor(descriptorTypeName, type, fieldMappings));
-        }
-
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
+
+            string json = BuildJsonDescriptor(factory);
+            byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
+
+            // Header layout: magic(8) + flags(4) + desc_size(4) + desc_ptr(ptr) + count(4) + pad(4) + data_ptr(ptr)
+            int headerSize = 8 + 4 + 4 + factory.Target.PointerSize + 4 + 4 + factory.Target.PointerSize;
 
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.RequireInitialPointerAlignment();
@@ -87,10 +65,10 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitUInt(flags);
 
             // uint32_t descriptor_size
-            builder.EmitInt(_jsonBytesLength);
+            builder.EmitInt(jsonBytes.Length);
 
-            // char* descriptor — pointer to JSON blob (separate compilation root)
-            builder.EmitPointerReloc(_jsonBlobNode);
+            // char* descriptor — points to inline JSON after the header
+            builder.EmitPointerReloc(this, headerSize);
 
             // uint32_t pointer_data_count = 0
             builder.EmitInt(0);
@@ -101,106 +79,68 @@ namespace ILCompiler.DependencyAnalysis
             // void** pointer_data = null
             builder.EmitZeroPointer();
 
+            // Emit JSON bytes inline, null-terminated
+            builder.EmitBytes(jsonBytes);
+            builder.EmitByte(0);
+
             return builder.ToObjectData();
         }
 
-        /// <summary>
-        /// Build the JSON and create the blob node. Must be called before the node
-        /// is added to the dependency graph.
-        /// </summary>
-        public void FinalizeDescriptor()
-        {
-            string jsonDescriptor = BuildJsonDescriptor();
-            byte[] jsonBytes = Encoding.UTF8.GetBytes(jsonDescriptor);
-            _jsonBytesLength = jsonBytes.Length;
-
-            byte[] nullTerminated = new byte[jsonBytes.Length + 1];
-            Array.Copy(jsonBytes, nullTerminated, jsonBytes.Length);
-            _jsonBlobNode = new BlobNode(
-                new Utf8String("__ManagedContractDescriptorJsonBlob"),
-                ObjectNodeSection.ReadOnlyDataSection,
-                nullTerminated,
-                alignment: 1);
-        }
-
-        /// <summary>
-        /// The blob node containing the JSON data. Add this as a separate compilation root.
-        /// </summary>
-        public BlobNode JsonBlobNode => _jsonBlobNode;
-
-        private BlobNode _jsonBlobNode;
-        private int _jsonBytesLength;
-
-        private string BuildJsonDescriptor()
+        private static string BuildJsonDescriptor(NodeFactory factory)
         {
             var sb = new StringBuilder();
             sb.Append("{\"version\":0,\"types\":{");
 
             bool firstType = true;
-            foreach (var desc in _typeDescriptors)
+            foreach (TypeDesc type in factory.MetadataManager.GetTypesWithEETypes())
             {
+                if (type is not EcmaType ecmaType)
+                    continue;
+
+                if (!ecmaType.HasCustomAttribute(CdacTypeAttributeNamespace, CdacTypeAttributeName))
+                    continue;
+
                 if (!firstType)
                     sb.Append(',');
                 firstType = false;
 
-                EmitTypeJson(sb, desc);
+                EmitTypeJson(sb, ecmaType);
             }
 
             sb.Append("},\"globals\":{}}");
             return sb.ToString();
         }
 
-        private static void EmitTypeJson(StringBuilder sb, ManagedTypeDescriptor desc)
+        private static void EmitTypeJson(StringBuilder sb, EcmaType type)
         {
-            MetadataType type = desc.Type;
-
-            // Use 0 (indeterminate) for reference types — their "size" from cDAC perspective
-            // is not meaningful since they're GC-managed objects.
+            // Use 0 (indeterminate) for reference types
             int typeSize = type.IsValueType ? type.InstanceFieldSize.AsInt : 0;
 
-            // JSON format: "TypeName": [size, { "Field1": offset, "Field2": offset }]
-            sb.Append('"').Append(desc.DescriptorName).Append("\":[");
+            sb.Append('"').Append(type.GetName()).Append("\":[");
             sb.Append(typeSize);
             sb.Append(",{");
 
             bool firstField = true;
             foreach (FieldDesc field in type.GetFields())
             {
-                if (field.IsStatic)
+                if (field.IsStatic || field is not EcmaField ecmaField)
                     continue;
 
-                string fieldName = field.GetName();
-                string cdacFieldName;
-                if (desc.FieldMappings is not null)
-                {
-                    // Check if any cDAC name maps to this managed field name
-                    cdacFieldName = null;
-                    foreach (var kvp in desc.FieldMappings)
-                    {
-                        if (kvp.Value == fieldName)
-                        {
-                            cdacFieldName = kvp.Key;
-                            break;
-                        }
-                    }
-                    if (cdacFieldName is null)
-                        continue;
-                }
-                else
-                {
-                    cdacFieldName = fieldName;
-                }
+                if (!ecmaField.HasCustomAttribute(CdacTypeAttributeNamespace, CdacFieldAttributeName))
+                    continue;
 
                 if (!firstField)
                     sb.Append(',');
                 firstField = false;
 
-                sb.Append('"').Append(cdacFieldName).Append("\":");
+                sb.Append('"').Append(field.GetName()).Append("\":");
                 sb.Append(field.Offset.AsInt);
             }
 
             sb.Append("}]");
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
 #if !SUPPORT_JIT
         public override int ClassCode => 0x4d444e01;
@@ -210,19 +150,5 @@ namespace ILCompiler.DependencyAnalysis
             return 0; // Singleton
         }
 #endif
-
-        private readonly struct ManagedTypeDescriptor
-        {
-            public readonly string DescriptorName;
-            public readonly MetadataType Type;
-            public readonly Dictionary<string, string> FieldMappings;
-
-            public ManagedTypeDescriptor(string descriptorName, MetadataType type, Dictionary<string, string> fieldMappings)
-            {
-                DescriptorName = descriptorName;
-                Type = type;
-                FieldMappings = fieldMappings;
-            }
-        }
     }
 }
