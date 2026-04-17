@@ -25,6 +25,8 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_SpanHelpers_Memmove,
 
+    NI_System_Half_op_Explicit,
+
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
     NI_System_Math_Acos,
