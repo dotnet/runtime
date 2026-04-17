@@ -2123,13 +2123,20 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
 
-    // Optimize comparison against Vector64/128<>.Zero via UMAXV:
+    // Optimize comparison against Vector64/128<>.Zero:
     //
     //   bool eq = v == Vector128<integer>.Zero
     //
-    // to:
+    // For Vector128, we fully reduce to a scalar with UMAXV, then extract the
+    // low 32 bits and compare against zero, which allows LowerJTrue to fold the
+    // comparison and branch into a cbz/cbnz:
     //
-    //   bool eq = AdvSimd.Arm64.MaxPairwise(v.AsUInt16(), v.AsUInt16()).GetElement(0) == 0;
+    //   bool eq = AdvSimd.Arm64.MaxAcross(v.AsUInt32()).ToScalar() == 0;
+    //
+    // For Vector64, the 64-bit vector already fits in a GP register, so we just
+    // extract it and compare:
+    //
+    //   bool eq = v.AsUInt64().ToScalar() == 0;
     //
     GenTree* op     = nullptr;
     GenTree* opZero = nullptr;
@@ -2147,42 +2154,46 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     // Special case: "vec ==/!= zero_vector"
     if (!varTypeIsFloating(simdBaseType) && (op != nullptr))
     {
-        GenTree* cmp = op;
-        if (simdSize != 8) // we don't need compression for Vector64
-        {
-            node->Op(1) = op;
-            LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
-            ReplaceWithLclVar(tmp1Use);
-            op               = node->Op(1);
-            GenTree* opClone = m_compiler->gtClone(op);
-            BlockRange().InsertAfter(op, opClone);
+        GenTree*  reduced          = op;
+        var_types extractType      = TYP_ULONG;
+        var_types extractJitType   = TYP_LONG;
+        unsigned  extractSimdSize  = simdSize;
 
-            cmp = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op, opClone, NI_AdvSimd_Arm64_MaxPairwise, TYP_UINT,
-                                                       simdSize);
-            BlockRange().InsertBefore(node, cmp);
-            LowerNode(cmp);
+        if (simdSize == 16)
+        {
+            // Use UMAXV (MaxAcross) to fully reduce the 128-bit vector to a scalar
+            // in the low 32 bits of a SIMD8. Using TYP_UINT selects the .4s form,
+            // which writes a zero-extended 32-bit result; comparing those 32 bits
+            // against zero is equivalent to comparing all 128 bits against zero.
+            reduced = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op, NI_AdvSimd_Arm64_MaxAcross, TYP_UINT,
+                                                           simdSize);
+            BlockRange().InsertBefore(node, reduced);
+            LowerNode(reduced);
+
+            extractType     = TYP_UINT;
+            extractJitType  = TYP_INT;
+            extractSimdSize = 8;
         }
 
         BlockRange().Remove(opZero);
 
         GenTree* zroCns = m_compiler->gtNewIconNode(0, TYP_INT);
-        BlockRange().InsertAfter(cmp, zroCns);
+        BlockRange().InsertAfter(reduced, zroCns);
 
-        GenTree* val =
-            m_compiler->gtNewSimdHWIntrinsicNode(TYP_LONG, cmp, zroCns, NI_AdvSimd_Extract, TYP_ULONG, simdSize);
+        GenTree* val = m_compiler->gtNewSimdHWIntrinsicNode(extractJitType, reduced, zroCns, NI_AdvSimd_Extract,
+                                                            extractType, extractSimdSize);
         BlockRange().InsertAfter(zroCns, val);
         LowerNode(val);
 
-        GenTree* cmpZeroCns = m_compiler->gtNewIconNode(0, TYP_LONG);
+        GenTree* cmpZeroCns = m_compiler->gtNewIconNode(0, extractJitType);
         BlockRange().InsertAfter(val, cmpZeroCns);
 
         node->ChangeOper(cmpOp);
         node->gtType        = TYP_INT;
         node->AsOp()->gtOp1 = val;
         node->AsOp()->gtOp2 = cmpZeroCns;
-        LowerNodeCC(node, (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE);
-        node->gtType = TYP_VOID;
-        node->ClearUnusedValue();
+        // Intentionally avoid LowerNodeCC here so that LowerJTrue can convert
+        // the following GT_EQ/GT_NE + GT_JTRUE into a GT_JCMP (cbz/cbnz).
         LowerNode(node);
         return node->gtNext;
     }
