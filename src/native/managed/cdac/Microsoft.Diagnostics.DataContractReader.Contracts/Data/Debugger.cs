@@ -49,6 +49,8 @@ internal sealed class Debugger : IData<Debugger>
             case nameof(GCNotificationEventsEnabled):
                 GCNotificationEventsEnabled = value;
                 break;
+            default:
+                throw new ArgumentException($"Field '{fieldName}' is not a writable Debugger field.", nameof(fieldName));
         }
     }
 }
