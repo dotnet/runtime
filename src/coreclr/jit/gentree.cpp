@@ -3956,17 +3956,18 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 
         if (isLoad || hwTree->OperIsMemoryStore(&addrOp))
         {
-            if (retType == TYP_SIMD64)
+            costEx = FLT_IND_COST_EX;
+
+            if (simdSize != 16)
             {
-                costEx = FLT_IND_COST_EX + 2;
-            }
-            else if (retType == TYP_SIMD32)
-            {
-                costEx = FLT_IND_COST_EX + 1;
-            }
-            else
-            {
-                costEx = FLT_IND_COST_EX;
+                if (simdSize == 32)
+                {
+                    costEx += 1;
+                }
+                else
+                {
+                    costEx += 2;
+                }
             }
 
             if (!isLoad)
@@ -4000,11 +4001,11 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                 {
                     if (varTypeIsLong(simdBaseType))
                     {
-                        costEx += (retType == TYP_SIMD32) ? 14 : 13;
+                        costEx += (simdSize == 16) ? 13 : 14;
                     }
                     else
                     {
-                        costEx += (retType == TYP_SIMD32) ? 16 : 15;
+                        costEx += (simdSize == 16) ? 15 : 16;
                     }
                     break;
                 }
@@ -4087,7 +4088,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         if (opCount == 1)
                         {
                             // We will end up as a broadcast
-                            costEx = (retType == TYP_SIMD16) ? 1 : 3;
+                            costEx = (simdSize == 16) ? 1 : 3;
                         }
                         else
                         {
@@ -4151,13 +4152,16 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                             costEx = (simdBaseType == TYP_DOUBLE) ? 9 : 13;
                         }
 
-                        if (simdSize == 64)
+                        if (simdSize != 16)
                         {
-                            costEx += 2;
-                        }
-                        else if (simdSize == 32)
-                        {
-                            costEx += 1;
+                            if (simdSize == 32)
+                            {
+                                costEx += 1;
+                            }
+                            else
+                            {
+                                costEx += 2;
+                            }
                         }
                         break;
                     }
@@ -4168,15 +4172,18 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     {
                         costEx = 3;
 
-                        if (simdSize == 64)
+                        if (simdSize != 16)
                         {
-                            // Convert vector to mask, then extract
-                            costEx += 3;
-                            costSz += 6;
-                        }
-                        else if (simdSize == 32)
-                        {
-                            costEx += 2;
+                            if (simdSize == 32)
+                            {
+                                costEx += 2;
+                            }
+                            else
+                            {
+                                // Convert vector to mask, then extract
+                                costEx += 3;
+                                costSz += 6;
+                            }
                         }
                         break;
                     }
@@ -4210,18 +4217,18 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         else
                         {
                             // We need a spill + load
+                            costEx = FLT_IND_COST_EX;
 
-                            if (simdSize == 64)
+                            if (simdSize != 16)
                             {
-                                costEx = FLT_IND_COST_EX + 2;
-                            }
-                            else if (simdSize == 32)
-                            {
-                                costEx = FLT_IND_COST_EX + 1;
-                            }
-                            else
-                            {
-                                costEx = FLT_IND_COST_EX;
+                                if (simdSize == 32)
+                                {
+                                    costEx += 1;
+                                }
+                                else
+                                {
+                                    costEx += 2;
+                                }
                             }
 
                             if (varTypeIsIntegral(simdBaseType))
@@ -4323,18 +4330,18 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         else
                         {
                             // We need a spill + write + load
+                            costEx = FLT_IND_COST_EX;
 
-                            if (simdSize == 64)
+                            if (simdSize != 16)
                             {
-                                costEx = FLT_IND_COST_EX + 2;
-                            }
-                            else if (simdSize == 32)
-                            {
-                                costEx = FLT_IND_COST_EX + 1;
-                            }
-                            else
-                            {
-                                costEx = FLT_IND_COST_EX;
+                                if (simdSize == 32)
+                                {
+                                    costEx += 1;
+                                }
+                                else
+                                {
+                                    costEx += 2;
+                                }
                             }
 
                             if (varTypeIsIntegral(simdBaseType))
@@ -4408,13 +4415,13 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_AVX512_Divide:
                     case NI_AVX512_DivideScalar:
                     {
-                        costEx = (retType == TYP_DOUBLE) ? 14 : 11;
+                        costEx = (simdBaseType == TYP_DOUBLE) ? 14 : 11;
                         break;
                     }
 
                     case NI_X86Base_DotProduct:
                     {
-                        costEx = (retType == TYP_DOUBLE) ? 9 : 13;
+                        costEx = (simdBaseType == TYP_DOUBLE) ? 9 : 13;
                         break;
                     }
 
@@ -4433,7 +4440,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_X86Base_MultiplyLow:
                     case NI_AVX2_MultiplyLow:
                     {
-                        costEx = varTypeIsInt(retType) ? 10 : 5;
+                        costEx = varTypeIsInt(simdBaseType) ? 10 : 5;
                         break;
                     }
 
@@ -4458,7 +4465,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_AVX512_Sqrt:
                     case NI_AVX512_SqrtScalar:
                     {
-                        costEx = (retType == TYP_DOUBLE) ? 16 : 12;
+                        costEx = (simdBaseType == TYP_DOUBLE) ? 16 : 12;
                         break;
                     }
 
@@ -4472,14 +4479,14 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_AVX_TestNotZAndNotC:
                     case NI_AVX_TestZ:
                     {
-                        costEx = (retType == TYP_SIMD32) ? 5 : 3;
+                        costEx = (simdSize == 16) ? 3 : 5;
                         break;
                     }
 
                     case NI_AVX512_AlignRight32:
                     case NI_AVX512_AlignRight64:
                     {
-                        costEx = (retType == TYP_SIMD16) ? 1 : 3;
+                        costEx = (simdSize == 16) ? 1 : 3;
                         break;
                     }
 
@@ -4545,6 +4552,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 
                     case NI_AVX512_ConvertToVector128Single:
                     case NI_AVX512_ConvertToVector256Single:
+                    case NI_AVX512_ConvertToVector512Single:
                     {
                         if (varTypeIsLong(simdBaseType))
                         {
@@ -4607,9 +4615,9 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 
                     case NI_AVX512_DetectConflicts:
                     {
-                        if (simdSize == 64)
+                        if (simdSize == 16)
                         {
-                            costEx = varTypeIsLong(simdBaseType) ? 17 : 26;
+                            costEx = varTypeIsLong(simdBaseType) ? 4 : 11;
                         }
                         else if (simdSize == 32)
                         {
@@ -4617,7 +4625,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         }
                         else
                         {
-                            costEx = varTypeIsLong(simdBaseType) ? 4 : 11;
+                            costEx = varTypeIsLong(simdBaseType) ? 17 : 26;
                         }
                         break;
                     }
@@ -4684,15 +4692,10 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         GenTree* op1 = multiOp->Op(1);
         GenTree* op2 = multiOp->Op(2);
 
-        if (op1 != addrOp)
-        {
-            level = gtSetEvalOrder(op1);
-        }
+        unsigned addrLevel = level;
 
-        if (op2 != addrOp)
-        {
-            lvl2 = gtSetEvalOrder(op2);
-        }
+        level = (op1 != addrOp) ? gtSetEvalOrder(op1) : addrLevel;
+        lvl2  = (op2 != addrOp) ? gtSetEvalOrder(op2) : addrLevel;
 
         // This way we have "level" be the complexity of the
         // first tree to be evaluated, and "lvl2" - the second.
