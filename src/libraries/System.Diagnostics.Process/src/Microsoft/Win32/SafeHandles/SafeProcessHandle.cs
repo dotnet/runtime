@@ -20,6 +20,7 @@ using System.Runtime.Versioning;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -246,11 +247,51 @@ namespace Microsoft.Win32.SafeHandles
         /// The process is NOT killed and continues running. If you want to kill the process on cancellation,
         /// use <see cref="WaitForExitOrKillOnCancellationAsync"/> instead.
         /// </remarks>
-        public Task<ProcessExitStatus> WaitForExitAsync(CancellationToken cancellationToken = default)
+        public async Task<ProcessExitStatus> WaitForExitAsync(CancellationToken cancellationToken = default)
         {
             Validate();
 
-            return WaitForExitAsyncCore(cancellationToken);
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            CancellationTokenRegistration ctr = default;
+
+            var exitedEvent = GetWaitHandle();
+
+            try
+            {
+                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    exitedEvent,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    ctr = cancellationToken.UnsafeRegister(
+                        static state =>
+                        {
+                            var (taskSource, token) = ((TaskCompletionSource<bool> taskSource, CancellationToken token))state!;
+                            taskSource.TrySetCanceled(token);
+                        },
+                        (tcs, cancellationToken));
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                ctr.Dispose();
+                registeredWaitHandle?.Unregister(null);
+
+                // On Unix, we don't own the ManualResetEvent.
+                if (OperatingSystem.IsWindows())
+                {
+                    exitedEvent.Dispose();
+                }
+            }
+
+            return GetExitStatus();
         }
 
         /// <summary>
@@ -270,7 +311,7 @@ namespace Microsoft.Win32.SafeHandles
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken)
+        public async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken)
         {
             Validate();
 
@@ -279,7 +320,55 @@ namespace Microsoft.Win32.SafeHandles
                 throw new PlatformNotSupportedException();
             }
 
-            return WaitForExitOrKillOnCancellationAsyncCore(cancellationToken);
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            CancellationTokenRegistration ctr = default;
+            StrongBox<bool> signalWasSentBox = new(false);
+
+            var exitedEvent = GetWaitHandle();
+
+            try
+            {
+                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    exitedEvent,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    ctr = cancellationToken.UnsafeRegister(
+                        static state =>
+                        {
+                            var (handle, signalWasSent, tcs) = ((SafeProcessHandle, StrongBox<bool>, TaskCompletionSource<bool>))state!;
+                            try
+                            {
+                                signalWasSent.Value = handle.SignalCore(PosixSignal.SIGKILL);
+                            }
+                            catch (Exception ex)
+                            {
+                                tcs.TrySetException(ex);
+                            }
+                        },
+                        (this, signalWasSentBox, tcs));
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                ctr.Dispose();
+                registeredWaitHandle?.Unregister(null);
+
+                // On Unix, we don't own the ManualResetEvent.
+                if (OperatingSystem.IsWindows())
+                {
+                    exitedEvent.Dispose();
+                }
+            }
+
+            return GetExitStatus(canceled: signalWasSentBox.Value);
         }
 
         private void Validate()

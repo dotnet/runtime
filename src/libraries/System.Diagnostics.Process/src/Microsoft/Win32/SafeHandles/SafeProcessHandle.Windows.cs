@@ -663,93 +663,9 @@ namespace Microsoft.Win32.SafeHandles
             return new ProcessExitStatus(GetExitCode(), signalWasSent);
         }
 
-        private async Task<ProcessExitStatus> WaitForExitAsyncCore(CancellationToken cancellationToken)
-        {
-            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+        private Interop.Kernel32.ProcessWaitHandle GetWaitHandle() => new(this);
 
-            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            RegisteredWaitHandle? registeredWaitHandle = null;
-            CancellationTokenRegistration ctr = default;
-
-            try
-            {
-                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
-                    processWaitHandle,
-                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
-                    tcs,
-                    Timeout.Infinite,
-                    executeOnlyOnce: true);
-
-                if (cancellationToken.CanBeCanceled)
-                {
-                    ctr = cancellationToken.UnsafeRegister(
-                        static state =>
-                        {
-                            var (taskSource, token) = ((TaskCompletionSource<bool> taskSource, CancellationToken token))state!;
-                            taskSource.TrySetCanceled(token);
-                        },
-                        (tcs, cancellationToken));
-                }
-
-                await tcs.Task.ConfigureAwait(false);
-            }
-            finally
-            {
-                ctr.Dispose();
-                registeredWaitHandle?.Unregister(null);
-            }
-
-            return new ProcessExitStatus(GetExitCode(), false);
-        }
-
-        private async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsyncCore(CancellationToken cancellationToken)
-        {
-            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
-
-            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            RegisteredWaitHandle? registeredWaitHandle = null;
-            CancellationTokenRegistration ctr = default;
-            StrongBox<bool> signalWasSentBox = new(false);
-
-            try
-            {
-                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
-                    processWaitHandle,
-                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
-                    tcs,
-                    Timeout.Infinite,
-                    executeOnlyOnce: true);
-
-                if (cancellationToken.CanBeCanceled)
-                {
-                    ctr = cancellationToken.UnsafeRegister(
-                        static state =>
-                        {
-                            var (handle, signalWasSent, tcs) = ((SafeProcessHandle, StrongBox<bool>, TaskCompletionSource<bool>))state!;
-                            try
-                            {
-#pragma warning disable CA1416 // PosixSignal.SIGKILL is supported on Windows via SignalCore
-                                signalWasSent.Value = handle.SignalCore(PosixSignal.SIGKILL);
-#pragma warning restore CA1416
-                            }
-                            catch (Exception ex)
-                            {
-                                tcs.TrySetException(ex);
-                            }
-                        },
-                        (this, signalWasSentBox, tcs));
-                }
-
-                await tcs.Task.ConfigureAwait(false);
-            }
-            finally
-            {
-                ctr.Dispose();
-                registeredWaitHandle?.Unregister(null);
-            }
-
-            return new ProcessExitStatus(GetExitCode(), signalWasSentBox.Value);
-        }
+        private ProcessExitStatus GetExitStatus(bool canceled = false) => new(GetExitCode(), canceled);
 
         private int GetExitCode()
         {

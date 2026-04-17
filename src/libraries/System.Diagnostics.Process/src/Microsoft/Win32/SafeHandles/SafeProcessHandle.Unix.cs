@@ -128,93 +128,9 @@ namespace Microsoft.Win32.SafeHandles
             return CreateExitStatus(waitState, canceled: signalWasSent);
         }
 
-        private async Task<ProcessExitStatus> WaitForExitAsyncCore(CancellationToken cancellationToken)
-        {
-            ProcessWaitState waitState = GetWaitState();
-            ManualResetEvent exitedEvent = waitState.EnsureExitedEvent();
+        private ManualResetEvent GetWaitHandle() => GetWaitState().EnsureExitedEvent();
 
-            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            RegisteredWaitHandle? registeredWaitHandle = null;
-            CancellationTokenRegistration ctr = default;
-
-            try
-            {
-                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
-                    exitedEvent,
-                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
-                    tcs,
-                    Timeout.Infinite,
-                    executeOnlyOnce: true);
-
-                if (cancellationToken.CanBeCanceled)
-                {
-                    ctr = cancellationToken.UnsafeRegister(
-                        static state =>
-                        {
-                            var (taskSource, token) = ((TaskCompletionSource<bool> taskSource, CancellationToken token))state!;
-                            taskSource.TrySetCanceled(token);
-                        },
-                        (tcs, cancellationToken));
-                }
-
-                await tcs.Task.ConfigureAwait(false);
-            }
-            finally
-            {
-                ctr.Dispose();
-                registeredWaitHandle?.Unregister(null);
-            }
-
-            return CreateExitStatus(waitState, canceled: false);
-        }
-
-        private async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsyncCore(CancellationToken cancellationToken)
-        {
-            ProcessWaitState waitState = GetWaitState();
-            ManualResetEvent exitedEvent = waitState.EnsureExitedEvent();
-
-            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            RegisteredWaitHandle? registeredWaitHandle = null;
-            CancellationTokenRegistration ctr = default;
-            StrongBox<bool> signalWasSentBox = new(false);
-
-            try
-            {
-                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
-                    exitedEvent,
-                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
-                    tcs,
-                    Timeout.Infinite,
-                    executeOnlyOnce: true);
-
-                if (cancellationToken.CanBeCanceled)
-                {
-                    ctr = cancellationToken.UnsafeRegister(
-                        static state =>
-                        {
-                            var (handle, signalWasSent, tcs) = ((SafeProcessHandle, StrongBox<bool>, TaskCompletionSource<bool>))state!;
-                            try
-                            {
-                                signalWasSent.Value = handle.SignalCore(PosixSignal.SIGKILL);
-                            }
-                            catch (Exception ex)
-                            {
-                                tcs.TrySetException(ex);
-                            }
-                        },
-                        (this, signalWasSentBox, tcs));
-                }
-
-                await tcs.Task.ConfigureAwait(false);
-            }
-            finally
-            {
-                ctr.Dispose();
-                registeredWaitHandle?.Unregister(null);
-            }
-
-            return CreateExitStatus(waitState, canceled: signalWasSentBox.Value);
-        }
+        private ProcessExitStatus GetExitStatus(bool canceled = false) => CreateExitStatus(GetWaitState(), canceled);
 
         private ProcessWaitState GetWaitState()
         {
