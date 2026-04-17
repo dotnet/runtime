@@ -1277,7 +1277,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_FALSE;
         try
         {
-            if (pModule == 0 || isModuleMapped == null)
+            if (pModule == 0)
+                throw new ArgumentException("Module pointer must not be zero.", nameof(pModule));
+
+            if (isModuleMapped == null)
                 throw new ArgumentNullException(nameof(isModuleMapped));
 
             *isModuleMapped = Interop.BOOL.FALSE;
