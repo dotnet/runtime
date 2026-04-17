@@ -6767,11 +6767,18 @@ bool DebuggerStepper::IsInterestingFrame(FrameInfo * pFrame)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Ignore managed exception handling frames
     if (pFrame->md != NULL)
     {
         MethodTable *pMT = pFrame->md->GetMethodTable();
+
+        // Ignore managed exception handling frames
         if ((pMT == g_pEHClass) || (pMT == g_pExceptionServicesInternalCallsClass))
+        {
+            return false;
+        }
+
+        // Ignore the runtime helper that invokes the main program entrypoint
+        if (pFrame->md == g_pEnvironmentCallEntryPointMethodDesc)
         {
             return false;
         }
