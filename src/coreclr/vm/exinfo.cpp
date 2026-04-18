@@ -180,9 +180,9 @@ void ExInfo::MakeCallbacksRelatedToHandler(
         {
             m_EHClauseInfo.SetEHClauseType(COR_PRF_CLAUSE_FILTER);
 
-            // Suppress the debugger filter notification for runtime helper that invokes
+            // Suppress the debugger filter notification for the runtime helper that invokes
             // the main program entrypoint (Environment.CallEntryPoint). This method has
-            // filter clause that may return false, but the debugger intercepts at the notification
+            // a filter clause that may return false, but the debugger intercepts at the notification
             // before the filter evaluates, preventing the exception from propagating as unhandled.
             if (pMD != g_pEnvironmentCallEntryPointMethodDesc)
             {
