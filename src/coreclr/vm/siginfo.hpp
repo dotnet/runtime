@@ -1096,19 +1096,6 @@ private:
                                              TokenPairList *pVisited);
 
 public:
-
-        //------------------------------------------------------------------
-        // Ensures that all the value types in the sig are loaded. This
-        // should be called on sig's that have value types before they
-        // are passed to Call(). This ensures that value classes will not
-        // be loaded during the operation to determine the size of the
-        // stack. Thus preventing the resulting GC hole.
-        //------------------------------------------------------------------
-        static void EnsureSigValueTypesLoaded(MethodDesc *pMD);
-
-        // this walks the sig and checks to see if all  types in the sig can be loaded
-        static void CheckSigTypesCanBeLoaded(MethodDesc *pMD);
-
         const SigTypeContext *GetSigTypeContext() const { LIMITED_METHOD_CONTRACT; return &m_typeContext; }
 
         // Disallow copy constructor.

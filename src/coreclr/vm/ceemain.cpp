@@ -209,6 +209,10 @@
 
 #include "genanalysis.h"
 
+#ifdef HAVE_GCCOVER
+#include "cdacstress.h"
+#endif
+
 HRESULT EEStartup();
 
 
@@ -664,7 +668,7 @@ void EEStartupHelper()
 
 #ifdef FEATURE_TIERED_COMPILATION
         TieredCompilationManager::StaticInitialize();
-        CallCountingManager::StaticInitialize();
+        CallCountingStub::StaticInitialize();
 #endif // FEATURE_TIERED_COMPILATION
 
         OnStackReplacementManager::StaticInitialize();
@@ -705,7 +709,7 @@ void EEStartupHelper()
             unsigned level = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
             unsigned bytesPerThread = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
             unsigned totalBytes = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-            CLRConfigStringHolder logFilename = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogFilename);
+            CLRConfigStringHolder logFilename(CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogFilename));
             StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase(), logFilename);
             g_pStressLog = &StressLog::theLog;
         }
@@ -963,6 +967,10 @@ void EEStartupHelper()
 
 #ifdef HAVE_GCCOVER
         MethodDesc::Init();
+        if (CdacStress::IsEnabled())
+        {
+            CdacStress::Initialize();
+        }
 #endif
 
         Assembly::Initialize();
@@ -1085,7 +1093,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 
 // EEStartup is responsible for all the one time initialization of the runtime.  Some of the highlights of
 // what it does include
-//     * Creates the default and shared, appdomains.
+//     * Creates the global AppDomain
 //     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)
 //
 // see code:EEStartup#TableOfContents for more on the runtime in general.
@@ -1243,6 +1251,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         // Indicate the EE is the shut down phase.
         InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Start);
+
+#ifdef HAVE_GCCOVER
+        CdacStress::Shutdown();
+#endif
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)
         {

@@ -426,5 +426,18 @@ namespace System.Runtime.CompilerServices.Tests
             var attr = new OverloadResolutionPriorityAttribute(42);
             Assert.Equal(42, attr.Priority);
         }
+
+        [Fact]
+        public static void UnionAttributeTests()
+        {
+            var attr = new UnionAttribute();
+            Assert.NotNull(attr);
+
+            var usage = (AttributeUsageAttribute)Attribute.GetCustomAttribute(typeof(UnionAttribute), typeof(AttributeUsageAttribute))!;
+            Assert.Equal(AttributeTargets.Class | AttributeTargets.Struct, usage.ValidOn);
+            Assert.False(usage.AllowMultiple);
+            Assert.False(usage.Inherited);
+        }
+
     }
 }
