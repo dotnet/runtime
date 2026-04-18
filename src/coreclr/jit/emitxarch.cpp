@@ -21367,7 +21367,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
         }
 
-        // The throughput is a reciprical, meaning 2X is 0.5 and 2C is 2.0, so we want
+        // The throughput is a reciprocal, meaning 2X is 0.5 and 2C is 2.0, so we want
         // to pick the higher value as it is the bigger limiter on the throughput.
         //
         // Latencies we just want to add together as we require the time to read/write
