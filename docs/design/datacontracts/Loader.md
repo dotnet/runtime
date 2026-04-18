@@ -93,7 +93,6 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
-// Throws NotImplementedException for unknown kind values.
 TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap);
 // Returns the size of the reserved virtual memory region for the given loader heap block
 TargetNUInt GetLoaderHeapBlockSize(TargetPointer block);
