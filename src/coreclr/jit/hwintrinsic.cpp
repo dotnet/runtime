@@ -9,28 +9,32 @@
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
               /* id */ NI_##isa##_##name, \
              /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
              /* isa */ InstructionSet_##isa, \
-        /* simdSize */ size, \
-         /* numArgs */ numarg, \
+        /* simdSize */ simdSize, \
+         /* numArgs */ numArgs, \
+         /* intCost */ intCost, \
+         /* fltCost */ fltCost, \
         /* category */ category \
     },
 #include "hwintrinsiclistxarch.h"
 #elif defined (TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
               /* id */ NI_##isa##_##name, \
              /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
              /* isa */ InstructionSet_##isa, \
-        /* simdSize */ size, \
-         /* numArgs */ numarg, \
+        /* simdSize */ simdSize, \
+         /* numArgs */ numArgs, \
+         /* intCost */ -1, \
+         /* fltCost */ -1, \
         /* category */ category \
     },
 #include "hwintrinsiclistarm64.h"

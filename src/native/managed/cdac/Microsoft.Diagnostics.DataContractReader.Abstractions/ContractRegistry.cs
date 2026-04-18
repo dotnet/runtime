@@ -150,7 +150,7 @@ public abstract class ContractRegistry
     /// Register a contract implementation for a specific version.
     /// External packages use this to add contract versions or entirely new contract interfaces.
     /// </summary>
-    public abstract void Register<TContract>(int version, Func<Target, TContract> creator)
+    public abstract void Register<TContract>(string version, Func<Target, TContract> creator)
         where TContract : IContract;
 
     /// <summary>

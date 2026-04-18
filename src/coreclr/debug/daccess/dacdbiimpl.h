@@ -589,18 +589,6 @@ private:
                         DebuggerIPCE_ObjectData * pObjectData);
 
 // ============================================================================
-// Functions to test data safety. In these functions we determine whether a lock
-// is held in a code path we need to execute for inspection. If so, we throw an
-// exception.
-// ============================================================================
-
-#ifdef TEST_DATA_CONSISTENCY
-public:
-    HRESULT STDMETHODCALLTYPE TestCrst(VMPTR_Crst vmCrst);
-    HRESULT STDMETHODCALLTYPE TestRWLock(VMPTR_SimpleRWLock vmRWLock);
-#endif
-
-// ============================================================================
 // CordbAssembly, CordbModule
 // ============================================================================
 
@@ -633,9 +621,6 @@ public:
     HRESULT STDMETHODCALLTYPE GetAssemblyInfo(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData);
 
     HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule);
-
-    // Yields true if the address is a CLR stub.
-    HRESULT STDMETHODCALLTYPE IsTransitionStub(CORDB_ADDRESS address, OUT BOOL * pResult);
 
     // Get the "type" of address.
     HRESULT STDMETHODCALLTYPE GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal);
@@ -753,10 +738,6 @@ public:
 
     // Enumerate the internal frames on the specified thread and invoke the provided callback on each of them.
     HRESULT STDMETHODCALLTYPE EnumerateInternalFrames(VMPTR_Thread vmThread, FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData);
-
-    // Given the FramePointer of the parent frame and the FramePointer of the current frame,
-    // check if the current frame is the parent frame.
-    HRESULT STDMETHODCALLTYPE IsMatchingParentFrame(FramePointer fpToCheck, FramePointer fpParent, OUT BOOL * pResult);
 
     // Return the stack parameter size of the given method.
     HRESULT STDMETHODCALLTYPE GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal);

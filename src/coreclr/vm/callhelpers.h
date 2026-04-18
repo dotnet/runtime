@@ -9,6 +9,13 @@
 #ifndef __CALLHELPERS_H__
 #define __CALLHELPERS_H__
 
+#ifdef TARGET_WASM
+// A sentinel value to indicate to the stack walker that this frame is NOT R2R generated managed code,
+// and it should look for the next Frame in the Frame chain to make further progress.
+#define TERMINATE_R2R_STACK_WALK 1
+
+#endif
+
 struct CallDescrData
 {
     // Input arguments
