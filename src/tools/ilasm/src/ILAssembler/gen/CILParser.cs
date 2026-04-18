@@ -205,7 +205,7 @@ public partial class CILParser : Parser {
 		"'.cctor'", "'il'", "'init'", "'.try'", "'to'", "'filter'", "'catch'", 
 		"'finally'", "'fault'", "'handler'", "'.data'", "'tls'", "'.publicKey'", 
 		"'.ver'", "'.locale'", "'.publickeytoken'", "'forwarder'", null, null, 
-		null, "'::'", "'...'", "'null'", "'nullref'", "'.hash'", "'char'", "'string'", 
+		null, "'::'", "'...'", "'null'", "'nullref'", "'.hash'", null, "'string'", 
 		"'bool'", "'int8'", "'int16'", "'int32'", "'int64'", "'float32'", "'float64'", 
 		"'uint8'", "'uint16'", "'uint32'", "'uint64'", "'int'", "'uint'", "'type'", 
 		"'object'", "'.module'", "'value'", "'valuetype'", "'void'", "'enum'", 

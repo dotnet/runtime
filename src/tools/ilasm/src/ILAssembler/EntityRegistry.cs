@@ -1030,26 +1030,36 @@ namespace ILAssembler
             // TODO-SRM: Propose a public API to construct a blob reader over a byte array or ReadOnlyMemory<byte>
             // to avoid the unsafe block.
             // Alternatively, propose an API to get the corresponding MethodDefSig for a MethodRefSig and move all of this logic into SRM.
-            unsafe
+            try
             {
-                fixed (byte* ptr = &signature[0])
+                unsafe
                 {
-                    var reader = new BlobReader(ptr, signature.Length);
-                    var methodSignature = decoder.DecodeMethodSignature(ref reader);
-
-                    if (methodSignature.RequiredParameterCount != methodSignature.ParameterTypes.Length)
+                    fixed (byte* ptr = &signature[0])
                     {
-                        hasVarargParameters = true;
+                        var reader = new BlobReader(ptr, signature.Length);
+                        var methodSignature = decoder.DecodeMethodSignature(ref reader);
 
-                        methodDefSig.MethodSignature(methodSignature.Header.CallingConvention, methodSignature.GenericParameterCount, methodSignature.Header.Attributes.HasFlag(SignatureAttributes.Instance))
-                            .Parameters(methodSignature.RequiredParameterCount, out var retTypeBuilder, out var parametersEncoder);
-                        methodSignature.ReturnType.WriteBlobTo(retTypeBuilder.Builder);
-                        for (int i = 0; i < methodSignature.RequiredParameterCount; i++)
+                        if (methodSignature.RequiredParameterCount != methodSignature.ParameterTypes.Length)
                         {
-                            methodSignature.ParameterTypes[i].WriteBlobTo(parametersEncoder.AddParameter().Builder);
+                            hasVarargParameters = true;
+
+                            methodDefSig.MethodSignature(methodSignature.Header.CallingConvention, methodSignature.GenericParameterCount, methodSignature.Header.Attributes.HasFlag(SignatureAttributes.Instance))
+                                .Parameters(methodSignature.RequiredParameterCount, out var retTypeBuilder, out var parametersEncoder);
+                            methodSignature.ReturnType.WriteBlobTo(retTypeBuilder.Builder);
+                            for (int i = 0; i < methodSignature.RequiredParameterCount; i++)
+                            {
+                                methodSignature.ParameterTypes[i].WriteBlobTo(parametersEncoder.AddParameter().Builder);
+                            }
                         }
                     }
                 }
+            }
+            catch (BadImageFormatException)
+            {
+                // Signature contains constructs (e.g., sentinel markers) that the
+                // SignatureDecoder cannot parse. Skip vararg processing and emit
+                // the MemberRef with its original signature.
+                return;
             }
 
             // If the method has vararg parameters, then this needs to be a MemberRef whose parent is a reference to the method with the signature without any vararg parameters.
