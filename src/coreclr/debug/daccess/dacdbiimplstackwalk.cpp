@@ -649,28 +649,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
     return hr;
 }
 
-// Given the FramePointer of the parent frame and the FramePointer of the current frame,
-// check if the current frame is the parent frame.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePointer fpParent, OUT BOOL * pResult)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        StackFrame sfToCheck = StackFrame((UINT_PTR)fpToCheck.GetSPValue());
-
-        StackFrame sfParent  = StackFrame((UINT_PTR)fpParent.GetSPValue());
-
-        // Ask the ExInfo to figure out the answer.
-        // Don't try to compare the StackFrames/FramePointers ourselves.
-        *pResult = ExInfo::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 // Return the stack parameter size of the given method.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal)
 {

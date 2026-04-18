@@ -25,6 +25,8 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_SpanHelpers_Memmove,
 
+    NI_System_Half_op_Explicit,
+
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
     NI_System_Math_Acos,
@@ -123,6 +125,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation,
 
