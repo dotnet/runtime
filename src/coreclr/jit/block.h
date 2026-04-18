@@ -445,7 +445,8 @@ enum BasicBlockFlags : uint64_t
     BBF_HAS_NEWARR                     = MAKE_BBFLAG(34), // BB contains 'new' of an array type.
     BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(35), // BB *likely* has a bounds check (after rangecheck phase).
     BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(36), // Block is a resumption block in an async method
-    BBF_THROW_HELPER                   = MAKE_BBFLAG(37), // Block is a call to a throw helper
+    BBF_CATCH_RESUMPTION               = MAKE_BBFLAG(37), // Block is a resumption from a catch
+    BBF_THROW_HELPER                   = MAKE_BBFLAG(38), // Block is a call to a throw helper
 
     // The following are sets of flags.
 
@@ -1766,6 +1767,10 @@ public:
     {
         return StatementList(FirstNonPhiDef());
     }
+
+    // True if any non-phi statement/node in the block has side effects.
+    //
+    bool hasSideEffects() const;
 
     // Simple "size" estimates
     //

@@ -1106,20 +1106,6 @@ void DynamicHelperFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_COMINTEROP
-//-----------------------------------------------------------------------
-// A rather specialized routine for the exclusive use of the COM PreStub.
-//-----------------------------------------------------------------------
-VOID
-ComPrestubMethodFrame::Init()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Initializes the frame's identifier.
-    Frame::Init(FrameIdentifier::ComPrestubMethodFrame);
-}
-#endif // FEATURE_COMINTEROP
-
 //-----------------------------------------------------------------------
 // GCFrames
 //-----------------------------------------------------------------------
@@ -1732,59 +1718,9 @@ PInvokeCalliFrame::PInvokeCalliFrame(TransitionBlock * pTransitionBlock, VASigCo
 }
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_COMINTEROP
-
-#ifndef DACCESS_COMPILE
-CLRToCOMMethodFrame::CLRToCOMMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
-    : FramedMethodFrame(FrameIdentifier::CLRToCOMMethodFrame, pTransitionBlock, pMD)
-{
-    LIMITED_METHOD_CONTRACT;
-}
-#endif // #ifndef DACCESS_COMPILE
-
-void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // CLRToCOMMethodFrame is only used in the event call / late bound call code path where we do not have IL stub
-    // so we need to promote the arguments and return value manually.
-
-    FramedMethodFrame::GcScanRoots_Impl(fn, sc);
-    PromoteCallerStack(fn, sc);
-
-    //
-    // Promote the returned object
-    //
-
-    MetaSig sig(GetFunction());
-
-    TypeHandle thValueType;
-    CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
-    if (CorTypeInfo::IsObjRef_NoThrow(et))
-    {
-        (*fn)(GetReturnObjectPtr(), sc, CHECK_APP_DOMAIN);
-    }
-    else if (CorTypeInfo::IsByRef_NoThrow(et))
-    {
-        PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
-    }
-    else if (et == ELEMENT_TYPE_VALUETYPE)
-    {
-        ArgIterator argit(&sig);
-        if (!argit.HasRetBuffArg())
-        {
-#ifdef TARGET_UNIX
-#error Non-Windows ABIs must be special cased
-#endif
-            ReportPointersFromValueType(fn, sc, thValueType.AsMethodTable(), GetReturnObjectPtr());
-        }
-    }
-}
-#endif // FEATURE_COMINTEROP
-
 #if defined (_DEBUG) && !defined (DACCESS_COMPILE)
 // For IsProtectedByGCFrame, we need to know whether a given object ref is protected
-// by a CLRToCOMMethodFrame or a ComMethodFrame. Since GCScanRoots for those frames are
+// by a TransitionFrame. Since GCScanRoots for those frames are
 // quite complicated, we don't want to duplicate their logic so we call GCScanRoots with
 // IsObjRefProtected (a fake promote function) and an extended ScanContext to do the checking.
 
@@ -1820,61 +1756,6 @@ BOOL TransitionFrame::Protects_Impl(OBJECTREF * ppORef)
 }
 #endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
 
-#ifdef FEATURE_COMINTEROP
-
-#ifdef TARGET_X86
-// Return the # of stack bytes pushed by the unmanaged caller.
-UINT ComMethodFrame::GetNumCallerStackBytes()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    ComCallMethodDesc* pCMD = PTR_ComCallMethodDesc((TADDR)GetDatum());
-    _ASSERTE(pCMD != NULL);
-    // assumes __stdcall
-    // compute the callee pop stack bytes
-    return pCMD->GetNumStackBytes();
-}
-#endif // TARGET_X86
-
-#ifndef DACCESS_COMPILE
-void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Find ComMethodFrame
-
-    while ((pCurFrame != FRAME_TOP) &&
-           (pCurFrame->GetFrameIdentifier() != FrameIdentifier::ComMethodFrame))
-    {
-        pCurFrame = pCurFrame->PtrNextFrame();
-    }
-
-    if (pCurFrame == FRAME_TOP)
-        return;
-
-    ComMethodFrame * pComMethodFrame = (ComMethodFrame *)pCurFrame;
-
-    _ASSERTE(pComMethodFrame != NULL);
-    Thread * pThread = GetThread();
-    GCX_COOP_THREAD_EXISTS(pThread);
-    // Unwind the frames till the entry frame (which was ComMethodFrame)
-    pCurFrame = pThread->GetFrame();
-    while ((pCurFrame != NULL) && (pCurFrame <= pComMethodFrame))
-    {
-        pCurFrame->ExceptionUnwind();
-        pCurFrame = pCurFrame->PtrNextFrame();
-    }
-
-    // At this point, pCurFrame would be the ComMethodFrame's predecessor frame
-    // that we need to reset to.
-    _ASSERTE((pCurFrame != NULL) && (pComMethodFrame->PtrNextFrame() == pCurFrame));
-    pThread->SetFrame(pCurFrame);
-}
-#endif // !DACCESS_COMPILE
-
-#endif // FEATURE_COMINTEROP
-
 #ifndef DACCESS_COMPILE
 VOID InlinedCallFrame::Init()
 {
@@ -1887,27 +1768,6 @@ VOID InlinedCallFrame::Init()
     m_pCallerReturnAddress = (TADDR)NULL;
 }
 #endif // !DACCESS_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-PCODE UnmanagedToManagedFrame::GetReturnAddress_Impl()
-{
-    WRAPPER_NO_CONTRACT;
-
-    PCODE pRetAddr = Frame::GetReturnAddress_Impl();
-
-    if (InlinedCallFrame::FrameHasActiveCall(m_Next) &&
-        pRetAddr == m_Next->GetReturnAddress())
-    {
-        // there's actually no unmanaged code involved - we were called directly
-        // from managed code using an InlinedCallFrame
-        return NULL;
-    }
-    else
-    {
-        return pRetAddr;
-    }
-}
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_INTERPRETER
 

@@ -13,6 +13,11 @@
 
 // begin blob definition
 
+// In debug/checked builds, validate that TYPE() references match declared cDAC types.
+#ifdef _DEBUG
+#include "cdactypevalidation.inc"
+#endif
+
 extern "C"
 {
 
@@ -70,6 +75,24 @@ struct GlobalContractSpec
 // __VA_ARGS__ is the argument list comma separated
 #define STRINGIFY(...) #__VA_ARGS__
 
+// Double-indirection stringify: expands macros in x before stringifying.
+// This is needed because the T_* type annotation defines (T_UINT32, TYPE(GCHandle), etc.)
+// must be expanded before stringification. Direct #x does not expand macros.
+#define CDAC_STRINGIFY_IMPL(x) #x
+#define CDAC_STRINGIFY(x) CDAC_STRINGIFY_IMPL(x)
+
+// CDAC_STRINGIFY_TYPE stringifies a type annotation parameter.
+// Type defines always expand to real type names (e.g., T_UINT32 -> uint32).
+// In debug/checked builds, the type name is included in the blob string pool.
+// In release builds, "" is emitted instead to keep the blob compact.
+// To include type info in release builds, change this to use CDAC_STRINGIFY
+// unconditionally.
+#ifdef _DEBUG
+#define CDAC_STRINGIFY_TYPE(membertyname) CDAC_STRINGIFY(membertyname)
+#else
+#define CDAC_STRINGIFY_TYPE(membertyname) ""
+#endif
+
 // define a struct where the size of each field is the length of some string.  we will use offsetof to get
 // the offset of each struct element, which will be equal to the offset of the beginning of that string in the
 // string pool.
@@ -80,14 +103,14 @@ struct CDacStringPoolSizes
 #define CDAC_BASELINE(name) DECL_LEN(cdac_string_pool_baseline_, (sizeof(name)))
 #define CDAC_TYPE_BEGIN(name) DECL_LEN(MAKE_TYPELEN_NAME(name), sizeof(#name))
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) DECL_LEN(MAKE_FIELDLEN_NAME(tyname,membername), sizeof(#membername)) \
-    DECL_LEN(MAKE_FIELDTYPELEN_NAME(tyname,membername), sizeof(#membertyname))
+    DECL_LEN(MAKE_FIELDTYPELEN_NAME(tyname,membername), sizeof(CDAC_STRINGIFY_TYPE(membertyname)))
 #define CDAC_GLOBAL_STRING(name, stringval) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
     DECL_LEN(MAKE_GLOBALVALUELEN_NAME(name), sizeof(STRINGIFY(stringval)))
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
 #define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
 #define CDAC_GLOBAL_CONTRACT(name,value) DECL_LEN(MAKE_GLOBALCONTRACTLEN_NAME(name), sizeof(#name))
 #define CDAC_GLOBAL(name,tyname,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
-    DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(#tyname))
+    DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(CDAC_STRINGIFY_TYPE(tyname)))
 #include "wrappeddatadescriptor.inc"
     char cdac_string_pool_trailing_nil;
 #undef DECL_LEN
@@ -368,12 +391,12 @@ struct MagicAndBlob BlobDataDescriptor = {
         /* .NamesPool = */ ("\0" // starts with a nul
 #define CDAC_BASELINE(name) name "\0"
 #define CDAC_TYPE_BEGIN(name) #name "\0"
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) #membername "\0" #membertyname "\0"
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) #membername "\0" CDAC_STRINGIFY_TYPE(membertyname) "\0"
 #define CDAC_GLOBAL_STRING(name,value) #name "\0" STRINGIFY(value) "\0"
 #define CDAC_GLOBAL_POINTER(name,value) #name "\0"
 #define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) #name "\0"
 #define CDAC_GLOBAL_CONTRACT(name,value) #name "\0"
-#define CDAC_GLOBAL(name,tyname,value) #name "\0" #tyname "\0"
+#define CDAC_GLOBAL(name,tyname,value) #name "\0" CDAC_STRINGIFY_TYPE(tyname) "\0"
 #include "wrappeddatadescriptor.inc"
                   ),
 
