@@ -11586,20 +11586,11 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         /* Then print the general purpose flags */
         GenTreeFlags flags = tree->gtFlags;
 
-        if (tree->OperIsBinary() || tree->OperIsMultiOp())
+        if (tree->IsPartOfAddressMode())
         {
-            genTreeOps oper = tree->OperGet();
-
-            // Check for GTF_ADDRMODE_NO_CSE flag on add/mul/shl Binary Operators
-            if ((oper == GT_ADD) || (oper == GT_MUL) || (oper == GT_LSH))
-            {
-                if ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0)
-                {
-                    flags |= GTF_DONT_CSE; // Force the GTF_ADDRMODE_NO_CSE flag to print out like GTF_DONT_CSE
-                }
-            }
+            flags |= GTF_DONT_CSE; // Force the GTF_ADDRMODE_NO_CSE flag to print out like GTF_DONT_CSE
         }
-        else // !(tree->OperIsBinary() || tree->OperIsMultiOp())
+        if (!(tree->OperIsBinary() || tree->OperIsMultiOp()))
         {
             // the GTF_REVERSE flag only applies to binary operations (which some MultiOp nodes are).
             flags &= ~GTF_REVERSE_OPS;
