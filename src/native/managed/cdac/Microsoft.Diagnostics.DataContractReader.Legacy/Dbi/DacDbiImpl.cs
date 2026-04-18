@@ -613,9 +613,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int EnumerateInternalFrames(ulong vmThread, nint fpCallback, nint pUserData)
         => _legacy is not null ? _legacy.EnumerateInternalFrames(vmThread, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
-    // [cDAC] IsMatchingParentFrame - replaces native DacDbiInterfaceImpl::IsMatchingParentFrame
-    // The native implementation converts both FramePointer args to StackFrame values and calls
-    // ExInfo::IsUnwoundToTargetParentFrame(sfToCheck, sfParent), which is simply sfParent == sfToCheck.
+    // Match native: ExInfo::IsUnwoundToTargetParentFrame is just an equality check.
     public int IsMatchingParentFrame(ulong fpToCheck, ulong fpParent, Interop.BOOL* pResult)
     {
         *pResult = Interop.BOOL.FALSE;
