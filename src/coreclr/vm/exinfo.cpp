@@ -180,8 +180,8 @@ void ExInfo::MakeCallbacksRelatedToHandler(
         {
             m_EHClauseInfo.SetEHClauseType(COR_PRF_CLAUSE_FILTER);
 
-            // Suppress the debugger filter notification for runtime-invoked UCO entrypoint methods.
-            // These methods have filter clauses (e.g., `catch when (captureException)`) that may
+            // Suppress the debugger filter notification for runtime helper that invokes
+            // the main program entrypoint. This method has filter clauses that may
             // return false, but the debugger intercepts at the notification before the filter
             // evaluates, preventing the exception from propagating as unhandled.
             if (pMD != g_pEnvironmentCallEntryPointMethodDesc)
