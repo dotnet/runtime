@@ -89,7 +89,7 @@ public class AuxiliarySymbolsTests
                 (Constants.Globals.AuxiliarySymbols, arrayAddress),
                 (Constants.Globals.AuxiliarySymbolCount, countFragment.Address))
             .AddMockContract<IPlatformMetadata>(Mock.Of<IPlatformMetadata>(p => p.GetCodePointerFlags() == default(CodePointerFlags)))
-            .AddContract<IAuxiliarySymbols>(version: 1)
+            .AddContract<IAuxiliarySymbols>(version: "c1")
             .Build();
     }
 

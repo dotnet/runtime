@@ -71,8 +71,8 @@ public class MethodDescTests
         var target = targetBuilder
             .AddTypes(CreateContractTypes(methodDescBuilder))
             .AddGlobals(CreateContractGlobals(methodDescBuilder))
-            .AddContract<IRuntimeTypeSystem>(version: 1)
-            .AddContract<ILoader>(version: 1)
+            .AddContract<IRuntimeTypeSystem>(version: "c1")
+            .AddContract<ILoader>(version: "c1")
             .AddMockContract(new Mock<IPlatformMetadata>())
             .AddMockContract(mockExecutionManager)
             .Build();
