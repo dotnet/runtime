@@ -162,7 +162,7 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [ConditionalTheory(nameof(IsNtlmAndAlpnAvailable))]
+        [ConditionalTheory(typeof(NtAuthTests), nameof(IsNtlmAndAlpnAvailable))]
         [InlineData(true)]
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
@@ -209,7 +209,7 @@ namespace System.Net.Http.Functional.Tests
                 httpOptions: CreateHttpAgnosticOptions());
         }
 
-        [ConditionalTheory(nameof(IsNtlmAndAlpnAvailable))]
+        [ConditionalTheory(typeof(NtAuthTests), nameof(IsNtlmAndAlpnAvailable))]
         [InlineData(true)]
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
@@ -257,7 +257,7 @@ namespace System.Net.Http.Functional.Tests
                 httpOptions: CreateHttpAgnosticOptions());
         }
 
-        [ConditionalTheory(nameof(IsNtlmAndAlpnAvailable))]
+        [ConditionalTheory(typeof(NtAuthTests), nameof(IsNtlmAndAlpnAvailable))]
         [InlineData(true)]
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
@@ -320,7 +320,7 @@ namespace System.Net.Http.Functional.Tests
                 httpOptions: CreateHttpAgnosticOptions());
         }
 
-        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [ConditionalTheory(typeof(NtAuthTests), nameof(IsNtlmAvailable))]
         [InlineData(true)]
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
@@ -355,7 +355,7 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [ConditionalTheory(typeof(NtAuthTests), nameof(IsNtlmAvailable))]
         [InlineData(true)]
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
@@ -391,7 +391,7 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [ConditionalTheory(nameof(IsNtlmAndAlpnAvailable))]
+        [ConditionalTheory(typeof(NtAuthTests), nameof(IsNtlmAndAlpnAvailable))]
         [InlineData(true)]
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
@@ -450,7 +450,7 @@ namespace System.Net.Http.Functional.Tests
                 httpOptions: CreateHttpAgnosticOptions());
         }
 
-        [ConditionalFact(nameof(IsNtlmAndAlpnAvailable))]
+        [ConditionalFact(typeof(NtAuthTests), nameof(IsNtlmAndAlpnAvailable))]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
         public async Task Http2_SessionAuthChallenge_Http2OnlyRequestsStillWork()
         {
@@ -510,7 +510,7 @@ namespace System.Net.Http.Functional.Tests
                 httpOptions: CreateHttpAgnosticOptions());
         }
 
-        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [ConditionalTheory(typeof(NtAuthTests), nameof(IsNtlmAvailable))]
         [InlineData(true)]
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
