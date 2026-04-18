@@ -217,7 +217,7 @@ public partial class CILParser : Parser {
 		"'filetime'", "'blob'", "'stream'", "'storage'", "'streamed_object'", 
 		"'stored_object'", "'blob_object'", "'cf'", "'clsid'", "'instance'", "'explicit'", 
 		"'default'", "'vararg'", "'unmanaged'", "'cdecl'", "'stdcall'", "'thiscall'", 
-		"'fastcall'", "'!'", null, "'typedref'", "'.param'", "'constraint'", "'.this'", 
+		"'fastcall'", "'!'", null, null, "'.param'", "'constraint'", "'.this'", 
 		"'.base'", "'.nester'", "'&'", null, "'*'", null, null, "'.'", "'+'", 
 		"'#define'", "'#undef'", "'#ifdef'", "'#ifndef'", "'#else'", "'#endif'", 
 		"'#include'", "'.mresource'", null, null, null, "'ldc.i8'", null, null, 

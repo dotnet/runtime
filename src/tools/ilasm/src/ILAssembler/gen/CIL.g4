@@ -91,7 +91,7 @@ THISCALL: 'thiscall';
 FASTCALL: 'fastcall';
 TYPE_PARAMETER: '!';
 METHOD_TYPE_PARAMETER: '!' '!';
-TYPEDREF: 'typedref';
+TYPEDREF: 'typedref' | 'refany';
 // NATIVE_INT and NATIVE_UINT are now parser rules (nativeInt, nativeUint)
 // to handle whitespace between 'native' and 'int'/'uint'.
 PARAM: '.param';

@@ -1269,22 +1269,32 @@ namespace ILAssembler
                         });
 
 
-                    for (int i = 0; i < VisitTyparsClause(context.typarsClause()).Value.Length; i++)
+                    // Two-pass generic parameter processing:
+                    // Pass 1: Register all parameter names (without resolving constraints)
+                    var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
+                    for (int i = 0; i < typarContexts.Length; i++)
                     {
-                        EntityRegistry.GenericParameterEntity? param = VisitTyparsClause(context.typarsClause()).Value[i];
+                        var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
+                        var param = EntityRegistry.CreateGenericParameter(attributes, VisitDottedName(typarContexts[i].dottedName()).Value);
                         param.Owner = newTypeDef;
                         param.Index = i;
                         newTypeDef.GenericParameters.Add(param);
-                        foreach (var constraint in param.Constraints)
+                    }
+
+                    // Push the type so that !T references in constraints, extends, and implements can resolve
+                    _currentTypeDefinition.Push(newTypeDef);
+
+                    // Pass 2: Resolve constraints (now all params are registered and type is on stack)
+                    for (int i = 0; i < typarContexts.Length; i++)
+                    {
+                        var param = newTypeDef.GenericParameters[i];
+                        foreach (var constraint in VisitTyBound(typarContexts[i].tyBound()).Value)
                         {
                             constraint.Owner = param;
+                            param.Constraints.Add(constraint);
                             newTypeDef.GenericParameterConstraints.Add(constraint);
                         }
                     }
-
-                    // Temporarily push the new type as the current type definition so we can resolve type parameters
-                    // that are used in the base type and interface types.
-                    _currentTypeDefinition.Push(newTypeDef);
 
                     if (context.extendsClause() is CILParser.ExtendsClauseContext extends)
                     {
@@ -1337,16 +1347,27 @@ namespace ILAssembler
 
                 if (typeDefinition.GenericParameters.Count == 0)
                 {
-                    var typeParams = VisitTyparsClause(context.typarsClause()).Value;
-                    for (int i = 0; i < typeParams.Length; i++)
+                    // Two-pass generic parameter processing for forward-referenced types
+                    var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
+                    for (int i = 0; i < typarContexts.Length; i++)
                     {
-                        var param = typeParams[i];
+                        var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
+                        var param = EntityRegistry.CreateGenericParameter(attributes, VisitDottedName(typarContexts[i].dottedName()).Value);
                         param.Owner = typeDefinition;
                         param.Index = i;
                         typeDefinition.GenericParameters.Add(param);
-                        foreach (var constraint in param.Constraints)
+                    }
+
+                    _currentTypeDefinition.Push(typeDefinition);
+
+                    // Pass 2: Resolve constraints
+                    for (int i = 0; i < typarContexts.Length; i++)
+                    {
+                        var param = typeDefinition.GenericParameters[i];
+                        foreach (var constraint in VisitTyBound(typarContexts[i].tyBound()).Value)
                         {
                             constraint.Owner = param;
+                            param.Constraints.Add(constraint);
                             typeDefinition.GenericParameterConstraints.Add(constraint);
                         }
                     }
@@ -1354,9 +1375,8 @@ namespace ILAssembler
                 else
                 {
                     _ = context.typarsClause().Accept(this);
+                    _currentTypeDefinition.Push(typeDefinition);
                 }
-
-                _currentTypeDefinition.Push(typeDefinition);
 
                 if (context.extendsClause() is CILParser.ExtendsClauseContext extends && typeDefinition.BaseType is null)
                 {
@@ -3483,20 +3503,29 @@ namespace ILAssembler
             }
 
             bool success = long.TryParse(value.ToString(), parseStyle, CultureInfo.InvariantCulture, out result);
-            if (!success && parseStyle == NumberStyles.AllowHexSpecifier)
+            if (!success)
             {
-                // Try parsing as unsigned - values like 0xED2E9C5C0D3DCE680 exceed Int64 but
-                // should be accepted and reinterpreted as their signed bit pattern.
+                // Try parsing as unsigned — handles values like:
+                // - Decimal overflow with negation: 9223372036854775808 (= -Int64.MinValue)
+                // - Large unsigned decimal: 18444492274432737280
                 if (ulong.TryParse(value.ToString(), parseStyle, CultureInfo.InvariantCulture, out ulong uresult))
                 {
                     result = unchecked((long)uresult);
-                    if (negate) result = -result;
+                    if (negate) result = unchecked(-result);
                     return true;
                 }
-                return false;
-            }
-            if (!success)
-            {
+                // Handle oversized hex values (>64 bits) by truncating to low 64 bits,
+                // matching native ilasm behavior for values like 0x94188556b24089e8b90c9c61f9f3088
+                if (parseStyle == NumberStyles.AllowHexSpecifier && value.Length > 16)
+                {
+                    var truncated = value.Slice(value.Length - 16);
+                    if (ulong.TryParse(truncated.ToString(), parseStyle, CultureInfo.InvariantCulture, out uresult))
+                    {
+                        result = unchecked((long)uresult);
+                        if (negate) result = unchecked(-result);
+                        return true;
+                    }
+                }
                 return false;
             }
 
@@ -4072,11 +4101,19 @@ namespace ILAssembler
             BlobBuilder methodSignature = new();
             byte sigHeader = VisitCallConv(context.callConv()).Value;
 
-            // Set the current method for type parameter and signature parsing
-            // so we can resolve generic parameters correctly.
+            // Two-pass generic parameter processing for method params:
+            // Pass 1: Register all parameter names (without resolving constraints)
             _currentMethod = new(methodDefinition);
-            var typeParameters = VisitTyparsClause(context.typarsClause()).Value;
-            if (typeParameters.Length != 0)
+            var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
+            for (int i = 0; i < typarContexts.Length; i++)
+            {
+                var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
+                var param = EntityRegistry.CreateGenericParameter(attributes, VisitDottedName(typarContexts[i].dottedName()).Value);
+                param.Owner = methodDefinition;
+                param.Index = i;
+                methodDefinition.GenericParameters.Add(param);
+            }
+            if (typarContexts.Length != 0)
             {
                 sigHeader |= (byte)SignatureAttributes.Generic;
             }
@@ -4115,19 +4152,18 @@ namespace ILAssembler
                 parsedHeader = new(sigHeader |= (byte)SignatureAttributes.Instance);
             }
             methodSignature.WriteByte(sigHeader);
-            if (typeParameters.Length != 0)
+            if (typarContexts.Length != 0)
             {
-                methodSignature.WriteCompressedInteger(typeParameters.Length);
+                methodSignature.WriteCompressedInteger(typarContexts.Length);
             }
-            for (int i = 0; i < typeParameters.Length; i++)
+            // Pass 2: Resolve constraints (now all params are registered)
+            for (int i = 0; i < typarContexts.Length; i++)
             {
-                EntityRegistry.GenericParameterEntity? param = typeParameters[i];
-                param.Owner = methodDefinition;
-                param.Index = i;
-                methodDefinition.GenericParameters.Add(param);
-                foreach (var constraint in param.Constraints)
+                var param = methodDefinition.GenericParameters[i];
+                foreach (var constraint in VisitTyBound(typarContexts[i].tyBound()).Value)
                 {
                     constraint.Owner = param;
+                    param.Constraints.Add(constraint);
                     methodDefinition.GenericParameterConstraints.Add(constraint);
                 }
             }

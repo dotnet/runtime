@@ -546,7 +546,6 @@ VTENTRY=301
 'thiscall'=249
 'fastcall'=250
 '!'=251
-'typedref'=253
 '.param'=254
 'constraint'=255
 '.this'=256

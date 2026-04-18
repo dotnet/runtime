@@ -3173,5 +3173,99 @@ namespace ILAssembler.Tests
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
             Assert.Empty(diagnostics);
         }
+
+        [Fact]
+        public void GenericConstraint_ForwardRefTypeParam()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly TestConstraint { }
+
+                .class interface public abstract auto ansi IAdder`1<T>
+                {
+                    .method public hidebysig newslot abstract virtual instance int32 Add() cil managed { }
+                }
+
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static int32 Check<(class IAdder`1<!!U>) T, U>(!!T t) cil managed
+                    {
+                        ldc.i4.0
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void TypeConstraint_ForwardRefTypeParam()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly TestConstraint { }
+
+                .class interface public abstract auto ansi I`1<T>
+                {
+                    .method public hidebysig newslot abstract virtual instance string Method() cil managed { }
+                }
+
+                .class public auto ansi beforefieldinit Conversion`2<T, (class I`1<!T>) U> extends [mscorlib]System.Object
+                {
+                    .method public hidebysig instance string M() cil managed
+                    {
+                        ldnull
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void RefanyType_Accepted()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly TestRefany { }
+
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .locals (int32, refany)
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void Int64MinValue_Accepted()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly TestInt64Min { }
+
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static int64 M() cil managed
+                    {
+                        ldc.i8 -9223372036854775808
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
     }
 }
