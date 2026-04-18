@@ -792,20 +792,21 @@ namespace ILAssembler
         public GrammarResult.Literal<(int? Lower, int? Upper)> VisitBound(CILParser.BoundContext context)
         {
             bool hasEllipsis = context.ELLIPSIS() is not null;
-            if (context.ChildCount == 0 || (context.ChildCount == 1 && hasEllipsis))
+            var indices = context.int32();
+
+            if (indices.Length == 0)
             {
+                // Empty or standalone "..."
                 return new((null, null));
             }
 
-            var indicies = context.int32();
+            int firstValue = VisitInt32(indices[0]).Value;
 
-            int firstValue = VisitInt32(indicies[0]).Value;
-
-            return (indicies.Length, hasEllipsis) switch
+            return (indices.Length, hasEllipsis) switch
             {
                 (1, false) => new((0, firstValue)),
                 (1, true) => new((firstValue, null)),
-                (2, false) => new((firstValue, VisitInt32(indicies[1]).Value - firstValue + 1)),
+                (2, _) => new((firstValue, VisitInt32(indices[1]).Value - firstValue + 1)),
                 _ => throw new UnreachableException()
             };
         }
@@ -2440,6 +2441,7 @@ namespace ILAssembler
 #pragma warning disable SYSLIB0050 // FieldAttributes.NotSeralized is obsolete
                 "notserialized" => new(FieldAttributes.NotSerialized),
 #pragma warning restore SYSLIB0050 // FieldAttributes.NotSeralized is obsolete
+                "volatile" => new(0), // COMPAT: volatile is not a field attribute; accepted for compatibility
                 _ => throw new UnreachableException()
             };
         }
@@ -3281,7 +3283,18 @@ namespace ILAssembler
         public GrammarResult.Literal<ILOpCode> VisitInstr_var(CILParser.Instr_varContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
         private static ILOpCode ParseOpCodeFromToken(IToken token)
         {
-            return (ILOpCode)Enum.Parse(typeof(ILOpCode), token.Text.Replace('.', '_'), ignoreCase: true);
+            string text = token.Text.TrimEnd('.');
+            string normalized = text.Replace('.', '_');
+
+            // Handle instruction aliases that don't directly map to ILOpCode enum names
+            normalized = normalized switch
+            {
+                "ldelem_u8" => "ldelem_i8",
+                "ldind_u8" => "ldind_i8",
+                _ => normalized
+            };
+
+            return (ILOpCode)Enum.Parse(typeof(ILOpCode), normalized, ignoreCase: true);
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitInstr(CILParser.InstrContext context) => VisitInstr(context);
