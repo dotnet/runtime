@@ -845,7 +845,7 @@ namespace ILAssembler.Tests
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
             var error = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.AbstractMethodNotInAbstractType, error.Id);
-            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal(DiagnosticSeverity.Warning, error.Severity);
         }
 
         [Fact]

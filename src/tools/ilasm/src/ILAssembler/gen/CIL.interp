@@ -179,7 +179,7 @@ null
 'null'
 'nullref'
 '.hash'
-'char'
+null
 'string'
 'bool'
 'int8'

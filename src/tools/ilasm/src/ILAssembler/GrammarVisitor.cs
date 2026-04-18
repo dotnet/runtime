@@ -3400,6 +3400,7 @@ namespace ILAssembler
             if (value.StartsWith("-".AsSpan()))
             {
                 negate = true;
+                value = value.Slice(1);
             }
 
             if (value.StartsWith("0x".AsSpan()))
@@ -3421,6 +3422,7 @@ namespace ILAssembler
                     }
                     result += digitValue;
                 }
+                if (negate) result = -result;
                 return true;
             }
 
@@ -3430,7 +3432,7 @@ namespace ILAssembler
                 return false;
             }
 
-            result *= negate ? -1 : 1;
+            if (negate) result = -result;
             return true;
         }
 
@@ -4014,7 +4016,7 @@ namespace ILAssembler
 
             if (methodDefinition.MethodAttributes.HasFlag(MethodAttributes.Abstract) && !methodDefinition.ContainingType.Attributes.HasFlag(TypeAttributes.Abstract))
             {
-                ReportError(DiagnosticIds.AbstractMethodNotInAbstractType,
+                ReportWarning(DiagnosticIds.AbstractMethodNotInAbstractType,
                     string.Format(DiagnosticMessageTemplates.AbstractMethodNotInAbstractType, methodDefinition.Name),
                     context);
             }
