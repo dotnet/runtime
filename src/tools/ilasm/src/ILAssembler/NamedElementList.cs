@@ -41,7 +41,7 @@ namespace ILAssembler
         public void Add(T item)
         {
             _elements.Add(item);
-            _elementsByName.Add(item.Name, item);
+            _elementsByName.TryAdd(item.Name, item);
         }
 
         public void Clear()
@@ -60,7 +60,7 @@ namespace ILAssembler
         public void Insert(int index, T item)
         {
             _elements.Insert(index, item);
-            _elementsByName.Add(item.Name, item);
+            _elementsByName.TryAdd(item.Name, item);
         }
 
         public bool Remove(T item)
