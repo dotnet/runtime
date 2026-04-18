@@ -17,7 +17,7 @@
 #include "utilcode.h"
 #include "ex.h"
 #include "executableallocator.h"
-#include "../vm/cdacdata.h"
+#include "cdacdata.h"
 
 //==============================================================================
 // Interface used to back out loader heap allocations.
