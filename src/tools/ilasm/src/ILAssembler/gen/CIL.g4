@@ -9,7 +9,7 @@ tokens { IncludedFileEof, SyntheticIncludedFileEof }
 
 INT32: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
 INT64: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
-FLOAT64: '-'? [0-9]+ ('.' [0-9]* ([eE] [+\-]? [0-9]+)? | [eE] [+\-]? [0-9]+);
+FLOAT64: '-'? ([0-9]+ ('.' [0-9]* ([eE] [+\-]? [0-9]+)? | [eE] [+\-]? [0-9]+) | '.' [0-9]+ ([eE] [+\-]? [0-9]+)?);
 // HEXBYTE removed: hex bytes in blobs now use INT32 or ID tokens via the hexbyte parser rule
 DCOLON: '::';
 ELLIPSIS: '...';
