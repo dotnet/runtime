@@ -8152,7 +8152,7 @@ DONE_MORPHING_CHILDREN:
         case GT_OR:
         case GT_XOR:
         case GT_AND:
-            if (oper == GT_ADD || oper == GT_OR || oper == GT_AND)
+            if (oper != GT_MUL)
             {
                 tree = fgOptimizeDistributiveArithemtic(tree->AsOp());
             }
@@ -10407,14 +10407,14 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
 // fgOptimizeDistributiveArithemtic: Optimizes distributive arithemtic.
 //
 // Arguments:
-//   tree - the unchecked GT_ADD/GT_SUB/GT_OR/GT_AND tree to optimize.
+//   tree - the unchecked GT_AND/GT_OR/GT_XOR/GT_ADD/GT_SUB tree to optimize.
 //
 // Return Value:
 //   The unchanged tree or optimized tree with oper GT_MUL/GT_OR/GT_AND.
 //
 GenTree* Compiler::fgOptimizeDistributiveArithemtic(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_ADD, GT_SUB, GT_OR, GT_AND));
+    assert(tree->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB));
     assert(!tree->gtOverflowEx());
 
     if (opts.OptimizationDisabled())
@@ -10435,27 +10435,24 @@ GenTree* Compiler::fgOptimizeDistributiveArithemtic(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    auto isDistributiveOver = [](genTreeOps op1, genTreeOps op2) {
-        // op1 is distributive over op2 iff:
-        // ((A op1 B) op2 (A op1 C)) <==> (A op1 (B op2 C))
-
+    auto isLeftDistributive = [](genTreeOps op1, genTreeOps op2) {
+        // op1 is left distributive over op2 iff:
+        // "A op1 (B op2 C)" <==> "(A op1 B) op2 (A op1 C)"
         switch (op1)
         {
-            case GT_MUL:
-                return op2 == GT_ADD || op2 == GT_SUB;
-
             case GT_AND:
-                return op2 == GT_OR || op2 == GT_AND;
+                return op2 == GT_OR || op2 == GT_XOR || op2 == GT_AND;
 
             case GT_OR:
                 return op2 == GT_AND || op2 == GT_OR;
 
-            default:
-                return false;
+            case GT_MUL:
+                return op2 == GT_ADD || op2 == GT_SUB;
         }
+        return false;
     };
 
-    if ((op1->OperGet() == op2->OperGet()) && isDistributiveOver(op1->OperGet(), tree->OperGet()))
+    if ((op1->OperGet() == op2->OperGet()) && isLeftDistributive(op1->OperGet(), tree->OperGet()))
     {
         if (GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
         {
