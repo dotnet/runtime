@@ -404,46 +404,6 @@ IEnumerable<TargetPointer> IGC.GetGCHeaps()
 }
 ```
 
-GetOomData
-```csharp
-GCOomData IGC.GetOomData()
-{
-    string[] gcIdentifiers = GetGCIdentifiers();
-    if (!gcType.Contains("workstation"))
-        throw new InvalidOperationException();
-
-    TargetPointer oomHistory = target.ReadGlobalPointer("GCHeapOomData");
-    return GetGCOomData(oomHistoryData);
-}
-
-GCOomData IGC.GetOomData(TargetPointer heapAddress)
-{
-    string[] gcIdentifiers = GetGCIdentifiers();
-    if (!gcType.Contains("server"))
-        throw new InvalidOperationException();
-
-    TargetPointer oomHistory = target.ReadPointer(heapAddress + /* GCHeap::OomData offset */);
-    return GetGCOomData(oomHistory);
-}
-
-private GCOomData GetGCOomData(TargetPointer oomHistory)
-{
-    GCOomData data = default;
-
-    data.Reason = target.Read<int>(oomHistory + /* OomHistory::Reason offset */);
-    data.AllocSize = target.ReadNUInt(oomHistory + /* OomHistory::AllocSize offset */);
-    data.Reserved = target.ReadPointer(oomHistory + /* OomHistory::Reserved offset */);
-    data.Allocated = target.ReadPointer(oomHistory + /* OomHistory::Allocated offset */);
-    data.GcIndex = target.ReadNUInt(oomHistory + /* OomHistory::GcIndex offset */);
-    data.Fgm = target.Read<int>(oomHistory + /* OomHistory::Fgm offset */);
-    data.Size = target.ReadNUInt(oomHistory + /* OomHistory::Size offset */);
-    data.AvailablePagefileMb = target.ReadNUInt(oomHistory + /* OomHistory::AvailablePagefileMb offset */);
-    data.LohP = target.Read<uint>(oomHistory + /* OomHistory::LohP offset */);
-
-    return data;
-}
-```
-
 GetHeapData
 ```csharp
 GCHeapData IGC.GetHeapData()
@@ -629,6 +589,46 @@ private List<TargetNUInt> ReadGCHeapDataArray(TargetPointer arrayStart, uint len
 }
 ```
 
+GetOomData
+```csharp
+GCOomData IGC.GetOomData()
+{
+    string[] gcIdentifiers = GetGCIdentifiers();
+    if (!gcType.Contains("workstation"))
+        throw new InvalidOperationException();
+
+    TargetPointer oomHistory = target.ReadGlobalPointer("GCHeapOomData");
+    return GetGCOomData(oomHistoryData);
+}
+
+GCOomData IGC.GetOomData(TargetPointer heapAddress)
+{
+    string[] gcIdentifiers = GetGCIdentifiers();
+    if (!gcType.Contains("server"))
+        throw new InvalidOperationException();
+
+    TargetPointer oomHistory = target.ReadPointer(heapAddress + /* GCHeap::OomData offset */);
+    return GetGCOomData(oomHistory);
+}
+
+private GCOomData GetGCOomData(TargetPointer oomHistory)
+{
+    GCOomData data = default;
+
+    data.Reason = target.Read<int>(oomHistory + /* OomHistory::Reason offset */);
+    data.AllocSize = target.ReadNUInt(oomHistory + /* OomHistory::AllocSize offset */);
+    data.Reserved = target.ReadPointer(oomHistory + /* OomHistory::Reserved offset */);
+    data.Allocated = target.ReadPointer(oomHistory + /* OomHistory::Allocated offset */);
+    data.GcIndex = target.ReadNUInt(oomHistory + /* OomHistory::GcIndex offset */);
+    data.Fgm = target.Read<int>(oomHistory + /* OomHistory::Fgm offset */);
+    data.Size = target.ReadNUInt(oomHistory + /* OomHistory::Size offset */);
+    data.AvailablePagefileMb = target.ReadNUInt(oomHistory + /* OomHistory::AvailablePagefileMb offset */);
+    data.LohP = target.Read<uint>(oomHistory + /* OomHistory::LohP offset */);
+
+    return data;
+}
+```
+
 GetHandles
 ```csharp
 public enum HandleType
@@ -774,6 +774,36 @@ private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, ui
     }
 
     return handleData;
+}
+```
+
+GetHandleExtraInfo
+```csharp
+TargetNUInt IGC.GetHandleExtraInfo(TargetPointer handle)
+{
+    // Handle table segments are aligned to their size ("HandleSegmentSize").
+    // The segment base is found by masking the handle address.
+    // User data blocks are stored in TableSegment.RgUserData, indexed by block number.
+    // The block and intra-block index are computed from the handle's position within the segment.
+
+    uint segmentSize = target.ReadGlobal<uint>("HandleSegmentSize");
+    TargetPointer segment = handle & ~(ulong)(segmentSize - 1);
+
+    uint headerSize = /* TableSegment::RgValue offset */;
+    uint handlesPerBlock = target.ReadGlobal<uint>("HandlesPerBlock");
+
+    uint handleIndex = (uint)((handle - segment - headerSize) / (uint)target.PointerSize);
+    uint block = handleIndex / handlesPerBlock;
+    uint intraBlockIndex = handleIndex % handlesPerBlock;
+
+    byte userDataBlockIndex = target.Read<byte>(segment + /* TableSegment::RgUserData offset */ + block);
+    if (userDataBlockIndex == target.ReadGlobal<byte>("BlockInvalid"))
+        return new TargetNUInt(0);
+
+    uint offset = userDataBlockIndex * handlesPerBlock + intraBlockIndex;
+    TargetPointer extraInfoAddr = segment + headerSize + offset * (uint)target.PointerSize;
+
+    return target.ReadNUInt(extraInfoAddr);
 }
 ```
 
@@ -937,35 +967,5 @@ void AddSegmentList(TargetPointer start, FreeRegionKind kind, List<GCMemoryRegio
         if (curr == start) break;
         if (iterationMax-- <= 0) break;
     }
-}
-```
-
-GetHandleExtraInfo
-```csharp
-TargetNUInt IGC.GetHandleExtraInfo(TargetPointer handle)
-{
-    // Handle table segments are aligned to their size ("HandleSegmentSize").
-    // The segment base is found by masking the handle address.
-    // User data blocks are stored in TableSegment.RgUserData, indexed by block number.
-    // The block and intra-block index are computed from the handle's position within the segment.
-
-    uint segmentSize = target.ReadGlobal<uint>("HandleSegmentSize");
-    TargetPointer segment = handle & ~(ulong)(segmentSize - 1);
-
-    uint headerSize = /* TableSegment::RgValue offset */;
-    uint handlesPerBlock = target.ReadGlobal<uint>("HandlesPerBlock");
-
-    uint handleIndex = (uint)((handle - segment - headerSize) / (uint)target.PointerSize);
-    uint block = handleIndex / handlesPerBlock;
-    uint intraBlockIndex = handleIndex % handlesPerBlock;
-
-    byte userDataBlockIndex = target.Read<byte>(segment + /* TableSegment::RgUserData offset */ + block);
-    if (userDataBlockIndex == target.ReadGlobal<byte>("BlockInvalid"))
-        return new TargetNUInt(0);
-
-    uint offset = userDataBlockIndex * handlesPerBlock + intraBlockIndex;
-    TargetPointer extraInfoAddr = segment + headerSize + offset * (uint)target.PointerSize;
-
-    return target.ReadNUInt(extraInfoAddr);
 }
 ```
