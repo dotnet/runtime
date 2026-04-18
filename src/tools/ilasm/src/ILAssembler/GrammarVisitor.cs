@@ -2887,11 +2887,18 @@ namespace ILAssembler
             }
             else if (context.int32() is CILParser.Int32Context int32)
             {
-                int value = VisitInt32(int32).Value;
-                return new(BitConverter.Int32BitsToSingle(value));
+                int intValue = VisitInt32(int32).Value;
+                if (context.FLOAT32() is not null)
+                {
+                    // FLOAT32 '(' int32 ')' — hex bits reinterpreted as float32
+                    return new(BitConverter.Int32BitsToSingle(intValue));
+                }
+                // int32 or int32 '.' — plain integer or trailing-dot float
+                return new((double)intValue);
             }
             else if (context.int64() is CILParser.Int64Context int64)
             {
+                // FLOAT64_ '(' int64 ')' — hex bits reinterpreted as float64
                 long value = VisitInt64(int64).Value;
                 return new(BitConverter.Int64BitsToDouble(value));
             }
