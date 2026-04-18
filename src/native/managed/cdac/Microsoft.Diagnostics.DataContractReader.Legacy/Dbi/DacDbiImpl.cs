@@ -233,11 +233,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             *pData = default;
             pData->vmAssembly = loader.GetAssembly(handle).Value;
             pData->vmPEAssembly = loader.GetPEAssembly(handle).Value;
-            pData->fIsDynamic = loader.IsDynamic(handle) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            bool isDynamic = loader.IsDynamic(handle);
+            pData->fIsDynamic = isDynamic ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             string path = loader.GetPath(handle);
             pData->fInMemory = string.IsNullOrEmpty(path) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-            if (!loader.IsDynamic(handle)
-                && loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint _))
+            if (!isDynamic && loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint _))
             {
                 pData->pPEBaseAddress = baseAddress.Value;
                 pData->nPESize = size;
