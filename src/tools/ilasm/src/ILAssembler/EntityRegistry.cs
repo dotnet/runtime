@@ -381,7 +381,10 @@ namespace ILAssembler
 
                 foreach (var accessor in evt.Accessors)
                 {
-                    builder.AddMethodSemantics(evt.Handle, accessor.Semantic, (MethodDefinitionHandle)accessor.Method.Handle);
+                    if (accessor.Method.Handle.Kind == HandleKind.MethodDefinition)
+                    {
+                        builder.AddMethodSemantics(evt.Handle, accessor.Semantic, (MethodDefinitionHandle)accessor.Method.Handle);
+                    }
                 }
             }
 
@@ -394,7 +397,10 @@ namespace ILAssembler
 
                 foreach (var accessor in prop.Accessors)
                 {
-                    builder.AddMethodSemantics(prop.Handle, accessor.Semantic, (MethodDefinitionHandle)accessor.Method.Handle);
+                    if (accessor.Method.Handle.Kind == HandleKind.MethodDefinition)
+                    {
+                        builder.AddMethodSemantics(prop.Handle, accessor.Semantic, (MethodDefinitionHandle)accessor.Method.Handle);
+                    }
                 }
 
                 if (prop.HasConstant)

@@ -66,7 +66,10 @@ namespace ILAssembler
                 {
                     return rhs.Value;
                 }
-                return (T)(object)(((int)(object)lhs & (~(int)(object)rhs._groupMask)) | (int)(object)rhs.Value);
+                int lhsInt = Convert.ToInt32(lhs);
+                int maskInt = Convert.ToInt32(rhs._groupMask);
+                int valueInt = Convert.ToInt32(rhs.Value);
+                return (T)Enum.ToObject(typeof(T), (lhsInt & ~maskInt) | valueInt);
             }
         }
     }
@@ -1091,6 +1094,80 @@ namespace ILAssembler
                     foreach (var accessor in accessors)
                     {
                         evt.Accessors.Add(accessor);
+                    }
+                }
+            }
+            else if (context.PARAM() is not null)
+            {
+                var customAttrDeclarations = context.customAttrDecl();
+                var currentType = _currentTypeDefinition.PeekOrDefault();
+                if (currentType is not null && context.TYPE() is not null)
+                {
+                    EntityRegistry.GenericParameterEntity? param = null;
+                    if (context.int32() is { } int32ctx)
+                    {
+                        int index = VisitInt32(int32ctx).Value;
+                        if (index >= 0 && index < currentType.GenericParameters.Count)
+                        {
+                            param = currentType.GenericParameters[index];
+                        }
+                    }
+                    else if (context.dottedName() is { } dn)
+                    {
+                        string name = VisitDottedName(dn).Value;
+                        foreach (var genericParam in currentType.GenericParameters)
+                        {
+                            if (genericParam.Name == name)
+                            {
+                                param = genericParam;
+                                break;
+                            }
+                        }
+                    }
+                    if (param is not null)
+                    {
+                        foreach (var attr in customAttrDeclarations ?? Array.Empty<CILParser.CustomAttrDeclContext>())
+                        {
+                            var customAttrDecl = VisitCustomAttrDecl(attr).Value;
+                            customAttrDecl?.Owner = param;
+                        }
+                    }
+                }
+                else if (currentType is not null && context.CONSTRAINT() is not null)
+                {
+                    EntityRegistry.GenericParameterEntity? param = null;
+                    if (context.int32() is { } int32ctx)
+                    {
+                        int index = VisitInt32(int32ctx).Value;
+                        if (index >= 0 && index < currentType.GenericParameters.Count)
+                        {
+                            param = currentType.GenericParameters[index];
+                        }
+                    }
+                    else if (context.dottedName() is { } dn)
+                    {
+                        string name = VisitDottedName(dn).Value;
+                        foreach (var genericParam in currentType.GenericParameters)
+                        {
+                            if (genericParam.Name == name)
+                            {
+                                param = genericParam;
+                                break;
+                            }
+                        }
+                    }
+                    if (param is not null)
+                    {
+                        var baseType = VisitTypeSpec(context.typeSpec()[0]).Value;
+                        var constraint = new EntityRegistry.GenericParameterConstraintEntity(baseType);
+                        constraint.Owner = param;
+                        param.Constraints.Add(constraint);
+                        currentType.GenericParameterConstraints.Add(constraint);
+                        foreach (var attr in customAttrDeclarations ?? Array.Empty<CILParser.CustomAttrDeclContext>())
+                        {
+                            var customAttrDecl = VisitCustomAttrDecl(attr).Value;
+                            customAttrDecl?.Owner = constraint;
+                        }
                     }
                 }
             }
@@ -3761,7 +3838,7 @@ namespace ILAssembler
                 {
                     // Type parameters
                     EntityRegistry.GenericParameterEntity? param = null;
-                    if (context.int32() is { } int32)
+                    if (context.int32() is { Length: > 0 } int32)
                     {
                         int index = VisitInt32(int32[0]).Value;
                         if (index < 0 || index >= currentMethod.Definition.GenericParameters.Count)
@@ -3802,7 +3879,7 @@ namespace ILAssembler
                 {
                     // constraints
                     EntityRegistry.GenericParameterEntity? param = null;
-                    if (context.int32() is { } int32)
+                    if (context.int32() is { Length: > 0 } int32)
                     {
                         int index = VisitInt32(int32[0]).Value;
                         if (index < 0 || index >= currentMethod.Definition.GenericParameters.Count)
