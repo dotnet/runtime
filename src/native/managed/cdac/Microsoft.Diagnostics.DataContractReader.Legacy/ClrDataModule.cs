@@ -47,12 +47,14 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         }
     }
 
+    private const uint CORDEBUG_JIT_DEFAULT = 0x1;
+    private const uint CORDEBUG_JIT_DISABLE_OPTIMIZATION = 0x3;
     private static readonly Guid IID_IMetaDataImport = Guid.Parse("7DAC8207-D3AE-4c75-9B67-92801A497D44");
 
     CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
     {
         ppv = default;
-        if (_legacyModulePointer == 0)
+        if (!LegacyFallbackHelper.CanFallback() || _legacyModulePointer == 0)
             return CustomQueryInterfaceResult.NotHandled;
 
         // Legacy DAC implementation of IXCLRDataModule handles QIs for IMetaDataImport by creating and
@@ -181,42 +183,42 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     }
 
     int IXCLRDataModule.StartEnumAssemblies(ulong* handle)
-        => _legacyModule is not null ? _legacyModule.StartEnumAssemblies(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumAssemblies(handle) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumAssembly(ulong* handle, DacComNullableByRef<IXCLRDataAssembly> assembly)
-        => _legacyModule is not null ? _legacyModule.EnumAssembly(handle, assembly) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumAssembly(handle, assembly) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumAssemblies(ulong handle)
-        => _legacyModule is not null ? _legacyModule.EndEnumAssemblies(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumAssemblies(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumTypeDefinitions(ulong* handle)
-        => _legacyModule is not null ? _legacyModule.StartEnumTypeDefinitions(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumTypeDefinitions(handle) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumTypeDefinition(ulong* handle, DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
-        => _legacyModule is not null ? _legacyModule.EnumTypeDefinition(handle, typeDefinition) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumTypeDefinition(handle, typeDefinition) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumTypeDefinitions(ulong handle)
-        => _legacyModule is not null ? _legacyModule.EndEnumTypeDefinitions(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumTypeDefinitions(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumTypeInstances(IXCLRDataAppDomain? appDomain, ulong* handle)
-        => _legacyModule is not null ? _legacyModule.StartEnumTypeInstances(appDomain, handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumTypeInstances(appDomain, handle) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumTypeInstance(ulong* handle, DacComNullableByRef<IXCLRDataTypeInstance> typeInstance)
-        => _legacyModule is not null ? _legacyModule.EnumTypeInstance(handle, typeInstance) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumTypeInstance(handle, typeInstance) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumTypeInstances(ulong handle)
-        => _legacyModule is not null ? _legacyModule.EndEnumTypeInstances(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumTypeInstances(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumTypeDefinitionsByName(char* name, uint flags, ulong* handle)
-        => _legacyModule is not null ? _legacyModule.StartEnumTypeDefinitionsByName(name, flags, handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumTypeDefinitionsByName(name, flags, handle) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumTypeDefinitionByName(ulong* handle, DacComNullableByRef<IXCLRDataTypeDefinition> type)
-        => _legacyModule is not null ? _legacyModule.EnumTypeDefinitionByName(handle, type) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumTypeDefinitionByName(handle, type) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumTypeDefinitionsByName(ulong handle)
-        => _legacyModule is not null ? _legacyModule.EndEnumTypeDefinitionsByName(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumTypeDefinitionsByName(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumTypeInstancesByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, ulong* handle)
-        => _legacyModule is not null ? _legacyModule.StartEnumTypeInstancesByName(name, flags, appDomain, handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumTypeInstancesByName(name, flags, appDomain, handle) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumTypeInstanceByName(ulong* handle, DacComNullableByRef<IXCLRDataTypeInstance> type)
-        => _legacyModule is not null ? _legacyModule.EnumTypeInstanceByName(handle, type) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumTypeInstanceByName(handle, type) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumTypeInstancesByName(ulong handle)
-        => _legacyModule is not null ? _legacyModule.EndEnumTypeInstancesByName(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumTypeInstancesByName(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.GetTypeDefinitionByToken(/*mdTypeDef*/ uint token, DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
-        => _legacyModule is not null ? _legacyModule.GetTypeDefinitionByToken(token, typeDefinition) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.GetTypeDefinitionByToken(token, typeDefinition) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumMethodDefinitionsByName(char* name, uint flags, ulong* handle)
     {
@@ -346,21 +348,21 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         return hr;
     }
     int IXCLRDataModule.StartEnumMethodInstancesByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, ulong* handle)
-        => _legacyModule is not null ? _legacyModule.StartEnumMethodInstancesByName(name, flags, appDomain, handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumMethodInstancesByName(name, flags, appDomain, handle) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, DacComNullableByRef<IXCLRDataMethodInstance> method)
-        => _legacyModule is not null ? _legacyModule.EnumMethodInstanceByName(handle, method) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumMethodInstanceByName(handle, method) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumMethodInstancesByName(ulong handle)
-        => _legacyModule is not null ? _legacyModule.EndEnumMethodInstancesByName(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumMethodInstancesByName(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.GetMethodDefinitionByToken(/*mdMethodDef*/ uint token, DacComNullableByRef<IXCLRDataMethodDefinition> methodDefinition)
-        => _legacyModule is not null ? _legacyModule.GetMethodDefinitionByToken(token, methodDefinition) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.GetMethodDefinitionByToken(token, methodDefinition) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumDataByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, IXCLRDataTask? tlsTask, ulong* handle)
-        => _legacyModule is not null ? _legacyModule.StartEnumDataByName(name, flags, appDomain, tlsTask, handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumDataByName(name, flags, appDomain, tlsTask, handle) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumDataByName(ulong* handle, DacComNullableByRef<IXCLRDataValue> value)
-        => _legacyModule is not null ? _legacyModule.EnumDataByName(handle, value) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumDataByName(handle, value) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumDataByName(ulong handle)
-        => _legacyModule is not null ? _legacyModule.EndEnumDataByName(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumDataByName(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.GetName(uint bufLen, uint* nameLen, char* name)
     {
@@ -496,7 +498,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     }
 
     int IXCLRDataModule.IsSameObject(IXCLRDataModule* mod)
-        => _legacyModule is not null ? _legacyModule.IsSameObject(mod) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.IsSameObject(mod) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumExtents(ulong* handle)
     {
@@ -707,15 +709,51 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     }
 
     int IXCLRDataModule.StartEnumAppDomains(ulong* handle)
-        => _legacyModule is not null ? _legacyModule.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain)
-        => _legacyModule is not null ? _legacyModule.EnumAppDomain(handle, appDomain) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumAppDomain(handle, appDomain) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumAppDomains(ulong handle)
-        => _legacyModule is not null ? _legacyModule.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.GetVersionId(Guid* vid)
-        => _legacyModule is not null ? _legacyModule.GetVersionId(vid) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.GetVersionId(vid) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule2.SetJITCompilerFlags(uint flags)
-        => _legacyModule2 is not null ? _legacyModule2.SetJITCompilerFlags(flags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if ((flags != CORDEBUG_JIT_DEFAULT) && (flags != CORDEBUG_JIT_DISABLE_OPTIMIZATION))
+                throw new ArgumentException();
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(_address);
+
+            bool allowJitOpts = (flags & CORDEBUG_JIT_DISABLE_OPTIMIZATION) != CORDEBUG_JIT_DISABLE_OPTIMIZATION;
+            DebuggerAssemblyControlFlags bits = loader.GetDebuggerInfoBits(handle)
+                & ~(DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS | DebuggerAssemblyControlFlags.DACF_ENC_ENABLED);
+            bits &= DebuggerAssemblyControlFlags.DACF_CONTROL_FLAGS_MASK;
+
+            if (allowJitOpts)
+            {
+                bits |= DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS;
+            }
+
+            loader.SetDebuggerInfoBits(handle, bits);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule2 is not null)
+        {
+            int hrLocal = _legacyModule2.SetJITCompilerFlags(flags);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 }
