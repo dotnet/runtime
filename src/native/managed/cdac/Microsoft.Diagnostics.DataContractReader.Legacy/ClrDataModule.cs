@@ -112,6 +112,11 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
             StrategyBasedComWrappers comWrappers = new();
             nint pUnk = comWrappers.GetOrCreateComInterfaceForObject(wrapper, CreateComInterfaceFlags.None);
+
+            // Store the ComWrappers instance so MetaDataImportImpl's ICustomQueryInterface can
+            // obtain its own CCW pointer to redirect IMetaDataImport QIs to IMetaDataImport2.
+            wrapper._comWrappers ??= comWrappers;
+
             try
             {
                 // When asked for IMetaDataImport, return the IMetaDataImport2 vtable pointer.

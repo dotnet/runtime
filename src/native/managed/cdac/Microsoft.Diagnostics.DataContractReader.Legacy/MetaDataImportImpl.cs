@@ -12,7 +12,7 @@ using System.Runtime.InteropServices.Marshalling;
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
-internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMetaDataAssemblyImport
+internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface, IMetaDataImport2, IMetaDataAssemblyImport
 {
     private const int CLDB_E_RECORD_NOTFOUND = unchecked((int)0x80131130);
     private const int CLDB_E_FILE_CORRUPT = unchecked((int)0x8013110E);
@@ -25,12 +25,50 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
     private readonly IMetaDataAssemblyImport? _legacyAssemblyImport;
     private Dictionary<int, uint>? _interfaceImplToTypeDef;
 
+    // The ComWrappers instance used to create this object's CCW. Set after CCW creation
+    // so that ICustomQueryInterface.GetInterface can obtain the CCW pointer to redirect
+    // IMetaDataImport QIs to IMetaDataImport2. See comment on GetInterface below.
+    internal StrategyBasedComWrappers? _comWrappers;
+
     public MetaDataImportImpl(MetadataReader? reader, IMetaDataImport? legacyImport = null)
     {
         _reader = reader;
         _legacyImport = legacyImport;
         _legacyImport2 = legacyImport as IMetaDataImport2;
         _legacyAssemblyImport = legacyImport as IMetaDataAssemblyImport;
+    }
+
+    // Some consumers (e.g. ClrMD) QI for IMetaDataImport but then access IMetaDataImport2
+    // vtable slots beyond the IMetaDataImport vtable boundary. This works with native C++
+    // COM objects (where the vtable for IMetaDataImport and IMetaDataImport2 is unified via
+    // single-inheritance) but breaks with managed [GeneratedComInterface] CCWs which create
+    // separate per-interface vtables. To handle this, we redirect IMetaDataImport QIs to
+    // IMetaDataImport2. Since IMetaDataImport2 inherits from IMetaDataImport, the first
+    // slots are identical, and the additional IMetaDataImport2 slots are accessible.
+    //
+    // This works because the CCW QI handler checks ICustomQueryInterface BEFORE the
+    // user-defined vtable entries (AsUserDefined), so we intercept the IMetaDataImport QI
+    // before the CCW returns the shorter IMetaDataImport-only vtable.
+    CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
+    {
+        ppv = default;
+
+        if (iid == typeof(IMetaDataImport).GUID && _comWrappers is not null)
+        {
+            nint pUnk = _comWrappers.GetOrCreateComInterfaceForObject(this, CreateComInterfaceFlags.None);
+            try
+            {
+                Guid iid2 = typeof(IMetaDataImport2).GUID;
+                if (Marshal.QueryInterface(pUnk, in iid2, out ppv) >= 0)
+                    return CustomQueryInterfaceResult.Handled;
+            }
+            finally
+            {
+                Marshal.Release(pUnk);
+            }
+        }
+
+        return CustomQueryInterfaceResult.NotHandled;
     }
 
     // Helper: get the full name of a type definition (Namespace.Name).

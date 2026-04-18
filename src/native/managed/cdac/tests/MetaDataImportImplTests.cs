@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
 
@@ -988,5 +989,85 @@ public unsafe class MetaDataImportImplTests
         Assert.Equal(1u, cplusTypeFlag); // ELEMENT_TYPE_VOID
         Assert.True(pValue is null);
         Assert.Equal(0u, cchValue);
+    }
+
+    // Regression test: ClrMD QIs for IMetaDataImport but accesses IMetaDataImport2 vtable
+    // slots beyond the IMetaDataImport boundary (EnumGenericParams is slot 65, past the
+    // 65-slot IMetaDataImport vtable). With [GeneratedComInterface] CCWs, each interface
+    // gets its own vtable. The ICustomQueryInterface on MetaDataImportImpl must redirect
+    // IMetaDataImport QIs to IMetaDataImport2 so all 73 slots are accessible.
+    [Fact]
+    public void QueryInterfaceForIMetaDataImport_ReturnsIMetaDataImport2VtableWithExtendedSlots()
+    {
+        var (reader, provider) = CreateTestMetadata();
+        using var _ = provider;
+
+        MetaDataImportImpl wrapper = new MetaDataImportImpl(reader);
+
+        StrategyBasedComWrappers comWrappers = new();
+        nint pUnk = comWrappers.GetOrCreateComInterfaceForObject(wrapper, CreateComInterfaceFlags.None);
+        wrapper._comWrappers = comWrappers;
+
+        try
+        {
+            // Simulate ClrMD: QI for IMetaDataImport
+            Guid iidImport = typeof(IMetaDataImport).GUID;
+            int hr = Marshal.QueryInterface(pUnk, in iidImport, out nint pImport);
+            Assert.Equal(0, hr);
+            Assert.NotEqual(nint.Zero, pImport);
+
+            try
+            {
+                // Simulate ClrMD's CallableCOMWrapper: QI the returned pointer AGAIN for IMetaDataImport.
+                // This second QI goes to MetaDataImportImpl's CCW. Without the ICustomQueryInterface
+                // redirect, this would return the shorter IMetaDataImport vtable (65 slots) and accessing
+                // slot 65 (EnumGenericParams) would AV.
+                Guid iidImportAgain = typeof(IMetaDataImport).GUID;
+                hr = Marshal.QueryInterface(pImport, in iidImportAgain, out nint pImportAgain);
+                Assert.Equal(0, hr);
+                Assert.NotEqual(nint.Zero, pImportAgain);
+
+                try
+                {
+                    // Verify the returned pointer has IMetaDataImport2 slots accessible.
+                    // QI the result for IMetaDataImport2 to verify COM identity is correct.
+                    Guid iidImport2 = typeof(IMetaDataImport2).GUID;
+                    hr = Marshal.QueryInterface(pImportAgain, in iidImport2, out nint pImport2);
+                    Assert.Equal(0, hr);
+                    Assert.NotEqual(nint.Zero, pImport2);
+                    Marshal.Release(pImport2);
+
+                    // The critical check: read the vtable and verify EnumGenericParams (slot 65)
+                    // is a valid function pointer, not garbage from reading past the vtable end.
+                    // IMetaDataImport has 62 methods, IMetaDataImport2 adds 8 = 70 total.
+                    // Vtable: [0]=QI, [1]=AddRef, [2]=Release, [3..64]=IMetaDataImport, [65..72]=IMetaDataImport2
+                    nint* vtable = *(nint**)pImportAgain;
+                    nint enumGenericParams = vtable[65]; // EnumGenericParams
+                    Assert.NotEqual(nint.Zero, enumGenericParams);
+
+                    // Call EnumGenericParams with a null enumerator to verify it doesn't AV.
+                    // Use the COM function pointer directly, like ClrMD does.
+                    nint hEnum = 0;
+                    uint count = 0;
+                    // delegate* unmanaged[Stdcall]<nint, nint*, uint, uint*, uint, uint*, int>
+                    var fn = (delegate* unmanaged[Stdcall]<nint, nint*, uint, uint*, uint, uint*, int>)enumGenericParams;
+                    hr = fn(pImportAgain, &hEnum, 0x02000002, null, 0, &count);
+                    // Should succeed (or return no results) without AV
+                    Assert.True(hr >= 0 || hr == unchecked((int)0x80131130)); // S_OK or CLDB_E_RECORD_NOTFOUND
+                }
+                finally
+                {
+                    Marshal.Release(pImportAgain);
+                }
+            }
+            finally
+            {
+                Marshal.Release(pImport);
+            }
+        }
+        finally
+        {
+            Marshal.Release(pUnk);
+        }
     }
 }
