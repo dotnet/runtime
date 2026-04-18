@@ -16,7 +16,7 @@ ELLIPSIS: '...';
 NULL: 'null';
 NULLREF: 'nullref';
 HASH: '.hash';
-CHAR: 'char';
+CHAR: 'char' | 'wchar';
 STRING: 'string';
 BOOL: 'bool';
 INT8: 'int8';

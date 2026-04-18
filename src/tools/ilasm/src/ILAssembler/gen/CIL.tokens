@@ -477,7 +477,6 @@ SyntheticIncludedFileEof=303
 'null'=177
 'nullref'=178
 '.hash'=179
-'char'=180
 'string'=181
 'bool'=182
 'int8'=183
