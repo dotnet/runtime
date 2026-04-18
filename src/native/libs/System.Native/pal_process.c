@@ -376,15 +376,11 @@ static pthread_mutex_t s_pdeathsig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t s_pdeathsig_request_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t s_pdeathsig_done_cond = PTHREAD_COND_INITIALIZER;
 static PDeathSigForkRequest* s_pdeathsig_request = NULL;
-static int s_pdeathsig_thread_started = 0;
+static volatile int s_pdeathsig_thread_started = 0;
 
 static void* PDeathSigThreadFunc(void* arg)
 {
     (void)arg;
-
-    // Set PR_SET_PDEATHSIG on this thread so all children forked from it
-    // will inherit the parent death signal.
-    prctl(PR_SET_PDEATHSIG, (unsigned long)SIGKILL, 0, 0, 0);
 
     pthread_mutex_lock(&s_pdeathsig_mutex);
 
@@ -416,8 +412,8 @@ static void* PDeathSigThreadFunc(void* arg)
 
 static int EnsurePDeathSigThread(void)
 {
-    // Double-checked locking: fast path avoids the lock
-    if (s_pdeathsig_thread_started)
+    // Fast path: check if the thread is already started using an atomic load
+    if (__atomic_load_n(&s_pdeathsig_thread_started, __ATOMIC_ACQUIRE))
     {
         return 0;
     }
@@ -440,7 +436,7 @@ static int EnsurePDeathSigThread(void)
             return -1;
         }
 
-        s_pdeathsig_thread_started = 1;
+        __atomic_store_n(&s_pdeathsig_thread_started, 1, __ATOMIC_RELEASE);
     }
     pthread_mutex_unlock(&s_pdeathsig_mutex);
     return 0;
@@ -886,8 +882,9 @@ static int32_t ForkAndExecProcessInternal(
                 ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
             }
 
-            // Check if the parent already died between fork and prctl.
-            // getppid() returns 1 (init) or the subreaper if the original parent is gone.
+            // Best-effort check: if the parent already died between fork and prctl,
+            // getppid() returns 1 (init) or the subreaper's PID. Checking for PID 1
+            // covers the common case where no subreaper is configured.
             if (getppid() == 1)
             {
                 ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], ESRCH);
