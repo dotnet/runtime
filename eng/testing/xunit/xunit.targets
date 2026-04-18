@@ -51,6 +51,9 @@
     <UseAppHost>false</UseAppHost>
     <_RuntimeIdentifierUsesAppHost>false</_RuntimeIdentifierUsesAppHost>
     <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <!-- xunit v3 AOT source generator (xunit.v3.core.aot 4.0.0-pre.81) emits null
+         literals in generated InlineData code that violate nullable annotations. -->
+    <NoWarn>$(NoWarn);CS8625</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' != 'true' or '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
