@@ -36,9 +36,10 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void TypeNotFound_ReportsError()
+        public void TypeNotFound_CreatesForwardReference()
         {
-            // Referencing a type that doesn't exist should report an error
+            // Referencing a type that doesn't exist creates a forward reference placeholder,
+            // matching native ilasm behavior where types can be referenced before declaration.
             string source = """
                 .class public auto ansi sealed beforefieldinit Test extends NonExistentType
                 {
@@ -46,9 +47,7 @@ namespace ILAssembler.Tests
                 """;
 
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            var error = Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticIds.TypeNotFound, error.Id);
-            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Empty(diagnostics);
         }
 
         [Theory]
@@ -138,9 +137,10 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void MultipleTypeNotFound_ReportsMultipleErrors()
+        public void MultipleTypeNotFound_CreatesForwardReferences()
         {
-            // Multiple references to non-existent types should each report an error
+            // Multiple references to non-existent types create forward reference placeholders,
+            // matching native ilasm behavior
             string source = """
                 .class public auto ansi beforefieldinit Test extends NonExistentBase implements NonExistentInterface
                 {
@@ -148,12 +148,7 @@ namespace ILAssembler.Tests
                 """;
 
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            Assert.Equal(2, diagnostics.Length);
-            Assert.All(diagnostics, d =>
-            {
-                Assert.Equal(DiagnosticIds.TypeNotFound, d.Id);
-                Assert.Equal(DiagnosticSeverity.Error, d.Severity);
-            });
+            Assert.Empty(diagnostics);
         }
 
         [Fact]
@@ -2926,6 +2921,43 @@ namespace ILAssembler.Tests
 
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
             Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void ForwardTypeReference_ResolvedCorrectly()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Base extends [System.Runtime]System.Object
+                {
+                    .field public static class Derived child
+                }
+                .class public auto ansi beforefieldinit Derived extends Base
+                {
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            Assert.Equal(3, reader.TypeDefinitions.Count);
+        }
+
+        [Fact]
+        public void SelfTypeReference_InField()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit MyClass extends [System.Runtime]System.Object
+                {
+                    .field public static class MyClass instance
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            Assert.Equal(2, reader.TypeDefinitions.Count);
         }
     }
 }
