@@ -1354,16 +1354,11 @@ namespace ILAssembler
 
                         (string ns, string name) = NameHelpers.SplitDottedNameToNamespaceAndName(containingType.DottedName);
 
-                        typeDef = _entityRegistry.FindTypeDefinition(
+                        typeDef = _entityRegistry.GetOrCreateTypeDefinition(
                             typeDef,
                             ns,
-                            name);
-
-                        if (typeDef is null)
-                        {
-                            ReportError(DiagnosticIds.TypeNotFound, string.Format(DiagnosticMessageTemplates.TypeNotFound, containingType.DottedName), context);
-                            return new EntityRegistry.FakeTypeEntity(default(TypeDefinitionHandle));
-                        }
+                            name,
+                            _ => { });
                     }
 
                     return typeDef!;
