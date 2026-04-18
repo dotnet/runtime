@@ -10,8 +10,8 @@ internal sealed class InterfaceEntry : IData<InterfaceEntry>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.InterfaceEntry);
 
-        MethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset);
-        Unknown = target.ReadPointer(address + (ulong)type.Fields[nameof(Unknown)].Offset);
+        MethodTable = target.ReadPointerField(address, type, nameof(MethodTable));
+        Unknown = target.ReadPointerField(address, type, nameof(Unknown));
     }
 
     public TargetPointer MethodTable { get; init; }

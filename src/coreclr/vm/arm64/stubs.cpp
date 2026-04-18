@@ -521,39 +521,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 }
 #endif // FEATURE_HIJACK
 
-#ifdef FEATURE_COMINTEROP
-
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    WRAPPER_NO_CONTRACT;
-
-	// adr x12, label_comCallMethodDesc
-	// ldr x10, label_target
-	// br x10
-	// 4 byte padding for alignment
-	// label_target:
-    // target address (8 bytes)
-    // label_comCallMethodDesc:
-    DWORD rgCode[] = {
-        0x100000cc,
-        0x5800006a,
-        0xd61f0140
-    };
-
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    memcpy(pBufferRW, rgCode, sizeof(rgCode));
-    *((PCODE*)(pBufferRW + sizeof(rgCode) + 4)) = target;
-
-    // Ensure that the updated instructions get actually written
-    ClrFlushInstructionCache(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE);
-
-    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-             *((PCODE*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == target);
-}
-#endif // FEATURE_COMINTEROP
-
 #ifdef TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
 {

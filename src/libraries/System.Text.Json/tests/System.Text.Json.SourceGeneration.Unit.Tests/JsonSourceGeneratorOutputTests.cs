@@ -255,6 +255,86 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """, nameof(OutParameterWithUnsupportedType));
         }
 
+        [Fact]
+        public void UnsafeAccessors_PrivateProperties()
+        {
+            VerifyAgainstBaseline("""
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(PrivateProps))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                    public class PrivateProps
+                    {
+                        [JsonInclude]
+                        private string Name { get; set; }
+                        [JsonInclude]
+                        private int Age { get; set; }
+                    }
+                }
+                """, nameof(UnsafeAccessors_PrivateProperties), disableDiagnosticValidation: true);
+        }
+
+        [Fact]
+        public void UnsafeAccessors_InaccessibleConstructor()
+        {
+            VerifyAgainstBaseline("""
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(InaccessibleCtor))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                    public class InaccessibleCtor
+                    {
+                        [JsonConstructor]
+                        private InaccessibleCtor(string name, int value)
+                        {
+                            Name = name;
+                            Value = value;
+                        }
+                        public string Name { get; }
+                        public int Value { get; }
+                    }
+                }
+                """, nameof(UnsafeAccessors_InaccessibleConstructor));
+        }
+
+        [Fact]
+        public void UnsafeAccessors_InitOnlyProperties()
+        {
+            VerifyAgainstBaseline("""
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(InitOnlyProps))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                    public class InitOnlyProps
+                    {
+                        public string Name { get; init; }
+                        public int Count { get; init; }
+                    }
+                }
+                """, nameof(UnsafeAccessors_InitOnlyProperties));
+        }
+
+        [Fact]
+        public void UnsafeAccessors_GenericTypeInitOnlyProperties()
+        {
+            VerifyAgainstBaseline("""
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(GenericProps<int>))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                    public class GenericProps<T>
+                    {
+                        public T Value { get; init; }
+                        public string Label { get; init; }
+                    }
+                }
+                """, nameof(UnsafeAccessors_GenericTypeInitOnlyProperties));
+        }
+
         #region Baseline comparison infrastructure
 
         private static readonly string s_baselinesRelativePath = IO.Path.Combine(
@@ -273,10 +353,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         /// generated file matches the corresponding baseline in
         /// <c>Baselines/{testId}/{tfm}/{hintName}.cs.txt</c>.
         /// </summary>
-        private void VerifyAgainstBaseline(string source, string testId)
+        private void VerifyAgainstBaseline(string source, string testId, bool disableDiagnosticValidation = false)
         {
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: disableDiagnosticValidation, logger: logger);
 
             var inputPaths = new HashSet<string>(compilation.SyntaxTrees.Select(t => t.FilePath));
             List<SyntaxTree> generatedTrees = result.NewCompilation.SyntaxTrees

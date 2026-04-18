@@ -11,12 +11,12 @@ internal class InlinedCallFrame : IData<InlinedCallFrame>
     public InlinedCallFrame(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.InlinedCallFrame);
-        CallSiteSP = target.ReadPointer(address + (ulong)type.Fields[nameof(CallSiteSP)].Offset);
-        CallerReturnAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(CallerReturnAddress)].Offset);
-        CalleeSavedFP = target.ReadPointer(address + (ulong)type.Fields[nameof(CalleeSavedFP)].Offset);
+        CallSiteSP = target.ReadPointerField(address, type, nameof(CallSiteSP));
+        CallerReturnAddress = target.ReadPointerField(address, type, nameof(CallerReturnAddress));
+        CalleeSavedFP = target.ReadPointerField(address, type, nameof(CalleeSavedFP));
         if (type.Fields.ContainsKey(nameof(SPAfterProlog)))
-            SPAfterProlog = target.ReadPointer(address + (ulong)type.Fields[nameof(SPAfterProlog)].Offset);
-        Datum = target.ReadPointer(address + (ulong)type.Fields[nameof(Datum)].Offset);
+            SPAfterProlog = target.ReadPointerField(address, type, nameof(SPAfterProlog));
+        Datum = target.ReadPointerField(address, type, nameof(Datum));
         Address = address;
     }
 
