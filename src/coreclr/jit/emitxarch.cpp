@@ -21114,6 +21114,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             insThroughput = PERFSCORE_THROUGHPUT_1C;
             insLatency    = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_8C : PERFSCORE_LATENCY_6C;
+            break;
         }
 
         case INS_vcvtph2qq:
@@ -21339,6 +21340,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     {
         // unhandled instruction insFmt combination
         perfScoreUnhandledInstruction(id, &result);
+        result.insMemoryAccessKind = memAccessKind;
         return result;
     }
     else
