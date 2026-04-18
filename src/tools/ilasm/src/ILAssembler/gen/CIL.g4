@@ -10,9 +10,9 @@ tokens { IncludedFileEof, SyntheticIncludedFileEof }
 INT32: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
 INT64: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
 FLOAT64: '-'? [0-9]+ ('.' [0-9]+ | [eE] '-'? [0-9]+);
-HEXBYTE: [0-9A-Fa-f][0-9A-Fa-f];
+// HEXBYTE removed: hex bytes in blobs now use INT32 or ID tokens via the hexbyte parser rule
 DCOLON: '::';
-ELLIPSIS: '..';
+ELLIPSIS: '...';
 NULL: 'null';
 NULLREF: 'nullref';
 HASH: '.hash';
@@ -156,6 +156,7 @@ INSTR_NONE:
 	| 'ldind.i4'
 	| 'ldind.u4'
 	| 'ldind.i8'
+	| 'ldind.u8'
 	| 'ldind.i'
 	| 'ldind.r4'
 	| 'ldind.r8'
@@ -210,6 +211,7 @@ INSTR_NONE:
 	| 'ldelem.i4'
 	| 'ldelem.u4'
 	| 'ldelem.i8'
+	| 'ldelem.u8'
 	| 'ldelem.i'
 	| 'ldelem.r4'
 	| 'ldelem.r8'
@@ -1043,6 +1045,7 @@ fieldAttr:
 	| 'privatescope'
 	| 'literal'
 	| 'notserialized'
+	| 'volatile'
 	| 'flags' '(' int32 ')';
 
 atOpt: /* EMPTY */ | 'at' id;
@@ -1297,7 +1300,7 @@ fieldSerInit:
 
 bytes: hexbyte*;
 
-hexbyte: HEXBYTE | INT32;
+hexbyte: INT32 | ID;
 /*  Field/parameter initialization  */
 fieldInit: fieldSerInit | compQstring | NULLREF;
 

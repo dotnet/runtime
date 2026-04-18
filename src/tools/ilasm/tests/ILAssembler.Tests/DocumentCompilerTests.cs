@@ -2633,5 +2633,154 @@ namespace ILAssembler.Tests
             Assert.Equal(0x06, sig4.ReadByte());
             Assert.Equal(0x0B, sig4.ReadByte()); // ELEMENT_TYPE_U8
         }
+
+        [Fact]
+        public void HexLabelName_NotConfusedWithHexByte()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        br AA
+                        nop
+                    AA: ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void PrefixInstruction_Volatile_ParsedCorrectly()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .field public static int32 myField
+                    .method public static void M() cil managed
+                    {
+                        volatile.
+                        ldsfld int32 Test::myField
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void PrefixInstruction_Tail_ParsedCorrectly()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static int32 M() cil managed
+                    {
+                        ldc.i4.0
+                        tail.
+                        call int32 Test::M()
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void VolatileFieldAttribute_AcceptedAsModifier()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .field public static volatile int32 myField
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void MultiDimArrayBounds_ParsedCorrectly()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        .locals init (int32[0...,0...] V_0)
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void LdelemU8_InstructionParsedCorrectly()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void M(unsigned int64[] arr) cil managed
+                    {
+                        ldarg.0
+                        ldc.i4.0
+                        ldelem.u8
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void MethodNameF1_NotConfusedWithHexByte()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static int32 f1() cil managed
+                    {
+                        ldc.i4.0
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            var methods = typeDef.GetMethods().ToArray();
+            Assert.Single(methods);
+            Assert.Equal("f1", reader.GetString(reader.GetMethodDefinition(methods[0]).Name));
+        }
     }
 }
