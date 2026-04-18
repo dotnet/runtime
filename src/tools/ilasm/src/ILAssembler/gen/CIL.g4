@@ -9,7 +9,7 @@ tokens { IncludedFileEof, SyntheticIncludedFileEof }
 
 INT32: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
 INT64: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
-FLOAT64: '-'? ([0-9]+ ('.' [0-9]* ([eE] [+\-]? [0-9]+)? | [eE] [+\-]? [0-9]+) | '.' [0-9]+ ([eE] [+\-]? [0-9]+)?);
+FLOAT64: '-'? ([0-9]+ ('.' [0-9]+ ([eE] [+\-]? [0-9]+)? | [eE] [+\-]? [0-9]+) | '.' [0-9]+ ([eE] [+\-]? [0-9]+)?);
 // HEXBYTE removed: hex bytes in blobs now use INT32 or ID tokens via the hexbyte parser rule
 DCOLON: '::';
 ELLIPSIS: '...';
@@ -465,6 +465,8 @@ int64: INT64 | INT32;
 
 float64:
 	FLOAT64
+	| int32 '.'	/* trailing-dot integer as float (e.g., ldc.r8 1.) */
+	| int32
 	| FLOAT32 '(' int32 ')'
 	| FLOAT64_ '(' int64 ')';
 

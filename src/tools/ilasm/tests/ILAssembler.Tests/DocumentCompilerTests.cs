@@ -3111,5 +3111,67 @@ namespace ILAssembler.Tests
             int methodImplCount = reader.GetTableRowCount(TableIndex.MethodImpl);
             Assert.Equal(2, methodImplCount);
         }
+
+        [Fact]
+        public void ArrayBoundsType_ZeroBased()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly TestArrayBounds { }
+
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field public int32[0...] m_arr
+                    .method public hidebysig instance void M() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void ArrayBoundsType_MultiDimensional()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly TestArrayBounds { }
+
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M(int32[5...,3...] arr) cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void TrailingDotFloat_StillWorks()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly TestFloat { }
+
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static float64 M() cil managed
+                    {
+                        ldc.r8 1.
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
     }
 }
