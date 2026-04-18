@@ -10448,8 +10448,10 @@ GenTree* Compiler::fgOptimizeDistributiveArithemtic(GenTreeOp* tree)
 
             case GT_MUL:
                 return op2 == GT_ADD || op2 == GT_SUB;
+
+            default:
+                return false;
         }
-        return false;
     };
 
     if ((op1->OperGet() == op2->OperGet()) && isLeftDistributive(op1->OperGet(), tree->OperGet()))
