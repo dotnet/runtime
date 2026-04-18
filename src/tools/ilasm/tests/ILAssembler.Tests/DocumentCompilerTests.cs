@@ -2782,5 +2782,150 @@ namespace ILAssembler.Tests
             Assert.Single(methods);
             Assert.Equal("f1", reader.GetString(reader.GetMethodDefinition(methods[0]).Name));
         }
+
+        [Fact]
+        public void NamedLocal_CanBeReferencedByStloc()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        .locals init (int32 myLocal)
+                        ldc.i4.0
+                        stloc myLocal
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void NamedArgument_CanBeReferencedByLdarg()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void M(int32 myArg) cil managed
+                    {
+                        ldarg myArg
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void StringEscape_NewlineInLdstr()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        ldstr "Hello\nWorld\t!"
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void FloatLiteral_TrailingDot()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        ldc.r4 0.
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void FloatLiteral_SignedExponent()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        ldc.r8 5.1234567890000001e+054
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void SwitchInstruction_CommaLabels()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        ldc.i4.0
+                        switch (L0, L1, L2)
+                    L0: nop
+                    L1: nop
+                    L2: ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void ModuleLevelField_DoesNotCrash()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly TestAssembly { }
+                .field public static int32 globalField
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
     }
 }

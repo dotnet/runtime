@@ -9,7 +9,7 @@ tokens { IncludedFileEof, SyntheticIncludedFileEof }
 
 INT32: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
 INT64: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
-FLOAT64: '-'? [0-9]+ ('.' [0-9]+ | [eE] '-'? [0-9]+);
+FLOAT64: '-'? [0-9]+ ('.' [0-9]* ([eE] [+\-]? [0-9]+)? | [eE] [+\-]? [0-9]+);
 // HEXBYTE removed: hex bytes in blobs now use INT32 or ID tokens via the hexbyte parser rule
 DCOLON: '::';
 ELLIPSIS: '...';
@@ -104,8 +104,9 @@ REF: '&';
 ARRAY_TYPE_NO_BOUNDS: '[' ']';
 PTR: '*';
 
-QSTRING: '"' (~('"' | '\\') | '\\' ('"' | '\\'))* '"';
-SQSTRING: '\'' (~('\'' | '\\') | '\\' ('\'' | '\\'))* '\'';
+fragment ESC_SEQ: '\\' (["'\\/?abfnrtv0] | [0-7] [0-7]? [0-7]? | '\r'? '\n');
+QSTRING: '"' (~["\\\r\n] | ESC_SEQ)* '"';
+SQSTRING: '\'' (~['\\\r\n] | ESC_SEQ)* '\'';
 DOT: '.';
 PLUS: '+';
 
@@ -680,7 +681,7 @@ instr:
 
 labels:
 	/* empty */
-	| (id | int32 ',')* (id | int32);
+	| ((id | int32) ',')* (id | int32);
 
 typeArgs: '<' (type ',')* type '>';
 
@@ -690,8 +691,7 @@ sigArgs: '(' (sigArg ',')* sigArg ')' | '()';
 
 sigArg:
 	ELLIPSIS
-	| paramAttr type marshalClause
-	| paramAttr type marshalClause id;
+	| paramAttr type marshalClause id?;
 
 /*  Class referencing  */
 

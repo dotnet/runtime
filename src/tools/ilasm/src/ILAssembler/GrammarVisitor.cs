@@ -996,6 +996,14 @@ namespace ILAssembler
             public CurrentMethodContext(EntityRegistry.MethodDefinitionEntity definition)
             {
                 Definition = definition;
+                // Populate argument names from the method's parameter definitions
+                foreach (var param in definition.Parameters)
+                {
+                    if (param.Name is not null && param.Sequence > 0)
+                    {
+                        ArgumentNames[param.Name] = param.Sequence - 1;
+                    }
+                }
             }
 
             public EntityRegistry.MethodDefinitionEntity Definition { get; }
@@ -2461,7 +2469,7 @@ namespace ILAssembler
             _ = signature.Field();
             fieldType.WriteContentTo(signature.Builder);
 
-            var field = EntityRegistry.CreateUnrecordedFieldDefinition(fieldAttrs, _currentTypeDefinition.PeekOrDefault()!, name, signature.Builder);
+            var field = EntityRegistry.CreateUnrecordedFieldDefinition(fieldAttrs, _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType, name, signature.Builder);
 
             if (field is not null)
             {
@@ -3656,7 +3664,16 @@ namespace ILAssembler
                     // init keyword specified
                     currentMethod.Definition.BodyAttributes = MethodBodyAttributes.InitLocals;
                 }
-                var localsScope = currentMethod.LocalsScopes.Count != 0 ? currentMethod.LocalsScopes[currentMethod.LocalsScopes.Count - 1] : new();
+                Dictionary<string, int> localsScope;
+                if (currentMethod.LocalsScopes.Count != 0)
+                {
+                    localsScope = currentMethod.LocalsScopes[currentMethod.LocalsScopes.Count - 1];
+                }
+                else
+                {
+                    localsScope = new();
+                    currentMethod.LocalsScopes.Add(localsScope);
+                }
                 var newLocals = VisitSigArgs(context.sigArgs()).Value;
                 foreach (var loc in newLocals)
                 {
@@ -4916,11 +4933,12 @@ namespace ILAssembler
             {
                 return new(SignatureArg.CreateSentinelArgument());
             }
+            string? name = context.id() is CILParser.IdContext id ? VisitId(id).Value : null;
             return new(new SignatureArg(
                 VisitParamAttr(context.paramAttr()).Value,
                 VisitType(context.type()).Value,
                 VisitMarshalClause(context.marshalClause()).Value,
-                context.id() is CILParser.IdContext id ? VisitId(id).Value : null));
+                name));
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitSigArgs(CILParser.SigArgsContext context) => VisitSigArgs(context);

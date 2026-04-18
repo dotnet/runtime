@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -441,7 +442,10 @@ namespace ILAssembler
                 builder.AddMethodSpecification(methodSpec.Parent.Handle, builder.GetOrAddBlob(methodSpec.Signature));
             }
 
-            foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam))
+            // GenericParam table must be sorted by (Owner, Index) per ECMA-335 spec
+            foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam)
+                .OrderBy(gp => MetadataTokens.GetRowNumber(((GenericParameterEntity)gp).Owner!.Handle))
+                .ThenBy(gp => ((GenericParameterEntity)gp).Index))
             {
                 builder.AddGenericParameter(
                     genericParam.Owner!.Handle,
@@ -671,7 +675,7 @@ namespace ILAssembler
             if (_seenEntities.TryGetValue(tableIndex, out var entity))
             {
                 int rowNumber = MetadataTokens.GetRowNumber(entityHandle);
-                if (entity.Count < rowNumber - 1)
+                if (rowNumber >= 1 && rowNumber <= entity.Count)
                 {
                     return entity[rowNumber - 1];
                 }
