@@ -35,11 +35,8 @@ internal static class LegacyFallbackHelper
         // Loader heap traversal — not yet implemented in the cDAC (PR #125129).
         nameof(ISOSDacInterface.TraverseLoaderHeap),
 
-        // IXCLRDataMethodDefinition — not yet implemented in the cDAC.
-        nameof(IXCLRDataMethodDefinition.StartEnumInstances),
-        nameof(IXCLRDataMethodDefinition.GetName),
+        // IXCLRDataMethodDefinition — SetCodeNotification not yet implemented (needs INotifications contract).
         nameof(IXCLRDataMethodDefinition.SetCodeNotification),
-        nameof(IXCLRDataMethodDefinition.HasClassOrMethodInstantiation),
     };
 
     // Files whose methods are all allowed to fall back.
