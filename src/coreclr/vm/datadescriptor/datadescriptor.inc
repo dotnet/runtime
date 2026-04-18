@@ -1274,7 +1274,7 @@ CDAC_TYPE_END(SyncBlockCache)
 
 CDAC_TYPE_BEGIN(AuxiliarySymbolInfo)
 CDAC_TYPE_SIZE(sizeof(VMAUXILIARYSYMBOLDEF))
-CDAC_TYPE_FIELD(AuxiliarySymbolInfo, T_POINTER, Address, offsetof(VMAUXILIARYSYMBOLDEF, pfnAuxiliarySymbol))
+CDAC_TYPE_FIELD(AuxiliarySymbolInfo, TYPE(CodePointer), Address, offsetof(VMAUXILIARYSYMBOLDEF, pfnAuxiliarySymbol))
 CDAC_TYPE_FIELD(AuxiliarySymbolInfo, T_POINTER, Name, offsetof(VMAUXILIARYSYMBOLDEF, name))
 CDAC_TYPE_END(AuxiliarySymbolInfo)
 

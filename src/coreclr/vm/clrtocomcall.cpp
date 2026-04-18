@@ -172,7 +172,7 @@ namespace
         MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
             pMD->GetLoaderAllocator(),
             pMD->GetMethodTable(),
-            PINVOKESTUB_FL_COMEVENTCALL,
+            PINVOKESTUB_FL_COM | PINVOKESTUB_FL_COMEVENTCALL,
             pMD->GetModule(),
             szMetaSig,
             cbMetaSigSize,
