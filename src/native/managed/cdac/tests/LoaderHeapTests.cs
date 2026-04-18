@@ -4,67 +4,49 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class LoaderHeapTests
 {
-    private const ulong DefaultAllocationRangeStart = 0x0005_0000;
-    private const ulong DefaultAllocationRangeEnd = 0x0006_0000;
+    private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockLoaderBuilder loader)
+        => new()
+        {
+            [DataType.Module] = TargetTestHelpers.CreateTypeInfo(loader.ModuleLayout),
+            [DataType.Assembly] = TargetTestHelpers.CreateTypeInfo(loader.AssemblyLayout),
+            [DataType.EEConfig] = TargetTestHelpers.CreateTypeInfo(loader.EEConfigLayout),
+            [DataType.LoaderHeap] = TargetTestHelpers.CreateTypeInfo(loader.LoaderHeapLayout),
+            [DataType.LoaderHeapBlock] = TargetTestHelpers.CreateTypeInfo(loader.LoaderHeapBlockLayout),
+        };
 
-    private static readonly MockDescriptors.TypeFields LoaderHeapFields = new MockDescriptors.TypeFields()
+    private static ILoader CreateLoaderContract(MockTarget.Architecture arch, Action<MockLoaderBuilder> configure)
     {
-        DataType = DataType.LoaderHeap,
-        Fields =
-        [
-            new(nameof(Data.LoaderHeap.FirstBlock), DataType.pointer),
-        ]
-    };
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        MockLoaderBuilder loader = new(targetBuilder.MemoryBuilder);
 
-    private static readonly MockDescriptors.TypeFields LoaderHeapBlockFields = new MockDescriptors.TypeFields()
-    {
-        DataType = DataType.LoaderHeapBlock,
-        Fields =
-        [
-            new(nameof(Data.LoaderHeapBlock.Next), DataType.pointer),
-            new(nameof(Data.LoaderHeapBlock.VirtualAddress), DataType.pointer),
-            new(nameof(Data.LoaderHeapBlock.VirtualSize), DataType.nuint),
-        ]
-    };
+        configure(loader);
 
-    private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
-    {
-        return MockDescriptors.GetTypesForTypeFields(helpers, [LoaderHeapFields, LoaderHeapBlockFields]);
-    }
-
-    private static Target CreateTarget(MockTarget.Architecture arch, Dictionary<DataType, Target.TypeInfo> types, MockMemorySpace.Builder builder)
-    {
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, types);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
-        return target;
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(CreateContractTypes(loader))
+            .AddContract<ILoader>(version: 1)
+            .Build();
+        return target.Contracts.Loader;
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void EmptyLoaderHeap(MockTarget.Architecture arch)
     {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(DefaultAllocationRangeStart, DefaultAllocationRangeEnd);
-        Dictionary<DataType, Target.TypeInfo> types = GetTypes(helpers);
+        TargetPointer heapAddr = TargetPointer.Null;
 
-        Target.TypeInfo heapType = types[DataType.LoaderHeap];
-        MockMemorySpace.HeapFragment heapFragment = allocator.Allocate((ulong)helpers.SizeOfTypeInfo(heapType), "LoaderHeap");
-        // FirstBlock is zero (null) by default
-        builder.AddHeapFragment(heapFragment);
+        ILoader loader = CreateLoaderContract(arch, loaderBuilder =>
+        {
+            MockLoaderHeap heap = loaderBuilder.AddLoaderHeap(firstBlockAddress: 0);
+            heapAddr = new TargetPointer(heap.Address);
+        });
 
-        Target target = CreateTarget(arch, types, builder);
-        ILoader loader = target.Contracts.Loader;
-
-        TargetPointer firstBlock = loader.GetFirstLoaderHeapBlock(heapFragment.Address);
+        TargetPointer firstBlock = loader.GetFirstLoaderHeapBlock(heapAddr);
         Assert.Equal(TargetPointer.Null, firstBlock);
     }
 
@@ -72,31 +54,19 @@ public class LoaderHeapTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void SingleBlockLoaderHeap(MockTarget.Architecture arch)
     {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(DefaultAllocationRangeStart, DefaultAllocationRangeEnd);
-        Dictionary<DataType, Target.TypeInfo> types = GetTypes(helpers);
+        TargetPointer heapAddr = TargetPointer.Null;
+        const ulong virtualAddress = 0x1234_0000UL;
+        const ulong virtualSize = 0x1000UL;
 
-        Target.TypeInfo heapType = types[DataType.LoaderHeap];
-        Target.TypeInfo blockType = types[DataType.LoaderHeapBlock];
+        ILoader loader = CreateLoaderContract(arch, loaderBuilder =>
+        {
+            MockLoaderHeapBlock block = loaderBuilder.AddLoaderHeapBlock(virtualAddress, virtualSize);
+            MockLoaderHeap heap = loaderBuilder.AddLoaderHeap(firstBlockAddress: block.Address);
+            heapAddr = new TargetPointer(heap.Address);
+        });
 
-        ulong virtualAddress = 0x1234_0000UL;
-        ulong virtualSize = 0x1000UL;
-        MockMemorySpace.HeapFragment blockFragment = allocator.Allocate((ulong)helpers.SizeOfTypeInfo(blockType), "LoaderHeapBlock");
-        helpers.WritePointer(blockFragment.Data.AsSpan().Slice(blockType.Fields[nameof(Data.LoaderHeapBlock.Next)].Offset, helpers.PointerSize), TargetPointer.Null.Value);
-        helpers.WritePointer(blockFragment.Data.AsSpan().Slice(blockType.Fields[nameof(Data.LoaderHeapBlock.VirtualAddress)].Offset, helpers.PointerSize), virtualAddress);
-        helpers.WriteNUInt(blockFragment.Data.AsSpan().Slice(blockType.Fields[nameof(Data.LoaderHeapBlock.VirtualSize)].Offset, helpers.PointerSize), new TargetNUInt(virtualSize));
-        builder.AddHeapFragment(blockFragment);
-
-        MockMemorySpace.HeapFragment heapFragment = allocator.Allocate((ulong)helpers.SizeOfTypeInfo(heapType), "LoaderHeap");
-        helpers.WritePointer(heapFragment.Data.AsSpan().Slice(heapType.Fields[nameof(Data.LoaderHeap.FirstBlock)].Offset, helpers.PointerSize), blockFragment.Address);
-        builder.AddHeapFragment(heapFragment);
-
-        Target target = CreateTarget(arch, types, builder);
-        ILoader loader = target.Contracts.Loader;
-
-        TargetPointer firstBlock = loader.GetFirstLoaderHeapBlock(heapFragment.Address);
-        Assert.Equal((TargetPointer)blockFragment.Address, firstBlock);
+        TargetPointer firstBlock = loader.GetFirstLoaderHeapBlock(heapAddr);
+        Assert.NotEqual(TargetPointer.Null, firstBlock);
 
         Assert.Equal(virtualAddress, loader.GetLoaderHeapBlockAddress(firstBlock).Value);
         Assert.Equal(virtualSize, loader.GetLoaderHeapBlockSize(firstBlock).Value);
@@ -109,38 +79,21 @@ public class LoaderHeapTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void MultipleBlockLoaderHeap(MockTarget.Architecture arch)
     {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(DefaultAllocationRangeStart, DefaultAllocationRangeEnd);
-        Dictionary<DataType, Target.TypeInfo> types = GetTypes(helpers);
-
-        Target.TypeInfo heapType = types[DataType.LoaderHeap];
-        Target.TypeInfo blockType = types[DataType.LoaderHeapBlock];
-
+        TargetPointer heapAddr = TargetPointer.Null;
         ulong[] virtualAddresses = [0x1000_0000UL, 0x2000_0000UL];
         ulong[] virtualSizes = [0x8000UL, 0x10000UL];
 
-        MockMemorySpace.HeapFragment block2Fragment = allocator.Allocate((ulong)helpers.SizeOfTypeInfo(blockType), "LoaderHeapBlock2");
-        helpers.WritePointer(block2Fragment.Data.AsSpan().Slice(blockType.Fields[nameof(Data.LoaderHeapBlock.Next)].Offset, helpers.PointerSize), TargetPointer.Null.Value);
-        helpers.WritePointer(block2Fragment.Data.AsSpan().Slice(blockType.Fields[nameof(Data.LoaderHeapBlock.VirtualAddress)].Offset, helpers.PointerSize), virtualAddresses[1]);
-        helpers.WriteNUInt(block2Fragment.Data.AsSpan().Slice(blockType.Fields[nameof(Data.LoaderHeapBlock.VirtualSize)].Offset, helpers.PointerSize), new TargetNUInt(virtualSizes[1]));
-        builder.AddHeapFragment(block2Fragment);
-
-        MockMemorySpace.HeapFragment block1Fragment = allocator.Allocate((ulong)helpers.SizeOfTypeInfo(blockType), "LoaderHeapBlock1");
-        helpers.WritePointer(block1Fragment.Data.AsSpan().Slice(blockType.Fields[nameof(Data.LoaderHeapBlock.Next)].Offset, helpers.PointerSize), block2Fragment.Address);
-        helpers.WritePointer(block1Fragment.Data.AsSpan().Slice(blockType.Fields[nameof(Data.LoaderHeapBlock.VirtualAddress)].Offset, helpers.PointerSize), virtualAddresses[0]);
-        helpers.WriteNUInt(block1Fragment.Data.AsSpan().Slice(blockType.Fields[nameof(Data.LoaderHeapBlock.VirtualSize)].Offset, helpers.PointerSize), new TargetNUInt(virtualSizes[0]));
-        builder.AddHeapFragment(block1Fragment);
-
-        MockMemorySpace.HeapFragment heapFragment = allocator.Allocate((ulong)helpers.SizeOfTypeInfo(heapType), "LoaderHeap");
-        helpers.WritePointer(heapFragment.Data.AsSpan().Slice(heapType.Fields[nameof(Data.LoaderHeap.FirstBlock)].Offset, helpers.PointerSize), block1Fragment.Address);
-        builder.AddHeapFragment(heapFragment);
-
-        Target target = CreateTarget(arch, types, builder);
-        ILoader loader = target.Contracts.Loader;
+        ILoader loader = CreateLoaderContract(arch, loaderBuilder =>
+        {
+            // Build chain: heap -> block1 -> block2 -> null
+            MockLoaderHeapBlock block2 = loaderBuilder.AddLoaderHeapBlock(virtualAddresses[1], virtualSizes[1]);
+            MockLoaderHeapBlock block1 = loaderBuilder.AddLoaderHeapBlock(virtualAddresses[0], virtualSizes[0], nextBlockAddress: block2.Address);
+            MockLoaderHeap heap = loaderBuilder.AddLoaderHeap(firstBlockAddress: block1.Address);
+            heapAddr = new TargetPointer(heap.Address);
+        });
 
         List<(ulong Address, ulong Size)> blocks = [];
-        TargetPointer block = loader.GetFirstLoaderHeapBlock(heapFragment.Address);
+        TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
         while (block != TargetPointer.Null)
         {
             blocks.Add((loader.GetLoaderHeapBlockAddress(block).Value, loader.GetLoaderHeapBlockSize(block).Value));
