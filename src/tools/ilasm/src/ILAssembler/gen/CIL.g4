@@ -138,6 +138,7 @@ INSTR_NONE:
 	| 'stloc.3'
 	| 'ldnull'
 	| 'ldc.i4.m1'
+	| 'ldc.i4.M1'
 	| 'ldc.i4.0'
 	| 'ldc.i4.1'
 	| 'ldc.i4.2'
@@ -246,6 +247,7 @@ INSTR_NONE:
 	| 'sub.ovf'
 	| 'sub.ovf.un'
 	| 'endfinally'
+	| 'endfault'
 	| 'stind.i'
 	| 'conv.u'
 	| 'prefix7'
@@ -374,7 +376,7 @@ INSTR_FIELD:
 INSTR_TOK: 'ldtoken';
 
 // ID needs to be last to ensure it doesn't take priority over other token types
-fragment IDSTART: [A-Za-z_#$@];
+fragment IDSTART: [A-Za-z_#$@?];
 fragment IDCONT: [A-Za-z0-9_#?$@`];
 DOTTEDNAME: (ID DOT)+ ID;
 ID: IDSTART IDCONT*;
@@ -1156,6 +1158,7 @@ methodName: '.ctor' | '.cctor' | dottedName;
 implAttr:
 	'native'
 	| 'cil'
+	| 'il'
 	| 'optil'
 	| 'managed'
 	| 'unmanaged'
