@@ -2899,7 +2899,7 @@ namespace ILAssembler
             return attribute switch
             {
                 "native" => new(MethodImplAttributes.Native, MethodImplAttributes.CodeTypeMask),
-                "cil" => new(MethodImplAttributes.IL, MethodImplAttributes.CodeTypeMask),
+                "cil" or "il" => new(MethodImplAttributes.IL, MethodImplAttributes.CodeTypeMask),
                 "optil" => new(MethodImplAttributes.OPTIL, MethodImplAttributes.CodeTypeMask),
                 "managed" => new(MethodImplAttributes.Managed, MethodImplAttributes.ManagedMask),
                 "unmanaged" => new(MethodImplAttributes.Unmanaged, MethodImplAttributes.ManagedMask),
@@ -3299,6 +3299,7 @@ namespace ILAssembler
             {
                 "ldelem_u8" => "ldelem_i8",
                 "ldind_u8" => "ldind_i8",
+                "endfault" => "endfinally",
                 _ => normalized
             };
 
