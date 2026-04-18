@@ -172,8 +172,13 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     if (targetReg != REG_NA)
     {
-	abort();
+	// Need to materialize the comparison result into a register
+        // Use inst_SETCC to convert CR0 flags to 0 or 1
+        GenCondition condition = GenCondition::FromIntegralRelop(tree);
+        inst_SETCC(condition, tree->TypeGet(), targetReg);
+        genProduceReg(tree);
     }
+
 }
 
 //------------------------------------------------------------------------
@@ -230,6 +235,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    break;
 
 	case GT_CMP:
+	case GT_EQ:
+	case GT_NE:
+	case GT_LT:
+	case GT_LE:
+	case GT_GE:
+	case GT_GT:
 	    genConsumeOperands(treeNode->AsOp());
 	    genCodeForCompare(treeNode->AsOp());
 	    break;
@@ -264,6 +275,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    break;
 
         default:
+	    printf("ERROR: Unhandled tree node operation: %s (oper=%d)\n",
+                   GenTree::OpName(treeNode->gtOper), treeNode->gtOper);
+            printf("Tree node details: type=%s, flags=0x%x\n",
+                   varTypeName(treeNode->TypeGet()), treeNode->gtFlags);
 	    abort();
     }
 }
@@ -700,7 +715,33 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstReg)
 {
     //_ASSERTE("!NYI");
-    abort();
+    assert(varTypeIsIntegral(type));
+    assert(genIsValidIntReg(dstReg));
+
+    // PowerPC uses branchy pattern like ARM32:
+    // Emit code like:
+    //   bCC True      ; branch if condition is true
+    //   li rD, 0      ; set register to 0 (false case)
+    //   b Next        ; skip the true case
+    // True:
+    //   li rD, 1      ; set register to 1 (true case)
+    // Next:
+    //   ...
+
+    BasicBlock* labelTrue = genCreateTempLabel();
+    inst_JCC(condition, labelTrue);
+
+    // False case: set register to 0
+    GetEmitter()->emitIns_R_I(INS_li, emitActualTypeSize(type), dstReg, 0);
+
+    BasicBlock* labelNext = genCreateTempLabel();
+    GetEmitter()->emitIns_J(INS_b, labelNext);
+
+    // True case: set register to 1
+    genDefineTempLabel(labelTrue);
+    GetEmitter()->emitIns_R_I(INS_li, emitActualTypeSize(type), dstReg, 1);
+
+    genDefineTempLabel(labelNext);
 }
 
 
@@ -1330,36 +1371,41 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
 // clang-format off
 const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
 {
-    { }, // SGT
-    { },       // S
-    { },       // NS
+    { },       // NONE  (index 0)
+    { },       // 1     (index 1)
+    { EJ_lt }, // SLT   (index 2) - Signed Less Than
+    { EJ_le }, // SLE   (index 3) - Signed Less or Equal
+    { EJ_ge }, // SGE   (index 4) - Signed Greater or Equal
+    { EJ_gt }, // SGT   (index 5) - Signed Greater Than
+    { },       // S     (index 6) - Sign bit set (not used on PPC)
+    { },       // NS    (index 7) - Sign bit not set (not used on PPC)
 
-    { EJ_eq }, // EQ
-    { EJ_ne }, // NE
-    { EJ_lt }, // ULT (unsigned uses same branch instructions)
-    { EJ_le }, // ULE
-    { EJ_ge }, // UGE
-    { EJ_gt }, // UGT
-    { },       // C
-    { },       // NC
+    { EJ_eq }, // EQ    (index 8) - Equal
+    { EJ_ne }, // NE    (index 9) - Not Equal ← YOUR TEST USES THIS!
+    { EJ_lt }, // ULT   (index 10) - Unsigned Less Than
+    { EJ_le }, // ULE   (index 11) - Unsigned Less or Equal
+    { EJ_ge }, // UGE   (index 12) - Unsigned Greater or Equal
+    { EJ_gt }, // UGT   (index 13) - Unsigned Greater Than
+    { },       // C     (index 14) - Carry (not used on PPC)
+    { },       // NC    (index 15) - No Carry (not used on PPC)
 
-    { EJ_eq }, // FEQ
-    { EJ_ne }, // FNE
-    { EJ_lt }, // FLT
-    { EJ_le }, // FLE
-    { EJ_ge }, // FGE
-    { EJ_gt }, // FGT
-    { },       // O
-    { },       // NO
+    { EJ_eq }, // FEQ   (index 16) - Float Equal
+    { EJ_ne }, // FNE   (index 17) - Float Not Equal
+    { EJ_lt }, // FLT   (index 18) - Float Less Than
+    { EJ_le }, // FLE   (index 19) - Float Less or Equal
+    { EJ_ge }, // FGE   (index 20) - Float Greater or Equal
+    { EJ_gt }, // FGT   (index 21) - Float Greater Than
+    { },       // O     (index 22) - Overflow (not used on PPC)
+    { },       // NO    (index 23) - No Overflow (not used on PPC)
 
-    { },       // FEQU
-    { },       // FNEU
-    { },       // FLTU
-    { },       // FLEU
-    { },       // FGEU
-    { },       // FGTU
-    { },       // P
-    { },       // NP
+    { },       // FEQU  (index 24) - Float Equal Unordered
+    { },       // FNEU  (index 25) - Float Not Equal Unordered
+    { },       // FLTU  (index 26) - Float Less Than Unordered
+    { },       // FLEU  (index 27) - Float Less or Equal Unordered
+    { },       // FGEU  (index 28) - Float Greater or Equal Unordered
+    { },       // FGTU  (index 29) - Float Greater Than Unordered
+    { },       // P     (index 30) - Parity (not used on PPC)
+    { },       // NP    (index 31) - No Parity (not used on PPC)
 };
 // clang-format on
 

@@ -342,8 +342,9 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         // These elisions used to be explicit even when optimizations were disabled
         return true;
     }
-
-    _ASSERTE(!"NYI POWERPC64");
+    // For PowerPC, a move is redundant if source and destination are the same
+    // PowerPC uses 'mr' (move register) instruction which is actually 'or rA, rS, rS'
+    return (dst == src);
 }
 
 //------------------------------------------------------------------------
@@ -399,11 +400,24 @@ void emitter::emitIns_Mov(
                 return;
             }
 
-	    _ASSERTE(!"NYI POWERPC64");
-	    break;
+            // PowerPC uses 'mr' (move register) which is actually 'or rA, rS, rS'
+            // For now, just call emitIns_R_R to emit the move
+            printf("DEBUG: emitIns_Mov calling emitIns_R_R for mov\n");
+	    {
+                instrDesc* id = emitNewInstr(attr);
+                id->idIns(ins);
+                id->idReg1(dstReg);
+                id->idReg2(srcReg);
+                id->idInsFmt(IF_NONE);  // Will set proper format later
 
+                dispIns(id);
+                appendToCurIG(id);
+            
+	    }
+	    break;
 	default:
-	    _ASSERTE(!"NYI POWERPC64");
+	    printf("DEBUG: emitIns_Mov - unhandled instruction %d\n", ins);
+	    assert(!"Unhandled move instruction");
     }
 }
 
@@ -765,7 +779,17 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt /* = INS_OPTS_NONE */)
 {
-	    _ASSERTE(!"NYI");
+    printf("DEBUG: emitIns_R called with ins=%d (%s), reg=%d\n",
+           ins, reg);
+
+    // For now, just create the instruction descriptor
+    // We'll implement actual encoding later
+    instrDesc* id = emitNewInstr(attr);
+    id->idIns(ins);
+    id->idReg1(reg);
+    id->idInsFmt(IF_NONE);  // Will fix format later
+
+    printf("DEBUG: emitIns_R created instrDesc\n");
 }
 
 // clang-format off 
