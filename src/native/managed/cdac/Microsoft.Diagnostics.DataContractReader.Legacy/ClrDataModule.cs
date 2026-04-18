@@ -58,9 +58,18 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         // Legacy DAC implementation of IXCLRDataModule handles QIs for IMetaDataImport by creating and
         // passing out an implementation of IMetaDataImport. Note that it does not do COM aggregation.
         // It simply returns a completely separate object. See ClrDataModule::QueryInterface in task.cpp
-        // The returned MetaDataImportImpl also implements IMetaDataAssemblyImport, so consumers can QI
-        // the returned object for that interface as well.
-        if (iid == typeof(IMetaDataImport).GUID)
+        // The returned MetaDataImportImpl also implements IMetaDataImport2 and IMetaDataAssemblyImport,
+        // so consumers can QI the returned object for those interfaces as well.
+        //
+        // IMPORTANT: Some consumers (e.g. ClrMD) QI for IMetaDataImport but then access IMetaDataImport2
+        // vtable slots beyond the IMetaDataImport vtable boundary. This works with native C++ COM objects
+        // (where the vtable for IMetaDataImport and IMetaDataImport2 is unified) but breaks with managed
+        // [GeneratedComInterface] CCWs which create separate vtables per interface. To handle this, we
+        // always return the IMetaDataImport2 vtable pointer when asked for IMetaDataImport. Since
+        // IMetaDataImport2 inherits from IMetaDataImport, the first slots are identical.
+        if (iid == typeof(IMetaDataImport).GUID
+            || iid == typeof(IMetaDataImport2).GUID
+            || iid == typeof(IMetaDataAssemblyImport).GUID)
         {
             MetaDataImportImpl? wrapper = _metaDataImportImpl;
             if (wrapper is null)
@@ -105,7 +114,13 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             nint pUnk = comWrappers.GetOrCreateComInterfaceForObject(wrapper, CreateComInterfaceFlags.None);
             try
             {
-                if (Marshal.QueryInterface(pUnk, iid, out ppv) >= 0)
+                // When asked for IMetaDataImport, return the IMetaDataImport2 vtable pointer.
+                // Some consumers (e.g. ClrMD) QI for IMetaDataImport but access IMetaDataImport2
+                // vtable slots beyond the IMetaDataImport boundary. With native C++ COM objects the
+                // vtable is unified, but [GeneratedComInterface] CCWs have separate per-interface
+                // vtables. Returning IMetaDataImport2 ensures the extended slots are accessible.
+                Guid queryGuid = iid == typeof(IMetaDataImport).GUID ? typeof(IMetaDataImport2).GUID : iid;
+                if (Marshal.QueryInterface(pUnk, queryGuid, out ppv) >= 0)
                     return CustomQueryInterfaceResult.Handled;
             }
             finally

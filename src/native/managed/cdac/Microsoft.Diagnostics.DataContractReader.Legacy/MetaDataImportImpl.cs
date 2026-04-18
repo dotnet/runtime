@@ -15,6 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMetaDataAssemblyImport
 {
     private const int CLDB_E_RECORD_NOTFOUND = unchecked((int)0x80131130);
+    private const int CLDB_E_FILE_CORRUPT = unchecked((int)0x8013110E);
     private const int CLDB_S_TRUNCATION = 0x00131106;
     private const uint ELEMENT_TYPE_VOID = 0x01;
     private const uint ELEMENT_TYPE_STRING = 0x0E;
@@ -1229,26 +1230,46 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2, IMet
         int hr = HResults.S_OK;
         try
         {
-            UserStringHandle usHandle = MetadataTokens.UserStringHandle((int)(stk & 0x00FFFFFF));
-            string value = _reader!.GetUserString(usHandle);
+            // Read the user string from raw #US heap bytes to match native behavior exactly.
+            // Native does: GetUserString → check size is odd → TruncateBySize(1) → GetSize()/sizeof(WCHAR).
+            // Using raw bytes avoids potential discrepancies with MetadataReader.GetUserString().
+            int heapMetadataOffset = _reader.GetHeapMetadataOffset(HeapIndex.UserString);
+            int heapSize = _reader.GetHeapSize(HeapIndex.UserString);
+            int handleOffset = (int)(stk & 0x00FFFFFF);
 
-            // GetUserString differs from other string-returning methods:
-            // native returns character count WITHOUT null terminator (userString.GetSize() / sizeof(WCHAR)).
+            byte* heapBase = _reader.MetadataPointer + heapMetadataOffset;
+            int remaining = heapSize - handleOffset;
+            if (remaining <= 0)
+                throw Marshal.GetExceptionForHR(CLDB_E_FILE_CORRUPT)!;
+
+            BlobReader blobReader = new BlobReader(heapBase + handleOffset, remaining);
+            int blobSize = blobReader.ReadCompressedInteger();
+
+            // Validate blob fits within the remaining heap to prevent out-of-bounds reads.
+            if (blobSize > blobReader.RemainingBytes)
+                throw Marshal.GetExceptionForHR(CLDB_E_FILE_CORRUPT)!;
+
+            // Native rejects even-sized blobs (missing terminal byte) as corrupt.
+            if ((blobSize % sizeof(char)) == 0)
+                throw Marshal.GetExceptionForHR(CLDB_E_FILE_CORRUPT)!;
+
+            int charCount = (blobSize - 1) / sizeof(char);
+
             if (pchString is not null)
-                *pchString = (uint)value.Length;
+                *pchString = (uint)charCount;
 
-            bool truncated = false;
             if (szString is not null && cchString > 0)
             {
-                ReadOnlySpan<char> strSpan = value.AsSpan();
-                int copyLen = Math.Min(value.Length, (int)cchString);
-                truncated = (uint)value.Length > cchString;
-                strSpan.Slice(0, copyLen).CopyTo(new Span<char>(szString, copyLen));
-                if ((uint)value.Length < cchString)
-                    szString[value.Length] = '\0';
-            }
+                char* dataPtr = (char*)blobReader.CurrentPointer;
+                int copyChars = Math.Min(charCount, (int)cchString);
+                new ReadOnlySpan<char>(dataPtr, copyChars).CopyTo(new Span<char>(szString, copyChars));
 
-            hr = truncated ? CLDB_S_TRUNCATION : HResults.S_OK;
+                if ((uint)charCount > cchString)
+                {
+                    szString[cchString - 1] = '\0';
+                    hr = CLDB_S_TRUNCATION;
+                }
+            }
         }
         catch (System.Exception ex)
         {
