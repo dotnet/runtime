@@ -4165,7 +4165,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_Vector256_Dot:
                     case NI_Vector512_Dot:
                     {
-                        size_t elementCount = 16 / genTypeSize(simdBaseType);
+                        uint32_t elementCount = static_cast<uint32_t>(16 / genTypeSize(simdBaseType));
 
                         if (varTypeIsIntegral(simdBaseType))
                         {
