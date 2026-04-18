@@ -43,6 +43,7 @@ public enum DataType
     ModuleLookupMap,
     AppDomain,
     Debugger,
+    DebuggerRCThread,
     SystemDomain,
     Assembly,
     LoaderAllocator,

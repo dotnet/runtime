@@ -544,30 +544,40 @@ internal class TestPlaceholderTarget : Target
         public override void Register<TContract>(int version, Func<Target, TContract> creator)
             => _creators[(typeof(TContract), version)] = t => creator(t);
 
-        public override TContract GetContract<TContract>()
+        public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
         {
+            contract = default!;
+            failureReason = null;
             if (_resolved.TryGetValue(typeof(TContract), out var cached))
-                return (TContract)cached;
+            {
+                contract = (TContract)cached;
+                return true;
+            }
 
-            IContract contract;
+            IContract resolved;
             if (_mocks.TryGetValue(typeof(TContract), out var mock))
             {
-                contract = mock;
+                resolved = mock;
             }
             else if (_versions.TryGetValue(typeof(TContract), out int version))
             {
                 if (!_creators.TryGetValue((typeof(TContract), version), out var creator))
-                    throw new NotImplementedException($"No implementation registered for contract '{typeof(TContract).Name}' version {version}.");
+                {
+                    failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
+                    return false;
+                }
 
-                contract = creator(_target);
+                resolved = creator(_target);
             }
             else
             {
-                throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered. Use SetVersion<T>(version) or SetMock<T>(mock) to configure contracts.");
+                failureReason = $"Contract '{typeof(TContract).Name}' is not supported by the target.";
+                return false;
             }
 
-            _resolved[typeof(TContract)] = contract;
-            return (TContract)contract;
+            _resolved[typeof(TContract)] = resolved;
+            contract = (TContract)resolved;
+            return true;
         }
 
         public override void Flush() { }

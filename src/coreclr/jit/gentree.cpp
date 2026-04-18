@@ -2398,6 +2398,34 @@ bool GenTreeCall::IsHelperCall(unsigned helper) const
 }
 
 //-------------------------------------------------------------------------
+// IsHelperCallOrUserEquivalent: Determine if this GT_CALL node is a specific helper call
+//     or its CT_USER equivalent.
+//
+// Arguments:
+//     compiler - the compiler instance so that we can call eeFindHelper
+//
+// Return Value:
+//     Returns true if this GT_CALL node is a call to the specified helper.
+//
+bool GenTreeCall::IsHelperCallOrUserEquivalent(Compiler* compiler, unsigned helper) const
+{
+    CORINFO_METHOD_HANDLE helperCallHnd = Compiler::eeFindHelper(helper);
+    if (IsHelperCall())
+    {
+        return helperCallHnd == gtCallMethHnd;
+    }
+
+    if (gtCallType == CT_USER_FUNC)
+    {
+        CORINFO_METHOD_HANDLE userCallHnd = NO_METHOD_HANDLE;
+        return compiler->impInlineRoot()->HelperToManagedMapLookup(helperCallHnd, &userCallHnd) &&
+               (userCallHnd == gtCallMethHnd);
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------------------
 // IsRuntimeLookupHelperCall: Determine if this GT_CALL node represents a runtime lookup helper call.
 //
 // Arguments:
@@ -8207,7 +8235,6 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
             return gtNewLconNode(0);
         }
 
-        case TYP_HALF:
         case TYP_FLOAT:
         case TYP_DOUBLE:
         {
@@ -12972,6 +12999,9 @@ void Compiler::gtDispTree(GenTree*                    tree,
                     break;
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
                     printf(" isKnownConst");
+                    break;
+                case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
+                    printf(" WriteBarrier");
                     break;
 #if defined(FEATURE_SIMD)
                 case NI_SIMD_UpperRestore:
@@ -23060,17 +23090,6 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types type,
                 break;
             }
 
-            case TYP_HALF:
-            {
-                float16_t cnsVal = FloatingPointUtils::convertDoubleToFloat16(op1->AsDblCon()->DconValue());
-
-                for (unsigned i = 0; i < (simdSize / 2); i++)
-                {
-                    vecCon->gtSimdVal.f16[i] = cnsVal;
-                }
-                break;
-            }
-
             case TYP_FLOAT:
             {
                 float cnsVal = static_cast<float>(op1->AsDblCon()->DconValue());
@@ -27248,12 +27267,12 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(
 //
 GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize)
 {
-    assert(varTypeIsArithmetic(type) || TypeGet(type) == TYP_HALF);
+    assert(varTypeIsArithmetic(type));
 
     assert(op1 != nullptr);
     assert(varTypeIsSIMD(op1));
 
-    assert(varTypeIsArithmetic(simdBaseType) || TypeGet(simdBaseType) == TYP_HALF);
+    assert(varTypeIsArithmetic(simdBaseType));
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
@@ -28629,7 +28648,6 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_FusedMultiplySubtractNegated:
         case NI_AVX512_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512_FusedMultiplySubtractScalar:
-        case NI_AVX10v1_FusedMultiplyAddScalar:
         {
             return numArgs == 4;
         }
@@ -28647,13 +28665,6 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_X64_ConvertScalarToVector128Double:
         case NI_AVX512_X64_ConvertScalarToVector128Single:
 #endif // TARGET_AMD64
-        case NI_AVX10v1_AddScalar:
-        case NI_AVX10v1_DivideScalar:
-        case NI_AVX10v1_MultiplyScalar:
-        case NI_AVX10v1_SubtractScalar:
-        case NI_AVX10v1_ConvertScalarToVector128Half:
-        case NI_AVX10v1_ConvertScalarToVector128Single:
-        case NI_AVX10v1_ConvertScalarToVector128Double:
         {
             return numArgs == 3;
         }
@@ -28670,13 +28681,9 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_ConvertToVector512UInt32:
         case NI_AVX512_ConvertToVector512UInt64:
         case NI_AVX512_Sqrt:
-        case NI_AVX10v1_ConvertToInt32:
-        case NI_AVX10v1_ConvertToUInt32:
 #if defined(TARGET_AMD64)
         case NI_AVX512_X64_ConvertToInt64:
         case NI_AVX512_X64_ConvertToUInt64:
-        case NI_AVX10v1_ConvertToInt64:
-        case NI_AVX10v1_ConvertToUInt64:
 #endif // TARGET_AMD64
         case NI_AVX10v2_ConvertToSByteWithSaturationAndZeroExtendToInt32:
         case NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32:
