@@ -255,7 +255,9 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
-                    startInfo.StartDetached, inheritedHandles);
+#pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the attribute guards the actual effect
+                    startInfo.StartDetached, startInfo.KillOnParentExit, inheritedHandles);
+#pragma warning restore CA1416
 
                 if (errno == 0)
                 {
