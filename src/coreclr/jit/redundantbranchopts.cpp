@@ -1764,7 +1764,7 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
                 {
                     JITDUMP(FMT_BB " has global phi for V%02u.%u; no phi-based threading\n", block->bbNum, lclNum,
                             ssaNum);
-                    return JumpThreadCheckResult::CannotThread;
+                    hasGlobalPhiUses = true;
                 }
             }
 
@@ -2303,23 +2303,45 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 
         GenTreeLclVarCommon* const use       = phiUse.m_use;
         unsigned const             oldSsaNum = use->GetSsaNum();
+        unsigned const             lclNum    = use->GetLclNum();
 
-        if (oldSsaNum == phiUse.m_replacementSsaNum)
-        {
-            continue;
-        }
+        assert(oldSsaNum != phiUse.m_replacementSsaNum);
 
         JITDUMP("Updating [%06u] in " FMT_BB " from u:%u to u:%u\n", dspTreeID(use), phiUse.m_block->bbNum, oldSsaNum,
                 phiUse.m_replacementSsaNum);
 
-        LclSsaVarDsc* const replacementSsaDef = lvaGetDesc(use->GetLclNum())->GetPerSsaData(phiUse.m_replacementSsaNum);
+        LclSsaVarDsc* const replacementSsaDef = lvaGetDesc(lclNum)->GetPerSsaData(phiUse.m_replacementSsaNum);
 
         use->SetSsaNum(phiUse.m_replacementSsaNum);
 
         // Keep the use's value number in sync with the rewritten SSA def.
+        //
         if (use->gtVNPair != replacementSsaDef->m_vnPair)
         {
-            use->SetVNs(replacementSsaDef->m_vnPair);
+            ValueNumPair newVNPair = replacementSsaDef->m_vnPair;
+
+            // If this is a field use, get the proper field VN.
+
+            if (use->OperIs(GT_LCL_FLD))
+            {
+                GenTreeLclFld* const lclFld = use->AsLclFld();
+
+                newVNPair = vnStore->VNPairForLoad(replacementSsaDef->m_vnPair, lvaLclValueSize(lclNum),
+                                                   lclFld->TypeGet(), lclFld->GetLclOffs(), lclFld->GetValueSize());
+            }
+            else
+            {
+                assert(use->OperIs(GT_LCL_VAR));
+            }
+
+            JITDUMP("Updating [%06u] VN from ", dspTreeID(use));
+            JITDUMPEXEC(vnpPrint(use->gtVNPair, 1));
+            JITDUMP(" to ");
+            JITDUMPEXEC(vnpPrint(newVNPair, 1));
+            JITDUMP("\n");
+
+            use->SetVNs(newVNPair);
+
             GenTree* node   = use;
             GenTree* parent = node->gtGetParent(nullptr);
 
