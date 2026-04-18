@@ -1320,10 +1320,59 @@ namespace ILAssembler
 
             if (!isNewType)
             {
-                // COMPAT: Still visit some of the clauses to ensure the provided types are still imported,
-                // even if unused.
-                _ = context.extendsClause()?.Accept(this);
-                _ = context.typarsClause().Accept(this);
+                // Type was forward-referenced. Apply attributes, generic params,
+                // base type, and interface implementations that were deferred.
+                var classAttrs = context.classAttr();
+                typeDefinition.Attributes = classAttrs.Select(VisitClassAttr).Aggregate(
+                    typeDefinition.Attributes,
+                    (acc, result) =>
+                    {
+                        var (attribute, _, _) = result.Value;
+                        if (!attribute.ShouldAppend)
+                            return attribute.Value;
+                        if ((attribute.Value & TypeAttributes.Interface) != 0)
+                            return acc | TypeAttributes.Interface | TypeAttributes.Abstract;
+                        return acc | attribute.Value;
+                    });
+
+                if (typeDefinition.GenericParameters.Count == 0)
+                {
+                    var typeParams = VisitTyparsClause(context.typarsClause()).Value;
+                    for (int i = 0; i < typeParams.Length; i++)
+                    {
+                        var param = typeParams[i];
+                        param.Owner = typeDefinition;
+                        param.Index = i;
+                        typeDefinition.GenericParameters.Add(param);
+                        foreach (var constraint in param.Constraints)
+                        {
+                            constraint.Owner = param;
+                            typeDefinition.GenericParameterConstraints.Add(constraint);
+                        }
+                    }
+                }
+                else
+                {
+                    _ = context.typarsClause().Accept(this);
+                }
+
+                _currentTypeDefinition.Push(typeDefinition);
+
+                if (context.extendsClause() is CILParser.ExtendsClauseContext extends && typeDefinition.BaseType is null)
+                {
+                    typeDefinition.BaseType = VisitExtendsClause(extends).Value;
+                }
+                else
+                {
+                    _ = context.extendsClause()?.Accept(this);
+                }
+
+                if (context.implClause() is CILParser.ImplClauseContext impl)
+                {
+                    typeDefinition.InterfaceImplementations.AddRange(VisitImplClause(impl).Value);
+                }
+
+                _currentTypeDefinition.Pop();
             }
 
             return new(typeDefinition);
@@ -3427,6 +3476,18 @@ namespace ILAssembler
             }
 
             bool success = long.TryParse(value.ToString(), parseStyle, CultureInfo.InvariantCulture, out result);
+            if (!success && parseStyle == NumberStyles.AllowHexSpecifier)
+            {
+                // Try parsing as unsigned - values like 0xED2E9C5C0D3DCE680 exceed Int64 but
+                // should be accepted and reinterpreted as their signed bit pattern.
+                if (ulong.TryParse(value.ToString(), parseStyle, CultureInfo.InvariantCulture, out ulong uresult))
+                {
+                    result = unchecked((long)uresult);
+                    if (negate) result = -result;
+                    return true;
+                }
+                return false;
+            }
             if (!success)
             {
                 return false;
@@ -4132,7 +4193,12 @@ namespace ILAssembler
                 return new(_entityRegistry.CreateLazilyRecordedMemberReference(_entityRegistry.ModuleType, alias, new BlobBuilder()));
             }
             BlobBuilder methodRefSignature = new();
-            byte callConv = VisitCallConv(context.callConv()).Value;
+            if (context.callConv() is not CILParser.CallConvContext callConvCtx)
+            {
+                // Parse error recovery - callConv is missing
+                return new(_entityRegistry.CreateLazilyRecordedMemberReference(_entityRegistry.ModuleType, "<error>", methodRefSignature));
+            }
+            byte callConv = VisitCallConv(callConvCtx).Value;
             EntityRegistry.TypeEntity owner = _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType;
             if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
             {

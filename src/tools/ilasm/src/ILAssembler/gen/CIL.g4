@@ -679,7 +679,8 @@ instr:
 	| instr_string 'bytearray' '(' bytes ')'
 	| instr_sig callConv type sigArgs
 	| instr_tok ownerType /* ownerType ::= memberRef | typeSpec */
-	| instr_switch '(' labels ')';
+	| instr_switch '(' labels ')'
+	| instr_switch '()';
 
 labels:
 	/* empty */

@@ -968,7 +968,15 @@ namespace ILAssembler
             public BlobOrHandle GetPrimitiveType(PrimitiveTypeCode typeCode)
             {
                 var paramEncoder = new ParameterTypeEncoder(new BlobBuilder());
-                paramEncoder.Type().PrimitiveType(typeCode);
+                if ((int)typeCode >= 2 && (int)typeCode <= 14)
+                {
+                    paramEncoder.Type().PrimitiveType(typeCode);
+                }
+                else
+                {
+                    // Invalid type code from malformed signature - write raw byte
+                    paramEncoder.Builder.WriteByte((byte)typeCode);
+                }
                 return paramEncoder.Builder;
             }
             public BlobOrHandle GetSZArrayType(BlobOrHandle elementType)
