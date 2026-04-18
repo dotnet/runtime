@@ -282,6 +282,13 @@ namespace ILAssembler
                         bodyOffset = ilStream.Count;
                         methodDef.MethodBody.CodeBuilder.WriteContentTo(ilStream);
                     }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                        // Exception handler regions have invalid ranges (e.g., from parse
+                        // errors that produced malformed control flow).
+                        bodyOffset = ilStream.Count;
+                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ilStream);
+                    }
                 }
 
                 builder.AddMethodDefinition(
@@ -481,9 +488,16 @@ namespace ILAssembler
                 builder.AddMethodSpecification(methodSpec.Parent.Handle, builder.GetOrAddBlob(methodSpec.Signature));
             }
 
-            // GenericParam table must be sorted by (Owner, Index) per ECMA-335 spec
+            // GenericParam table must be sorted by coded TypeOrMethodDef token (Owner, Index) per ECMA-335 spec
+            // TypeOrMethodDef coded index: TypeDef tag=0, MethodDef tag=1, 1-bit tag
             foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam)
-                .OrderBy(gp => MetadataTokens.GetRowNumber(((GenericParameterEntity)gp).Owner!.Handle))
+                .OrderBy(gp =>
+                {
+                    var owner = ((GenericParameterEntity)gp).Owner!.Handle;
+                    int row = MetadataTokens.GetRowNumber(owner);
+                    int tag = owner.Kind == HandleKind.TypeDefinition ? 0 : 1;
+                    return (row << 1) | tag;
+                })
                 .ThenBy(gp => ((GenericParameterEntity)gp).Index))
             {
                 builder.AddGenericParameter(
