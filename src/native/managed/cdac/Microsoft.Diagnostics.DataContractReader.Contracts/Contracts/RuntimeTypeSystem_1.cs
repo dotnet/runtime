@@ -1329,13 +1329,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsILStub(MethodDescHandle methodDescHandle)
     {
-        MethodDesc md = _methodDescs[methodDescHandle.Address];
-        if (md.Classification != MethodClassification.Dynamic)
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (methodDesc.Classification != MethodClassification.Dynamic)
         {
             return false;
         }
 
-        return AsDynamicMethodDesc(md).IsILStub;
+        return AsDynamicMethodDesc(methodDesc).IsILStub;
     }
 
     public bool HasMDContextArg(MethodDescHandle methodDescHandle)
