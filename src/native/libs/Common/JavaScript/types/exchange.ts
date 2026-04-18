@@ -24,6 +24,8 @@ import type { cancelPromise } from "../../../System.Runtime.InteropServices.Java
 import type { abortInteropTimers } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/scheduling";
 
 import type { installNativeSymbols, symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
+import type { SystemJS_ScheduleDiagnosticServer } from "../../../System.Native.Browser/native";
+import type { ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send } from "../../../System.Native.Browser/diagnostics/diagnostic-server";
 
 
 type getWasmMemoryType = () => WebAssembly.Memory;
@@ -144,11 +146,13 @@ export type InteropJavaScriptExportsTable = [
 export type NativeBrowserExports = {
     getWasmMemory: getWasmMemoryType,
     getWasmTable: getWasmTableType,
+    SystemJS_ScheduleDiagnosticServer: typeof SystemJS_ScheduleDiagnosticServer,
 }
 
 export type NativeBrowserExportsTable = [
     getWasmMemoryType,
     getWasmTableType,
+    typeof SystemJS_ScheduleDiagnosticServer,
 ]
 
 export type BrowserUtilsExports = {
@@ -186,9 +190,19 @@ export type BrowserUtilsExportsTable = [
 export type DiagnosticsExportsTable = [
     typeof symbolicateStackTrace,
     typeof installNativeSymbols,
+    typeof ds_rt_websocket_create,
+    typeof ds_rt_websocket_send,
+    typeof ds_rt_websocket_poll,
+    typeof ds_rt_websocket_recv,
+    typeof ds_rt_websocket_close,
 ]
 
 export type DiagnosticsExports = {
     symbolicateStackTrace: typeof symbolicateStackTrace,
     installNativeSymbols: typeof installNativeSymbols,
+    ds_rt_websocket_create: typeof ds_rt_websocket_create,
+    ds_rt_websocket_send: typeof ds_rt_websocket_send,
+    ds_rt_websocket_poll: typeof ds_rt_websocket_poll,
+    ds_rt_websocket_recv: typeof ds_rt_websocket_recv,
+    ds_rt_websocket_close: typeof ds_rt_websocket_close,
 }

@@ -2078,6 +2078,115 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
     (void)ExecuteInterpretedMethod(&block, (TADDR)targetIp, retBuff);
 }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+// In this case, we're using this entrypoint like the prestub.
+// We need to run DoPrestub to have the runtime either compile the interpreter code, or find the R2R implementation
+// then we need to dispatch onwards to the correct target.
+// Continuing on from here for interpreter targets is straightforward, but for R2R targets we need to dispatch back
+// to WebAssembly code. To avoid needing all of the R2R to interpreter thunks have logic for tail-calling onto more
+// R2R functions, we utilize the InvokeManagedMethod path which will utilize an Interpreter to R2R thunk for this call.
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
+
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff)
+{
+    int8_t* args = (int8_t*)(block + 1);
+    MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(portableEntrypoint);
+    InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
+    if (targetIp == NULL)
+    {
+        MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThread());
+
+        PrestubMethodFrame frame(block, pMethod);
+        PrestubMethodFrame* pPFrame = &frame;
+
+        bool finishedPrestubPortion = false;
+
+        pPFrame->Push(CURRENT_THREAD);
+
+        EX_TRY
+        {
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+            {
+                GCX_PREEMP();
+                (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+                targetIp = pMethod->GetInterpreterCode();
+            }
+
+            finishedPrestubPortion = true;
+            if (targetIp == NULL)
+            {
+                _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
+                ManagedMethodParam param = { pMethod, args, retBuff, (PCODE)targetIp, nullptr /* WASM-TODO, handle RuntimeAsync */};
+                InvokeManagedMethod(&param);
+            }
+
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        }
+        EX_CATCH
+        {
+            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            _ASSERTE(ohThrowable);
+            if (finishedPrestubPortion)
+            {
+                StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)block, pMethod, NULL);
+            }
+            EX_RETHROW;
+        }
+        EX_END_CATCH
+
+        pPFrame->Pop(CURRENT_THREAD);
+
+        if (targetIp == NULL)
+            return; // We found R2R code during the Prestub, so there's no interpreter code to execute, and the R2R code has already been invoked, so we're done.
+    }
+
+    _ASSERTE((PCODE)targetIp == (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint));
+
+    // Copy arguments to the stack
+    if (argsSize > 0)
+    {
+        _ASSERTE(args != NULL);
+        InterpThreadContext *threadContext = GetInterpThreadContext();
+        int8_t* sp = threadContext->pStackPointer;
+        memcpy(sp, args, argsSize);
+    }
+
+    (void)ExecuteInterpretedMethod(block, (TADDR)targetIp, retBuff);
+    return;
+}
+
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff)
+{
+    PCODE targetIp;
+
+    if (!PortableEntryPoint::HasInterpreterData(portableEntrypoint))
+    {
+        // In this case, we're using this entrypoint like the prestub.
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(portableEntrypoint, block, argsSize, retBuff);
+    }
+    else
+    {
+        targetIp = (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint);
+        int8_t* args = (int8_t*)(block + 1);
+
+        // Copy arguments to the stack
+        if (argsSize > 0)
+        {
+            _ASSERTE(args != NULL);
+            InterpThreadContext *threadContext = GetInterpThreadContext();
+            int8_t* sp = threadContext->pStackPointer;
+            memcpy(sp, args, argsSize);
+        }
+
+        (void)ExecuteInterpretedMethod(block, (TADDR)targetIp, retBuff);
+        return;
+    }
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp)
 {
     _ASSERTE(pMD != NULL);
