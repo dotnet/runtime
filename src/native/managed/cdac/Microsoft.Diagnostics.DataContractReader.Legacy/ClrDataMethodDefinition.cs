@@ -139,7 +139,11 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         }
         finally
         {
-            // If we didn't transfer the legacy handle into the enum state, end it now.
+            // The legacy enumeration is started eagerly (before the cDAC try block) so
+            // that EnumInstance can advance both enumerations in lockstep. If the cDAC
+            // side fails to produce an enum (no MethodDesc, exception, or emi.Start()
+            // returns S_FALSE), the legacy handle would be orphaned because the caller
+            // receives *handle == 0 and has no way to call End. Clean it up here.
             if (_legacyImpl is not null && legacyHandle != default)
             {
                 _legacyImpl.EndEnumInstances(legacyHandle);
