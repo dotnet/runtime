@@ -144,7 +144,7 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
     pAttachingThread->m_ThreadStateFlags = Thread::TSF_Attached;
 
-    pTS->m_ThreadList.PushHead(pAttachingThread);
+    pTS->m_ThreadList.InsertHead(pAttachingThread);
 
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
     if (!InsertThreadIntoSignalSafeMap(pAttachingThread->m_threadId, pAttachingThread))
@@ -193,7 +193,7 @@ void ThreadStore::DetachCurrentThread()
         // Note that when process is shutting down, the threads may be rudely terminated,
         // possibly while holding the threadstore lock. That is ok, since the process is being torn down.
         CrstHolder threadStoreLock(&pTS->m_Lock);
-        ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
+        ASSERT(rh::std::count(pTS->m_ThreadList.begin(), pTS->m_ThreadList.end(), pDetachingThread) == 1);
         // remove the thread from the list of managed threads.
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
         // tidy up GC related stuff (release allocation context, etc..)

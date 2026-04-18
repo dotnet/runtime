@@ -15,11 +15,12 @@ template <typename T, typename Traits>
 void SList<T, Traits>::InsertHeadInterlocked(PTR_T pItem)
 {
     static_assert(!Traits::HasTail, "InsertHeadInterlocked is incompatible with tail tracking");
+    static_assert(Traits::IsInterlocked, "InsertHeadInterlocked requires SListMode::Interlocked");
     _ASSERTE(pItem != NULL);
 
-    while (true)
+    for (;;)
     {
-        *Traits::GetNextPtr(pItem) = *reinterpret_cast<T * volatile *>(&m_pHead);
+        *Traits::GetNextPtr(pItem) = m_pHead;
         T* expected = (T*)*Traits::GetNextPtr(pItem);
 #if defined(FEATURE_NATIVEAOT)
         if (static_cast<T*>(PalInterlockedCompareExchangePointer(

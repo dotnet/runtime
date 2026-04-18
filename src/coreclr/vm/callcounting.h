@@ -304,7 +304,7 @@ public:
     DPTR(CallCountingManager) m_pNext;
 
 private:
-    typedef SList<CallCountingManager, DefaultSListTraitsWithTail<CallCountingManager>> CallCountingManagerList;
+    typedef SListTail<CallCountingManager> CallCountingManagerList;
 
     static CallCountingManagerList s_callCountingManagers;
     static COUNT_T s_callCountingStubCount;

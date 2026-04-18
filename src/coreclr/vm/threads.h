@@ -3794,7 +3794,7 @@ void UndoRevert(BOOL bReverted, HANDLE hToken);
 // ThreadStore::m_pThreadStore.
 // ---------------------------------------------------------------------------
 
-typedef SList<Thread, DefaultSListTraitsWithTail<Thread>> ThreadList;
+typedef SListTail<Thread> ThreadList;
 
 
 // The ThreadStore is a singleton class

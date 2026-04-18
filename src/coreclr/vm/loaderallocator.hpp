@@ -462,7 +462,7 @@ private:
         }
     };
 
-    typedef SList<FailedTypeInitCleanupListItem, DefaultSListTraitsWithTail<FailedTypeInitCleanupListItem>> FailedTypeInitCleanupList;
+    typedef SListTail<FailedTypeInitCleanupListItem> FailedTypeInitCleanupList;
 
     FailedTypeInitCleanupList m_failedTypeInitCleanupList;
 
@@ -1026,7 +1026,7 @@ private:
         }
     };
 
-    typedef SList<HandleCleanupListItem, DefaultSListTraitsWithTail<HandleCleanupListItem>> HandleCleanupList;
+    typedef SListTail<HandleCleanupListItem> HandleCleanupList;
 
     HandleCleanupList m_handleCleanupList;
 #if !defined(DACCESS_COMPILE)

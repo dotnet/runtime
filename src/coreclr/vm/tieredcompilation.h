@@ -128,7 +128,7 @@ private:
 #endif // !DACCESS_COMPILE
 
 private:
-    typedef SList<SListElem<NativeCodeVersion>, DefaultSListTraitsWithTail<SListElem<NativeCodeVersion>>> OptimizationQueue;
+    typedef SListTail<SListElem<NativeCodeVersion>> OptimizationQueue;
 
     OptimizationQueue m_methodsToOptimize;
     UINT32 m_countOfMethodsToOptimize;

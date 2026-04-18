@@ -424,14 +424,11 @@ class SyncBlock
     PTR_EnCSyncBlockInfo m_pEnCInfo;
 #endif // FEATURE_METADATA_UPDATER
 
-    // When the SyncBlock is released (we recycle them),
-    // the SyncBlockCache maintains a free list of SyncBlocks here.
-    //
-    // We can't afford to use an SList<> here because we only want to burn
-    // space for the minimum, which is the pointer within an SLink.
-    // Next pointer used by SyncBlockCache free and cleanup lists.
+  public:
+    // Next pointer for SList linkage (SyncBlockCache free and cleanup lists).
     PTR_SyncBlock  m_pNext;
 
+  protected:
     // This is the hash code for the object. It can either have been transferred
     // from the header dword, in which case it will be limited to 26 bits, or
     // have been generated right into this member variable here, when it will
@@ -451,6 +448,7 @@ class SyncBlock
 #ifdef FEATURE_METADATA_UPDATER
         , m_pEnCInfo(PTR_NULL)
 #endif // FEATURE_METADATA_UPDATER
+        , m_pNext(PTR_NULL)
         , m_dwHashCode(0)
     {
         LIMITED_METHOD_CONTRACT;

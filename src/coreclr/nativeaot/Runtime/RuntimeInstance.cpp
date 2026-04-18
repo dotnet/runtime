@@ -268,7 +268,7 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
         return false;
 
     pEntry->m_pTypeManager = pTypeManager;
-    m_TypeManagerList.PushHeadInterlocked(pEntry);
+    m_TypeManagerList.InsertHeadInterlocked(pEntry);
 
     return true;
 }
@@ -290,7 +290,7 @@ FCIMPL1(void*, RhpRegisterOsModule, HANDLE hOsModule)
 
     pEntry->m_osModule = hOsModule;
     RuntimeInstance *pRuntimeInstance = GetRuntimeInstance();
-    pRuntimeInstance->GetOsModuleList()->PushHeadInterlocked(pEntry);
+    pRuntimeInstance->GetOsModuleList()->InsertHeadInterlocked(pEntry);
 
     return hOsModule; // Return non-null on success
 }

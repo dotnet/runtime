@@ -35,7 +35,7 @@ struct EventMethodInfo
 // Structure passed out as a cookie when Advise is called.
 struct ConnectionCookie
 {
-    ConnectionCookie(OBJECTHANDLEHolder hndEventProvObj) : m_hndEventProvObj(std::move(hndEventProvObj))
+    ConnectionCookie(OBJECTHANDLEHolder hndEventProvObj) : m_pNext(NULL), m_hndEventProvObj(std::move(hndEventProvObj))
     {
         CONTRACTL
         {

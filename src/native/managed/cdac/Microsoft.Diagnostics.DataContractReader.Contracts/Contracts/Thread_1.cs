@@ -47,7 +47,7 @@ internal readonly struct Thread_1 : IThread
         Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);
         return new ThreadStoreData(
             threadStore.ThreadCount,
-            GetThreadFromLink(threadStore.FirstThreadLink),
+            threadStore.FirstThreadLink,
             _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.FinalizerThread)),
             _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCThread)));
     }
@@ -118,7 +118,7 @@ internal readonly struct Thread_1 : IThread
             thread.CurrentCustomDebuggerNotification,
             thread.LastThrownObjectIsUnhandled != 0,
             hasUnhandledException,
-            GetThreadFromLink(thread.LinkNext));
+            thread.LinkNext);
     }
 
     void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)
@@ -149,11 +149,6 @@ internal readonly struct Thread_1 : IThread
         if (id < idDispenserObj.HighestId)
             threadPtr = _target.ReadPointer(idDispenserObj.IdToThread + (ulong)(id * _target.PointerSize));
         return threadPtr;
-    }
-
-    private static TargetPointer GetThreadFromLink(TargetPointer threadLink)
-    {
-        return threadLink;
     }
 
     TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr)
