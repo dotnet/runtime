@@ -119,28 +119,31 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         try
         {
             TargetPointer methodDescAddr = TryResolveMethodDesc();
-            if (methodDescAddr == TargetPointer.Null)
-            {
-                hr = HResults.S_FALSE;
-            }
-            else
+            if (methodDescAddr != TargetPointer.Null)
             {
                 SOSDacImpl.EnumMethodInstances emi = new(_target, methodDescAddr, TargetPointer.Null);
                 emi.LegacyHandle = legacyHandle;
 
-                *handle = (ulong)((IEnum<MethodDescHandle>)emi).GetHandle();
                 hr = emi.Start();
-                if (hr == HResults.S_FALSE)
+                if (hr == HResults.S_OK)
                 {
-                    GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
-                    gcHandle.Free();
-                    *handle = 0;
+                    *handle = (ulong)((IEnum<MethodDescHandle>)emi).GetHandle();
+                    // Legacy handle ownership transferred to emi — don't clean up below.
+                    legacyHandle = default;
                 }
             }
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
+        }
+        finally
+        {
+            // If we didn't transfer the legacy handle into the enum state, end it now.
+            if (_legacyImpl is not null && legacyHandle != default)
+            {
+                _legacyImpl.EndEnumInstances(legacyHandle);
+            }
         }
 
 #if DEBUG
@@ -226,6 +229,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             if (gcHandle.Target is not SOSDacImpl.EnumMethodInstances emi)
                 throw new ArgumentException();
 
+            ((IEnum<MethodDescHandle>)emi).Dispose();
             gcHandle.Free();
 
             if (_legacyImpl is not null && emi.LegacyHandle != TargetPointer.Null)
