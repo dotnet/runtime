@@ -2959,5 +2959,157 @@ namespace ILAssembler.Tests
             var reader = pe.GetMetadataReader();
             Assert.Equal(2, reader.TypeDefinitions.Count);
         }
+
+        [Fact]
+        public void SimpleOverride_EmitsMethodImpl()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly TestOverride { }
+
+                .class interface public abstract auto ansi IFoo
+                {
+                    .method public hidebysig newslot abstract virtual instance int32 GetVal() cil managed { }
+                }
+
+                .class public auto ansi beforefieldinit Bar extends [mscorlib]System.Object implements IFoo
+                {
+                    .method public hidebysig newslot virtual final instance int32 GetVal() cil managed
+                    {
+                        .override IFoo::GetVal
+                        ldc.i4.s 42
+                        ret
+                    }
+                    .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+                    {
+                        ldarg.0
+                        call instance void [mscorlib]System.Object::.ctor()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            int methodImplCount = reader.GetTableRowCount(TableIndex.MethodImpl);
+            Assert.Equal(1, methodImplCount);
+        }
+
+        [Fact]
+        public void OverrideWithExplicitSignature_EmitsMethodImpl()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly TestOverride { }
+
+                .class public auto ansi beforefieldinit Base extends [mscorlib]System.Object
+                {
+                    .method public hidebysig newslot virtual instance object GetVal(string& res) cil managed
+                    {
+                        ldnull
+                        ret
+                    }
+                }
+
+                .class public auto ansi beforefieldinit Derived extends Base
+                {
+                    .method public hidebysig newslot virtual instance object GetVal(string& res) cil managed
+                    {
+                        .override method instance object Base::GetVal(string&)
+                        ldnull
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            int methodImplCount = reader.GetTableRowCount(TableIndex.MethodImpl);
+            Assert.Equal(1, methodImplCount);
+        }
+
+        [Fact]
+        public void GenericOverride_EmitsMethodImpl()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly TestOverride { }
+
+                .class public auto ansi beforefieldinit GenBase<A,B> extends [mscorlib]System.Object
+                {
+                    .method public hidebysig newslot virtual instance object MyFunc(string& res) cil managed
+                    {
+                        ldnull
+                        ret
+                    }
+                }
+
+                .class public auto ansi beforefieldinit GenDerived<U,V> extends class GenBase<!U,!V>
+                {
+                    .method public hidebysig newslot virtual instance object MyFunc(string& res) cil managed
+                    {
+                        .override method instance object class GenBase<!U,!V>::MyFunc(string&)
+                        ldnull
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            int methodImplCount = reader.GetTableRowCount(TableIndex.MethodImpl);
+            Assert.Equal(1, methodImplCount);
+
+            int typeSpecCount = reader.GetTableRowCount(TableIndex.TypeSpec);
+            Assert.True(typeSpecCount >= 1, "Should have at least one TypeSpec for the generic instantiation");
+        }
+
+        [Fact]
+        public void MultipleOverrides_EmitsAllMethodImpls()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly TestOverride { }
+
+                .class public auto ansi beforefieldinit GenBase<A,B> extends [mscorlib]System.Object
+                {
+                    .method public hidebysig newslot virtual instance object Func1(string& res) cil managed
+                    {
+                        ldnull
+                        ret
+                    }
+                    .method public hidebysig newslot virtual instance object Func2(string& res) cil managed
+                    {
+                        ldnull
+                        ret
+                    }
+                }
+
+                .class public auto ansi beforefieldinit Derived<U,V> extends class GenBase<!U,!V>
+                {
+                    .method public hidebysig newslot virtual instance object Func1(string& res) cil managed
+                    {
+                        .override method instance object class GenBase<!U,!V>::Func1(string&)
+                        ldnull
+                        ret
+                    }
+                    .method public hidebysig newslot virtual instance object Func2(string& res) cil managed
+                    {
+                        .override method instance object class GenBase<!U,!V>::Func2(string&)
+                        ldnull
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            int methodImplCount = reader.GetTableRowCount(TableIndex.MethodImpl);
+            Assert.Equal(2, methodImplCount);
+        }
     }
 }

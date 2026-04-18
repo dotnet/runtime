@@ -21,14 +21,4 @@ supported by the managed ilasm. The native ilasm emits a TLS directory
 entry in the PE header for these, which the managed ilasm's PE builder
 does not currently implement.
 
-## Invalid metadata for complex generic type hierarchies
 
-Some files with complex generic type hierarchies, covariant returns,
-or interface method implementations produce metadata that causes ildasm
-to hang or return errors. The managed ilasm compiles these files without
-errors, but the output PE contains invalid metadata.
-
-Known affected files:
-- `src/tests/JIT/Regression/JitBlue/GitHub_17585/GitHub_17585.il`
-- `src/tests/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/OverrideMoreDerivedReturn.il`
-- `src/tests/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTestDelegates.il`
