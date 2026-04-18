@@ -52,7 +52,7 @@ namespace System.Diagnostics.Tests
 
                 streamWriter.WriteLine("pong");
 
-                ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(30));
+                ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
                 Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
                 Assert.False(exitStatus.Canceled);
             }
@@ -270,27 +270,19 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void WaitForExit_ProcessExitsNormally_ReturnsExitCode()
-        {
-            Process process = CreateProcess(static () => 42);
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
-
-            ProcessExitStatus exitStatus = processHandle.WaitForExit();
-
-            Assert.Equal(42, exitStatus.ExitCode);
-            Assert.False(exitStatus.Canceled);
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void WaitForExit_ProcessExitsWithZero_ReturnsZeroExitCode()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WaitForExit_ProcessExitsNormally_ReturnsExitCode(bool useAsync)
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
 
-            ProcessExitStatus exitStatus = processHandle.WaitForExit();
+            ProcessExitStatus exitStatus = useAsync
+                ? await processHandle.WaitForExitAsync(cts.Token)
+                : processHandle.WaitForExit();
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
             Assert.False(exitStatus.Canceled);
@@ -341,22 +333,29 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void WaitForExitOrKillOnTimeout_ProcessExitsBeforeTimeout_DoesNotKill()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WaitForExitOrKill_ProcessExitsBeforeTimeout_DoesNotKill(bool useAsync)
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
 
-            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(30));
+            ProcessExitStatus exitStatus = useAsync
+                ? await processHandle.WaitForExitOrKillOnCancellationAsync(cts.Token)
+                : processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(30));
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
             Assert.False(exitStatus.Canceled);
             Assert.Null(exitStatus.Signal);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void WaitForExitOrKillOnTimeout_ProcessDoesNotExitBeforeTimeout_KillsAndReturns()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WaitForExitOrKill_ProcessDoesNotExit_KillsAndReturns(bool useAsync)
         {
             Process process = CreateProcess(static () =>
             {
@@ -367,27 +366,16 @@ namespace System.Diagnostics.Tests
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
 
             Stopwatch stopwatch = Stopwatch.StartNew();
-            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(300));
+            using CancellationTokenSource cts = new(TimeSpan.FromMilliseconds(300));
+
+            ProcessExitStatus exitStatus = useAsync
+                ? await processHandle.WaitForExitOrKillOnCancellationAsync(cts.Token)
+                : processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(300));
             stopwatch.Stop();
 
             Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(200), TimeSpan.FromSeconds(10));
             Assert.True(exitStatus.Canceled);
             Assert.NotEqual(0, exitStatus.ExitCode);
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task WaitForExitAsync_ProcessExitsNormally_ReturnsExitCode()
-        {
-            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
-
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
-            ProcessExitStatus exitStatus = await processHandle.WaitForExitAsync(cts.Token);
-
-            Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
-            Assert.False(exitStatus.Canceled);
-            Assert.Null(exitStatus.Signal);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -427,43 +415,6 @@ namespace System.Diagnostics.Tests
                 processHandle.Kill();
                 processHandle.WaitForExit();
             }
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task WaitForExitOrKillOnCancellationAsync_ProcessExitsNormally_ReturnsExitCode()
-        {
-            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
-
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
-            ProcessExitStatus exitStatus = await processHandle.WaitForExitOrKillOnCancellationAsync(cts.Token);
-
-            Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
-            Assert.False(exitStatus.Canceled);
-            Assert.Null(exitStatus.Signal);
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task WaitForExitOrKillOnCancellationAsync_CancellationRequested_KillsAndReturns()
-        {
-            Process process = CreateProcess(static () =>
-            {
-                Thread.Sleep(Timeout.Infinite);
-                return RemoteExecutor.SuccessExitCode;
-            });
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
-
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            using CancellationTokenSource cts = new(TimeSpan.FromMilliseconds(300));
-
-            ProcessExitStatus exitStatus = await processHandle.WaitForExitOrKillOnCancellationAsync(cts.Token);
-            stopwatch.Stop();
-
-            Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(200), TimeSpan.FromSeconds(10));
-            Assert.True(exitStatus.Canceled);
-            Assert.NotEqual(0, exitStatus.ExitCode);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
