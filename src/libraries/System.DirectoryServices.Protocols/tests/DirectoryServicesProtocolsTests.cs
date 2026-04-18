@@ -877,7 +877,7 @@ namespace System.DirectoryServices.Protocols.Tests
             }
         }
 
-        [ConditionalFact(nameof(ServerSupportsPagination))]
+        [ConditionalFact(typeof(DirectoryServicesProtocolsTests), nameof(ServerSupportsPagination))]
         public void TestPageRequests()
         {
             using (ConnectionState state = Connect())
@@ -938,7 +938,7 @@ namespace System.DirectoryServices.Protocols.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsServerSideSortSupported))]
+        [ConditionalFact(typeof(DirectoryServicesProtocolsTests), nameof(IsServerSideSortSupported))]
         public void TestSortedSearch()
         {
             using (ConnectionState state = Connect())
