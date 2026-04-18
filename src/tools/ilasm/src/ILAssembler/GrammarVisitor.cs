@@ -4971,7 +4971,7 @@ namespace ILAssembler
             arrayHeader.WriteByte((byte)SerializationTypeCode.SZArray);
             arrayHeader.WriteByte((byte)GetTypeCodeForToken(tokenType));
             arrayHeader.WriteInt32(VisitInt32(arrLength).Value);
-            var sequenceResult = (GrammarResult.FormattedBlob)Visit(context.GetRuleContext<ParserRuleContext>(0));
+            var sequenceResult = (GrammarResult.FormattedBlob)Visit(context.GetRuleContext<ParserRuleContext>(1));
             arrayHeader.LinkSuffix(sequenceResult.Value);
             return new(arrayHeader);
         }
