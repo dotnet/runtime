@@ -668,7 +668,7 @@ void EEStartupHelper()
 
 #ifdef FEATURE_TIERED_COMPILATION
         TieredCompilationManager::StaticInitialize();
-        CallCountingManager::StaticInitialize();
+        CallCountingStub::StaticInitialize();
 #endif // FEATURE_TIERED_COMPILATION
 
         OnStackReplacementManager::StaticInitialize();
@@ -1093,7 +1093,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 
 // EEStartup is responsible for all the one time initialization of the runtime.  Some of the highlights of
 // what it does include
-//     * Creates the default and shared, appdomains.
+//     * Creates the global AppDomain
 //     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)
 //
 // see code:EEStartup#TableOfContents for more on the runtime in general.

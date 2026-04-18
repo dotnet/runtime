@@ -73,26 +73,23 @@ public class AuxiliarySymbolsTests
                 byte[] nameBytes = Encoding.UTF8.GetBytes(helpers[i].Name + '\0');
                 MockMemorySpace.HeapFragment nameFragment = allocator.Allocate((ulong)nameBytes.Length, $"Name_{helpers[i].Name}");
                 nameBytes.CopyTo(nameFragment.Data.AsSpan());
-                builder.AddHeapFragment(nameFragment);
                 entry.Name = nameFragment.Address;
             }
 
-            builder.AddHeapFragment(arrayFragment);
             arrayAddress = arrayFragment.Address;
         }
 
         // Allocate global for the count
         MockMemorySpace.HeapFragment countFragment = allocator.Allocate(sizeof(uint), "HelperCount");
         targetTestHelpers.Write(countFragment.Data, (uint)helpers.Length);
-        builder.AddHeapFragment(countFragment);
 
         return targetBuilder
             .AddTypes(types)
             .AddGlobals(
                 (Constants.Globals.AuxiliarySymbols, arrayAddress),
                 (Constants.Globals.AuxiliarySymbolCount, countFragment.Address))
-            .AddContract<IPlatformMetadata>(_ => Mock.Of<IPlatformMetadata>(p => p.GetCodePointerFlags() == default(CodePointerFlags)))
-            .AddContract<IAuxiliarySymbols>(static target => ((IContractFactory<IAuxiliarySymbols>)new AuxiliarySymbolsFactory()).CreateContract(target, 1))
+            .AddMockContract<IPlatformMetadata>(Mock.Of<IPlatformMetadata>(p => p.GetCodePointerFlags() == default(CodePointerFlags)))
+            .AddContract<IAuxiliarySymbols>(version: 1)
             .Build();
     }
 

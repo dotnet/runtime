@@ -282,6 +282,96 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        private static bool IsNotNanoServerAndRemoteExecutorSupported =>
+            PlatformDetection.IsNotWindowsNanoServer &&
+            RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(typeof(ProcessTests), nameof(IsNotNanoServerAndRemoteExecutorSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void StartDetached_GrandchildSurvivesSignalingParent(bool enable)
+        {
+            // Verify that a grandchild started with StartDetached=true survives terminating signal sent to the child's
+            // process group, whereas a non-detached grandchild (which inherits the child's process group) is killed.
+            int grandchildPid = -1;
+
+            // Start the child in its own group/session (process group leader) so killing the group
+            // targets only the child's process group, not the test runner's process group.
+            ProcessStartInfo childStartInfo = new()
+            {
+                RedirectStandardOutput = true,
+            };
+
+            if (OperatingSystem.IsWindows())
+            {
+                // We need to be able to send the signal to the child process group.
+                childStartInfo.CreateNewProcessGroup = true;
+            }
+            else
+            {
+                childStartInfo.StartDetached = true;
+            }
+
+            using (RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(static (arg) =>
+            {
+                using RemoteInvokeHandle grandchildHandle = RemoteExecutor.Invoke(
+                    static () => { Thread.Sleep(Timeout.Infinite); return RemoteExecutor.SuccessExitCode; },
+                    new RemoteInvokeOptions { Start = false, CheckExitCode = false });
+
+                grandchildHandle.Process.StartInfo.StartDetached = bool.Parse(arg);
+                grandchildHandle.Process.Start();
+
+                Console.WriteLine(grandchildHandle.Process.Id);
+
+                // Transfer ownership.
+                grandchildHandle.Process = null;
+
+                // Keep the child alive so the test can kill the process group.
+                Thread.Sleep(Timeout.Infinite);
+
+                return RemoteExecutor.SuccessExitCode;
+            },
+            enable.ToString(),
+            new RemoteInvokeOptions { StartInfo = childStartInfo, CheckExitCode = false }))
+            {
+                string pidLine = childHandle.Process.StandardOutput.ReadLine();
+                Assert.True(int.TryParse(pidLine, out grandchildPid), $"Could not parse grandchild PID from: '{pidLine}'");
+
+                // Obtain a Process instance before the child is killed to avoid PID reuse issues.
+                using Process grandchild = Process.GetProcessById(grandchildPid);
+
+                try
+                {
+                    Assert.False(grandchild.HasExited);
+
+                    // Kill the child's entire process group
+                    PosixSignal signal = OperatingSystem.IsWindows() ? PosixSignal.SIGQUIT : PosixSignal.SIGKILL;
+                    SendSignal(signal, childHandle.Process, entireProcessGroup: true);
+
+                    Assert.True(childHandle.Process.WaitForExit(WaitInMS));
+                    // Use shorter wait time when the process is expected to survive
+                    Assert.Equal(enable, !grandchild.WaitForExit(enable ? 300 : WaitInMS));
+                }
+                finally
+                {
+                    grandchild.Kill();
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StartDetached_StartsAndExitsSuccessfully()
+        {
+            // Simple smoke test: a process started with StartDetached=true should run and exit normally.
+            RemoteInvokeOptions options = new()
+            {
+                StartInfo = new ProcessStartInfo { StartDetached = true }
+            };
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () => RemoteExecutor.SuccessExitCode, options);
+            Assert.True(handle.Process.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, handle.Process.ExitCode);
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(-2)]
         [InlineData((long)int.MaxValue + 1)]

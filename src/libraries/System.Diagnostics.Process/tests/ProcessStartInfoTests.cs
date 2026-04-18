@@ -500,14 +500,17 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ConditionalFact(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
+        [ConditionalTheory(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Requires admin privileges")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80019", TestRuntimes.Mono)]
-        public void TestUserCredentialsPropertiesOnWindows()
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestUserCredentialsPropertiesOnWindows(bool killOnParentExit)
         {
             using Process longRunning = CreateProcessLong();
             longRunning.StartInfo.LoadUserProfile = true;
+            longRunning.StartInfo.KillOnParentExit = killOnParentExit;
 
             using TestProcessState testAccountCleanup = CreateUserAndExecute(longRunning, Setup, Cleanup);
 
@@ -1446,6 +1449,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Process.Start is not supported on iOS, tvOS, and MacCatalyst.")]
         public void UserNameCantBeCombinedWithInheritedHandles()
         {
             using Process longRunning = CreateProcessLong();

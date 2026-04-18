@@ -311,10 +311,21 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 //------------------------------------------------------------------------
 // genFuncletEpilog: codegen for funclet epilogs.
 //
-// For Wasm, funclet epilogs are empty
+// Arguments:
+//   block - funclet epilog block
 //
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* block)
 {
+    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
+
+    if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+    {
+        instGen(INS_end);
+    }
+    else
+    {
+        instGen(INS_return);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2236,9 +2247,10 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     // enregistered locals need to be handled.
     LclVarDsc* varDsc    = m_compiler->lvaGetDesc(tree);
     regNumber  targetReg = tree->GetRegNum();
+    var_types  type      = varDsc->GetRegisterType(tree);
     assert(genIsValidReg(targetReg) && varDsc->lvIsRegCandidate());
 
-    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), WasmRegToIndex(targetReg));
+    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg));
     genUpdateLifeStore(tree, targetReg, varDsc);
 }
 
@@ -2435,7 +2447,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
         // indirection cell but we should not try to optimize.
         WellKnownArg indirectionCellArgKind = WellKnownArg::None;
-        if (!call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
         {
             indirectionCellArgKind = call->GetIndirectionCellArgKind();
         }

@@ -549,6 +549,7 @@ namespace ILCompiler
             }
             componentGraph.ComputeMarkedNodes();
             componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode);
+            componentFactory.SetMarkingComplete();
             ReadyToRunObjectWriter.EmitObject(
                 outputFile,
                 componentModule: inputModule,

@@ -78,6 +78,11 @@ extends:
           - osx_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 20
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
           jobParameters:
             testGroup: outerloop
             runInterpreter: true
