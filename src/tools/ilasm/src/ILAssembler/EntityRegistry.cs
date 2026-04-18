@@ -199,12 +199,18 @@ namespace ILAssembler
                     GetFieldHandleForList(type.Fields, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Fields, i),
                     GetMethodHandleForList(type.Methods, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Methods, i));
 
-                builder.AddEventMap(
-                    (TypeDefinitionHandle)type.Handle,
-                    GetEventHandleForList(type.Events, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Events, i));
-                builder.AddPropertyMap(
-                    (TypeDefinitionHandle)type.Handle,
-                    GetPropertyHandleForList(type.Properties, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Properties, i));
+                if (type.Events.Count > 0)
+                {
+                    builder.AddEventMap(
+                        (TypeDefinitionHandle)type.Handle,
+                        GetEventHandleForList(type.Events, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Events, i));
+                }
+                if (type.Properties.Count > 0)
+                {
+                    builder.AddPropertyMap(
+                        (TypeDefinitionHandle)type.Handle,
+                        GetPropertyHandleForList(type.Properties, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Properties, i));
+                }
 
                 if (type.PackingSize is not null || type.ClassSize is not null)
                 {
@@ -248,15 +254,34 @@ namespace ILAssembler
                 }
             }
 
+            var bodyStreamEncoder = new MethodBodyStreamEncoder(ilStream);
+
             for (int i = 0; i < GetSeenEntities(TableIndex.MethodDef).Count; i++)
             {
                 MethodDefinitionEntity methodDef = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[i];
 
-                int rva = 0;
+                int bodyOffset = -1;
                 if (methodDef.MethodBody.CodeBuilder.Count != 0)
                 {
-                    rva = ilStream.Count;
-                    methodDef.MethodBody.CodeBuilder.WriteContentTo(ilStream);
+                    StandaloneSignatureHandle localsSigHandle = methodDef.LocalsSignature is not null
+                        ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle
+                        : default;
+                    try
+                    {
+                        bodyOffset = bodyStreamEncoder.AddMethodBody(
+                            methodDef.MethodBody,
+                            methodDef.MaxStack,
+                            localsSigHandle,
+                            methodDef.BodyAttributes);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // Method has unresolved labels or other body errors.
+                        // Write raw IL bytes as a fallback so the PE can still be emitted
+                        // (error diagnostics are already recorded).
+                        bodyOffset = ilStream.Count;
+                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ilStream);
+                    }
                 }
 
                 builder.AddMethodDefinition(
@@ -264,7 +289,7 @@ namespace ILAssembler
                     methodDef.ImplementationAttributes,
                     builder.GetOrAddString(methodDef.Name),
                     builder.GetOrAddBlob(methodDef.MethodSignature!),
-                    rva,
+                    bodyOffset,
                     GetParameterHandleForList(methodDef.Parameters, GetSeenEntities(TableIndex.MethodDef), method => ((MethodDefinitionEntity)method).Parameters, i));
 
                 if (methodDef.MethodImportInformation is not null)
@@ -284,7 +309,7 @@ namespace ILAssembler
                     param.Name is null ? default : builder.GetOrAddString(param.Name),
                     param.Sequence);
 
-                if (param.MarshallingDescriptor is not null)
+                if (param.MarshallingDescriptor.Count != 0)
                 {
                     builder.AddMarshallingDescriptor(param.Handle, builder.GetOrAddBlob(param.MarshallingDescriptor));
                 }
@@ -300,6 +325,14 @@ namespace ILAssembler
                 builder.AddInterfaceImplementation(
                     (TypeDefinitionHandle)impl.Type.Handle,
                     impl.InterfaceType is FakeTypeEntity fakeType ? fakeType.TypeColumnHandle : impl.InterfaceType.Handle);
+            }
+
+            foreach (MethodImplementationEntity impl in GetSeenEntities(TableIndex.MethodImpl))
+            {
+                builder.AddMethodImplementation(
+                    (TypeDefinitionHandle)impl.MethodBody.ContainingType.Handle,
+                    impl.MethodBody.Handle,
+                    impl.MethodDeclaration.Handle);
             }
 
             foreach (MemberReferenceEntity memberRef in _memberReferences)
