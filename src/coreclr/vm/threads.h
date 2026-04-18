@@ -129,7 +129,6 @@ class     PInvoke;
 class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
-class     DomainAssembly;
 class     DeadlockAwareLock;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
@@ -911,20 +910,6 @@ public:
     InterpThreadContext* GetInterpThreadContext();
     InterpThreadContext* GetOrCreateInterpThreadContext();
 #endif // FEATURE_INTERPRETER
-
-#ifndef TARGET_UNIX
-private:
-    _NT_TIB *m_pTEB;
-public:
-    _NT_TIB *GetTEB() {
-        LIMITED_METHOD_CONTRACT;
-        return m_pTEB;
-    }
-    PEXCEPTION_REGISTRATION_RECORD *GetExceptionListPtr() {
-        WRAPPER_NO_CONTRACT;
-        return &GetTEB()->ExceptionList;
-    }
-#endif // !TARGET_UNIX
 
     inline void SetTHAllocContextObj(TypeHandle th) {LIMITED_METHOD_CONTRACT; m_thAllocContextObj = th; }
 
@@ -3786,7 +3771,6 @@ struct cdac_data<Thread>
     static constexpr size_t ProfilerFilterContext = offsetof(Thread, m_pProfilerFilterContext);
 #endif // PROFILING_SUPPORTED
 #ifndef TARGET_UNIX
-    static constexpr size_t TEB = offsetof(Thread, m_pTEB);
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
 #endif
@@ -4060,7 +4044,6 @@ typedef StateHolder<ThreadStore::LockThreadStore,ThreadStore::UnlockThreadStore>
 
 
 // This class dispenses small thread ids for the thin lock mechanism.
-// Recently we started using this class to dispense domain neutral module IDs as well.
 class IdDispenser
 {
 private:
