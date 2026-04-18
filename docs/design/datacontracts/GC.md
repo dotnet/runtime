@@ -969,13 +969,3 @@ TargetNUInt IGC.GetHandleExtraInfo(TargetPointer handle)
     return target.ReadNUInt(extraInfoAddr);
 }
 ```
-
-GetGlobalAllocationContext
-```csharp
-void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit)
-{
-    TargetPointer globalAllocContextAddress = target.ReadGlobalPointer("GlobalAllocContext");
-    allocPtr = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Pointer offset */);
-    allocLimit = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Limit offset */);
-}
-```
