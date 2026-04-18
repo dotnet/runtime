@@ -248,7 +248,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 
 extern
 BOOL
-PAL_VirtualUnwindOutOfProc(PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, BOOL *isSignalFrame);
+PAL_VirtualUnwindOutOfProc(PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame);
 #endif
 
 HRESULT
