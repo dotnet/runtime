@@ -556,9 +556,11 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
 
     <!-- xunit v3 AOT source generator (xunit.v3.core.aot 4.0.0-pre.81) emits invalid C# for
-         abstract generic test base classes (CS0246), non-public nested types (CS0122), and
-         missing APIs (CS0117). Re-enable once xunit ships a fix for the AOT generators. -->
+         abstract generic test base classes (CS0246), non-public nested types (CS0122),
+         missing APIs (CS0117), and marks DataAttribute.GetData as obsolete-error (CS0619).
+         Re-enable once xunit ships a fix for the AOT generators. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\System.Reflection.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
