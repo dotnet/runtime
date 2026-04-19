@@ -555,12 +555,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
 
-    <!-- xunit v3 AOT source generator (xunit.v3.core.aot 4.0.0-pre.81) emits invalid C# for
-         abstract generic test base classes (CS0246), non-public nested types (CS0122),
-         missing APIs (CS0117), and marks DataAttribute.GetData as obsolete-error (CS0619).
-         Re-enable once xunit ships a fix for the AOT generators. -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\System.Reflection.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -629,22 +623,18 @@
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetOS)' != 'android'">
     <!--
-      Some NativeAOT library smoke tests remain disabled until xunit v3 AOT support matures.
-      The xunit.v3.core.aot (4.0.0-pre.81) source generators have issues with:
-        - Non-public nested types referenced from generated code (CS0122, CS1525)
-        - DataAttribute.GetData marked obsolete-error breaks custom attributes (CS0619)
-        - ILC crashes on some test assemblies (System.Linq.Tests)
-        - Pre-existing build failures (System.IO.Compression.Tests — new encoder/decoder types)
-      Re-enable once xunit ships a fix for the AOT generators.
+      Some NativeAOT library smoke tests remain disabled:
+        - System.Linq.Tests: ILC crashes (BadImageFormatException in PortablePdbSymbolReader)
+        - System.IO.Compression.Tests: pre-existing browser API surface mismatch (not xunit-related)
     -->
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
     <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" /> -->
     <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" /> -->
-    <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" /> -->
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.UnitTests\System.Runtime.InteropServices.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
-    <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\System.Reflection.Tests.csproj" /> -->
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\System.Reflection.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors\tests\System.Numerics.Vectors.Tests.csproj" />

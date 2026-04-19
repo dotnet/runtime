@@ -10,6 +10,15 @@ using Xunit.v3;
 
 namespace System.Linq.Expressions.Tests
 {
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+#if XUNIT_AOT
+    // In NativeAOT mode, DataAttribute.GetData is [Obsolete("...", error: true)].
+    // Provide a non-functional stub so test code compiles.
+    internal class InlinePerCompilationTypeAttribute : Attribute
+    {
+        public InlinePerCompilationTypeAttribute(params object[] data) { }
+    }
+#else
     internal class InlinePerCompilationTypeAttribute : DataAttribute
     {
         private static readonly object[] s_boxedBooleans = PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly ?
@@ -42,4 +51,5 @@ namespace System.Linq.Expressions.Tests
 
         public override bool SupportsDiscoveryEnumeration() => true;
     }
+#endif
 }

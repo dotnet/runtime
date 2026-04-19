@@ -15,6 +15,15 @@ namespace System.Linq.Expressions.Tests
     /// permuted through both false and true.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+#if XUNIT_AOT
+    // In NativeAOT mode, DataAttribute.GetData is [Obsolete("...", error: true)].
+    // Provide a non-functional stub so test code compiles. Tests using this attribute
+    // won't have data rows and will be skipped by the AOT runner.
+    internal class PerCompilationTypeAttribute : Attribute
+    {
+        public PerCompilationTypeAttribute(string memberName, params object[] parameters) { }
+    }
+#else
     internal class PerCompilationTypeAttribute : DataAttribute
     {
         private static readonly object s_boxedFalse = false;
@@ -72,4 +81,5 @@ namespace System.Linq.Expressions.Tests
 
         public override bool SupportsDiscoveryEnumeration() => true;
     }
+#endif
 }

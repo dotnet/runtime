@@ -17,6 +17,11 @@ namespace System.Reflection.Tests
 {
     public class ModuleTest
     {
+        public static IEnumerable<object[]> GetTypeTest_MultiDimArrayData()
+        {
+            yield return new object[] { "OutsideModuleTest[,,]", typeof(OutsideModuleTest[,,]) };
+        }
+
         [Theory]
         [InlineData(typeof(int))]
         [InlineData(typeof(List<>))]
@@ -66,7 +71,7 @@ namespace System.Reflection.Tests
         [InlineData("OutsideModuleTest`1", typeof(OutsideModuleTest<>))]
         [InlineData("OutsideModuleTest`1+InsideModuleTest`1", typeof(OutsideModuleTest<>.InsideModuleTest<>))]
         [InlineData("OutsideModuleTest[]", typeof(OutsideModuleTest[]))]
-        [InlineData("OutsideModuleTest[,,]", typeof(OutsideModuleTest[,,]))]
+        [MemberData(nameof(GetTypeTest_MultiDimArrayData))]
         [InlineData("OutsideModuleTest[][]", typeof(OutsideModuleTest[][]))]
         public void GetTypeTest(string className, Type expectedType)
         {

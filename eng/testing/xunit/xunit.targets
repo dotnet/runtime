@@ -54,6 +54,9 @@
     <!-- xunit v3 AOT source generator (xunit.v3.core.aot 4.0.0-pre.81) emits null
          literals in generated InlineData code that violate nullable annotations. -->
     <NoWarn>$(NoWarn);CS8625</NoWarn>
+    <!-- Let test code conditionally compile AOT-incompatible patterns
+         (e.g. custom DataAttribute subclasses that override GetData). -->
+    <DefineConstants>$(DefineConstants);XUNIT_AOT</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' != 'true' or '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
