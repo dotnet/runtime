@@ -744,7 +744,8 @@
 
   <ItemGroup>
     <ProjectReference Condition="'$(RunSmokeTestsOnly)' == 'true'"
-                      Include="@(SmokeTestProject)" />
+                      Include="@(SmokeTestProject)"
+                      Exclude="@(ProjectExclusions)" />
     <ProjectReference Condition="'$(RunHighAOTResourceRequiringTestsOnly)' == 'true'"
                       Include="@(HighAOTResourceRequiringProject)"
                       BuildInParallel="false" />
