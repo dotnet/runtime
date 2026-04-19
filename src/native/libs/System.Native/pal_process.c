@@ -427,10 +427,24 @@ static int EnsurePDeathSigThread(void)
     {
         pthread_t thread;
         pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+        int result = pthread_attr_init(&attr);
+        if (result != 0)
+        {
+            pthread_mutex_unlock(&s_pdeathsig_mutex);
+            errno = result;
+            return -1;
+        }
 
-        int result = pthread_create(&thread, &attr, PDeathSigThreadFunc, NULL);
+        result = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+        if (result != 0)
+        {
+            pthread_attr_destroy(&attr);
+            pthread_mutex_unlock(&s_pdeathsig_mutex);
+            errno = result;
+            return -1;
+        }
+
+        result = pthread_create(&thread, &attr, PDeathSigThreadFunc, NULL);
         pthread_attr_destroy(&attr);
 
         if (result != 0)
