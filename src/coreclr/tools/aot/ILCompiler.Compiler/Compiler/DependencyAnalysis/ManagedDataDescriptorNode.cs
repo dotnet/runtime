@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
+using System.IO;
+using System.Text.Json;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -47,8 +48,7 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            string json = BuildJsonDescriptor(factory);
-            byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
+            byte[] jsonBytes = BuildJsonDescriptor(factory);
 
             // Header layout: magic(8) + flags(4) + desc_size(4) + desc_ptr(ptr) + count(4) + pad(4) + data_ptr(ptr)
             int headerSize = 8 + 4 + 4 + factory.Target.PointerSize + 4 + 4 + factory.Target.PointerSize;
@@ -86,41 +86,50 @@ namespace ILCompiler.DependencyAnalysis
             return builder.ToObjectData();
         }
 
-        private static string BuildJsonDescriptor(NodeFactory factory)
+        /// <summary>
+        /// Build the JSON descriptor using the compact format expected by the cDAC reader's
+        /// ContractDescriptorParser. Types are objects with an optional "!" size sigil and
+        /// field-name properties mapped to their offsets.
+        /// </summary>
+        private static byte[] BuildJsonDescriptor(NodeFactory factory)
         {
-            var sb = new StringBuilder();
-            sb.Append("{\"version\":0,\"types\":{");
-
-            bool firstType = true;
-            foreach (TypeDesc type in factory.MetadataManager.GetTypesWithEETypes())
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream))
             {
-                if (type is not EcmaType ecmaType)
-                    continue;
+                writer.WriteStartObject();
+                writer.WriteNumber("version", 0);
 
-                if (!ecmaType.HasCustomAttribute(CdacTypeAttributeNamespace, CdacTypeAttributeName))
-                    continue;
+                writer.WriteStartObject("types");
+                foreach (TypeDesc type in factory.MetadataManager.GetTypesWithEETypes())
+                {
+                    if (type is not EcmaType ecmaType)
+                        continue;
 
-                if (!firstType)
-                    sb.Append(',');
-                firstType = false;
+                    if (!ecmaType.HasCustomAttribute(CdacTypeAttributeNamespace, CdacTypeAttributeName))
+                        continue;
 
-                EmitTypeJson(sb, ecmaType);
+                    WriteType(writer, ecmaType);
+                }
+                writer.WriteEndObject();
+
+                writer.WriteStartObject("globals");
+                writer.WriteEndObject();
+
+                writer.WriteEndObject();
             }
 
-            sb.Append("},\"globals\":{}}");
-            return sb.ToString();
+            return stream.ToArray();
         }
 
-        private static void EmitTypeJson(StringBuilder sb, EcmaType type)
+        private static void WriteType(Utf8JsonWriter writer, EcmaType type)
         {
-            // Use 0 (indeterminate) for reference types
-            int typeSize = type.IsValueType ? type.InstanceFieldSize.AsInt : 0;
+            writer.WriteStartObject(type.GetName());
 
-            sb.Append('"').Append(type.GetName()).Append("\":[");
-            sb.Append(typeSize);
-            sb.Append(",{");
+            if (type.IsValueType)
+            {
+                writer.WriteNumber("!", type.InstanceFieldSize.AsInt);
+            }
 
-            bool firstField = true;
             foreach (FieldDesc field in type.GetFields())
             {
                 if (field.IsStatic || field is not EcmaField ecmaField)
@@ -129,15 +138,10 @@ namespace ILCompiler.DependencyAnalysis
                 if (!ecmaField.HasCustomAttribute(CdacTypeAttributeNamespace, CdacFieldAttributeName))
                     continue;
 
-                if (!firstField)
-                    sb.Append(',');
-                firstField = false;
-
-                sb.Append('"').Append(field.GetName()).Append("\":");
-                sb.Append(field.Offset.AsInt);
+                writer.WriteNumber(field.GetName(), field.Offset.AsInt);
             }
 
-            sb.Append("}]");
+            writer.WriteEndObject();
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
