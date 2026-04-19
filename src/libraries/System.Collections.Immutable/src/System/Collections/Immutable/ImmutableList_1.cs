@@ -121,7 +121,12 @@ namespace System.Collections.Immutable
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
         /// </exception>
-        public int BinarySearch(int index, int count, T item, IComparer<T>? comparer) => _root.BinarySearch(index, count, item, comparer);
+        public int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
+        {
+            Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+            Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
+            return _root.BinarySearch(index, count, item, comparer);
+        }
 
         #region IImmutableList<T> Properties
 
@@ -470,9 +475,8 @@ namespace System.Collections.Immutable
         /// <returns>The sorted list.</returns>
         public ImmutableList<T> Sort(int index, int count, IComparer<T>? comparer)
         {
-            Requires.Range(index >= 0, nameof(index));
-            Requires.Range(count >= 0, nameof(count));
-            Requires.Range(index + count <= this.Count, nameof(count));
+            Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+            Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
 
             return this.Wrap(_root.Sort(index, count, comparer));
         }
@@ -553,9 +557,8 @@ namespace System.Collections.Immutable
         /// </returns>
         public ImmutableList<T> GetRange(int index, int count)
         {
-            Requires.Range(index >= 0, nameof(index));
-            Requires.Range(count >= 0, nameof(count));
-            Requires.Range(index + count <= this.Count, nameof(count));
+            Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+            Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
             return this.Wrap(Node.NodeTreeFromList(this, index, count));
         }
 

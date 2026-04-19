@@ -534,9 +534,8 @@ namespace System.Collections.Immutable
             /// <returns>The reversed list.</returns>
             internal Node Reverse(int index, int count)
             {
-                Requires.Range(index >= 0, nameof(index));
-                Requires.Range(count >= 0, nameof(count));
-                Requires.Range(index + count <= this.Count, nameof(index));
+                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
 
                 Node result = this;
                 int start = index;
@@ -608,9 +607,8 @@ namespace System.Collections.Immutable
             /// <returns>The sorted list.</returns>
             internal Node Sort(int index, int count, IComparer<T>? comparer)
             {
-                Requires.Range(index >= 0, nameof(index));
-                Requires.Range(count >= 0, nameof(count));
-                Requires.Argument(index + count <= this.Count);
+                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
 
                 // PERF: Eventually this might be reimplemented in a way that does not require allocating an array.
                 var array = new T[this.Count];
@@ -889,11 +887,9 @@ namespace System.Collections.Immutable
             internal void CopyTo(int index, T[] array, int arrayIndex, int count)
             {
                 Requires.NotNull(array, nameof(array));
-                Requires.Range(index >= 0, nameof(index));
-                Requires.Range(count >= 0, nameof(count));
-                Requires.Range(index + count <= this.Count, nameof(count));
-                Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
-                Requires.Range(arrayIndex + count <= array.Length, nameof(arrayIndex));
+                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
+                Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + count) <= (uint)array.Length, nameof(arrayIndex));
 
                 using (var enumerator = new Enumerator(this, startIndex: index, count: count))
                 {
@@ -1124,9 +1120,8 @@ namespace System.Collections.Immutable
             internal int FindIndex(int startIndex, int count, Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
-                Requires.Range(startIndex >= 0, nameof(startIndex));
-                Requires.Range(count >= 0, nameof(count));
-                Requires.Range(startIndex <= this.Count - count, nameof(count));
+                Requires.Range(startIndex >= 0 && startIndex <= this.Count, nameof(startIndex));
+                Requires.Range(count >= 0 && (uint)(startIndex + count) <= (uint)this.Count, nameof(count));
 
                 using (var enumerator = new Enumerator(this, startIndex: startIndex, count: count))
                 {

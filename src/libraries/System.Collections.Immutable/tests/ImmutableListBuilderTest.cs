@@ -484,6 +484,59 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentNullException>("builder", () => nullBuilder.ToImmutableList());
         }
 
+        [Fact]
+        public void SortRangeValidation()
+        {
+            ImmutableList<int>.Builder builder = ImmutableList.Create(1, 2, 3).ToBuilder();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Sort(-1, 0, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Sort(4, 0, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Sort(0, -1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Sort(0, 4, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Sort(2, 2, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Sort(1, int.MaxValue, null));
+            builder.Sort(3, 0, null);
+            Assert.Equal(new[] { 1, 2, 3 }, builder);
+        }
+
+        [Fact]
+        public void GetRangeValidation()
+        {
+            ImmutableList<int>.Builder builder = ImmutableList.Create(1, 2, 3).ToBuilder();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.GetRange(-1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.GetRange(4, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.GetRange(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.GetRange(0, 4));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.GetRange(2, 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.GetRange(1, int.MaxValue));
+            Assert.True(builder.GetRange(3, 0).IsEmpty);
+        }
+
+        [Fact]
+        public void ReverseRangeValidation()
+        {
+            ImmutableList<int>.Builder builder = ImmutableList.Create(1, 2, 3).ToBuilder();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Reverse(-1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Reverse(4, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Reverse(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Reverse(0, 4));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Reverse(2, 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Reverse(1, int.MaxValue));
+            builder.Reverse(3, 0);
+            Assert.Equal(new[] { 1, 2, 3 }, builder);
+        }
+
+        [Fact]
+        public void BinarySearchRangeValidation()
+        {
+            ImmutableList<int>.Builder builder = ImmutableList.Create(1, 2, 3, 4, 5).ToBuilder();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.BinarySearch(-1, 0, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.BinarySearch(6, 0, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.BinarySearch(0, -1, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.BinarySearch(0, 6, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.BinarySearch(3, 3, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.BinarySearch(1, int.MaxValue, 1, null));
+        }
+
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
             return ImmutableList<T>.Empty.AddRange(contents).ToBuilder();

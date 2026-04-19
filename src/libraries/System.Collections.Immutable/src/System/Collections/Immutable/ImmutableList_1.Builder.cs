@@ -319,9 +319,8 @@ namespace System.Collections.Immutable
             /// </returns>
             public ImmutableList<T> GetRange(int index, int count)
             {
-                Requires.Range(index >= 0, nameof(index));
-                Requires.Range(count >= 0, nameof(count));
-                Requires.Range(index + count <= this.Count, nameof(count));
+                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
                 return ImmutableList<T>.WrapNode(Node.NodeTreeFromList(this, index, count));
             }
 
@@ -851,9 +850,8 @@ namespace System.Collections.Immutable
             /// <param name="count">The number of elements in the range to reverse.</param>
             public void Reverse(int index, int count)
             {
-                Requires.Range(index >= 0, nameof(index));
-                Requires.Range(count >= 0, nameof(count));
-                Requires.Range(index + count <= this.Count, nameof(count));
+                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
 
                 this.Root = this.Root.Reverse(index, count);
             }
@@ -910,9 +908,8 @@ namespace System.Collections.Immutable
             /// </param>
             public void Sort(int index, int count, IComparer<T>? comparer)
             {
-                Requires.Range(index >= 0, nameof(index));
-                Requires.Range(count >= 0, nameof(count));
-                Requires.Range(index + count <= this.Count, nameof(count));
+                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
                 this.Root = this.Root.Sort(index, count, comparer);
             }
 
@@ -993,6 +990,8 @@ namespace System.Collections.Immutable
             /// </exception>
             public int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
             {
+                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
                 return this.Root.BinarySearch(index, count, item, comparer);
             }
 

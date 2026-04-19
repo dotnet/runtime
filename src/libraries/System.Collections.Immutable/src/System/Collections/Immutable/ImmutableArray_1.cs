@@ -826,8 +826,8 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
-            Requires.Range(index >= 0, nameof(index));
-            Requires.Range(count >= 0 && index + count <= self.Length, nameof(count));
+            Requires.Range(index >= 0 && index <= self.Length, nameof(index));
+            Requires.Range(count >= 0 && (uint)(index + count) <= (uint)self.Length, nameof(count));
 
             // 0 and 1 element arrays don't need to be sorted.
             if (count > 1)
