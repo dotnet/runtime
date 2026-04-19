@@ -37,11 +37,11 @@ namespace System
         }
 
         /// <summary>
-        /// Indicates whether the specified span contains <see cref="char.IsWhiteSpace(char)">any
+        /// Indicates whether the specified span contains any <see cref="char.IsWhiteSpace(char)">
         /// white-space characters</see>.
         /// </summary>
         /// <param name="span">The source span.</param>
-        /// <returns><see langword="true"/> if the span contains any whitespace characters, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if the span contains any white-space characters, <see langword="false"/> otherwise.</returns>
         public static bool ContainsAnyWhiteSpace(this ReadOnlySpan<char> span) =>
             string.SearchValuesStorage.WhiteSpaceChars.ContainsAny(span);
 
@@ -160,16 +160,16 @@ namespace System
         }
 
         /// <summary>
-        /// Reports the zero-based index of the first occurrence of <see cref="char.IsWhiteSpace(char)">any white-space
-        /// characters</see> in the current <paramref name="span"/>, or -1 if not founded.
+        /// Reports the zero-based index of the first occurrence of any <see cref="char.IsWhiteSpace(char)">
+        /// white-space character</see> in the current <paramref name="span"/>, or -1 if not found.
         /// </summary>
         /// <param name="span">The source span.</param>
         public static int IndexOfAnyWhiteSpace(this ReadOnlySpan<char> span) =>
             string.SearchValuesStorage.WhiteSpaceChars.IndexOfAny(span);
 
         /// <summary>
-        /// Reports the zero-based index of the first occurrence of <see cref="char.IsWhiteSpace(char)">any
-        /// non-white-space characters</see> in the current <paramref name="span"/>, or -1 if not founded.
+        /// Reports the zero-based index of the first occurrence of any <see cref="char.IsWhiteSpace(char)">
+        /// non-white-space character</see> in the current <paramref name="span"/>, or -1 if not found.
         /// </summary>
         /// <param name="span">The source span.</param>
         public static int IndexOfAnyExceptWhiteSpace(this ReadOnlySpan<char> span) =>
@@ -211,16 +211,16 @@ namespace System
         }
 
         /// <summary>
-        /// Reports the zero-based index of the last occurrence of <see cref="char.IsWhiteSpace(char)">any white-space
-        /// characters</see> in the current <paramref name="span"/>, or -1 if not founded.
+        /// Reports the zero-based index of the last occurrence of any <see cref="char.IsWhiteSpace(char)">
+        /// white-space character</see> in the current <paramref name="span"/>, or -1 if not found.
         /// </summary>
         /// <param name="span">The source span.</param>
         public static int LastIndexOfAnyWhiteSpace(this ReadOnlySpan<char> span) =>
             string.SearchValuesStorage.WhiteSpaceChars.LastIndexOfAny(span);
 
         /// <summary>
-        /// Reports the zero-based index of the last occurrence of <see cref="char.IsWhiteSpace(char)">any
-        /// non-white-space characters</see> in the current <paramref name="span"/>, or -1 if not founded.
+        /// Reports the zero-based index of the last occurrence of any <see cref="char.IsWhiteSpace(char)">
+        /// non-white-space character</see> in the current <paramref name="span"/>, or -1 if not found.
         /// </summary>
         /// <param name="span">The source span.</param>
         public static int LastIndexOfAnyExceptWhiteSpace(this ReadOnlySpan<char> span) =>
