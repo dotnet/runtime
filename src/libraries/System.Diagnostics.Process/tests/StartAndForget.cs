@@ -24,18 +24,17 @@ namespace System.Diagnostics.Tests
             Assert.True(pid > 0);
 
             using Process launched = Process.GetProcessById(pid);
-#pragma warning disable CA1416 // SIGKILL is supported on all platforms for SafeProcessHandle.Signal.
             try
             {
+#pragma warning disable CA1416 // SIGKILL is supported on all platforms for SafeProcessHandle.Signal.
                 Assert.True(launched.SafeHandle.Signal(PosixSignal.SIGKILL));
+#pragma warning restore CA1416
                 Assert.True(launched.WaitForExit(WaitInMS));
             }
             finally
             {
-                launched.SafeHandle.Signal(PosixSignal.SIGKILL);
                 launched.WaitForExit(WaitInMS);
             }
-#pragma warning restore CA1416
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
