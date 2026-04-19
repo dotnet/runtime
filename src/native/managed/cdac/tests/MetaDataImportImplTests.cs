@@ -612,45 +612,6 @@ public unsafe class MetaDataImportImplTests
     }
 
     [Fact]
-    public void NullReader_ImplementedMethods_ReturnENotImpl()
-    {
-        // When both reader and legacy are null, all methods should return E_NOTIMPL (or 0 for IsValidToken)
-        MetaDataImportImpl wrapper = new(reader: null);
-
-        char* nameBuf = stackalloc char[256];
-        uint nameLen;
-
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetTypeDefProps(0x02000001, nameBuf, 256, &nameLen, null, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetTypeRefProps(0x01000001, null, null, 0, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetMethodProps(0x06000001, null, null, 0, null, null, null, null, null, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetFieldProps(0x04000001, null, null, 0, null, null, null, null, null, null, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetInterfaceImplProps(0x09000001, null, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetNestedClassProps(0x02000002, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetRVA(0x06000001, null, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetSigFromToken(0x11000001, null, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetCustomAttributeByName(0x02000001, null, null, null));
-        Assert.Equal(0, wrapper.IsValidToken(0x02000001));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumFields(null, 0x02000001, null, 0, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumInterfaceImpls(null, 0x02000001, null, 0, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumGenericParams(null, 0x02000001, null, 0, null));
-    }
-
-    [Fact]
-    public void NullReader_DelegatedMethods_ReturnENotImpl()
-    {
-        // Non-enum delegated methods return E_NOTIMPL when no legacy is available
-        MetaDataImportImpl wrapper = new(reader: null);
-
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetScopeProps(null, 0, null, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetModuleFromScope(null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.ResolveTypeRef(0, null, null, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.FindMember(0, null, null, 0, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetMethodSpecProps(0, null, null, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetPEKind(null, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.GetVersionString(null, 0, null));
-    }
-
-    [Fact]
     public void ReaderOnly_MethodsWork()
     {
         // When only reader is available (no legacy), implemented methods should still work

@@ -101,7 +101,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 {
                 }
 
-                if (reader is null && legacyImport is null)
+                if (reader is null)
                     return CustomQueryInterfaceResult.NotHandled;
 
                 wrapper = new MetaDataImportImpl(reader, legacyImport);
