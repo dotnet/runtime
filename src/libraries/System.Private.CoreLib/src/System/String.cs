@@ -520,12 +520,7 @@ namespace System
         {
             if (value == null) return true;
 
-            for (int i = 0; i < value.Length; i++)
-            {
-                if (!char.IsWhiteSpace(value[i])) return false;
-            }
-
-            return true;
+            return ((ReadOnlySpan<char>)value).IndexOfAnyExceptWhiteSpace() < 0;
         }
 
         /// <summary>

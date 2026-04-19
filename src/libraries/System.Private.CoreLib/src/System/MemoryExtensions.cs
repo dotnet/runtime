@@ -5395,17 +5395,16 @@ namespace System
         /// <summary>Updates the starting and ending markers for a range to exclude whitespace.</summary>
         private static (int StartInclusive, int EndExclusive) TrimSplitEntry(ReadOnlySpan<char> source, int startInclusive, int endExclusive)
         {
-            while (startInclusive < endExclusive && char.IsWhiteSpace(source[startInclusive]))
+            ReadOnlySpan<char> slice = source.Slice(startInclusive, endExclusive - startInclusive);
+
+            int startOffset = slice.IndexOfAnyExceptWhiteSpace();
+            if (startOffset < 0)
             {
-                startInclusive++;
+                return (endExclusive, endExclusive);
             }
 
-            while (endExclusive > startInclusive && char.IsWhiteSpace(source[endExclusive - 1]))
-            {
-                endExclusive--;
-            }
-
-            return (startInclusive, endExclusive);
+            int endOffset = slice.LastIndexOfAnyExceptWhiteSpace();
+            return (startInclusive + startOffset, startInclusive + endOffset + 1);
         }
 
         /// <summary>Counts the number of times the specified <paramref name="value"/> occurs in the <paramref name="span"/>.</summary>

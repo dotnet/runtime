@@ -2035,12 +2035,15 @@ namespace System
             // Special-case no separators to mean any whitespace is a separator.
             if (separators.Length == 0)
             {
-                for (int i = 0; i < source.Length; i++)
+                int offset = 0;
+                ReadOnlySpan<char> remaining = source;
+                int i = remaining.IndexOfAnyWhiteSpace();
+                while ((uint)i < (uint)remaining.Length)
                 {
-                    if (char.IsWhiteSpace(source[i]))
-                    {
-                        sepListBuilder.Append(i);
-                    }
+                    sepListBuilder.Append(offset + i);
+                    remaining = remaining.Slice(i + 1);
+                    offset += i + 1;
+                    i = remaining.IndexOfAnyWhiteSpace();
                 }
             }
 
@@ -2639,24 +2642,14 @@ namespace System
             // Trim specified characters.
             if ((trimType & TrimType.Head) != 0)
             {
-                for (start = 0; start < Length; start++)
-                {
-                    if (!char.IsWhiteSpace(this[start]))
-                    {
-                        break;
-                    }
-                }
+                int idx = ((ReadOnlySpan<char>)this).IndexOfAnyExceptWhiteSpace();
+                start = idx < 0 ? Length : idx;
             }
 
             if ((trimType & TrimType.Tail) != 0)
             {
-                for (end = Length - 1; end >= start; end--)
-                {
-                    if (!char.IsWhiteSpace(this[end]))
-                    {
-                        break;
-                    }
-                }
+                int idx = ((ReadOnlySpan<char>)this).Slice(start).LastIndexOfAnyExceptWhiteSpace();
+                end = start + idx;
             }
 
             return CreateTrimmedString(start, end);
