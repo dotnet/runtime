@@ -1963,9 +1963,18 @@ namespace ILAssembler
                 {
                     offset = (uint)_manifestResources.Count;
                     byte[] resourceData = _resourceLocator(alias);
-                    // ECMA-335: Each resource is prefixed with a 4-byte length
-                    _manifestResources.WriteInt32(resourceData.Length);
-                    _manifestResources.WriteBytes(resourceData);
+                    if (resourceData is null)
+                    {
+                        ReportError(DiagnosticIds.FileNotFound,
+                            string.Format(DiagnosticMessageTemplates.FileNotFound, alias),
+                            context);
+                    }
+                    else
+                    {
+                        // ECMA-335: Each resource is prefixed with a 4-byte length
+                        _manifestResources.WriteInt32(resourceData.Length);
+                        _manifestResources.WriteBytes(resourceData);
+                    }
                 }
                 var res = _entityRegistry.CreateManifestResource(name, offset);
                 res.Attributes = flags;
@@ -3300,8 +3309,10 @@ namespace ILAssembler
                 case CILParser.RULE_instr_switch:
                     {
                         var labels = new List<(LabelHandle Label, int? Offset)>();
-                        foreach (var label in context.labels().children)
+                        if (context.labels()?.children is { } labelChildren)
                         {
+                            foreach (var label in labelChildren)
+                            {
                             if (label is CILParser.IdContext id)
                             {
                                 string labelName = VisitId(id).Value;
@@ -3323,11 +3334,21 @@ namespace ILAssembler
                                 LabelHandle labelHandle = _currentMethod!.Definition.MethodBody.DefineLabel();
                                 labels.Add((labelHandle, offset));
                             }
+                            }
                         }
-                        var switchEncoder = _currentMethod!.Definition.MethodBody.Switch(labels.Count);
-                        foreach (var label in labels)
+                        if (labels.Count > 0)
                         {
-                            switchEncoder.Branch(label.Label);
+                            var switchEncoder = _currentMethod!.Definition.MethodBody.Switch(labels.Count);
+                            foreach (var label in labels)
+                            {
+                                switchEncoder.Branch(label.Label);
+                            }
+                        }
+                        else
+                        {
+                            // Empty switch: emit opcode + 0 count manually
+                            _currentMethod!.Definition.MethodBody.OpCode(ILOpCode.Switch);
+                            _currentMethod.Definition.MethodBody.CodeBuilder.WriteInt32(0);
                         }
                         // Now that we've emitted the switch instruction, we can go back and mark the offset-based target labels
                         foreach (var label in labels)
@@ -3683,15 +3704,7 @@ namespace ILAssembler
                 else if (kind == ".assembly")
                 {
                     string assemblyName = VisitDottedName(decl.dottedName()).Value;
-                    var asm = _entityRegistry.FindAssemblyReference(assemblyName);
-                    if (asm is null)
-                    {
-                        ReportError(DiagnosticIds.AssemblyNotFound, string.Format(DiagnosticMessageTemplates.AssemblyNotFound, assemblyName), decl);
-                    }
-                    else
-                    {
-                        implementation = asm;
-                    }
+                    implementation = _entityRegistry.GetOrCreateAssemblyReference(assemblyName, _ => { });
                 }
             }
 
