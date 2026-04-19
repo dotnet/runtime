@@ -21,11 +21,6 @@ namespace Microsoft.Interop
     [Generator]
     public sealed class VtableIndexStubGenerator : IIncrementalGenerator
     {
-        public static class StepNames
-        {
-            public const string CalculateStubInformation = nameof(CalculateStubInformation);
-        }
-
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             // Get all methods with the [VirtualMethodIndex] attribute.
@@ -47,16 +42,7 @@ namespace Microsoft.Interop
             // for each method.
             IncrementalValuesProvider<SourceAvailableIncrementalMethodStubGenerationContext> generateStubInformation = methodsToGenerate
                 .Combine(context.CreateStubEnvironmentProvider())
-                .Select(static (data, ct) => new
-                {
-                    data.Left.Syntax,
-                    data.Left.Symbol,
-                    Environment = data.Right
-                })
-                .Select(
-                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, ct)
-                )
-                .WithTrackingName(StepNames.CalculateStubInformation);
+                .Select(static (data, ct) => CalculateStubInformation(data.Left.Syntax, data.Left.Symbol, data.Right, ct));
 
             // Filter the list of all stubs to only the stubs that requested managed-to-unmanaged stub generation.
             IncrementalValuesProvider<SourceAvailableIncrementalMethodStubGenerationContext> managedToNativeStubContexts =
