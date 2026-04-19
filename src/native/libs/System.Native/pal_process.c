@@ -45,6 +45,7 @@
 
 #if HAVE_PR_SET_PDEATHSIG
 #include <sys/prctl.h>
+#include <stdatomic.h>
 #endif
 
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
@@ -341,12 +342,11 @@ static int32_t ForkAndExecProcessInternal(
 // On Linux, PR_SET_PDEATHSIG sends the death signal when the *thread* that called
 // prctl exits, not when the process exits. To ensure the signal is sent only when
 // the process truly exits, we use a long-lived dedicated thread that:
-// 1. Calls prctl(PR_SET_PDEATHSIG, SIGKILL) once (this applies to the thread itself).
-// 2. Performs fork+exec for each request where killOnParentExit is set.
-// 3. Lives for the lifetime of the application.
+// 1. Performs fork+exec for each request where killOnParentExit is set.
+// 2. Lives for the lifetime of the application.
 //
-// Because this thread never exits (until process exit), the child processes will
-// receive SIGKILL when the process exits.
+// Because the forking thread does not exit until process exit, children forked from
+// it can use PR_SET_PDEATHSIG so the signal is delivered when the process exits.
 
 typedef struct
 {
@@ -376,7 +376,7 @@ static pthread_mutex_t s_pdeathsig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t s_pdeathsig_request_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t s_pdeathsig_done_cond = PTHREAD_COND_INITIALIZER;
 static PDeathSigForkRequest* s_pdeathsig_request = NULL;
-static volatile int s_pdeathsig_thread_started = 0;
+static _Atomic int s_pdeathsig_thread_started = 0;
 
 static void* PDeathSigThreadFunc(void* arg)
 {
@@ -414,14 +414,14 @@ static void* PDeathSigThreadFunc(void* arg)
 
 static int EnsurePDeathSigThread(void)
 {
-    // Fast path: check if the thread is already started using an atomic load
-    if (__atomic_load_n(&s_pdeathsig_thread_started, __ATOMIC_ACQUIRE))
+    // Fast path: check if the thread is already started
+    if (atomic_load_explicit(&s_pdeathsig_thread_started, memory_order_acquire))
     {
         return 0;
     }
 
     pthread_mutex_lock(&s_pdeathsig_mutex);
-    if (!s_pdeathsig_thread_started)
+    if (!atomic_load_explicit(&s_pdeathsig_thread_started, memory_order_acquire))
     {
         pthread_t thread;
         pthread_attr_t attr;
@@ -438,7 +438,7 @@ static int EnsurePDeathSigThread(void)
             return -1;
         }
 
-        __atomic_store_n(&s_pdeathsig_thread_started, 1, __ATOMIC_RELEASE);
+        atomic_store_explicit(&s_pdeathsig_thread_started, 1, memory_order_release);
     }
     pthread_mutex_unlock(&s_pdeathsig_mutex);
     return 0;
@@ -750,6 +750,12 @@ static int32_t ForkAndExecProcessInternal(
     sigfillset(&signal_set);
     pthread_sigmask(SIG_SETMASK, &signal_set, &old_signal_set);
 
+#if HAVE_PR_SET_PDEATHSIG
+    // Capture the parent PID before fork so the child can verify it hasn't been
+    // reparented (e.g., to a subreaper) between fork and prctl.
+    pid_t expectedParentPid = applyPDeathSig ? getpid() : 0;
+#endif
+
 // vfork on OS X is deprecated
 // On Android, signal handlers between parent and child processes are shared with vfork, so when we reset
 // the signal handlers during child startup, we end up incorrectly clearing also the ones for the parent.
@@ -884,10 +890,10 @@ static int32_t ForkAndExecProcessInternal(
                 ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
             }
 
-            // Best-effort check: if the parent already died between fork and prctl,
-            // getppid() returns 1 (init) or the subreaper's PID. Checking for PID 1
-            // covers the common case where no subreaper is configured.
-            if (getppid() == 1)
+            // If the parent died between fork and prctl, this child may already have
+            // been reparented (for example, to a subreaper in a container). Verify
+            // that our parent PID is still the original parent we inherited at fork.
+            if (getppid() != expectedParentPid)
             {
                 ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], ESRCH);
             }
