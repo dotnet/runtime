@@ -87,12 +87,12 @@
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="set &quot;CDAC_DUMP_ROOT=%25HELIX_WORKITEM_PAYLOAD%25\dumps\%(_SourcePlatform.Identity)&quot;" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="%25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec --runtimeconfig %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.dll --report-xunit-xml --report-xunit-xml-filename testResults.xml --auto-reporters off" />
+          Include="%25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec --runtimeconfig %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.dll --report-xunit-xml --report-xunit-xml-filename testResults.xml --results-directory %25HELIX_WORKITEM_UPLOAD_ROOT%25 --auto-reporters off" />
       <!-- Unix: set CDAC_DUMP_ROOT via export, run xunit -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="export CDAC_DUMP_ROOT=$HELIX_WORKITEM_PAYLOAD/dumps/%(_SourcePlatform.Identity)" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="$HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.dll --report-xunit-xml --report-xunit-xml-filename testResults.xml --auto-reporters off" />
+          Include="$HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.dll --report-xunit-xml --report-xunit-xml-filename testResults.xml --results-directory $HELIX_WORKITEM_UPLOAD_ROOT --auto-reporters off" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(_HelixCommandFile)" Lines="@(_HelixCommandLines)" Overwrite="true" />
