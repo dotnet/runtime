@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -23,15 +24,10 @@ namespace System.Diagnostics.Tests
             Assert.True(pid > 0);
 
             using Process launched = Process.GetProcessById(pid);
-            try
-            {
-                Assert.False(launched.HasExited);
-            }
-            finally
-            {
-                launched.Kill();
-                launched.WaitForExit();
-            }
+#pragma warning disable CA1416 // SIGKILL is supported on all platforms for SafeProcessHandle.Signal.
+            Assert.True(launched.SafeHandle.Signal(PosixSignal.SIGKILL));
+#pragma warning restore CA1416
+            Assert.True(launched.WaitForExit(WaitInMS));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
