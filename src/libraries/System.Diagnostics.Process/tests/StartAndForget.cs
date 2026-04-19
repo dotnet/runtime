@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -17,23 +18,22 @@ namespace System.Diagnostics.Tests
         public void StartAndForget_StartsProcessAndReturnsValidPid(bool useProcessStartInfo)
         {
             using Process template = CreateSleepProcess((int)TimeSpan.FromHours(1).TotalMilliseconds);
+            List<string>? arguments = MapToArgumentList(template.StartInfo);
             int pid = useProcessStartInfo
                 ? Process.StartAndForget(template.StartInfo)
-                : Process.StartAndForget(template.StartInfo.FileName, template.StartInfo.ArgumentList);
+                : Process.StartAndForget(template.StartInfo.FileName, arguments);
 
             Assert.True(pid > 0);
 
             using Process launched = Process.GetProcessById(pid);
             try
             {
-#pragma warning disable CA1416 // SIGKILL is supported on all platforms for SafeProcessHandle.Signal.
-                Assert.True(launched.SafeHandle.Signal(PosixSignal.SIGKILL));
-#pragma warning restore CA1416
-                Assert.True(launched.WaitForExit(WaitInMS));
+                Assert.False(launched.HasExited);
             }
             finally
             {
-                launched.WaitForExit(WaitInMS);
+                launched.Kill();
+                launched.WaitForExit();
             }
         }
 
@@ -112,6 +112,48 @@ namespace System.Diagnostics.Tests
             };
 
             Assert.Throws<InvalidOperationException>(() => Process.StartAndForget(startInfo));
+        }
+
+        private static List<string>? MapToArgumentList(ProcessStartInfo startInfo)
+        {
+            string arguments = startInfo.Arguments;
+            if (string.IsNullOrEmpty(arguments))
+            {
+                return null;
+            }
+
+            List<string> list = new();
+            StringBuilder builder = new();
+            bool isQuoted = false;
+
+            foreach (char c in arguments)
+            {
+                switch (c)
+                {
+                    case '"' when !isQuoted:
+                        isQuoted = true;
+                        break;
+                    case ' ' when !isQuoted:
+                    case '"' when isQuoted:
+                        if (builder.Length > 0)
+                        {
+                            list.Add(builder.ToString());
+                            builder.Clear();
+                        }
+                        isQuoted = false;
+                        break;
+                    default:
+                        builder.Append(c);
+                        break;
+                }
+            }
+
+            if (builder.Length > 0)
+            {
+                list.Add(builder.ToString());
+            }
+
+            return list;
         }
     }
 }
