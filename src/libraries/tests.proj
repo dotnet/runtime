@@ -559,11 +559,8 @@
          abstract generic test base classes (CS0246), non-public nested types (CS0122),
          missing APIs (CS0117), and marks DataAttribute.GetData as obsolete-error (CS0619).
          Re-enable once xunit ships a fix for the AOT generators. -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\System.Reflection.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -632,26 +629,25 @@
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetOS)' != 'android'">
     <!--
-      All NativeAOT library smoke tests are disabled until xunit v3 AOT support matures.
-      The xunit.v3.core.aot (4.0.0-pre.81) source generators have multiple issues:
-        - Emit invalid C# for generic test base classes (CS0246, CS0122, CS0117, CS1525)
-        - Reject null theory data arguments for non-nullable parameters
-        - ConditionalFact/ConditionalTheory conditions not evaluated (platform tests run everywhere)
+      Some NativeAOT library smoke tests remain disabled until xunit v3 AOT support matures.
+      The xunit.v3.core.aot (4.0.0-pre.81) source generators have issues with:
+        - Non-public nested types referenced from generated code (CS0122, CS1525)
         - DataAttribute.GetData marked obsolete-error breaks custom attributes (CS0619)
-        - Some test assemblies crash at runtime (SIGABRT/SIGSEGV)
+        - ILC crashes on some test assemblies (System.Linq.Tests)
+        - Pre-existing build failures (System.IO.Compression.Tests — new encoder/decoder types)
       Re-enable once xunit ships a fix for the AOT generators.
     -->
-    <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" /> -->
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
     <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" /> -->
     <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" /> -->
     <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" /> -->
-    <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.UnitTests\System.Runtime.InteropServices.Tests.csproj" /> -->
-    <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" /> -->
-    <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" /> -->
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.UnitTests\System.Runtime.InteropServices.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
     <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\System.Reflection.Tests.csproj" /> -->
-    <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" /> -->
-    <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" /> -->
-    <!-- <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors\tests\System.Numerics.Vectors.Tests.csproj" /> -->
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors\tests\System.Numerics.Vectors.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'">
