@@ -961,6 +961,7 @@
     </ItemGroup>
 
     <XcodeBuildApp
+        Condition="'@(XcodeProjects)' != ''"
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         XcodeProjectPath="%(XcodeProjects.Identity)"
