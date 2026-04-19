@@ -408,6 +408,15 @@ static void* PDeathSigThreadFunc(void* arg)
         s_pdeathsig_request = NULL;
         pthread_cond_signal(&s_pdeathsig_done_cond);
     }
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunreachable-code-return"
+#endif
+    return NULL; // Unreachable, but required to satisfy -Werror=return-type on GCC
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 }
 
 static int EnsurePDeathSigThread(void)
