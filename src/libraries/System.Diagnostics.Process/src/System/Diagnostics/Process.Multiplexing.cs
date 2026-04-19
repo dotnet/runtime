@@ -177,14 +177,17 @@ namespace System.Diagnostics
                 return;
             }
 
-            // If there isn't enough room at the end but there's free space at the start
-            // (from already-consumed data), compact first to avoid unnecessary buffer growth.
+            // If there isn't enough room at the end but compacting the consumed space at the start
+            // would free enough room, compact to avoid unnecessary buffer growth.
             if (charEndIndex + charCount > charBuffer.Length && charStartIndex > 0)
             {
                 int remaining = charEndIndex - charStartIndex;
-                Array.Copy(charBuffer, charStartIndex, charBuffer, 0, remaining);
-                charStartIndex = 0;
-                charEndIndex = remaining;
+                if (remaining + charCount <= charBuffer.Length)
+                {
+                    Array.Copy(charBuffer, charStartIndex, charBuffer, 0, remaining);
+                    charStartIndex = 0;
+                    charEndIndex = remaining;
+                }
             }
 
             while (charEndIndex + charCount > charBuffer.Length)
