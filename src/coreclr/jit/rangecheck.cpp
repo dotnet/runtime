@@ -848,7 +848,7 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
     Range phiRange = Range(Limit(Limit::keUndef));
     auto  visitor  = [comp, &phiRange, &budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
         // call GetRangeFromAssertions for each reaching VN using reachingAssertions
-        Range edgeRange = GetRangeFromAssertions(comp, reachingVN, reachingAssertions, --budget);
+        Range edgeRange = GetRangeFromAssertions(comp, reachingVN, reachingAssertions, min(3, --budget));
 
         // If phiRange is not yet set, set it to the first edgeRange
         // else merge it with the new edgeRange. Example: [10..100] U [50..150] = [10..150]
@@ -1102,9 +1102,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             int        addCns;
             const bool normalLclVNMatchesOp2 =
                 ((normalLclVN == boundVN) && (boundCns == 0)) ||
-                ((boundCns != 0) &&
-                 comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) && (addOp == boundVN) &&
-                 (addCns == boundCns));
+                ((boundCns != 0) && comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) &&
+                 (addOp == boundVN) && (addCns == boundCns));
 
             if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()))
             {
