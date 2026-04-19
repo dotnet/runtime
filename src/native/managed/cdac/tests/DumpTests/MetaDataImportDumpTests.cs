@@ -29,8 +29,7 @@ public class MetaDataImportDumpTests : DumpTestBase
         TargetPointer rootAssembly = loader.GetRootAssembly();
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
 
-        MetadataReader? reader = ecmaMetadata.GetMetadata(moduleHandle);
-        Assert.NotNull(reader);
+        MetadataReader reader = Assert.NotNull(ecmaMetadata.GetMetadata(moduleHandle));
 
         return (reader, new MetaDataImportImpl(reader));
     }
