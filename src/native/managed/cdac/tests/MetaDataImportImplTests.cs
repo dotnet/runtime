@@ -445,8 +445,6 @@ public unsafe class MetaDataImportImplTests
         Assert.Equal(HResults.E_NOTIMPL, wrapper.ResolveTypeRef(0, null, null, null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumTypeDefs(null, null, 0, null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumTypeRefs(null, null, 0, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.CountEnum(0, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.ResetEnum(0, 0));
     }
 
     [Fact]
@@ -1030,5 +1028,72 @@ public unsafe class MetaDataImportImplTests
         {
             Marshal.Release(pUnk);
         }
+    }
+
+    [Fact]
+    public void CountEnum_ReturnsCountForCdacEnum()
+    {
+        MetaDataImportImpl wrapper = CreateWrapper();
+
+        nint hEnum = 0;
+        uint* tokens = stackalloc uint[10];
+        uint count;
+
+        int hr = wrapper.EnumFields(&hEnum, 0x02000002, tokens, 10, &count);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.True(count > 0);
+        uint expectedCount = count;
+
+        uint enumCount;
+        hr = wrapper.CountEnum(hEnum, &enumCount);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(expectedCount, enumCount);
+
+        wrapper.CloseEnum(hEnum);
+    }
+
+    [Fact]
+    public void CountEnum_NullHandle_ReturnsZero()
+    {
+        MetaDataImportImpl wrapper = CreateWrapper();
+
+        uint count = 42;
+        int hr = wrapper.CountEnum(0, &count);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(0u, count);
+    }
+
+    [Fact]
+    public void ResetEnum_ResetsPositionForCdacEnum()
+    {
+        MetaDataImportImpl wrapper = CreateWrapper();
+
+        nint hEnum = 0;
+        uint token;
+        uint count;
+
+        int hr = wrapper.EnumFields(&hEnum, 0x02000002, &token, 1, &count);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(1u, count);
+        uint firstToken = token;
+
+        hr = wrapper.ResetEnum(hEnum, 0);
+        Assert.Equal(HResults.S_OK, hr);
+
+        hr = wrapper.EnumFields(&hEnum, 0x02000002, &token, 1, &count);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(1u, count);
+        Assert.Equal(firstToken, token);
+
+        wrapper.CloseEnum(hEnum);
+    }
+
+    [Fact]
+    public void ResetEnum_NullHandle_ReturnsOk()
+    {
+        MetaDataImportImpl wrapper = CreateWrapper();
+
+        int hr = wrapper.ResetEnum(0, 0);
+        Assert.Equal(HResults.S_OK, hr);
     }
 }

@@ -24,6 +24,11 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     private readonly IMetaDataImport2? _legacyImport2;
     private readonly IMetaDataAssemblyImport? _legacyAssemblyImport;
     private Dictionary<int, uint>? _interfaceImplToTypeDef;
+    private Dictionary<int, uint>? _paramToMethod;
+
+    // Tracks GCHandle values allocated by AllocEnum so that CountEnum, ResetEnum,
+    // and CloseEnum can distinguish cDAC-created enum handles from legacy HENUMInternal*.
+    private readonly HashSet<nint> _cdacEnumHandles = new();
 
     // The ComWrappers instance used to create this object's CCW. Set after CCW creation
     // so that ICustomQueryInterface.GetInterface can obtain the CCW pointer to redirect
@@ -122,6 +127,23 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         return lookup;
     }
 
+    private Dictionary<int, uint> BuildParamToMethodLookup()
+    {
+        Dictionary<int, uint> lookup = new();
+        foreach (TypeDefinitionHandle tdh in _reader.TypeDefinitions)
+        {
+            foreach (MethodDefinitionHandle mdh in _reader.GetTypeDefinition(tdh).GetMethods())
+            {
+                uint methodToken = (uint)MetadataTokens.GetToken(mdh);
+                foreach (ParameterHandle ph in _reader.GetMethodDefinition(mdh).GetParameters())
+                {
+                    lookup[MetadataTokens.GetRowNumber(ph)] = methodToken;
+                }
+            }
+        }
+        return lookup;
+    }
+
     private sealed class MetadataEnum
     {
         public List<uint> Tokens { get; }
@@ -133,11 +155,13 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         }
     }
 
-    private static nint AllocEnum(List<uint> tokens)
+    private nint AllocEnum(List<uint> tokens)
     {
         MetadataEnum e = new(tokens);
         GCHandle handle = GCHandle.Alloc(e);
-        return GCHandle.ToIntPtr(handle);
+        nint ptr = GCHandle.ToIntPtr(handle);
+        _cdacEnumHandles.Add(ptr);
+        return ptr;
     }
 
     private static MetadataEnum? GetEnum(nint hEnum)
@@ -148,7 +172,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         return (MetadataEnum?)handle.Target;
     }
 
-    private static int FillEnum(nint* phEnum, List<uint> tokens, uint* rTokens, uint cMax, uint* pcTokens)
+    private int FillEnum(nint* phEnum, List<uint> tokens, uint* rTokens, uint cMax, uint* pcTokens)
     {
         if (phEnum is null)
             return HResults.E_INVALIDARG;
@@ -174,18 +198,58 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
 
     public void CloseEnum(nint hEnum)
     {
-        if (hEnum != 0)
+        if (hEnum == 0)
+            return;
+
+        if (_cdacEnumHandles.Remove(hEnum))
         {
             GCHandle handle = GCHandle.FromIntPtr(hEnum);
             handle.Free();
         }
+        else
+        {
+            _legacyImport?.CloseEnum(hEnum);
+        }
     }
 
     public int CountEnum(nint hEnum, uint* pulCount)
-        => _legacyImport is not null ? _legacyImport.CountEnum(hEnum, pulCount) : HResults.E_NOTIMPL;
+    {
+        if (hEnum == 0)
+        {
+            if (pulCount is not null)
+                *pulCount = 0;
+            return HResults.S_OK;
+        }
+
+        if (_cdacEnumHandles.Contains(hEnum))
+        {
+            MetadataEnum? e = GetEnum(hEnum);
+            if (e is null)
+                return HResults.E_FAIL;
+            if (pulCount is not null)
+                *pulCount = (uint)e.Tokens.Count;
+            return HResults.S_OK;
+        }
+
+        return _legacyImport is not null ? _legacyImport.CountEnum(hEnum, pulCount) : HResults.E_NOTIMPL;
+    }
 
     public int ResetEnum(nint hEnum, uint ulPos)
-        => _legacyImport is not null ? _legacyImport.ResetEnum(hEnum, ulPos) : HResults.E_NOTIMPL;
+    {
+        if (hEnum == 0)
+            return HResults.S_OK;
+
+        if (_cdacEnumHandles.Contains(hEnum))
+        {
+            MetadataEnum? e = GetEnum(hEnum);
+            if (e is null)
+                return HResults.E_FAIL;
+            e.Position = (int)Math.Min(ulPos, (uint)e.Tokens.Count);
+            return HResults.S_OK;
+        }
+
+        return _legacyImport is not null ? _legacyImport.ResetEnum(hEnum, ulPos) : HResults.E_NOTIMPL;
+    }
 
     public int EnumTypeDefs(nint* phEnum, uint* rTypeDefs, uint cMax, uint* pcTypeDefs)
         => _legacyImport is not null ? _legacyImport.EnumTypeDefs(phEnum, rTypeDefs, cMax, pcTypeDefs) : HResults.E_NOTIMPL;
@@ -1069,7 +1133,8 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         try
         {
             TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(td & 0x00FFFFFF));
-            TypeLayout layout = _reader.GetTypeDefinition(typeHandle).GetLayout();
+            TypeDefinition typeDef = _reader.GetTypeDefinition(typeHandle);
+            TypeLayout layout = typeDef.GetLayout();
 
             if (layout.IsDefault)
             {
@@ -1083,8 +1148,24 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 if (pulClassSize is not null)
                     *pulClassSize = (uint)layout.Size;
 
-                if (pcFieldOffset is not null)
-                    *pcFieldOffset = 0;
+                if (rFieldOffset is not null || pcFieldOffset is not null)
+                {
+                    uint* fieldOffsets = (uint*)rFieldOffset;
+                    uint count = 0;
+                    foreach (FieldDefinitionHandle fh in typeDef.GetFields())
+                    {
+                        if (fieldOffsets is not null && count < cMax)
+                        {
+                            // Each entry is {ridOfField (uint), ulOffset (uint)}
+                            fieldOffsets[count * 2] = (uint)MetadataTokens.GetToken(fh);
+                            int offset = _reader.GetFieldDefinition(fh).GetOffset();
+                            fieldOffsets[count * 2 + 1] = offset >= 0 ? (uint)offset : 0xFFFFFFFF;
+                        }
+                        count++;
+                    }
+                    if (pcFieldOffset is not null)
+                        *pcFieldOffset = count;
+                }
 
                 hr = HResults.S_OK;
             }
@@ -1097,8 +1178,8 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
 #if DEBUG
         if (_legacyImport is not null)
         {
-            uint packLocal = 0, sizeLocal = 0;
-            int hrLegacy = _legacyImport.GetClassLayout(td, &packLocal, null, 0, null, &sizeLocal);
+            uint packLocal = 0, sizeLocal = 0, fieldCountLocal = 0;
+            int hrLegacy = _legacyImport.GetClassLayout(td, &packLocal, null, 0, &fieldCountLocal, &sizeLocal);
             Debug.ValidateHResult(hr, hrLegacy);
             if (hr >= 0 && hrLegacy >= 0)
             {
@@ -1106,6 +1187,8 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                     Debug.Assert(*pdwPackSize == packLocal, $"PackSize mismatch: cDAC={*pdwPackSize}, DAC={packLocal}");
                 if (pulClassSize is not null)
                     Debug.Assert(*pulClassSize == sizeLocal, $"ClassSize mismatch: cDAC={*pulClassSize}, DAC={sizeLocal}");
+                if (pcFieldOffset is not null)
+                    Debug.Assert(*pcFieldOffset == fieldCountLocal, $"FieldOffset count mismatch: cDAC={*pcFieldOffset}, DAC={fieldCountLocal}");
             }
         }
 #endif
@@ -1346,24 +1429,8 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
 
             if (pmd is not null)
             {
-                *pmd = 0;
-                foreach (TypeDefinitionHandle tdh in _reader.TypeDefinitions)
-                {
-                    TypeDefinition td = _reader.GetTypeDefinition(tdh);
-                    foreach (MethodDefinitionHandle mdh in td.GetMethods())
-                    {
-                        MethodDefinition method = _reader.GetMethodDefinition(mdh);
-                        foreach (ParameterHandle ph in method.GetParameters())
-                        {
-                            if (ph == paramHandle)
-                            {
-                                *pmd = (uint)MetadataTokens.GetToken(mdh);
-                                goto FoundMethod;
-                            }
-                        }
-                    }
-                }
-                FoundMethod:;
+                _paramToMethod ??= BuildParamToMethodLookup();
+                *pmd = _paramToMethod.TryGetValue(MetadataTokens.GetRowNumber(paramHandle), out uint methodToken) ? methodToken : 0;
             }
 
             if (pulSequence is not null)
