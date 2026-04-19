@@ -81,8 +81,8 @@ namespace System.Collections.Immutable
             /// <param name="frozen">Whether this node is prefrozen.</param>
             private Node(T key, Node left, Node right, bool frozen = false)
             {
-                Requires.NotNull(left, nameof(left));
-                Requires.NotNull(right, nameof(right));
+                Debug.Assert(left is not null);
+                Debug.Assert(right is not null);
                 Debug.Assert(!frozen || (left._frozen && right._frozen));
 
                 _key = key;
@@ -242,9 +242,9 @@ namespace System.Collections.Immutable
             /// <returns>The root of the created node tree.</returns>
             internal static Node NodeTreeFromList(IReadOnlyList<T> items, int start, int length)
             {
-                Requires.NotNull(items, nameof(items));
-                Requires.Range(start >= 0, nameof(start));
-                Requires.Range(length >= 0, nameof(length));
+                Debug.Assert(items is not null);
+                Debug.Assert(start >= 0);
+                Debug.Assert(length >= 0);
 
                 if (length == 0)
                 {
@@ -330,7 +330,7 @@ namespace System.Collections.Immutable
             /// <returns>The new tree.</returns>
             internal Node AddRange(IEnumerable<T> keys)
             {
-                Requires.NotNull(keys, nameof(keys));
+                Debug.Assert(keys is not null);
 
                 if (this.IsEmpty)
                 {
@@ -367,8 +367,8 @@ namespace System.Collections.Immutable
             /// <returns>The new tree.</returns>
             internal Node InsertRange(int index, IEnumerable<T> keys)
             {
-                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-                Requires.NotNull(keys, nameof(keys));
+                Debug.Assert(index >= 0 && index <= this.Count);
+                Debug.Assert(keys is not null);
 
                 if (this.IsEmpty)
                 {
@@ -459,7 +459,7 @@ namespace System.Collections.Immutable
             /// </returns>
             internal Node RemoveAll(Predicate<T> match)
             {
-                Requires.NotNull(match, nameof(match));
+                Debug.Assert(match is not null);
 
                 ImmutableList<T>.Node result = this;
                 var enumerator = new Enumerator(result);
@@ -1442,8 +1442,8 @@ namespace System.Collections.Immutable
             /// <returns>The mutated (or created) node.</returns>
             private Node MutateBoth(Node left, Node right)
             {
-                Requires.NotNull(left, nameof(left));
-                Requires.NotNull(right, nameof(right));
+                Debug.Assert(left is not null);
+                Debug.Assert(right is not null);
                 Debug.Assert(!this.IsEmpty);
 
                 if (_frozen)
@@ -1468,7 +1468,7 @@ namespace System.Collections.Immutable
             /// <returns>The mutated (or created) node.</returns>
             private Node MutateLeft(Node left)
             {
-                Requires.NotNull(left, nameof(left));
+                Debug.Assert(left is not null);
                 Debug.Assert(!this.IsEmpty);
 
                 if (_frozen)
@@ -1492,7 +1492,7 @@ namespace System.Collections.Immutable
             /// <returns>The mutated (or created) node.</returns>
             private Node MutateRight(Node right)
             {
-                Requires.NotNull(right, nameof(right));
+                Debug.Assert(right is not null);
                 Debug.Assert(!this.IsEmpty);
 
                 if (_frozen)
