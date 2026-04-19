@@ -554,6 +554,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
+
+    <!-- xunit v3 AOT source generator (xunit.v3.core.aot 4.0.0-pre.81) emits invalid C# for
+         abstract generic test base classes (CS0246), non-public nested types (CS0122), and
+         missing APIs (CS0117). Re-enable once xunit ships a fix for the AOT generators. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>

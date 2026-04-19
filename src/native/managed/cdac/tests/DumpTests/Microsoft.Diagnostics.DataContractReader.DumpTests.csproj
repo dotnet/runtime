@@ -53,7 +53,7 @@
 
     The layout is:
       $(HelixPayloadDir)/
-        tests/                    — test DLLs + xunit.console.dll + deps
+        tests/                    — test DLLs + deps (self-hosted xunit v3 runner)
         debuggees/{name}/         — built debuggee binaries
         debuggee-metadata.props   — auto-generated _Debuggee items with all metadata
 
@@ -73,11 +73,7 @@
     </ItemGroup>
     <Copy SourceFiles="@(_TestOutput)" DestinationFolder="$(_HelixTestsDir)%(RecursiveDir)" />
 
-    <!-- Copy xunit console runner files to tests directory -->
-    <ItemGroup>
-      <_XunitConsoleFiles Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsoleNetCoreAppPath)'))\*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_XunitConsoleFiles)" DestinationFolder="$(_HelixTestsDir)" SkipUnchangedFiles="true" />
+    <!-- xunit v3: test DLL is self-hosted (OutputType=Exe), no separate console runner needed -->
 
     <!-- Copy each debuggee's build output (skipped for x-plat test-only mode) -->
     <MSBuild Projects="$(MSBuildProjectFile)"
