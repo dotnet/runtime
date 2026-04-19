@@ -30,10 +30,11 @@ internal readonly partial struct ReJIT_1 : IReJIT
         kStateMask = 0x0000000F
     }
 
-    public ReJIT_1(Target target, Data.ProfControlBlock profControlBlock)
+    public ReJIT_1(Target target)
     {
         _target = target;
-        _profControlBlock = profControlBlock;
+        TargetPointer profControlBlockAddress = target.ReadGlobalPointer(Constants.Globals.ProfilerControlBlock);
+        _profControlBlock = target.ProcessedData.GetOrAdd<Data.ProfControlBlock>(profControlBlockAddress);
     }
 
     bool IReJIT.IsEnabled()

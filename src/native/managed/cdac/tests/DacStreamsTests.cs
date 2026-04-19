@@ -1,11 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -35,16 +34,18 @@ public class DacStreamsTests
 
     private static unsafe void DacStreamsContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
-        TargetTestHelpers targetTestHelpers = new(arch);
-        MockMemorySpace.Builder builder = new(targetTestHelpers);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.Builder builder = targetBuilder.MemoryBuilder;
         if (configure != null)
         {
             builder = configure(builder);
         }
 
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, DacStreamsTypes, DacStreamsGlobals);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.DacStreams == ((IContractFactory<IDacStreams>)new DacStreamsFactory()).CreateContract(target, 1)));
+        var target = targetBuilder
+            .AddTypes(DacStreamsTypes)
+            .AddGlobals(DacStreamsGlobals)
+            .AddContract<IDacStreams>(version: "c1")
+            .Build();
 
         testCase(target);
     }

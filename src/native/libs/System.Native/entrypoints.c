@@ -10,6 +10,7 @@
 #include "pal_dynamicload.h"
 #include "pal_environment.h"
 #include "pal_errno.h"
+#include "pal_getosinfo.h"
 #include "pal_interfaceaddresses.h"
 #include "pal_io.h"
 #include "pal_iossupportversion.h"
@@ -305,6 +306,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelCrossProcessMutex_IsAbandoned)
     DllImportEntry(SystemNative_LowLevelCrossProcessMutex_SetAbandoned)
     DllImportEntry(SystemNative_Select)
+    DllImportEntry(SystemNative_GetNextAreaInfo)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

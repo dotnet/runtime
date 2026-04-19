@@ -5433,22 +5433,32 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                         ((lookup.accessType == IAT_PVALUE) ? (int32_t)PInvokeCallFlags::Indirect : 0) |
                         (suppressGCTransition ? (int32_t)PInvokeCallFlags::SuppressGCTransition : 0);
                 }
-                else if (opcode == INTOP_CALLDELEGATE)
+                else if (opcode == INTOP_CALLDELEGATE || opcode == INTOP_CALLDELEGATE_TAIL)
                 {
                     int32_t sizeOfArgsUpto16ByteAlignment = 0;
+                    int32_t targetArgsSize = 0;
+                    bool found16ByteAligned = false;
                     for (int argIndex = 1; argIndex < numArgs; argIndex++)
                     {
                         int32_t argAlignment = INTERP_STACK_SLOT_SIZE;
                         int32_t size = GetInterpTypeStackSize(m_pVars[callArgs[argIndex]].clsHnd, m_pVars[callArgs[argIndex]].interpType, &argAlignment);
                         size = ALIGN_UP_TO(size, INTERP_STACK_SLOT_SIZE);
-                        if (argAlignment == INTERP_STACK_ALIGNMENT)
+                        if (!found16ByteAligned)
                         {
-                            break;
+                            if (argAlignment == INTERP_STACK_ALIGNMENT)
+                            {
+                                found16ByteAligned = true;
+                            }
+                            else
+                            {
+                                sizeOfArgsUpto16ByteAlignment += size;
+                            }
                         }
-                        sizeOfArgsUpto16ByteAlignment += size;
+                        targetArgsSize = ALIGN_UP_TO(targetArgsSize, argAlignment);
+                        targetArgsSize += size;
                     }
-
                     m_pLastNewIns->data[1] = sizeOfArgsUpto16ByteAlignment;
+                    m_pLastNewIns->data[2] = targetArgsSize;
                 }
             }
             break;

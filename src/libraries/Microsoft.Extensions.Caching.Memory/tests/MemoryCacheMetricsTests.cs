@@ -268,7 +268,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     TrackStatistics = true,
                     Clock = clock,
-                    ExpirationScanFrequency = TimeSpan.Zero
+                    ExpirationScanFrequency = TimeSpan.MaxValue
                 },
                 loggerFactory: null,
                 meterFactory: meterFactory);

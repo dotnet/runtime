@@ -255,7 +255,7 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
-                    inheritedHandles);
+                    startInfo.StartDetached, inheritedHandles);
 
                 if (errno == 0)
                 {

@@ -1051,7 +1051,18 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        private static void SendSignal(PosixSignal signal, Process process) => Assert.True(process.SafeHandle.Signal(signal));
+        private static void SendSignal(PosixSignal signal, Process process, bool entireProcessGroup = false)
+        {
+            if (entireProcessGroup)
+            {
+                int signalNumber = Interop.Sys.GetPlatformSignalNumber(signal);
+                Assert.Equal(0, Interop.Sys.Kill(-process.Id, signalNumber));
+            }
+            else
+            {
+                Assert.True(process.SafeHandle.Signal(signal));
+            }
+        }
 
         private static unsafe void ReEnableCtrlCHandlerIfNeeded(PosixSignal signal) { }
 

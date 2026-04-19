@@ -162,6 +162,11 @@ check_symbol_exists(
     HAVE_FORK)
 
 check_symbol_exists(
+    posix_spawn_file_actions_addchdir_np
+    spawn.h
+    HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP)
+
+check_symbol_exists(
     lseek64
     unistd.h
     HAVE_LSEEK64)
@@ -569,19 +574,7 @@ check_symbol_exists(
     stdlib.h
     HAVE_POSIX_MEMALIGN)
 
-if(CLR_CMAKE_TARGET_IOS)
-    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
-    unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_REALTIME 1)
-    unset(HAVE_FORK) # exists but blocked by kernel
-elseif(CLR_CMAKE_TARGET_MACCATALYST)
-    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
-    unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_REALTIME 1)
-    unset(HAVE_FORK) # exists but blocked by kernel
-elseif(CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_APPLE_MOBILE)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
@@ -923,7 +916,7 @@ check_include_files(
     "pthread.h"
     HAVE_PTHREAD_H)
 
-if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_APPLE_MOBILE)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(HAVE_IOS_NET_IFMEDIA_H 1)
     set(HAVE_IOS_NETINET_TCPFSM_H 1)
@@ -1003,6 +996,10 @@ check_include_files(
 check_include_files(
     IOKit/serial/ioss.h
     HAVE_IOSS_H)
+
+check_include_files(
+    OS.h
+    HAVE_OS_H)
 
 check_symbol_exists(
     getpeereid
