@@ -87,6 +87,8 @@ namespace R2RDump
                     int assemblyIndex = 0;
                     foreach (string assemblyName in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
                     {
+                        if (assemblyIndex >= _r2r.ReadyToRunAssemblyHeaders.Count)
+                            break;
                         Guid mvid = _r2r.GetAssemblyMvid(assemblyIndex);
                         WriteDivider($@"Component Assembly [{assemblyIndex}]: {assemblyName} - MVID {mvid:b}");
                         ReadyToRunCoreHeader assemblyHeader = _r2r.ReadyToRunAssemblyHeaders[assemblyIndex];
@@ -503,6 +505,12 @@ namespace R2RDump
                     int ii2EndOffset = ii2Offset + section.Size;
                     InliningInfoSection2 inliningInfoSection2 = new InliningInfoSection2(_r2r, ii2Offset, ii2EndOffset);
                     _writer.WriteLine(inliningInfoSection2.ToString());
+                    break;
+                case ReadyToRunSectionType.CrossModuleInlineInfo:
+                    int cmiOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int cmiEndOffset = cmiOffset + section.Size;
+                    CrossModuleInliningInfoSection crossModuleInliningInfo = new CrossModuleInliningInfoSection(_r2r, cmiOffset, cmiEndOffset);
+                    _writer.WriteLine(crossModuleInliningInfo.ToString());
                     break;
                 case ReadyToRunSectionType.OwnerCompositeExecutable:
                     int oceOffset = _r2r.GetOffset(section.RelativeVirtualAddress);

@@ -47,4 +47,25 @@ internal interface IGCInfoTraits
     static abstract int NUM_INTERRUPTIBLE_RANGES_ENCBASE { get; }
 
     static abstract bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA { get; }
+
+    /// <summary>
+    /// Returns true if the given register is a scratch (volatile) register.
+    /// Scratch register slots should only be reported for the active (leaf) stack frame.
+    /// </summary>
+    static abstract bool IsScratchRegister(uint regNum);
+
+    /// <summary>
+    /// Returns true if a stack slot at the given offset and base is in the scratch/outgoing area.
+    /// Scratch stack slots should only be reported for the active (leaf) stack frame.
+    /// spBase uses the GcStackSlotBase encoding: 0=CALLER_SP_REL, 1=SP_REL, 2=FRAMEREG_REL.
+    /// </summary>
+    static virtual bool IsScratchStackSlot(int spOffset, uint spBase, uint fixedStackParameterScratchArea)
+        => false;
+
+    // These are the same across all platforms
+    static virtual int POINTER_SIZE_ENCBASE { get; } = 3;
+    static virtual int LIVESTATE_RLE_RUN_ENCBASE { get; } = 2;
+    static virtual int LIVESTATE_RLE_SKIP_ENCBASE { get; } = 4;
+    static virtual uint NUM_NORM_CODE_OFFSETS_PER_CHUNK { get; } = 64;
+    static virtual int NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 { get; } = 6;
 }

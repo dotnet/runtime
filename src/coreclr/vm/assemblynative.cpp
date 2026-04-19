@@ -42,7 +42,6 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 
     BEGIN_QCALL;
 
-    DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
     AssemblyBinder *pBinder = NULL;
 
@@ -196,13 +195,13 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 
         // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())
-            THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
+            THROW_BAD_FORMAT(BFA_BAD_IL, static_cast<PEImage*>(pILImage));
 
         LoaderAllocator* pLoaderAllocator = pBinder->GetLoaderAllocator();
         if (pLoaderAllocator && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
         {
             // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
-            THROW_BAD_FORMAT(BFA_IJW_IN_COLLECTIBLE_ALC, pILImage.GetValue());
+            THROW_BAD_FORMAT(BFA_IJW_IN_COLLECTIBLE_ALC, static_cast<PEImage*>(pILImage));
         }
     }
 
@@ -1773,16 +1772,19 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
             (newProxyTypeEntry != nullptr && !hasPrecachedProxy) ||
             !hasPrecachedTargets)
         {
-            // Only fall back to attribute parsing for the assembly targets if they were
-            // not found in the pre-cached R2R section.
-            if (!hasPrecachedTargets)
-            {
-                ProcessTypeMapAttribute(
-                    TypeMapAssemblyTargetAttributeName,
-                    assemblies,
-                    groupTypeMT,
-                    currAssembly);
-            }
+            // Fall back to attribute parsing for the assembly targets if they were
+            // not found in the pre-cached R2R section, or if the external/proxy type
+            // maps were not pre-cached. When CrossGen2 fails to resolve an assembly
+            // target, it emits an assembly targets entry with count=0 but marks the
+            // external/proxy maps as invalid (state=0). Re-processing the assembly
+            // target attributes in that case ensures the runtime correctly loads (and
+            // throws for) unresolvable assemblies. The AssemblyTargetProcessor already
+            // deduplicates, so re-processing is safe.
+            ProcessTypeMapAttribute(
+                TypeMapAssemblyTargetAttributeName,
+                assemblies,
+                groupTypeMT,
+                currAssembly);
 
             // We will only process the specific type maps if we have a callback to process
             // the entry and the precached map was not calculated for this module.
