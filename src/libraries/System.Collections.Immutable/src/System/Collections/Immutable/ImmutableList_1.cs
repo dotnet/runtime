@@ -424,7 +424,13 @@ namespace System.Collections.Immutable
         /// <param name="index">The zero-based starting index of the range to reverse.</param>
         /// <param name="count">The number of elements in the range to reverse.</param>
         /// <returns>The reversed list.</returns>
-        public ImmutableList<T> Reverse(int index, int count) => this.Wrap(_root.Reverse(index, count));
+        public ImmutableList<T> Reverse(int index, int count)
+        {
+            Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+            Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
+
+            return this.Wrap(_root.Reverse(index, count));
+        }
 
         /// <summary>
         /// Sorts the elements in the entire <see cref="ImmutableList{T}"/> using

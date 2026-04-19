@@ -534,8 +534,8 @@ namespace System.Collections.Immutable
             /// <returns>The reversed list.</returns>
             internal Node Reverse(int index, int count)
             {
-                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
+                Debug.Assert(index >= 0 && index <= this.Count);
+                Debug.Assert(count >= 0 && (uint)(index + count) <= (uint)this.Count);
 
                 Node result = this;
                 int start = index;
@@ -570,7 +570,7 @@ namespace System.Collections.Immutable
             /// <returns>The sorted list.</returns>
             internal Node Sort(Comparison<T> comparison)
             {
-                Requires.NotNull(comparison, nameof(comparison));
+                Debug.Assert(comparison != null);
 
                 // PERF: Eventually this might be reimplemented in a way that does not require allocating an array.
                 var array = new T[this.Count];
@@ -607,8 +607,8 @@ namespace System.Collections.Immutable
             /// <returns>The sorted list.</returns>
             internal Node Sort(int index, int count, IComparer<T>? comparer)
             {
-                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
+                Debug.Assert(index >= 0 && index <= this.Count);
+                Debug.Assert(count >= 0 && (uint)(index + count) <= (uint)this.Count);
 
                 // PERF: Eventually this might be reimplemented in a way that does not require allocating an array.
                 var array = new T[this.Count];
