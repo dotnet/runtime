@@ -648,8 +648,8 @@ namespace System.Collections.Immutable
             /// </exception>
             internal int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
             {
-                Requires.Range(index >= 0, nameof(index));
-                Requires.Range(count >= 0, nameof(count));
+                Debug.Assert(index >= 0);
+                Debug.Assert(count >= 0);
                 comparer ??= Comparer<T>.Default;
 
                 if (this.IsEmpty || count <= 0)
