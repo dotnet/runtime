@@ -168,12 +168,23 @@ namespace System.Diagnostics
             int byteCount,
             bool flush,
             ref char[] charBuffer,
+            ref int charStartIndex,
             ref int charEndIndex)
         {
             int charCount = decoder.GetCharCount(byteBuffer, byteIndex, byteCount, flush);
             if (charCount == 0)
             {
                 return;
+            }
+
+            // If there isn't enough room at the end but there's free space at the start
+            // (from already-consumed data), compact first to avoid unnecessary buffer growth.
+            if (charEndIndex + charCount > charBuffer.Length && charStartIndex > 0)
+            {
+                int remaining = charEndIndex - charStartIndex;
+                Array.Copy(charBuffer, charStartIndex, charBuffer, 0, remaining);
+                charStartIndex = 0;
+                charEndIndex = remaining;
             }
 
             while (charEndIndex + charCount > charBuffer.Length)

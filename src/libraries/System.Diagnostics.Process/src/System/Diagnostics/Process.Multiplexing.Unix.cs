@@ -125,7 +125,7 @@ namespace System.Diagnostics
                             int bytesRead = ReadNonBlocking(currentHandle, errorByteBuffer, 0);
                             if (bytesRead > 0)
                             {
-                                DecodeAndAppendChars(errorDecoder, errorByteBuffer, 0, bytesRead, flush: false, ref errorCharBuffer, ref errorCharEnd);
+                                DecodeAndAppendChars(errorDecoder, errorByteBuffer, 0, bytesRead, flush: false, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
                                 if (!errorBomChecked && errorCharEnd > 0)
                                 {
                                     SkipBomIfPresent(errorCharBuffer, errorCharEnd, ref errorCharStart);
@@ -136,7 +136,7 @@ namespace System.Diagnostics
                             }
                             else if (bytesRead == 0)
                             {
-                                DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharEnd);
+                                DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
                                 EmitRemainingCharsAsLine(errorCharBuffer, ref errorCharStart, ref errorCharEnd, true, lines);
                                 errorDone = true;
                             }
@@ -147,7 +147,7 @@ namespace System.Diagnostics
                             int bytesRead = ReadNonBlocking(currentHandle, outputByteBuffer, 0);
                             if (bytesRead > 0)
                             {
-                                DecodeAndAppendChars(outputDecoder, outputByteBuffer, 0, bytesRead, flush: false, ref outputCharBuffer, ref outputCharEnd);
+                                DecodeAndAppendChars(outputDecoder, outputByteBuffer, 0, bytesRead, flush: false, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
                                 if (!outputBomChecked && outputCharEnd > 0)
                                 {
                                     SkipBomIfPresent(outputCharBuffer, outputCharEnd, ref outputCharStart);
@@ -158,7 +158,7 @@ namespace System.Diagnostics
                             }
                             else if (bytesRead == 0)
                             {
-                                DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharEnd);
+                                DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
                                 EmitRemainingCharsAsLine(outputCharBuffer, ref outputCharStart, ref outputCharEnd, false, lines);
                                 outputDone = true;
                             }

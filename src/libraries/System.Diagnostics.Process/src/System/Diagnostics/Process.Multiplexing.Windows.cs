@@ -110,7 +110,7 @@ namespace System.Diagnostics
                         // Decode bytes to chars and parse lines.
                         if (isError)
                         {
-                            DecodeAndAppendChars(errorDecoder, errorByteBuffer, 0, bytesRead, flush: false, ref errorCharBuffer, ref errorCharEnd);
+                            DecodeAndAppendChars(errorDecoder, errorByteBuffer, 0, bytesRead, flush: false, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
                             if (!errorBomChecked && errorCharEnd > 0)
                             {
                                 SkipBomIfPresent(errorCharBuffer, errorCharEnd, ref errorCharStart);
@@ -121,7 +121,7 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            DecodeAndAppendChars(outputDecoder, outputByteBuffer, 0, bytesRead, flush: false, ref outputCharBuffer, ref outputCharEnd);
+                            DecodeAndAppendChars(outputDecoder, outputByteBuffer, 0, bytesRead, flush: false, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
                             if (!outputBomChecked && outputCharEnd > 0)
                             {
                                 SkipBomIfPresent(outputCharBuffer, outputCharEnd, ref outputCharStart);
@@ -147,13 +147,13 @@ namespace System.Diagnostics
                                 // EOF during QueueRead — flush decoder and emit remaining.
                                 if (isError)
                                 {
-                                    DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharEnd);
+                                    DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
                                     EmitRemainingCharsAsLine(errorCharBuffer, ref errorCharStart, ref errorCharEnd, true, lines);
                                     errorDone = true;
                                 }
                                 else
                                 {
-                                    DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharEnd);
+                                    DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
                                     EmitRemainingCharsAsLine(outputCharBuffer, ref outputCharStart, ref outputCharEnd, false, lines);
                                     outputDone = true;
                                 }
@@ -167,13 +167,13 @@ namespace System.Diagnostics
                         // EOF: flush decoder and emit remaining chars.
                         if (isError)
                         {
-                            DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharEnd);
+                            DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
                             EmitRemainingCharsAsLine(errorCharBuffer, ref errorCharStart, ref errorCharEnd, true, lines);
                             errorDone = true;
                         }
                         else
                         {
-                            DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharEnd);
+                            DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
                             EmitRemainingCharsAsLine(outputCharBuffer, ref outputCharStart, ref outputCharEnd, false, lines);
                             outputDone = true;
                         }
