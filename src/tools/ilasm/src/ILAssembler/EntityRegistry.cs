@@ -500,6 +500,9 @@ namespace ILAssembler
                 })
                 .ThenBy(gp => ((GenericParameterEntity)gp).Index))
             {
+                // GenericParam index is stored as a 2-byte value; skip params beyond the limit
+                if (genericParam.Index > ushort.MaxValue)
+                    continue;
                 builder.AddGenericParameter(
                     genericParam.Owner!.Handle,
                     genericParam.Attributes,
