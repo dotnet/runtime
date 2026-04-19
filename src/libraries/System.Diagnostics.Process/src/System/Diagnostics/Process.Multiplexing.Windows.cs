@@ -29,20 +29,23 @@ namespace System.Diagnostics
             SafeFileHandle outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
             SafeFileHandle errorHandle = GetSafeHandleFromStreamReader(_standardError!);
 
-            byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
-            byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            byte[] outputByteBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            byte[] errorByteBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            char[] outputCharBuffer = ArrayPool<char>.Shared.Rent(InitialReadAllBufferSize);
+            char[] errorCharBuffer = ArrayPool<char>.Shared.Rent(InitialReadAllBufferSize);
             bool outputRefAdded = false, errorRefAdded = false;
             PinnedGCHandle<byte[]> outputPin = default, errorPin = default;
             nint outputOverlappedNint = 0, errorOverlappedNint = 0;
             EventWaitHandle? outputEvent = null, errorEvent = null;
+            bool outputDone = true, errorDone = true;
 
             try
             {
                 outputHandle.DangerousAddRef(ref outputRefAdded);
                 errorHandle.DangerousAddRef(ref errorRefAdded);
 
-                outputPin = new PinnedGCHandle<byte[]>(outputBuffer);
-                errorPin = new PinnedGCHandle<byte[]>(errorBuffer);
+                outputPin = new PinnedGCHandle<byte[]>(outputByteBuffer);
+                errorPin = new PinnedGCHandle<byte[]>(errorByteBuffer);
 
                 outputEvent = new EventWaitHandle(initialState: false, EventResetMode.ManualReset);
                 errorEvent = new EventWaitHandle(initialState: false, EventResetMode.ManualReset);
@@ -56,16 +59,18 @@ namespace System.Diagnostics
                 // Error output gets index 0 so WaitAny services it first when both are signaled.
                 WaitHandle[] waitHandles = [errorEvent, outputEvent];
 
-                int outputStartIndex = 0, outputEndIndex = 0;
-                int errorStartIndex = 0, errorEndIndex = 0;
+                Decoder outputDecoder = outputEncoding.GetDecoder();
+                Decoder errorDecoder = errorEncoding.GetDecoder();
 
-                bool outputDone, errorDone;
+                int outputCharStart = 0, outputCharEnd = 0;
+                int errorCharStart = 0, errorCharEnd = 0;
+
                 unsafe
                 {
                     outputDone = !QueueRead(outputHandle, outputPin.GetAddressOfArrayData(),
-                        outputBuffer.Length, (NativeOverlapped*)outputOverlappedNint, outputEvent);
+                        outputByteBuffer.Length, (NativeOverlapped*)outputOverlappedNint, outputEvent);
                     errorDone = !QueueRead(errorHandle, errorPin.GetAddressOfArrayData(),
-                        errorBuffer.Length, (NativeOverlapped*)errorOverlappedNint, errorEvent);
+                        errorByteBuffer.Length, (NativeOverlapped*)errorOverlappedNint, errorEvent);
                 }
 
                 long deadline = timeoutMs >= 0 ? Environment.TickCount64 + timeoutMs : long.MaxValue;
@@ -91,7 +96,6 @@ namespace System.Diagnostics
                     bool isError = waitResult == 0;
                     nint currentOverlappedNint = isError ? errorOverlappedNint : outputOverlappedNint;
                     SafeFileHandle currentHandle = isError ? errorHandle : outputHandle;
-                    Encoding currentEncoding = isError ? errorEncoding : outputEncoding;
                     EventWaitHandle currentEvent = isError ? errorEvent! : outputEvent!;
 
                     int bytesRead;
@@ -102,74 +106,64 @@ namespace System.Diagnostics
 
                     if (bytesRead > 0)
                     {
-                        // Scoped block for ref locals that must not cross yield points.
+                        // Decode bytes to chars and parse lines.
+                        if (isError)
                         {
-                            ref int currentStartIndex = ref (isError ? ref errorStartIndex : ref outputStartIndex);
-                            ref int currentEndIndex = ref (isError ? ref errorEndIndex : ref outputEndIndex);
-                            ref byte[] currentBuffer = ref (isError ? ref errorBuffer : ref outputBuffer);
+                            DecodeAndAppendChars(errorDecoder, errorByteBuffer, 0, bytesRead, flush: false, ref errorCharBuffer, ref errorCharEnd);
+                            ParseLinesFromCharBuffer(errorCharBuffer, ref errorCharStart, errorCharEnd, true, lines);
+                            CompactOrGrowCharBuffer(ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
+                        }
+                        else
+                        {
+                            DecodeAndAppendChars(outputDecoder, outputByteBuffer, 0, bytesRead, flush: false, ref outputCharBuffer, ref outputCharEnd);
+                            ParseLinesFromCharBuffer(outputCharBuffer, ref outputCharStart, outputCharEnd, false, lines);
+                            CompactOrGrowCharBuffer(ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
+                        }
 
-                            currentEndIndex += bytesRead;
+                        unsafe
+                        {
+                            ResetOverlapped(currentEvent, (NativeOverlapped*)currentOverlappedNint);
 
-                            ParseLinesFromBuffer(currentBuffer, ref currentStartIndex, currentEndIndex, currentEncoding, isError, lines);
-                            CompactOrGrowLineBuffer(ref currentBuffer, ref currentStartIndex, ref currentEndIndex);
+                            byte* pinPointer = isError
+                                ? errorPin.GetAddressOfArrayData()
+                                : outputPin.GetAddressOfArrayData();
+                            byte[] currentByteBuffer = isError ? errorByteBuffer : outputByteBuffer;
 
-                            // Update pin in case the buffer was replaced by growth.
-                            if (isError)
+                            if (!QueueRead(currentHandle, pinPointer,
+                                currentByteBuffer.Length,
+                                (NativeOverlapped*)currentOverlappedNint, currentEvent))
                             {
-                                errorPin.Target = errorBuffer;
-                            }
-                            else
-                            {
-                                outputPin.Target = outputBuffer;
-                            }
-
-                            unsafe
-                            {
-                                ResetOverlapped(currentEvent, (NativeOverlapped*)currentOverlappedNint);
-
-                                byte* pinPointer = isError
-                                    ? errorPin.GetAddressOfArrayData()
-                                    : outputPin.GetAddressOfArrayData();
-
-                                if (!QueueRead(currentHandle, pinPointer + currentEndIndex,
-                                    currentBuffer.Length - currentEndIndex,
-                                    (NativeOverlapped*)currentOverlappedNint, currentEvent))
+                                // EOF during QueueRead — flush decoder and emit remaining.
+                                if (isError)
                                 {
-                                    EmitRemainingAsLine(currentBuffer, ref currentStartIndex, ref currentEndIndex,
-                                        currentEncoding, isError, lines);
-
-                                    if (isError)
-                                    {
-                                        errorDone = true;
-                                    }
-                                    else
-                                    {
-                                        outputDone = true;
-                                    }
-
-                                    currentEvent.Reset();
+                                    DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharEnd);
+                                    EmitRemainingCharsAsLine(errorCharBuffer, ref errorCharStart, ref errorCharEnd, true, lines);
+                                    errorDone = true;
                                 }
+                                else
+                                {
+                                    DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharEnd);
+                                    EmitRemainingCharsAsLine(outputCharBuffer, ref outputCharStart, ref outputCharEnd, false, lines);
+                                    outputDone = true;
+                                }
+
+                                currentEvent.Reset();
                             }
                         }
                     }
                     else
                     {
-                        // EOF: pipe write end was closed.
-                        {
-                            ref int currentStartIndex = ref (isError ? ref errorStartIndex : ref outputStartIndex);
-                            ref int currentEndIndex = ref (isError ? ref errorEndIndex : ref outputEndIndex);
-                            ref byte[] currentBuffer = ref (isError ? ref errorBuffer : ref outputBuffer);
-
-                            EmitRemainingAsLine(currentBuffer, ref currentStartIndex, ref currentEndIndex,
-                                currentEncoding, isError, lines);
-                        }
-
+                        // EOF: flush decoder and emit remaining chars.
                         if (isError)
                         {
+                            DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharEnd);
+                            EmitRemainingCharsAsLine(errorCharBuffer, ref errorCharStart, ref errorCharEnd, true, lines);
                             errorDone = true;
                         }
                         else
                         {
+                            DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharEnd);
+                            EmitRemainingCharsAsLine(outputCharBuffer, ref outputCharStart, ref outputCharEnd, false, lines);
                             outputDone = true;
                         }
 
@@ -191,11 +185,13 @@ namespace System.Diagnostics
                 {
                     if (outputOverlappedNint != 0)
                     {
+                        CancelPendingIOIfNeeded(outputHandle, outputDone, (NativeOverlapped*)outputOverlappedNint);
                         NativeMemory.Free((void*)outputOverlappedNint);
                     }
 
                     if (errorOverlappedNint != 0)
                     {
+                        CancelPendingIOIfNeeded(errorHandle, errorDone, (NativeOverlapped*)errorOverlappedNint);
                         NativeMemory.Free((void*)errorOverlappedNint);
                     }
                 }
@@ -215,8 +211,10 @@ namespace System.Diagnostics
                     errorHandle.DangerousRelease();
                 }
 
-                ArrayPool<byte>.Shared.Return(outputBuffer);
-                ArrayPool<byte>.Shared.Return(errorBuffer);
+                ArrayPool<byte>.Shared.Return(outputByteBuffer);
+                ArrayPool<byte>.Shared.Return(errorByteBuffer);
+                ArrayPool<char>.Shared.Return(outputCharBuffer);
+                ArrayPool<char>.Shared.Return(errorCharBuffer);
             }
         }
 

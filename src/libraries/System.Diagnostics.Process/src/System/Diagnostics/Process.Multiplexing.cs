@@ -156,36 +156,65 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Scans the buffer from <paramref name="startIndex"/> to <paramref name="endIndex"/> for complete lines
-        /// (delimited by <c>\n</c>), adds each as a <see cref="ProcessOutputLine"/> to <paramref name="lines"/>,
-        /// and advances <paramref name="startIndex"/> past the consumed data. Handles both <c>\r\n</c> and <c>\n</c>
-        /// line endings.
+        /// Decodes bytes from the byte buffer using the <paramref name="decoder"/> and appends the
+        /// resulting characters to the char buffer, growing it if necessary.
+        /// To flush the decoder at EOF, pass an empty byte array with <paramref name="flush"/> set to
+        /// <see langword="true"/>.
         /// </summary>
-        private static void ParseLinesFromBuffer(
-            byte[] buffer,
+        private static void DecodeAndAppendChars(
+            Decoder decoder,
+            byte[] byteBuffer,
+            int byteIndex,
+            int byteCount,
+            bool flush,
+            ref char[] charBuffer,
+            ref int charEndIndex)
+        {
+            int charCount = decoder.GetCharCount(byteBuffer, byteIndex, byteCount, flush);
+            if (charCount == 0)
+            {
+                return;
+            }
+
+            while (charEndIndex + charCount > charBuffer.Length)
+            {
+                RentLargerCharBuffer(ref charBuffer, charEndIndex);
+            }
+
+            int decoded = decoder.GetChars(byteBuffer, byteIndex, byteCount, charBuffer, charEndIndex, flush);
+            charEndIndex += decoded;
+        }
+
+        /// <summary>
+        /// Scans the char buffer from <paramref name="startIndex"/> to <paramref name="endIndex"/> for complete
+        /// lines (delimited by <c>\n</c>), adds each as a <see cref="ProcessOutputLine"/> to
+        /// <paramref name="lines"/>, and advances <paramref name="startIndex"/> past the consumed data.
+        /// Handles both <c>\r\n</c> and <c>\n</c> line endings.
+        /// </summary>
+        private static void ParseLinesFromCharBuffer(
+            char[] buffer,
             ref int startIndex,
             int endIndex,
-            Encoding encoding,
             bool standardError,
             List<ProcessOutputLine> lines)
         {
             while (startIndex < endIndex)
             {
                 int remaining = endIndex - startIndex;
-                int lineEnd = buffer.AsSpan(startIndex, remaining).IndexOf((byte)'\n');
+                int lineEnd = buffer.AsSpan(startIndex, remaining).IndexOf('\n');
                 if (lineEnd == -1)
                 {
                     break;
                 }
 
                 int contentLength = lineEnd;
-                if (contentLength > 0 && buffer[startIndex + contentLength - 1] == (byte)'\r')
+                if (contentLength > 0 && buffer[startIndex + contentLength - 1] == '\r')
                 {
                     contentLength--;
                 }
 
                 lines.Add(new ProcessOutputLine(
-                    encoding.GetString(buffer, startIndex, contentLength),
+                    new string(buffer, startIndex, contentLength),
                     standardError));
 
                 startIndex += lineEnd + 1;
@@ -193,20 +222,19 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Emits any remaining data in the buffer as a final line when an EOF is reached.
+        /// Emits any remaining characters in the buffer as a final line when an EOF is reached.
         /// </summary>
-        private static void EmitRemainingAsLine(
-            byte[] buffer,
+        private static void EmitRemainingCharsAsLine(
+            char[] buffer,
             ref int startIndex,
             ref int endIndex,
-            Encoding encoding,
             bool standardError,
             List<ProcessOutputLine> lines)
         {
             if (startIndex < endIndex)
             {
                 int length = endIndex - startIndex;
-                if (length > 0 && buffer[startIndex + length - 1] == (byte)'\r')
+                if (length > 0 && buffer[startIndex + length - 1] == '\r')
                 {
                     length--;
                 }
@@ -214,7 +242,7 @@ namespace System.Diagnostics
                 if (length > 0)
                 {
                     lines.Add(new ProcessOutputLine(
-                        encoding.GetString(buffer, startIndex, length),
+                        new string(buffer, startIndex, length),
                         standardError));
                 }
 
@@ -224,10 +252,10 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// After line parsing, compacts remaining data to the front of the buffer if it has reached
+        /// After line parsing, compacts remaining data to the front of the char buffer if it has reached
         /// the end, or rents a larger buffer if the entire buffer is filled with a single incomplete line.
         /// </summary>
-        private static void CompactOrGrowLineBuffer(ref byte[] buffer, ref int startIndex, ref int endIndex)
+        private static void CompactOrGrowCharBuffer(ref char[] buffer, ref int startIndex, ref int endIndex)
         {
             if (endIndex < buffer.Length)
             {
@@ -239,16 +267,30 @@ namespace System.Diagnostics
             if (remaining == buffer.Length)
             {
                 // The buffer is too small to hold a single line — grow it.
-                RentLargerBuffer(ref buffer, remaining);
+                RentLargerCharBuffer(ref buffer, remaining);
             }
             else
             {
                 // Compact: move remaining data to the start of the buffer.
-                Buffer.BlockCopy(buffer, startIndex, buffer, 0, remaining);
+                Array.Copy(buffer, startIndex, buffer, 0, remaining);
             }
 
             startIndex = 0;
             endIndex = remaining;
+        }
+
+        /// <summary>
+        /// Rents a larger char buffer from the array pool, copies existing data, and returns the old buffer.
+        /// </summary>
+        private static void RentLargerCharBuffer(ref char[] buffer, int charsUsed)
+        {
+            int newSize = (int)Math.Min((long)buffer.Length * 2, Array.MaxLength);
+            newSize = Math.Max(buffer.Length + 1, newSize);
+            char[] newBuffer = ArrayPool<char>.Shared.Rent(newSize);
+            Array.Copy(buffer, newBuffer, charsUsed);
+            char[] oldBuffer = buffer;
+            buffer = newBuffer;
+            ArrayPool<char>.Shared.Return(oldBuffer);
         }
 
         /// <summary>

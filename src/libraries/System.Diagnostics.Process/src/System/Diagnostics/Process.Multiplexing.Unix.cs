@@ -29,8 +29,10 @@ namespace System.Diagnostics
             SafePipeHandle outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
             SafePipeHandle errorHandle = GetSafeHandleFromStreamReader(_standardError!);
 
-            byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
-            byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            byte[] outputByteBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            byte[] errorByteBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            char[] outputCharBuffer = ArrayPool<char>.Shared.Rent(InitialReadAllBufferSize);
+            char[] errorCharBuffer = ArrayPool<char>.Shared.Rent(InitialReadAllBufferSize);
             bool outputRefAdded = false, errorRefAdded = false;
 
             try
@@ -50,10 +52,13 @@ namespace System.Diagnostics
                 // Cannot use stackalloc in an iterator method; use a regular array.
                 Interop.PollEvent[] pollFds = new Interop.PollEvent[2];
 
+                Decoder outputDecoder = outputEncoding.GetDecoder();
+                Decoder errorDecoder = errorEncoding.GetDecoder();
+
                 long deadline = timeoutMs >= 0 ? Environment.TickCount64 + timeoutMs : long.MaxValue;
 
-                int outputStartIndex = 0, outputEndIndex = 0;
-                int errorStartIndex = 0, errorEndIndex = 0;
+                int outputCharStart = 0, outputCharEnd = 0;
+                int errorCharStart = 0, errorCharEnd = 0;
                 bool outputDone = false, errorDone = false;
 
                 List<ProcessOutputLine> lines = new();
@@ -113,37 +118,38 @@ namespace System.Diagnostics
 
                         bool isError = i == errorIndex;
                         SafePipeHandle currentHandle = isError ? errorHandle : outputHandle;
-                        Encoding currentEncoding = isError ? errorEncoding : outputEncoding;
 
                         // Use explicit branching to avoid ref locals across yield points.
                         if (isError)
                         {
-                            int bytesRead = ReadNonBlocking(currentHandle, errorBuffer, errorEndIndex);
+                            int bytesRead = ReadNonBlocking(currentHandle, errorByteBuffer, 0);
                             if (bytesRead > 0)
                             {
-                                errorEndIndex += bytesRead;
-                                ParseLinesFromBuffer(errorBuffer, ref errorStartIndex, errorEndIndex, currentEncoding, true, lines);
-                                CompactOrGrowLineBuffer(ref errorBuffer, ref errorStartIndex, ref errorEndIndex);
+                                DecodeAndAppendChars(errorDecoder, errorByteBuffer, 0, bytesRead, flush: false, ref errorCharBuffer, ref errorCharEnd);
+                                ParseLinesFromCharBuffer(errorCharBuffer, ref errorCharStart, errorCharEnd, true, lines);
+                                CompactOrGrowCharBuffer(ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
                             }
                             else if (bytesRead == 0)
                             {
-                                EmitRemainingAsLine(errorBuffer, ref errorStartIndex, ref errorEndIndex, currentEncoding, true, lines);
+                                DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharEnd);
+                                EmitRemainingCharsAsLine(errorCharBuffer, ref errorCharStart, ref errorCharEnd, true, lines);
                                 errorDone = true;
                             }
                             // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.
                         }
                         else
                         {
-                            int bytesRead = ReadNonBlocking(currentHandle, outputBuffer, outputEndIndex);
+                            int bytesRead = ReadNonBlocking(currentHandle, outputByteBuffer, 0);
                             if (bytesRead > 0)
                             {
-                                outputEndIndex += bytesRead;
-                                ParseLinesFromBuffer(outputBuffer, ref outputStartIndex, outputEndIndex, currentEncoding, false, lines);
-                                CompactOrGrowLineBuffer(ref outputBuffer, ref outputStartIndex, ref outputEndIndex);
+                                DecodeAndAppendChars(outputDecoder, outputByteBuffer, 0, bytesRead, flush: false, ref outputCharBuffer, ref outputCharEnd);
+                                ParseLinesFromCharBuffer(outputCharBuffer, ref outputCharStart, outputCharEnd, false, lines);
+                                CompactOrGrowCharBuffer(ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
                             }
                             else if (bytesRead == 0)
                             {
-                                EmitRemainingAsLine(outputBuffer, ref outputStartIndex, ref outputEndIndex, currentEncoding, false, lines);
+                                DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharEnd);
+                                EmitRemainingCharsAsLine(outputCharBuffer, ref outputCharStart, ref outputCharEnd, false, lines);
                                 outputDone = true;
                             }
                             // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.
@@ -171,8 +177,10 @@ namespace System.Diagnostics
                     errorHandle.DangerousRelease();
                 }
 
-                ArrayPool<byte>.Shared.Return(outputBuffer);
-                ArrayPool<byte>.Shared.Return(errorBuffer);
+                ArrayPool<byte>.Shared.Return(outputByteBuffer);
+                ArrayPool<byte>.Shared.Return(errorByteBuffer);
+                ArrayPool<char>.Shared.Return(outputCharBuffer);
+                ArrayPool<char>.Shared.Return(errorCharBuffer);
             }
         }
 
