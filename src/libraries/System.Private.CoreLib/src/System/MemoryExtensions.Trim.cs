@@ -580,13 +580,23 @@ namespace System
             [MethodImpl(MethodImplOptions.NoInlining)]
             static ReadOnlySpan<char> TrimFallback(ReadOnlySpan<char> span)
             {
-                int start = span.IndexOfAnyExceptWhiteSpace();
-                if (start < 0)
+                int start = 0;
+                for (; start < span.Length; start++)
                 {
-                    return default;
+                    if (!char.IsWhiteSpace(span[start]))
+                    {
+                        break;
+                    }
                 }
 
-                int end = span.LastIndexOfAnyExceptWhiteSpace();
+                int end = span.Length - 1;
+                for (; end > start; end--)
+                {
+                    if (!char.IsWhiteSpace(span[end]))
+                    {
+                        break;
+                    }
+                }
                 return span.Slice(start, end - start + 1);
             }
         }
@@ -597,8 +607,16 @@ namespace System
         /// <param name="span">The source span from which the characters are removed.</param>
         public static ReadOnlySpan<char> TrimStart(this ReadOnlySpan<char> span)
         {
-            int start = span.IndexOfAnyExceptWhiteSpace();
-            return start < 0 ? default : span.Slice(start);
+            int start = 0;
+            for (; start < span.Length; start++)
+            {
+                if (!char.IsWhiteSpace(span[start]))
+                {
+                    break;
+                }
+            }
+
+            return span.Slice(start);
         }
 
         /// <summary>
@@ -607,7 +625,15 @@ namespace System
         /// <param name="span">The source span from which the characters are removed.</param>
         public static ReadOnlySpan<char> TrimEnd(this ReadOnlySpan<char> span)
         {
-            int end = span.LastIndexOfAnyExceptWhiteSpace();
+            int end = span.Length - 1;
+            for (; end >= 0; end--)
+            {
+                if (!char.IsWhiteSpace(span[end]))
+                {
+                    break;
+                }
+            }
+
             return span.Slice(0, end + 1);
         }
 
@@ -771,13 +797,23 @@ namespace System
             [MethodImpl(MethodImplOptions.NoInlining)]
             static Span<char> TrimFallback(Span<char> span)
             {
-                int start = ((ReadOnlySpan<char>)span).IndexOfAnyExceptWhiteSpace();
-                if (start < 0)
+                int start = 0;
+                for (; start < span.Length; start++)
                 {
-                    return default;
+                    if (!char.IsWhiteSpace(span[start]))
+                    {
+                        break;
+                    }
                 }
 
-                int end = ((ReadOnlySpan<char>)span).LastIndexOfAnyExceptWhiteSpace();
+                int end = span.Length - 1;
+                for (; end > start; end--)
+                {
+                    if (!char.IsWhiteSpace(span[end]))
+                    {
+                        break;
+                    }
+                }
                 return span.Slice(start, end - start + 1);
             }
         }
@@ -802,8 +838,17 @@ namespace System
         /// <param name="span">The source span from which the characters are removed.</param>
         private static int ClampStart(ReadOnlySpan<char> span)
         {
-            int start = span.IndexOfAnyExceptWhiteSpace();
-            return start < 0 ? span.Length : start;
+            int start = 0;
+
+            for (; start < span.Length; start++)
+            {
+                if (!char.IsWhiteSpace(span[start]))
+                {
+                    break;
+                }
+            }
+
+            return start;
         }
 
         /// <summary>
@@ -816,8 +861,17 @@ namespace System
             // Initially, start==len==0. If ClampStart trims all, start==len
             Debug.Assert((uint)start <= span.Length);
 
-            int end = span.Slice(start).LastIndexOfAnyExceptWhiteSpace();
-            return end + 1;
+            int end = span.Length - 1;
+
+            for (; end >= start; end--)
+            {
+                if (!char.IsWhiteSpace(span[end]))
+                {
+                    break;
+                }
+            }
+
+            return end - start + 1;
         }
     }
 }

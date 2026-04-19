@@ -592,8 +592,16 @@ namespace Microsoft.Extensions.Primitives
         {
             ReadOnlySpan<char> span = AsSpan();
 
-            int i = span.IndexOfAnyExceptWhiteSpace();
-            return i < 0 ? Subsegment(span.Length) : Subsegment(i);
+            int i;
+            for (i = 0; i < span.Length; i++)
+            {
+                if (!char.IsWhiteSpace(span[i]))
+                {
+                    break;
+                }
+            }
+
+            return Subsegment(i);
         }
 
         /// <summary>
@@ -604,7 +612,15 @@ namespace Microsoft.Extensions.Primitives
         {
             ReadOnlySpan<char> span = AsSpan();
 
-            int i = span.LastIndexOfAnyExceptWhiteSpace();
+            int i;
+            for (i = span.Length - 1; i >= 0; i--)
+            {
+                if (!char.IsWhiteSpace(span[i]))
+                {
+                    break;
+                }
+            }
+
             return Subsegment(0, i + 1);
         }
 

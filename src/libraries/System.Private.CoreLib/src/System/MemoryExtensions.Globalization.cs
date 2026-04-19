@@ -14,8 +14,16 @@ namespace System
         /// <summary>
         /// Indicates whether the specified span contains only white-space characters.
         /// </summary>
-        public static bool IsWhiteSpace(this ReadOnlySpan<char> span) =>
-            span.IndexOfAnyExceptWhiteSpace() < 0;
+        public static bool IsWhiteSpace(this ReadOnlySpan<char> span)
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!char.IsWhiteSpace(span[i]))
+                    return false;
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Returns a value indicating whether the specified <paramref name="value"/> occurs within the <paramref name="span"/>.
