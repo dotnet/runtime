@@ -73,7 +73,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(EnumerableTestData), MemberType = typeof(TestBase))]
         public void HashSet_Generic_Constructor_IEnumerable(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             _ = setLength;
@@ -84,7 +84,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_Constructor_IEnumerable_WithManyDuplicates(int count)
         {
             IEnumerable<T> items = CreateEnumerable(EnumerableType.List, null, count, 0, 0);
@@ -94,7 +94,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_Constructor_HashSet_SparselyFilled(int count)
         {
             HashSet<T> source = (HashSet<T>)CreateEnumerable(EnumerableType.HashSet, null, count, 0, 0);
@@ -115,7 +115,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(EnumerableTestData), MemberType = typeof(TestBase))]
         public void HashSet_Generic_Constructor_IEnumerable_IEqualityComparer(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             _ = setLength;
@@ -158,7 +158,7 @@ namespace System.Collections.Tests
         #region RemoveWhere
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_RemoveWhere_AllElements(int setLength)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
@@ -167,7 +167,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_RemoveWhere_NoElements(int setLength)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
@@ -191,7 +191,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_RemoveWhere_NullMatchPredicate(int setLength)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
@@ -248,7 +248,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_TrimExcess_OnValidSetThatHasntBeenRemovedFrom(int setLength)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
@@ -256,7 +256,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_TrimExcess_Repeatedly(int setLength)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
@@ -268,7 +268,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_TrimExcess_AfterRemovingOneElement(int setLength)
         {
             if (setLength > 0)
@@ -287,7 +287,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_TrimExcess_AfterClearingAndAddingSomeElementsBack(int setLength)
         {
             if (setLength > 0)
@@ -305,7 +305,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_TrimExcess_AfterClearingAndAddingAllElementsBack(int setLength)
         {
             if (setLength > 0)
@@ -327,7 +327,7 @@ namespace System.Collections.Tests
         #region CopyTo
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_CopyTo_NegativeCount_ThrowsArgumentOutOfRangeException(int count)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(count);
@@ -337,7 +337,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_CopyTo_NoIndexDefaultsToZero(int count)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(count);
@@ -540,7 +540,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_Constructor_int(int capacity)
         {
             HashSet<T> set = new HashSet<T>(capacity);
@@ -548,7 +548,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_Constructor_int_AddUpToAndBeyondCapacity(int capacity)
         {
             HashSet<T> set = new HashSet<T>(capacity);
@@ -580,7 +580,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_Constructor_int_IEqualityComparer(int capacity)
         {
             IEqualityComparer<T> comparer = GetIEqualityComparer();
@@ -593,7 +593,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void HashSet_Generic_Constructor_int_IEqualityComparer_AddUpToAndBeyondCapacity(int capacity)
         {
             IEqualityComparer<T> comparer = GetIEqualityComparer();
@@ -677,7 +677,7 @@ namespace System.Collections.Tests
         #region EnsureCapacity
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void EnsureCapacity_Generic_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int setLength)
         {
             HashSet<T> set = (HashSet<T>)(GenericISetFactory(setLength));
@@ -828,7 +828,7 @@ namespace System.Collections.Tests
         #region Remove
 
         [Theory]
-        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        [MemberData(nameof(ValidPositiveCollectionSizes), MemberType = typeof(TestBase))]
         public void Remove_NonDefaultComparer_ComparerUsed(int capacity)
         {
             var c = new TrackingEqualityComparer<T>();
@@ -910,22 +910,8 @@ namespace System.Collections.Tests
 
         #region UnionWith
 
-        public static IEnumerable<object[]> UnionWith_HashSet_TestData()
-        {
-            foreach (int count in new[] { 0, 1, 75 })
-            {
-                foreach (bool destinationEmpty in new[] { true, false })
-                {
-                    foreach (bool sourceSparseFilled in new[] { true, false })
-                    {
-                        yield return new object[] { count, destinationEmpty, sourceSparseFilled };
-                    }
-                }
-            }
-        }
-
         [Theory]
-        [MemberData(nameof(UnionWith_HashSet_TestData))]
+        [MemberData(nameof(CollectionTestData.UnionWith_HashSet_TestData), MemberType = typeof(CollectionTestData))]
         public void HashSet_Generic_UnionWith_HashSet(int count, bool destinationEmpty, bool sourceSparseFilled)
         {
             HashSet<T> source = (HashSet<T>)CreateEnumerable(EnumerableType.HashSet, null, count, 0, 0);

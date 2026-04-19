@@ -13,7 +13,7 @@ namespace System.Collections.Tests
     public abstract partial class List_Generic_Tests<T> : IList_Generic_Tests<T>
     {
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Reverse(int listLength)
         {
             List<T> list = GenericListFactory(listLength);
@@ -100,7 +100,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Reverse_InvalidParameters(int listLength)
         {
             if (listLength % 2 != 0)
@@ -132,7 +132,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Reverse_NegativeParameters(int listLength)
         {
             if (listLength % 2 != 0)

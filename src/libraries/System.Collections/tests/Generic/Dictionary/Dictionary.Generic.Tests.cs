@@ -35,7 +35,7 @@ namespace System.Collections.Tests
         #region Constructors
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_Constructor_IDictionary(int count)
         {
             IDictionary<TKey, TValue> source = GenericIDictionaryFactory(count);
@@ -44,7 +44,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_Constructor_IDictionary_IEqualityComparer(int count)
         {
             IEqualityComparer<TKey> comparer = GetKeyIEqualityComparer();
@@ -55,7 +55,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_Constructor_IEqualityComparer(int count)
         {
             IEqualityComparer<TKey> comparer = GetKeyIEqualityComparer();
@@ -66,7 +66,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_Constructor_int(int count)
         {
             IDictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>(count);
@@ -74,7 +74,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_Constructor_int_IEqualityComparer(int count)
         {
             IEqualityComparer<TKey> comparer = GetKeyIEqualityComparer();
@@ -116,7 +116,7 @@ namespace System.Collections.Tests
         #region ContainsValue
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_ContainsValue_NotPresent(int count)
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -128,7 +128,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_ContainsValue_Present(int count)
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -141,7 +141,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_ContainsValue_DefaultValueNotPresent(int count)
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -149,7 +149,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_ContainsValue_DefaultValuePresent(int count)
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -166,7 +166,7 @@ namespace System.Collections.Tests
         #region IReadOnlyDictionary<TKey, TValue>.Keys
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IReadOnlyDictionary_Generic_Keys_ContainsAllCorrectKeys(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
@@ -176,7 +176,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IReadOnlyDictionary_Generic_Values_ContainsAllCorrectValues(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
@@ -190,7 +190,7 @@ namespace System.Collections.Tests
         #region Remove(TKey)
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_RemoveKey_ValidKeyNotContainedInDictionary(int count)
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -203,7 +203,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_RemoveKey_ValidKeyContainedInDictionary(int count)
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -219,7 +219,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_RemoveKey_DefaultKeyNotContainedInDictionary(int count)
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -243,7 +243,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Dictionary_Generic_RemoveKey_DefaultKeyContainedInDictionary(int count)
         {
             if (DefaultValueAllowed)
@@ -312,7 +312,7 @@ namespace System.Collections.Tests
         #region EnsureCapacity
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void EnsureCapacity_Generic_RequestingLargerCapacity_DoesInvalidateEnumeration(int count)
         {
             var dictionary = (Dictionary<TKey, TValue>)(GenericIDictionaryFactory(count));
@@ -661,19 +661,8 @@ namespace System.Collections.Tests
             Assert.False(dictionary.TryGetAlternateLookup<int>(out _));
         }
 
-        public static IEnumerable<object[]> Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary_MemberData()
-        {
-            yield return new object[] { EqualityComparer<string>.Default };
-            yield return new object[] { StringComparer.Ordinal };
-            yield return new object[] { StringComparer.OrdinalIgnoreCase };
-            yield return new object[] { StringComparer.InvariantCulture };
-            yield return new object[] { StringComparer.InvariantCultureIgnoreCase };
-            yield return new object[] { StringComparer.CurrentCulture };
-            yield return new object[] { StringComparer.CurrentCultureIgnoreCase };
-        }
-
         [Theory]
-        [MemberData(nameof(Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary_MemberData))]
+        [MemberData(nameof(CollectionTestData.Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary_MemberData), MemberType = typeof(CollectionTestData))]
         public void Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary(IEqualityComparer<string> comparer)
         {
             // Test with a variety of comparers to ensure that the alternate lookup is consistent with the underlying dictionary

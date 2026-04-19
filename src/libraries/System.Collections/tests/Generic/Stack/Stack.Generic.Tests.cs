@@ -73,7 +73,7 @@ namespace System.Collections.Tests
         #region Constructor_IEnumerable
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(EnumerableTestData), MemberType = typeof(TestBase))]
         public void Stack_Generic_Constructor_IEnumerable(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             _ = setLength;
@@ -94,7 +94,7 @@ namespace System.Collections.Tests
         #region Constructor_Capacity
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_Constructor_int(int count)
         {
             Stack<T> stack = new Stack<T>(count);
@@ -122,7 +122,7 @@ namespace System.Collections.Tests
         #region Pop
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_Pop_AllElements(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
@@ -142,7 +142,7 @@ namespace System.Collections.Tests
         #region ToArray
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_ToArray(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
@@ -154,7 +154,7 @@ namespace System.Collections.Tests
         #region Peek
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_Peek_AllElements(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
@@ -198,7 +198,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_TrimExcess_OnValidStackThatHasntBeenRemovedFrom(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
@@ -206,7 +206,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_TrimExcess_Repeatedly(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
@@ -218,7 +218,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_TrimExcess_AfterRemovingOneElement(int count)
         {
             if (count > 0)
@@ -237,7 +237,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_TrimExcess_AfterClearingAndAddingSomeElementsBack(int count)
         {
             if (count > 0)
@@ -255,7 +255,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_TrimExcess_AfterClearingAndAddingAllElementsBack(int count)
         {
             if (count > 0)
@@ -286,7 +286,7 @@ namespace System.Collections.Tests
         #endregion
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_TryPop_AllElements(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
@@ -308,7 +308,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_TryPeek_AllElements(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
@@ -332,7 +332,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_EnsureCapacity_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
@@ -358,14 +358,8 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => stack.EnsureCapacity(-1));
         }
 
-        public static IEnumerable<object[]> Stack_Generic_EnsureCapacity_LargeCapacityRequested_Throws_MemberData()
-        {
-            yield return new object[] { Array.MaxLength + 1 };
-            yield return new object[] { int.MaxValue };
-        }
-
         [Theory]
-        [MemberData(nameof(Stack_Generic_EnsureCapacity_LargeCapacityRequested_Throws_MemberData))]
+        [MemberData(nameof(CollectionTestData.Stack_Generic_EnsureCapacity_LargeCapacityRequested_Throws_MemberData), MemberType = typeof(CollectionTestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51411", TestRuntimes.Mono)]
         public void Stack_Generic_EnsureCapacity_LargeCapacityRequested_Throws(int requestedCapacity)
         {
@@ -386,7 +380,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_EnsureCapacity_RequestedCapacitySmallerThanOrEqualToCount_CapacityUnchanged(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
@@ -411,7 +405,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Stack_Generic_EnsureCapacity_RequestingLargerCapacity_DoesNotImpactStackContent(int count)
         {
             Stack<T> stack = GenericStackFactory(count);

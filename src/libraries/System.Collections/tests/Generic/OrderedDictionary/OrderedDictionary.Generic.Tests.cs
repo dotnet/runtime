@@ -69,7 +69,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void OrderedDictionary_Generic_Constructor_IDictionary(int count)
         {
             IDictionary<TKey, TValue> source = GenericIDictionaryFactory(count);
@@ -86,7 +86,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void OrderedDictionary_Generic_Constructor_IEnumerable(int count)
         {
             IEnumerable<KeyValuePair<TKey, TValue>> initial = GenericIDictionaryFactory(count);
@@ -163,7 +163,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void TryAdd_AppendsItemToEndOfDictionary(int count)
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -191,7 +191,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void TryAdd_Index_AppendsItemToEndOfDictionary(int count)
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -209,7 +209,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        [MemberData(nameof(ValidPositiveCollectionSizes), MemberType = typeof(TestBase))]
         public void TryAdd_NewItem_IndexCorrect(int count)
         {
             var dictionary = new OrderedDictionary<TKey, TValue>();
@@ -231,7 +231,7 @@ namespace System.Collections.Tests
         #region TryGetValue
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void TryGetValue_Index_NullKeyThrows(int count)
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -251,7 +251,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void TryGetValue_ValidKeyNotContainedInDictionary(int count)
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -261,7 +261,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void TryGetValue_ValidKeyContainedInDictionary(int count)
         {
             OrderedDictionary<TKey, TValue>dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -278,7 +278,7 @@ namespace System.Collections.Tests
         #region ContainsValue
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void OrderedDictionary_Generic_ContainsValue_NotPresent(int count)
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -293,7 +293,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void OrderedDictionary_Generic_ContainsValue_Present(int count)
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -309,7 +309,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void OrderedDictionary_Generic_ContainsValue_DefaultValueNotPresent(int count)
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -317,7 +317,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void OrderedDictionary_Generic_ContainsValue_DefaultValuePresent(int count)
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -373,7 +373,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        [MemberData(nameof(ValidPositiveCollectionSizes), MemberType = typeof(TestBase))]
         public void OrderedDictionary_Generic_SetAt_GetAt_Roundtrip(int count)
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -418,7 +418,7 @@ namespace System.Collections.Tests
         #region Remove(..., out TValue)
 
         [Theory]
-        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        [MemberData(nameof(ValidPositiveCollectionSizes), MemberType = typeof(TestBase))]
         public void OrderedDictionary_Generic_Remove(int count)
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -439,7 +439,7 @@ namespace System.Collections.Tests
         #region TrimExcess
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void OrderedDictionary_Generic_TrimExcess(int count)
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -502,7 +502,7 @@ namespace System.Collections.Tests
         #region IReadOnlyDictionary<TKey, TValue>.Keys
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IReadOnlyDictionary_Generic_Keys_ContainsAllCorrectKeys(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
@@ -512,7 +512,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void IReadOnlyDictionary_Generic_Values_ContainsAllCorrectValues(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);

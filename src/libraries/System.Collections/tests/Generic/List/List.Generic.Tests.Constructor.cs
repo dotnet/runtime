@@ -45,7 +45,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(EnumerableTestData), MemberType = typeof(TestBase))]
         public void Constructor_IEnumerable(EnumerableType enumerableType, int listLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             _ = listLength;

@@ -56,7 +56,7 @@ namespace System.Collections.Tests
         #endregion
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void CopyTo_ArgumentValidity(int count)
         {
             List<T> list = GenericListFactory(count);

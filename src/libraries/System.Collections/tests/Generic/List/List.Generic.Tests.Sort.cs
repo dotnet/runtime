@@ -12,16 +12,10 @@ namespace System.Collections.Tests
     /// </summary>
     public abstract partial class List_Generic_Tests<T> : IList_Generic_Tests<T>
     {
-        public static IEnumerable<object[]> ValidCollectionSizes_GreaterThanOne()
-        {
-            yield return new object[] { 2 };
-            yield return new object[] { 20 };
-        }
-
         #region Sort
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
+        [MemberData(nameof(CollectionTestData.ValidCollectionSizes_GreaterThanOne), MemberType = typeof(CollectionTestData))]
         public void Sort_WithoutDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -34,7 +28,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
+        [MemberData(nameof(CollectionTestData.ValidCollectionSizes_GreaterThanOne), MemberType = typeof(CollectionTestData))]
         public void Sort_WithDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -52,7 +46,7 @@ namespace System.Collections.Tests
         #region Sort(IComparer)
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
+        [MemberData(nameof(CollectionTestData.ValidCollectionSizes_GreaterThanOne), MemberType = typeof(CollectionTestData))]
         public void Sort_IComparer_WithoutDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -65,7 +59,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
+        [MemberData(nameof(CollectionTestData.ValidCollectionSizes_GreaterThanOne), MemberType = typeof(CollectionTestData))]
         public void Sort_IComparer_WithDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -83,7 +77,7 @@ namespace System.Collections.Tests
         #region Sort(Comparison)
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
+        [MemberData(nameof(CollectionTestData.ValidCollectionSizes_GreaterThanOne), MemberType = typeof(CollectionTestData))]
         public void Sort_Comparison_WithoutDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -97,7 +91,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
+        [MemberData(nameof(CollectionTestData.ValidCollectionSizes_GreaterThanOne), MemberType = typeof(CollectionTestData))]
         public void Sort_Comparison_WithDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -116,7 +110,7 @@ namespace System.Collections.Tests
         #region Sort(int, int, IComparer<T>)
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
+        [MemberData(nameof(CollectionTestData.ValidCollectionSizes_GreaterThanOne), MemberType = typeof(CollectionTestData))]
         public void Sort_intintIComparer_WithoutDuplicates(int count)
         {
             List<T> unsortedList = GenericListFactory(count);
@@ -132,7 +126,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
+        [MemberData(nameof(CollectionTestData.ValidCollectionSizes_GreaterThanOne), MemberType = typeof(CollectionTestData))]
         public void Sort_intintIComparer_WithDuplicates(int count)
         {
             List<T> unsortedList = GenericListFactory(count);
@@ -149,7 +143,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Sort_intintIComparer_NegativeRange_ThrowsArgumentOutOfRangeException(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -175,7 +169,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
+        [MemberData(nameof(ValidCollectionSizes), MemberType = typeof(TestBase))]
         public void Sort_intintIComparer_InvalidRange_ThrowsArgumentException(int count)
         {
             List<T> list = GenericListFactory(count);
