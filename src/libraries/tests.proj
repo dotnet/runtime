@@ -797,8 +797,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(RunAOTCompilation)' == 'true'">
-    <!-- Only System.Runtime tests on iOS for now -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
+    <!-- Only System.Runtime tests on iOS for now.
+         Skip when RunSmokeTestsOnly: SmokeTestProject items handle smoke selection
+         with proper TargetOS conditions (XHarness xunit v2 incompatibility). -->
+    <ProjectReference Condition="'$(RunSmokeTestsOnly)' != 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
 
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
@@ -806,8 +808,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
-    <!-- Only System.Runtime tests on iOS for now -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
+    <!-- Only System.Runtime tests on iOS for now.
+         Skip when RunSmokeTestsOnly: SmokeTestProject items handle smoke selection
+         with proper TargetOS conditions (XHarness xunit v2 incompatibility). -->
+    <ProjectReference Condition="'$(RunSmokeTestsOnly)' != 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
 
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
