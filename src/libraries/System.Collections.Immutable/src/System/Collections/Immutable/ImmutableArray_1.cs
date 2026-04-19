@@ -173,8 +173,7 @@ namespace System.Collections.Immutable
                 return -1;
             }
 
-            Requires.Range(startIndex >= 0 && startIndex <= self.Length, nameof(startIndex));
-            Requires.Range(count >= 0 && (uint)(startIndex + count) <= (uint)self.Length, nameof(count));
+            Requires.ValidateRange(startIndex, count, self.Length, nameof(startIndex));
 
             equalityComparer ??= EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)
@@ -826,8 +825,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
-            Requires.Range(index >= 0 && index <= self.Length, nameof(index));
-            Requires.Range(count >= 0 && (uint)(index + count) <= (uint)self.Length, nameof(count));
+            Requires.ValidateRange(index, count, self.Length);
 
             // 0 and 1 element arrays don't need to be sorted.
             if (count > 1)
