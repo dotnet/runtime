@@ -753,7 +753,7 @@ static int32_t ForkAndExecProcessInternal(
 #if HAVE_PR_SET_PDEATHSIG
     // Capture the parent PID before fork so the child can verify it hasn't been
     // reparented (e.g., to a subreaper) between fork and prctl.
-    pid_t expectedParentPid = applyPDeathSig ? getpid() : 0;
+    pid_t expectedParentPid = getpid();
 #endif
 
 // vfork on OS X is deprecated
