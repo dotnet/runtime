@@ -190,6 +190,11 @@ namespace System.Diagnostics
         /// advances <paramref name="startIndex"/> past it. Called once per stream after the first
         /// decode that produces characters, to match <see cref="StreamReader"/> BOM-stripping behavior.
         /// </summary>
+        /// <param name="charBuffer">The decoded character buffer.</param>
+        /// <param name="endIndex">Exclusive upper bound of valid characters in <paramref name="charBuffer"/>.</param>
+        /// <param name="startIndex">
+        /// Current read position in <paramref name="charBuffer"/>; advanced by one if a BOM is found.
+        /// </param>
         private static void SkipBomIfPresent(char[] charBuffer, int endIndex, ref int startIndex)
         {
             if (startIndex < endIndex && charBuffer[startIndex] == '\uFEFF')
