@@ -577,11 +577,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Mobile/wasm/wasi platforms use XHarness test runners (AppleTestRunner, AndroidTestRunner,
-         WasmTestRunner) which depend on Microsoft.DotNet.XHarness.TestRunners.Xunit built against
-         xunit v2. These runners crash or silently find 0 tests with xunit v3 assemblies.
-         Re-enable once XHarness is updated to support xunit v3. -->
-    <SmokeTestProject Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(TargetsMobile)' != 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
+    <!-- Apple and browser/wasi platforms use XHarness test runners that depend on xunit v2.
+         Apple crashes at startup; wasm gets ReflectionAssemblyInfo constructor error.
+         Android does not crash (gracefully runs 0 tests) so keep it included to avoid
+         empty Helix work item errors. Re-enable once XHarness supports xunit v3. -->
+    <SmokeTestProject Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
   </ItemGroup>
 
   <!-- browser smoke tests Mono (disabled: XHarness xunit v2 incompatibility with xunit v3) -->

@@ -327,10 +327,7 @@
     <Message Text="HelixCorrelationPayload: %(HelixCorrelationPayload.Identity)" Condition="'$(HelixDryRun)' == 'true'" Importance="High" />
     <Message Text="HelixWorkItem: %(HelixWorkItem.Identity), Command: %(HelixWorkItem.Command), PreCommands: %(HelixWorkItem.PreCommands) with PayloadArchive: %(HelixWorkItem.PayloadArchive)" Condition="'$(HelixDryRun)' == 'true'" Importance="High" />
 
-    <!-- When running smoke tests only, 0 items is allowed (e.g., disabled platform smoke tests). -->
-    <Warning Condition="@(HelixWorkItemOrXHarnessTest->Count()) == 0 and '$(RunSmokeTestsOnly)' == 'true'"
-             Text="No helix work items found for smoke tests — all smoke tests may be disabled for this platform." />
-    <Error Condition="@(HelixWorkItemOrXHarnessTest->Count()) == 0 and '$(RunSmokeTestsOnly)' != 'true'"
+    <Error Condition="@(HelixWorkItemOrXHarnessTest->Count()) == 0"
            Text="No helix work items, or APKs, or AppBundles found to test" />
 
     <Error Condition="'%(HelixWorkItem.Identity)' != '' and ('%(HelixWorkItem.PayloadArchive)' == '' or !Exists(%(HelixWorkItem.PayloadArchive)))"
