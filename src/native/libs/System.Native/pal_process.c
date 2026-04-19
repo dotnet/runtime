@@ -328,6 +328,13 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
     }
 }
 
+// Forward declaration of the internal fork+exec function
+static int32_t ForkAndExecProcessInternal(
+    const char* filename, char* const argv[], char* const envp[], const char* cwd,
+    int32_t setCredentials, uint32_t userId, uint32_t groupId, uint32_t* groups, int32_t groupsLength,
+    int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
+    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig);
+
 #if HAVE_PR_SET_PDEATHSIG
 // Dedicated thread infrastructure for PR_SET_PDEATHSIG.
 //
@@ -364,13 +371,6 @@ typedef struct
     int32_t result;
     int32_t errnoValue;
 } PDeathSigForkRequest;
-
-// Forward declaration of the internal fork+exec function
-static int32_t ForkAndExecProcessInternal(
-    const char* filename, char* const argv[], char* const envp[], const char* cwd,
-    int32_t setCredentials, uint32_t userId, uint32_t groupId, uint32_t* groups, int32_t groupsLength,
-    int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
-    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig);
 
 static pthread_mutex_t s_pdeathsig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t s_pdeathsig_request_cond = PTHREAD_COND_INITIALIZER;
@@ -409,14 +409,7 @@ static void* PDeathSigThreadFunc(void* arg)
         pthread_cond_signal(&s_pdeathsig_done_cond);
     }
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunreachable-code-return"
-#endif
-    return NULL; // Unreachable, but required to satisfy -Werror=return-type on GCC
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
+    return NULL;
 }
 
 static int EnsurePDeathSigThread(void)
