@@ -160,7 +160,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new InvalidOperationException(SR.InvalidProcessHandle);
             }
 
-            ProcessWaitState.Holder holder = new ProcessWaitState.Holder(processId, isNewChild: false, usesTerminal: false);
+            ProcessWaitState.Holder holder = new ProcessWaitState.Holder(processId);
             waitState = holder._state;
 
             ProcessWaitState? existing = Interlocked.CompareExchange(ref _waitState, waitState, null);
