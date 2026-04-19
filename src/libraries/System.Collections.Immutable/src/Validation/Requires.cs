@@ -107,6 +107,26 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Validates that <paramref name="index"/> and <paramref name="count"/> represent a valid range
+        /// within a collection of size <paramref name="listCount"/>.
+        /// </summary>
+        /// <param name="index">The zero-based starting index of the range.</param>
+        /// <param name="count">The number of elements in the range.</param>
+        /// <param name="listCount">The total number of elements in the collection.</param>
+        /// <param name="indexParameterName">The name of the index parameter for exception messages.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is negative or greater than <paramref name="listCount"/>,
+        /// or <paramref name="count"/> is negative or <c>index + count</c> exceeds <paramref name="listCount"/>.
+        /// </exception>
+        [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateRange(int index, int count, int listCount, string indexParameterName = "index")
+        {
+            Range(index >= 0 && index <= listCount, indexParameterName);
+            Range(count >= 0 && (uint)(index + count) <= (uint)listCount, nameof(count));
+        }
+
+        /// <summary>
         /// Throws an <see cref="ArgumentException"/> if a condition does not evaluate to true.
         /// </summary>
         [DebuggerStepThrough]

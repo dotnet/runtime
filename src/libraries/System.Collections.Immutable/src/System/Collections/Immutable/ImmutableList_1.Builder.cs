@@ -54,6 +54,7 @@ namespace System.Collections.Immutable
             internal Builder(ImmutableList<T> list)
             {
                 Requires.NotNull(list, nameof(list));
+
                 _root = list._root;
                 _immutable = list;
             }
@@ -319,8 +320,8 @@ namespace System.Collections.Immutable
             /// </returns>
             public ImmutableList<T> GetRange(int index, int count)
             {
-                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
+                Requires.ValidateRange(index, count, this.Count);
+
                 return ImmutableList<T>.WrapNode(Node.NodeTreeFromList(this, index, count));
             }
 
@@ -342,6 +343,7 @@ namespace System.Collections.Immutable
             public ImmutableList<TOutput> ConvertAll<TOutput>(Func<T, TOutput> converter)
             {
                 Requires.NotNull(converter, nameof(converter));
+
                 return ImmutableList<TOutput>.WrapNode(_root.ConvertAll(converter));
             }
 
@@ -850,8 +852,7 @@ namespace System.Collections.Immutable
             /// <param name="count">The number of elements in the range to reverse.</param>
             public void Reverse(int index, int count)
             {
-                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
+                Requires.ValidateRange(index, count, this.Count);
 
                 this.Root = this.Root.Reverse(index, count);
             }
@@ -876,6 +877,7 @@ namespace System.Collections.Immutable
             public void Sort(Comparison<T> comparison)
             {
                 Requires.NotNull(comparison, nameof(comparison));
+
                 this.Root = this.Root.Sort(comparison);
             }
 
@@ -908,8 +910,8 @@ namespace System.Collections.Immutable
             /// </param>
             public void Sort(int index, int count, IComparer<T>? comparer)
             {
-                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
+                Requires.ValidateRange(index, count, this.Count);
+
                 this.Root = this.Root.Sort(index, count, comparer);
             }
 
@@ -990,8 +992,8 @@ namespace System.Collections.Immutable
             /// </exception>
             public int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
             {
-                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
+                Requires.ValidateRange(index, count, this.Count);
+
                 return this.Root.BinarySearch(index, count, item, comparer);
             }
 
@@ -1177,6 +1179,7 @@ namespace System.Collections.Immutable
         public ImmutableListBuilderDebuggerProxy(ImmutableList<T>.Builder builder)
         {
             Requires.NotNull(builder, nameof(builder));
+
             _list = builder;
         }
 

@@ -757,8 +757,7 @@ namespace System.Collections.Immutable
             /// </returns>
             internal int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
             {
-                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
+                Requires.ValidateRange(index, count, this.Count);
 
                 equalityComparer ??= EqualityComparer<T>.Default;
                 using (var enumerator = new Enumerator(this, startIndex: index, count: count))
@@ -887,8 +886,7 @@ namespace System.Collections.Immutable
             internal void CopyTo(int index, T[] array, int arrayIndex, int count)
             {
                 Requires.NotNull(array, nameof(array));
-                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
+                Requires.ValidateRange(index, count, this.Count);
                 Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + count) <= (uint)array.Length, nameof(arrayIndex));
 
                 using (var enumerator = new Enumerator(this, startIndex: index, count: count))
@@ -1120,8 +1118,7 @@ namespace System.Collections.Immutable
             internal int FindIndex(int startIndex, int count, Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
-                Requires.Range(startIndex >= 0 && startIndex <= this.Count, nameof(startIndex));
-                Requires.Range(count >= 0 && (uint)(startIndex + count) <= (uint)this.Count, nameof(count));
+                Requires.ValidateRange(startIndex, count, this.Count, nameof(startIndex));
 
                 using (var enumerator = new Enumerator(this, startIndex: startIndex, count: count))
                 {
