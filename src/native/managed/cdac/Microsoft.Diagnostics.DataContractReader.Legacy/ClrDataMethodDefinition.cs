@@ -171,9 +171,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         if (gcHandle.Target is not SOSDacImpl.EnumMethodInstances emi)
             return HResults.E_INVALIDARG;
 
-        if (instance.IsNullRef)
-            return HResults.E_INVALIDARG;
-
         // Advance the legacy enumeration to keep it in sync with the cDAC enumeration.
         // The legacy method instance is passed to ClrDataMethodInstance for delegation.
         IXCLRDataMethodInstance? legacyMethod = null;
