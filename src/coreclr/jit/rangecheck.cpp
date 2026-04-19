@@ -1093,11 +1093,17 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             // is e.g. V = phi(V0, V - 8), and the back-edge JTRUE generates an assertion of the
             // form "8 <= (V + -8)" against the phi's VN. We want to apply that assertion to the
             // value of the back-edge phi-arg "(V - 8)" itself.
+            //
+            // Note: when boundCns == 0, the trivial check above is exhaustive -- VN normalizes
+            // ADD(x, 0) to x, so any IsVNBinFuncWithConst match would also have to satisfy
+            // normalLclVN == boundVN, which the trivial check already covers. Skip the lookup
+            // in that case to keep this fast-path cheap.
             ValueNum   addOp;
             int        addCns;
             const bool normalLclVNMatchesOp2 =
                 ((normalLclVN == boundVN) && (boundCns == 0)) ||
-                (comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) && (addOp == boundVN) &&
+                ((boundCns != 0) &&
+                 comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) && (addOp == boundVN) &&
                  (addCns == boundCns));
 
             if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()))
