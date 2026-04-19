@@ -296,7 +296,6 @@ internal partial class MockDescriptors
             totalAllocSize += (uint)(size * MethodDescAlignment);
 
             MockMemorySpace.HeapFragment fragment = _allocator.Allocate(totalAllocSize, $"MethodDescChunk {name}");
-            Builder.AddHeapFragment(fragment);
 
             MockMethodDescChunk chunk = MethodDescChunkLayout.Create(fragment.Data.AsMemory(), fragment.Address);
             return chunk;
@@ -307,7 +306,6 @@ internal partial class MockDescriptors
             ArgumentNullException.ThrowIfNull(typeArgs);
 
             MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)(typeArgs.Length * TargetTestHelpers.PointerSize), "PerInstInfo");
-            Builder.AddHeapFragment(fragment);
 
             MockPerInstInfo perInstInfo = PerInstInfoLayout.Create(fragment.Data.AsMemory(), fragment.Address);
             for (int i = 0; i < typeArgs.Length; i++)

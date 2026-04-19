@@ -38,6 +38,7 @@ internal struct MethodTableFlags_1
         Category_Array = 0x00080000,
         Category_IfArrayThenSzArray = 0x00020000,
         Category_Array_Mask = 0x000C0000,
+        Category_ValueType_Mask = 0x000C0000,
         Category_ElementType_Mask = 0x000E0000,
         Category_ValueType = 0x00040000,
         Category_Nullable = 0x00050000,
@@ -45,8 +46,10 @@ internal struct MethodTableFlags_1
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000, // GC depends on this bit.
+        RequiresAlign8 = 0x00800000,
 
         ContainsGCPointers = 0x01000000,
+        ContainsGenericVariables = 0x20000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                         // otherwise the lower bits are used for WFLAGS_LOW
     }
@@ -92,15 +95,18 @@ internal struct MethodTableFlags_1
 
     public bool HasComponentSize => GetFlag(WFLAGS_HIGH.HasComponentSize) != 0;
     public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
+    public bool IsValueType => GetFlag(WFLAGS_HIGH.Category_ValueType_Mask) == WFLAGS_HIGH.Category_ValueType;
     public bool IsString => HasComponentSize && !IsArray && ComponentSizeBits == 2;
     public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
     public bool IsStringOrArray => HasComponentSize;
     public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
     public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
     public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
+    public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
     public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
     public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
     public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
+    public bool ContainsGenericVariables => GetFlag(WFLAGS_HIGH.ContainsGenericVariables) != 0;
 
     internal static EEClassOrCanonMTBits GetEEClassOrCanonMTBits(TargetPointer eeClassOrCanonMTPtr)
     {

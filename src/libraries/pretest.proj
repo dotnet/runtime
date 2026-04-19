@@ -20,6 +20,10 @@
     <!-- Task for building the PlatformManifest and the sfx deps.json -->
     <ProjectReference Include="$(RepoTasksDir)installer.tasks\installer.tasks.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
 
+    <!-- Hot reload delta generator tool, used by ApplyUpdate test projects -->
+    <ProjectReference Include="$(ToolsProjectRoot)hotreload-delta-gen\Microsoft.DotNet.HotReload.Utils.Generator.BuildTool\Microsoft.DotNet.HotReload.Utils.Generator.BuildTool.csproj" />
+    <ProjectReference Include="$(ToolsProjectRoot)hotreload-delta-gen\Microsoft.DotNet.HotReload.Utils.Generator.Tasks\Microsoft.DotNet.HotReload.Utils.Generator.Tasks.csproj" />
+
     <!-- HelixTestTasks for batched WASM library tests on Helix -->
     <ProjectReference Include="$(RepoTasksDir)HelixTestTasks\HelixTestTasks.csproj" Condition="'$(TargetOS)' == 'browser'" />
 
