@@ -22,11 +22,6 @@
 
 #include "cdacdata.h"
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 4127) // conditional expression is constant
-#endif
-
 // ---------------------------------------------------------------------------
 // DoNothingFailFastPolicy — default no-op FailFast for Iterator validation.
 // ---------------------------------------------------------------------------
@@ -289,6 +284,7 @@ public:
     Iterator Insert(Iterator & it, PTR_T pItem)
     {
         static_assert(!Traits::HasTail, "Iterator Insert cannot maintain m_pTail");
+        static_assert(!Traits::IsInterlocked, "Iterator Insert is not safe on interlocked lists");
         return it.Insert(pItem);
     }
 
@@ -296,6 +292,7 @@ public:
     Iterator Remove(Iterator & it)
     {
         static_assert(!Traits::HasTail, "Iterator Remove cannot maintain m_pTail");
+        static_assert(!Traits::IsInterlocked, "Iterator Remove is not safe on interlocked lists");
         return it.Remove();
     }
 
@@ -403,6 +400,7 @@ public:
     static void InsertAfter(PTR_T pAfter, PTR_T pNewItem)
     {
         static_assert(!Traits::IsInterlocked, "InsertAfter is not safe on interlocked lists");
+        static_assert(!Traits::HasTail, "InsertAfter cannot maintain m_pTail");
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pAfter != NULL && pNewItem != NULL);
         _ASSERTE(*Traits::GetNextPtr(pNewItem) == NULL);
@@ -479,9 +477,5 @@ struct SListElem
     { }
 };
 #endif // !FEATURE_NATIVEAOT
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 #endif // _H_SLIST_

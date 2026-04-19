@@ -1105,7 +1105,6 @@ HRESULT __stdcall ConnectionEnum::Next(ULONG cConnections, CONNECTDATA* rgcd, UL
 
     HRESULT hr = S_OK;
     UINT cFetched;
-    CONNECTIONCOOKIELIST *pConnectionList = m_pConnectionPoint->GetCookieList();
 
     // Acquire the connection point's lock before we start traversing the connection list.
     {
@@ -1149,7 +1148,6 @@ HRESULT __stdcall ConnectionEnum::Skip(ULONG cConnections)
     SetupForComCallHR();
 
     HRESULT hr = S_FALSE;
-    CONNECTIONCOOKIELIST *pConnectionList = m_pConnectionPoint->GetCookieList();
 
     {
         ConnectionPoint::LockHolder lh(m_pConnectionPoint);

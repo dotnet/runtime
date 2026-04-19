@@ -457,6 +457,7 @@ private:
         ListLockEntry *m_pListLockEntry;
         explicit FailedTypeInitCleanupListItem(ListLockEntry *pListLockEntry)
                 :
+            m_pNext(PTR_NULL),
             m_pListLockEntry(pListLockEntry)
         {
         }
@@ -1021,6 +1022,7 @@ private:
         OBJECTHANDLE m_handle;
         explicit HandleCleanupListItem(OBJECTHANDLE handle)
                 :
+            m_pNext(PTR_NULL),
             m_handle(handle)
         {
         }

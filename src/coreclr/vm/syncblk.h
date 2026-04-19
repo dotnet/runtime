@@ -418,17 +418,15 @@ class SyncBlock
     // If this object is exposed to unmanaged code, we keep some extra info here.
     PTR_InteropSyncBlockInfo    m_pInteropInfo;
 
+    // Next pointer for linked-list linkage (SyncBlockCache free and cleanup lists).
+    PTR_SyncBlock  m_pNext;
+
   protected:
 #ifdef FEATURE_METADATA_UPDATER
     // And if the object has new fields added via EnC, this is a list of them
     PTR_EnCSyncBlockInfo m_pEnCInfo;
 #endif // FEATURE_METADATA_UPDATER
 
-  public:
-    // Next pointer for SList linkage (SyncBlockCache free and cleanup lists).
-    PTR_SyncBlock  m_pNext;
-
-  protected:
     // This is the hash code for the object. It can either have been transferred
     // from the header dword, in which case it will be limited to 26 bits, or
     // have been generated right into this member variable here, when it will
@@ -445,10 +443,10 @@ class SyncBlock
         : m_Lock((OBJECTHANDLE)NULL)
         , m_thinLock()
         , m_dwSyncIndex(indx)
+        , m_pNext(PTR_NULL)
 #ifdef FEATURE_METADATA_UPDATER
         , m_pEnCInfo(PTR_NULL)
 #endif // FEATURE_METADATA_UPDATER
-        , m_pNext(PTR_NULL)
         , m_dwHashCode(0)
     {
         LIMITED_METHOD_CONTRACT;
