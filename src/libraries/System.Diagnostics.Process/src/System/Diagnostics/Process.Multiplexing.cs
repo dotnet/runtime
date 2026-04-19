@@ -186,6 +186,19 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// If the first character at <paramref name="startIndex"/> is the Unicode BOM (U+FEFF),
+        /// advances <paramref name="startIndex"/> past it. Called once per stream after the first
+        /// decode that produces characters, to match <see cref="StreamReader"/> BOM-stripping behavior.
+        /// </summary>
+        private static void SkipBomIfPresent(char[] charBuffer, int endIndex, ref int startIndex)
+        {
+            if (startIndex < endIndex && charBuffer[startIndex] == '\uFEFF')
+            {
+                startIndex++;
+            }
+        }
+
+        /// <summary>
         /// Scans the char buffer from <paramref name="startIndex"/> to <paramref name="endIndex"/> for complete
         /// lines (delimited by <c>\n</c>), adds each as a <see cref="ProcessOutputLine"/> to
         /// <paramref name="lines"/>, and advances <paramref name="startIndex"/> past the consumed data.

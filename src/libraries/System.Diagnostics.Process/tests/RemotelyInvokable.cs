@@ -135,6 +135,22 @@ namespace System.Diagnostics.Tests
             return SuccessExitCode;
         }
 
+        public static int WriteLinesToBothStreamsWithEncoding(string encodingName)
+        {
+            Encoding encoding = Encoding.GetEncoding(encodingName);
+            using (var outputWriter = new StreamWriter(Console.OpenStandardOutput(), encoding))
+            {
+                outputWriter.WriteLine("stdout_line");
+            }
+
+            using (var errorWriter = new StreamWriter(Console.OpenStandardError(), encoding))
+            {
+                errorWriter.WriteLine("stderr_line");
+            }
+
+            return SuccessExitCode;
+        }
+
         public static int SelfTerminate()
         {
             Process.GetCurrentProcess().Kill();

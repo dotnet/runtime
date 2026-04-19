@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -437,6 +438,45 @@ namespace System.Diagnostics.Tests
 
             Assert.NotNull(firstLine);
             Assert.NotNull(firstLine.Value.Content);
+
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("utf-8", true)]
+        [InlineData("utf-8", false)]
+        [InlineData("utf-16", true)]
+        [InlineData("utf-16", false)]
+        [InlineData("utf-32", true)]
+        [InlineData("utf-32", false)]
+        public async Task ReadAllLines_WorksWithNonDefaultEncodings(string encodingName, bool useAsync)
+        {
+            Encoding encoding = Encoding.GetEncoding(encodingName);
+
+            using Process process = CreateProcessPortable(RemotelyInvokable.WriteLinesToBothStreamsWithEncoding, encodingName);
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.StandardOutputEncoding = encoding;
+            process.StartInfo.StandardErrorEncoding = encoding;
+            process.Start();
+
+            List<string> capturedOutput = new();
+            List<string> capturedError = new();
+
+            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
+            {
+                if (line.StandardError)
+                {
+                    capturedError.Add(line.Content);
+                }
+                else
+                {
+                    capturedOutput.Add(line.Content);
+                }
+            }
+
+            Assert.Equal(new[] { "stdout_line" }, capturedOutput);
+            Assert.Equal(new[] { "stderr_line" }, capturedError);
 
             Assert.True(process.WaitForExit(WaitInMS));
         }

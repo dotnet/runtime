@@ -64,6 +64,7 @@ namespace System.Diagnostics
 
                 int outputCharStart = 0, outputCharEnd = 0;
                 int errorCharStart = 0, errorCharEnd = 0;
+                bool outputBomChecked = false, errorBomChecked = false;
 
                 unsafe
                 {
@@ -110,12 +111,22 @@ namespace System.Diagnostics
                         if (isError)
                         {
                             DecodeAndAppendChars(errorDecoder, errorByteBuffer, 0, bytesRead, flush: false, ref errorCharBuffer, ref errorCharEnd);
+                            if (!errorBomChecked && errorCharEnd > 0)
+                            {
+                                SkipBomIfPresent(errorCharBuffer, errorCharEnd, ref errorCharStart);
+                                errorBomChecked = true;
+                            }
                             ParseLinesFromCharBuffer(errorCharBuffer, ref errorCharStart, errorCharEnd, true, lines);
                             CompactOrGrowCharBuffer(ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
                         }
                         else
                         {
                             DecodeAndAppendChars(outputDecoder, outputByteBuffer, 0, bytesRead, flush: false, ref outputCharBuffer, ref outputCharEnd);
+                            if (!outputBomChecked && outputCharEnd > 0)
+                            {
+                                SkipBomIfPresent(outputCharBuffer, outputCharEnd, ref outputCharStart);
+                                outputBomChecked = true;
+                            }
                             ParseLinesFromCharBuffer(outputCharBuffer, ref outputCharStart, outputCharEnd, false, lines);
                             CompactOrGrowCharBuffer(ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
                         }
