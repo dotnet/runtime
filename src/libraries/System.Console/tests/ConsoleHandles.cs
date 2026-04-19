@@ -118,25 +118,29 @@ namespace System.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void UnixConsoleStream_SeekableStdoutRedirection_WritesAllContent()
         {
-            const string outputContent = "Hello seekable stdout!";
+            const string outputContentPart1 = "Hello seekable ";
+            const string outputContentPart2 = "stdout!";
             string testFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
                 using SafeFileHandle stdoutHandle = File.OpenHandle(testFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
                 using RemoteInvokeHandle handle = RemoteExecutor.Invoke(
-                    static (data) =>
+                    static (part1, part2) =>
                     {
-                        Console.OpenStandardOutput().Write(Encoding.UTF8.GetBytes(data));
+                        Stream stdout = Console.OpenStandardOutput();
+                        stdout.Write(Encoding.UTF8.GetBytes(part1));
+                        stdout.Write(Encoding.UTF8.GetBytes(part2));
                         return RemoteExecutor.SuccessExitCode;
                     },
-                    outputContent,
+                    outputContentPart1,
+                    outputContentPart2,
                     new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { StandardOutputHandle = stdoutHandle } });
 
                 stdoutHandle.Dispose();
                 Assert.True(handle.Process.WaitForExit(30_000), "Process did not exit in time.");
 
                 string output = File.ReadAllText(testFilePath, Encoding.UTF8);
-                Assert.Equal(outputContent, output);
+                Assert.Equal(outputContentPart1 + outputContentPart2, output);
             }
             finally
             {
