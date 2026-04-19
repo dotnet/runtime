@@ -5626,8 +5626,17 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             return AssertVisit::Abort;
         }
 
-        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
-        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
+        // Read the VN from the phi arg's SSA def rather than from phiArg->gtVNPair: by SSA
+        // construction the value flowing along this predecessor edge is exactly that SSA
+        // def's value, and m_vnPair is always at least as precise as the cached gtVNPair.
+        // In particular, fgValueNumberPhiDef may leave gtVNPair as NoVN (or as a stale prior
+        // VN) when it refuses to back-patch a loop-varying SSA-def VN into the phi-arg slot
+        // -- a hygiene constraint for general gtVNPair consumers that does not apply here,
+        // since we hand the VN to the visitor together with this edge's assertion set and
+        // never write it back into any tree.
+        LclSsaVarDsc*  phiArgSsaDef = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum());
+        const ValueNum phiArgVN     = vnStore->VNConservativeNormalValue(phiArgSsaDef->m_vnPair);
+        ASSERT_TP      assertions   = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
         {
             // The visitor wants to abort the walk.

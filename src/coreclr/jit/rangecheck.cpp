@@ -1082,17 +1082,33 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         else if (curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
                  curAssertion.GetOp2().KindIs(Compiler::O2K_CHECKED_BOUND_ADD_CNS))
         {
+            const ValueNum boundVN  = curAssertion.GetOp2().GetCheckedBound();
+            const int      boundCns = curAssertion.GetOp2().GetCheckedBoundConstant();
+
+            // Check whether normalLclVN VN-equals the op2 expression "(boundVN + boundCns)":
+            //  - trivially, when boundCns is 0 and normalLclVN == boundVN, or
+            //  - when normalLclVN itself is the value-number "ADD(boundVN, boundCns)".
+            //
+            // The general case commonly arises on a loop back-edge where the induction variable
+            // is e.g. V = phi(V0, V - 8), and the back-edge JTRUE generates an assertion of the
+            // form "8 <= (V + -8)" against the phi's VN. We want to apply that assertion to the
+            // value of the back-edge phi-arg "(V - 8)" itself.
+            ValueNum   addOp;
+            int        addCns;
+            const bool normalLclVNMatchesOp2 =
+                ((normalLclVN == boundVN) && (boundCns == 0)) ||
+                (comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) && (addOp == boundVN) &&
+                 (addCns == boundCns));
+
             if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()))
             {
                 cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
-                limit   = Limit(Limit::keBinOpArray, curAssertion.GetOp2().GetCheckedBound(),
-                                curAssertion.GetOp2().GetCheckedBoundConstant());
+                limit   = Limit(Limit::keBinOpArray, boundVN, boundCns);
             }
-            else if ((normalLclVN == curAssertion.GetOp2().GetCheckedBound()) &&
-                     (curAssertion.GetOp2().GetCheckedBoundConstant() == 0))
+            else if (normalLclVNMatchesOp2)
             {
-                // Check if it's "Const <relop> (checkedBndVN + 0)" or in other words "Const <relop> checkedBndVN"
-                // If normalLclVN == checkedBndVN, then we can deduce "normalLclVN <relop> Const"
+                // Check if it's "Const <relop> (checkedBndVN + cns)" or in other words "Const <relop> normalLclVN"
+                // If normalLclVN VN-equals (checkedBndVN + cns), we can deduce "normalLclVN <relop> Const"
                 //
                 // Example: We created "O1K_VN(vn1) - OAK_GT - O2K_CHECKED_BOUND_ADD_CNS(vn2, 0)"
                 // if vn1 is a constant (say, 100) and vn2 is our normalLclVN, we can deduce "normalLclVN < 100"
