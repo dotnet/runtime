@@ -404,9 +404,11 @@ static void* PDeathSigThreadFunc(void* arg)
         req->childPid = childPid;
         req->errnoValue = errno;
 
-        // Signal completion
+        // Signal completion. Use broadcast (not signal) because multiple callers may be
+        // waiting on done_cond simultaneously. Each caller checks s_pdeathsig_request == NULL
+        // in a while loop, so spurious wakeups are handled correctly.
         s_pdeathsig_request = NULL;
-        pthread_cond_signal(&s_pdeathsig_done_cond);
+        pthread_cond_broadcast(&s_pdeathsig_done_cond);
     }
 
     return NULL;
