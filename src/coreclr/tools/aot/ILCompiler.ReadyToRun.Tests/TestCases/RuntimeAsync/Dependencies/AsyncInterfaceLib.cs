@@ -1,6 +1,5 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Dependency library: defines an async interface and sealed implementation
+// for cross-module async devirtualization tests in composite mode.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

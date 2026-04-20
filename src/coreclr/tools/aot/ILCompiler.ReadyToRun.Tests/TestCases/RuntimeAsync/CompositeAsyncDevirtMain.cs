@@ -1,6 +1,6 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Test: Composite mode async devirtualization across module boundaries.
+// Interface defined in AsyncInterfaceLib, call sites here.
+// In composite mode, crossgen2 should devirtualize sealed type dispatch.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

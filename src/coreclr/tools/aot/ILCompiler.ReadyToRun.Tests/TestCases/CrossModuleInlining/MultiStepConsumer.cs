@@ -1,6 +1,6 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Test: Non-composite consumer of assemblies that were also compiled as composite.
+// Step 1 compiles MultiStepLibA + MultiStepLibB as composite.
+// Step 2 compiles this assembly non-composite with --ref to LibA and --opt-cross-module.
 using System;
 using System.Runtime.CompilerServices;
 

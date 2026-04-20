@@ -1,6 +1,5 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Middle library in async transitive chain: AsyncTransitiveMain → AsyncTransitiveLib → AsyncExternalLib.
+// Contains runtime-async methods that reference types from AsyncExternalLib.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

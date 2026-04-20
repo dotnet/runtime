@@ -1,6 +1,6 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Test: Transitive cross-module references
+// Validates that when InlineableLibTransitive is inlined, its references to ExternalLib
+// are properly encoded in the R2R image (requiring tokens for both libraries).
 using System;
 using System.Runtime.CompilerServices;
 

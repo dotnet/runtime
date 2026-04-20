@@ -1,6 +1,5 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Second library for multi-step composite compilation.
+// Compiled together with MultiStepLibA as a composite in step 1.
 using System;
 using System.Runtime.CompilerServices;
 

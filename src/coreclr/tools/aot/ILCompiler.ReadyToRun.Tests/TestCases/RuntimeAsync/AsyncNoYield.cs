@@ -1,6 +1,6 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Test: Async method without yields (no suspension point)
+// When a runtime-async method never actually awaits, crossgen2 may
+// omit the resumption stub. This tests that edge case.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

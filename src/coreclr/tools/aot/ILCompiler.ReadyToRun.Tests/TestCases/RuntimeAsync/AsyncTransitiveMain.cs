@@ -1,6 +1,6 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Test: Non-composite runtime-async transitive cross-module inlining.
+// Chain: AsyncTransitiveMain → AsyncTransitiveLib → AsyncExternalLib.
+// Validates transitive manifest refs and async cross-module inlining.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

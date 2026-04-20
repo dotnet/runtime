@@ -1,6 +1,6 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Dependency library for async cross-module continuation tests.
+// Contains runtime-async methods that capture GC refs across await points,
+// forcing ContinuationLayout fixup emission when cross-module inlined.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

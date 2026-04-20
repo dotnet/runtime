@@ -1,6 +1,6 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Test: Async virtual method devirtualization in R2R
+// Validates that async methods on sealed/interface types
+// produce [ASYNC] variant entries in the R2R image.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

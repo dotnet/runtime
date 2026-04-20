@@ -1,6 +1,6 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Test: Non-composite runtime-async cross-module inlining with continuation layouts.
+// The dependency methods capture GC refs across await points.
+// Validates manifest refs and [ASYNC] variants for cross-module async calls.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

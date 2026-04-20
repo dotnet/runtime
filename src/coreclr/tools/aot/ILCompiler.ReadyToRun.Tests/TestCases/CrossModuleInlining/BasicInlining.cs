@@ -1,6 +1,6 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
+// Test: Basic cross-module inlining
+// Validates that crossgen2 with --opt-cross-module produces CHECK_IL_BODY fixups
+// for methods inlined from InlineableLib into this main assembly.
 using System;
 using System.Runtime.CompilerServices;
 
