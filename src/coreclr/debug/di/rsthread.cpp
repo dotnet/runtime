@@ -1639,8 +1639,8 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    VMPTR_DomainAssembly vmDomainAssembly = pNativeCode->GetModule()->m_vmDomainAssembly;
-    _ASSERTE(!vmDomainAssembly.IsNull());
+    VMPTR_Assembly vmAssembly = pNativeCode->GetModule()->m_vmAssembly;
+    _ASSERTE(!vmAssembly.IsNull());
 
     // If this thread is stopped due to an exception, never allow SetIP
     if (HasException())
@@ -1652,7 +1652,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
     GetProcess()->InitIPCEvent(&event, DB_IPCE_SET_IP, true, GetAppDomain()->GetADToken());
     event.SetIP.fCanSetIPOnly = fCanSetIPOnly;
     event.SetIP.vmThreadToken = m_vmThreadToken;
-    event.SetIP.vmDomainAssembly = vmDomainAssembly;
+    event.SetIP.vmAssembly = vmAssembly;
     event.SetIP.mdMethod = pNativeCode->GetMetadataToken();
     event.SetIP.vmMethodDesc = pNativeCode->GetVMNativeCodeMethodDescToken();
     event.SetIP.startAddress = pNativeCode->GetAddress();
@@ -1664,7 +1664,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
         "mod:0x%x  MethodDef:0x%x offset:0x%x  il?:0x%x\n",
          GetCurrentThreadId(),
          VmPtrToCookie(m_vmThreadToken),
-         VmPtrToCookie(vmDomainAssembly),
+         VmPtrToCookie(vmAssembly),
          pNativeCode->GetMetadataToken(),
          offset,
          fIsIL));
@@ -5091,10 +5091,9 @@ CordbInternalFrame::CordbInternalFrame(CordbThread *          pThread,
     // Some internal frames may not have a Function associated w/ them.
     if (!IsNilToken(m_funcMetadataToken))
     {
-        // Find the module of the function.  Note that this module isn't necessarily in the same domain as our frame.
-        // FuncEval frames can point to methods they are going to invoke in another domain.
+        // Find the module of the function.
         CordbModule * pModule = NULL;
-        pModule = GetProcess()->LookupOrCreateModule(pData->stubFrame.vmDomainAssembly);
+        pModule = pCurrentAppDomain->LookupOrCreateModule(pData->stubFrame.vmAssembly);
         _ASSERTE(pModule != NULL);
 
         //
@@ -5944,9 +5943,7 @@ HRESULT CordbNativeFrame::IsMatchingParentFrame(ICorDebugNativeFrame2 * pPotenti
         {
             FramePointer fpParent  = this->m_misc.fpParentOrSelf;
             FramePointer fpToCheck = pFrameToCheck->m_misc.fpParentOrSelf;
-
-            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            IfFailThrow(pDAC->IsMatchingParentFrame(fpToCheck, fpParent, pIsParent));
+            *pIsParent = (fpParent == fpToCheck);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -7671,8 +7668,7 @@ void CordbJITILFrame::LoadGenericArgs()
     UINT32 cGenericClassTypeParams = 0;
     DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
 
-    IfFailThrow(pDAC->GetMethodDescParams(GetCurrentAppDomain()->GetADToken(),
-                              m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
+    IfFailThrow(pDAC->GetMethodDescParams(m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
                               m_frameParamsToken,
                               &cGenericClassTypeParams,
                               &rgGenericTypeParams));
@@ -9809,7 +9805,7 @@ HRESULT CordbEval::CallParameterizedFunction(ICorDebugFunction *pFunction,
         event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
         event.FuncEval.funcEvalType = m_evalType;
         event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-        event.FuncEval.vmDomainAssembly = m_function->GetModule()->GetRuntimeDomainAssembly();
+        event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeAssembly();
         event.FuncEval.funcEvalKey = hFuncEval.Ptr();
         event.FuncEval.argCount = nArgs;
         event.FuncEval.genericArgsCount = nTypeArgs;
@@ -9992,7 +9988,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
     event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-    event.FuncEval.vmDomainAssembly = m_function->GetModule()->GetRuntimeDomainAssembly();
+    event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = nArgs;
     event.FuncEval.genericArgsCount = nTypeArgs;
@@ -10093,7 +10089,7 @@ HRESULT CordbEval::NewParameterizedObjectNoConstructor(ICorDebugClass * pClass,
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = (mdTypeDef)m_class->m_id;
-    event.FuncEval.vmDomainAssembly = m_class->GetModule()->GetRuntimeDomainAssembly();
+    event.FuncEval.vmAssembly = m_class->GetModule()->GetRuntimeAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = nTypeArgs;
@@ -10188,7 +10184,7 @@ HRESULT CordbEval::NewStringWithLength(LPCWSTR wszString, UINT iLength)
     // Note: no function or module here...
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = mdTypeDefNil;
-    event.FuncEval.vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+    event.FuncEval.vmAssembly = VMPTR_Assembly::NullPtr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = 0;
     event.FuncEval.genericArgsNodeCount = 0;
@@ -10305,7 +10301,7 @@ HRESULT CordbEval::NewParameterizedArray(ICorDebugType * pElementType,
     // Note: no function or module here...
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = mdTypeDefNil;
-    event.FuncEval.vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+    event.FuncEval.vmAssembly = VMPTR_Assembly::NullPtr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = 1;
 
@@ -10997,10 +10993,9 @@ HRESULT CordbAsyncFrame::Init()
         GetProcess()->GetContinueNeuterList()->Add(GetProcess(), this);
 
         // Initialize module and appdomain
-        VMPTR_DomainAssembly vmDomainAssembly;
-        IfFailThrow(GetProcess()->GetDAC()->GetDomainAssemblyFromModule(m_vmModule, &vmDomainAssembly));
-        CordbModule* pModule = GetProcess()->LookupOrCreateModule(vmDomainAssembly);
-        m_pAppDomain.Assign(pModule->GetAppDomain());
+        CordbAppDomain *pAppDomain = GetProcess()->GetAppDomain();
+        CordbModule* pModule = pAppDomain->LookupOrCreateModule(VMPTR_Assembly::NullPtr(), m_vmModule);
+        m_pAppDomain.Assign(pAppDomain);
 
         // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.
         m_pCode.Assign(pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));
@@ -11546,8 +11541,14 @@ void CordbAsyncFrame::LoadGenericArgs()
         {
             if (m_asyncVars[i].ilVarNum == genericArgIndex)
             {
-
-                HRESULT hr = GetProcess()->SafeReadStruct(m_continuationAddress + m_asyncVars[i].offset, &genericTypeParam);
+                // Read a target-pointer-sized value. CORDB_ADDRESS is always 8 bytes (ULONG64),
+                // but on x86 targets the generic arg field is only a 4-byte pointer. Using
+                // SIZE_T (which is pointer-sized for the DBI build, matching the target here)
+                // avoids reading adjacent memory. This mirrors how CordbJITILFrame::Init()
+                // reads the raw token via GetRegisterOrStackValue (which returns SIZE_T).
+                SIZE_T rawToken = 0;
+                HRESULT hr = GetProcess()->SafeReadStruct(m_continuationAddress + m_asyncVars[i].offset, &rawToken);
+                genericTypeParam = (CORDB_ADDRESS)rawToken;
                 IfFailThrow(hr);
                 break;
             }
@@ -11557,8 +11558,7 @@ void CordbAsyncFrame::LoadGenericArgs()
         genericTypeParam = resolvedToken;
     }
 
-    IfFailThrow(pDAC->GetMethodDescParams(m_pAppDomain->GetADToken(),
-                              m_vmMethodDesc,
+    IfFailThrow(pDAC->GetMethodDescParams(m_vmMethodDesc,
                               genericTypeParam,
                               &cGenericClassTypeParams,
                               &rgGenericTypeParams));

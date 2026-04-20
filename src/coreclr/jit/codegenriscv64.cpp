@@ -2204,7 +2204,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     if (cpObjNode->IsVolatile())
     {
         // issue a INS_BARRIER_RMB after a volatile CpObj operation
-        // TODO-RISCV64: there is only BARRIER_FULL for RISCV64.
         instGen_MemoryBarrier(BARRIER_FULL);
     }
 
@@ -4162,14 +4161,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CATCH_ARG:
-
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
-
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
-
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
+            genCodeForCatchArg(treeNode);
             break;
 
         case GT_LABEL:
@@ -6257,7 +6249,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
 // instGen_MemoryBarrier: Emit a MemoryBarrier instruction
 //
 // Arguments:
-//     barrierKind - kind of barrier to emit (Only supports the Full now!! This depends on the CPU).
+//     barrierKind - kind of barrier to emit
 //
 // Notes:
 //     All MemoryBarriers instructions can be removed by DOTNET_JitNoMemoryBarriers=1
@@ -6271,8 +6263,21 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 #endif // DEBUG
 
-    // TODO-RISCV64: Use the exact barrier type depending on the CPU.
-    GetEmitter()->emitIns_I(INS_fence, EA_4BYTE, INS_BARRIER_FULL);
+    insBarrier barrier;
+    switch (barrierKind)
+    {
+        case BARRIER_LOAD_ONLY:
+            barrier = INS_BARRIER_LOAD_ONLY;
+            break;
+        case BARRIER_STORE_ONLY:
+            barrier = INS_BARRIER_STORE_ONLY;
+            break;
+        default:
+            barrier = INS_BARRIER_FULL;
+            break;
+    }
+
+    GetEmitter()->emitIns_I(INS_fence, EA_4BYTE, barrier);
 }
 
 /*-----------------------------------------------------------------------------

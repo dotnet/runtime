@@ -60,8 +60,6 @@ FCIMPL1(FC_BOOL_RET, ExceptionNative::IsImmutableAgileException, Object* pExcept
 
     OBJECTREF pException = (OBJECTREF) pExceptionUNSAFE;
 
-    // The preallocated exception objects may be used from multiple AppDomains
-    // and therefore must remain immutable from the application's perspective.
     FC_RETURN_BOOL(CLRException::IsPreallocatedExceptionObject(pException));
 }
 FCIMPLEND
