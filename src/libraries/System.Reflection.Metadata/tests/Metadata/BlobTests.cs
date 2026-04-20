@@ -645,6 +645,17 @@ namespace System.Reflection.Metadata.Tests
             }, blobs[0].GetBytes().ToArray());
         }
 
+        [Fact]
+        public void ReserveBytes3()
+        {
+            var builder = new BlobBuilder(16);
+            builder.WriteBytes(0xff, 16);
+            builder.Clear();
+            // Reserved buffers must be zero-initialized.
+            var reserved = builder.ReserveBytes(4);
+            AssertEx.Equal(Enumerable.Repeat((byte)0, 4).ToArray(), reserved.GetBytes().ToArray());
+        }
+
         // TODO:
         // WriteBytes(byte*)
         // WriteBytes(stream)

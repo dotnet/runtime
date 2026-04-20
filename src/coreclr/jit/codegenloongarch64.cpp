@@ -4375,14 +4375,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CATCH_ARG:
-
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
-
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
-
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
+            genCodeForCatchArg(treeNode);
             break;
 
         case GT_LABEL:

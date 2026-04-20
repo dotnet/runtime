@@ -133,7 +133,7 @@ The skill contains baked-in examples and guidelines for writing good proposals (
 
 #### Prototype Validation (all steps required)
 
-> **Prerequisite:** Follow the build and test workflow in [`copilot-instructions.md`](/.github/copilot-instructions.md) — complete the baseline build, configure the environment, and use the component-specific workflow for the target library. All build and test steps below assume the baseline build has already succeeded.
+> **Prerequisite:** Follow the build and test workflow in [`copilot-instructions.md`](../../copilot-instructions.md) — complete the baseline build, configure the environment, and use the component-specific workflow for the target library. All build and test steps below assume the baseline build has already succeeded.
 
 **Step 1: Build and test**
 
