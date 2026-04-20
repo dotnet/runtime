@@ -59,21 +59,18 @@ namespace System.Diagnostics
                 _state = ProcessWaitState.AddRef(processId, isNewChild, usesTerminal);
             }
 
+            private Holder(ProcessWaitState source) => _state = source;
+
             /// <summary>Creates an additional holder for the same wait state, incrementing the ref count.</summary>
-            internal Holder(Holder existing)
+            internal Holder IncrementRefCount()
             {
-                _state = existing._state;
                 _state.IncrementRefCount();
+                return new(_state);
             }
 
             ~Holder()
             {
-                // Don't try to Dispose resources (like ManualResetEvents) if
-                // the process is shutting down.
-                if (_state != null && !Environment.HasShutdownStarted)
-                {
-                    _state.ReleaseRef();
-                }
+                _state?.ReleaseRef();
             }
 
             public void Dispose()
@@ -182,7 +179,6 @@ namespace System.Diagnostics
             lock (waitStates)
             {
                 bool foundState = waitStates.TryGetValue(_processId, out pws);
-                Debug.Assert(foundState);
                 if (foundState)
                 {
                     --_outstandingRefCount;

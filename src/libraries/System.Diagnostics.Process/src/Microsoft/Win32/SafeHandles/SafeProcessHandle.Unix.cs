@@ -30,28 +30,16 @@ namespace Microsoft.Win32.SafeHandles
 
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
-        private readonly ProcessWaitState? _waitState;
         private readonly ProcessWaitState.Holder? _waitStateHolder;
 
-        private SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
+        internal SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
             ProcessId = processId;
-            _waitStateHolder = new ProcessWaitState.Holder(waitStateHolder);
-            _waitState = _waitStateHolder._state;
+            _waitStateHolder = waitStateHolder;
 
-            _handle = _waitState.EnsureExitedEvent().GetSafeWaitHandle();
+            _handle = _waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
             _handle.DangerousAddRef(ref _releaseRef);
             SetHandle(_handle.DangerousGetHandle());
-        }
-
-        internal SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder, SafeWaitHandle handle) :
-            this(handle.DangerousGetHandle(), ownsHandle: true)
-        {
-            ProcessId = processId;
-            _waitStateHolder = new ProcessWaitState.Holder(waitStateHolder);
-            _waitState = _waitStateHolder._state;
-            _handle = handle;
-            handle.DangerousAddRef(ref _releaseRef);
         }
 
         protected override bool ReleaseHandle()
@@ -137,15 +125,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private ProcessExitStatus GetExitStatus(bool canceled = false) => CreateExitStatus(GetWaitState(), canceled);
 
-        private ProcessWaitState GetWaitState()
-        {
-            if (_waitState is null)
-            {
-                throw new InvalidOperationException(SR.InvalidProcessHandle);
-            }
-
-            return _waitState;
-        }
+        private ProcessWaitState GetWaitState() => _waitStateHolder is null ? throw new InvalidOperationException(SR.InvalidProcessHandle) : _waitStateHolder._state;
 
         private static ProcessExitStatus CreateExitStatus(ProcessWaitState waitState, bool canceled)
         {
@@ -161,14 +141,7 @@ namespace Microsoft.Win32.SafeHandles
         private static StartWithShellExecuteDelegate? s_startWithShellExecute;
 
         private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandlesSnapshot = null)
-        {
-            SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandlesSnapshot, out ProcessWaitState.Holder? waitStateHolder);
-
-            // The SafeProcessHandle constructor created its own Holder copy, so we can dispose the original.
-            waitStateHolder?.Dispose();
-
-            return startedProcess;
-        }
+            => StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandlesSnapshot, out _);
 
         internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
             SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder)
