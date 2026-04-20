@@ -978,18 +978,52 @@ namespace ILAssembler
 
             switch (context.GetText())
             {
+                case "public":
+                    return new((new(TypeAttributes.Public, TypeAttributes.VisibilityMask), null, false));
                 case "private":
-                    return new((new(TypeAttributes.NotPublic), null, false));
+                    return new((new(TypeAttributes.NotPublic, TypeAttributes.VisibilityMask), null, false));
+                case "nestedpublic":
+                    return new((new(TypeAttributes.NestedPublic, TypeAttributes.VisibilityMask), null, false));
+                case "nestedprivate":
+                    return new((new(TypeAttributes.NestedPrivate, TypeAttributes.VisibilityMask), null, false));
+                case "nestedfamily":
+                    return new((new(TypeAttributes.NestedFamily, TypeAttributes.VisibilityMask), null, false));
+                case "nestedassembly":
+                    return new((new(TypeAttributes.NestedAssembly, TypeAttributes.VisibilityMask), null, false));
+                case "nestedfamandassem":
+                    return new((new(TypeAttributes.NestedFamANDAssem, TypeAttributes.VisibilityMask), null, false));
+                case "nestedfamorassem":
+                    return new((new(TypeAttributes.NestedFamORAssem, TypeAttributes.VisibilityMask), null, false));
                 case "ansi":
-                    return new((new(TypeAttributes.AnsiClass), null, false));
+                    return new((new(TypeAttributes.AnsiClass, TypeAttributes.StringFormatMask), null, false));
                 case "autochar":
-                    return new((new(TypeAttributes.AutoClass), null, false));
+                    return new((new(TypeAttributes.AutoClass, TypeAttributes.StringFormatMask), null, false));
+                case "unicode":
+                    return new((new(TypeAttributes.UnicodeClass, TypeAttributes.StringFormatMask), null, false));
                 case "auto":
-                    return new((new(TypeAttributes.AutoLayout), null, false));
+                    return new((new(TypeAttributes.AutoLayout, TypeAttributes.LayoutMask), null, false));
                 case "sequential":
-                    return new((new(TypeAttributes.SequentialLayout), null, false));
+                    return new((new(TypeAttributes.SequentialLayout, TypeAttributes.LayoutMask), null, false));
                 case "extended":
-                    return new((new(TypeAttributes.ExtendedLayout), null, false));
+                    return new((new(TypeAttributes.ExtendedLayout, TypeAttributes.LayoutMask), null, false));
+                case "sealed":
+                    return new((new(TypeAttributes.Sealed), null, false));
+                case "abstract":
+                    return new((new(TypeAttributes.Abstract), null, false));
+                case "import":
+                    return new((new(TypeAttributes.Import), null, false));
+                case "serializable":
+#pragma warning disable SYSLIB0050
+                    return new((new(TypeAttributes.Serializable), null, false));
+#pragma warning restore SYSLIB0050
+                case "windowsruntime":
+                    return new((new(TypeAttributes.WindowsRuntime), null, false));
+                case "beforefieldinit":
+                    return new((new(TypeAttributes.BeforeFieldInit), null, false));
+                case "specialname":
+                    return new((new(TypeAttributes.SpecialName), null, false));
+                case "rtspecialname":
+                    return new((new(TypeAttributes.RTSpecialName), null, false));
                 default:
                     return new((new((TypeAttributes)Enum.Parse(typeof(TypeAttributes), context.GetText(), true)), null, false));
             }
@@ -1228,33 +1262,14 @@ namespace ILAssembler
                             var (attribute, implicitBase, attrRequireSealed) = result.Value;
                             if (implicitBase is not null)
                             {
-                                // COMPAT: Any base type specified by an attribute is ignored if
-                                // the user specified an explicit base type in an 'extends' clause.
                                 fallbackBase = implicitBase;
                             }
-                            // COMPAT: When a flags value is specified as an integer, it overrides
-                            // all of the provided flags, including any compat sentinel flags that will require
-                            // the sealed modifier to be provided.
                             if (!attribute.ShouldAppend)
                             {
                                 requireSealed = attrRequireSealed;
                                 return attribute.Value;
                             }
                             requireSealed |= attrRequireSealed;
-                            // Note: We check attribute.Value != 0 because HasFlag(0) always returns true,
-                            // but AutoLayout (0) and AnsiClass (0) should not clear other flags.
-                            if (attribute.Value != 0 && TypeAttributes.LayoutMask.HasFlag(attribute.Value))
-                            {
-                                return (acc & ~TypeAttributes.LayoutMask) | attribute.Value;
-                            }
-                            if (attribute.Value != 0 && TypeAttributes.StringFormatMask.HasFlag(attribute.Value))
-                            {
-                                return (acc & ~TypeAttributes.StringFormatMask) | attribute.Value;
-                            }
-                            if (TypeAttributes.VisibilityMask.HasFlag(attribute.Value))
-                            {
-                                return (acc & ~TypeAttributes.VisibilityMask) | attribute.Value;
-                            }
                             if (attribute.Value == TypeAttributes.RTSpecialName)
                             {
                                 // COMPAT: ILASM ignores the rtspecialname directive on a type.
@@ -1265,8 +1280,9 @@ namespace ILAssembler
                                 // COMPAT: interface implies abstract
                                 return acc | TypeAttributes.Interface | TypeAttributes.Abstract;
                             }
-
-                            return acc | attribute.Value;
+                            // Use the Flag's | operator which handles group masks
+                            // (visibility, layout, string format) correctly.
+                            return acc | attribute;
                         });
 
 
@@ -2073,7 +2089,12 @@ namespace ILAssembler
 
         public static GrammarResult.String VisitDottedName(CILParser.DottedNameContext context)
         {
-            return new(context.GetText());
+            string text = context.GetText();
+            if (context.SQSTRING() is not null && text.Length >= 2 && text[0] == '\'')
+            {
+                text = text.Substring(1, text.Length - 2);
+            }
+            return new(text);
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitElementType(CILParser.ElementTypeContext context) => VisitElementType(context);
         public GrammarResult.FormattedBlob VisitElementType(CILParser.ElementTypeContext context)
