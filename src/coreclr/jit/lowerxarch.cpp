@@ -7647,6 +7647,22 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     break;
                 }
 
+                case NI_AVX2_ConvertToVector128Half:
+                case NI_AVX2_ConvertToVector256Half:
+                {
+                    // These intrinsics are "ins xmm/mem, xmm, imm8"
+                    // and store half the width of the input vector
+
+                    size_t   numArgs  = hwintrinsic->GetOperandCount();
+                    GenTree* lastOp   = hwintrinsic->Op(numArgs);
+                    unsigned simdSize = hwintrinsic->GetSimdSize();
+                    unsigned memSize  = (simdSize / 2);
+
+                    isContainable = HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI() &&
+                                    (genTypeSize(node) == memSize);
+                    break;
+                }
+
                 default:
                 {
                     break;
@@ -9813,6 +9829,14 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             assert(isContainedImm);
                             return;
+                        }
+
+                        case NI_AVX2_ConvertToVector128Half:
+                        case NI_AVX2_ConvertToVector256Half:
+                        {
+                            // These intrinsics are "ins xmm/mem, xmm, imm8" and get
+                            // contained by the relevant store operation instead.
+                            break;
                         }
 
                         default:
