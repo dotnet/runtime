@@ -37,12 +37,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64_t svrax1[_s64](svint64_t op1, svint64_t op2)
         ///   RAX1 Zresult.D, Zop1.D, Zop2.D
         /// </summary>
-        public static unsafe Vector<long> BitwiseRotateLeftBy1AndXor(Vector<long> xor, Vector<long> rol1) => BitwiseRotateLeftBy1AndXor(xor, rol1);
+        public static Vector<long> BitwiseRotateLeftBy1AndXor(Vector<long> xor, Vector<long> rol1) => BitwiseRotateLeftBy1AndXor(xor, rol1);
 
         /// <summary>
         /// svuint64_t svrax1[_u64](svuint64_t op1, svuint64_t op2)
         ///   RAX1 Zresult.D, Zop1.D, Zop2.D
         /// </summary>
-        public static unsafe Vector<ulong> BitwiseRotateLeftBy1AndXor(Vector<ulong> xor, Vector<ulong> rol1) => BitwiseRotateLeftBy1AndXor(xor, rol1);
+        public static Vector<ulong> BitwiseRotateLeftBy1AndXor(Vector<ulong> xor, Vector<ulong> rol1) => BitwiseRotateLeftBy1AndXor(xor, rol1);
     }
 }
