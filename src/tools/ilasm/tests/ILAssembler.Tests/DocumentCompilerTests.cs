@@ -3490,5 +3490,50 @@ namespace ILAssembler.Tests
             Assert.Equal("MyType", reader.GetString(typeDef.Name));
             Assert.Equal("MyNamespace", reader.GetString(typeDef.Namespace));
         }
+
+        [Fact]
+        public void Namespace_NoLeadingDot()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .namespace System.Tests
+                {
+                    .class public auto ansi beforefieldinit MyType extends [mscorlib]System.Object { }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal("MyType", reader.GetString(typeDef.Name));
+            Assert.Equal("System.Tests", reader.GetString(typeDef.Namespace));
+        }
+
+        [Fact]
+        public void ParamWithInAttribute_EmitsParamRow()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public hidebysig static void M([in] int32& x) cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            int paramCount = reader.GetTableRowCount(TableIndex.Param);
+            Assert.True(paramCount >= 1, "Should have at least one Param row for [in] parameter");
+
+            var param = reader.GetParameter(MetadataTokens.ParameterHandle(1));
+            Assert.True(param.Attributes.HasFlag(ParameterAttributes.In));
+        }
     }
 }
