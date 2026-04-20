@@ -935,6 +935,8 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t
     assert(exitCode != NULL);
     assert(terminatingSignal != NULL);
 
+    *exitCode = 0;
+    *terminatingSignal = 0;
     int32_t result;
     int status;
     while (CheckInterrupted(result = waitpid(pid, &status, WNOHANG)));
