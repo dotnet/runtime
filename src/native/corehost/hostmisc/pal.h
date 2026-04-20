@@ -24,7 +24,20 @@
 typedef wchar_t pal_char_t;
 #endif
 #ifndef _X
+#ifdef __cplusplus
+// C++ mode: MSVC uses a non-conforming preprocessor by default, which expands
+// macro arguments before ## even though the standard says otherwise. This allows
+// L ## __FUNCTION__ to produce L__FUNCTION__ (MSVC's wide function-name literal).
+// Using a two-step pattern here would break __FUNCTION__ expansion.
 #define _X(s) L ## s
+#else
+// C mode: MSVC enables its conforming preprocessor when compiling with /std:c11,
+// which suppresses argument expansion before ##. A two-step helper forces the
+// argument to be expanded first so that e.g. _X(HOST_VERSION) correctly produces
+// a wide string literal rather than the identifier LHOST_VERSION.
+#define _X_HELPER(s) L ## s
+#define _X(s) _X_HELPER(s)
+#endif
 #endif
 #else
 #ifndef PAL_CHAR_T_DEFINED
