@@ -26,8 +26,9 @@ namespace ILCompiler.ReadyToRun
         }
 
         /// <summary>
-        /// Ensures that all the tokens necessary for creating a ReadyToRun signature for the given entity are present in the MutableModule.
-        /// Adds the necessary tokens for the given entity to the MutableModule if they are not already present.
+        /// Ensures that all the tokens necessary for creating a ReadyToRun signature for the given entities are available.
+        /// If a token for an entity is not already resolvable from a module known to the <see cref="ModuleTokenResolver"/>,
+        /// a new token is added to the manifest <see cref="MutableModule"/>.
         /// </summary>
         public void EnsureDefTokensAreAvailable(IEnumerable<TypeSystemEntity> entities, ModuleDesc moduleForNewReferences, bool referencesAreForAsyncMethod)
         {
@@ -48,8 +49,9 @@ namespace ILCompiler.ReadyToRun
         }
 
         /// <summary>
-        /// Ensures that all the tokens necessary for creating a ReadyToRun signature for the given entity are present in the MutableModule.
-        /// Adds the necessary tokens for the given entity to the MutableModule if they are not already present.
+        /// Ensures that all the tokens necessary for creating a ReadyToRun signature for the given entity are available.
+        /// If a token for the entity is not already resolvable from a module known to the <see cref="ModuleTokenResolver"/>,
+        /// a new token is added to the manifest <see cref="MutableModule"/>.
         /// </summary>
         public void EnsureDefTokensAreAvailable(TypeSystemEntity entity, ModuleDesc moduleForNewReferences, bool referencesAreForAsyncMethod)
         {
