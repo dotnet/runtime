@@ -22,7 +22,7 @@ class OomHandlingTest
 
     const string AllocateSmallArg = "--allocate-small";
     const string AllocateLargeArg = "--allocate-large";
-    // Both the minimal OOM fail-fast path ("Process is terminating due to OutOfMemoryException.")
+    // Both the minimal OOM fail-fast path ("Process terminated. System.OutOfMemoryException")
     // and the standard unhandled-exception path ("Unhandled exception. System.OutOfMemoryException...")
     // contain this token. The test validates that some OOM diagnostic is printed rather than
     // just "Aborted" with no context.
@@ -91,6 +91,8 @@ class OomHandlingTest
         if (!p.WaitForExit(TimeoutMilliseconds))
         {
             p.Kill(true);
+            p.WaitForExit();
+            _ = stderrTask.GetAwaiter().GetResult();
             Console.WriteLine($"Subprocess timed out after {TimeoutMilliseconds / 1000} seconds.");
             return Fail;
         }

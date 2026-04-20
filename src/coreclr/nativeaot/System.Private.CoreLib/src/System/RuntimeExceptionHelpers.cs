@@ -249,7 +249,7 @@ namespace System
                     // report that OOM is the reason for the crash.
                     try
                     {
-                        Internal.Console.Error.Write("Process terminated. System.OutOfMemoryException.");
+                        Internal.Console.Error.Write("Process terminated. System.OutOfMemoryException");
                         Internal.Console.Error.WriteLine();
                     }
                     catch { }
