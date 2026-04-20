@@ -600,7 +600,7 @@ namespace System.Collections.Immutable
             /// </returns>
             public int IndexOf(T item, int index)
             {
-                Requires.ValidateRange(index, this.Count - index, this.Count);
+                Requires.Range((uint)index <= (uint)this.Count, nameof(index));
 
                 return _root.IndexOf(item, index, this.Count - index, EqualityComparer<T>.Default);
             }

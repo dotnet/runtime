@@ -616,8 +616,7 @@ namespace System.Collections.Immutable
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
             Requires.NotNull(array, nameof(array));
-            Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
-            Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
+            Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length, nameof(arrayIndex));
 
             foreach (KeyValuePair<TKey, TValue> item in this)
             {
@@ -756,8 +755,7 @@ namespace System.Collections.Immutable
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
             Requires.NotNull(array, nameof(array));
-            Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
-            Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
+            Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length, nameof(arrayIndex));
 
             foreach (KeyValuePair<TKey, TValue> item in this)
             {
