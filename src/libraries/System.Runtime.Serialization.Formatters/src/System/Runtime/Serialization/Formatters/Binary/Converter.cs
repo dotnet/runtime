@@ -64,11 +64,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private const int PrimitiveTypeEnumLength = 17; //Number of PrimitiveTypeEnums
 
-        private static volatile Type?[]? s_typeA;
-        private static volatile Type?[]? s_arrayTypeA;
-        private static volatile string?[]? s_valueA;
-        private static volatile TypeCode[]? s_typeCodeA;
-        private static volatile InternalPrimitiveTypeE[]? s_codeA;
+        private static Type?[]? s_typeA;
+        private static Type?[]? s_arrayTypeA;
+        private static string?[]? s_valueA;
+        private static TypeCode[]? s_typeCodeA;
+        private static InternalPrimitiveTypeE[]? s_codeA;
 
         internal static InternalPrimitiveTypeE ToCode(Type? type) =>
                 type == null ? ToPrimitiveTypeEnum(TypeCode.Empty) :

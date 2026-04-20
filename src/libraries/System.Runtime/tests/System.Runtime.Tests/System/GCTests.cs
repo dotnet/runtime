@@ -874,7 +874,7 @@ namespace System.Tests
         private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
-        [ConditionalFact(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29434")]
+        [ConditionalFact(typeof(GCExtendedTests), nameof(IsNotArmProcessAndRemoteExecutorSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29434")]
         public static void GetGCMemoryInfo()
         {
             RemoteExecutor.Invoke(() =>
@@ -1097,7 +1097,6 @@ namespace System.Tests
 
         [Theory]
         [InlineData(-1)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         private static void AllocateArrayNegativeSize(int negValue)
         {
             Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1));

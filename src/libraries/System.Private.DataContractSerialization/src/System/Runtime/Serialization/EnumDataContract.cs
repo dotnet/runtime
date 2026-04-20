@@ -378,7 +378,7 @@ namespace System.Runtime.Serialization.DataContracts
             for (int i = 0; i < Members.Count; i++)
             {
                 string memberName = Members[i].Name;
-                if (memberName.Length == count && string.CompareOrdinal(value, index, memberName, 0, count) == 0)
+                if (value.AsSpan(index, count).Equals(memberName, StringComparison.Ordinal))
                 {
                     return Values![i];
                 }

@@ -26,6 +26,7 @@ namespace System.Net.Security
         }
 
         internal const bool StartMutualAuthAsAnonymous = true;
+        internal const bool CertValidationInCallback = false;
 
         // SecureTransport is okay with a 0 byte input, but it produces a 0 byte output.
         // Since ST is not producing the framed empty message just call this false and avoid the
@@ -359,7 +360,7 @@ namespace System.Net.Security
                 sslContext.ReadPendingWrites(ref token);
                 return token;
             }
-            catch (Exception exc)
+            catch (Exception exc) when (exc is not ArgumentException)
             {
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
                 return token;

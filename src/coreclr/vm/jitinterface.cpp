@@ -81,6 +81,8 @@
 // Hence, we add them here.
 GARY_IMPL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
 GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
+GARY_IMPL(VMAUXILIARYSYMBOLDEF, hlpAuxiliarySymbolTable, MAX_AUXILIARY_SYMBOLS);
+GVAL_IMPL_INIT(DWORD, g_auxiliarySymbolCount, 0);
 
 #else // DACCESS_COMPILE
 
@@ -1081,38 +1083,11 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
             break;
 
         case CORINFO_TOKENKIND_Await:
-        case CORINFO_TOKENKIND_AwaitVirtual:
             {
                 // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                 // we cannot resolve to an Async variant in such case.
                 // return NULL, so that caller would re-resolve as a regular method call
-                bool allowAsyncVariant = pMD->ReturnsTaskOrValueTask();
-                if (allowAsyncVariant)
-                {
-                    bool isDirect = tokenType == CORINFO_TOKENKIND_Await || pMD->IsStatic();
-                    if (!isDirect)
-                    {
-                        DWORD attrs = pMD->GetAttrs();
-                        if (pMD->GetMethodTable()->IsInterface())
-                        {
-                            isDirect = !IsMdVirtual(attrs);
-                        }
-                        else
-                        {
-                            isDirect = !IsMdVirtual(attrs) || IsMdFinal(attrs) || pMD->GetMethodTable()->IsSealed();
-                        }
-                    }
-
-                    if (isDirect && !pMD->IsAsyncThunkMethod())
-                    {
-                        // Async variant would be a thunk. Do not resolve direct calls
-                        // to async thunks. That just creates and JITs unnecessary
-                        // thunks, and the thunks are harder for the JIT to optimize.
-                        allowAsyncVariant = false;
-                    }
-                }
-
-                pMD = allowAsyncVariant ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+                pMD = pMD->ReturnsTaskOrValueTask() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
             }
             break;
 
@@ -2904,13 +2879,12 @@ CORINFO_OBJECT_HANDLE CEEInfo::getJitHandleForObject(OBJECTREF objref, bool know
         m_pJitHandles = new SArray<OBJECTHANDLE>();
     }
 
-    OBJECTHANDLEHolder handle = AppDomain::GetCurrentDomain()->CreateHandle(objref);
+    OBJECTHANDLEHolder handle(AppDomain::GetCurrentDomain()->CreateHandle(objref));
     m_pJitHandles->Append(handle);
-    handle.SuppressRelease();
 
     // We know that handle is aligned so we use the lowest bit as a marker
     // "this is a handle, not a frozen object".
-    return (CORINFO_OBJECT_HANDLE)((size_t)handle.GetValue() | 1);
+    return (CORINFO_OBJECT_HANDLE)((size_t)handle.Detach() | 1);
 }
 
 OBJECTREF CEEInfo::getObjectFromJitHandle(CORINFO_OBJECT_HANDLE handle)
@@ -3027,7 +3001,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     _ASSERT(pCallerMD != nullptr);
 
     pResultLookup->lookupKind.needsRuntimeLookup = true;
-    pResultLookup->lookupKind.runtimeLookupFlags = 0;
 
     CORINFO_RUNTIME_LOOKUP *pResult = &pResultLookup->runtimeLookup;
     pResult->signature = NULL;
@@ -4484,6 +4457,16 @@ static bool isExactTypeHelper(TypeHandle th)
 
     // Use conservative answer for equivalent and variant types.
     if (pMT->HasTypeEquivalence() || pMT->HasVariance())
+        return false;
+
+    // SZArrayHelper is a phantom dispatch target: the VM maps generic
+    // array interface methods (IList<T>.set_Item, etc.) to sealed
+    // SZArrayHelper methods, but no runtime object ever has
+    // SZArrayHelper as its MethodTable - `this` inside those methods
+    // is always a T[]. Reporting it as exact would allow the JIT (e.g.
+    // VN-based invariant-load folding of GetMethodTable) to embed
+    // SZArrayHelper's MT as a constant and mis-read fields off it.
+    if (pMT == g_pSZArrayHelperClass)
         return false;
 
     return pMT->IsSealed();
@@ -6123,7 +6106,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
 /***********************************************************************/
 bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-        CORINFO_LOOKUP_KIND *           pGenericLookupKind,
         CorInfoHelpFunc                 id,
         CORINFO_METHOD_HANDLE           callerHandle,
         CORINFO_CONST_LOOKUP *          pLookup
@@ -7587,6 +7569,16 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
 
                 ftn->GenerateFunctionPointerCall(&cxt.TransientResolver, &cxt.Header);
             }
+            else if (CoreLibBinder::IsClass(pMT->GetTypicalMethodTable(), CLASS__STRUCTURE_MARSHALER))
+            {
+                DynamicResolver* newResolver;
+                COR_ILMETHOD_DECODER* newHeader;
+                if (StructMarshalStubs::TryGenerateStructMarshallingMethod(ftn, &newResolver, &newHeader))
+                {
+                    cxt.TransientResolver = newResolver;
+                    cxt.Header = newHeader;
+                }
+            }
         }
 
         scopeHnd = cxt.HasTransientMethodDetails()
@@ -8991,6 +8983,40 @@ CORINFO_METHOD_HANDLE CEEInfo::getInstantiatedEntry(
             *classArg = (CORINFO_CLASS_HANDLE)pMD->GetMethodTable();
         }
     }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
+    CORINFO_METHOD_HANDLE ftn,
+    bool* variantIsThunk)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_METHOD_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* pMD = GetMethod(ftn);
+    MethodDesc* pAsyncOtherVariant = NULL;
+
+    if (pMD->ReturnsTaskOrValueTask())
+    {
+         pAsyncOtherVariant = pMD->GetAsyncVariant();
+    }
+    else if (pMD->IsAsyncVariantMethod())
+    {
+        pAsyncOtherVariant = pMD->GetOrdinaryVariant();
+    }
+
+    result = (CORINFO_METHOD_HANDLE)pAsyncOtherVariant;
+    *variantIsThunk = pAsyncOtherVariant != NULL && pAsyncOtherVariant->IsAsyncThunkMethod();
 
     EE_TO_JIT_TRANSITION();
 
@@ -11094,7 +11120,16 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
         {
             _ASSERTE(pfnHelper != NULL);
             AllocMemHolder<PortableEntryPoint> portableEntryPoint = SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) });
-            portableEntryPoint->Init((void*)pfnHelper);
+            if (ftnNum >= CORINFO_HELP_NEWFAST && ftnNum <= CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE)
+            {
+                // CoreLib calls newobj helpers via calli. Give these helpers a MethodDesc
+                // so the interpreter can find the method signature for the call cookie.
+                portableEntryPoint->Init((void*)pfnHelper, CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__NEWOBJ_HELPER_DUMMY));
+            }
+            else
+            {
+                portableEntryPoint->Init((void*)pfnHelper);
+            }
             pfnHelper = (PCODE)(PortableEntryPoint*)(portableEntryPoint);
 
             if (InterlockedCompareExchangeT<PCODE>(&hlpFuncEntryPoints[ftnNum], pfnHelper, (PCODE)NULL) == (PCODE)NULL)
@@ -11419,7 +11454,7 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 #ifdef FEATURE_INTERPRETER
 
 // Forward declare the function for mapping MetaSig to a cookie.
-void* GetCookieForCalliSig(MetaSig metaSig);
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
 
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
@@ -11438,7 +11473,18 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
 
     _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
 
-    result = GetCookieForCalliSig(sig);
+    // When compiling a calli inside an IL stub for a P/Invoke, pass the target
+    // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
+    MethodDesc* pContextMD = nullptr;
+    if (m_pMethodBeingCompiled != nullptr && m_pMethodBeingCompiled->IsILStub())
+    {
+        MethodDesc* pTargetMD = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
+        if (pTargetMD != nullptr)
+        {
+            pContextMD = pTargetMD;
+        }
+    }
+    result = GetCookieForCalliSig(sig, pContextMD);
 
     EE_TO_JIT_TRANSITION();
     return result;
@@ -12685,10 +12731,15 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     } CONTRACTL_END;
 
     HRESULT hr = E_FAIL;
+    *pSchema = NULL;
     *pCountSchemaItems = 0;
     *pInstrumentationData = NULL;
     *pPgoSource = PgoSource::Unknown;
+#ifdef FEATURE_PGO
     *pDynamicPgo = g_pConfig->TieredPGO();
+#else
+    *pDynamicPgo = false;
+#endif
 
     JIT_TO_EE_TRANSITION();
 
@@ -13135,7 +13186,11 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
 
         // If we're a reverse IL stub, we need to use the TrackTransitions variant
         // so we have the target MethodDesc entrypoint to tell the debugger about.
-        if (CORProfilerTrackTransitions() || ftn->IsILStub())
+        bool trackTransitions = ftn->IsILStub();
+#ifdef PROFILING_SUPPORTED
+        trackTransitions = trackTransitions || CORProfilerTrackTransitions();
+#endif // PROFILING_SUPPORTED
+        if (trackTransitions)
         {
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
         }
@@ -13300,7 +13355,7 @@ static TADDR UnsafeJitFunctionWorker(
             QueryPerformanceCounter(&methodJitTimeStop);
 
             SString moduleName;
-            ftn->GetModule()->GetDomainAssembly()->GetPEAssembly()->GetPathOrCodeBase(moduleName);
+            ftn->GetModule()->GetAssembly()->GetPEAssembly()->GetPathOrCodeBase(moduleName);
 
             SString codeBase;
             codeBase.AppendPrintf("%s,0x%x,%d,%d\n",
@@ -13327,20 +13382,7 @@ static TADDR UnsafeJitFunctionWorker(
         //
         // Notify the debugger that we have successfully jitted the function
         //
-        bool isInterpreterCode = false;
-#ifdef FEATURE_INTERPRETER
-        EECodeInfo codeInfo((TADDR)nativeEntry);
-        if (codeInfo.IsValid())
-        {
-            IJitManager* pJitManager = codeInfo.GetJitManager();
-            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
-            {
-                isInterpreterCode = true;
-            }
-        }
-#endif // FEATURE_INTERPRETER
-        // TODO: Revisit this for interpreter code
-        if (g_pDebugInterface && !isInterpreterCode)
+        if (g_pDebugInterface)
         {
             g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
 
@@ -14142,6 +14184,32 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case READYTORUN_FIXUP_Helper:
         {
+#ifdef _DEBUG
+            // Reenable loading types during Eager fixups. These types should all be from CoreLib.
+            class EnableTypeLoadHolder
+            {
+                ULONG _previousForbidTypeLoad = (ULONG)-1;
+            public:
+                EnableTypeLoadHolder()
+                {
+                    if (GetThreadNULLOk() != 0)
+                    {
+                        _previousForbidTypeLoad = GetThreadNULLOk()->m_ulForbidTypeLoad;
+                        GetThreadNULLOk()->m_ulForbidTypeLoad = 0;
+                    }
+                }
+
+                ~EnableTypeLoadHolder()
+                {
+                    if (GetThreadNULLOk() != 0 && _previousForbidTypeLoad != (ULONG)-1)
+                    {
+                        _ASSERTE(GetThreadNULLOk()->m_ulForbidTypeLoad == 0);
+                        GetThreadNULLOk()->m_ulForbidTypeLoad = _previousForbidTypeLoad;
+                    }
+                }
+            }
+            enableTypeLoad;
+#endif
             DWORD helperNum = CorSigUncompressData(pBlob);
 
             CorInfoHelpFunc corInfoHelpFunc = MapReadyToRunHelper((ReadyToRunHelper)helperNum);
@@ -14273,6 +14341,19 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             TypeHandle th = TypeHandle(continuationTypeMethodTable);
             result = (size_t)th.AsPtr();
+        }
+        break;
+
+    case READYTORUN_FIXUP_ResumptionStubEntryPoint:
+        {
+            ReadyToRunInfo * pR2RInfo = currentModule->GetReadyToRunInfo();
+
+            DWORD stubRVA = GET_UNALIGNED_VAL32(pBlob);
+            PCODE stubEntryPoint = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase()) + stubRVA;
+
+            pR2RInfo->RegisterResumptionStub(stubEntryPoint);
+
+            result = (size_t)stubEntryPoint;
         }
         break;
 

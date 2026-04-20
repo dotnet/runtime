@@ -656,7 +656,8 @@ namespace System.Reflection.Metadata.Tests
         public void ReserveBytes3()
         {
             var builder = new BlobBuilder(16);
-            builder.Buffer.AsSpan().Fill(0xff);
+            builder.WriteBytes(0xff, 16);
+            builder.Clear();
             // Reserved buffers must be zero-initialized.
             var reserved = builder.ReserveBytes(4);
             AssertEx.Equal(Enumerable.Repeat((byte)0, 4).ToArray(), reserved.GetBytes().ToArray());

@@ -9,13 +9,15 @@
 #cmakedefine01 HAVE_FLOCK64
 #cmakedefine01 HAVE_F_DUPFD_CLOEXEC
 #cmakedefine01 HAVE_F_DUPFD
-#cmakedefine01 HAVE_F_FULLFSYNC
 #cmakedefine01 HAVE_O_CLOEXEC
 #cmakedefine01 HAVE_GETIFADDRS
 #cmakedefine01 HAVE_UTSNAME_DOMAINNAME
 #cmakedefine01 HAVE_STAT64
 #cmakedefine01 HAVE_FORK
+#cmakedefine01 HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
 #cmakedefine01 HAVE_VFORK
+#cmakedefine01 HAVE_CLOSE_RANGE
+#cmakedefine01 HAVE_FDWALK
 #cmakedefine01 HAVE_CHMOD
 #cmakedefine01 HAVE_FCHMOD
 #cmakedefine01 HAVE_PIPE
@@ -32,6 +34,9 @@
 #cmakedefine01 HAVE_STATFS_FSTYPENAME
 #cmakedefine01 HAVE_STATVFS_FSTYPENAME
 #cmakedefine01 HAVE_STATVFS_BASETYPE
+#cmakedefine01 HAVE_GETFSSTAT_INT
+#cmakedefine01 HAVE_GETFSSTAT_SIZE_T
+#cmakedefine01 HAVE_GETFSSTAT_LONG
 #cmakedefine01 HAVE_NON_LEGACY_STATFS
 #cmakedefine01 HAVE_STRCPY_S
 #cmakedefine01 HAVE_STRLCPY
@@ -135,6 +140,7 @@
 #cmakedefine01 HAVE_NET_IF_H
 #cmakedefine01 HAVE_SYS_PROCINFO_H
 #cmakedefine01 HAVE_IOSS_H
+#cmakedefine01 HAVE_OS_H
 #cmakedefine01 HAVE_ALIGNED_ALLOC
 #cmakedefine01 HAVE_MALLOC_SIZE
 #cmakedefine01 HAVE_MALLOC_USABLE_SIZE

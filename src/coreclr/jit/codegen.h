@@ -209,15 +209,22 @@ protected:
     void genInitializeRegisterState();
 
     void genCodeForBBlist();
+    void genCodeForFunclet(FuncInfoDsc* funcInfo);
+    void genCodeForBlock(BasicBlock* block);
 
 #if defined(TARGET_WASM)
     ArrayStack<WasmInterval*>* wasmControlFlowStack = nullptr;
     unsigned                   wasmCursor           = 0;
     unsigned                   findTargetDepth(BasicBlock* target);
+    void                       WasmProduceReg(GenTree* node);
+    regNumber                  GetMultiUseOperandReg(GenTree* operand);
+    void                       genEmitNullCheck(regNumber reg);
+    unsigned                   GetStackPointerRegIndex() const;
+    unsigned                   GetFramePointerRegIndex() const;
 #endif
 
-    void        genEmitStartBlock(BasicBlock* block);
-    BasicBlock* genEmitEndBlock(BasicBlock* block);
+    void genEmitStartBlock(BasicBlock* block);
+    void genEmitEndBlock(BasicBlock* block);
 
 public:
     void genSpillVar(GenTree* tree);
@@ -301,6 +308,7 @@ protected:
 
 #if defined(TARGET_WASM)
     void genJumpToThrowHlpBlk(SpecialCodeKind codeKind);
+    void genCodeForBinaryOverflow(GenTreeOp* node);
 #else
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 #endif
@@ -328,8 +336,11 @@ protected:
     // Prolog functions and data (there are a few exceptions for more generally used things)
     //
 
-    void      genEstablishFramePointer(int delta, bool reportUnwindData);
-    void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
+    void genEstablishFramePointer(int delta, bool reportUnwindData);
+    void genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
+#ifdef TARGET_WASM
+    void genHomeRegisterParamsOutsideProlog();
+#endif
     regMaskTP genGetParameterHomingTempRegisterCandidates();
 
     var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
@@ -597,7 +608,7 @@ protected:
     void genReserveFuncletProlog(BasicBlock* block);
     void genReserveFuncletEpilog(BasicBlock* block);
     void genFuncletProlog(BasicBlock* block);
-    void genFuncletEpilog();
+    void genFuncletEpilog(BasicBlock* block);
     void genCaptureFuncletPrologEpilogInfo();
 
     void genUpdateCurrentFunclet(BasicBlock* block);
@@ -766,6 +777,7 @@ protected:
 
 #if defined(TARGET_WASM)
     void genCodeForConstant(GenTree* treeNode);
+    void genCatchArg(GenTree* treeNode);
 #endif
 
 #if defined(TARGET_X86)
@@ -1132,6 +1144,7 @@ protected:
     void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
 #endif // TARGET_XARCH
 
+    void genCodeForCatchArg(GenTree* tree);
     void genCodeForCast(GenTreeOp* tree);
     void genCodeForLclAddr(GenTreeLclFld* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);
@@ -1250,7 +1263,7 @@ protected:
     void        genCallPlaceRegArgs(GenTreeCall* call);
     void        genJmpPlaceArgs(GenTree* jmp);
     void        genJmpPlaceVarArgs();
-    BasicBlock* genCallFinally(BasicBlock* block);
+    void        genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genCodeForJumpCompare(GenTreeOpCC* tree);
 #endif

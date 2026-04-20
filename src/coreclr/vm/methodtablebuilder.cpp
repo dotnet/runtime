@@ -2697,8 +2697,9 @@ MethodTableBuilder::EnumerateClassMethods()
     // In a worst case the number of declared methods can double
     // as each async method may have two variants.
     // The method count is typically a modest number though.
-    // We will reserve twice the size for the builder, up to the max, just in case.
-    DWORD cMethUpperBound = cMethAndGaps * 2;
+    // If we have covariant overrides, such as a base Task method overridden by Task<T>, we will need 3 method descs.
+    // Reserve the space conservatively, up to the max, for the worst case scenario.
+    DWORD cMethUpperBound = cMethAndGaps * (bmtMetaData->fHasCovariantOverride ? 3 : 2);
     if ((DWORD)MAX_SLOT_INDEX <= cMethUpperBound)
     {
         cMethUpperBound = MAX_SLOT_INDEX - 1;
@@ -2782,10 +2783,11 @@ MethodTableBuilder::EnumerateClassMethods()
         SigParser sig(pMemberSignature, cMemberSignature);
 
         ULONG offsetOfAsyncDetails = 0;
+        ULONG elementTypeLength = 0;
         bool returnsValueTask = false;
         MethodReturnKind returnKind = IsDelegate() ?
             MethodReturnKind::NormalMethod :
-            ClassifyMethodReturnKind(sig, GetModule(), &offsetOfAsyncDetails, &returnsValueTask);
+            ClassifyMethodReturnKind(sig, GetModule(), &offsetOfAsyncDetails, &elementTypeLength, &returnsValueTask);
 
         bool hasGenericMethodArgsComputed = false;
         bool hasGenericMethodArgs = this->GetModule()->m_pMethodIsGenericMap->IsGeneric(tok, &hasGenericMethodArgsComputed);
@@ -3338,8 +3340,7 @@ MethodTableBuilder::EnumerateClassMethods()
         // Create a new bmtMDMethod representing this method and add it to the
         // declared method list.
         //
-        bmtMDMethod *pDeclaredMethod = NULL;
-        for (int insertCount = 0; insertCount < 2; insertCount++)
+        for (int insertCount = 0; insertCount < 3; insertCount++)
         {
             if (bmtMethod->m_cDeclaredMethods >= bmtMethod->m_cMaxDeclaredMethods)
             {
@@ -3391,12 +3392,10 @@ MethodTableBuilder::EnumerateClassMethods()
                         pNewMethod->SetAsyncMethodFlags(AsyncMethodFlags::None);
                     }
                 }
-
-                pDeclaredMethod = pNewMethod;
             }
             else
             {
-                // Second pass, add the async variant.
+                // Extra pass, add an async variant.
 
                 ULONG cAsyncThunkMemberSignature;
                 ULONG taskTokenOffsetFromAsyncDetailsOffset;
@@ -3413,20 +3412,42 @@ MethodTableBuilder::EnumerateClassMethods()
                 if (!IsMiAsync(dwImplFlags))
                     asyncFlags |= AsyncMethodFlags::Thunk;
 
+                if (insertCount == 2)
+                    asyncFlags |= (AsyncMethodFlags::Thunk | AsyncMethodFlags::ReturnDroppingThunk);
+
                 // Here we construct the signature of async call variant given its task-returning counterpart.
                 // It is basically just removing the Task/ValueTask part of the return type and keeping
                 // the token for T or inserting void instead.
                 // The rest of the signature stays exactly the same.
-                ULONG tokenLen = 0;
-                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+                ULONG taskTokenLen = 0;
+
+                if (insertCount == 2)
+                {
+                    // This is a rare case when we need two async variants and this is the second one.
+                    // The need arises when a Task-returning method has a Task<T> returning virtual override.
+                    // We need an extra void-returning thunk that can override the void-returning async variant in the base.
+                    // The thunk's implementation simply calls the T-returning async variant and ignores the return.
+
+                    // from ". . . Task<tk> . . . Method(args);"    we construct
+                    //      ". . .    void  . . . Method(args);"
+
+                    taskTokenOffsetFromAsyncDetailsOffset = 2;
+                    taskTokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
+
+                    taskTypePrefixSize = 2 + taskTokenLen + 1 + elementTypeLength; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1 <elementType>
+                    taskTypePrefixReplacementSize = 1;                             // ELEMENT_TYPE_VOID
+
+                    cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
+                }
+                else if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
                 {
                     // from ". . . Task . . . Method(args);"        we construct
                     //      ". . . void . . . Method(args);"
 
                     taskTokenOffsetFromAsyncDetailsOffset = 1;
-                    tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
+                    taskTokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
 
-                    taskTypePrefixSize = 1 + tokenLen;     // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
+                    taskTypePrefixSize = 1 + taskTokenLen; // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
                     taskTypePrefixReplacementSize = 1;     // ELEMENT_TYPE_VOID
 
                     cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
@@ -3437,9 +3458,9 @@ MethodTableBuilder::EnumerateClassMethods()
                     //      ". . .      tk  . . . Method(args);"
 
                     taskTokenOffsetFromAsyncDetailsOffset = 2;
-                    tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
+                    taskTokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
 
-                    taskTypePrefixSize = 2 + tokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
+                    taskTypePrefixSize = 2 + taskTokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
                     taskTypePrefixReplacementSize = 0;
 
                     cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
@@ -3461,7 +3482,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 _ASSERTE((cMemberSignature - originalRemainingSigOffset) == (cAsyncThunkMemberSignature - newRemainingSigOffset));
                 memcpy(pNewMemberSignature + newRemainingSigOffset, pMemberSignature + originalRemainingSigOffset, cMemberSignature - originalRemainingSigOffset);
 
-                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod || insertCount == 2)
                 {
                     pNewMemberSignature[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
                 }
@@ -3486,9 +3507,6 @@ MethodTableBuilder::EnumerateClassMethods()
                     asyncFlags,
                     asyncVariantType,
                     implType);
-
-                pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
-                pDeclaredMethod->SetAsyncOtherVariant(pNewMethod);
 
 #ifdef FEATURE_COMINTEROP
                 // We only ever include one of the two async variants (whichever doesn't have the async calling convention)
@@ -3521,6 +3539,23 @@ MethodTableBuilder::EnumerateClassMethods()
             if (!IsTaskReturning(returnKind))
             {
                 break;
+            }
+
+            // In rare cases we need a void-returning async variant in addition to the T-returning one.
+            // It is ok to add a void-returning thunk and end up not using it, but we want to avoid waste.
+            // Thus we try to filter closer to the cases when the thunk most certainly will be used.
+            if (insertCount == 1)
+            {
+                if (!bmtMetaData->fHasCovariantOverride ||
+                    implType != METHOD_IMPL ||
+                    returnsValueTask ||
+                    returnKind != MethodReturnKind::GenericTaskReturningMethod ||
+                    this->IsValueClass() ||
+                    !IsMdVirtual(dwMemberAttrs))
+                {
+                    // No need for another variant
+                    break;
+                }
             }
         }
     }
@@ -5546,8 +5581,8 @@ MethodTableBuilder::PlaceVirtualMethods()
     }
 }
 
-// Given an interface map entry, and a name+signature, compute the method on the interface
-// that the name+signature corresponds to. Used by ProcessMethodImpls and ProcessInexactMethodImpls
+// Given an interface map entry, and a name+signature+variantLookup, compute the method on the interface
+// that the name+signature+variantLookup corresponds to. Used by ProcessMethodImpls and ProcessInexactMethodImpls
 // Always returns the first match that it finds. Affects the ambiguities in code:#ProcessInexactMethodImpls_Ambiguities
 MethodTableBuilder::bmtMethodHandle
 MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, AsyncVariantLookup variantLookup, bool searchForStaticMethods)
@@ -5587,7 +5622,10 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
         }
     }
 
-    if (variantLookup == AsyncVariantLookup::AsyncOtherVariant && !declMethod.IsNull())
+    // declSig is for an ordinary method, we should not find an async variant.
+    _ASSERTE(declMethod.IsNull() || !declMethod.GetMethodDesc()->IsAsyncVariantMethod());
+
+    if (variantLookup != AsyncVariantLookup::Ordinary && !declMethod.IsNull())
     {
         bmtRTMethod* declRTMethod = declMethod.AsRTMethod();
         // Other variant may not exist. For example we return Task and the base is generic and returns T.
@@ -5600,7 +5638,7 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
             if ((slotDeclMethod->GetOwningType() == declRTMethod->GetOwningType()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMethodTable() == declRTMethod->GetMethodDesc()->GetMethodTable()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMemberDef() == declRTMethod->GetMethodDesc()->GetMemberDef()) &&
-                (slotDeclMethod->GetMethodDesc()->IsAsyncVariantMethod() != declRTMethod->GetMethodDesc()->IsAsyncVariantMethod()))
+                (slotDeclMethod->GetMethodDesc()->MatchesAsyncVariantLookup(variantLookup)))
             {
                 declMethod = slotIt->Decl();
                 break;
@@ -5676,9 +5714,9 @@ MethodTableBuilder::ProcessInexactMethodImpls()
             continue;
         }
 
-        AsyncVariantLookup asyncVariantOfDeclToFind = !it->IsAsyncVariant() ?
-            AsyncVariantLookup::MatchingAsyncVariant :
-            AsyncVariantLookup::AsyncOtherVariant;
+        AsyncVariantLookup asyncVariantOfDeclToFind = it->IsAsyncVariant() ?
+            AsyncVariantLookup::Async :
+            AsyncVariantLookup::Ordinary;
 
         // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
@@ -5821,9 +5859,9 @@ MethodTableBuilder::ProcessMethodImpls()
             continue;
         }
 
-        AsyncVariantLookup asyncVariantOfDeclToFind = !it->IsAsyncVariant() ?
-            AsyncVariantLookup::MatchingAsyncVariant :
-            AsyncVariantLookup::AsyncOtherVariant;
+        AsyncVariantLookup asyncVariantOfDeclToFind = it->IsAsyncVariant() ?
+            AsyncVariantLookup::Async :
+            AsyncVariantLookup::Ordinary;
 
         // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
@@ -6008,11 +6046,23 @@ MethodTableBuilder::ProcessMethodImpls()
                                 declMethod = FindDeclMethodOnClassInHierarchy(it, pDeclMT, declSig, asyncVariantOfDeclToFind);
                             }
 
-                            if (declMethod.IsNull() && asyncVariantOfDeclToFind == AsyncVariantLookup::AsyncOtherVariant)
+                            if (asyncVariantOfDeclToFind == AsyncVariantLookup::Async &&
+                                (declMethod.IsNull() ||
+                                    !MethodSignature::SignaturesEquivalent(declMethod.GetMethodSignature(), it->GetMethodSignature(), FALSE)))
                             {
-                                // when implementing/overriding, we may see a Task-returning method
-                                // which matches a T-returning method in the interface/base, which would not have variants.
-                                // in such case the async variant of the Task-returning method does not implement/override anything.
+                                // There are two scenarios when an async variant may not find a base to override:
+                                // 
+                                // 1. We have a Task-returning method that is Task-returning due to generic substitution of the return type.
+                                //    The base method is T-returning and thus does not have an async variant that we can override.
+                                // 
+                                // 2. We may have added a void-returning async thunk in anticipation of covariant Task -> Task<T> override.
+                                //    The thunk is added very early based on limited type system information and it is not 100% guaranteed that
+                                //    we actually have Task -> Task<T> situation. (i.e. we may have Object -> Task<T> override or some other case...)
+                                //    When this happens the thunk does not override anything.
+                                // 
+                                // It is ok in the above cases to not have a base. It means that the "impl" method should not be called
+                                // polymorphically.
+                                //
                                 continue;
                             }
 
@@ -6150,11 +6200,14 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
                         FALSE,
                         iPass == 0 ? &newVisited : NULL))
                     {
-                        if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
+                        // We should find the ordinary variant first.
+                        _ASSERTE(pCurMD->MatchesAsyncVariantLookup(AsyncVariantLookup::Ordinary));
+
+                        if (variantLookup != AsyncVariantLookup::Ordinary)
                         {
-                            if (pCurMD->IsAsyncVariantMethod() || pCurMD->ReturnsTaskOrValueTask())
+                            if (pCurMD->ReturnsTaskOrValueTask())
                             {
-                                pCurMD = pCurMD->GetAsyncOtherVariant();
+                                pCurMD = pCurMD->GetAsyncVariant();
                             }
                             else
                             {
@@ -9833,13 +9886,22 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                     {
                         MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
 
-                        // pItfPossiblyApprox can be in 4 situations
+                        // pItfPossiblyApprox can be in 6 situations
                         // 1. It has no instantiation
-                        // 2. It is a special marker type, AND pNewItfMT is a special marker type. Compute the exact instantiation as containing entirely a list of types corresponding to calling GetSpecialInstantiationType on pMT (This rule works based on the current behavior of GetSpecialInstantiationType where it treats all interfaces the same)
-                        // 3. It is a special marker type, but pNewItfMT is NOT a special marker type. Compute the exact instantiation as containing entirely a list of types corresponding to calling GetSpecialInstantiationType on pNewItfMT
-                        // 4. It is an exact instantiation
+                        // 2. It is a special marker type, AND pNewIntfMT is a special marker type. Compute the exact instantiation as containing entirely a list of
+                        //    types corresponding to calling GetSpecialInstantiationType on pMT (This rule works based on the current behavior of
+                        //    GetSpecialInstantiationType where it treats all interfaces the same)
+                        // 3. It is a special marker type, but pNewIntfMT is NOT a special marker type. Compute the exact instantiation as containing entirely a list
+                        //    of types corresponding to calling GetSpecialInstantiationType on pNewIntfMT
+                        // 4. It is an exact instantiation, but pNewIntfMT was a special marker type, and the exact instantiation type found here could have been a
+                        //    special marker type. This should produce a result equivalent to case 2 (the special marker type)
+                        // 5. It is an exact instantiation, but pNewIntfMT was a special marker type, and the exact instantiation type is NOT one which would have
+                        //    been on the exact instantiation of pNewIntfMT if it were not a special marker type. In theory we could reconstruct this, but this is a
+                        //    rare scenario, so we just fallback to the retry with exact interfaces pathway
+                        // 6. It is an exact instantiation, and pNewIntfMT is NOT a special marker type, compute the result and insert either a special marker or
+                        //    the exact instantiation already found.
                         //
-                        // NOTE: pItfPossiblyApprox must not be considered a special marker type if pNewItfMT has the MayHaveOpenInterfacesInInterfaceMap flag set
+                        // NOTE: pItfPossiblyApprox must not be considered a special marker type if pNewIntfMT has the MayHaveOpenInterfacesInInterfaceMap flag set
                         //
                         // Then determine if all of the following conditions hold true.
                         // 1. All generic arguments are the same (always true for cases 2 and 3 above)
@@ -9889,17 +9951,40 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                         }
                         else
                         {
-                            // case 4 (We have an exact interface)
-                            if (ClassLoader::EligibleForSpecialMarkerTypeUsage(pItfPossiblyApprox->GetInstantiation(), pMT))
+                            // case 4, 5, or 6 (We have an exact interface)
+                            bool pNewIntfMTIsSpecialMarkerType = pNewIntfMT->IsSpecialMarkerTypeForGenericCasting() && !pMT->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap();
+                            if (pNewIntfMTIsSpecialMarkerType)
                             {
-                                // Validated that all generic arguments are the same, and that the first generic argument in the instantiation is exactly the value of calling GetSpecialInstantiationType on pMT
-                                // Then use the special marker type here
-                                pItfToInsert = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                                if (ClassLoader::EligibleForSpecialMarkerTypeUsage(pItfPossiblyApprox->GetInstantiation(), pNewIntfMT))
+                                {
+                                    // Case 4 - we have an exact instantiation, but pNewIntfMT was a special marker type, and the exact instantiation type found here could have been a special marker type. We need to check if the exact instantiation we found
+                                    // here could have been a special marker type. If it is, we need to insert the special marker type here.
+                                    pItfToInsert = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                                }
+                                else if (pItfPossiblyApprox->ContainsGenericVariables())
+                                {
+                                    // Case 5
+                                    // If the instantiation contains generic variables and can't be converted to the special marker type, then we would need to fully re-instantiate the type with a deep substitution to get the exact instantiation, which is complex and expensive, and we expect this to be a rare case, so we can just fallback to the retry with exact interfaces pathway in this case.
+                                    retry = true;
+                                    break;
+                                }
+                                // If we reach here, we've already found the correct pItfToInsert (case 4), OR we can proceed to case 6 since pItfPossiblyApprox was an exact type defined on the generic type.
                             }
-                            else
+
+                            if (pItfToInsert == NULL)
                             {
-                                pItfToInsert = pItfPossiblyApprox;
-                                intendedExactMatch = true;
+                                // Case 6, this is an exact instantiation of exactly the right type. Insert it here.
+                                if (ClassLoader::EligibleForSpecialMarkerTypeUsage(pItfPossiblyApprox->GetInstantiation(), pMT))
+                                {
+                                    // Validated that all generic arguments are the same, and that the first generic argument in the instantiation is exactly the value of calling GetSpecialInstantiationType on pMT
+                                    // Then use the special marker type here
+                                    pItfToInsert = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                                }
+                                else
+                                {
+                                    pItfToInsert = pItfPossiblyApprox;
+                                    intendedExactMatch = true;
+                                }
                             }
                         }
 

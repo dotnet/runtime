@@ -1354,14 +1354,14 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     assert((maskSaveRegsInt & RBM_LR) != 0);
     assert((maskSaveRegsInt & RBM_FP) != 0);
 
-    bool isFilter = (block->bbCatchTyp == BBCT_FILTER);
+    bool isFilter = block->CatchTypeIs(BBCT_FILTER);
 
     regMaskTP maskArgRegsLiveIn;
     if (isFilter)
     {
         maskArgRegsLiveIn = RBM_R0 | RBM_R1;
     }
-    else if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
+    else if (block->CatchTypeIs(BBCT_FINALLY, BBCT_FAULT))
     {
         maskArgRegsLiveIn = RBM_NONE;
     }
@@ -1495,7 +1495,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  See the description of frame shapes at genFuncletProlog().
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
@@ -2015,7 +2015,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+//------------------------------------------------------------------------
+// genCallFinally: Generate a call to a finally.
+//
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
@@ -2040,7 +2046,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
             instGen(INS_BREAKPOINT); // This should never get executed
         }
 
-        return block;
+        return;
     }
     else
     {
@@ -2066,8 +2072,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
 
         GetEmitter()->emitEnableGC();
-
-        return nextBlock;
     }
 }
 
@@ -2459,7 +2463,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 
         instruction ins = isUnsigned ? INS_umull : INS_smull;
 
-        regNumber r = emit->emitInsTernary(ins, EA_4BYTE, treeNode, op1, op2);
+        regNumber r = emit->emitInsTernary(ins, EA_8BYTE, treeNode, op1, op2);
 
         emit->emitIns_R_R_I(isUnsigned ? INS_lsr : INS_asr, EA_8BYTE, targetReg, targetReg, 32);
     }

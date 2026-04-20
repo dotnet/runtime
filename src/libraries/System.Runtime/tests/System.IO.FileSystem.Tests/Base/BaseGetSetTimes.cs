@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {
@@ -20,6 +21,18 @@ namespace System.IO.Tests
 
         protected static bool LowTemporalResolution => PlatformDetection.IsBrowser || isHFS;
         protected static bool HighTemporalResolution => !LowTemporalResolution;
+
+        private static void CheckHighTemporalResolution()
+        {
+            if (!HighTemporalResolution)
+                throw new SkipTestException(nameof(HighTemporalResolution));
+        }
+
+        private static void CheckLowTemporalResolution()
+        {
+            if (!LowTemporalResolution)
+                throw new SkipTestException(nameof(LowTemporalResolution));
+        }
 
         protected abstract bool CanBeReadOnly { get; }
 
@@ -232,9 +245,10 @@ namespace System.IO.Tests
             ValidateSetTimes(item, beforeTime, afterTime);
         }
 
-        [ConditionalFact(nameof(HighTemporalResolution))] // OSX HFS driver format and Browser platform do not support millisec granularity
+        [ConditionalFact] // OSX HFS driver format and Browser platform do not support millisec granularity
         public void TimesIncludeMillisecondPart()
         {
+            CheckHighTemporalResolution();
             T item = GetExistingItem();
             Assert.All(TimeFunctions(), (function) =>
             {
@@ -264,9 +278,10 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(LowTemporalResolution))]
+        [ConditionalFact]
         public void TimesIncludeMillisecondPart_LowTempRes()
         {
+            CheckLowTemporalResolution();
             T item = GetExistingItem();
             // OSX HFS driver format and Browser do not support millisec granularity
             Assert.All(TimeFunctions(), (function) =>

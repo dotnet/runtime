@@ -7,7 +7,7 @@ namespace System.Threading.Tests
 {
     public static class HostExecutionContextManagerTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void BasicTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>

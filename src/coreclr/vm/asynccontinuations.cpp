@@ -19,13 +19,14 @@ AsyncContinuationsManager::AsyncContinuationsManager(LoaderAllocator* allocator)
 {
     LIMITED_METHOD_CONTRACT;
 
-    m_layoutsLock.Init(CrstLeafLock);
+    m_layoutsLock.Init(CrstAsyncContinuations);
     LockOwner lock = {&m_layoutsLock, IsOwnerOfCrst};
     m_layouts.Init(16, &lock, m_allocator->GetLowFrequencyHeap());
 }
 
 void AsyncContinuationsManager::NotifyUnloadingClasses()
 {
+#ifdef PROFILING_SUPPORTED
     if (!CORProfilerTrackClasses())
     {
         return;
@@ -39,6 +40,7 @@ void AsyncContinuationsManager::NotifyUnloadingClasses()
         ClassLoader::NotifyUnload(pMT, true);
         ClassLoader::NotifyUnload(pMT, false);
     }
+#endif // PROFILING_SUPPORTED
 }
 
 static EEClass* volatile g_singletonContinuationEEClass;

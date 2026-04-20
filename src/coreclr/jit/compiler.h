@@ -90,6 +90,7 @@ class PerLoopInfo;         // defined in inductionvariableopts.cpp
 class RangeCheck;          // defined in rangecheck.h
 #ifdef TARGET_WASM
 class WasmInterval; // defined in fgwasm.h
+enum class WasmValueType : unsigned;
 #endif
 #ifdef DEBUG
 struct IndentStack;
@@ -100,6 +101,7 @@ class Lowering; // defined in lower.h
 // The following are defined in this file, Compiler.h
 
 class Compiler;
+class FuncInfoRange;
 
 /*****************************************************************************
  *                  Unwind info
@@ -502,6 +504,8 @@ enum class AddressExposedReason
     EXTERNALLY_VISIBLE_IMPLICITLY, // Local is visible externally without explicit escape in JIT IR.
                                    // For example because it is used by GC or is the outgoing arg area
                                    // that belongs to callees.
+    SMALL_TYPE_PARTIAL_DEF,        // A small-typed local has a partial def that doesn't cover the full
+                                   // local, so we must treat it as normalize-on-load.
 };
 
 #endif // DEBUG
@@ -1693,6 +1697,8 @@ enum FuncKind : BYTE
     FUNC_COUNT
 };
 
+constexpr unsigned ROOT_FUNC_IDX = 0;
+
 class emitLocation;
 
 struct FuncInfoDsc
@@ -1702,6 +1708,27 @@ struct FuncInfoDsc
     unsigned short funEHIndex; // index, into the ebd table, of innermost EH clause corresponding to this
                                // funclet. It is only valid if funKind field indicates this is a
                                // EH-related funclet: FUNC_HANDLER or FUNC_FILTER
+
+#if !HAS_FIXED_REGISTER_SET
+    regNumber funStackPointerReg;
+    regNumber funFramePointerReg;
+#endif
+
+#if defined(TARGET_WASM)
+    struct WasmLocalsDecl
+    {
+        WasmValueType Type;
+        unsigned      Count;
+    };
+
+    jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
+#endif // defined(TARGET_WASM)
+
+    EHblkDsc*            GetEHDesc(Compiler* comp) const;
+    BasicBlock*          GetStartBlock(Compiler* comp) const;
+    BasicBlock*          GetLastBlock(Compiler* comp) const;
+    BasicBlockRangeList  Blocks(Compiler* comp) const;
+    unsigned             GetFuncletIdx(Compiler* comp) const;
 
 #if defined(TARGET_AMD64)
 
@@ -2238,6 +2265,161 @@ public:
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoops* loops);
 #endif // DEBUG
+};
+
+class FlowGraphTryRegions;
+
+// Represents a try region in a method. Currently fairly lightweight.
+class FlowGraphTryRegion
+{
+    friend class FlowGraphTryRegions;
+    FlowGraphTryRegions* m_regions;
+    FlowGraphTryRegion* m_parent;
+    EHblkDsc* m_ehDsc;
+    BitVec m_blocks;
+
+    // Edges from blocks outside the try region to blocks inside the try region.
+    // This includes edges from any catch handler, and edges from some ancestor
+    // region to some descendant region.
+    jitstd::vector<FlowEdge*> m_entryEdges;
+
+    bool m_requiresRuntimeResumption;
+    bool m_hasSideEntry;
+
+    FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions);
+
+    void SetRequiresRuntimeResumption()
+    {
+        m_requiresRuntimeResumption = true;
+    }
+
+    void SetHasSideEntry()
+    {
+        m_hasSideEntry = true;
+    }
+
+    bool IsMutualProtectWith(FlowGraphTryRegion* other) const
+    {
+        return EHblkDsc::ebdIsSameTry(this->m_ehDsc, other->m_ehDsc);
+    }
+
+    void AddEntryEdge(FlowEdge* edge)
+    {
+        m_entryEdges.push_back(edge);
+    }
+
+public:
+
+    template<typename TFunc>
+    BasicBlockVisit VisitTryRegionBlocksReversePostOrder(TFunc func);
+
+    unsigned NumBlocks() const;
+
+    bool HasCatchHandler() const
+    {
+        return m_ehDsc->HasCatchHandler();
+    }
+
+    const jitstd::vector<FlowEdge*>& EntryEdges() const
+    {
+        return m_entryEdges;
+    }
+
+    // True if resumption from a catch in this or in an enclosed
+    // try region requires runtime support.
+    //
+    bool RequiresRuntimeResumption() const
+    {
+        return m_requiresRuntimeResumption;
+    }
+
+    // True if control can enter the try via some block other than the header block.
+    //
+    bool HasSideEntry() const
+    {
+        return m_hasSideEntry;
+    }
+
+    FlowGraphTryRegion* EnclosingRegion() const;
+
+    BasicBlock* GetHeaderBlock() const
+    {
+        return m_ehDsc->ebdTryBeg;
+    }
+
+    bool CanEnumerateInReversePostOrder() const;
+
+#ifdef DEBUG
+    static void Dump(FlowGraphTryRegion* region);
+#endif
+};
+
+// Represents the try regions in a method
+class FlowGraphTryRegions
+{
+private:
+    Compiler* m_compiler;
+    FlowGraphDfsTree* m_dfsTree;
+    // Collection of try regions that were found, indexed by EhID
+    jitstd::vector<FlowGraphTryRegion*> m_tryRegions;
+
+    FlowGraphTryRegions(Compiler* comp, FlowGraphDfsTree* dfs, unsigned numRegions);
+
+    unsigned m_numRegions;
+    unsigned m_numTryCatchRegions;
+    bool m_tryRegionsIncludeHandlerBlocks;
+    bool m_hasMultipleEntryTryRegions;
+    BitVecTraits m_traits;
+
+    void SetHasMultipleEntryTryRegions()
+    {
+        m_hasMultipleEntryTryRegions = true;
+    }
+
+public:
+
+    static FlowGraphTryRegions* Build(Compiler* comp, FlowGraphDfsTree* dfs, bool includeHandlerBlocks = false);
+
+    BitVecTraits* GetBlockBitVecTraits()
+    {
+        return &m_traits;
+    }
+
+    unsigned GetBlockIndex(BasicBlock* block) const
+    {
+        if (m_dfsTree != nullptr)
+        {
+            return block->bbPostorderNum;
+        }
+        else
+        {
+            return block->bbNum;
+        }
+    }
+
+    Compiler* GetCompiler() const
+    {
+        return m_compiler;
+    }
+
+    FlowGraphTryRegion* GetTryRegionByHeader(BasicBlock* block);
+
+    unsigned NumTryRegions() const { return m_numRegions; }
+    unsigned NumTryCatchRegions() const { return m_numTryCatchRegions; }
+
+    FlowGraphDfsTree* GetDfsTree() const { return m_dfsTree; }
+
+    bool TryRegionsIncludeHandlerBlocks() const { return m_tryRegionsIncludeHandlerBlocks; }
+
+    bool HasMultipleEntryTryRegions() const { return m_hasMultipleEntryTryRegions; }
+
+    void AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
+
+    void RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
+
+#ifdef DEBUG
+    static void Dump(FlowGraphTryRegions* regions);
+#endif
 };
 
 // Represents the dominator tree of the flow graph.
@@ -2847,9 +3029,9 @@ public:
 #ifdef TARGET_WASM
     // Once we have run wasm layout, try regions may no longer be contiguous.
     //
-    bool fgTrysNotContiguous() { return fgIndexToBlockMap != nullptr; }
+    bool fgTrysContiguous() { return fgIndexToBlockMap == nullptr; }
 #else
-    bool fgTrysNotContiguous() { return false; }
+    bool fgTrysContiguous() { return true; }
 #endif
 
     FlowEdge* BlockPredsWithEH(BasicBlock* blk);
@@ -3021,6 +3203,7 @@ public:
 
     GenTreeFlags gtTokenToIconFlags(unsigned token);
 
+    GenTree* gtNewIconEmbHndNode(CORINFO_CONST_LOOKUP* pLookup, GenTreeFlags flags, void* compileTimeHandle);
     GenTree* gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags flags, void* compileTimeHandle);
 
     GenTree* gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd);
@@ -3643,6 +3826,7 @@ public:
     void gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCostSz, bool isLikelyRegVar);
     void gtGetLclFldNodeCost(GenTreeLclFld* node, int* pCostEx, int* pCostSz);
     bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
+    bool gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile, int* pCostEx, int* pCostSz);
 
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
@@ -4119,6 +4303,8 @@ public:
     // located on the original method stack frame.
     bool lvaIsOSRLocal(unsigned varNum);
 
+    int lvaOSRLocalTier0FrameOffset(unsigned varNum);
+
     //------------------------ For splitting types ----------------------------
 
     void lvaInitTypeRef();
@@ -4206,6 +4392,17 @@ public:
     unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
     ValueSize lvaLclValueSize(unsigned varNum);
+
+    //-----------------------------------------------------------------------------
+    // lvaIsUnknownSizeLocal: Does the local have an unknown size at compile-time?
+    //
+    // Returns:
+    //     True if the local does not have an exact size, else false.
+    //
+    bool lvaIsUnknownSizeLocal(unsigned varNum)
+    {
+        return !lvaLclValueSize(varNum).IsExact();
+    }
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 
@@ -4582,6 +4779,11 @@ protected:
 
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
+#if defined(FEATURE_HW_INTRINSICS)
+    GenTree* impSimdCreateScalarHalf(GenTree* op1);
+    GenTree* impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd);
+#endif // FEATURE_HW_INTRINSICS
+
     enum class BoxPatterns
     {
         None                  = 0,
@@ -4602,6 +4804,8 @@ protected:
     bool impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
+
+    bool impCanReorderWithNullCheck(GenTree* tree);
 
     bool impCanPInvokeInline();
     bool impCanPInvokeInlineCallSite(BasicBlock* block);
@@ -4809,7 +5013,7 @@ protected:
 
     GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
-    GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
+    GenTree* impMethodPointer(CORINFO_CALL_INFO* pCallInfo);
 
     GenTree* impTransformThis(GenTree*                thisPtr,
                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -4870,23 +5074,18 @@ public:
         return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, true);
     }
 
-    GenTree* impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                             CORINFO_LOOKUP*         pLookup,
+    GenTree* impLookupToTree(CORINFO_LOOKUP*         pLookup,
                              GenTreeFlags            flags,
                              void*                   compileTimeHandle);
 
     GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind);
 
-    GenTree* impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    CORINFO_LOOKUP*         pLookup,
+    GenTree* impRuntimeLookupToTree(CORINFO_LOOKUP*         pLookup,
                                     void*                   compileTimeHandle);
-
-    GenTree* impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup, GenTreeFlags flags, void* compileTimeHandle);
 
     GenTreeCall* impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CorInfoHelpFunc         helper,
                                            var_types               type,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr,
                                            GenTree*                arg1               = nullptr);
 
     bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
@@ -5178,6 +5377,30 @@ private:
                                                             GenTree*    dereferencedAddress,
                                                             InlArgInfo* inlArgInfo);
 
+    typedef JitHashTable<CORINFO_METHOD_HANDLE, JitPtrKeyFuncs<struct CORINFO_METHOD_STRUCT_>, CORINFO_METHOD_HANDLE> HelperToManagedMap;
+    HelperToManagedMap* m_helperToManagedMap = nullptr;
+
+public:
+    HelperToManagedMap* GetHelperToManagedMap()
+    {
+        if (m_helperToManagedMap == nullptr)
+        {
+            m_helperToManagedMap = new (getAllocator()) HelperToManagedMap(getAllocator());
+        }
+        return m_helperToManagedMap;
+    }
+    bool HelperToManagedMapLookup(CORINFO_METHOD_HANDLE helperCallHnd, CORINFO_METHOD_HANDLE* userCallHnd)
+    {
+        if (m_helperToManagedMap == nullptr)
+        {
+            return false;
+        }
+        bool found = m_helperToManagedMap->Lookup(helperCallHnd, userCallHnd);
+        return found;
+    }
+private:
+
+    void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
@@ -5242,6 +5465,8 @@ public:
 #ifdef TARGET_WASM
     jitstd::vector<WasmInterval*>* fgWasmIntervals = nullptr;
     BasicBlock** fgIndexToBlockMap = nullptr;
+    bool fgWasmHasCatchResumptions = false;
+    FlowGraphTryRegions* fgTryRegions = nullptr;
 #endif
 
     FlowGraphDfsTree* m_dfsTree = nullptr;
@@ -5619,6 +5844,15 @@ public:
         return BasicBlockRangeList(startBlock, endBlock);
     }
 
+    // Funcs/Funclets: convenience methods for enabling range-based `for` iteration over the
+    // method's root function and its EH funclets, e.g.:
+    // 1.   for (FuncInfoDsc* const func : Funcs()) ...
+    // 2.   for (FuncInfoDsc* const funclet : Funclets()) ...
+    // 3.   for (FuncInfoDsc* const funclet : Funclets().Reverse()) ...
+    //
+    FuncInfoRange Funcs() const;
+    FuncInfoRange Funclets() const;
+
     // This array, managed by the SSA numbering infrastructure, keeps "outlined composite SSA numbers".
     // See "SsaNumInfo::GetNum" for more details on when this is needed.
     JitExpandArrayStack<unsigned>* m_outlinedCompositeSsaNums = nullptr;
@@ -5920,7 +6154,7 @@ public:
         }
     }
 
-    bool GetImmutableDataFromAddress(GenTree* address, int size, uint8_t* pValue);
+    bool GetImmutableDataFromAddress(GenTree* address, int size, CompAllocator alloc, uint8_t** ppValue);
     bool GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORINFO_OBJECT_HANDLE* pObj);
 
     // Convert a BYTE which represents the VM's CorInfoGCtype to the JIT's var_types
@@ -6204,6 +6438,8 @@ public:
 
 #ifdef TARGET_WASM
     FlowGraphDfsTree* fgWasmDfs();
+    PhaseStatus fgWasmEhFlow();
+    void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
 #ifdef DEBUG
@@ -6228,11 +6464,15 @@ public:
     template <typename TFunc>
     void fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func);
 
+    template <typename TFunc>
+    void fgVisitBlocksInTryAwareLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphTryRegions* tryRegions, FlowGraphNaturalLoops* loops, TFunc func);
+
     void fgRemoveReturnBlock(BasicBlock* block);
 
     void fgConvertBBToThrowBB(BasicBlock* block);
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
+    bool fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow = false);
 
     void fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB);
     void fgLoopCallMark();
@@ -6877,6 +7117,8 @@ private:
 public:
     bool fgIsBigOffset(size_t offset);
     bool IsValidLclAddr(unsigned lclNum, unsigned offset);
+    bool IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize accessSize);
+    bool IsWideAccess(unsigned lclNum, unsigned offset, ValueSize accessSize);
     bool IsPotentialGCSafePoint(GenTree* tree) const;
 
 private:
@@ -7596,7 +7838,7 @@ public:
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*> LocalNumberToNullCheckTreeMap;
 
-    GenTree*    getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
+    GenTree*    getArrayLengthFromAllocation(GenTree* tree);
     GenTree*    optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTree*    optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
     GenTree*    optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
@@ -7645,13 +7887,23 @@ public:
 
     // Redundant branch opts
     //
-    PhaseStatus optRedundantBranches();
-    bool        optRedundantRelop(BasicBlock* const block);
-    bool        optRedundantBranch(BasicBlock* const block);
-    bool        optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
-    bool        optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
-    bool        optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
-    bool        optJumpThreadCore(JumpThreadInfo& jti);
+    enum class JumpThreadCheckResult
+    {
+        CannotThread,
+        CanThread,
+        NeedsPhiUseResolution,
+    };
+
+    PhaseStatus           optRedundantBranches();
+    bool                  optRedundantRelop(BasicBlock* const block);
+    bool                  optRedundantDominatingBranch(BasicBlock* const block);
+    bool                  optRedundantBranch(BasicBlock* const block);
+    bool                  optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool                  optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
+    JumpThreadCheckResult optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
+    bool optFindPhiUsesInBlockAndSuccessors(BasicBlock* block, GenTreeLclVar* phiDef, JumpThreadInfo& jti);
+    bool optCanRewritePhiUses(JumpThreadInfo& jti);
+    bool optJumpThreadCore(JumpThreadInfo& jti);
 
     enum class ReachabilityResult
     {
@@ -7712,7 +7964,6 @@ public:
 
     enum optOp2Kind : uint8_t
     {
-        O2K_INVALID,
         O2K_LCLVAR_COPY,
         O2K_CONST_INT,
         O2K_CONST_DOUBLE,
@@ -7732,6 +7983,7 @@ public:
             friend struct AssertionDsc; // For AssertionDsc::Create* factory methods
 
         private:
+            INDEBUG(const Compiler* m_compiler);
             optOp1Kind m_kind;
             union
             {
@@ -7753,6 +8005,7 @@ public:
 
             ValueNum GetVN() const
             {
+                assert(!m_compiler->optLocalAssertionProp);
                 // TODO-Cleanup: O1K_LCLVAR should be Local-AP only.
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
@@ -7760,6 +8013,7 @@ public:
 
             unsigned GetLclNum() const
             {
+                assert(m_compiler->optLocalAssertionProp);
                 assert(m_lclNum != BAD_VAR_NUM);
                 assert(KindIs(O1K_LCLVAR));
                 return m_lclNum;
@@ -7776,6 +8030,7 @@ public:
             friend struct AssertionDsc; // For AssertionDsc::Create* factory methods
 
         private:
+            INDEBUG(const Compiler* m_compiler);
             optOp2Kind m_kind;
             bool       m_checkedBoundIsNeverNegative; // only meaningful for O2K_CHECKED_BOUND_ADD_CNS kind
             uint16_t   m_encodedIconFlags;            // encoded icon gtFlags
@@ -7806,6 +8061,7 @@ public:
 
             unsigned GetLclNum() const
             {
+                assert(m_compiler->optLocalAssertionProp);
                 assert(KindIs(O2K_LCLVAR_COPY));
                 return m_lclNum;
             }
@@ -7824,6 +8080,7 @@ public:
 
             IntegralRange GetIntegralRange() const
             {
+                assert(m_compiler->optLocalAssertionProp);
                 assert(KindIs(O2K_SUBRANGE));
                 return m_range;
             }
@@ -7837,6 +8094,7 @@ public:
 
             ValueNum GetVN() const
             {
+                assert(!m_compiler->optLocalAssertionProp);
                 assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
@@ -7845,6 +8103,7 @@ public:
             // For "checkedBndVN + cns" form, return the "cns" part.
             int GetCheckedBoundConstant() const
             {
+                assert(!m_compiler->optLocalAssertionProp);
                 assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
                 assert(FitsIn<int>(m_icon.m_iconVal));
                 return (int)m_icon.m_iconVal;
@@ -7854,6 +8113,7 @@ public:
             // We intentionally don't allow to use it via GetVN() to avoid confusion.
             ValueNum GetCheckedBound() const
             {
+                assert(!m_compiler->optLocalAssertionProp);
                 assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
@@ -7861,6 +8121,7 @@ public:
 
             bool IsCheckedBoundNeverNegative() const
             {
+                assert(!m_compiler->optLocalAssertionProp);
                 assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
                 return m_checkedBoundIsNeverNegative;
             }
@@ -7911,6 +8172,14 @@ public:
         optAssertionKind m_assertionKind;
         AssertionDscOp1  m_op1;
         AssertionDscOp2  m_op2;
+
+        static AssertionDsc CreateEmptyAssertion(const Compiler* comp)
+        {
+            AssertionDsc dsc = {};
+            INDEBUG(dsc.m_op1.m_compiler = comp);
+            INDEBUG(dsc.m_op2.m_compiler = comp);
+            return dsc;
+        }
     public:
 
         optAssertionKind GetKind() const
@@ -8168,7 +8437,6 @@ public:
                 case O2K_SUBRANGE:
                     return GetOp2().GetIntegralRange().Equals(that.GetOp2().GetIntegralRange());
 
-                case O2K_INVALID:
                 default:
                     assert(!"Unexpected value for GetOp2().m_kind in AssertionDsc.");
                     break;
@@ -8203,7 +8471,7 @@ public:
                                                        GenTreeFlags    iconFlags = GTF_EMPTY,
                                                        FieldSeq*       fldSeq    = nullptr)
         {
-            AssertionDsc dsc    = {};
+            AssertionDsc dsc    = CreateEmptyAssertion(comp);
             dsc.m_assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
             dsc.m_op1.m_kind    = O1K_LCLVAR;
 
@@ -8284,7 +8552,7 @@ public:
             assert(lclNum1 != BAD_VAR_NUM);
             assert(lclNum2 != BAD_VAR_NUM);
 
-            AssertionDsc dsc    = {};
+            AssertionDsc dsc    = CreateEmptyAssertion(comp);
             dsc.m_assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
             dsc.m_op1.m_kind    = O1K_LCLVAR;
             dsc.m_op1.m_lclNum  = lclNum1;
@@ -8300,7 +8568,7 @@ public:
             assert(comp->optLocalAssertionProp);
             assert(lclNum != BAD_VAR_NUM);
 
-            AssertionDsc dsc    = {};
+            AssertionDsc dsc    = CreateEmptyAssertion(comp);
             dsc.m_assertionKind = OAK_SUBRANGE;
             dsc.m_op1.m_kind    = O1K_LCLVAR;
             dsc.m_op1.m_lclNum  = lclNum;
@@ -8321,7 +8589,7 @@ public:
             assert(!comp->vnStore->IsVNHandle(op2VN));
             assert(!comp->optLocalAssertionProp);
 
-            AssertionDsc dsc           = {};
+            AssertionDsc dsc           = CreateEmptyAssertion(comp);
             dsc.m_assertionKind        = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
             dsc.m_op1.m_vn             = op1VN;
             dsc.m_op2.m_vn             = op2VN;
@@ -8336,7 +8604,7 @@ public:
         {
             assert((objVN != ValueNumStore::NoVN) && comp->vnStore->IsVNTypeHandle(typeHndVN));
 
-            AssertionDsc dsc           = {};
+            AssertionDsc dsc           = CreateEmptyAssertion(comp);
             dsc.m_op1.m_kind           = exact ? O1K_EXACT_TYPE : O1K_SUBTYPE;
             dsc.m_op1.m_vn             = objVN;
             dsc.m_op2.m_kind           = O2K_CONST_INT;
@@ -8348,12 +8616,12 @@ public:
 
         // Create a no-throw bounds check assertion: idxVN u< lenVN where lenVN is never negative
         // Effectively, this means "idxVN is in range [0, lenVN)".
-        static AssertionDsc CreateNoThrowArrBnd(ValueNum idxVN, ValueNum lenVN)
+        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp, ValueNum idxVN, ValueNum lenVN)
         {
             assert(idxVN != ValueNumStore::NoVN);
             assert(lenVN != ValueNumStore::NoVN);
 
-            AssertionDsc dsc    = {};
+            AssertionDsc dsc    = CreateEmptyAssertion(comp);
             dsc.m_assertionKind = OAK_LT_UN;
             dsc.m_op1.m_kind    = O1K_VN;
             dsc.m_op1.m_vn      = idxVN;
@@ -8367,12 +8635,13 @@ public:
         }
 
         // Create "i <relop> (bnd + cns)" assertion
-        static AssertionDsc CreateCompareCheckedBound(VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
+        static AssertionDsc CreateCompareCheckedBound(
+            const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);
 
-            AssertionDsc dsc           = {};
+            AssertionDsc dsc           = CreateEmptyAssertion(comp);
             dsc.m_assertionKind        = FromVNFunc(relop);
             dsc.m_op1.m_kind           = O1K_VN;
             dsc.m_op1.m_vn             = op1VN;
@@ -8391,7 +8660,7 @@ public:
             bool    op2IsCns = comp->vnStore->IsVNIntegralConstant(cnsVN, &cns);
             assert(op2IsCns);
 
-            AssertionDsc dsc           = {};
+            AssertionDsc dsc           = CreateEmptyAssertion(comp);
             dsc.m_assertionKind        = FromVNFunc(relop);
             dsc.m_op1.m_kind           = O1K_VN;
             dsc.m_op1.m_vn             = op1VN;
@@ -8438,6 +8707,7 @@ public:
     GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call);
 
     AssertionIndex GetAssertionCount()
     {
@@ -8667,6 +8937,11 @@ public:
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
 
+    Lowering* GetLowering() const
+    {
+        return m_pLowering;
+    }
+
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -8797,7 +9072,7 @@ public:
     // Get the offset of a MDArray's lower bound for a given dimension.
     static unsigned eeGetMDArrayLowerBoundOffset(unsigned rank, unsigned dimension);
 
-    GenTree* eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig);
+    CORINFO_CONST_LOOKUP eeConvertToLookup(void* value, void* pValue);
 
     // Returns the page size for the target machine as reported by the EE.
     target_size_t eeGetPageSize()
@@ -9460,6 +9735,17 @@ private:
         return isOpaqueSIMDType(varDsc->GetLayout());
     }
 
+    bool isSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        if (isIntrinsicType(clsHnd))
+        {
+            const char* namespaceName = nullptr;
+            const char* className     = getClassNameFromMetadata(clsHnd, &namespaceName);
+            return (strcmp(className, "Half") == 0) && (strcmp(namespaceName, "System") == 0);
+        }
+        return false;
+    }
+
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
@@ -9566,17 +9852,24 @@ public:
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
-        if (compExactlyDependsOn(InstructionSet_VectorT128))
+#if defined(DEBUG)
+        if (JitConfig.JitUseScalableVectorT() && compExactlyDependsOn(InstructionSet_VectorT))
         {
-            return FP_REGSIZE_BYTES;
+            return SIZE_UNKNOWN;
         }
         else
-        {
-            // TODO: We should be returning 0 here, but there are a number of
-            // places that don't quite get handled correctly in that scenario
+#endif // DEBUG
+            if (compExactlyDependsOn(InstructionSet_VectorT128))
+            {
+                return FP_REGSIZE_BYTES;
+            }
+            else
+            {
+                // TODO: We should be returning 0 here, but there are a number of
+                // places that don't quite get handled correctly in that scenario
 
-            return FP_REGSIZE_BYTES;
-        }
+                return FP_REGSIZE_BYTES;
+            }
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
@@ -10989,12 +11282,6 @@ public:
         unsigned         compMethodHash() const;
 #endif // defined(DEBUG)
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-        // things for pseudorandom nop insertion
-        unsigned  compChecksum;
-        CLRRandom compRNG;
-#endif
-
         // The following holds the FLG_xxxx flags for the method we're compiling.
         unsigned compFlags;
 
@@ -11424,6 +11711,7 @@ public:
         unsigned m_wideIndir;
         unsigned m_stressPoisonImplicitByrefs;
         unsigned m_externallyVisibleImplicitly;
+        unsigned m_smallTypePartialDef;
 
     public:
         void RecordLocal(const LclVarDsc* varDsc);
@@ -12165,14 +12453,13 @@ public:
             case GT_PHI_ARG:
             case GT_JMPTABLE:
             case GT_PHYSREG:
-            case GT_EMITNOP:
-            case GT_PINVOKE_PROLOG:
-            case GT_PINVOKE_EPILOG:
             case GT_IL_OFFSET:
             case GT_RECORD_ASYNC_RESUME:
             case GT_NOP:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
+            case GT_WASM_THROW_REF:
+            case GT_WASM_JEXCEPT:
                 break;
 
             // Lclvar unary operators
@@ -12323,24 +12610,6 @@ public:
                     }
                 }
 
-                if (call->gtCallType == CT_INDIRECT)
-                {
-                    if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
-                    {
-                        result = WalkTree(&call->gtCallCookie, call);
-                        if (result == fgWalkResult::WALK_ABORT)
-                        {
-                            return result;
-                        }
-                    }
-
-                    result = WalkTree(&call->gtCallAddr, call);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-
                 if (call->gtControlExpr != nullptr)
                 {
                     result = WalkTree(&call->gtControlExpr, call);
@@ -12349,7 +12618,6 @@ public:
                         return result;
                     }
                 }
-
                 break;
             }
 
@@ -12642,6 +12910,194 @@ public:
         return iterator(m_end);
     }
 };
+
+inline EHblkDsc* FuncInfoDsc::GetEHDesc(Compiler* comp) const
+{
+    assert(funKind != FUNC_ROOT);
+
+    EHblkDsc* const ehDsc = comp->ehGetDsc(funEHIndex);
+    assert(ehDsc != nullptr);
+
+    return ehDsc;
+}
+
+inline BasicBlock* FuncInfoDsc::GetStartBlock(Compiler* comp) const
+{
+    if (funKind == FUNC_ROOT)
+    {
+        assert(comp->fgFirstBB != nullptr);
+        return comp->fgFirstBB;
+    }
+
+    EHblkDsc* const ehDsc = GetEHDesc(comp);
+
+    if (funKind == FUNC_FILTER)
+    {
+        assert(ehDsc->HasFilter());
+        return ehDsc->ebdFilter;
+    }
+
+    assert(funKind == FUNC_HANDLER);
+    return ehDsc->ebdHndBeg;
+}
+
+inline BasicBlock* FuncInfoDsc::GetLastBlock(Compiler* comp) const
+{
+    if (funKind == FUNC_ROOT)
+    {
+        return comp->fgLastBBInMainFunction();
+    }
+
+    EHblkDsc* const ehDsc = GetEHDesc(comp);
+
+    if (funKind == FUNC_FILTER)
+    {
+        assert(ehDsc->HasFilter());
+        return ehDsc->BBFilterLast();
+    }
+
+    assert(funKind == FUNC_HANDLER);
+    return ehDsc->ebdHndLast;
+}
+
+inline BasicBlockRangeList FuncInfoDsc::Blocks(Compiler* comp) const
+{
+    return BasicBlockRangeList(GetStartBlock(comp), GetLastBlock(comp));
+}
+
+inline unsigned FuncInfoDsc::GetFuncletIdx(Compiler* comp) const
+{
+    assert((comp->compFuncInfos <= this) && (this < (comp->compFuncInfos + comp->compFuncInfoCount)));
+    unsigned funcletIdx = (unsigned)(this - comp->compFuncInfos);
+    assert(this == &comp->compFuncInfos[funcletIdx]);
+    return funcletIdx;
+}
+
+// FuncInfoRange: adapter class for forward or reverse iteration of a contiguous range of function/funclet
+// descriptors using range-based `for`, e.g.:
+//    for (FuncInfoDsc* const func : compiler->Funcs())
+//    for (FuncInfoDsc* const funclet : compiler->Funclets().Reverse())
+//
+class FuncInfoRange
+{
+    FuncInfoDsc* m_begin;
+    FuncInfoDsc* m_end;
+
+public:
+    class iterator
+    {
+        FuncInfoDsc* m_funcInfo;
+
+    public:
+        iterator(FuncInfoDsc* funcInfo)
+            : m_funcInfo(funcInfo)
+        {
+        }
+
+        FuncInfoDsc* operator*() const
+        {
+            return m_funcInfo;
+        }
+
+        iterator& operator++()
+        {
+            ++m_funcInfo;
+            return *this;
+        }
+
+        bool operator!=(const iterator& other) const
+        {
+            return m_funcInfo != other.m_funcInfo;
+        }
+    };
+
+    class ReverseIterator
+    {
+        FuncInfoDsc* m_funcInfo;
+
+    public:
+        ReverseIterator(FuncInfoDsc* funcInfo)
+            : m_funcInfo(funcInfo)
+        {
+        }
+
+        FuncInfoDsc* operator*() const
+        {
+            return m_funcInfo - 1;
+        }
+
+        ReverseIterator& operator++()
+        {
+            --m_funcInfo;
+            return *this;
+        }
+
+        bool operator!=(const ReverseIterator& other) const
+        {
+            return m_funcInfo != other.m_funcInfo;
+        }
+    };
+
+    class ReverseView
+    {
+        FuncInfoDsc* m_begin;
+        FuncInfoDsc* m_end;
+
+    public:
+        ReverseView(FuncInfoDsc* begin, FuncInfoDsc* end)
+            : m_begin(begin)
+            , m_end(end)
+        {
+        }
+
+        ReverseIterator begin() const
+        {
+            return ReverseIterator(m_begin);
+        }
+
+        ReverseIterator end() const
+        {
+            return ReverseIterator(m_end);
+        }
+    };
+
+    FuncInfoRange(FuncInfoDsc* begin, FuncInfoDsc* end)
+        : m_begin(begin)
+        , m_end(end)
+    {
+        assert(m_begin <= m_end);
+        assert((m_begin != nullptr) || (m_begin == m_end));
+    }
+
+    iterator begin() const
+    {
+        return iterator(m_begin);
+    }
+
+    iterator end() const
+    {
+        return iterator(m_end);
+    }
+
+    ReverseView Reverse() const
+    {
+        return ReverseView(m_end, m_begin);
+    }
+};
+
+inline FuncInfoRange Compiler::Funcs() const
+{
+    assert(fgFuncletsCreated);
+    assert(compFuncInfoCount > 0);
+    return FuncInfoRange(compFuncInfos, compFuncInfos + compFuncInfoCount);
+}
+
+inline FuncInfoRange Compiler::Funclets() const
+{
+    assert(fgFuncletsCreated);
+    assert(compFuncInfoCount > 0);
+    return FuncInfoRange(compFuncInfos + 1, compFuncInfos + compFuncInfoCount);
+}
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

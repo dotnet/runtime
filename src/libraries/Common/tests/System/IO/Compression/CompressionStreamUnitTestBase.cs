@@ -65,7 +65,7 @@ namespace System.IO.Compression
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
         {
             byte[] buffer = new byte[100000];
@@ -98,7 +98,7 @@ namespace System.IO.Compression
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task FlushAsync_DuringReadAsync()
         {
             byte[] buffer = new byte[32];
@@ -125,7 +125,7 @@ namespace System.IO.Compression
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task FlushAsync_DuringFlushAsync()
         {
             byte[] buffer = null;
@@ -166,7 +166,7 @@ namespace System.IO.Compression
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public virtual async Task Dispose_WithUnfinishedReadAsync()
         {
             string compressedPath = CompressedTestFile(UncompressedTestFile());
@@ -810,6 +810,36 @@ namespace System.IO.Compression
                 Assert.Equal(footerBytes.Length, footerBytesRead);
                 Assert.Equal(footerBytes, footerBuffer);
             }
+        }
+
+        [Theory]
+        [InlineData(8)]
+        [InlineData(10)]
+        [InlineData(15)]
+        [InlineData(-1)]
+        public void RoundTrip_WithWindowLog(int windowLog)
+        {
+            byte[] input = new byte[1024];
+            Random.Shared.NextBytes(input);
+
+            var options = new ZLibCompressionOptions
+            {
+                CompressionLevel = 6,
+                WindowLog = windowLog
+            };
+
+            using var compressed = new MemoryStream();
+            using (var compressor = CreateStream(compressed, options, leaveOpen: true))
+            {
+                compressor.Write(input);
+            }
+
+            compressed.Position = 0;
+            using var decompressor = CreateStream(compressed, CompressionMode.Decompress);
+            using var decompressed = new MemoryStream();
+            decompressor.CopyTo(decompressed);
+
+            Assert.Equal(input, decompressed.ToArray());
         }
 
     }

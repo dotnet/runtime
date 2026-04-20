@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Throws<ObjectDisposedException>(() => rsa.ImportEncryptedPkcs8PrivateKey(pwBytes, pkcs8EncryptedPrivate, out _));
         }
 
-        [ConditionalFact(nameof(SupportsLargeExponent))]
+        [ConditionalFact(typeof(RSAKeyFileTests), nameof(SupportsLargeExponent))]
         public static void ReadWriteBigExponentPrivatePkcs1()
         {
             ReadWriteBase64PrivatePkcs1(
@@ -173,7 +173,7 @@ t4Ru7LOzqUULk+Y3+gSNHX34/+Jw+VCq5hHlolNkpw+thqvba8lMvzMCAwEAAQ==",
                 TestData.RSA16384Params);
         }
 
-        [ConditionalFact(nameof(SupportsLargeExponent))]
+        [ConditionalFact(typeof(RSAKeyFileTests), nameof(SupportsLargeExponent))]
         public static void ReadWriteSubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -840,7 +840,7 @@ Dmw2pL/LzHORugcg9BxRkur91lenPNcLAvnke76tMGvSGkA82I9NpBDcGRK4cPie
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(nameof(Supports384BitPrivateKeyAndRC2))]
+        [ConditionalFact(typeof(RSAKeyFileTests), nameof(Supports384BitPrivateKeyAndRC2))]
         public static void ReadPbes1Rc2EncryptedRsa384()
         {
             // PbeWithSha1AndRC2CBC

@@ -181,7 +181,6 @@ public sealed class ConditionalTest : ITestInfo
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("string reason = string.Empty;");
             builder.AppendLine(testReporterWrapper.GenerateSkippedTestReporting(_innerTest));
         }
         return builder;
@@ -296,9 +295,11 @@ public sealed class MemberDataTest : ITestInfo
                           string externAlias,
                           string argumentLoopVarIdentifier)
     {
-        TestNameExpression = innerTest.TestNameExpression;
         Method = innerTest.Method;
         ContainingType = innerTest.ContainingType;
+        // Use a static expression that doesn't reference the loop variable since it may be used
+        // outside the foreach loop scope (e.g., in a ConditionalTest's else branch).
+        TestNameExpression = $"\"{externAlias}::{ContainingType}.{Method}(...)\"";
         DisplayNameForFiltering = $"{ContainingType}.{Method}(...)";
 
         _innerTest = innerTest;
@@ -517,8 +518,6 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($"string reason = {_filterLocalIdentifier}"
-                             + $".GetTestExclusionReason({test.TestNameExpression});");
             builder.AppendLine(GenerateSkippedTestReporting(test));
         }
         return builder;
@@ -531,7 +530,7 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
              + $" \"{skippedTest.ContainingType}\","
              + $" @\"{skippedTest.Method}\","
              + $" System.TimeSpan.Zero,"
-             + $" reason,"
+             + $" string.Empty,"
              + $" tempLogSw,"
              + $" statsCsvSw);";
     }

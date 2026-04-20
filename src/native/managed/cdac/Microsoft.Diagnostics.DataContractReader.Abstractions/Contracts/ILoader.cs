@@ -19,9 +19,28 @@ public readonly struct ModuleHandle
 [Flags]
 public enum ModuleFlags
 {
-    Tenured = 0x1,                  // Set once we know for sure the Module will not be freed until the appdomain itself exits
-    EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
-    ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
+    Tenured = 0x1,                      // Set once we know for sure the Module will not be freed until the appdomain itself exits
+    JitOptimizationDisabled = 0x2,      // Cached flag: JIT optimizations are disabled
+    EditAndContinue = 0x8,              // Edit and Continue is enabled for this module
+    ReflectionEmit = 0x40,              // Reflection.Emit was used to create this module
+    ProfDisableOptimizations = 0x80,    // Profiler disabled JIT optimizations
+    EncCapable = 0x200,                 // Cached flag: module is Edit and Continue capable
+}
+
+[Flags]
+public enum DebuggerAssemblyControlFlags : uint
+{
+    DACF_NONE = 0x00,
+    DACF_ALLOW_JIT_OPTS = 0x02,
+    DACF_ENC_ENABLED = 0x08,
+    DACF_CONTROL_FLAGS_MASK = 0x2E,
+}
+
+public enum ClrModifiableAssemblies : uint
+{
+    Unset = 0,
+    None = 1,
+    Debug = 2,
 }
 
 [Flags]
@@ -68,12 +87,15 @@ public interface ILoader : IContract
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
     bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags) => throw new NotImplementedException();
     TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
+    TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
     bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle) => throw new NotImplementedException();
 
     bool IsProbeExtensionResultValid(ModuleHandle handle) => throw new NotImplementedException();
     ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsReadyToRun(ModuleHandle handle) => throw new NotImplementedException();
+    bool TryGetSimpleName(ModuleHandle handle, out string simpleName) => throw new NotImplementedException();
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
@@ -87,12 +109,17 @@ public interface ILoader : IContract
     bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
 
     TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();
+    TargetPointer GetSystemAssembly() => throw new NotImplementedException();
     TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
     TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
+    IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+
+    DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle) => throw new NotImplementedException();
+    void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

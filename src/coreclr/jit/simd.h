@@ -5,7 +5,7 @@
 #define _SIMD_H_
 
 template <typename T>
-static bool ElementsAreSame(T* array, size_t size)
+static bool ElementsAreSame(const T* array, size_t size)
 {
     for (size_t i = 1; i < size; i++)
     {
@@ -16,7 +16,7 @@ static bool ElementsAreSame(T* array, size_t size)
 }
 
 template <typename T>
-static bool ElementsAreAllBitsSetOrZero(T* array, size_t size)
+static bool ElementsAreAllBitsSetOrZero(const T* array, size_t size)
 {
     for (size_t i = 0; i < size; i++)
     {
@@ -383,6 +383,45 @@ typedef simd64_t simd_t;
 #else
 typedef simd16_t simd_t;
 #endif
+
+static bool ElementsAreAllBitsSetOrZero(const simd_t* simdVal, var_types simdBaseType, unsigned elementCount)
+{
+    assert(simdVal != nullptr);
+
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u8[0], elementCount);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u16[0], elementCount);
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_FLOAT:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u32[0], elementCount);
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u64[0], elementCount);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
 
 inline bool IsUnaryBitwiseOperation(genTreeOps oper)
 {
@@ -1976,49 +2015,59 @@ SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
 
     uint64_t mask;
     memcpy(&mask, &arg0.u8[0], sizeof(uint64_t));
-    uint32_t finalOne = count;
+    uint32_t firstZero = count;
 
-    // A mask pattern starts with zero of more 1s and then the rest of the mask is filled with 0s.
+    constexpr uint64_t laneMask = (1ull << sizeof(TBase)) - 1ull;
+
+    // A mask is a vector of unsigned integers, where 1 indicates the lane is set, 0 is not set,
+    // and all other values are undefined.
+    // For a valid mask pattern:
+    // * Each element of size TBase contains 0 or 1 in the lowest bit, and no other bits set.
+    // * The sequence starts with zero or more 1s and then the rest of the mask is filled with 0s.
 
     // Find an unbroken sequence of 1s.
     for (uint32_t i = 0; i < count; i++)
     {
-        // For Arm64 we have count total bits to read, but
-        // they are sizeof(TBase) bits apart. We set
-        // the result element to AllBitsSet or Zero depending
-        // on the corresponding mask bit
+        const uint64_t lane = (mask >> static_cast<uint32_t>(i * sizeof(TBase)));
+        TBase          elem = (TBase)(lane & laneMask);
 
-        bool isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
-        if (!isSet)
+        if (elem == 0)
         {
-            finalOne = i;
+            // Found the first zero
+            firstZero = i;
             break;
         }
+        else if (elem != 1)
+        {
+            // Other bits are set. Invalid sequence
+            return SveMaskPatternNone;
+        }
+        // else just bit 1 in elem was set
     }
 
     // Find an unbroken sequence of 0s.
-    for (uint32_t i = finalOne; i < count; i++)
+    for (uint32_t i = firstZero; i < count; i++)
     {
-        // For Arm64 we have count total bits to read, but
-        // they are sizeof(TBase) bits apart. We set
-        // the result element to AllBitsSet or Zero depending
-        // on the corresponding mask bit
+        const uint64_t lane = (mask >> static_cast<uint32_t>(i * sizeof(TBase)));
+        TBase          elem = (TBase)(lane & laneMask);
 
-        bool isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
-        if (isSet)
+        if (elem != 0)
         {
-            // Invalid sequence
+            // Either a 1 or other bits are set. Invalid sequence
             return SveMaskPatternNone;
         }
     }
 
-    if (finalOne == count)
+    assert(firstZero <= count);
+
+    if (firstZero == count)
     {
+        // No zeros in the pattern
         return SveMaskPatternAll;
     }
-    else if (finalOne >= SveMaskPatternVectorCount1 && finalOne <= SveMaskPatternVectorCount8)
+    else if (firstZero >= SveMaskPatternVectorCount1 && firstZero <= SveMaskPatternVectorCount8)
     {
-        return (SveMaskPattern)finalOne;
+        return (SveMaskPattern)firstZero;
     }
     else
     {

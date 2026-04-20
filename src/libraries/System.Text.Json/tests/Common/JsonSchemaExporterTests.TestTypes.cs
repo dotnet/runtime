@@ -256,52 +256,52 @@ namespace System.Text.Json.Schema.Tests
                     new() { DoubleAllowingFloatingPointLiterals = double.NegativeInfinity },
                 ],
                 ExpectedJsonSchema: """
-                {
-                  "type": ["object","null"],
-                  "properties": {
-                    "IntegerReadingFromString": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" },
-                    "DoubleReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
-                    "DecimalReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" },
-                    "IntegerWritingAsString": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" },
-                    "DoubleWritingAsString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
-                    "DecimalWritingAsString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" },
-                    "IntegerAllowingFloatingPointLiterals": { "type": "integer" },
-                    "DoubleAllowingFloatingPointLiterals": {
-                        "anyOf": [
-                            { "type": "number" },
-                            { "enum": ["NaN", "Infinity", "-Infinity"] }
-                        ]
-                    },
-                    "DecimalAllowingFloatingPointLiterals": { "type": "number" },
-                    "IntegerAllowingFloatingPointLiteralsAndReadingFromString": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" },
-                    "DoubleAllowingFloatingPointLiteralsAndReadingFromString": {
-                        "anyOf": [
-                            { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
-                            { "enum": ["NaN", "Infinity", "-Infinity"] }
-                        ]
-                    },
-                    "DecimalAllowingFloatingPointLiteralsAndReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" }
-                  }
-                }
+                    {
+                      "type": ["object","null"],
+                      "properties": {
+                        "IntegerReadingFromString": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" },
+                        "DoubleReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
+                        "DecimalReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" },
+                        "IntegerWritingAsString": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" },
+                        "DoubleWritingAsString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
+                        "DecimalWritingAsString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" },
+                        "IntegerAllowingFloatingPointLiterals": { "type": "integer" },
+                        "DoubleAllowingFloatingPointLiterals": {
+                            "anyOf": [
+                                { "type": "number" },
+                                { "enum": ["NaN", "Infinity", "-Infinity"] }
+                            ]
+                        },
+                        "DecimalAllowingFloatingPointLiterals": { "type": "number" },
+                        "IntegerAllowingFloatingPointLiteralsAndReadingFromString": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" },
+                        "DoubleAllowingFloatingPointLiteralsAndReadingFromString": {
+                            "anyOf": [
+                                { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
+                                { "enum": ["NaN", "Infinity", "-Infinity"] }
+                            ]
+                        },
+                        "DecimalAllowingFloatingPointLiteralsAndReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" }
+                      }
+                    }
                 """);
 
             yield return new TestData<PocoWithRecursiveMembers>(
                 Value: new() { Value = 1, Next = new() { Value = 2, Next = new() { Value = 3 } } },
                 AdditionalValues: [new() { Value = 1, Next = null }],
                 ExpectedJsonSchema: """
-                {
-                    "type": ["object","null"],
-                    "properties": {
-                        "Value": { "type": "integer" },
-                        "Next": {
-                            "type": ["object", "null"],
-                            "properties": {
-                                "Value": { "type": "integer" },
-                                "Next": { "$ref": "#/properties/Next" }
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                            "Value": { "type": "integer" },
+                            "Next": {
+                                "type": ["object", "null"],
+                                "properties": {
+                                    "Value": { "type": "integer" },
+                                    "Next": { "$ref": "#/properties/Next" }
+                                }
                             }
                         }
                     }
-                }
                 """);
 
             // Same as above with non-nullable reference type handling
@@ -309,19 +309,19 @@ namespace System.Text.Json.Schema.Tests
                 Value: new() { Value = 1, Next = new() { Value = 2, Next = new() { Value = 3 } } },
                 AdditionalValues: [new() { Value = 1, Next = null }],
                 ExpectedJsonSchema: """
-                {
-                    "type": "object",
-                    "properties": {
-                        "Value": { "type": "integer" },
-                        "Next": {
-                            "type": ["object", "null"],
-                            "properties": {
-                                "Value": { "type": "integer" },
-                                "Next": { "$ref": "#/properties/Next" }
+                    {
+                        "type": "object",
+                        "properties": {
+                            "Value": { "type": "integer" },
+                            "Next": {
+                                "type": ["object", "null"],
+                                "properties": {
+                                    "Value": { "type": "integer" },
+                                    "Next": { "$ref": "#/properties/Next" }
+                                }
                             }
                         }
                     }
-                }
                 """,
                 Options: new() { TreatNullObliviousAsNonNullable = true });
 
@@ -330,21 +330,21 @@ namespace System.Text.Json.Schema.Tests
                 Value: new() { Value = 1, Next = new() { Value = 2, Next = new() { Value = 3 } } },
                 AdditionalValues: [new() { Value = 1, Next = null }],
                 ExpectedJsonSchema: """
-                {
-                    "$anchor" : "PocoWithRecursiveMembers",
-                    "type": ["object","null"],
-                    "properties": {
-                        "Value": { "type": "integer" },
-                        "Next": {
-                            "$anchor" : "PocoWithRecursiveMembers_Next",
-                            "type": ["object", "null"],
-                            "properties": {
-                                "Value": { "type": "integer" },
-                                "Next": { "$ref": "#PocoWithRecursiveMembers_Next" }
+                    {
+                        "$anchor" : "PocoWithRecursiveMembers",
+                        "type": ["object","null"],
+                        "properties": {
+                            "Value": { "type": "integer" },
+                            "Next": {
+                                "$anchor" : "PocoWithRecursiveMembers_Next",
+                                "type": ["object", "null"],
+                                "properties": {
+                                    "Value": { "type": "integer" },
+                                    "Next": { "$ref": "#PocoWithRecursiveMembers_Next" }
+                                }
                             }
                         }
                     }
-                }
                 """,
                 Options: new JsonSchemaExporterOptions
                 {
@@ -424,60 +424,60 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<PocoWithRecursiveCollectionElement>(
                 Value: new() { Children = [new(), new() { Children = [] }] },
                 ExpectedJsonSchema: """
-                {
-                    "type": ["object","null"],
-                    "properties": {
-                        "Children": {
-                            "type": "array",
-                            "items": { "$ref" : "#" }
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                            "Children": {
+                                "type": "array",
+                                "items": { "$ref" : "#" }
+                            }
                         }
                     }
-                }
                 """);
 
             // Same as above but with non-nullable reference type handling
             yield return new TestData<PocoWithRecursiveCollectionElement>(
                 Value: new() { Children = [new(), new() { Children = [] }] },
                 ExpectedJsonSchema: """
-                {
-                    "type": "object",
-                    "properties": {
-                        "Children": {
-                            "type": "array",
-                            "items": { "$ref" : "#" }
+                    {
+                        "type": "object",
+                        "properties": {
+                            "Children": {
+                                "type": "array",
+                                "items": { "$ref" : "#" }
+                            }
                         }
                     }
-                }
                 """,
                 Options: new() { TreatNullObliviousAsNonNullable = true });
 
             yield return new TestData<PocoWithRecursiveDictionaryValue>(
                 Value: new() { Children = new() { ["key1"] = new(), ["key2"] = new() { Children = new() { ["key3"] = new() }  } } },
                 ExpectedJsonSchema: """
-                {
-                    "type": ["object","null"],
-                    "properties": {
-                        "Children": {
-                            "type": "object",
-                            "additionalProperties": { "$ref" : "#" }
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                            "Children": {
+                                "type": "object",
+                                "additionalProperties": { "$ref" : "#" }
+                            }
                         }
                     }
-                }
                 """);
 
             // Same as above but with non-nullable reference type handling
             yield return new TestData<PocoWithRecursiveDictionaryValue>(
                 Value: new() { Children = new() { ["key1"] = new(), ["key2"] = new() { Children = new() { ["key3"] = new() } } } },
                 ExpectedJsonSchema: """
-                {
-                    "type": "object",
-                    "properties": {
-                        "Children": {
-                            "type": "object",
-                            "additionalProperties": { "$ref" : "#" }
+                    {
+                        "type": "object",
+                        "properties": {
+                            "Children": {
+                                "type": "object",
+                                "additionalProperties": { "$ref" : "#" }
+                            }
                         }
                     }
-                }
                 """,
                 Options: new() { TreatNullObliviousAsNonNullable = true });
 
@@ -485,56 +485,56 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<PocoWithNonRecursiveDuplicateOccurrences>(
                 Value: new() { Value1 = recordValue, Value2 = recordValue, ArrayValue = [recordValue], ListValue = [recordValue] },
                 ExpectedJsonSchema: """
-                {
-                  "type": ["object","null"],
-                  "properties": {
-                    "Value1": {
-                      "type": "object",
+                    {
+                      "type": ["object","null"],
                       "properties": {
-                        "X": { "type": "integer" },
-                        "Y": { "type": "string" },
-                        "Z": { "type": "boolean" },
-                        "W": { "type": "number" }
-                      },
-                      "required": ["X", "Y", "Z", "W"]
-                    },
-                    /* The same type on a different property is repeated to
-                       account for potential metadata resolved from attributes. */
-                    "Value2": {
-                      "type": "object",
-                      "properties": {
-                        "X": { "type": "integer" },
-                        "Y": { "type": "string" },
-                        "Z": { "type": "boolean" },
-                        "W": { "type": "number" }
-                      },
-                      "required": ["X", "Y", "Z", "W"]
-                    },
-                    /* This collection element is the first occurrence
-                       of the type without contextual metadata. */
-                    "ListValue": {
-                      "type": "array",
-                      "items": {
-                        "type": ["object","null"],
-                        "properties": {
-                          "X": { "type": "integer" },
-                          "Y": { "type": "string" },
-                          "Z": { "type": "boolean" },
-                          "W": { "type": "number" }
+                        "Value1": {
+                          "type": "object",
+                          "properties": {
+                            "X": { "type": "integer" },
+                            "Y": { "type": "string" },
+                            "Z": { "type": "boolean" },
+                            "W": { "type": "number" }
+                          },
+                          "required": ["X", "Y", "Z", "W"]
                         },
-                        "required": ["X", "Y", "Z", "W"]
-                      }
-                    },
-                    /* This collection element is the second occurrence
-                       of the type which points to the first occurrence. */
-                    "ArrayValue": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/properties/ListValue/items"
+                        /* The same type on a different property is repeated to
+                           account for potential metadata resolved from attributes. */
+                        "Value2": {
+                          "type": "object",
+                          "properties": {
+                            "X": { "type": "integer" },
+                            "Y": { "type": "string" },
+                            "Z": { "type": "boolean" },
+                            "W": { "type": "number" }
+                          },
+                          "required": ["X", "Y", "Z", "W"]
+                        },
+                        /* This collection element is the first occurrence
+                           of the type without contextual metadata. */
+                        "ListValue": {
+                          "type": "array",
+                          "items": {
+                            "type": ["object","null"],
+                            "properties": {
+                              "X": { "type": "integer" },
+                              "Y": { "type": "string" },
+                              "Z": { "type": "boolean" },
+                              "W": { "type": "number" }
+                            },
+                            "required": ["X", "Y", "Z", "W"]
+                          }
+                        },
+                        /* This collection element is the second occurrence
+                           of the type which points to the first occurrence. */
+                        "ArrayValue": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/properties/ListValue/items"
+                          }
+                        }
                       }
                     }
-                  }
-                }
                 """);
 
             yield return new TestData<PocoWithDescription>(
@@ -667,58 +667,58 @@ namespace System.Text.Json.Schema.Tests
                 Value: new() { Struct = recordStruct, NullableStruct = null },
                 AdditionalValues: [new() { Struct = recordStruct, NullableStruct = recordStruct }],
                 ExpectedJsonSchema: """
-                {
-                    "type": ["object","null"],
-                    "properties": {
-                        "Struct": {
-                            "type": "object",
-                            "properties": {
-                                "X": {"type":"integer"},
-                                "Y": {"type":"string"},
-                                "Z": {"type":"boolean"},
-                                "W": {"type":"number"}
-                            }
-                        },
-                        "NullableStruct": {
-                            "type": ["object","null"],
-                            "properties": {
-                                "X": {"type":"integer"},
-                                "Y": {"type":"string"},
-                                "Z": {"type":"boolean"},
-                                "W": {"type":"number"}
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                            "Struct": {
+                                "type": "object",
+                                "properties": {
+                                    "X": {"type":"integer"},
+                                    "Y": {"type":"string"},
+                                    "Z": {"type":"boolean"},
+                                    "W": {"type":"number"}
+                                }
+                            },
+                            "NullableStruct": {
+                                "type": ["object","null"],
+                                "properties": {
+                                    "X": {"type":"integer"},
+                                    "Y": {"type":"string"},
+                                    "Z": {"type":"boolean"},
+                                    "W": {"type":"number"}
+                                }
                             }
                         }
                     }
-                }
                 """);
 
             yield return new TestData<PocoWithNullableStructFollowedByStruct>(
                 Value: new() { NullableStruct = null, Struct = recordStruct },
                 AdditionalValues: [new() { NullableStruct = recordStruct, Struct = recordStruct }],
                 ExpectedJsonSchema: """
-                {
-                    "type": ["object","null"],
-                    "properties": {
-                        "NullableStruct": {
-                            "type": ["object","null"],
-                            "properties": {
-                                "X": {"type":"integer"},
-                                "Y": {"type":"string"},
-                                "Z": {"type":"boolean"},
-                                "W": {"type":"number"}
-                            }
-                        },
-                        "Struct": {
-                            "type": "object",
-                            "properties": {
-                                "X": {"type":"integer"},
-                                "Y": {"type":"string"},
-                                "Z": {"type":"boolean"},
-                                "W": {"type":"number"}
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                            "NullableStruct": {
+                                "type": ["object","null"],
+                                "properties": {
+                                    "X": {"type":"integer"},
+                                    "Y": {"type":"string"},
+                                    "Z": {"type":"boolean"},
+                                    "W": {"type":"number"}
+                                }
+                            },
+                            "Struct": {
+                                "type": "object",
+                                "properties": {
+                                    "X": {"type":"integer"},
+                                    "Y": {"type":"string"},
+                                    "Z": {"type":"boolean"},
+                                    "W": {"type":"number"}
+                                }
                             }
                         }
                     }
-                }
                 """);
 
             yield return new TestData<PocoWithExtensionDataProperty>(
@@ -847,62 +847,62 @@ namespace System.Text.Json.Schema.Tests
                 ],
 
                 ExpectedJsonSchema: """
-                {
-                    "anyOf": [
-                        {
-                            "type": ["object","null"],
-                            "properties": {
-                                "BaseValue": {"type":"integer"},
-                                "DerivedValue": {"type":["string", "null"]}
-                            }
-                        },
-                        {
-                            "type": ["object","null"],
-                            "properties": {
-                                "$type": {"const":"derivedPoco"},
-                                "BaseValue": {"type":"integer"},
-                                "DerivedValue": {"type":["string", "null"]}
-                            },
-                            "required": ["$type"]
-                        },
-                        {
-                            "type": ["object","null"],
-                            "properties": {
-                                "$type": {"const":42},
-                                "BaseValue": {"type":"integer"},
-                                "DerivedValue": {"type":["string", "null"]}
-                            },
-                            "required": ["$type"]
-                        },
-                        {
-                            "type": ["array","null"],
-                            "items": {"type":"integer"}
-                        },
-                        {
-                            "type": ["object","null"],
-                            "properties": {
-                                "$type": {"const":"derivedCollection"},
-                                "$values": {
-                                    "type": "array",
-                                    "items": {"type":"integer"}
+                    {
+                        "anyOf": [
+                            {
+                                "type": ["object","null"],
+                                "properties": {
+                                    "BaseValue": {"type":"integer"},
+                                    "DerivedValue": {"type":["string", "null"]}
                                 }
                             },
-                            "required": ["$type"]
-                        },
-                        {
-                            "type": ["object","null"],
-                            "additionalProperties":{"type": "integer"}
-                        },
-                        {
-                            "type": ["object","null"],
-                            "properties": {
-                                "$type": {"const":"derivedDictionary"}
+                            {
+                                "type": ["object","null"],
+                                "properties": {
+                                    "$type": {"const":"derivedPoco"},
+                                    "BaseValue": {"type":"integer"},
+                                    "DerivedValue": {"type":["string", "null"]}
+                                },
+                                "required": ["$type"]
                             },
-                            "additionalProperties":{"type": "integer"},
-                            "required": ["$type"]
-                        }
-                    ]
-                }
+                            {
+                                "type": ["object","null"],
+                                "properties": {
+                                    "$type": {"const":42},
+                                    "BaseValue": {"type":"integer"},
+                                    "DerivedValue": {"type":["string", "null"]}
+                                },
+                                "required": ["$type"]
+                            },
+                            {
+                                "type": ["array","null"],
+                                "items": {"type":"integer"}
+                            },
+                            {
+                                "type": ["object","null"],
+                                "properties": {
+                                    "$type": {"const":"derivedCollection"},
+                                    "$values": {
+                                        "type": "array",
+                                        "items": {"type":"integer"}
+                                    }
+                                },
+                                "required": ["$type"]
+                            },
+                            {
+                                "type": ["object","null"],
+                                "additionalProperties":{"type": "integer"}
+                            },
+                            {
+                                "type": ["object","null"],
+                                "properties": {
+                                    "$type": {"const":"derivedDictionary"}
+                                },
+                                "additionalProperties":{"type": "integer"},
+                                "required": ["$type"]
+                            }
+                        ]
+                    }
                 """);
 
             yield return new TestData<NonAbstractClassWithSingleDerivedType>(
@@ -914,126 +914,126 @@ namespace System.Text.Json.Schema.Tests
                 Value: new DiscriminatedUnion.Left("value"),
                 AdditionalValues: [new DiscriminatedUnion.Right(42)],
                 ExpectedJsonSchema: """
-                {
-                    "type": ["object","null"],
-                    "required": ["case"],
-                    "anyOf": [
-                        {
-                            "properties": {
-                                "case": {"const":"left"},
-                                "value": {"type":"string"}
+                    {
+                        "type": ["object","null"],
+                        "required": ["case"],
+                        "anyOf": [
+                            {
+                                "properties": {
+                                    "case": {"const":"left"},
+                                    "value": {"type":"string"}
+                                },
+                                "required": ["value"]
                             },
-                            "required": ["value"]
-                        },
-                        {
-                            "properties": {
-                                "case": {"const":"right"},
-                                "value": {"type":"integer"}
-                            },
-                            "required": ["value"]
-                        }
-                    ]
-                }
+                            {
+                                "properties": {
+                                    "case": {"const":"right"},
+                                    "value": {"type":"integer"}
+                                },
+                                "required": ["value"]
+                            }
+                        ]
+                    }
                 """);
 
             yield return new TestData<PocoCombiningPolymorphicTypeAndDerivedTypes>(
                 Value: new(),
                 ExpectedJsonSchema: """
-                {
-                    "type": ["object","null"],
-                    "properties": {
-                        "PolymorphicValue": {
-                            "anyOf": [
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "BaseValue": {"type":"integer"},
-                                        "DerivedValue": {"type":["string", "null"]}
-                                    }
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "$type": {"const":"derivedPoco"},
-                                        "BaseValue": {"type":"integer"},
-                                        "DerivedValue": {"type":["string","null"]}
-                                    },
-                                    "required": ["$type"]
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "$type": {"const":42},
-                                        "BaseValue": {"type":"integer"},
-                                        "DerivedValue": {"type":["string", "null"]}
-                                    },
-                                    "required": ["$type"]
-                                },
-                                {
-                                    "type": "array",
-                                    "items": {"type":"integer"}
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "$type": {"const":"derivedCollection"},
-                                        "$values": {
-                                            "type": "array",
-                                            "items": {"type":"integer"}
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                            "PolymorphicValue": {
+                                "anyOf": [
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "BaseValue": {"type":"integer"},
+                                            "DerivedValue": {"type":["string", "null"]}
                                         }
                                     },
-                                    "required": ["$type"]
-                                },
-                                {
-                                    "type": "object",
-                                    "additionalProperties":{"type": "integer"}
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "$type": {"const":"derivedDictionary"}
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "$type": {"const":"derivedPoco"},
+                                            "BaseValue": {"type":"integer"},
+                                            "DerivedValue": {"type":["string","null"]}
+                                        },
+                                        "required": ["$type"]
                                     },
-                                    "additionalProperties":{"type": "integer"},
-                                    "required": ["$type"]
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "$type": {"const":42},
+                                            "BaseValue": {"type":"integer"},
+                                            "DerivedValue": {"type":["string", "null"]}
+                                        },
+                                        "required": ["$type"]
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {"type":"integer"}
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "$type": {"const":"derivedCollection"},
+                                            "$values": {
+                                                "type": "array",
+                                                "items": {"type":"integer"}
+                                            }
+                                        },
+                                        "required": ["$type"]
+                                    },
+                                    {
+                                        "type": "object",
+                                        "additionalProperties":{"type": "integer"}
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "$type": {"const":"derivedDictionary"}
+                                        },
+                                        "additionalProperties":{"type": "integer"},
+                                        "required": ["$type"]
+                                    }
+                                ]
+                            },
+                            "DiscriminatedUnion":{
+                                "type": "object",
+                                "required": ["case"],
+                                "anyOf": [
+                                    {
+                                        "properties": {
+                                            "case": {"const":"left"},
+                                            "value": {"type":"string"}
+                                        },
+                                        "required": ["value"]
+                                    },
+                                    {
+                                        "properties": {
+                                            "case": {"const":"right"},
+                                            "value": {"type":"integer"}
+                                        },
+                                        "required": ["value"]
+                                    }
+                                ]
+                            },
+                            "DerivedValue1": {
+                                "type": "object",
+                                "properties": {
+                                    "BaseValue": {"type":"integer"},
+                                    "DerivedValue": {"type":["string", "null"]}
                                 }
-                            ]
-                        },
-                        "DiscriminatedUnion":{
-                            "type": "object",
-                            "required": ["case"],
-                            "anyOf": [
-                                {
-                                    "properties": {
-                                        "case": {"const":"left"},
-                                        "value": {"type":"string"}
-                                    },
-                                    "required": ["value"]
-                                },
-                                {
-                                    "properties": {
-                                        "case": {"const":"right"},
-                                        "value": {"type":"integer"}
-                                    },
-                                    "required": ["value"]
+                            },
+                            "DerivedValue2": {
+                                "type": "object",
+                                "properties": {
+                                    "BaseValue": {"type":"integer"},
+                                    "DerivedValue": {"type":["string", "null"]}
                                 }
-                            ]
-                        },
-                        "DerivedValue1": {
-                            "type": "object",
-                            "properties": {
-                                "BaseValue": {"type":"integer"},
-                                "DerivedValue": {"type":["string", "null"]}
-                            }
-                        },
-                        "DerivedValue2": {
-                            "type": "object",
-                            "properties": {
-                                "BaseValue": {"type":"integer"},
-                                "DerivedValue": {"type":["string", "null"]}
                             }
                         }
                     }
-                }
                 """);
 
             yield return new TestData<ClassWithComponentModelAttributes>(
@@ -1082,24 +1082,24 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<ClassWithJsonPointerEscapablePropertyNames>(
                 Value: new ClassWithJsonPointerEscapablePropertyNames { Value = new() },
                 ExpectedJsonSchema: """
-                {
-                    "type": ["object","null"],
-                    "properties": {
-                        "~/path/to/value": {
-                            "type": "object",
-                            "properties": {
-                                "Value" : {"type":"integer"},
-                                "Next": {
-                                    "type": ["object","null"],
-                                    "properties": {
-                                        "Value" : {"type":"integer"},
-                                        "Next": {"$ref":"#/properties/~0~1path~1to~1value/properties/Next"}
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                            "~/path/to/value": {
+                                "type": "object",
+                                "properties": {
+                                    "Value" : {"type":"integer"},
+                                    "Next": {
+                                        "type": ["object","null"],
+                                        "properties": {
+                                            "Value" : {"type":"integer"},
+                                            "Next": {"$ref":"#/properties/~0~1path~1to~1value/properties/Next"}
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
                 """);
 
             yield return new TestData<ClassWithOptionalObjectParameter>(
@@ -1159,19 +1159,19 @@ namespace System.Text.Json.Schema.Tests
                     ["three"] = new() { String = "string", StringNullable = null, Int = 42, Double = 3.14, Boolean = true },
                 },
                 ExpectedJsonSchema: """
-                {
-                    "type": ["object","null"],
-                    "additionalProperties": {
+                    {
                         "type": ["object","null"],
-                        "properties": {
-                            "String": { "type": "string" },
-                            "StringNullable": { "type": ["string","null"] },
-                            "Int": { "type": "integer" },
-                            "Double": { "type": "number" },
-                            "Boolean": { "type": "boolean" }
+                        "additionalProperties": {
+                            "type": ["object","null"],
+                            "properties": {
+                                "String": { "type": "string" },
+                                "StringNullable": { "type": ["string","null"] },
+                                "Int": { "type": "integer" },
+                                "Double": { "type": "number" },
+                                "Boolean": { "type": "boolean" }
+                            }
                         }
                     }
-                }
                 """);
 
             yield return new TestData<Dictionary<string, object>>(

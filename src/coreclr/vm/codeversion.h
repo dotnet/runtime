@@ -82,6 +82,7 @@ public:
         OptimizationTierOptimized, // may do less optimizations than tier 1
         OptimizationTier0Instrumented,
         OptimizationTier1Instrumented,
+        OptimizationTierUnknown = 0xFFFFFFFF
     };
 #ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;
@@ -339,6 +340,9 @@ struct cdac_data<NativeCodeVersionNode>
 #ifdef HAVE_GCCOVER
     static constexpr size_t GCCoverageInfo = offsetof(NativeCodeVersionNode, m_gcCover);
 #endif // HAVE_GCCOVER
+#ifdef FEATURE_TIERED_COMPILATION
+    static constexpr size_t OptimizationTier = offsetof(NativeCodeVersionNode, m_optTier);
+#endif // FEATURE_TIERED_COMPILATION
 };
 
 class NativeCodeVersionCollection

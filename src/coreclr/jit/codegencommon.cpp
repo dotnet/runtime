@@ -58,22 +58,61 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 #endif // JIT32_GCENCODER
 }
 
+#if HAS_FIXED_REGISTER_SET
+regNumber CodeGenInterface::GetStackPointerReg(unsigned) const
+{
+    return REG_SPBASE;
+}
+regNumber CodeGenInterface::GetFramePointerReg(unsigned) const
+{
+    return REG_FPBASE;
+}
+#else
+void CodeGenInterface::SetStackPointerReg(unsigned funcletIndex, regNumber reg)
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    assert(reg != REG_NA);
+    m_compiler->compFuncInfos[funcletIndex].funStackPointerReg = reg;
+}
+
+void CodeGenInterface::SetFramePointerReg(unsigned funcletIndex, regNumber reg)
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    assert(reg != REG_NA);
+    m_compiler->compFuncInfos[funcletIndex].funFramePointerReg = reg;
+}
+
+regNumber CodeGenInterface::GetStackPointerReg(unsigned funcletIndex) const
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    return m_compiler->compFuncInfos[funcletIndex].funStackPointerReg;
+}
+
+regNumber CodeGenInterface::GetFramePointerReg(unsigned funcletIndex) const
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    return m_compiler->compFuncInfos[funcletIndex].funFramePointerReg;
+}
+#endif // !HAS_FIXED_REGISTER_SET
+
 CodeGenInterface* getCodeGenerator(Compiler* comp)
 {
     return new (comp, CMK_Codegen) CodeGen(comp);
 }
 
-// TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
-// 1. Everything shared by all codegen backends (incl. WASM) stays here.
-// 2. Everything else goes into codegenlinear.cpp.
-// 3. codegenlinear.cpp gets renamed to codegennative.cpp.
+//------------------------------------------------------------------------
+// NodeInternalRegisters::NodeInternalRegisters: construct the
+//    internal registers tracking data
 //
-#ifndef TARGET_WASM
+// Arguments:
+//    comp -- compiler instance
+//
 NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
     : m_table(comp->getAllocator(CMK_LSRA))
 {
 }
 
+#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------
 // Add: Add internal allocated registers for the specified node.
 //
@@ -174,6 +213,149 @@ unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
     regMaskTP regs;
     return m_table.Lookup(tree, &regs) ? genCountBits(regs & mask) : 0;
 }
+#else  // !HAS_FIXED_REGISTER_SET
+//------------------------------------------------------------------------
+// InternalRegs: construct an empty 'InternalRegs' instance.
+//
+InternalRegs::InternalRegs()
+{
+    for (size_t i = 0; i < ArrLen(m_regs); i++)
+    {
+        m_regs[i] = REG_NA;
+    }
+}
+
+//------------------------------------------------------------------------
+// IsEmpty: are there any registers in this set?
+//
+// Return Value:
+//   Whether there are any registers in this set.
+//
+bool InternalRegs::IsEmpty() const
+{
+    return m_regs[0] == REG_NA;
+}
+
+//------------------------------------------------------------------------
+// Count: how many registers are in this set?
+//
+// Return Value:
+//   The count of registers in this set.
+//
+unsigned InternalRegs::Count() const
+{
+    unsigned count = 0;
+    while (count < ArrLen(m_regs))
+    {
+        if (m_regs[count] == REG_NA)
+        {
+            break;
+        }
+        count++;
+    }
+    return count;
+}
+
+//------------------------------------------------------------------------
+// Add: add a register to this set.
+//
+// The set must not be full yet.
+//
+// Parameters:
+//   reg - The register to add
+//
+void InternalRegs::Add(regNumber reg)
+{
+    assert(reg != REG_NA);
+    unsigned count = Count();
+    assert(count < ArrLen(m_regs));
+    m_regs[count] = reg;
+}
+
+//------------------------------------------------------------------------
+// GetAt: Get a register at an index.
+//
+// Parameters:
+//   index - The index
+//
+// Return Value:
+//   The register at 'index', which must be valid.
+//
+regNumber InternalRegs::GetAt(unsigned index) const
+{
+    assert(index < Count());
+    return m_regs[index];
+}
+
+//------------------------------------------------------------------------
+// SetAt: Set a register at an index.
+//
+// Parameters:
+//   index - The index
+//   reg   - The register, must be valid
+//
+void InternalRegs::SetAt(unsigned index, regNumber reg)
+{
+    assert(index < Count());
+    assert(reg != REG_NA);
+    m_regs[index] = reg;
+}
+
+//------------------------------------------------------------------------
+// Extract: Remove the last register from this set and return it.
+//
+// Return Value:
+//   The extracted register.
+//
+regNumber InternalRegs::Extract()
+{
+    assert(!IsEmpty());
+    unsigned  index = Count() - 1;
+    regNumber reg   = m_regs[index];
+    m_regs[index]   = REG_NA;
+    return reg;
+}
+
+//------------------------------------------------------------------------
+// Add: Add a register to the set of ones internally allocated for this node.
+//
+// Parameters:
+//   tree - IR node to add the internal allocated register to
+//   reg  - The register to add
+//
+void NodeInternalRegisters::Add(GenTree* tree, regNumber reg)
+{
+    InternalRegs* regs = m_table.LookupPointerOrAdd(tree, InternalRegs{});
+    regs->Add(reg);
+}
+
+//------------------------------------------------------------------------
+// GetAll: Get the internally allocated registers for the specified node.
+//
+// Parameters:
+//   tree - IR node to get the registers for
+//
+// Returns:
+//   Pointer to the registers, nullptr if there are none.
+//
+InternalRegs* NodeInternalRegisters::GetAll(GenTree* tree)
+{
+    InternalRegs* regs = m_table.LookupPointer(tree);
+    assert((regs == nullptr) || !regs->IsEmpty());
+    return regs;
+}
+
+//------------------------------------------------------------------------
+// Iterate: Get the iterator for the internal register table.
+//
+// Returns:
+//   A 'for'-loop compatible iterator of the table entries.
+//
+NodeInternalRegistersTable::KeyValueIteration NodeInternalRegisters::Iterate()
+{
+    return NodeInternalRegistersTable::KeyValueIteration(&m_table);
+}
+#endif // !HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_XARCH)
 void CodeGenInterface::CopyRegisterInfo()
@@ -190,20 +372,14 @@ void CodeGenInterface::CopyRegisterInfo()
     rbmMskCalleeTrash = m_compiler->rbmMskCalleeTrash;
 }
 #endif // TARGET_XARCH
-#endif // !TARGET_WASM
 
 // CodeGen constructor
 CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
     : gcInfo(theCompiler)
     , regSet(theCompiler, gcInfo)
-#if HAS_FIXED_REGISTER_SET
     , internalRegisters(theCompiler)
-#endif // HAS_FIXED_REGISTER_SET
     , m_compiler(theCompiler)
     , treeLifeUpdater(nullptr)
-#ifdef TARGET_WASM
-    , WasmLocalsDecls(theCompiler->getAllocator(CMK_Codegen))
-#endif
 {
 }
 
@@ -268,6 +444,11 @@ CodeGen::CodeGen(Compiler* theCompiler)
 #endif // TARGET_ARM64
 }
 
+// TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
+// 1. Everything shared by all codegen backends (incl. WASM) stays here.
+// 2. Everything else goes into codegenlinear.cpp.
+// 3. codegenlinear.cpp gets renamed to codegennative.cpp.
+//
 #ifndef TARGET_WASM
 #if defined(TARGET_X86) || defined(TARGET_ARM)
 
@@ -591,7 +772,7 @@ void CodeGen::genMarkLabelsForCodegen()
 
 void CodeGenInterface::genUpdateLife(GenTree* tree)
 {
-    treeLifeUpdater->UpdateLife(tree);
+    treeLifeUpdater->UpdateLife<false>(tree);
 }
 
 void CodeGenInterface::genUpdateLife(VARSET_VALARG_TP newLife)
@@ -1772,16 +1953,9 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
     m_compiler->funSetCurrentFunc(m_compiler->funGetFuncIdx(block));
 
     // Check the current funclet index for correctness
-    if (m_compiler->funCurrentFunc()->funKind == FUNC_FILTER)
-    {
-        assert(m_compiler->ehGetDsc(m_compiler->funCurrentFunc()->funEHIndex)->ebdFilter == block);
-    }
-    else
-    {
-        // We shouldn't see FUNC_ROOT
-        assert(m_compiler->funCurrentFunc()->funKind == FUNC_HANDLER);
-        assert(m_compiler->ehGetDsc(m_compiler->funCurrentFunc()->funEHIndex)->ebdHndBeg == block);
-    }
+    FuncInfoDsc* const currentFunc = m_compiler->funCurrentFunc();
+    assert(currentFunc->funKind != FUNC_ROOT);
+    assert(currentFunc->GetStartBlock(m_compiler) == block);
 }
 
 //----------------------------------------------------------------------
@@ -1820,6 +1994,36 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
         {
             m_compiler->compGetHelperFtn((CorInfoHelpFunc)i);
         }
+    }
+
+#if defined(TARGET_WASM)
+    // Allow the JIT to fail R2R at this point, so we can skip over methods
+    // that compile without assert but then have Wasm validation errors
+    //
+    static ConfigMethodRange JitR2RUnsupportedRange;
+    JitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange());
+    assert(!JitR2RUnsupportedRange.Error());
+    const unsigned hash    = m_compiler->impInlineRoot()->info.compMethodHash();
+    const bool     inRange = !JitR2RUnsupportedRange.IsEmpty() && JitR2RUnsupportedRange.Contains(hash);
+
+    if (inRange)
+    {
+        JITDUMP("Failing R2R codegen because of JitR2RUnsupportedRange. Hash is 0x%08x, range is ", hash);
+        JITDUMPEXEC(JitR2RUnsupportedRange.Dump());
+        implReadyToRunUnsupported();
+    }
+#endif // defined(TARGET_WASM)
+#endif // DEBUG
+
+#if defined(TARGET_WASM)
+    // Also fail at this point for any method with funclets, since the Wasm we produce
+    // for such methods requires post-processing by the host before it can be validated.
+    // TODO-WASM: Remove this once the host can do the processing.
+    //
+    if ((JitConfig.JitWasmFunclets() == 0) && (m_compiler->compFuncCount() > 1))
+    {
+        JITDUMP("Failing R2R codegen because method has funclets.\n");
+        implReadyToRunUnsupported();
     }
 #endif
 }
@@ -2733,9 +2937,8 @@ public:
     //
     RegNode* Get(regNumber reg)
     {
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const node : m_nodes.BottomUpOrder())
         {
-            RegNode* node = m_nodes.Bottom(i);
             if (node->reg == reg)
             {
                 return node;
@@ -2812,9 +3015,8 @@ public:
 
         // Prefer a node with no outgoing edges meaning that its value does not
         // need to be saved.
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const reg : m_nodes.BottomUpOrder())
         {
-            RegNode* reg = m_nodes.Bottom(i);
             if (reg->incoming == nullptr)
             {
                 continue;
@@ -2869,9 +3071,8 @@ public:
     void Dump()
     {
         printf("%d registers in register parameter interference graph\n", m_nodes.Height());
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const regNode : m_nodes.BottomUpOrder())
         {
-            RegNode* regNode = m_nodes.Bottom(i);
             printf("  %s", getRegName(regNode->reg));
             for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
             {
@@ -2892,9 +3093,8 @@ public:
     //
     void Validate()
     {
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const regNode : m_nodes.BottomUpOrder())
         {
-            RegNode* regNode = m_nodes.Bottom(i);
             for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
             {
                 unsigned destStart = incoming->destOffset;
@@ -4002,7 +4202,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
         //
         const var_types lclTyp  = varDsc->GetStackSlotHomeType();
         const emitAttr  size    = emitActualTypeSize(lclTyp);
-        const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
+        const int       stkOffs = m_compiler->lvaOSRLocalTier0FrameOffset(lclNum) + fieldOffset;
 
 #if defined(TARGET_AMD64)
 
@@ -5747,26 +5947,12 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
 //
 GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd)
 {
-    // all virtuals should have been expanded into a control expression by this point.
-    assert(!call->IsVirtual() || call->gtControlExpr || call->gtCallAddr);
-
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        assert(call->gtControlExpr == nullptr);
-
-        if (methHnd != nullptr)
-        {
-            *methHnd = nullptr;
-        }
-
-        return call->gtCallAddr;
-    }
-
     if (methHnd != nullptr)
     {
-        *methHnd = call->gtCallMethHnd;
+        *methHnd = (call->gtCallType != CT_INDIRECT) ? call->gtCallMethHnd : NO_METHOD_HANDLE;
     }
 
+    assert((call->gtCallType != CT_INDIRECT) || (call->gtControlExpr != nullptr));
     return call->gtControlExpr;
 }
 
@@ -5836,7 +6022,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     // - memset/memcpy helper calls emitted for GT_STORE_BLK
     if (call->IsHelperCall())
     {
-        switch (m_compiler->eeGetHelperNum(call->gtCallMethHnd))
+        switch (call->GetHelperNum())
         {
             case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             case CORINFO_HELP_VIRTUAL_FUNC_PTR:
@@ -6815,7 +7001,7 @@ void CodeGen::genReportAsyncDebugInfo()
         uint32_t diagNativeOffset = 0;
         if (genAsyncResumeInfoTable != nullptr)
         {
-            emitLocation& emitLoc = ((emitLocation*)genAsyncResumeInfoTable->dsCont)[i];
+            emitLocation& emitLoc = genAsyncResumeInfoTable->Locations()[i];
             if (emitLoc.Valid())
             {
                 diagNativeOffset = emitLoc.CodeOffset(GetEmitter());

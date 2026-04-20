@@ -357,19 +357,23 @@ namespace System.IO
                         else
                         {
                             // Name surrogate reparse point, don't recurse, simply remove the directory.
-                            // If a mount point, we have to delete the mount point first.
+                            // If a volume mount point, we have to delete the mount point first.
+                            // Note that IO_REPARSE_TAG_MOUNT_POINT is used for both volume mount points
+                            // and directory junctions. DeleteVolumeMountPoint only works for volume mount
+                            // points; for directory junctions, RemoveDirectory handles removal directly.
+                            Exception? mountPointException = null;
                             if (findData.dwReserved0 == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
                             {
                                 // Mount point. Unmount using full path plus a trailing '\'.
                                 // (Note: This doesn't remove the underlying directory)
                                 string mountPoint = Path.Join(fullPath, fileName, PathInternal.DirectorySeparatorCharAsString);
-                                if (!Interop.Kernel32.DeleteVolumeMountPoint(mountPoint) && exception == null)
+                                if (!Interop.Kernel32.DeleteVolumeMountPoint(mountPoint))
                                 {
                                     errorCode = Marshal.GetLastPInvokeError();
                                     if (errorCode != Interop.Errors.ERROR_SUCCESS &&
                                         errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND)
                                     {
-                                        exception = Win32Marshal.GetExceptionForWin32Error(errorCode, fileName);
+                                        mountPointException = Win32Marshal.GetExceptionForWin32Error(errorCode, fileName);
                                     }
                                 }
                             }
@@ -380,9 +384,15 @@ namespace System.IO
                                 errorCode = Marshal.GetLastPInvokeError();
                                 if (errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND)
                                 {
-                                    exception = Win32Marshal.GetExceptionForWin32Error(errorCode, fileName);
+                                    // For a true volume mount point, use its error (it indicates why the
+                                    // unmount step failed). If this is a directory junction, RemoveDirectory
+                                    // succeeds and this code path is not reached.
+                                    exception = mountPointException ?? Win32Marshal.GetExceptionForWin32Error(errorCode, fileName);
                                 }
                             }
+                            // If RemoveDirectory succeeded, mountPointException is discarded. This correctly
+                            // handles directory junctions: DeleteVolumeMountPoint fails for them (since they
+                            // are not volume mount points), but RemoveDirectory removes them successfully.
                         }
                     }
                 } while (Interop.Kernel32.FindNextFile(handle, ref findData));

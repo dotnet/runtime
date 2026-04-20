@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Collections.Concurrent.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class BlockingCollectionCancellationTests
     {
         [Fact]

@@ -207,7 +207,8 @@ IF_DEF(DV_2Q, IS_NONE, NONE) // DV_2Q   .........X...... ......nnnnnddddd      S
 IF_DEF(DV_2R, IS_NONE, NONE) // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
 IF_DEF(DV_2S, IS_NONE, NONE) // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
 IF_DEF(DV_2T, IS_NONE, NONE) // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv, umaxv, uminv)
-IF_DEF(DV_2U, IS_NONE, NONE) // DV_2U   ................ ......nnnnnddddd      Sd Sn      (sha1h)
+IF_DEF(DV_2U, IS_NONE, NONE) // DV_2U   ................ ......nnnnnddddd      Vd Vn      (sha)
+IF_DEF(DV_2V, IS_NONE, NONE) // DV_2V   ................ ......nnnnnddddd      Vd Vn      (vector)
 
 IF_DEF(DV_3A,  IS_NONE, NONE) // DV_3A  .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
 IF_DEF(DV_3AI, IS_NONE, NONE) // DV_3AI .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by element)
@@ -219,9 +220,12 @@ IF_DEF(DV_3DI, IS_NONE, NONE) // DV_3DI .........XLmmmmm ....H.nnnnnddddd      V
 IF_DEF(DV_3E,  IS_NONE, NONE) // DV_3E  ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
 IF_DEF(DV_3EI, IS_NONE, NONE) // DV_3EI ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by element)
 IF_DEF(DV_3F,  IS_NONE, NONE) // DV_3F  ...........mmmmm ......nnnnnddddd      Qd Sn Vm   (Qd used as both source and destination)
-IF_DEF(DV_3G,  IS_NONE, NONE) // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd     Vd Vn Vm imm (vector)
+IF_DEF(DV_3G,  IS_NONE, NONE) // DV_3G  .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
+IF_DEF(DV_3H,  IS_NONE, NONE) // DV_3H  ...........mmmmm .O....nnnnnddddd      Vd Vn Vm     (vector)
+IF_DEF(DV_3I,  IS_NONE, NONE) // DV_3I  ...........mmmmm iiiiiinnnnnddddd      Vd Vn Vm imm (vector)
 
 IF_DEF(DV_4A,  IS_NONE, NONE) // DV_4A  .........X.mmmmm .aaaaannnnnddddd      Vd Vn Vm Va (scalar)
+IF_DEF(DV_4B,  IS_NONE, NONE) // DV_4B  ...........mmmmm .aaaaannnnnddddd      Vd Vn Vm Va (vector)
 
 IF_DEF(SN_0A, IS_NONE, NONE) // SN_0A   ................ ................
 IF_DEF(SI_0A, IS_NONE, NONE) // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16

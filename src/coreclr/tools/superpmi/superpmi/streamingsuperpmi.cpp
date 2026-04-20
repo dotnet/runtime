@@ -104,7 +104,7 @@ static MethodContext* getMethodContext(int index, MethodContextReader* reader)
         }
 
         MethodContext* mc = nullptr;
-        if (!MethodContext::Initialize(index, mcb.buff, mcb.size, &mc))
+        if (!MethodContext::Initialize(index, mcb.buff, mcb.size, /* readCompileResults */ false, &mc))
         {
             return nullptr;
         }

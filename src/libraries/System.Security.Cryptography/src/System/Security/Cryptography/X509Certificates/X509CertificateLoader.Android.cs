@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ReadOnlySpan<byte> span = data.Span;
 
-            AsnValueReader reader = new AsnValueReader(span, AsnEncodingRules.DER);
+            ValueAsnReader reader = new ValueAsnReader(span, AsnEncodingRules.DER);
             reader.ReadSequence();
             reader.ThrowIfNotEmpty();
 

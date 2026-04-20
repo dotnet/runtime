@@ -23,8 +23,6 @@
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
   </PropertyGroup>
 
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'" />
-
   <ItemGroup>
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicy.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ServiceNameCollection.cs" />
@@ -32,8 +30,10 @@
              Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
              Link="Common\System\Net\UriScheme.cs" />
-    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs"
-             Link="Common\System\AppContextSwitchHelper.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\LocalAppContextSwitches.Net.cs"
+             Link="Common\System\Net\LocalAppContextSwitches.Net.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
@@ -53,6 +53,7 @@
     <Compile Include="System\Net\Security\ProtectionLevel.cs" />
     <Compile Include="System\Net\Security\SslApplicationProtocol.cs" />
     <Compile Include="System\Net\Security\SslAuthenticationOptions.cs" />
+    <Compile Include="System\Net\Security\LocalAppContextSwitches.cs" />
     <Compile Include="System\Net\Security\SslCertificateTrust.cs" />
     <Compile Include="System\Net\Security\SslClientAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SslClientHelloInfo.cs" />

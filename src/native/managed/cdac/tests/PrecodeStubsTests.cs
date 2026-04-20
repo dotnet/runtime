@@ -172,8 +172,8 @@ public class PrecodeStubsTests
     {
         foreach (var data in PrecodeTestDescriptorData())
         {
-            yield return new object[]{data[0], 1}; // Test v1 of the contract
-            yield return new object[]{data[0], 2}; // Test v2 of the contract
+            yield return new object[]{data[0], "c1"}; // Test v1 of the contract
+            yield return new object[]{data[0], "c2"}; // Test v2 of the contract
         }
     }
 
@@ -206,10 +206,10 @@ public class PrecodeStubsTests
         public TargetPointer MachineDescriptorAddress;
         public CodePointerFlags CodePointerFlags {get; private set;}
 
-        public int PrecodesVersion { get; }
-        public PrecodeBuilder(MockTarget.Architecture arch, int precodesVersion) : this(DefaultAllocationRange, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), precodesVersion) {
+        public string PrecodesVersion { get; }
+        public PrecodeBuilder(MockTarget.Architecture arch, string precodesVersion) : this(DefaultAllocationRange, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), precodesVersion) {
         }
-        public PrecodeBuilder(AllocationRange allocationRange, MockMemorySpace.Builder builder, int precodesVersion, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null) {
+        public PrecodeBuilder(AllocationRange allocationRange, MockMemorySpace.Builder builder, string precodesVersion, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null) {
             Builder = builder;
             PrecodesVersion = precodesVersion;
             PrecodeAllocator = builder.CreateAllocator(allocationRange.PrecodeDescriptorStart, allocationRange.PrecodeDescriptorEnd);
@@ -235,7 +235,7 @@ public class PrecodeStubsTests
                 Size = layout.Stride,
             };
 
-            if (PrecodesVersion == 1) {
+            if (PrecodesVersion == "c1") {
                 layout = targetTestHelpers.LayoutFields([
                     new(nameof(Data.StubPrecodeData_1.Type), DataType.uint8),
                     new(nameof(Data.StubPrecodeData_1.MethodDesc), DataType.pointer),
@@ -251,7 +251,7 @@ public class PrecodeStubsTests
                 Size = layout.Stride,
             };
 
-            if (PrecodesVersion >= 2)
+            if (PrecodesVersion is not "c1")
             {
                 layout = targetTestHelpers.LayoutFields([
                     new(nameof(Data.ThisPtrRetBufPrecodeData.MethodDesc), DataType.pointer),
@@ -276,7 +276,6 @@ public class PrecodeStubsTests
             SetCodePointerFlags(descriptor);
             var typeInfo = Types[DataType.PrecodeMachineDescriptor];
             var fragment = PrecodeAllocator.Allocate((ulong)typeInfo.Size, $"{descriptor.Name} Precode Machine Descriptor");
-            Builder.AddHeapFragment(fragment);
             MachineDescriptorAddress = fragment.Address;
             Span<byte> desc = Builder.BorrowAddressRange(fragment.Address, (int)typeInfo.Size);
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.ReadWidthOfPrecodeType)].Offset, sizeof(byte)), (byte)descriptor.ReadWidthOfPrecodeType);
@@ -293,7 +292,6 @@ public class PrecodeStubsTests
             ulong stubCodeSize = (ulong)test.StubPrecodeSize;
             var stubDataTypeInfo  = Types[DataType.StubPrecodeData];
             MockMemorySpace.HeapFragment stubDataFragment = StubDataPageAllocator.Allocate(Math.Max((ulong)stubDataTypeInfo.Size, (ulong)stubCodeSize), $"Stub data for {name} on {test.Name}");
-            Builder.AddHeapFragment(stubDataFragment);
             // allocate the code one page before the stub data
             ulong stubCodeStart = stubDataFragment.Address - test.StubCodePageSize;
             MockMemorySpace.HeapFragment stubCodeFragment = new MockMemorySpace.HeapFragment {
@@ -305,7 +303,7 @@ public class PrecodeStubsTests
             Builder.AddHeapFragment(stubCodeFragment);
 
             Span<byte> stubData = Builder.BorrowAddressRange(stubDataFragment.Address, (int)stubDataTypeInfo.Size);
-            if (PrecodesVersion == 1) {
+            if (PrecodesVersion == "c1") {
                 Builder.TargetTestHelpers.Write(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_1.Type)].Offset, sizeof(byte)), test.StubPrecode);
                 Builder.TargetTestHelpers.WritePointer(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_1.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
             } else {
@@ -323,11 +321,9 @@ public class PrecodeStubsTests
             ulong stubCodeSize = (ulong)test.StubPrecodeSize;
             var stubDataTypeInfo  = Types[DataType.StubPrecodeData];
             MockMemorySpace.HeapFragment stubDataFragment = StubDataPageAllocator.Allocate(Math.Max((ulong)stubDataTypeInfo.Size, (ulong)stubCodeSize), $"Stub data for {name} on {test.Name}");
-            Builder.AddHeapFragment(stubDataFragment);
 
             var thisPtrRetBufDataTypeInfo  = Types[DataType.ThisPtrRetBufPrecodeData];
             MockMemorySpace.HeapFragment thisPtrRetBufStubDataFragment = StubDataPageAllocator.Allocate((ulong)thisPtrRetBufDataTypeInfo.Size, $"ThisPtrRetBufData stub data for {name} on {test.Name}");
-            Builder.AddHeapFragment(thisPtrRetBufStubDataFragment);
 
             // allocate the code one page before the stub data
             ulong stubCodeStart = stubDataFragment.Address - test.StubCodePageSize;
@@ -359,29 +355,26 @@ public class PrecodeStubsTests
     private static Target CreateTarget(PrecodeBuilder precodeBuilder)
     {
         var arch = precodeBuilder.Builder.TargetTestHelpers.Arch;
-        TestPlaceholderTarget.ReadFromTargetDelegate reader = precodeBuilder.Builder.GetMemoryContext().ReadFromTarget;
-        // hack for this test put the precode machine descriptor at the same address as the PlatformMetadata
         (string Name, ulong Value)[] globals = [(Constants.Globals.PlatformMetadata, precodeBuilder.MachineDescriptorAddress)];
-        var target = new TestPlaceholderTarget(arch, reader, precodeBuilder.Types, globals);
 
-        IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
         Mock<IPlatformMetadata> platformMetadata = new();
         platformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(precodeBuilder.CodePointerFlags);
         platformMetadata.Setup(p => p.GetPrecodeMachineDescriptor()).Returns(precodeBuilder.MachineDescriptorAddress);
 
-        // Creating the PrecodeStubs contract depends on the PlatformMetadata contract, so we need
-        // to set it up such that it will only be created after the target's targets are set up
-        Mock<ContractRegistry> reg = new();
-        reg.SetupGet(c => c.PlatformMetadata).Returns(platformMetadata.Object);
-        reg.SetupGet(c => c.PrecodeStubs).Returns(() => precodeFactory.CreateContract(target, precodeBuilder.PrecodesVersion));
-        target.SetContracts(reg.Object);
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader(precodeBuilder.Builder.GetMemoryContext().ReadFromTarget)
+            .AddTypes(precodeBuilder.Types)
+            .AddGlobals(globals)
+            .AddMockContract(platformMetadata)
+            .AddContract<IPrecodeStubs>(version: precodeBuilder.PrecodesVersion)
+            .Build();
 
         return target;
     }
 
     [Theory]
     [MemberData(nameof(PrecodeTestDescriptorDataWithContractVersion))]
-    public void TestPrecodeStubPrecodeExpectedMethodDesc(PrecodeTestDescriptor test, int contractVersion)
+    public void TestPrecodeStubPrecodeExpectedMethodDesc(PrecodeTestDescriptor test, string contractVersion)
     {
         var builder = new PrecodeBuilder(test.Arch, contractVersion);
         builder.AddPlatformMetadata(test);
@@ -389,7 +382,7 @@ public class PrecodeStubsTests
         TargetPointer expectedMethodDesc = new TargetPointer(0xeeee_eee0u); // arbitrary
         TargetCodePointer stub1 = builder.AddStubPrecodeEntry("Stub 1", test, expectedMethodDesc);
         TargetPointer expectedMethodDesc2 = new TargetPointer(0xfafa_eee0u); // arbitrary
-        TargetCodePointer stub2 = contractVersion >= 2 ? builder.AddThisPtrRetBufPrecodeEntry("Stub 2", test, expectedMethodDesc2) : new TargetCodePointer(expectedMethodDesc2.Value);
+        TargetCodePointer stub2 = contractVersion is not "c1" ? builder.AddThisPtrRetBufPrecodeEntry("Stub 2", test, expectedMethodDesc2) : new TargetCodePointer(expectedMethodDesc2.Value);
 
         var target = CreateTarget(builder);
         Assert.NotNull(target);
@@ -401,7 +394,7 @@ public class PrecodeStubsTests
         var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(stub1);
         Assert.Equal(expectedMethodDesc, actualMethodDesc);
 
-        if (contractVersion >= 2)
+        if (contractVersion is not "c1")
         {
             // Implementation of this type of precode is only handled correctly in contract version 2 and higher
             var actualMethodDesc2 = precodeContract.GetMethodDescFromStubAddress(stub2);

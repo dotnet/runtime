@@ -108,6 +108,24 @@ namespace System
             }
         }
 
+        private static void OnFirstChanceException(Exception e, object? sender)
+        {
+            if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
+            {
+                FirstChanceExceptionEventArgs args = new(e);
+                foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                {
+                    try
+                    {
+                        handler(sender, args);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+
         internal static void OnProcessExit()
         {
             AssemblyLoadContext.OnProcessExit();
@@ -179,6 +197,7 @@ namespace System
         }
 #elif !NATIVEAOT
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void Setup(char** pNames, char** pValues, int count, Exception* pException)
         {
             try

@@ -50,6 +50,7 @@ public class BuildPublishTests : BlazorWasmTestBase
 
     [Theory]
     [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
+    [TestCategory("native")]
     public void DefaultTemplate_AOT_WithWorkload(Configuration config, bool testUnicode)
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_aot", appendUnicodeToPath: testUnicode);
@@ -117,6 +118,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Theory]
     [InlineData("", true)] // Default case
     [InlineData("false", false)] // the other case
+    [TestCategory("native")]
     public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
     {
         Configuration config = Configuration.Release;
@@ -136,6 +138,7 @@ public class BuildPublishTests : BlazorWasmTestBase
 
     [Theory]
     [InlineData(Configuration.Debug)]
+    [TestCategory("native")]
     public void BlazorWasm_CannotAOT_InDebug(Configuration config)
     {
         ProjectInfo info = CopyTestAsset(
