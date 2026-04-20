@@ -1134,7 +1134,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     Thread* pThread = GetThread();
     AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
 
-    SafeArrayPtrHolder pSA = NULL;
+    SafeArrayPtrHolder pSA;
     VARIANT safeArrayVar;
     HRESULT hr;
 
@@ -1331,7 +1331,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                 LONG lSafeArrayArg = 0;
                 bByRefArg = FALSE;
                 pSA = SafeArrayCreateVector(VT_VARIANT, 0, iSrcArg - NumNamedArgs + 1);
-                if (pSA.GetValue() == NULL)
+                if (pSA == NULL)
                     COMPlusThrowHR(E_OUTOFMEMORY);
                 V_VT(&safeArrayVar) = VT_VARIANT | VT_ARRAY;
                 V_ARRAY(&safeArrayVar) = pSA;
@@ -2153,17 +2153,8 @@ void DispatchInfo::MarshalParamManagedToNativeRef(DispatchMemberInfo *pMemberInf
         VARTYPE ElementVt = V_VT(pRefVar) & ~(VT_BYREF | VT_ARRAY);
         MethodTable *pElementMT = (*(BASEARRAYREF *)pSrcObj)->GetArrayElementTypeHandle().GetMethodTable();
 
-        PCODE pStructMarshalStubAddress = NULL;
-        GCPROTECT_BEGIN(*pSrcObj);
-        if (ElementVt == VT_RECORD && pElementMT->IsBlittable())
-        {
-            GCX_PREEMP();
-            pStructMarshalStubAddress = PInvoke::GetEntryPointForStructMarshalStub(pElementMT);
-        }
-        GCPROTECT_END();
-
         // Convert the contents of the managed array into the original SAFEARRAY.
-        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt, pElementMT, pStructMarshalStubAddress);
+        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt, pElementMT);
     }
     else
 {

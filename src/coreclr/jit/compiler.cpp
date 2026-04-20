@@ -4857,6 +4857,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // update the flowgraph if we modified it during the optimization phase
                 //
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
+
+                // Clean up unreachable blocks.
+                // In opt-repeat builds, RecomputeFlowGraphAnnotations() will call
+                // fgDfsBlocksAndRemove() when resetting annotations between iterations.
+                // To avoid doing this expensive work twice per iteration, only run this
+                // phase on non-optRepeat builds or on the final optRepeat iteration.
+                //
+                if (!opts.optRepeat || (opts.optRepeatIteration == opts.optRepeatCount))
+                {
+                    DoPhase(this, PHASE_OPT_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+                    fgInvalidateDfsTree();
+                }
             }
 
             // Iterate if requested, resetting annotations first.
@@ -6016,6 +6028,31 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
         }
+
+        if (JitConfig.EnableArm64Sha3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sha3);
+        }
+
+        if (JitConfig.EnableArm64Sm4() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sm4);
+        }
+
+        if (JitConfig.EnableArm64SveAes() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
+        }
+
+        if (JitConfig.EnableArm64SveSha3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveSha3);
+        }
+
+        if (JitConfig.EnableArm64SveSm4() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveSm4);
+        }
 #elif defined(TARGET_XARCH)
         if (info.compMatchedVM)
         {
@@ -6577,96 +6614,12 @@ void Compiler::compCompileFinish()
     }
 #endif // TRACK_ENREG_STATS
 
-    // Only call _DbgBreakCheck when we are jitting, not when we are generating AOT code.
-    // For AOT the int3 or breakpoint instruction will be right at the
-    // start of the AOT method and we will stop when we execute it.
-    //
-    if (!IsAot())
-    {
-        if (compJitHaltMethod())
-        {
-#if !defined(HOST_UNIX)
-            // TODO-UNIX: re-enable this when we have an OS that supports a pop-up dialog
-
-            // Don't do an assert, but just put up the dialog box so we get just-in-time debugger
-            // launching.  When you hit 'retry' it will continue and naturally stop at the INT 3
-            // that the JIT put in the code
-            _DbgBreakCheck(__FILE__, __LINE__, "JitHalt");
-#endif
-        }
-    }
 #else  // DEBUG
     if (JitConfig.JitReportMetrics())
     {
         Metrics.report(this);
     }
 #endif // !DEBUG
-}
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-// this is zlib adler32 checksum.  source came from windows base
-
-#define BASE 65521L // largest prime smaller than 65536
-#define NMAX 5552
-// NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1
-
-#define DO1(buf, i)                                                                                                    \
-    {                                                                                                                  \
-        s1 += buf[i];                                                                                                  \
-        s2 += s1;                                                                                                      \
-    }
-#define DO2(buf, i)                                                                                                    \
-    DO1(buf, i);                                                                                                       \
-    DO1(buf, i + 1);
-#define DO4(buf, i)                                                                                                    \
-    DO2(buf, i);                                                                                                       \
-    DO2(buf, i + 2);
-#define DO8(buf, i)                                                                                                    \
-    DO4(buf, i);                                                                                                       \
-    DO4(buf, i + 4);
-#define DO16(buf)                                                                                                      \
-    DO8(buf, 0);                                                                                                       \
-    DO8(buf, 8);
-
-unsigned adler32(unsigned adler, char* buf, unsigned int len)
-{
-    unsigned int s1 = adler & 0xffff;
-    unsigned int s2 = (adler >> 16) & 0xffff;
-    int          k;
-
-    if (buf == NULL)
-        return 1L;
-
-    while (len > 0)
-    {
-        k = len < NMAX ? len : NMAX;
-        len -= k;
-        while (k >= 16)
-        {
-            DO16(buf);
-            buf += 16;
-            k -= 16;
-        }
-        if (k != 0)
-            do
-            {
-                s1 += *buf++;
-                s2 += s1;
-            } while (--k);
-        s1 %= BASE;
-        s2 %= BASE;
-    }
-    return (s2 << 16) | s1;
-}
-#endif
-
-unsigned getMethodBodyChecksum(_In_z_ char* code, int size)
-{
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    return adler32(0, code, size);
-#else
-    return 0;
-#endif
 }
 
 int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
@@ -6695,10 +6648,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
     else
     {
-        info.compFlags = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
-#ifdef PSEUDORANDOM_NOP_INSERTION
-        info.compChecksum = getMethodBodyChecksum((char*)methodInfo->ILCode, methodInfo->ILCodeSize);
-#endif
+        info.compFlags    = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
         compInlineContext = m_inlineStrategy->GetRootContext();
     }
 
@@ -10420,7 +10370,7 @@ bool Compiler::killGCRefs(GenTree* tree)
             return true;
         }
 
-        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_JIT_PINVOKE_BEGIN))
+        if (call->IsHelperCall(CORINFO_HELP_JIT_PINVOKE_BEGIN))
         {
             assert(opts.ShouldUsePInvokeHelpers());
             return true;

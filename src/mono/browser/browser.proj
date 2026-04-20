@@ -38,7 +38,7 @@
     <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
   </Target>
 
-  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
     <PropertyGroup>
       <WasmPInvokeTablePath>$(WasmObjDir)\pinvoke-table.h</WasmPInvokeTablePath>

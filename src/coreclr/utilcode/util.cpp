@@ -2494,40 +2494,31 @@ namespace Util
 
 namespace Reg
 {
-    HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKeyName, LPCWSTR wszValueName, SString & ssValue)
+    HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKeyName, SString& ssValue)
     {
         STANDARD_VM_CONTRACT;
+        _ASSERTE (hKey != NULL && wszSubKeyName != NULL && *wszSubKeyName != W('\0'));
 
-        if (hKey == NULL)
-        {
-            return E_INVALIDARG;
-        }
-
-        RegKeyHolder hTargetKey;
-        if (wszSubKeyName == NULL || *wszSubKeyName == W('\0'))
-        {   // No subkey was requested, use hKey as the resolved key.
-            hTargetKey = hKey;
-            hTargetKey.SuppressRelease();
-        }
-        else
-        {   // Try to open the specified subkey.
-            if (RegOpenKeyEx(hKey, wszSubKeyName, 0, KEY_READ, &hTargetKey) != ERROR_SUCCESS)
-                return REGDB_E_CLASSNOTREG;
-        }
+        HKEYHolder hTargetSubKey;
+        // Open requested subkey.
+        if (RegOpenKeyEx(hKey, wszSubKeyName, 0, KEY_READ, &hTargetSubKey) != ERROR_SUCCESS)
+            return REGDB_E_CLASSNOTREG;
 
         DWORD type;
-        DWORD size;
-        if ((RegQueryValueEx(hTargetKey, wszValueName, 0, &type, 0, &size) == ERROR_SUCCESS) &&
-            type == REG_SZ && size > 0)
+        DWORD sizeInBytes;
+        LPCWSTR targetValueName = NULL; // Default value is represented as NULL.
+        if ((RegQueryValueEx(hTargetSubKey, targetValueName, 0, &type, 0, &sizeInBytes) == ERROR_SUCCESS) &&
+            type == REG_SZ && sizeInBytes > 0)
         {
-            LPWSTR wszValueBuf = ssValue.OpenUnicodeBuffer(static_cast<COUNT_T>((size / sizeof(WCHAR)) - 1));
+            COUNT_T valueStrLength = static_cast<COUNT_T>((sizeInBytes / sizeof(WCHAR)) - 1);
+            LPWSTR wszValueBuf = ssValue.OpenUnicodeBuffer(valueStrLength);
             LONG lResult = RegQueryValueEx(
-                hTargetKey,
-                wszValueName,
+                hTargetSubKey,
+                targetValueName,
                 0,
                 0,
                 reinterpret_cast<LPBYTE>(wszValueBuf),
-                &size);
+                &sizeInBytes);
 
             _ASSERTE(lResult == ERROR_SUCCESS);
             if (lResult == ERROR_SUCCESS)
@@ -2538,8 +2529,8 @@ namespace Reg
                 // terminating NULL is not a legitimate scenario for REG_SZ - this must
                 // be done using REG_MULTI_SZ - however this was tolerated in the
                 // past and so it would be a breaking change to stop doing so.
-                _ASSERTE(u16_strlen(wszValueBuf) <= (size / sizeof(WCHAR)) - 1);
-                ssValue.CloseBuffer((COUNT_T)wcsnlen(wszValueBuf, (size_t)size));
+                _ASSERTE(u16_strlen(wszValueBuf) <= valueStrLength);
+                ssValue.CloseBuffer((COUNT_T)wcsnlen(wszValueBuf, valueStrLength));
             }
             else
             {
@@ -2554,87 +2545,54 @@ namespace Reg
             return REGDB_E_KEYMISSING;
         }
     }
-
-    HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKey, LPCWSTR wszName, _Outptr_ _Outptr_result_z_ LPWSTR* pwszValue)
-    {
-        CONTRACTL {
-            NOTHROW;
-            GC_NOTRIGGER;
-        } CONTRACTL_END;
-
-        HRESULT hr = S_OK;
-        EX_TRY
-        {
-            StackSString ssValue;
-            if (SUCCEEDED(hr = ReadStringValue(hKey, wszSubKey, wszName, ssValue)))
-            {
-                *pwszValue = new WCHAR[ssValue.GetCount() + 1];
-                wcscpy_s(*pwszValue, ssValue.GetCount() + 1, ssValue.GetUnicode());
-            }
-        }
-        EX_CATCH_HRESULT(hr);
-        return hr;
-    }
 } // namespace Reg
 
 namespace Com
 {
-    namespace __imp
-    {
-        __success(return == S_OK)
-        static
-        HRESULT FindSubKeyDefaultValueForCLSID(REFCLSID rclsid, LPCWSTR wszSubKeyName, SString & ssValue)
-        {
-            STANDARD_VM_CONTRACT;
-
-            WCHAR wszClsid[MINIPAL_GUID_BUFFER_LEN];
-            if (GuidToLPWSTR(rclsid, wszClsid) == 0)
-                return E_UNEXPECTED;
-
-            StackSString ssKeyName;
-            ssKeyName.Append(SL(W("CLSID\\")));
-            ssKeyName.Append(wszClsid);
-            ssKeyName.Append(SL(W("\\")));
-            ssKeyName.Append(wszSubKeyName);
-
-            // Query HKCR first to retain backwards compat with previous implementation where HKCR was only queried.
-            // This is being done due to registry caching. This value will be used if the process integrity is medium or less.
-            HRESULT hkcrResult = Clr::Util::Reg::ReadStringValue(HKEY_CLASSES_ROOT, ssKeyName.GetUnicode(), nullptr, ssValue);
-
-            // HKCR is a virtualized registry hive that weaves together HKCU\Software\Classes and HKLM\Software\Classes
-            // Processes with high integrity or greater should only read from HKLM to avoid being hijacked by medium
-            // integrity processes writing to HKCU.
-            DWORD integrity = SECURITY_MANDATORY_PROTECTED_PROCESS_RID;
-            HRESULT hr = Clr::Util::GetCurrentProcessIntegrity(&integrity);
-            if (hr != S_OK)
-            {
-                // In the event that we are unable to get the current process integrity,
-                // we assume that this process is running in an elevated state.
-                // GetCurrentProcessIntegrity may fail if the process has insufficient rights to get the integrity level
-                integrity = SECURITY_MANDATORY_PROTECTED_PROCESS_RID;
-            }
-
-            if (integrity > SECURITY_MANDATORY_MEDIUM_RID)
-            {
-                Clr::Util::SuspendImpersonation si;
-
-                // Clear the previous HKCR queried value
-                ssValue.Clear();
-
-                // Force to use HKLM
-                StackSString ssHklmKeyName(SL(W("SOFTWARE\\Classes\\")));
-                ssHklmKeyName.Append(ssKeyName);
-                return Clr::Util::Reg::ReadStringValue(HKEY_LOCAL_MACHINE, ssHklmKeyName.GetUnicode(), nullptr, ssValue);
-            }
-
-            return hkcrResult;
-        }
-    }
-
     HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString & ssInprocServer32Name)
     {
-        WRAPPER_NO_CONTRACT;
-        return __imp::FindSubKeyDefaultValueForCLSID(rclsid, W("InprocServer32"), ssInprocServer32Name);
+        STANDARD_VM_CONTRACT;
+
+        WCHAR wszClsid[MINIPAL_GUID_BUFFER_LEN];
+        if (GuidToLPWSTR(rclsid, wszClsid) == 0)
+            return E_UNEXPECTED;
+
+        StackSString ssKeyName;
+        ssKeyName.Append(SL(W("CLSID\\")));
+        ssKeyName.Append(wszClsid);
+        ssKeyName.Append(SL(W("\\InprocServer32")));
+
+        // Query HKCR first to retain backwards compat with previous implementation where HKCR was only queried.
+        // This is being done due to registry caching. This value will be used if the process integrity is medium or less.
+        HRESULT hkcrResult = Clr::Util::Reg::ReadStringValue(HKEY_CLASSES_ROOT, ssKeyName.GetUnicode(), ssInprocServer32Name);
+
+        // HKCR is a virtualized registry hive that weaves together HKCU\Software\Classes and HKLM\Software\Classes
+        // Processes with high integrity or greater should only read from HKLM to avoid being hijacked by medium
+        // integrity processes writing to HKCU.
+        DWORD integrity = SECURITY_MANDATORY_PROTECTED_PROCESS_RID;
+        HRESULT hr = Clr::Util::GetCurrentProcessIntegrity(&integrity);
+        if (hr != S_OK)
+        {
+            // In the event that we are unable to get the current process integrity,
+            // we assume that this process is running in an elevated state.
+            // GetCurrentProcessIntegrity may fail if the process has insufficient rights to get the integrity level
+            integrity = SECURITY_MANDATORY_PROTECTED_PROCESS_RID;
+        }
+
+        if (integrity > SECURITY_MANDATORY_MEDIUM_RID)
+        {
+            Clr::Util::SuspendImpersonation si;
+
+            // Clear the previous HKCR queried value
+            ssInprocServer32Name.Clear();
+
+            // Force to use HKLM
+            StackSString ssHklmKeyName(SL(W("SOFTWARE\\Classes\\")));
+            ssHklmKeyName.Append(ssKeyName);
+            return Clr::Util::Reg::ReadStringValue(HKEY_LOCAL_MACHINE, ssHklmKeyName.GetUnicode(), ssInprocServer32Name);
+        }
+
+        return hkcrResult;
     }
 } // namespace Com
 #endif //  HOST_WINDOWS

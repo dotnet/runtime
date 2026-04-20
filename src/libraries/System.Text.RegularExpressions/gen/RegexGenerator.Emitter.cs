@@ -43,7 +43,8 @@ namespace System.Text.RegularExpressions.Generator
                         case '>': sb.Append("&gt;"); break;
 
                         // Propagate all other valid XML characters as-is. Control chars are considered invalid.
-                        case (>= 0x20 and <= 0x7F) or (>= 0xA0 and <= 0xD7FF) or (>= 0xE000 and <= 0xFFFD): sb.Append(c); break;
+                        // U+2028 and U+2029 are valid XML but are C# line terminators, so they'd break /// comments.
+                        case (>= 0x20 and <= 0x7F) or (>= 0xA0 and <= 0xD7FF and not 0x2028 and not 0x2029) or (>= 0xE000 and <= 0xFFFD): sb.Append(c); break;
 
                         // Use Unicode escape sequences for everything else.
                         default: sb.Append($"\\u{(int)c:X4}"); break;
@@ -2526,7 +2527,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 string postYesDoneLabel = doneLabel;
-                if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                 {
                     writer.WriteLine($"{resumeAt} = 0;");
                 }
@@ -2555,7 +2556,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (!isAtomic && postNoDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postNoDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 1;");
                     }
@@ -2565,7 +2566,7 @@ namespace System.Text.RegularExpressions.Generator
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 2;");
                     }

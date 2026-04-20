@@ -25,18 +25,24 @@ public abstract class DumpTestBase : IDisposable
     private DumpInfo? _dumpInfo;
 
     /// <summary>
-    /// The set of runtime versions to test against.
+    /// The set of runtime versions and R2R modes to test against.
     /// Each entry produces a separate test invocation via <c>[MemberData]</c>.
+    /// R2R modes are provided by <see cref="GetR2RModes"/>, which currently yields
+    /// both <c>"r2r"</c> and <c>"jit"</c> for each runtime version.
     /// </summary>
     public static IEnumerable<object[]> TestConfigurations
     {
         get
         {
-            if (!IsVersionSkipped("local"))
-                yield return [new TestConfiguration("local")];
+            string? dumpSource = GetDumpSource();
+            foreach (string r2rMode in GetR2RModes())
+            {
+                if (!IsVersionSkipped("local"))
+                    yield return [new TestConfiguration("local", r2rMode, dumpSource)];
 
-            if (!IsVersionSkipped("net10.0"))
-                yield return [new TestConfiguration("net10.0")];
+                if (!IsVersionSkipped("net10.0"))
+                    yield return [new TestConfiguration("net10.0", r2rMode, dumpSource)];
+            }
         }
     }
 
@@ -83,9 +89,15 @@ public abstract class DumpTestBase : IDisposable
 
         EvaluateSkipAttributes(config, callerName, dumpType);
 
-        string dumpPath = Path.Combine(versionDir, dumpType, debuggeeName, $"{debuggeeName}.dmp");
+        string dumpPath = Path.Combine(versionDir, dumpType, config.R2RMode, debuggeeName, $"{debuggeeName}.dmp");
 
-        Assert.True(File.Exists(dumpPath), $"Dump file not found: {dumpPath}");
+        if (!File.Exists(dumpPath))
+        {
+            if (_dumpInfo is not null && _dumpInfo.IsDumpExpected(debuggeeName, dumpType, config.R2RMode))
+                Assert.Fail($"Expected {config.R2RMode}/{dumpType} dump for {debuggeeName} but not found: {dumpPath}");
+
+            throw new SkipTestException($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
+        }
 
         _host = ClrMdDumpHost.Open(dumpPath);
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
@@ -95,7 +107,7 @@ public abstract class DumpTestBase : IDisposable
             _host.ReadFromTarget,
             writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
-            additionalFactories: [],
+            [Contracts.CoreCLRContracts.Register],
             out _target);
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
@@ -130,6 +142,18 @@ public abstract class DumpTestBase : IDisposable
 
         if (_dumpInfo is not null)
         {
+            // Cross-bitness dump reading is not yet supported when a 32-bit host
+            // tries to read a 64-bit dump (see microsoft/clrmd#1423).
+            // The reverse (64-bit host reading 32-bit dump) works fine.
+            bool isDump64Bit = _dumpInfo.Arch is "x64" or "arm64" or "riscv64" or "loongarch64";
+            bool isHost64Bit = IntPtr.Size == 8;
+            if (isDump64Bit && !isHost64Bit)
+            {
+                throw new SkipTestException(
+                    $"32-bit host cannot read 64-bit dumps: dump is {_dumpInfo.Arch}. " +
+                    $"See microsoft/clrmd#1423.");
+            }
+
             foreach (SkipOnOSAttribute attr in method.GetCustomAttributes<SkipOnOSAttribute>())
             {
                 if (attr.IncludeOnly is not null)
@@ -142,6 +166,12 @@ public abstract class DumpTestBase : IDisposable
                     if (string.Equals(attr.Os, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase))
                         throw new SkipTestException($"[{_dumpInfo.Os}] {attr.Reason}");
                 }
+            }
+
+            foreach (SkipOnArchAttribute attr in method.GetCustomAttributes<SkipOnArchAttribute>())
+            {
+                if (string.Equals(attr.Arch, _dumpInfo.Arch, StringComparison.OrdinalIgnoreCase))
+                    throw new SkipTestException($"[{_dumpInfo.Arch}] {attr.Reason}");
             }
         }
     }
@@ -157,6 +187,38 @@ public abstract class DumpTestBase : IDisposable
             throw new InvalidOperationException("Could not locate the repository root.");
 
         return Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
+    }
+
+    /// <summary>
+    /// Returns the dump source platform from dump-info.json (e.g., "windows_x64"),
+    /// or null for local runs where CDAC_DUMP_ROOT is not set.
+    /// </summary>
+    private static string? GetDumpSource()
+    {
+        string? dumpRoot = Environment.GetEnvironmentVariable("CDAC_DUMP_ROOT");
+        if (string.IsNullOrEmpty(dumpRoot))
+            return null;
+
+        // Try loading dump-info.json from any version directory to get OS/Arch
+        foreach (string versionDir in new[] { "local", "net10.0" })
+        {
+            DumpInfo? info = DumpInfo.TryLoad(Path.Combine(dumpRoot, versionDir));
+            if (info is not null)
+                return $"{info.Os}_{info.Arch}";
+        }
+
+        // Fall back to the directory name if dump-info.json isn't available
+        return Path.GetFileName(dumpRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+    }
+
+    /// <summary>
+    /// Returns the R2R modes to test against. Both modes are always tested;
+    /// dumps that don't exist for a given mode are skipped via <see cref="SkipTestException"/>.
+    /// </summary>
+    private static IEnumerable<string> GetR2RModes()
+    {
+        yield return "r2r";
+        yield return "jit";
     }
 
     /// <summary>

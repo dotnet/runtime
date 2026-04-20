@@ -6,7 +6,7 @@
 
 #include <stddef.h>
 #include <interoplib.h>
-#include "../../vm/cdacdata.h"
+#include "cdacdata.h"
 
 namespace InteropLib
 {

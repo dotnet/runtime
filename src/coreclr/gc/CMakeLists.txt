@@ -41,7 +41,6 @@ endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if (CLR_CMAKE_TARGET_WIN32)
   set(GC_HEADERS
-    env/cdacdata.h
     env/common.h
     env/etmdummy.h
     env/gcenv.base.h

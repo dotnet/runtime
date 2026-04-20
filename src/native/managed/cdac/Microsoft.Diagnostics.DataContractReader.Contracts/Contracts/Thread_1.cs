@@ -19,10 +19,28 @@ internal readonly struct Thread_1 : IThread
         DirectOnThreadLocalData = 2, // IndexOffset for this form of TLS index is an offset into the ThreadLocalData structure itself. This is used for very high performance scenarios, and scenario where the runtime native code needs to hold a TLS pointer to a managed TLS slot. Each one of these is hand-opted into this model.
     };
 
-    internal Thread_1(Target target, TargetPointer threadStore)
+    [Flags]
+    private enum ThreadState_1
+    {
+        Hijacked = 0x80,
+        Background = 0x200,
+        Unstarted = 0x400,
+        Stopped = 0x10000,
+        ThreadPoolWorker = 0x1000000,
+        Detached = unchecked((int)0x80000000)
+    }
+
+    [Flags]
+    private enum ExceptionFlags
+    {
+        DebuggerInterceptInfo = 0x00000200,
+        IsUnhandled = 0x00000800,
+    }
+
+    internal Thread_1(Target target)
     {
         _target = target;
-        _threadStoreAddr = threadStore;
+        _threadStoreAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore));
 
         // Get the offset into Thread of the SLink. We use this to find the actual
         // first thread from the linked list node contained by the first thread.
@@ -50,29 +68,62 @@ internal readonly struct Thread_1 : IThread
             threadStore.DeadCount);
     }
 
+    private static Contracts.ThreadState GetThreadState(ThreadState_1 state)
+    {
+        Contracts.ThreadState result = Contracts.ThreadState.Unknown;
+        if (state.HasFlag(ThreadState_1.Hijacked))
+            result |= Contracts.ThreadState.Hijacked;
+        if (state.HasFlag(ThreadState_1.Background))
+            result |= Contracts.ThreadState.Background;
+        if (state.HasFlag(ThreadState_1.Unstarted))
+            result |= Contracts.ThreadState.Unstarted;
+        if (state.HasFlag(ThreadState_1.Stopped))
+            result |= Contracts.ThreadState.Stopped;
+        if (state.HasFlag(ThreadState_1.ThreadPoolWorker))
+            result |= Contracts.ThreadState.ThreadPoolWorker;
+        if (state.HasFlag(ThreadState_1.Detached))
+            result |= Contracts.ThreadState.Detached;
+        return result;
+    }
+
     ThreadData IThread.GetThreadData(TargetPointer threadPointer)
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
 
         TargetPointer address = _target.ReadPointer(thread.ExceptionTracker);
         TargetPointer firstNestedException = TargetPointer.Null;
+        bool hasUnhandledException = false;
         if (address != TargetPointer.Null)
         {
             Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(address);
             firstNestedException = exceptionInfo.PreviousNestedInfo;
+
+            if (exceptionInfo.ThrownObjectHandle != TargetPointer.Null)
+            {
+                uint exceptionFlags = exceptionInfo.ExceptionFlags;
+                hasUnhandledException = (exceptionFlags & (uint)ExceptionFlags.IsUnhandled) != 0
+                    && (exceptionFlags & (uint)ExceptionFlags.DebuggerInterceptInfo) == 0;
+            }
         }
 
+        if (thread.LastThrownObjectIsUnhandled != 0)
+            hasUnhandledException = true;
+
         return new ThreadData(
+            threadPointer,
             thread.Id,
             thread.OSId,
-            (ThreadState)thread.State,
+            GetThreadState((ThreadState_1)thread.State),
             (thread.PreemptiveGCDisabled & 0x1) != 0,
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Pointer ?? TargetPointer.Null,
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Limit ?? TargetPointer.Null,
             thread.Frame,
             firstNestedException,
-            thread.TEB,
+            thread.ExposedObject,
             thread.LastThrownObject.Handle,
+            thread.CurrentCustomDebuggerNotification,
+            thread.LastThrownObjectIsUnhandled != 0,
+            hasUnhandledException,
             GetThreadFromLink(thread.LinkNext));
     }
 

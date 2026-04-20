@@ -170,7 +170,7 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                SendSignal(signal, remoteHandle.Process.Id);
+                SendSignal(signal, remoteHandle.Process);
 
                 Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
                 Assert.Equal(0, remoteHandle.Process.ExitCode);
@@ -243,7 +243,7 @@ namespace System.Diagnostics.Tests
             {
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalRegistrationCreatedMessage, WaitInMS);
 
-                SendSignal(signal, remoteHandle.Process.Id);
+                SendSignal(signal, remoteHandle.Process);
 
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerStartedMessage, WaitInMS);
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerDisposedMessage, WaitInMS);
@@ -253,11 +253,11 @@ namespace System.Diagnostics.Tests
                 if (PlatformDetection.IsMonoRuntime && signal == PosixSignal.SIGQUIT && !PlatformDetection.IsWindows)
                 {
                     // Terminate process using SIGTERM instead.
-                    SendSignal(PosixSignal.SIGTERM, remoteHandle.Process.Id);
+                    SendSignal(PosixSignal.SIGTERM, remoteHandle.Process);
                 }
                 else
                 {
-                    SendSignal(signal, remoteHandle.Process.Id);
+                    SendSignal(signal, remoteHandle.Process);
                 }
 
                 Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
@@ -280,6 +280,96 @@ namespace System.Diagnostics.Tests
                 // to prevent RemoteExecutor's timeout from hiding it.
                 remoteHandle.Process.Kill();
             }
+        }
+
+        private static bool IsNotNanoServerAndRemoteExecutorSupported =>
+            PlatformDetection.IsNotWindowsNanoServer &&
+            RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(typeof(ProcessTests), nameof(IsNotNanoServerAndRemoteExecutorSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void StartDetached_GrandchildSurvivesSignalingParent(bool enable)
+        {
+            // Verify that a grandchild started with StartDetached=true survives terminating signal sent to the child's
+            // process group, whereas a non-detached grandchild (which inherits the child's process group) is killed.
+            int grandchildPid = -1;
+
+            // Start the child in its own group/session (process group leader) so killing the group
+            // targets only the child's process group, not the test runner's process group.
+            ProcessStartInfo childStartInfo = new()
+            {
+                RedirectStandardOutput = true,
+            };
+
+            if (OperatingSystem.IsWindows())
+            {
+                // We need to be able to send the signal to the child process group.
+                childStartInfo.CreateNewProcessGroup = true;
+            }
+            else
+            {
+                childStartInfo.StartDetached = true;
+            }
+
+            using (RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(static (arg) =>
+            {
+                using RemoteInvokeHandle grandchildHandle = RemoteExecutor.Invoke(
+                    static () => { Thread.Sleep(Timeout.Infinite); return RemoteExecutor.SuccessExitCode; },
+                    new RemoteInvokeOptions { Start = false, CheckExitCode = false });
+
+                grandchildHandle.Process.StartInfo.StartDetached = bool.Parse(arg);
+                grandchildHandle.Process.Start();
+
+                Console.WriteLine(grandchildHandle.Process.Id);
+
+                // Transfer ownership.
+                grandchildHandle.Process = null;
+
+                // Keep the child alive so the test can kill the process group.
+                Thread.Sleep(Timeout.Infinite);
+
+                return RemoteExecutor.SuccessExitCode;
+            },
+            enable.ToString(),
+            new RemoteInvokeOptions { StartInfo = childStartInfo, CheckExitCode = false }))
+            {
+                string pidLine = childHandle.Process.StandardOutput.ReadLine();
+                Assert.True(int.TryParse(pidLine, out grandchildPid), $"Could not parse grandchild PID from: '{pidLine}'");
+
+                // Obtain a Process instance before the child is killed to avoid PID reuse issues.
+                using Process grandchild = Process.GetProcessById(grandchildPid);
+
+                try
+                {
+                    Assert.False(grandchild.HasExited);
+
+                    // Kill the child's entire process group
+                    PosixSignal signal = OperatingSystem.IsWindows() ? PosixSignal.SIGQUIT : PosixSignal.SIGKILL;
+                    SendSignal(signal, childHandle.Process, entireProcessGroup: true);
+
+                    Assert.True(childHandle.Process.WaitForExit(WaitInMS));
+                    // Use shorter wait time when the process is expected to survive
+                    Assert.Equal(enable, !grandchild.WaitForExit(enable ? 300 : WaitInMS));
+                }
+                finally
+                {
+                    grandchild.Kill();
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StartDetached_StartsAndExitsSuccessfully()
+        {
+            // Simple smoke test: a process started with StartDetached=true should run and exit normally.
+            RemoteInvokeOptions options = new()
+            {
+                StartInfo = new ProcessStartInfo { StartDetached = true }
+            };
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () => RemoteExecutor.SuccessExitCode, options);
+            Assert.True(handle.Process.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, handle.Process.ExitCode);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -402,14 +492,14 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, and MacCatalyst.")]
         public void ProcessStart_TryOpenFolder_UseShellExecuteIsFalse_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, and MacCatalyst.")]
         public void TestStartWithBadWorkingDirectory()
         {
             string program;
@@ -504,7 +594,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(true), InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS and MacCatalyst.")]
         [SkipOnPlatform(TestPlatforms.Android, "Android doesn't allow executing custom shell scripts")]
         public void ProcessStart_UseShellExecute_Executes(bool filenameAsUrl)
         {
@@ -577,7 +667,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore),
             nameof(PlatformDetection.IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS and MacCatalyst.")]
         [SkipOnPlatform(TestPlatforms.Android, "Android doesn't allow executing custom shell scripts")]
         public void ProcessStart_UseShellExecute_WorkingDirectory()
         {
@@ -1792,6 +1882,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Process.Start() is not supported on iOS, tvOS, and MacCatalyst.")]
         public void Start_Disposed_ThrowsObjectDisposedException()
         {
             var process = new Process();
@@ -2488,7 +2579,7 @@ namespace System.Diagnostics.Tests
             Process testProcess = CreateProcess();
             testProcess.StartInfo = psi;
 
-            AssertExtensions.Throws<ArgumentNullException>("item", () => testProcess.Start());
+            AssertExtensions.Throws<ArgumentNullException>("ArgumentList[0]", () => testProcess.Start());
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
