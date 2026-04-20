@@ -324,8 +324,8 @@ namespace System.Net.WebSockets
                 return ValueTask.FromException(exc);
             }
 
-            bool endOfMessage = messageFlags.HasFlag(WebSocketMessageFlags.EndOfMessage);
-            bool disableCompression = messageFlags.HasFlag(WebSocketMessageFlags.DisableCompression);
+            bool endOfMessage = (messageFlags & WebSocketMessageFlags.EndOfMessage) != 0;
+            bool disableCompression = (messageFlags & WebSocketMessageFlags.DisableCompression) != 0;
             MessageOpcode opcode;
 
             if (_lastSendWasFragment)

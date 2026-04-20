@@ -90,6 +90,7 @@ partial interface IRuntimeTypeSystem : IContract
     // HasTypeParam will return true for cases where this is the interop view, and false for normal valuetypes.
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
 
+    bool IsValueType(TypeHandle typeHandle);
     // return true if the TypeHandle represents an enum type.
     bool IsEnum(TypeHandle typeHandle);
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
@@ -266,6 +267,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_Mask = 0x000F0000,
         Category_ElementType_Mask = 0x000E0000,
         Category_Array_Mask = 0x000C0000,
+        Category_ValueType_Mask = 0x000C0000,
 
         Category_IfArrayThenSzArray = 0x00020000,
         Category_Array = 0x00080000,
@@ -745,6 +747,12 @@ Contracts used:
             return (CorElementType)(TypeAndFlags & 0xFF);
         }
         return default(CorElementType);
+    }
+
+    public bool IsValueType(TypeHandle typeHandle)
+    {
+        // if methodtable: check WFLAGS_HIGH for Category_ValueType
+        // if typedesc: check for CorElementType.ValueType
     }
 
     // Enums have Category_PrimitiveValueType in their MethodTable flags and their

@@ -271,7 +271,7 @@
         $(HelixPostCommands);
         %HELIX_PYTHONPATH% %HELIX_CORRELATION_PAYLOAD%\gen-debug-dump-docs.py -buildid $(BUILD_BUILDID) -workitem %HELIX_WORKITEM_FRIENDLYNAME% -jobid %HELIX_CORRELATION_ID% -outdir %HELIX_WORKITEM_UPLOAD_ROOT% -templatedir %HELIX_CORRELATION_PAYLOAD% -dumpdir %HELIX_DUMP_FOLDER% -productver $(ProductVersion)
       </HelixPostCommands>
-      <HelixPostCommands Condition="'$(TargetOS)' != 'windows'">
+      <HelixPostCommands Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'">
         $(HelixPostCommands);
         $HELIX_PYTHONPATH $HELIX_CORRELATION_PAYLOAD/gen-debug-dump-docs.py -buildid $(BUILD_BUILDID) -workitem $HELIX_WORKITEM_FRIENDLYNAME -jobid $HELIX_CORRELATION_ID -outdir $HELIX_WORKITEM_UPLOAD_ROOT -templatedir $HELIX_CORRELATION_PAYLOAD -dumpdir $HELIX_DUMP_FOLDER -productver $(ProductVersion)
       </HelixPostCommands>

@@ -30,7 +30,7 @@ public class BuiltInCOMTests
         var target = targetBuilder
             .AddTypes(CreateContractTypes(builtInCom))
             .AddGlobals(CreateContractGlobals(builtInCom))
-            .AddContract<IBuiltInCOM>(version: 1)
+            .AddContract<IBuiltInCOM>(version: "c1")
             .AddMockContract<ISyncBlock>(syncBlockContract)
             .Build();
         return target.Contracts.BuiltInCOM;

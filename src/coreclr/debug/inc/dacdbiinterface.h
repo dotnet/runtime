@@ -550,24 +550,6 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal) = 0;
 
 
-    //
-    // Query if address is a CLR stub.
-    //
-    // Arguments:
-    //   address  - Target address to query for.
-    //   pResult - [out] True if the address is a CLR stub.
-    //
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //    This is used to implement ICorDebugProcess::IsTransitionStub
-    //    This yields true if the address is claimed by a CLR stub manager, or if the IP is in mscorwks.
-    //    Conceptually, This should eventually be merged with GetAddressType().
-    //
-    virtual HRESULT STDMETHODCALLTYPE IsTransitionStub(CORDB_ADDRESS address, OUT BOOL * pResult) = 0;
-
     //.........................................................................
     // Get the values of the JIT Optimization and EnC flags.
     //
@@ -1313,26 +1295,6 @@ public:
     virtual HRESULT STDMETHODCALLTYPE EnumerateInternalFrames(VMPTR_Thread vmThread, FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     //
-    // Given the FramePointer of the parent frame and the FramePointer of the current frame,
-    // check if the current frame is the parent frame.  fpParent should have been returned
-    // previously by the DacDbiInterface via GetStackWalkCurrentFrameInfo().
-    //
-    // Arguments:
-    //    fpToCheck - the FramePointer of the current frame
-    //    fpParent  - the FramePointer of the parent frame; should have been returned earlier by the DDI
-    //    pResult - [out] TRUE if the current frame is indeed the parent frame.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Note:
-    //    Because of the complexity involved in checking for the parent frame, we should always
-    //    ask the ExInfo to do it.
-    //
-
-    virtual HRESULT STDMETHODCALLTYPE IsMatchingParentFrame(FramePointer fpToCheck, FramePointer fpParent, OUT BOOL * pResult) = 0;
-
-    //
     // Get the stack parameter size of a given method.  This is necessary on x86 for unwinding.
     //
     // Arguments:
@@ -1832,36 +1794,6 @@ public:
     // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, DebuggerIPCE_ObjectData * pObjectData) = 0;
 
-    // --------------------------------------------------------------------------------------------
-#ifdef TEST_DATA_CONSISTENCY
-    // Determine whether a crst is held by the left side. When the DAC is executing VM code that takes a
-    // lock, we want to know whether the LS already holds that lock. If it does, we will assume the locked
-    // data is in an inconsistent state and will return a failure HRESULT, rather than relying on this data. This
-    // function is part of a self-test that will ensure we are correctly detecting when the LS holds a lock
-    // on data the RS is trying to inspect.
-    // Argument:
-    //     input:  vmCrst    - the lock to test
-    //     output: none
-    // Notes:
-    //     Returns an appropriate failure HRESULT on error
-    //     For this code to run, the environment variable TestDataConsistency must be set to 1.
-    virtual HRESULT STDMETHODCALLTYPE TestCrst(VMPTR_Crst vmCrst) = 0;
-
-    // Determine whether a crst is held by the left side. When the DAC is executing VM code that takes a
-    // lock, we want to know whether the LS already holds that lock. If it does, we will assume the locked
-    // data is in an inconsistent state and will return a failure HRESULT, rather than relying on this data. This
-    // function is part of a self-test that will ensure we are correctly detecting when the LS holds a lock
-    // on data the RS is trying to inspect.
-    // Argument:
-    //     input:  vmRWLock  - the lock to test
-    //     output: none
-    // Notes:
-    //     Returns an appropriate failure HRESULT on error
-    //     For this code to run, the environment variable TestDataConsistency must be set to 1.
-
-    virtual HRESULT STDMETHODCALLTYPE TestRWLock(VMPTR_SimpleRWLock vmRWLock) = 0;
-#endif
-    // --------------------------------------------------------------------------------------------
     // Get the address of the Debugger control block on the helper thread. The debugger control block
     // contains information about the status of the debugger, handles to various events and space to hold
     // information sent back and forth between the debugger and the debuggee's helper thread.

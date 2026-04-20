@@ -5943,9 +5943,7 @@ HRESULT CordbNativeFrame::IsMatchingParentFrame(ICorDebugNativeFrame2 * pPotenti
         {
             FramePointer fpParent  = this->m_misc.fpParentOrSelf;
             FramePointer fpToCheck = pFrameToCheck->m_misc.fpParentOrSelf;
-
-            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            IfFailThrow(pDAC->IsMatchingParentFrame(fpToCheck, fpParent, pIsParent));
+            *pIsParent = (fpParent == fpToCheck);
         }
     }
     EX_CATCH_HRESULT(hr);
