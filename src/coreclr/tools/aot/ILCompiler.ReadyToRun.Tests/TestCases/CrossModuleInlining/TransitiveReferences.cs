@@ -1,6 +1,6 @@
-// Test: Transitive cross-module references
-// Validates that when InlineableLibTransitive is inlined, its references to ExternalLib
-// are properly encoded in the R2R image (requiring tokens for both libraries).
+// Calls inlinable helpers in another module that transitively touch types
+// and members from a further module, so the consumer's R2R image must
+// carry tokens for both the mid-layer and leaf modules.
 using System;
 using System.Runtime.CompilerServices;
 
@@ -9,18 +9,18 @@ public static class TransitiveReferences
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int TestTransitiveValue()
     {
-        return InlineableLibTransitive.GetExternalValue();
+        return InlinableLeafCallers.GetExternalValue();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int TestNestedTypeAccess()
     {
-        return InlineableLibTransitive.GetNestedValue();
+        return InlinableLeafCallers.GetNestedValue();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static object TestTransitiveTypeCreation()
     {
-        return InlineableLibTransitive.CreateExternal();
+        return InlinableLeafCallers.CreateExternal();
     }
 }

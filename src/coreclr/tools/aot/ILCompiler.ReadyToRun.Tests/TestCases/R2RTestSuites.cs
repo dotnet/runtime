@@ -59,29 +59,29 @@ public class R2RTestSuites
     [Fact]
     public void TransitiveReferences()
     {
-        var externalLib = new CompiledAssembly()
+        var syncLeafMethods = new CompiledAssembly()
         {
-            AssemblyName = "ExternalLib",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/ExternalLib.cs"],
+            AssemblyName = "SyncLeafMethods",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/SyncLeafMethods.cs"],
         };
-        var inlineableLibTransitive = new CompiledAssembly()
+        var inlinableLeafCallers = new CompiledAssembly()
         {
-            AssemblyName = "InlineableLibTransitive",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlineableLibTransitive.cs"],
-            References = [externalLib]
+            AssemblyName = "InlinableLeafCallers",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/TransitiveReferences.InlinableLeafCallers.cs"],
+            References = [syncLeafMethods]
         };
         var transitiveReferences = new CompiledAssembly()
         {
             AssemblyName = "TransitiveReferences",
             SourceResourceNames = ["CrossModuleInlining/TransitiveReferences.cs"],
-            References = [inlineableLibTransitive, externalLib]
+            References = [inlinableLeafCallers, syncLeafMethods]
         };
         new R2RTestRunner(_output).Run(new R2RTestCase(nameof(TransitiveReferences),
             [
                 new("TransitiveReferences", [
                         new CrossgenAssembly(transitiveReferences),
-                        new CrossgenAssembly(externalLib) { Kind = Crossgen2InputKind.Reference },
-                        new CrossgenAssembly(inlineableLibTransitive)
+                        new CrossgenAssembly(syncLeafMethods) { Kind = Crossgen2InputKind.Reference },
+                        new CrossgenAssembly(inlinableLeafCallers)
                         {
                             Kind = Crossgen2InputKind.Reference,
                             Options = [Crossgen2AssemblyOption.CrossModuleOptimization],
@@ -91,8 +91,8 @@ public class R2RTestSuites
                     Validate = reader =>
                     {
                         string diag;
-                        Assert.True(R2RAssert.HasManifestRef(reader, "InlineableLibTransitive", out diag), diag);
-                        Assert.True(R2RAssert.HasManifestRef(reader, "ExternalLib", out diag), diag);
+                        Assert.True(R2RAssert.HasManifestRef(reader, "InlinableLeafCallers", out diag), diag);
+                        Assert.True(R2RAssert.HasManifestRef(reader, "SyncLeafMethods", out diag), diag);
                         Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestTransitiveValue", "GetExternalValue", out diag), diag);
                     },
                 },
@@ -893,22 +893,22 @@ public class R2RTestSuites
     [Fact]
     public void CompositeTransitive()
     {
-        var externalLib = new CompiledAssembly
+        var syncLeafMethods = new CompiledAssembly
         {
-            AssemblyName = "ExternalLib",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/ExternalLib.cs"],
+            AssemblyName = "SyncLeafMethods",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/SyncLeafMethods.cs"],
         };
-        var inlineableLibTransitive = new CompiledAssembly
+        var inlinableLeafCallers = new CompiledAssembly
         {
-            AssemblyName = "InlineableLibTransitive",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlineableLibTransitive.cs"],
-            References = [externalLib]
+            AssemblyName = "InlinableLeafCallers",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/TransitiveReferences.InlinableLeafCallers.cs"],
+            References = [syncLeafMethods]
         };
         var compositeTransitiveMain = new CompiledAssembly
         {
             AssemblyName = "CompositeTransitive",
             SourceResourceNames = ["CrossModuleInlining/TransitiveReferences.cs"],
-            References = [inlineableLibTransitive, externalLib]
+            References = [inlinableLeafCallers, syncLeafMethods]
         };
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
@@ -916,8 +916,8 @@ public class R2RTestSuites
             [
                 new(nameof(CompositeTransitive),
                 [
-                    new CrossgenAssembly(externalLib),
-                    new CrossgenAssembly(inlineableLibTransitive),
+                    new CrossgenAssembly(syncLeafMethods),
+                    new CrossgenAssembly(inlinableLeafCallers),
                     new CrossgenAssembly(compositeTransitiveMain),
                 ])
                 {
@@ -929,8 +929,8 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "InlineableLibTransitive", out diag), diag);
-            Assert.True(R2RAssert.HasManifestRef(reader, "ExternalLib", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "InlinableLeafCallers", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "SyncLeafMethods", out diag), diag);
         }
     }
 
@@ -941,32 +941,32 @@ public class R2RTestSuites
     [Fact]
     public void AsyncCrossModuleTransitive()
     {
-        var asyncExternalLib = new CompiledAssembly
+        var syncLeafMethods = new CompiledAssembly
         {
-            AssemblyName = "AsyncExternalLib",
-            SourceResourceNames = ["RuntimeAsync/Dependencies/AsyncExternalLib.cs"],
+            AssemblyName = "SyncLeafMethods",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/SyncLeafMethods.cs"],
         };
-        var asyncTransitiveLib = new CompiledAssembly
+        var inlinableAsyncLeafCallers = new CompiledAssembly
         {
-            AssemblyName = "AsyncTransitiveLib",
+            AssemblyName = "InlinableAsyncLeafCallers",
             SourceResourceNames =
             [
-                "RuntimeAsync/Dependencies/AsyncTransitiveLib.cs",
+                "RuntimeAsync/Dependencies/AwaitsTransitiveAsync.InlinableAsyncLeafCallers.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
-            References = [asyncExternalLib]
+            References = [syncLeafMethods]
         };
-        var asyncTransitiveMain = new CompiledAssembly
+        var awaitsTransitiveAsync = new CompiledAssembly
         {
             AssemblyName = nameof(AsyncCrossModuleTransitive),
             SourceResourceNames =
             [
-                "RuntimeAsync/AsyncTransitiveMain.cs",
+                "RuntimeAsync/AwaitsTransitiveAsync.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
-            References = [asyncTransitiveLib, asyncExternalLib]
+            References = [inlinableAsyncLeafCallers, syncLeafMethods]
         };
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
@@ -974,9 +974,9 @@ public class R2RTestSuites
             [
                 new(nameof(AsyncCrossModuleTransitive),
                 [
-                    new CrossgenAssembly(asyncTransitiveMain),
-                    new CrossgenAssembly(asyncExternalLib) { Kind = Crossgen2InputKind.Reference },
-                    new CrossgenAssembly(asyncTransitiveLib)
+                    new CrossgenAssembly(awaitsTransitiveAsync),
+                    new CrossgenAssembly(syncLeafMethods) { Kind = Crossgen2InputKind.Reference },
+                    new CrossgenAssembly(inlinableAsyncLeafCallers)
                     {
                         Kind = Crossgen2InputKind.Reference,
                         Options = [Crossgen2AssemblyOption.CrossModuleOptimization],
@@ -990,7 +990,7 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncTransitiveLib", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "InlinableAsyncLeafCallers", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "CallTransitiveValueAsync", out diag), diag);
         }
     }
@@ -1002,32 +1002,32 @@ public class R2RTestSuites
     [Fact]
     public void CompositeAsyncTransitive()
     {
-        var asyncExternalLib = new CompiledAssembly
+        var syncLeafMethods = new CompiledAssembly
         {
-            AssemblyName = "AsyncExternalLib",
-            SourceResourceNames = ["RuntimeAsync/Dependencies/AsyncExternalLib.cs"],
+            AssemblyName = "SyncLeafMethods",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/SyncLeafMethods.cs"],
         };
-        var asyncTransitiveLib = new CompiledAssembly
+        var inlinableAsyncLeafCallers = new CompiledAssembly
         {
-            AssemblyName = "AsyncTransitiveLib",
+            AssemblyName = "InlinableAsyncLeafCallers",
             SourceResourceNames =
             [
-                "RuntimeAsync/Dependencies/AsyncTransitiveLib.cs",
+                "RuntimeAsync/Dependencies/AwaitsTransitiveAsync.InlinableAsyncLeafCallers.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
-            References = [asyncExternalLib]
+            References = [syncLeafMethods]
         };
         var compositeAsyncTransitiveMain = new CompiledAssembly
         {
             AssemblyName = "CompositeAsyncTransitive",
             SourceResourceNames =
             [
-                "RuntimeAsync/AsyncTransitiveMain.cs",
+                "RuntimeAsync/AwaitsTransitiveAsync.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
-            References = [asyncTransitiveLib, asyncExternalLib]
+            References = [inlinableAsyncLeafCallers, syncLeafMethods]
         };
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
@@ -1035,8 +1035,8 @@ public class R2RTestSuites
             [
                 new(nameof(CompositeAsyncTransitive),
                 [
-                    new CrossgenAssembly(asyncExternalLib),
-                    new CrossgenAssembly(asyncTransitiveLib),
+                    new CrossgenAssembly(syncLeafMethods),
+                    new CrossgenAssembly(inlinableAsyncLeafCallers),
                     new CrossgenAssembly(compositeAsyncTransitiveMain),
                 ])
                 {
@@ -1048,7 +1048,7 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncTransitiveLib", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "InlinableAsyncLeafCallers", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "CallTransitiveValueAsync", out diag), diag);
         }
     }
