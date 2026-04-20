@@ -1,10 +1,13 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 project(corehost)
 
 include(../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 set(COREHOST_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
+option(CLR_CMAKE_BUILD_HOST_PRODUCT "Build host product components" ON)
+option(CLR_CMAKE_BUILD_HOST_TESTS "Build host test components" OFF)
 
 if (MSVC)
     # Host components don't try to handle asynchronous exceptions
@@ -27,9 +30,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 
 if (NOT ${CLR_SINGLE_FILE_HOST_ONLY})
-    if("${CLI_CMAKE_PKG_RID}" STREQUAL "")
-        message(FATAL_ERROR "A minimum supported package rid is not specified (ex: win7-x86 or ubuntu.14.04-x64, osx.10.12-x64, rhel.7-x64)")
-    endif()
     if("${CLI_CMAKE_COMMIT_HASH}" STREQUAL "")
         message(FATAL_ERROR "Commit hash needs to be specified to build the host")
     endif()
@@ -92,13 +92,17 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
 
     add_subdirectory(hostcommon)
     add_subdirectory(hostmisc)
-    add_subdirectory(fxr)
-    add_subdirectory(hostpolicy)
-
-    add_subdirectory(apphost)
-    add_subdirectory(dotnet)
     add_subdirectory(nethost)
-    add_subdirectory(test)
+
+    if(CLR_CMAKE_BUILD_HOST_PRODUCT)
+        add_subdirectory(fxr)
+        add_subdirectory(hostpolicy)
+        add_subdirectory(apphost)
+        add_subdirectory(dotnet)
+    endif()
+    if(CLR_CMAKE_BUILD_HOST_TESTS)
+        add_subdirectory(test)
+    endif()
 else()
     add_subdirectory(hostmisc)
     add_subdirectory(browserhost)
@@ -106,11 +110,17 @@ endif()
 
 # If there's a dynamic ASAN runtime, then install it in the directories where we put our executables.
 if (NOT "${ASAN_RUNTIME}" STREQUAL "")
-    install(FILES ${ASAN_RUNTIME} DESTINATION corehost)
-    install(FILES ${ASAN_RUNTIME} DESTINATION corehost_test)
+    if(CLR_CMAKE_BUILD_HOST_PRODUCT)
+        install(FILES ${ASAN_RUNTIME} DESTINATION corehost)
+    endif()
+    if(CLR_CMAKE_BUILD_HOST_TESTS)
+        install(FILES ${ASAN_RUNTIME} DESTINATION corehost_test)
+    endif()
 endif()
 
 if(CLR_CMAKE_HOST_WIN32)
-    add_subdirectory(comhost)
     add_subdirectory(ijwhost)
+    if(CLR_CMAKE_BUILD_HOST_PRODUCT)
+        add_subdirectory(comhost)
+    endif()
 endif()

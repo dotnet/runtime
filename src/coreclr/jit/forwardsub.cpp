@@ -226,7 +226,7 @@ public:
                 if ((parent != nullptr) && parent->IsCall())
                 {
                     GenTreeCall* const parentCall = parent->AsCall();
-                    isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
+                    isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtControlExpr == node);
                 }
 
                 if (!isCallTarget && IsLastUse(node->AsLclVar()))
@@ -257,16 +257,13 @@ public:
         }
 
         m_accumulatedFlags |= (node->gtFlags & GTF_GLOB_EFFECT);
-        if ((node->gtFlags & GTF_CALL) != 0)
+        if ((node->gtFlags & GTF_EXCEPT) != 0)
         {
-            m_accumulatedExceptions = ExceptionSetFlags::All;
-        }
-        else if ((node->gtFlags & GTF_EXCEPT) != 0)
-        {
-            // We can never reorder in the face of different exception types,
-            // so stop calling 'OperExceptions' once we've seen more than one
-            // different exception type.
-            if (genCountBits(static_cast<uint32_t>(m_accumulatedExceptions)) <= 1)
+            // We can never reorder in the face of different or unknown
+            // exception types, so stop calling 'OperExceptions' once we've
+            // seen more than one different exception type.
+            if ((genCountBits(static_cast<uint32_t>(m_accumulatedExceptions)) <= 1) &&
+                ((m_accumulatedExceptions & ExceptionSetFlags::UnknownException) == ExceptionSetFlags::None))
             {
                 m_accumulatedExceptions |= node->OperExceptions(m_compiler);
             }
@@ -694,9 +691,10 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         if ((fsv.GetFlags() & GTF_EXCEPT) != 0)
         {
             assert(fsv.GetExceptions() != ExceptionSetFlags::None);
-            if (genCountBits(static_cast<uint32_t>(fsv.GetExceptions())) > 1)
+            if ((genCountBits(static_cast<uint32_t>(fsv.GetExceptions())) > 1) ||
+                (((fsv.GetExceptions() & ExceptionSetFlags::UnknownException) != ExceptionSetFlags::None)))
             {
-                JITDUMP(" cannot reorder different thrown exceptions\n");
+                JITDUMP(" cannot reorder different/unknown thrown exceptions\n");
                 return false;
             }
 

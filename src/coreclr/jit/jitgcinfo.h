@@ -86,7 +86,7 @@ class GCInfo
     friend class CodeGen;
 
 private:
-    Compiler* compiler;
+    Compiler* m_compiler;
     RegSet*   regSet;
 
 public:
@@ -294,7 +294,7 @@ public:
                           UNALIGNED unsigned int* pVarPtrTableSize,
                           UNALIGNED unsigned int* pNoGCRegionCount);
 
-    bool gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum, bool* pThisKeptAliveIsInUntracked = nullptr);
+    bool gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum);
 
     size_t gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, unsigned codeSize, size_t* pArgTabOffset);
 #else

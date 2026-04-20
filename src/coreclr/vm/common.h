@@ -68,6 +68,8 @@
 #include <time.h>
 #include <limits.h>
 #include <assert.h>
+#include <cstdint>
+#include <functional>
 
 #include <olectl.h>
 
@@ -115,7 +117,6 @@ typedef DPTR(class ComCallMethodDesc)   PTR_ComCallMethodDesc;
 typedef DPTR(class CLRToCOMCallMethodDesc) PTR_CLRToCOMCallMethodDesc;
 typedef VPTR(class DebugInterface)      PTR_DebugInterface;
 typedef DPTR(class Dictionary)          PTR_Dictionary;
-typedef DPTR(class DomainAssembly)      PTR_DomainAssembly;
 typedef DPTR(struct FailedAssembly)     PTR_FailedAssembly;
 typedef VPTR(class EditAndContinueModule) PTR_EditAndContinueModule;
 typedef DPTR(class EEClass)             PTR_EEClass;
@@ -234,7 +235,7 @@ namespace Loader
 #include "utilcode.h"
 #include "log.h"
 #include "loaderheap.h"
-#include "stgpool.h"
+#include "memorystreams.h"
 
 // src/vm
 #include "gcenv.interlocked.h"
@@ -293,6 +294,7 @@ namespace Loader
 #include "threads.h"
 #include "clrex.inl"
 #include "loaderallocator.hpp"
+#include "callcounting.h"
 #include "appdomain.hpp"
 #include "appdomain.inl"
 #include "assembly.hpp"

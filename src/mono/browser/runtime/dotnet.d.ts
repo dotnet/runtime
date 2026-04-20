@@ -58,11 +58,10 @@ declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Arra
 interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: MonoConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
+     * @deprecated This method is no longer supported and will be removed in a future version.
      */
     withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
@@ -126,6 +125,10 @@ interface DotnetHostBuilder {
      */
     create(): Promise<RuntimeAPI>;
     /**
+     * @deprecated use runMain() or runMainAndExit() instead.
+     */
+    run(): Promise<number>;
+    /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
      * - dotnet.withApplicationArguments("A", "B", "C")
@@ -133,7 +136,14 @@ interface DotnetHostBuilder {
      * Note: after the runtime exits, it would reject all further calls to the API.
      * You can use runMain() if you want to keep the runtime alive.
      */
-    run(): Promise<number>;
+    runMainAndExit(): Promise<number>;
+    /**
+     * Runs the Main() method of the application and keeps the runtime alive.
+     * You can provide "command line" arguments for the Main() method using
+     * - dotnet.withApplicationArguments("A", "B", "C")
+     * - dotnet.withApplicationArgumentsFromQuery()
+     */
+    runMain(): Promise<number>;
 }
 type MonoConfig = {
     /**
@@ -290,16 +300,19 @@ type Asset = {
 type WasmAsset = Asset & {
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type AssemblyAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type PdbAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type JsAsset = Asset & {
     /**
@@ -311,16 +324,19 @@ type JsAsset = Asset & {
 };
 type SymbolsAsset = Asset & {
     name: string;
+    cache?: RequestCache;
 };
 type VfsAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type IcuAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 /**
  * A "key" is name of the file, a "value" is optional hash for integrity check.
@@ -479,7 +495,6 @@ declare const enum GlobalizationMode {
 }
 type DotnetModuleConfig = {
     config?: MonoConfig;
-    configSrc?: string;
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
@@ -511,9 +526,7 @@ type RunAPIType = {
      */
     exit: (code: number, reason?: any) => void;
     /**
-     * Sets the environment variable for the "process"
-     * @param name
-     * @param value
+     * @deprecated use withEnvironmentVariable() on the host builder instead.
      */
     setEnvironmentVariable: (name: string, value: string) => void;
     /**
@@ -705,7 +718,7 @@ type DiagnosticsAPIType = {
 type DiagnosticCommandProviderV2 = {
     keywords: [number, number];
     logLevel: number;
-    provider_name: string;
+    providerName: string;
     arguments: string | null;
 };
 type DiagnosticCommandOptions = {
@@ -777,4 +790,4 @@ declare global {
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
-export type { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI };
+export type { AssemblyAsset, Asset, AssetBehaviors, AssetEntry, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoadingResource, ModuleAPI, MonoConfig, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };

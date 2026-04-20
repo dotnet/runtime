@@ -377,7 +377,7 @@ class RefInfoListNodePool final
     static const unsigned defaultPreallocation = 8;
 
 public:
-    RefInfoListNodePool(Compiler* compiler, unsigned preallocate = defaultPreallocation);
+    RefInfoListNodePool(Compiler* m_compiler, unsigned preallocate = defaultPreallocation);
     RefInfoListNode* GetNode(RefPosition* r, GenTree* t);
     void             ReturnNode(RefInfoListNode* listNode);
 };
@@ -917,7 +917,7 @@ private:
 
     bool stressInitialParamReg()
     {
-        return compiler->compStressCompile(Compiler::STRESS_INITIAL_PARAM_REG, 25);
+        return m_compiler->compStressCompile(Compiler::STRESS_INITIAL_PARAM_REG, 25);
     }
 
     // Dump support
@@ -1053,7 +1053,7 @@ private:
     {
         if (tree->IsLocal())
         {
-            const LclVarDsc* varDsc = compiler->lvaGetDesc(tree->AsLclVarCommon());
+            const LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
             return isCandidateVar(varDsc);
         }
         return false;
@@ -1081,6 +1081,7 @@ private:
 
     // Given some tree node add refpositions for all the registers this node kills
     bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskTP killMask);
+    void updateIntervalPreferencesForKill(Interval* interval, regMaskTP killMask);
 
     SingleTypeRegSet allRegs(RegisterType rt);
     SingleTypeRegSet allByteRegs();
@@ -1101,7 +1102,7 @@ private:
         {
             assert(tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
             GenTreeLclVar* lclVar = tree->AsLclVar();
-            LclVarDsc*     varDsc = compiler->lvaGetDesc(lclVar);
+            LclVarDsc*     varDsc = m_compiler->lvaGetDesc(lclVar);
             type                  = varDsc->GetRegisterType(lclVar);
         }
         assert(type != TYP_UNDEF && type != TYP_STRUCT);
@@ -1130,14 +1131,14 @@ private:
 
     Interval* getIntervalForLocalVar(unsigned varIndex)
     {
-        assert(varIndex < compiler->lvaTrackedCount);
+        assert(varIndex < m_compiler->lvaTrackedCount);
         assert(localVarIntervals[varIndex] != nullptr);
         return localVarIntervals[varIndex];
     }
 
     Interval* getIntervalForLocalVarNode(GenTreeLclVarCommon* tree)
     {
-        const LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
+        const LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree);
         assert(varDsc->lvTracked);
         return getIntervalForLocalVar(varDsc->lvVarIndex);
     }
@@ -1393,7 +1394,7 @@ private:
         if (splitBBNumToTargetBBNumMap == nullptr)
         {
             splitBBNumToTargetBBNumMap =
-                new (getAllocator(compiler)) SplitBBNumToTargetBBNumMap(getAllocator(compiler));
+                new (getAllocator(m_compiler)) SplitBBNumToTargetBBNumMap(getAllocator(m_compiler));
         }
         return splitBBNumToTargetBBNumMap;
     }
@@ -1424,11 +1425,12 @@ private:
         if (nextConsecutiveRefPositionMap == nullptr)
         {
             nextConsecutiveRefPositionMap =
-                new (getAllocator(compiler)) NextConsecutiveRefPositionsMap(getAllocator(compiler));
+                new (getAllocator(m_compiler)) NextConsecutiveRefPositionsMap(getAllocator(m_compiler));
         }
         return nextConsecutiveRefPositionMap;
     }
     FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
+    FORCEINLINE regNumber    getNextFPRegWraparound(regNumber reg);
     SingleTypeRegSet         getOperandCandidates(GenTreeHWIntrinsic* intrinsicTree, HWIntrinsic intrin, size_t opNum);
     GenTree*                 getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool embedded = false);
     GenTree*                 getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree);
@@ -1521,13 +1523,10 @@ private:
     {
         // Conflicting def/use
         LSRA_EVENT_DEFUSE_CONFLICT,
-        LSRA_EVENT_DEFUSE_FIXED_DELAY_USE,
-        LSRA_EVENT_DEFUSE_CASE1,
-        LSRA_EVENT_DEFUSE_CASE2,
-        LSRA_EVENT_DEFUSE_CASE3,
-        LSRA_EVENT_DEFUSE_CASE4,
-        LSRA_EVENT_DEFUSE_CASE5,
-        LSRA_EVENT_DEFUSE_CASE6,
+        LSRA_EVENT_DEFUSE_DEF_IN_FIXED_USE,
+        LSRA_EVENT_DEFUSE_DEF_IN_USE,
+        LSRA_EVENT_DEFUSE_ANY_DEF,
+        LSRA_EVENT_DEFUSE_COPY,
 
         // Spilling
         LSRA_EVENT_SPILL,
@@ -1604,7 +1603,7 @@ public:
 #endif // !TRACK_LSRA_STATS
 
 private:
-    Compiler*     compiler;
+    Compiler*     m_compiler;
     CompAllocator getAllocator(Compiler* comp)
     {
         return comp->getAllocator(CMK_LSRA);
@@ -2257,7 +2256,7 @@ public:
     void microDump();
 #endif // DEBUG
 
-    void setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l);
+    void setLocalNumber(Compiler* m_compiler, unsigned lclNum, LinearScan* l);
 
     // Fixed registers for which this Interval has a preference
     SingleTypeRegSet registerPreferences;

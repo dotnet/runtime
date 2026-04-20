@@ -11,10 +11,14 @@ internal sealed class GCAllocContext : IData<GCAllocContext>
     public GCAllocContext(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.GCAllocContext);
-        Pointer = target.ReadPointer(address + (ulong)type.Fields[nameof(Pointer)].Offset);
-        Limit = target.ReadPointer(address + (ulong)type.Fields[nameof(Limit)].Offset);
+        Pointer = target.ReadPointerField(address, type, nameof(Pointer));
+        Limit = target.ReadPointerField(address, type, nameof(Limit));
+        AllocBytes = target.ReadField<long>(address, type, nameof(AllocBytes));
+        AllocBytesLoh = target.ReadField<long>(address, type, nameof(AllocBytesLoh));
     }
 
     public TargetPointer Pointer { get; init; }
     public TargetPointer Limit { get; init; }
+    public long AllocBytes { get; init; }
+    public long AllocBytesLoh { get; init; }
 }

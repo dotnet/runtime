@@ -38,8 +38,16 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
 using ILLink.Shared;
+
+#if ILTRIM
+using ILCompiler;
+using ILogger = ILCompiler.ILogWriter;
+using DependencyNode = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
+using AssemblyRootNode = ILCompiler.DependencyAnalysis.AssemblyRootNode;
+#else
 using Mono.Cecil;
 using Mono.Linker.Steps;
+#endif
 
 namespace Mono.Linker
 {
@@ -84,7 +92,9 @@ namespace Mono.Linker
         }
 
         readonly Queue<string> arguments;
+#if !ILTRIM
         bool _needAddBypassNGenStep;
+#endif
         LinkContext? context;
         protected LinkContext Context
         {
@@ -214,7 +224,7 @@ namespace Mono.Linker
         // -1 => error setting up context
         protected int SetupContext(ILogger? customLogger = null)
         {
-            Pipeline p = GetStandardPipeline();
+            var p = GetStandardPipeline();
             context = GetDefaultContext(p, customLogger);
 
             var body_substituter_steps = new Stack<string>();
@@ -230,7 +240,11 @@ namespace Mono.Linker
             MetadataTrimming metadataTrimming = MetadataTrimming.Any;
             DependenciesFileFormat fileType = DependenciesFileFormat.Xml;
 
+#if ILTRIM
+            var inputs = p;
+#else
             List<BaseStep> inputs = CreateDefaultResolvers();
+#endif
 
             while (arguments.Count > 0)
             {
@@ -391,6 +405,7 @@ namespace Mono.Linker
                             context.TrimAction = action.Value;
                             continue;
                         }
+#if !ILTRIM
                         case "--custom-step":
                             if (!GetStringParam(token, out string? custom_step))
                                 return -1;
@@ -416,6 +431,14 @@ namespace Mono.Linker
 
                             context.SetCustomData(values[0], values[1]);
                             continue;
+#else
+                        case "--parallelism":
+                            if (!GetStringParam(token, out string? parallelismValue))
+                                return -1;
+
+                            context.MaxDegreeOfParallelism = int.Parse(parallelismValue);
+                            continue;
+#endif
 
                         case "--keep-com-interfaces":
                             if (!GetBoolParam(token, l => context.KeepComInterfaces = l))
@@ -463,6 +486,13 @@ namespace Mono.Linker
                             if (!GetBoolParam(token, l => context.DisableGeneratedCodeHeuristics = l))
                                 return -1;
 
+                            continue;
+
+                        case "--typemap-entry-assembly":
+                            if (!GetStringParam(token, out string? typeMapEntryAssembly))
+                                return -1;
+
+                            context.TypeMapEntryAssembly = typeMapEntryAssembly;
                             continue;
 
                         case "--ignore-descriptors":
@@ -531,8 +561,10 @@ namespace Mono.Linker
                             //
                             if (!GetBoolParam(token, l =>
                             {
+#if !ILTRIM
                                 if (!l)
                                     p.RemoveStep(typeof(RegenerateGuidStep));
+#endif
                             }))
                                 return -1;
 
@@ -581,6 +613,7 @@ namespace Mono.Linker
                             if (!GetStringParam(token, out string? generateWarningSuppressionsArgument))
                                 return -1;
 
+#if !ILTRIM
                             if (!GetWarningSuppressionWriterFileOutputKind(generateWarningSuppressionsArgument, out var fileOutputKind))
                             {
                                 context.LogError(null, DiagnosticId.InvalidGenerateWarningSuppressionsValue, generateWarningSuppressionsArgument);
@@ -588,6 +621,7 @@ namespace Mono.Linker
                             }
 
                             context.WarningSuppressionWriter = new WarningSuppressionWriter(context, fileOutputKind);
+#endif
                             continue;
 
                         case "--notrimwarn":
@@ -738,19 +772,15 @@ namespace Mono.Linker
                                 return -1;
                             }
 
+#if !ILTRIM
                             inputs.Add(new ResolveFromXmlStep(File.OpenRead(xmlFile), xmlFile));
+#endif
                             continue;
                         }
                         case "a":
                         {
-                            if (!GetStringParam(token, out string? assemblyFile))
+                            if (!GetStringParam(token, out string? assemblyName))
                                 return -1;
-
-                            if (!File.Exists(assemblyFile) && assemblyFile.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                context.LogError(null, DiagnosticId.RootAssemblyCouldNotBeFound, assemblyFile);
-                                return -1;
-                            }
 
                             AssemblyRootMode rmode = AssemblyRootMode.AllMembers;
                             var rootMode = GetNextStringValue();
@@ -763,7 +793,11 @@ namespace Mono.Linker
                                 rmode = parsed_rmode.Value;
                             }
 
-                            inputs.Add(new RootAssemblyInput(assemblyFile, rmode));
+#if ILTRIM
+                            inputs.Add(new AssemblyRootNode(assemblyName, rmode));
+#else
+                            inputs.Add(new RootAssemblyInput(assemblyName, rmode));
+#endif
                             continue;
                         }
                         case "b":
@@ -848,6 +882,7 @@ namespace Mono.Linker
                 }
             }
 
+#if !ILTRIM
             //
             // Modify the default pipeline
             //
@@ -907,10 +942,12 @@ namespace Mono.Linker
                 if (!AddCustomStep(p, custom_step))
                     return -1;
             }
+#endif
 
             return 0;
         }
 
+#if !ILTRIM
         // Returns the exit code of the process. 0 indicates success.
         // Known non-recoverable errors (LinkerFatalErrorException) set the exit code
         // to the error code.
@@ -967,6 +1004,7 @@ namespace Mono.Linker
         }
 
         partial void PreProcessPipeline(Pipeline pipeline);
+#endif
 
         private static IEnumerable<int> ProcessWarningCodes(string value)
         {
@@ -990,6 +1028,7 @@ namespace Mono.Linker
             }
         }
 
+#if !ILTRIM
         Assembly? GetCustomAssembly(string arg)
         {
             if (Path.IsPathRooted(arg))
@@ -1217,6 +1256,7 @@ namespace Mono.Linker
 
             return (TStep?)Activator.CreateInstance(step);
         }
+#endif
 
         static string[] GetFiles(string param)
         {
@@ -1252,12 +1292,14 @@ namespace Mono.Linker
                 case "skip":
                     return AssemblyAction.Skip;
 
+#if !ILTRIM
                 case "addbypassngen":
                     _needAddBypassNGenStep = true;
                     return AssemblyAction.AddBypassNGen;
                 case "addbypassngenused":
                     _needAddBypassNGenStep = true;
                     return AssemblyAction.AddBypassNGenUsed;
+#endif
             }
 
             Context.LogError(null, DiagnosticId.InvalidAssemblyAction, s);
@@ -1351,6 +1393,7 @@ namespace Mono.Linker
             return false;
         }
 
+#if !ILTRIM
         protected static bool GetWarningSuppressionWriterFileOutputKind(string text, out WarningSuppressionWriter.FileOutputKind fileOutputKind)
         {
             switch (text.ToLowerInvariant())
@@ -1368,6 +1411,7 @@ namespace Mono.Linker
                     return false;
             }
         }
+#endif
 
         bool GetBoolParam(string token, Action<bool> action)
         {
@@ -1428,6 +1472,7 @@ namespace Mono.Linker
             return arg;
         }
 
+#if !ILTRIM
         protected virtual LinkContext GetDefaultContext(Pipeline pipeline, ILogger? logger)
         {
             return new LinkContext(pipeline, logger ?? new ConsoleLogger(), "output")
@@ -1442,6 +1487,7 @@ namespace Mono.Linker
         {
             return new List<BaseStep>();
         }
+#endif
 
         static bool IsValidAssemblyName(string value)
         {
@@ -1453,7 +1499,7 @@ namespace Mono.Linker
             Console.WriteLine(_linker);
 
             Console.WriteLine($"illink [options] {resolvers}");
-            Console.WriteLine("  -a FILE [MODE]      Assembly file used as root assembly with optional MODE value to alter default root mode");
+            Console.WriteLine("  -a ASSEMBLYNAME [MODE]  Assembly name used as root assembly with optional MODE value to alter default root mode");
             Console.WriteLine("                      Mode can be one of the following values");
             Console.WriteLine("                        all: Keep all members in root assembly");
             Console.WriteLine("                        default: Use entry point for applications and all members for libraries");
@@ -1509,34 +1555,35 @@ namespace Mono.Linker
 
             Console.WriteLine();
             Console.WriteLine("Trimming");
-            Console.WriteLine("  --disable-opt NAME [ASM]   Disable one of the default optimizations globaly or for a specific assembly name");
-            Console.WriteLine("                               beforefieldinit: Unused static fields are removed if there is no static ctor");
-            Console.WriteLine("                               ipconstprop: Interprocedural constant propagation on return values");
-            Console.WriteLine("                               overrideremoval: Overrides of virtual methods on types that are never instantiated are removed");
-            Console.WriteLine("                               unreachablebodies: Instance methods that are marked but not executed are converted to throws");
-            Console.WriteLine("                               unusedinterfaces: Removes interface types from declaration when not used");
-            Console.WriteLine("                               unusedtypechecks: Inlines never successful type checks");
-            Console.WriteLine("                               substitutefeatureguards: Substitutes properties annotated as FeatureGuard(typeof(RequiresUnreferencedCodeAttribute)) to false");
-            Console.WriteLine("  --enable-opt NAME [ASM]    Enable one of the additional optimizations globaly or for a specific assembly name");
-            Console.WriteLine("                               sealer: Any method or type which does not have override is marked as sealed");
-            Console.WriteLine("  --explicit-reflection      Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
-            Console.WriteLine("  --feature FEATURE VALUE    Apply any optimizations defined when this feature setting is a constant known at link time");
-            Console.WriteLine("  --keep-com-interfaces      Keep COM interfaces implemented by kept types. Defaults to true");
-            Console.WriteLine("  --keep-compilers-resources Keep assembly resources used for F# compilation resources. Defaults to false");
-            Console.WriteLine("  --keep-dep-attributes      Keep attributes used for manual dependency tracking. Defaults to false");
-            Console.WriteLine("  --keep-metadata NAME       Keep metadata which would otherwise be removed if not used");
-            Console.WriteLine("                               all: Metadata for any member are all kept");
-            Console.WriteLine("                               parametername: All parameter names are kept");
-            Console.WriteLine("  --new-mvid                 Generate a new guid for each linked assembly (short -g). Defaults to true");
-            Console.WriteLine("  --strip-descriptors        Remove XML descriptor resources for linked assemblies. Defaults to true");
-            Console.WriteLine("  --strip-security           Remove metadata and code related to Code Access Security. Defaults to true");
-            Console.WriteLine("  --substitutions FILE       Configuration file with field or methods substitution rules");
-            Console.WriteLine("  --ignore-substitutions     Skips reading embedded substitutions. Defaults to false");
-            Console.WriteLine("  --strip-substitutions      Remove XML substitution resources for linked assemblies. Defaults to true");
-            Console.WriteLine("  --used-attrs-only          Attribute usage is removed if the attribute type is not used. Defaults to false");
-            Console.WriteLine("  --link-attributes FILE     Supplementary custom attribute definitions for attributes controlling the trimming behavior.");
-            Console.WriteLine("  --ignore-link-attributes   Skips reading embedded attributes. Defaults to false");
-            Console.WriteLine("  --strip-link-attributes    Remove XML link attributes resources for linked assemblies. Defaults to true");
+            Console.WriteLine("  --disable-opt NAME [ASM]       Disable one of the default optimizations globaly or for a specific assembly name");
+            Console.WriteLine("                                   beforefieldinit: Unused static fields are removed if there is no static ctor");
+            Console.WriteLine("                                   ipconstprop: Interprocedural constant propagation on return values");
+            Console.WriteLine("                                   overrideremoval: Overrides of virtual methods on types that are never instantiated are removed");
+            Console.WriteLine("                                   unreachablebodies: Instance methods that are marked but not executed are converted to throws");
+            Console.WriteLine("                                   unusedinterfaces: Removes interface types from declaration when not used");
+            Console.WriteLine("                                   unusedtypechecks: Inlines never successful type checks");
+            Console.WriteLine("                                   substitutefeatureguards: Substitutes properties annotated as FeatureGuard(typeof(RequiresUnreferencedCodeAttribute)) to false");
+            Console.WriteLine("  --enable-opt NAME [ASM]        Enable one of the additional optimizations globaly or for a specific assembly name");
+            Console.WriteLine("                                   sealer: Any method or type which does not have override is marked as sealed");
+            Console.WriteLine("  --explicit-reflection          Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
+            Console.WriteLine("  --feature FEATURE VALUE        Apply any optimizations defined when this feature setting is a constant known at link time");
+            Console.WriteLine("  --typemap-entry-assembly NAME  Set the assembly name to use as entry point for TypeMap generation.");
+            Console.WriteLine("  --keep-com-interfaces          Keep COM interfaces implemented by kept types. Defaults to true");
+            Console.WriteLine("  --keep-compilers-resources     Keep assembly resources used for F# compilation resources. Defaults to false");
+            Console.WriteLine("  --keep-dep-attributes          Keep attributes used for manual dependency tracking. Defaults to false");
+            Console.WriteLine("  --keep-metadata NAME           Keep metadata which would otherwise be removed if not used");
+            Console.WriteLine("                                   all: Metadata for any member are all kept");
+            Console.WriteLine("                                   parametername: All parameter names are kept");
+            Console.WriteLine("  --new-mvid                     Generate a new guid for each linked assembly (short -g). Defaults to true");
+            Console.WriteLine("  --strip-descriptors            Remove XML descriptor resources for linked assemblies. Defaults to true");
+            Console.WriteLine("  --strip-security               Remove metadata and code related to Code Access Security. Defaults to true");
+            Console.WriteLine("  --substitutions FILE           Configuration file with field or methods substitution rules");
+            Console.WriteLine("  --ignore-substitutions         Skips reading embedded substitutions. Defaults to false");
+            Console.WriteLine("  --strip-substitutions          Remove XML substitution resources for linked assemblies. Defaults to true");
+            Console.WriteLine("  --used-attrs-only              Attribute usage is removed if the attribute type is not used. Defaults to false");
+            Console.WriteLine("  --link-attributes FILE         Supplementary custom attribute definitions for attributes controlling the trimming behavior.");
+            Console.WriteLine("  --ignore-link-attributes       Skips reading embedded attributes. Defaults to false");
+            Console.WriteLine("  --strip-link-attributes        Remove XML link attributes resources for linked assemblies. Defaults to true");
 
             Console.WriteLine();
             Console.WriteLine("Analyzer");
@@ -1563,6 +1610,7 @@ namespace Mono.Linker
             Console.WriteLine("   https://github.com/dotnet/runtime/tree/main/src/tools/illink");
         }
 
+#if !ILTRIM
         static Pipeline GetStandardPipeline()
         {
             Pipeline p = new Pipeline();
@@ -1585,5 +1633,6 @@ namespace Mono.Linker
         {
             context?.Dispose();
         }
+#endif
     }
 }

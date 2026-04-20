@@ -51,8 +51,6 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
                                       /* OUT */ emitLocation** ppStartLoc,
                                       /* OUT */ emitLocation** ppEndLoc)
 {
-    assert(UsesFunclets());
-
     if (func->funKind == FUNC_ROOT)
     {
         // Since all funclets are pulled out of line, the main code size is everything
@@ -115,22 +113,12 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
     }
     else
     {
-        EHblkDsc* HBtab = ehGetDsc(func->funEHIndex);
+        BasicBlock* const startBlock = func->GetStartBlock(this);
+        BasicBlock* const lastBlock  = func->GetLastBlock(this);
 
-        if (func->funKind == FUNC_FILTER)
-        {
-            assert(HBtab->HasFilter());
-            *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdFilter));
-            *ppEndLoc   = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
-        }
-        else
-        {
-            assert(func->funKind == FUNC_HANDLER);
-            *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
-            *ppEndLoc   = HBtab->ebdHndLast->IsLast() ? nullptr
-                                                      : new (this, CMK_UnwindInfo)
-                                                          emitLocation(ehEmitCookie(HBtab->ebdHndLast->Next()));
-        }
+        *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(startBlock));
+        *ppEndLoc =
+            lastBlock->IsLast() ? nullptr : new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(lastBlock->Next()));
     }
 }
 
@@ -196,22 +184,19 @@ void Compiler::unwindBegPrologCFI()
 {
     assert(compGeneratingProlog);
 
-    if (UsesFunclets())
+    FuncInfoDsc* func = funCurrentFunc();
+
+    // There is only one prolog for a function/funclet, and it comes first. So now is
+    // a good time to initialize all the unwind data structures.
+
+    unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
+
+    if (fgFirstColdBlock != nullptr)
     {
-        FuncInfoDsc* func = funCurrentFunc();
-
-        // There is only one prolog for a function/funclet, and it comes first. So now is
-        // a good time to initialize all the unwind data structures.
-
-        unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
-
-        if (fgFirstColdBlock != nullptr)
-        {
-            unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
-        }
-
-        func->cfiCodes = new (getAllocator(CMK_UnwindInfo)) CFICodeVector(getAllocator());
+        unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
     }
+
+    func->cfiCodes = new (getAllocator(CMK_UnwindInfo)) CFICodeVector(getAllocator());
 }
 
 void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)

@@ -35,7 +35,13 @@ namespace ILCompiler.Dataflow
 
         public CompilerGeneratedState(ILProvider ilProvider, Logger logger, bool disableGeneratedCodeHeuristics)
         {
-            _typeCacheHashtable = new TypeCacheHashtable(new AsyncMaskingILProvider(ilProvider));
+            _typeCacheHashtable = new TypeCacheHashtable(
+#if ILTRIM
+                ilProvider
+#else
+                new AsyncMaskingILProvider(ilProvider)
+#endif
+                );
             _logger = logger;
             _disableGeneratedCodeHeuristics = disableGeneratedCodeHeuristics;
         }
@@ -736,6 +742,12 @@ namespace ILCompiler.Dataflow
             userMethod = null;
             if (sourceMember == null)
                 return false;
+
+            Debug.Assert(sourceMember is not MethodDesc sourceMethod || sourceMethod.IsTypicalMethodDefinition);
+#if !ILTRIM
+            if (sourceMember is AsyncMethodVariant asyncVariant)
+                sourceMember = asyncVariant.Target;
+#endif
 
             TypeSystemEntity member = sourceMember;
             MethodDesc? userMethodCandidate;

@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 #if NET
@@ -19,6 +20,7 @@ namespace System.Text.Unicode
         // On method return, pInputBufferRemaining and pOutputBufferRemaining will both point to where
         // the next byte would have been consumed from / the next char would have been written to.
         // inputLength in bytes, outputCharsRemaining in chars.
+        [RequiresUnsafe]
         public static OperationStatus TranscodeToUtf16(byte* pInputBuffer, int inputLength, char* pOutputBuffer, int outputCharsRemaining, out byte* pInputBufferRemaining, out char* pOutputBufferRemaining)
         {
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");
@@ -837,6 +839,7 @@ namespace System.Text.Unicode
         // On method return, pInputBufferRemaining and pOutputBufferRemaining will both point to where
         // the next char would have been consumed from / the next byte would have been written to.
         // inputLength in chars, outputBytesRemaining in bytes.
+        [RequiresUnsafe]
         public static OperationStatus TranscodeToUtf8(char* pInputBuffer, int inputLength, byte* pOutputBuffer, int outputBytesRemaining, out char* pInputBufferRemaining, out byte* pOutputBufferRemaining)
         {
             const int CharsPerDWord = sizeof(uint) / sizeof(char);

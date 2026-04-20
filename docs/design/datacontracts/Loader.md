@@ -15,9 +15,12 @@ readonly struct ModuleHandle
 [Flags]
 enum ModuleFlags
 {
-    Tenured = 0x00000001, // Set once we know for sure the Module will not be freed until the appdomain itself exits
-    EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
-    ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+    Tenured = 0x1,                      // Set once we know for sure the Module will not be freed until the appdomain itself exits
+    JitOptimizationDisabled = 0x2,      // Cached flag: JIT optimizations are disabled
+    EditAndContinue = 0x8,              // Edit and Continue is enabled for this module
+    ReflectionEmit = 0x40,              // Reflection.Emit was used to create this module
+    ProfDisableOptimizations = 0x80,    // Profiler disabled JIT optimizations
+    EncCapable = 0x200,                 // Cached flag: module is Edit and Continue capable
 }
 
 [Flags]
@@ -29,7 +32,7 @@ public enum AssemblyIterationFlags
     IncludeLoading = 0x00000002, // include assemblies that are still in the process of loading
                                  // (all m_level values)
     IncludeAvailableToProfilers = 0x00000020, // include assemblies available to profilers
-                                              // See comment at code:DomainAssembly::IsAvailableToProfilers
+                                              // See comment at code:Assembly::IsAvailableToProfilers
 
     // Execution / introspection flags
     IncludeExecution = 0x00000004, // include assemblies that are loaded for execution only
@@ -62,12 +65,15 @@ TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
 TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva);
+TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
 IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
+bool IsReadyToRun(ModuleHandle handle);
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
@@ -79,12 +85,39 @@ IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table)
 bool IsCollectible(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
+TargetPointer GetSystemAssembly();
 TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
+IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
+
+DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle);
+void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits);
+```
+
+The `DebuggerAssemblyControlFlags` enum is defined as:
+```csharp
+[Flags]
+enum DebuggerAssemblyControlFlags : uint
+{
+    DACF_NONE = 0x00,
+    DACF_ALLOW_JIT_OPTS = 0x02,
+    DACF_ENC_ENABLED = 0x08,
+    DACF_CONTROL_FLAGS_MASK = 0x2E,
+}
+```
+
+The `ClrModifiableAssemblies` enum (from `EEConfig::ModifiableAssemblies`) is defined as:
+```csharp
+enum ClrModifiableAssemblies : uint
+{
+    Unset = 0,
+    None = 1,
+    Debug = 2,
+}
 ```
 
 ## Version 1
@@ -99,6 +132,7 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
+| `Module` | `SimpleName` | Simple name of the Module (UTF-8, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
 | `Module` | `AvailableTypeParams` | Pointer to an EETypeHashTable |
 | `Module` | `InstMethodHashTable` | Pointer to an InstMethodHashTable |
@@ -118,7 +152,7 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `Assembly` | `IsDynamic` | Flag indicating if this module is dynamic |
 | `Assembly` | `Error` | Pointer to exception. No error if nullptr |
 | `Assembly` | `NotifyFlags` | Flags relating to the debugger/profiler notification state of the assembly |
-| `Assembly` | `Level` | File load level of the assembly |
+| `Assembly` | `IsLoaded` | Whether assembly has been loaded |
 | `PEAssembly` | `PEImage` | Pointer to the PEAssembly's PEImage |
 | `PEAssembly` | `AssemblyBinder` | Pointer to the PEAssembly's binder |
 | `AssemblyBinder` | `AssemblyLoadContext` | Pointer to the AssemblyBinder's AssemblyLoadContext |
@@ -128,17 +162,27 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `PEImageLayout` | `Base` | Base address of the image layout |
 | `PEImageLayout` | `Size` | Size of the image layout |
 | `PEImageLayout` | `Flags` | Flags associated with the PEImageLayout |
+| `PEImageLayout` | `Format` | Format discriminator (PE or Webcil) for the image layout |
 | `CGrowableSymbolStream` | `Buffer` | Pointer to the raw symbol stream buffer start |
 | `CGrowableSymbolStream` | `Size` | Size of the raw symbol stream buffer |
 | `AppDomain` | `RootAssembly` | Pointer to the root assembly |
-| `AppDomain` | `DomainAssemblyList` | ArrayListBase of assemblies in the AppDomain |
+| `AppDomain` | `AssemblyList` | ArrayListBase of assemblies in the AppDomain |
 | `AppDomain` | `FriendlyName` | Friendly name of the AppDomain |
 | `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
+| `SystemDomain` | `SystemAssembly` | pointer to the system Assembly |
 | `LoaderAllocator` | `ReferenceCount` | Reference count of LoaderAllocator |
 | `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `StubHeap` | Stub heap of LoaderAllocator |
+| `LoaderAllocator` | `StaticsHeap` | Statics heap of LoaderAllocator |
+| `LoaderAllocator` | `ExecutableHeap` | Executable heap of LoaderAllocator |
+| `LoaderAllocator` | `FixupPrecodeHeap` | FixupPrecode heap of LoaderAllocator (optional, present when `HAS_FIXUP_PRECODE`) |
+| `LoaderAllocator` | `NewStubPrecodeHeap` | NewStubPrecode heap of LoaderAllocator (optional, present when not `FEATURE_PORTABLE_ENTRYPOINTS`) |
+| `LoaderAllocator` | `DynamicHelpersStubHeap` | DynamicHelpers stub heap of LoaderAllocator (optional, present when `FEATURE_READYTORUN && FEATURE_STUBPRECODE_DYNAMIC_HELPERS`) |
+| `LoaderAllocator` | `VirtualCallStubManager` | Pointer to the VirtualCallStubManager of LoaderAllocator |
 | `LoaderAllocator` | `ObjectHandle` | object handle of LoaderAllocator |
+| `VirtualCallStubManager` | `IndcellHeap` | Indirection cell heap of VirtualCallStubManager |
+| `VirtualCallStubManager` | `CacheEntryHeap` | Cache entry heap of VirtualCallStubManager (optional, present when `FEATURE_VIRTUAL_STUB_DISPATCH`) |
 | `ArrayListBase` | `Count` | Total number of elements in the ArrayListBase |
 | `ArrayListBase` | `FirstBlock` | First ArrayListBlock |
 | `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
@@ -157,6 +201,7 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
 | `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
 | `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
+| `EEConfig` | `ModifiableAssemblies` | Controls Edit and Continue support (ClrModifiableAssemblies enum) |
 
 
 
@@ -165,13 +210,18 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | --- | --- | --- |
 | `AppDomain` | TargetPointer | Pointer to the global AppDomain |
 | `SystemDomain` | TargetPointer | Pointer to the global SystemDomain |
+| `EEConfig` | TargetPointer | Pointer to the global EEConfig (runtime configuration) |
 
 
 ### Contract Constants:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
-| `ASSEMBLY_LEVEL_LOADED` | uint | The value of Assembly Level required for an Assembly to be considered loaded. In the runtime, this is `FILE_LOAD_DELIVER_EVENTS` | `0x4` |
 | `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
+| `DefaultDomainFriendlyName` | string | Friendly name returned when `AppDomain.FriendlyName` is null (matches native `DEFAULT_DOMAIN_FRIENDLY_NAME`) | `"DefaultDomain"` |
+| `MaxWebcilSections` | ushort | Maximum number of COFF sections supported in a Webcil image (must stay in sync with native `WEBCIL_MAX_SECTIONS`) | `16` |
+| `DebuggerInfoMask` | uint | Mask for the debugger info bits within the Module's transient flags | `0x0000FC00` |
+| `DebuggerInfoShift` | int | Bit shift for the debugger info bits within the Module's transient flags | `10` |
+| `DEBUGGER_ALLOW_JIT_OPTS_PRIV` | uint | Debugger allows JIT optimizations (shifted in transient flags) | `0x00000800` |
 
 Contracts used:
 | Contract Name |
@@ -194,6 +244,13 @@ private enum PEImageFlags : uint
 {
     FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
 };
+
+// Must stay in sync with native PEImageLayout::ImageFormat values.
+private enum ImageFormat : uint
+{
+    PE = 0,
+    Webcil = 1,
+}
 ```
 
 ### Method Implementations
@@ -215,13 +272,10 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
 
     // ArrayListBase encapsulates the data structure defined in arraylist.h
     // It handles reading each contained pointer and exposing them as a C# List
-    ArrayListBase arrayList = // read ArrayListBase starting at appDomain + AppDomain::DomainAssemblyList offset
+    ArrayListBase arrayList = // read ArrayListBase starting at appDomain + AppDomain::AssemblyList offset
 
-    foreach (TargetPointer domainAssembly in arrayList.Elements)
+    foreach (TargetPointer pAssembly in arrayList.Elements)
     {
-        // We have a list of DomainAssemblies, this class contains a single pointer to an Assembly.
-        // Therefore we can read a pointer at the DomainAssembly to access the actual Assembly.
-        TargetPointer pAssembly = target.ReadPointer(domainAssembly);
         Assembly assembly = // read Assembly object at pAssembly
 
         // The Assemblies map 1:1 to Modules, however we must filter them based on the iterationFlags before returning.
@@ -248,7 +302,7 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
             // IncludeAvailableToProfilers contains some loaded AND loading
             // assemblies.
         }
-        else if (assembly.Level >= ASSEMBLY_LEVEL_LOADED)
+        else if (assembly.IsLoaded)
         {
             if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeLoaded))
             {
@@ -288,8 +342,7 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
             if (((ModuleFlags)module.Flags).HasFlag(ModuleFlags.Tenured))
             {
                 // Un-tenured collectible assemblies should not be returned. (This can only happen in a brief
-                // window during collectible assembly creation. No thread should need to have a pointer
-                // to the just allocated DomainAssembly at this stage.)
+                // window during collectible assembly creation.
                 // the assemblies Module is not Tenured, skip
                 continue;
             }
@@ -317,8 +370,11 @@ string ILoader.GetAppDomainFriendlyName()
 {
     TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
     TargetPointer appDomain = target.ReadPointer(appDomainPointer)
-    TargetPointer pathStart = appDomain + /* AppDomain::FriendlyName offset */;
-    char[] name = // Read<char> from target starting at pathStart until null terminator
+    TargetPointer namePtr = appDomain + /* AppDomain::FriendlyName offset */;
+    // Match native AppDomain::GetFriendlyName(): return "DefaultDomain" when pointer is null.
+    if (namePtr == TargetPointer.Null)
+        return "DefaultDomain";
+    char[] name = // Read<char> from target starting at namePtr until null terminator
     return new string(name);
 }
 
@@ -359,7 +415,17 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
 
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
 {
-    if (rva == 0)
+    return GetRvaData(peAssemblyPtr, rva, isNullOk: false);
+}
+
+TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva)
+{
+    return GetRvaData(peAssemblyPtr, rva, isNullOk: true);
+}
+
+private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNullOk)
+{
+    if (rva == 0 && !isNullOk)
         return TargetPointer.Null;
     TargetPointer peImage = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
     if(peImage == TargetPointer.Null)
@@ -382,48 +448,91 @@ TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
     }
     else
     {
-        // find NT headers using DOS header
-        uint dosHeaderLfanew = target.Read<uint>(baseAddress + /* ImageDosHeader::LfanewOffset */);
-        TargetPointer ntHeadersPtr = baseAddress + dosHeaderLfanew;
-
-        TargetPointer optionalHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */;
-
-        // Get number of sections from file header
-        TargetPointer fileHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::FileHeaderOffset */;
-        uint numberOfSections = target.Read<uint>(fileHeaderPtr + /* ImageFileHeader::NumberOfSectionsOffset */);
-
-        // Calculate first section address (after NT headers and optional header)
-        uint imageFileHeaderSize = target.Read<ushort>(fileHeaderPtr + /* ImageFileHeader::SizeOfOptionalHeaderOffset */);
-        TargetPointer firstSectionPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */ + imageFileHeaderSize;
-
-        // Find the section containing this RVA
-        TargetPointer sectionPtr = TargetPointer.Null;
-        uint sectionHeaderSize = /* sizeof(ImageSectionHeader native struct) */;
-
-        for (uint i = 0; i < numberOfSections; i++)
-        {
-            TargetPointer currentSectionPtr = firstSectionPtr + (i * sectionHeaderSize);
-            uint virtualAddress = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
-            uint sizeOfRawData = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::SizeOfRawDataOffset */);
-
-            if (rva >= VirtualAddress && rva < VirtualAddress + SizeOfRawData)
-            {
-                sectionPtr = currentSectionPtr;
-            }
-        }
-        if (sectionPtr == TargetPointer.Null)
-        {
-            throw new InvalidOperationException("Failed to read from image.");
-        }
-        else
-        {
-            // Convert RVA to file offset using section information
-            uint sectionVirtualAddress = target.Read<uint>(sectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
-            uint sectionPointerToRawData = target.Read<uint>(sectionPtr + /* ImageSectionHeader::PointerToRawDataOffset */);
-            offset = ((rva - sectionVirtualAddress) + sectionPointerToRawData);
-        }
+        offset = RvaToOffset(rva, peImageLayout);
     }
     return baseAddress + offset;
+}
+
+uint RvaToOffset(int rva, Data.PEImageLayout imageLayout)
+{
+    uint format = target.Read<uint>(imageLayout + /* PEImageLayout::Format offset */);
+    if (format == (uint)ImageFormat.Webcil)
+        return WebcilRvaToOffset(rva, imageLayout);
+
+    TargetPointer baseAddress = target.ReadPointer(imageLayout + /* PEImageLayout::Base offset */);
+
+    // find NT headers using DOS header
+    uint dosHeaderLfanew = target.Read<uint>(baseAddress + /* ImageDosHeader::LfanewOffset */);
+    TargetPointer ntHeadersPtr = baseAddress + dosHeaderLfanew;
+
+    // Get number of sections from file header
+    TargetPointer fileHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::FileHeaderOffset */;
+    uint numberOfSections = target.Read<uint>(fileHeaderPtr + /* ImageFileHeader::NumberOfSectionsOffset */);
+
+    // Calculate first section address (after NT headers and optional header)
+    uint imageFileHeaderSize = target.Read<ushort>(fileHeaderPtr + /* ImageFileHeader::SizeOfOptionalHeaderOffset */);
+    TargetPointer firstSectionPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */ + imageFileHeaderSize;
+
+    // Find the section containing this RVA
+    TargetPointer sectionPtr = TargetPointer.Null;
+    uint sectionHeaderSize = /* sizeof(ImageSectionHeader native struct) */;
+
+    for (uint i = 0; i < numberOfSections; i++)
+    {
+        TargetPointer currentSectionPtr = firstSectionPtr + (i * sectionHeaderSize);
+        uint virtualAddress = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
+        uint sizeOfRawData = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::SizeOfRawDataOffset */);
+
+        if (rva >= virtualAddress && rva < virtualAddress + sizeOfRawData)
+        {
+            sectionPtr = currentSectionPtr;
+        }
+    }
+    if (sectionPtr == TargetPointer.Null)
+    {
+        throw new InvalidOperationException("Failed to read from image.");
+    }
+
+    // Convert RVA to file offset using section information
+    uint sectionVirtualAddress = target.Read<uint>(sectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
+    uint sectionPointerToRawData = target.Read<uint>(sectionPtr + /* ImageSectionHeader::PointerToRawDataOffset */);
+    return (rva - sectionVirtualAddress) + sectionPointerToRawData;
+}
+
+uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
+{
+    if (rva < 0)
+        throw new InvalidOperationException("Negative RVA in Webcil image.");
+
+    TargetPointer headerBase = imageLayout.Base;
+    // The webcil specification is found at docs/design/mono/webcil.md
+    Data.WebcilHeader webcilHeader = // read WebcilHeader at headerBase
+    uint webcilHeaderSize = /* sizeof(WebcilHeader) + 4 if the VersionMajor of the header is 1 or greater */; // Size is defined in webcil spec
+    uint webcilSectionSize = /* sizeof(WebcilSectionHeader) */; // Size is defined in webcil spec
+
+    ushort numSections = webcilHeader.CoffSections;
+    if (numSections == 0 || numSections > MaxWebcilSections)
+        throw new InvalidOperationException("Invalid Webcil section count.");
+
+    TargetPointer sectionTableBase = headerBase + webcilHeaderSize;
+
+    for (int i = 0; i < numSections; i++)
+    {
+        TargetPointer sectionPtr = sectionTableBase + (uint)(i * (int)webcilSectionSize);
+        Data.WebcilSectionHeader section = // read WebcilSectionHeader at sectionPtr
+
+        uint rvaUnsigned = (uint)rva;
+        if (rvaUnsigned >= section.VirtualAddress)
+        {
+            uint offset = rvaUnsigned - section.VirtualAddress;
+            if (offset < section.VirtualSize && offset < section.SizeOfRawData)
+            {
+                return offset + section.PointerToRawData;
+            }
+        }
+    }
+
+    throw new InvalidOperationException("Failed to resolve RVA in Webcil image.");
 }
 
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
@@ -492,6 +601,16 @@ private static ModuleFlags GetFlags(uint flags)
 ModuleFlags GetFlags(ModuleHandle handle)
 {
     return GetFlags(target.Read<uint>(handle.Address + /* Module::Flags offset */));
+}
+
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName)
+{
+    TargetPointer simpleNameStart = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
+    if (simpleNameStart == TargetPointer.Null)
+        return false;
+    byte[] simpleNameBytes = // Read<byte> from target starting at simpleNameStart until null terminator
+    simpleName = // convert to string, throw on invalid UTF-8
+    return true;
 }
 
 string GetPath(ModuleHandle handle)
@@ -611,15 +730,22 @@ bool IsDynamic(ModuleHandle handle)
 bool IsAssemblyLoaded(ModuleHandle handle)
 {
     TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
-    uint loadLevel = target.Read<uint>(assembly + /* Assembly::Level*/);
-    return assembly.Level >= ASSEMBLY_LEVEL_LOADED;
+    bool isLoaded = target.Read<byte>(assembly + /* Assembly::IsLoaded*/) != 0;
+    return isLoaded;
 }
 
 TargetPointer GetGlobalLoaderAllocator()
 {
     TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
     TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
-    return target.ReadPointer(systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */);
+    return systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */;
+}
+
+TargetPointer GetSystemAssembly()
+{
+    TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
+    TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
+    return target.ReadPointer(systemDomain + /* SystemDomain::SystemAssembly offset */);
 }
 
 TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
@@ -640,6 +766,44 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer)
 {
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::ObjectHandle offset */);
+}
+
+IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
+{
+    // Read LoaderAllocator data
+    LoaderAllocator la = // read LoaderAllocator object at loaderAllocatorPointer
+
+    // Always-present heaps
+    Dictionary<string, TargetPointer> heaps = {
+        ["LowFrequencyHeap"] = la.LowFrequencyHeap,
+        ["HighFrequencyHeap"] = la.HighFrequencyHeap,
+        ["StaticsHeap"] = la.StaticsHeap,
+        ["StubHeap"] = la.StubHeap,
+        ["ExecutableHeap"] = la.ExecutableHeap,
+    };
+
+    // Feature-conditional heaps: only included when the data descriptor field exists
+    if (LoaderAllocator type has "FixupPrecodeHeap" field)
+        heaps["FixupPrecodeHeap"] = la.FixupPrecodeHeap;
+
+    if (LoaderAllocator type has "NewStubPrecodeHeap" field)
+        heaps["NewStubPrecodeHeap"] = la.NewStubPrecodeHeap;
+
+    if (LoaderAllocator type has "DynamicHelpersStubHeap" field)
+        heaps["DynamicHelpersStubHeap"] = la.DynamicHelpersStubHeap;
+
+    // VirtualCallStubManager heaps: only included when VirtualCallStubManager is non-null
+    if (la.VirtualCallStubManager != null)
+    {
+        VirtualCallStubManager vcsMgr = // read VirtualCallStubManager object at la.VirtualCallStubManager
+
+        heaps["IndcellHeap"] = vcsMgr.IndcellHeap;
+
+        if (VirtualCallStubManager type has "CacheEntryHeap" field)
+            heaps["CacheEntryHeap"] = vcsMgr.CacheEntryHeap;
+    }
+
+    return heaps;
 }
 
 private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
@@ -681,6 +845,36 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
     SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
     Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
     return /* blob entry IL address */
+}
+
+DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle)
+{
+    uint flags = // read Module::Flags at handle.Address + Flags offset
+    return (DebuggerAssemblyControlFlags)((flags & DebuggerInfoMask) >> DebuggerInfoShift);
+}
+
+void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits)
+{
+    uint currentFlags = // read Module::Flags at handle.Address + Flags offset
+    uint debuggerInfoBitsMask = DebuggerInfoMask >> DebuggerInfoShift;
+    uint updated = (currentFlags & ~DebuggerInfoMask) | (((uint)newBits & debuggerInfoBitsMask) << DebuggerInfoShift);
+
+    bool jitOptDisabled = (updated & DEBUGGER_ALLOW_JIT_OPTS_PRIV) == 0 || (updated & PROF_DISABLE_OPTIMIZATIONS) != 0;
+    // Set or clear IS_JIT_OPTIMIZATION_DISABLED accordingly.
+
+    if ((updated & IS_ENC_CAPABLE) != 0)
+    {
+        ClrModifiableAssemblies modifiable = // read EEConfig::ModifiableAssemblies from g_pConfig
+        if (modifiable != None)
+        {
+            bool encRequested = (newBits & DACF_ENC_ENABLED) != 0;
+            bool setEnC = encRequested || (modifiable == Debug && jitOptDisabled);
+            if (setEnC)
+                updated |= IS_EDIT_AND_CONTINUE;
+        }
+    }
+
+    // Write updated flags back to handle.Address + Flags offset
 }
 ```
 

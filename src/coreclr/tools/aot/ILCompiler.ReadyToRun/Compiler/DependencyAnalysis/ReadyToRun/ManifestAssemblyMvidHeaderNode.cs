@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _manifestNode = manifestNode;
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool IsShareable => false;
 

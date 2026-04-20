@@ -254,7 +254,18 @@ namespace Mono.Linker.Steps
         {
             InitializeCorelibAttributeXml();
             Context.Pipeline.InitializeMarkHandlers(Context, MarkContext);
-            _typeMapHandler.Initialize(Context, this, Annotations.GetEntryPointAssembly());
+
+            // Check for TypeMappingEntryAssembly override
+            AssemblyDefinition? startingAssembly = null;
+            if (Context.TypeMapEntryAssembly is not null)
+            {
+                var assemblyName = AssemblyNameReference.Parse(Context.TypeMapEntryAssembly);
+                startingAssembly = Context.TryResolve(assemblyName);
+            }
+            // If resolution fails, fall back to entry point assembly
+            startingAssembly ??= Annotations.GetEntryPointAssembly();
+
+            _typeMapHandler.Initialize(Context, this, startingAssembly);
             ProcessMarkedPending();
         }
 
@@ -1451,7 +1462,7 @@ namespace Mono.Linker.Steps
             return !Annotations.SetProcessed(provider);
         }
 
-        public void MarkAssembly(AssemblyDefinition assembly, DependencyInfo reason, MessageOrigin origin)
+        public virtual void MarkAssembly(AssemblyDefinition assembly, DependencyInfo reason, MessageOrigin origin)
         {
             Annotations.Mark(assembly, reason, origin);
             if (CheckProcessed(assembly))
@@ -1478,6 +1489,8 @@ namespace Mono.Linker.Steps
                     disableMarkingOfCopyAssembliesValue != "true")
                 {
                     MarkEntireAssembly(assembly, assemblyOrigin);
+                    // For copy/save assemblies, also mark scopes of type references, since they won't be rewritten.
+                    TypeReferenceMarker.MarkTypeReferences(assembly, MarkingHelpers);
                 }
                 return;
             }
@@ -1508,8 +1521,14 @@ namespace Mono.Linker.Steps
             foreach (TypeDefinition type in module.Types)
                 MarkEntireType(type, new DependencyInfo(DependencyKind.TypeInAssembly, assembly), origin);
 
-            // Mark scopes of type references and exported types.
-            TypeReferenceMarker.MarkTypeReferences(assembly, MarkingHelpers);
+            MarkExportedTypes(assembly, origin);
+        }
+
+        void MarkExportedTypes(AssemblyDefinition assembly, MessageOrigin origin)
+        {
+            ModuleDefinition module = assembly.MainModule;
+            foreach (ExportedType exportedType in module.ExportedTypes)
+                MarkingHelpers.MarkExportedType(exportedType, module, new DependencyInfo(DependencyKind.ExportedType, assembly), origin);
         }
 
         sealed class TypeReferenceMarker : TypeReferenceWalker
@@ -1535,7 +1554,6 @@ namespace Mono.Linker.Steps
 
             protected override void ProcessExportedType(ExportedType exportedType)
             {
-                markingHelpers.MarkExportedType(exportedType, assembly.MainModule, new DependencyInfo(DependencyKind.ExportedType, assembly), new MessageOrigin(assembly));
                 markingHelpers.MarkForwardedScope(CreateTypeReferenceForExportedTypeTarget(exportedType), new MessageOrigin(assembly));
             }
 
@@ -1845,7 +1863,7 @@ namespace Mono.Linker.Steps
             MarkType(field.FieldType, new DependencyInfo(DependencyKind.FieldType, field), fieldOrigin);
             MarkCustomAttributes(field, new DependencyInfo(DependencyKind.CustomAttribute, field), fieldOrigin);
             MarkMarshalSpec(field, new DependencyInfo(DependencyKind.FieldMarshalSpec, field), fieldOrigin);
-            DoAdditionalFieldProcessing(field);
+            DoAdditionalFieldProcessing(field, fieldOrigin);
 
             // If we accessed a field on a type and the type has explicit/sequential layout, make sure to keep
             // all the other fields.
@@ -2151,7 +2169,6 @@ namespace Mono.Linker.Steps
                 handleMarkType(type);
 
             MarkType(type.BaseType, new DependencyInfo(DependencyKind.BaseType, type), typeOrigin);
-            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in typeOrigin, this, Context, type.BaseType);
 
             // The DynamicallyAccessedMembers hierarchy processing must be done after the base type was marked
             // (to avoid inconsistencies in the cache), but before anything else as work done below
@@ -2239,7 +2256,7 @@ namespace Mono.Linker.Steps
                 }
             }
 
-            DoAdditionalTypeProcessing(type);
+            DoAdditionalTypeProcessing(type, typeOrigin);
 
             ApplyPreserveInfo(type);
             ApplyPreserveMethods(type, typeOrigin);
@@ -2258,27 +2275,27 @@ namespace Mono.Linker.Steps
         }
 
         // Allow subclassers to mark additional things
-        protected virtual void DoAdditionalTypeProcessing(TypeDefinition type)
+        protected virtual void DoAdditionalTypeProcessing(TypeDefinition type, MessageOrigin origin)
         {
         }
 
         // Allow subclassers to mark additional things
-        protected virtual void DoAdditionalFieldProcessing(FieldDefinition field)
+        protected virtual void DoAdditionalFieldProcessing(FieldDefinition field, MessageOrigin origin)
         {
         }
 
         // Allow subclassers to mark additional things
-        protected virtual void DoAdditionalPropertyProcessing(PropertyDefinition property)
+        protected virtual void DoAdditionalPropertyProcessing(PropertyDefinition property, MessageOrigin origin)
         {
         }
 
         // Allow subclassers to mark additional things
-        protected virtual void DoAdditionalEventProcessing(EventDefinition evt)
+        protected virtual void DoAdditionalEventProcessing(EventDefinition evt, MessageOrigin origin)
         {
         }
 
         // Allow subclassers to mark additional things
-        protected virtual void DoAdditionalInstantiatedTypeProcessing(TypeDefinition type)
+        protected virtual void DoAdditionalInstantiatedTypeProcessing(TypeDefinition type, MessageOrigin origin)
         {
         }
 
@@ -2362,10 +2379,10 @@ namespace Mono.Linker.Steps
         }
 
         [GeneratedRegex("{[^{}]+}")]
-        private static partial Regex DebuggerDisplayAttributeValueRegex();
+        private static partial Regex DebuggerDisplayAttributeValueRegex { get; }
 
         [GeneratedRegex(@".+,\s*nq")]
-        private static partial Regex ContainsNqSuffixRegex();
+        private static partial Regex ContainsNqSuffixRegex { get; }
 
         void MarkTypeWithDebuggerDisplayAttribute(TypeDefinition type, CustomAttribute attribute, MessageOrigin origin)
         {
@@ -2394,14 +2411,14 @@ namespace Mono.Linker.Steps
             if (string.IsNullOrEmpty(displayString))
                 return;
 
-            foreach (Match match in DebuggerDisplayAttributeValueRegex().Matches(displayString))
+            foreach (Match match in DebuggerDisplayAttributeValueRegex.Matches(displayString))
             {
                 // Remove '{' and '}'
                 string realMatch = match.Value.Substring(1, match.Value.Length - 2);
 
                 // Remove ",nq" suffix if present
                 // (it asks the expression evaluator to remove the quotes when displaying the final value)
-                if (ContainsNqSuffixRegex().IsMatch(realMatch))
+                if (ContainsNqSuffixRegex.IsMatch(realMatch))
                 {
                     realMatch = realMatch.Substring(0, realMatch.LastIndexOf(','));
                 }
@@ -2915,23 +2932,16 @@ namespace Mono.Linker.Steps
         {
             var arguments = instance.GenericArguments;
 
-            IGenericParameterProvider? generic_element = GetGenericProviderFromInstance(instance);
-            Collection<GenericParameter>? parameters = generic_element?.GenericParameters;
-
             for (int i = 0; i < arguments.Count; i++)
             {
                 var argument = arguments[i];
-                var parameter = parameters?[i];
 
                 var argumentTypeDef = MarkType(argument, new DependencyInfo(DependencyKind.GenericArgumentType, instance), origin);
                 if (argumentTypeDef == null)
                     continue;
 
                 MarkRelevantToVariantCasting(argumentTypeDef);
-
-                if (parameter?.HasDefaultConstructorConstraint == true)
-                    MarkDefaultConstructor(argumentTypeDef, new DependencyInfo(DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance), origin);
-            }
+           }
         }
 
         IGenericParameterProvider? GetGenericProviderFromInstance(IGenericInstance instance)
@@ -3457,13 +3467,13 @@ namespace Mono.Linker.Steps
                 }
             }
 
-            DoAdditionalMethodProcessing(method);
+            DoAdditionalMethodProcessing(method, methodOrigin);
 
             ApplyPreserveMethods(method, methodOrigin);
         }
 
         // Allow subclassers to mark additional things when marking a method
-        protected virtual void DoAdditionalMethodProcessing(MethodDefinition method)
+        protected virtual void DoAdditionalMethodProcessing(MethodDefinition method, MessageOrigin origin)
         {
         }
 
@@ -3528,7 +3538,7 @@ namespace Mono.Linker.Steps
 
             _typeMapHandler.ProcessInstantiated(type);
 
-            DoAdditionalInstantiatedTypeProcessing(type);
+            DoAdditionalInstantiatedTypeProcessing(type, typeOrigin);
         }
 
         void MarkRuntimeInterfaceImplementation(MethodDefinition method, MethodReference ov)
@@ -3746,7 +3756,7 @@ namespace Mono.Linker.Steps
 
             // Consider making this more similar to MarkEvent method?
             MarkCustomAttributes(prop, new DependencyInfo(DependencyKind.CustomAttribute, prop), propertyOrigin);
-            DoAdditionalPropertyProcessing(prop);
+            DoAdditionalPropertyProcessing(prop, propertyOrigin);
         }
 
         protected internal virtual void MarkEvent(EventDefinition evt, in DependencyInfo reason, MessageOrigin origin)
@@ -3763,7 +3773,7 @@ namespace Mono.Linker.Steps
 
             var eventOrigin = new MessageOrigin(evt);
             MarkCustomAttributes(evt, new DependencyInfo(DependencyKind.CustomAttribute, evt), eventOrigin);
-            DoAdditionalEventProcessing(evt);
+            DoAdditionalEventProcessing(evt, eventOrigin);
         }
 
         internal void MarkMethodIfNotNull(MethodReference method, in DependencyInfo reason, in MessageOrigin origin)

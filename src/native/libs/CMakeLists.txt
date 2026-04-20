@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 include(CheckCCompilerFlag)
 
@@ -19,6 +19,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(STATIC_LIBS_ONLY 1)
     set(GEN_SHARED_LIB 0)
+    add_definitions(-DGEN_PINVOKE=${GEN_PINVOKE})
     if (NOT STATIC_LIB_DESTINATION)
         if (BUILD_LIBS_NATIVE_BROWSER)
             set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/lib)
@@ -39,7 +40,7 @@ endif ()
 
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(CMAKE_MACOSX_RPATH ON)
-    if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE_MOBILE)
         set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
         set(CMAKE_INSTALL_NAME_DIR "@rpath")
     endif ()
@@ -113,9 +114,7 @@ else ()
     add_subdirectory(System.Globalization.Native)
 endif ()
 
-if (NOT CORERUN_LIBS_ONLY)
-    add_subdirectory(System.IO.Compression.Native)
-endif ()
+add_subdirectory(System.IO.Compression.Native)
 
 # Only when Browser for CoreCLR
 if (CLR_CMAKE_TARGET_BROWSER AND BUILD_LIBS_NATIVE_BROWSER)

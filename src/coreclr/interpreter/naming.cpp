@@ -266,7 +266,7 @@ void AppendMethodName(COMP_HANDLE comp,
 
         // Does it have a 'this' pointer? Don't count explicit this, which has
         // the this pointer type as the first element of the arg type list
-        if (includeThisSpecifier && sig->hasThis() && !sig->hasExplicitThis())
+        if (includeThisSpecifier && sig->hasImplicitThis())
         {
             printer->Append(":this", 5);
         }

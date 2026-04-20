@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: debugger.h
 //
-
-//
 // Header file for Runtime Controller classes of the CLR Debugging Services.
-//
 //*****************************************************************************
 
 #ifndef DEBUGGER_H_
@@ -48,6 +46,7 @@
 #include "dllimportcallback.h"
 
 #include "canary.h"
+#include "cdacdata.h"
 
 #undef ASSERT
 #define CRASH(x)  _ASSERTE(!(x))
@@ -381,13 +380,9 @@ inline LPVOID PushedRegAddr(REGDISPLAY* pRD, LPVOID pAddr)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
     if ( ((UINT_PTR)(pAddr) >= (UINT_PTR)pRD->pCurrentContextPointers) &&
          ((UINT_PTR)(pAddr) <= ((UINT_PTR)pRD->pCurrentContextPointers + sizeof(T_KNONVOLATILE_CONTEXT_POINTERS))) )
-#else
-    if ( ((UINT_PTR)(pAddr) >= (UINT_PTR)pRD->pContext) &&
-         ((UINT_PTR)(pAddr) <= ((UINT_PTR)pRD->pContext + sizeof(T_CONTEXT))) )
-#endif
+
         return NULL;
 
     // (Microsoft 2/9/07 - putting this in an else clause confuses gcc for some reason, so I've moved
@@ -444,7 +439,7 @@ typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
 class DebuggerModule
 {
   public:
-    DebuggerModule(Module * pRuntimeModule, DomainAssembly * pDomainAssembly);
+    DebuggerModule(Module * pRuntimeModule, Assembly * pAssembly);
 
     // Do we have any optimized code in the module?
     // JMC-probes aren't emitted in optimized code,
@@ -460,10 +455,10 @@ class DebuggerModule
 
     Module * GetRuntimeModule();
 
-    DomainAssembly * GetDomainAssembly()
+    Assembly * GetAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pRuntimeDomainAssembly;
+        return m_pRuntimeAssembly;
     }
 
     void SetCanChangeJitFlags(bool fCanChangeJitFlags);
@@ -472,7 +467,7 @@ class DebuggerModule
     BOOL            m_enableClassLoadCallbacks;
 
     PTR_Module     m_pRuntimeModule;
-    PTR_DomainAssembly m_pRuntimeDomainAssembly;
+    PTR_Assembly   m_pRuntimeAssembly;
 
     // Can we change jit flags on the module?
     // This is true during the Module creation
@@ -907,6 +902,7 @@ private:
 
 
     friend class Debugger;
+    friend struct ::cdac_data<DebuggerRCThread>;
     Debugger*                       m_debugger;
 
     // IPC_TARGET_* define default targets - if we ever want to do
@@ -1319,9 +1315,7 @@ private:
 
 class DebuggerJitInfo;
 
-#if defined(FEATURE_EH_FUNCLETS)
 const int PARENT_METHOD_INDEX     = -1;
-#endif // FEATURE_EH_FUNCLETS
 
 class CodeRegionInfo
 {
@@ -1600,10 +1594,8 @@ public:
     // The version number of this jitted code
     SIZE_T                   m_encVersion;
 
-#if defined(FEATURE_EH_FUNCLETS)
     DWORD                   *m_rgFunclet;
     int                      m_funcletCount;
-#endif // FEATURE_EH_FUNCLETS
 
 #ifndef DACCESS_COMPILE
 
@@ -1630,9 +1622,7 @@ public:
 
     private:
         SIZE_T m_ilOffset;
-#ifdef FEATURE_EH_FUNCLETS
         int m_funcletIndex;
-#endif
     };
 
     struct NativeOffset
@@ -1679,10 +1669,8 @@ public:
     SIZE_T MapSpecialToNative(CorDebugMappingResult mapping,
                               SIZE_T which,
                               BOOL *pfAccurate);
-#if defined(FEATURE_EH_FUNCLETS)
     void   MapSpecialToNative(int funcletIndex, DWORD* pPrologEndOffset, DWORD* pEpilogStartOffset);
     SIZE_T MapILOffsetToNativeForSetIP(SIZE_T offsetILTo, int funcletIndexFrom, EHRangeTree* pEHRT, BOOL* pExact);
-#endif // FEATURE_EH_FUNCLETS
 
     // MapNativeOffsetToIL Takes a given nativeOffset, and maps it back
     //      to the corresponding IL offset, which it returns.  If mapping indicates
@@ -1696,7 +1684,6 @@ public:
 
     void Init(TADDR newAddress);
 
-#if defined(FEATURE_EH_FUNCLETS)
     enum GetFuncletIndexMode
     {
         GFIM_BYOFFSET,
@@ -1707,7 +1694,6 @@ public:
     DWORD GetFuncletOffsetByIndex(int index);
     int   GetFuncletIndex(CORDB_ADDRESS offset, GetFuncletIndexMode mode);
     int   GetFuncletCount() {return m_funcletCount;}
-#endif // FEATURE_EH_FUNCLETS
 
     void SetVars(ULONG32 cVars, ICorDebugInfo::NativeVarInfo *pVars);
     void SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap);
@@ -1878,7 +1864,6 @@ extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size
 // Forward declare some parameter marshalling structs
 struct ShouldAttachDebuggerParams;
 struct EnsureDebuggerAttachedParams;
-struct SendMDANotificationParams;
 class DebuggerSteppingInfo;
 
 // class Debugger:  This class implements DebugInterface to provide
@@ -1907,9 +1892,6 @@ public:
     SVAL_DECL(BOOL, s_fCanChangeNgenFlags);
 
     friend class DebuggerLazyInit;
-#ifdef TEST_DATA_CONSISTENCY
-    friend class DataTest;
-#endif
 
     // Checks if the JitInfos table has been allocated, and if not does so.
     HRESULT inline CheckInitMethodInfoTable();
@@ -1948,9 +1930,6 @@ public:
     void LazyInit(); // will throw
     HRESULT LazyInitWrapper(); // calls LazyInit and converts to HR.
 
-    // Helper on startup to notify debugger
-    void RaiseStartupNotification();
-
     // Send a raw managed debug event over the managed pipeline.
     void SendRawEvent(const DebuggerIPCEvent * pManagedEvent);
 
@@ -1975,9 +1954,8 @@ public:
                     LPCWSTR pszModuleName,
                     DWORD dwModuleName,
                     Assembly *pAssembly,
-                    DomainAssembly * pDomainAssembly,
                     BOOL fAttaching);
-    DebuggerModule * AddDebuggerModule(DomainAssembly * pDomainAssembly);
+    DebuggerModule * AddDebuggerModule(Assembly * pAssembly);
 
     void UnloadModule(Module* pRuntimeModule);
     void DestructModule(Module *pModule);
@@ -2004,7 +1982,7 @@ public:
 
     BOOL ShouldSendCatchHandlerFound(Thread* pThread);
 
-    BOOL ShouldSendCustomNotification(DomainAssembly *pAssembly, mdTypeDef typeDef);
+    BOOL ShouldSendCustomNotification(Assembly *pAssembly, mdTypeDef typeDef);
 
     void SendCatchHandlerFound(Thread *pThread,
                                FramePointer fp,
@@ -2150,8 +2128,7 @@ public:
 
     bool HandleIPCEvent(DebuggerIPCEvent* event);
 
-    DebuggerModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
-    DebuggerModule * LookupOrCreateModule(DomainAssembly * pDomainAssembly);
+    DebuggerModule * LookupOrCreateModule(VMPTR_Assembly vmAssembly);
     DebuggerModule * LookupOrCreateModule(Module * pModule);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
@@ -2347,10 +2324,6 @@ public:
         SString *   pMessage);
 
 
-    // Helper function to send MDA notification
-    void SendRawMDANotification(SendMDANotificationParams * params);
-    static void SendMDANotificationOnHelperThreadProxy(SendMDANotificationParams * params);
-
     // Returns a bitfield reflecting the managed debugging state at the time of
     // the jit attach.
     CLR_DEBUGGING_PROCESS_FLAGS GetAttachStateFlags();
@@ -2526,17 +2499,7 @@ public:
     }
 
     // send a custom debugger notification to the RS
-    void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomain, mdTypeDef classToken);
-
-    // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
-    void SendMDANotification(
-        Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString * szName,
-        SString * szDescription,
-        SString * szXML,
-        CorDebugMDAFlags flags,
-        BOOL bAttach
-    );
+    void SendCustomDebuggerNotification(Thread * pThread, Assembly * pAssembly, mdTypeDef classToken);
 
 
     void EnableLogMessages (bool fOnOff) {LIMITED_METHOD_CONTRACT;  m_LoggingEnabled = fOnOff;}
@@ -2622,7 +2585,7 @@ public:
     void AppDomainCreated(AppDomain * pAppDomain);
 
     // Notify the debugger that an assembly has been unloaded
-    void UnloadAssembly(DomainAssembly * pDomainAssembly);
+    void UnloadAssembly(Assembly * pAssembly);
 
     HRESULT FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo, BYTE **argDataArea, DebuggerEval **debuggerEvalKey);
     HRESULT FuncEvalAbort(DebuggerEval *debuggerEvalKey);
@@ -2699,6 +2662,7 @@ public:
 #ifndef DACCESS_COMPILE
     virtual void OnMethodEnter(void * pIP);
     virtual DWORD* GetJMCFlagAddr(Module * pModule);
+    virtual bool IsMethodEnterEnabled();
 #endif
 
     // GetJMCFlagAddr provides a unique flag for each module. UpdateModuleJMCFlag
@@ -2759,6 +2723,7 @@ private:
         // AppDomain, Thread, are already initialized
     }
 
+public:
     // Let this function to figure out the unique Id that we will use for Thread.
     void InitIPCEvent(DebuggerIPCEvent *ipce,
                       DebuggerIPCEventType type,
@@ -2780,14 +2745,13 @@ private:
         ipce->vmThread.SetRawPtr(pThread);
     }
 
+private:
     void InitIPCEvent(DebuggerIPCEvent *ipce,
                       DebuggerIPCEventType type)
     {
         WRAPPER_NO_CONTRACT;
 
-        _ASSERTE((type == DB_IPCE_SYNC_COMPLETE) ||
-                 (type == DB_IPCE_TEST_CRST) ||
-                 (type == DB_IPCE_TEST_RWLOCK));
+        _ASSERTE(type == DB_IPCE_SYNC_COMPLETE);
 
         Thread *pThread = g_pEEInterface->GetThread();
         InitIPCEvent(ipce,
@@ -2925,6 +2889,7 @@ private:
 
     // DacDbiInterfaceImpl needs to be able to write to private fields in the debugger class.
     friend class DacDbiInterfaceImpl;
+    friend struct ::cdac_data<Debugger>;
 
     // Set OOP by RS to request a sync after a debug event.
     // Clear by LS when we sync.
@@ -3916,6 +3881,21 @@ HANDLE OpenWin32EventOrThrow(
 
 // Include all of the inline stuff now.
 #include "debugger.inl"
+
+template<>
+struct cdac_data<Debugger>
+{
+    static constexpr size_t RCThread = offsetof(Debugger, m_pRCThread);
+    static constexpr size_t RSRequestedSync = offsetof(Debugger, m_RSRequestedSync);
+    static constexpr size_t SendExceptionsOutsideOfJMC = offsetof(Debugger, m_sendExceptionsOutsideOfJMC);
+    static constexpr size_t GCNotificationEventsEnabled = offsetof(Debugger, m_isGarbageCollectionEventsEnabled);
+};
+
+template<>
+struct cdac_data<DebuggerRCThread>
+{
+    static constexpr size_t DCB = offsetof(DebuggerRCThread, m_pDCB);
+};
 
 
 //

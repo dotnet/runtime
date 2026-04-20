@@ -10,6 +10,7 @@
 #define _PEDECODER_INL_
 
 #include "pedecoder.h"
+#include "cordecoderhelpers.h"
 #include "ex.h"
 
 #ifndef DACCESS_COMPILE
@@ -700,33 +701,17 @@ inline RVA PEDecoder::OffsetToRva(COUNT_T fileOffset) const
 
 inline BOOL PEDecoder::IsStrongNameSigned() const
 {
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(HasCorHeader());
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return ((GetCorHeader()->Flags & VAL32(COMIMAGE_FLAGS_STRONGNAMESIGNED)) != 0);
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+    return CorDecoderHelpers::IsStrongNameSigned(*this);
 }
 
 
 inline BOOL PEDecoder::HasStrongNameSignature() const
 {
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(HasCorHeader());
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return (GetCorHeader()->StrongNameSignature.VirtualAddress != 0);
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+    return CorDecoderHelpers::HasStrongNameSignature(*this);
 }
 
 inline CHECK PEDecoder::CheckStrongNameSignature() const
@@ -743,29 +728,6 @@ inline CHECK PEDecoder::CheckStrongNameSignature() const
     CONTRACT_CHECK_END;
 
     return CheckDirectory(&GetCorHeader()->StrongNameSignature, IMAGE_SCN_MEM_WRITE, NULL_OK);
-}
-
-inline PTR_CVOID PEDecoder::GetStrongNameSignature(COUNT_T *pSize) const
-{
-    CONTRACT(PTR_CVOID)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(HasCorHeader());
-        PRECONDITION(HasStrongNameSignature());
-        PRECONDITION(CheckStrongNameSignature());
-        PRECONDITION(CheckPointer(pSize, NULL_OK));
-        NOTHROW;
-        GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->StrongNameSignature;
-
-    if (pSize != NULL)
-        *pSize = VAL32(pDir->Size);
-
-    RETURN dac_cast<PTR_CVOID>(GetDirectoryData(pDir));
 }
 
 inline BOOL PEDecoder::HasTls() const
@@ -863,7 +825,7 @@ inline IMAGE_COR20_HEADER *PEDecoder::GetCorHeader() const
     CONTRACT_END;
 
     if (m_pCorHeader == NULL)
-        const_cast<PEDecoder *>(this)->m_pCorHeader =
+        m_pCorHeader =
             dac_cast<PTR_IMAGE_COR20_HEADER>(FindCorHeader());
 
     RETURN m_pCorHeader;
@@ -979,42 +941,28 @@ inline CHECK PEDecoder::CheckBounds(RVA rangeBase, COUNT_T rangeSize, RVA rva)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-    CHECK(CheckOverflow(rangeBase, rangeSize));
-    CHECK(rva >= rangeBase);
-    CHECK(rva <= rangeBase + rangeSize);
-    CHECK_OK;
+    return CorDecoderHelpers::CheckBounds(rangeBase, rangeSize, rva);
 }
 
 inline CHECK PEDecoder::CheckBounds(RVA rangeBase, COUNT_T rangeSize, RVA rva, COUNT_T size)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-    CHECK(CheckOverflow(rangeBase, rangeSize));
-    CHECK(CheckOverflow(rva, size));
-    CHECK(rva >= rangeBase);
-    CHECK(rva + size <= rangeBase + rangeSize);
-    CHECK_OK;
+    return CorDecoderHelpers::CheckBounds(rangeBase, rangeSize, rva, size);
 }
 
 inline CHECK PEDecoder::CheckBounds(const void *rangeBase, COUNT_T rangeSize, const void *pointer)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-    CHECK(CheckOverflow(dac_cast<PTR_CVOID>(rangeBase), rangeSize));
-    CHECK(dac_cast<TADDR>(pointer) >= dac_cast<TADDR>(rangeBase));
-    CHECK(dac_cast<TADDR>(pointer) <= dac_cast<TADDR>(rangeBase) + rangeSize);
-    CHECK_OK;
+    return CorDecoderHelpers::CheckBounds(rangeBase, rangeSize, pointer);
 }
 
 inline CHECK PEDecoder::CheckBounds(PTR_CVOID rangeBase, COUNT_T rangeSize, PTR_CVOID pointer, COUNT_T size)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-    CHECK(CheckOverflow(rangeBase, rangeSize));
-    CHECK(CheckOverflow(pointer, size));
-    CHECK(dac_cast<TADDR>(pointer) >= dac_cast<TADDR>(rangeBase));
-    CHECK(dac_cast<TADDR>(pointer) + size <= dac_cast<TADDR>(rangeBase) + rangeSize);
-    CHECK_OK;
+    return CorDecoderHelpers::CheckBounds(rangeBase, rangeSize, pointer, size);
 }
 
 inline void PEDecoder::GetPEKindAndMachine(DWORD * pdwPEKind, DWORD *pdwMachine)

@@ -7,7 +7,7 @@
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
     .extern RhpCidResolve
-    .extern RhpUniversalTransition_DebugStepTailCall
+    .extern RhpUniversalTransitionTailCall
 
 //
 // Cache miss case, call the runtime to resolve the target and update the cache.
@@ -20,7 +20,7 @@
         //  xip1: parameter of the thunk's target
         PREPARE_EXTERNAL_VAR RhpCidResolve, xip0
         mov xip1, x11
-        b       C_FUNC(RhpUniversalTransition_DebugStepTailCall)
+        b       C_FUNC(RhpUniversalTransitionTailCall)
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

@@ -42,7 +42,7 @@ namespace ILCompiler
             new("--optimize-space", "--Os") { Description = SR.OptimizeSpaceOption };
         public Option<bool> OptimizeTime { get; } =
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
-        public Option<bool> EnableCachedInterfaceDispatchSupport { get; } =
+        public Option<bool?> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
         public Option<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
@@ -54,6 +54,8 @@ namespace ILCompiler
             new("--composite") { Description = SR.CompositeBuildMode };
         public Option<string> CompositeKeyFile { get; } =
             new("--compositekeyfile") { Description = SR.CompositeKeyFile };
+        public Option<string> ReadyToRunHeaderSymbolName { get; } =
+            new("--rtr-header-symbol-name") { Description = SR.ReadyToRunHeaderSymbolName };
         public Option<bool> CompileNoMethods { get; } =
             new("--compile-no-methods") { Description = SR.CompileNoMethodsOption };
         public Option<bool> OutNearInput { get; } =
@@ -142,6 +144,12 @@ namespace ILCompiler
             new("--make-repro-path") { Description = "Path where to place a repro package" };
         public Option<bool> HotColdSplitting { get; } =
             new("--hot-cold-splitting") { Description = SR.HotColdSplittingOption };
+        public Option<bool> StripInliningInfo { get; } =
+            new("--strip-inlining-info") { Description = SR.StripInliningInfoOption };
+        public Option<bool> StripDebugInfo { get; } =
+            new("--strip-debug-info") { Description = SR.StripDebugInfoOption };
+        public Option<bool> StripILBodies { get; } =
+            new("--strip-il-bodies") { Description = SR.StripILBodiesOption };
         public Option<bool> SynthesizeRandomMibc { get; } =
             new("--synthesize-random-mibc");
 
@@ -175,6 +183,7 @@ namespace ILCompiler
             Options.Add(InputBubbleReferenceFilePaths);
             Options.Add(Composite);
             Options.Add(CompositeKeyFile);
+            Options.Add(ReadyToRunHeaderSymbolName);
             Options.Add(CompileNoMethods);
             Options.Add(OutNearInput);
             Options.Add(SingleFileCompilation);
@@ -219,6 +228,9 @@ namespace ILCompiler
             Options.Add(CallChainProfileFile);
             Options.Add(MakeReproPath);
             Options.Add(HotColdSplitting);
+            Options.Add(StripInliningInfo);
+            Options.Add(StripDebugInfo);
+            Options.Add(StripILBodies);
             Options.Add(SynthesizeRandomMibc);
             Options.Add(DeterminismStress);
 
@@ -296,8 +308,8 @@ namespace ILCompiler
             Console.WriteLine(SR.DashDashHelp);
             Console.WriteLine();
 
-            string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64"};
-            string[] ValidOS = new string[] {"windows", "linux", "osx", "ios", "iossimulator", "maccatalyst"};
+            string[] ValidArchitectures = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
+            string[] ValidOS = ["windows", "linux", "osx", "ios", "iossimulator", "maccatalyst", "browser"];
 
             Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
             Console.WriteLine();
@@ -416,6 +428,7 @@ namespace ILCompiler
             {
                 "pe" => ReadyToRunContainerFormat.PE,
                 "macho" => ReadyToRunContainerFormat.MachO,
+                "wasm" => ReadyToRunContainerFormat.Wasm,
                 _ => throw new CommandLineException(SR.InvalidOutputFormat)
             };
         }

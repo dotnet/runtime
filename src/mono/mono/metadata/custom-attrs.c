@@ -313,7 +313,9 @@ load_cattr_value (MonoImage *image, MonoType *t, MonoObject **out_obj, const cha
 {
 	int type = t->type;
 	guint32 slen;
-	MonoClass *tklass = m_type_data_get_klass (t);
+	MonoClass *tklass = NULL;
+	if (type != MONO_TYPE_GENERICINST)
+		tklass = m_type_data_get_klass (t);
 
 	if (out_obj)
 		*out_obj = NULL;
@@ -339,9 +341,9 @@ handle_enum:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_BOOLEAN: {
-		MonoBoolean *bval = (MonoBoolean *)g_malloc (sizeof (MonoBoolean));
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
+		MonoBoolean *bval = (MonoBoolean *)g_malloc (sizeof (MonoBoolean));
 		*bval = *p;
 		*end = p + 1;
 		return bval;
@@ -349,9 +351,9 @@ handle_enum:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I2: {
-		guint16 *val = (guint16 *)g_malloc (sizeof (guint16));
 		if (!bcheck_blob (p, 1, boundp, error))
 			return NULL;
+		guint16 *val = (guint16 *)g_malloc (sizeof (guint16));
 		*val = read16 (p);
 		*end = p + 2;
 		return val;
@@ -363,9 +365,9 @@ handle_enum:
 	case MONO_TYPE_R4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I4: {
-		guint32 *val = (guint32 *)g_malloc (sizeof (guint32));
 		if (!bcheck_blob (p, 3, boundp, error))
 			return NULL;
+		guint32 *val = (guint32 *)g_malloc (sizeof (guint32));
 		*val = read32 (p);
 		*end = p + 4;
 		return val;
@@ -376,17 +378,17 @@ handle_enum:
 #endif
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8: {
-		guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
 		if (!bcheck_blob (p, 7, boundp, error))
 			return NULL;
+		guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
 		*val = read64 (p);
 		*end = p + 8;
 		return val;
 	}
 	case MONO_TYPE_R8: {
-		double *val = (double *)g_malloc (sizeof (double));
 		if (!bcheck_blob (p, 7, boundp, error))
 			return NULL;
+		double *val = (double *)g_malloc (sizeof (double));
 		readr8 (p, val);
 		*end = p + 8;
 		return val;
@@ -667,9 +669,9 @@ handle_enum:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_BOOLEAN: {
-		MonoBoolean *bval = (MonoBoolean *)g_malloc (sizeof (MonoBoolean));
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
+		MonoBoolean *bval = (MonoBoolean *)g_malloc (sizeof (MonoBoolean));
 		*bval = *p;
 		*end = p + 1;
 		result->value.primitive = bval;
@@ -678,9 +680,9 @@ handle_enum:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I2: {
-		guint16 *val = (guint16 *)g_malloc (sizeof (guint16));
 		if (!bcheck_blob (p, 1, boundp, error))
 			return NULL;
+		guint16 *val = (guint16 *)g_malloc (sizeof (guint16));
 		*val = read16 (p);
 		*end = p + 2;
 		result->value.primitive = val;
@@ -693,9 +695,9 @@ handle_enum:
 	case MONO_TYPE_R4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I4: {
-		guint32 *val = (guint32 *)g_malloc (sizeof (guint32));
 		if (!bcheck_blob (p, 3, boundp, error))
 			return NULL;
+		guint32 *val = (guint32 *)g_malloc (sizeof (guint32));
 		*val = read32 (p);
 		*end = p + 4;
 		result->value.primitive = val;
@@ -707,18 +709,18 @@ handle_enum:
 #endif
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8: {
-		guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
 		if (!bcheck_blob (p, 7, boundp, error))
 			return NULL;
+		guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
 		*val = read64 (p);
 		*end = p + 8;
 		result->value.primitive = val;
 		return result;
 	}
 	case MONO_TYPE_R8: {
-		double *val = (double *)g_malloc (sizeof (double));
 		if (!bcheck_blob (p, 7, boundp, error))
 			return NULL;
+		double *val = (double *)g_malloc (sizeof (double));
 		readr8 (p, val);
 		*end = p + 8;
 		result->value.primitive = val;
@@ -858,7 +860,7 @@ load_cattr_value_boxed (MonoDomain *domain, MonoImage *image, MonoType *t, const
 		gpointer val = load_cattr_value (image, t, &obj, p, boundp, end, error);
 		if (!is_ok (error))
 			return NULL;
-		g_assert (!val);
+		g_assert ((!val) || (val && t->type == MONO_TYPE_GENERICINST));
 		return obj;
 	} else {
 		void *val = load_cattr_value (image, t, NULL, p, boundp, end, error);

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // vars.hpp
 //
 // Global variables
 //
-
 
 #ifndef _VARS_HPP
 #define _VARS_HPP
@@ -33,13 +33,25 @@ class LoaderHeap;
 class IGCHeap;
 class Object;
 class StringObject;
-class ArrayClass;
 class MethodTable;
 class MethodDesc;
 class SyncBlockCache;
 class SyncTableEntry;
 class ThreadStore;
 namespace ETW { class CEtwTracer; };
+#ifdef FEATURE_COMWRAPPERS
+inline constexpr size_t g_numKnownQueryInterfaceImplementations = 2;
+namespace InteropLib { namespace ABI {
+    struct ComInterfaceDispatch;
+    using QueryInterfaceMethod = HRESULT (STDMETHODCALLTYPE *)(InteropLib::ABI::ComInterfaceDispatch*, REFIID, void**);
+#ifndef DACCESS_COMPILE
+    extern QueryInterfaceMethod g_knownQueryInterfaceImplementations[g_numKnownQueryInterfaceImplementations];
+#endif // !DACCESS_COMPILE
+} }
+
+GARY_DECL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
+
+#endif // FEATURE_COMWRAPPERS
 class DebugInterface;
 class DebugInfoManager;
 class EEDbgInterfaceImpl;
@@ -365,11 +377,11 @@ GVAL_DECL(DWORD,            g_TlsIndex);
 GVAL_DECL(DWORD,            g_offsetOfCurrentThreadInfo);
 GVAL_DECL(DWORD,            g_gcNotificationFlags);
 
-#ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);
 GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
-#endif
+
+GPTR_DECL(MethodDesc,       g_pEnvironmentCallEntryPointMethodDesc);
 
 // Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
 GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);
@@ -534,14 +546,8 @@ inline bool CORDebuggerAttached()
     return (g_CORDebuggerControlFlags & DBCF_ATTACHED) && !IsAtProcessExit();
 }
 
-// This only check debugger bits. However JIT optimizations can be disabled by other ways on a module
-// In most cases Module::AreJITOptimizationsDisabled() should be the prefered for checking if JIT optimizations
-// are disabled for a module (it does check both debugger bits and profiler jit deoptimization flag)
 #define CORDebuggerAllowJITOpts(dwDebuggerBits)           \
-    (((dwDebuggerBits) & DACF_ALLOW_JIT_OPTS)             \
-     ||                                                   \
-     ((g_CORDebuggerControlFlags & DBCF_ALLOW_JIT_OPT) && \
-      !((dwDebuggerBits) & DACF_USER_OVERRIDE)))
+    (((dwDebuggerBits) & DACF_ALLOW_JIT_OPTS) != 0)
 
 #define CORDebuggerEnCMode(dwDebuggerBits)                         \
     ((dwDebuggerBits) & DACF_ENC_ENABLED)

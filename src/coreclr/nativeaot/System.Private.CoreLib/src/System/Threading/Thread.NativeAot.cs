@@ -272,24 +272,12 @@ namespace System.Threading
 
         private int SetThreadStateBit(ThreadState bit)
         {
-            int oldState, newState;
-            do
-            {
-                oldState = _threadState;
-                newState = oldState | (int)bit;
-            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
-            return oldState;
+            return Interlocked.Or(ref _threadState, (int)bit);
         }
 
         private int ClearThreadStateBit(ThreadState bit)
         {
-            int oldState, newState;
-            do
-            {
-                oldState = _threadState;
-                newState = oldState & ~(int)bit;
-            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
-            return oldState;
+            return Interlocked.And(ref _threadState, ~(int)bit);
         }
 
         internal void SetWaitSleepJoinState()
@@ -318,16 +306,6 @@ namespace System.Threading
                     SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             return millisecondsTimeout;
-        }
-
-        public bool Join(int millisecondsTimeout)
-        {
-            VerifyTimeoutMilliseconds(millisecondsTimeout);
-            if (GetThreadStateBit(ThreadState.Unstarted))
-            {
-                throw new ThreadStateException(SR.ThreadState_NotStarted);
-            }
-            return JoinInternal(millisecondsTimeout);
         }
 
         /// <summary>

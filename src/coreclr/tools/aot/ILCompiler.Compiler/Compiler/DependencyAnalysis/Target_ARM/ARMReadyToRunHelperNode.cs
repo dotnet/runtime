@@ -3,7 +3,10 @@
 
 using System;
 using System.Diagnostics;
+
+using Internal.Text;
 using Internal.TypeSystem;
+
 using ILCompiler.DependencyAnalysis.ARM;
 
 namespace ILCompiler.DependencyAnalysis
@@ -128,7 +131,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
-                            encoder.EmitJMP(factory.ExternFunctionSymbol("RhpResolveInterfaceMethod"));
+                            encoder.EmitJMP(factory.ExternFunctionSymbol(s_RhpResolveInterfaceMethod));
                         }
                         else
                         {
@@ -142,7 +145,7 @@ namespace ILCompiler.DependencyAnalysis
                             int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
                             Debug.Assert(slot != -1);
                             encoder.EmitLDR(encoder.TargetRegister.Result, encoder.TargetRegister.Result,
-                                            ((short)(EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize))));
+                                            (short)(EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize)));
                             encoder.EmitRET();
                         }
                     }

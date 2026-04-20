@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using Xunit;
+using TestLibrary;
 
 public struct MyValueType
 {
@@ -14,6 +15,7 @@ public abstract class Test_test13394
 {
     public abstract void M(MyValueType v);
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

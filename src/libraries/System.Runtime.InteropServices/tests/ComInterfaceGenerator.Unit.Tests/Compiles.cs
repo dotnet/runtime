@@ -12,8 +12,8 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop.UnitTests;
 using Xunit;
-using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
-using VerifyVTableGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.VtableIndexStubGenerator>;
+using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>;
+using VerifyVTableGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.VtableIndexStubGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -349,6 +349,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("ref readonly") };
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("in") };
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("out") };
+            yield return new object[] { ID(), codeSnippets.ComInterfaceWithNativeMarshalling };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeWithUnsafeBaseMethod };
         }
 
         public static IEnumerable<object[]> ManagedToUnmanagedComInterfaceSnippetsToCompile()
@@ -370,6 +372,29 @@ namespace ComInterfaceGenerator.Unit.Tests
         public async Task ValidateComInterfaceSnippets(string id, string source)
         {
             _ = id;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task PartialMethodModifierOnComInterfaceMethodCompiles()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                internal partial interface IComInterface
+                {
+                    void Method();
+                    public virtual partial void PartialMethod();
+                }
+                internal partial interface IComInterface
+                {
+                    public virtual partial void PartialMethod() { }
+                }
+                """;
 
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
         }
@@ -409,7 +434,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator>(false)
+            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>(false)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,

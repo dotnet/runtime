@@ -33,7 +33,7 @@ The paths to major components can be overridden using `IlcToolsPath`, `IlcSdkPat
 Run `build[.cmd|.sh] -c Release` from the repo root to build the NativeAOT toolchain packages. The build will place the toolchain packages at `artifacts\packages\Release\Shipping`. To publish your project using these packages:
 
 * Add the package directory to your `nuget.config` file. For example, add `<add key="local" value="C:\runtime\artifacts\packages\Release\Shipping" />`
-* Run `dotnet add package Microsoft.DotNet.ILCompiler -v 10.0.0-dev` to add the local package reference to your project.
+* Run `dotnet add package Microsoft.DotNet.ILCompiler -v 11.0.0-dev` to add the local package reference to your project.
 * Run `dotnet publish --packages pkg -r [win-x64|linux-x64|osx-64] -c [Debug|Release]` to publish your project. `--packages pkg` option restores the package into a local directory that is easy to cleanup once you are done. It avoids polluting the global nuget cache with your locally built dev package.
 
 ## High Level Overview
@@ -95,7 +95,10 @@ If you haven't built the tests yet, run `src\tests\build.cmd nativeaot [Debug|Re
 
 To run all the tests that got built, run `src\tests\run.cmd runnativeaottests [Debug|Release]` on Windows, or `src/tests/run.sh --runnativeaottests [Debug|Release]` on Linux. The `Debug`/`Release` flag should match the flag that was passed to `build.cmd` in the previous step.
 
-To build an individual test, follow the instructions for compiling a individual test project located in [Building an Individual Test](/docs/workflow/testing/coreclr/testing.md#building-an-individual-test), but add `/t:BuildNativeAot /p:TestBuildMode=nativeaot` to the build command.
+To build an individual test, follow the instructions for compiling an individual test project located in [Building an Individual Test](/docs/workflow/testing/coreclr/testing.md#building-an-individual-test) with these additional arguments:
+
+ * For the build `build[.cmd|.sh]` script, add the `nativeaot`/`-nativeaot` command line parameter such as `.\src\tests\build.cmd nativeaot test ...` or `./src/tests/build.sh -nativeaot test ...`
+ * For the `dotnet build` workflow, add `-t:BuildNativeAot -p:TestBuildMode=nativeaot`
 
 To run an individual test (after it was built), navigate to the `artifacts\tests\coreclr\[windows|linux|osx[.x64.[Debug|Release]\$path_to_test` directory. `$path_to_test` matches the subtree of `src\tests`. You should see a `[.cmd|.sh]` file there. This file is a script that will compile and launch the individual test for you. Before invoking the script, set the following environment variables:
 

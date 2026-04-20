@@ -589,6 +589,7 @@ namespace System.Reflection.Metadata
             }
 
             int start = ReserveBytesImpl(byteCount);
+            Array.Clear(_buffer, start, byteCount);
             return new Blob(_buffer, start, byteCount);
         }
 
@@ -822,7 +823,7 @@ namespace System.Reflection.Metadata
         public void WriteByte(byte value)
         {
             int start = ReserveBytesPrimitive(sizeof(byte));
-            _buffer.WriteByte(start, value);
+            _buffer[start] = value;
         }
 
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>

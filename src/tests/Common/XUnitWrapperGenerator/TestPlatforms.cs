@@ -13,7 +13,7 @@ namespace Xunit
         OSX = 4,
         FreeBSD = 8,
         NetBSD = 16,
-        illumos= 32,
+        illumos = 32,
         Solaris = 64,
         iOS = 128,
         tvOS = 256,
@@ -22,7 +22,9 @@ namespace Xunit
         MacCatalyst = 2048,
         LinuxBionic = 4096,
         Wasi = 8192,
-        AnyUnix = FreeBSD | Linux | NetBSD | OSX | illumos | Solaris | iOS | tvOS | MacCatalyst | Android | Browser | LinuxBionic | Wasi,
+        Haiku = 16384,
+        AnyUnix = FreeBSD | Linux | NetBSD | OSX | illumos | Solaris | iOS | tvOS | MacCatalyst | Android | Browser | LinuxBionic | Wasi | Haiku,
+        AnyApple = OSX | iOS | tvOS | MacCatalyst,
         Any = ~0
     }
 }

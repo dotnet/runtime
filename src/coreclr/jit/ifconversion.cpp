@@ -23,12 +23,12 @@ class OptIfConversionDsc
 public:
     OptIfConversionDsc(Compiler* comp, BasicBlock* startBlock)
     {
-        m_comp       = comp;
+        m_compiler   = comp;
         m_startBlock = startBlock;
     }
 
 private:
-    Compiler* m_comp; // The Compiler instance.
+    Compiler* m_compiler; // The Compiler instance.
 
     BasicBlock* m_startBlock;           // First block in the If Conversion.
     BasicBlock* m_finalBlock = nullptr; // Block where the flows merge. In a return case, this can be nullptr.
@@ -45,17 +45,12 @@ private:
     IfConvertOperation m_thenOperation; // The single operation in the Then case.
     IfConvertOperation m_elseOperation; // The single operation in the Else case.
 
-    int m_checkLimit = 4; // Max number of chained blocks to allow in both the True and Else cases.
-
     genTreeOps m_mainOper         = GT_COUNT; // The main oper of the if conversion.
     bool       m_doElseConversion = false;    // Does the If conversion have an else statement.
-    bool       m_flowFound        = false;    // Has a valid flow been found.
 
-    bool IfConvertCheckInnerBlockFlow(BasicBlock* block);
-    bool IfConvertCheckThenFlow();
-    void IfConvertFindFlow();
-    bool IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOperation* foundOperation);
-    void IfConvertJoinStmts(BasicBlock* fromBlock);
+    bool IfConvertCheck();
+    bool IfConvertCheckFlow();
+    bool IfConvertCheckStmts(BasicBlock* block, IfConvertOperation* foundOperation);
 
     GenTree* TryTransformSelectOperOrLocal(GenTree* oper, GenTree* lcl);
     GenTree* TryTransformSelectOperOrZero(GenTree* oper, GenTree* lcl);
@@ -69,311 +64,159 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-// IfConvertCheckInnerBlockFlow
+// IfConvertCheck
 //
-// Check if the flow of a block is valid for use as an inner block (either a Then or Else block)
-// in an If Conversion.
-//
-// Assumptions:
-//   m_startBlock and m_doElseConversion are set.
-//
-// Arguments:
-//   block -- Block to check.
-//
-// Returns:
-//   True if Checks are ok, else false.
-//
-bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
-{
-    // Block should have a single successor or be a return.
-    if (!(block->GetUniqueSucc() != nullptr || (m_doElseConversion && (block->KindIs(BBJ_RETURN)))))
-    {
-        return false;
-    }
-
-    // Check that we have linear flow and are still in the same EH region
-
-    if (block->GetUniquePred(m_comp) == nullptr)
-    {
-        return false;
-    }
-
-    if (!BasicBlock::sameEHRegion(block, m_startBlock))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-//-----------------------------------------------------------------------------
-// IfConvertCheckThenFlow
-//
-// Check all the Then blocks between m_startBlock and m_finalBlock are valid.
-//
-// Assumptions:
-//   m_startBlock, m_finalBlock and m_doElseConversion are set.
-//
-// Returns:
-//   If a conversion is found, then set m_flowFound and return true.
-//   If a conversion is not found, and it's ok to keep searching, return true.
-//   Otherwise, return false.
-//
+// Check whether the JTRUE block and its successors can be expressed as a SELECT.
+// In the process, get the data required to perform the transformation.
 // Notes:
-//   Sets m_flowFound and m_mainOper.
+//   Sets m_finalBlock, m_doElseConversion, m_thenOperation, m_elseOperation and m_mainOper
 //
-bool OptIfConversionDsc::IfConvertCheckThenFlow()
+bool OptIfConversionDsc::IfConvertCheck()
 {
-    m_flowFound           = false;
-    BasicBlock* thenBlock = m_startBlock->GetFalseTarget();
-
-    for (int thenLimit = 0; thenLimit < m_checkLimit; thenLimit++)
+    if (!IfConvertCheckFlow())
     {
-        if (!IfConvertCheckInnerBlockFlow(thenBlock))
-        {
-            // Then block is not in a valid flow.
-            return true;
-        }
-        BasicBlock* thenBlockNext = thenBlock->GetUniqueSucc();
+        return false;
+    }
 
-        if (thenBlockNext == m_finalBlock)
-        {
-            // All the Then blocks up to m_finalBlock are in a valid flow.
-            m_flowFound = true;
-            if (thenBlock->KindIs(BBJ_RETURN))
-            {
-                assert(m_finalBlock == nullptr);
-                m_mainOper = GT_RETURN;
-            }
-            else
-            {
-                m_mainOper = GT_STORE_LCL_VAR;
-            }
-            return true;
-        }
+    if (!IfConvertCheckStmts(m_startBlock->GetFalseTarget(), &m_thenOperation))
+    {
+        return false;
+    }
 
-        if (thenBlockNext == nullptr)
+    m_mainOper = m_thenOperation.node->OperGet();
+    assert(m_mainOper == GT_RETURN || m_mainOper == GT_STORE_LCL_VAR);
+
+    if (m_doElseConversion)
+    {
+        if (!IfConvertCheckStmts(m_startBlock->GetTrueTarget(), &m_elseOperation))
         {
-            // Invalid Then and Else combination.
             return false;
         }
 
-        thenBlock = thenBlockNext;
+        // Both operations are the same node type.
+        assert(m_thenOperation.node->OperGet() == m_elseOperation.node->OperGet());
+
+        // Currently can only support Else Store Blocks that have the same destination as the Then block.
+        if (m_mainOper == GT_STORE_LCL_VAR)
+        {
+            unsigned lclNumThen = m_thenOperation.node->AsLclVarCommon()->GetLclNum();
+            unsigned lclNumElse = m_elseOperation.node->AsLclVarCommon()->GetLclNum();
+
+            if (lclNumThen != lclNumElse)
+            {
+                return false;
+            }
+        }
     }
 
-    // Nothing found. Still valid to continue.
     return true;
 }
 
 //-----------------------------------------------------------------------------
-// IfConvertFindFlow
+// IfConvertCheckFlow
 //
-// Find a valid if conversion flow from m_startBlock to a final block.
-// There might be multiple Then and Else blocks in the flow - use m_checkLimit to limit this.
+// Check if there is a valid flow from m_startBlock to a final block.
 //
 // Notes:
-//   Sets m_flowFound, m_finalBlock, m_doElseConversion and m_mainOper.
+//   Sets m_finalBlock and m_doElseConversion.
 //
-void OptIfConversionDsc::IfConvertFindFlow()
+bool OptIfConversionDsc::IfConvertCheckFlow()
 {
-    // First check for flow with no else case. The final block is the destination of the jump.
-    m_doElseConversion = false;
-    m_finalBlock       = m_startBlock->GetTrueTarget();
-    assert(m_finalBlock != nullptr);
-    if (!IfConvertCheckThenFlow() || m_flowFound)
+    BasicBlock* falseBb = m_startBlock->GetFalseTarget();
+    BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
+
+    if (falseBb->GetUniquePred(m_compiler) == nullptr)
     {
-        // Either the flow is invalid, or a flow was found.
-        return;
+        return false;
     }
 
-    // Look for flows with else blocks. The final block is the block after the else block.
-    m_doElseConversion = true;
-    for (int elseLimit = 0; elseLimit < m_checkLimit; elseLimit++)
+    m_doElseConversion = trueBb->GetUniquePred(m_compiler) != nullptr;
+    m_finalBlock       = m_doElseConversion ? trueBb->GetUniqueSucc() : trueBb;
+
+    // m_finalBlock is only allowed to be null if both return.
+    // E.g: Then block exits by throwing an exception => we bail here.
+    if (m_finalBlock == nullptr && (!falseBb->KindIs(BBJ_RETURN) || !trueBb->KindIs(BBJ_RETURN)))
     {
-        BasicBlock* elseBlock = m_finalBlock;
-        if (elseBlock == nullptr || !IfConvertCheckInnerBlockFlow(elseBlock))
-        {
-            // Need a valid else block in a valid flow .
-            return;
-        }
-
-        m_finalBlock = elseBlock->GetUniqueSucc();
-
-        if (!IfConvertCheckThenFlow() || m_flowFound)
-        {
-            // Either the flow is invalid, or a flow was found.
-            return;
-        }
+        return false;
     }
+
+    return falseBb->GetUniqueSucc() == m_finalBlock;
 }
 
 //-----------------------------------------------------------------------------
 // IfConvertCheckStmts
 //
-// From the given block to the final block, check all the statements and nodes are
-// valid for an If conversion. Chain of blocks must contain only a single local
-// store and no other operations.
+// Check whether the statements in the block are valid for an If conversion.
+// It must contain only a single RETURN or STORE node. NOPs are ignored.
 //
 // Arguments:
-//   fromBlock      - Block inside the if statement to start from (Either Then or Else path).
-//   foundOperation - Returns the found operation.
+//   block          - Block to check
+//   foundOperation - The found operation
 //
 // Returns:
-//   If everything is valid, then set foundOperation to the store and return true.
-//   Otherwise return false.
+//   True if the statements are valid for an If conversion. In that case foundOperation is also set.
 //
-bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOperation* foundOperation)
+bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperation* foundOperation)
 {
     bool found = false;
 
-    for (BasicBlock* block = fromBlock; block != m_finalBlock; block = block->GetUniqueSucc())
+    // Can all the nodes within the block be made to conditionally execute?
+    for (Statement* stmt : block->Statements())
     {
-        assert(block != nullptr);
-
-        // Can all the nodes within the block be made to conditionally execute?
-        for (Statement* const stmt : block->Statements())
+        GenTree* tree = stmt->GetRootNode();
+        if (tree->OperIs(GT_STORE_LCL_VAR, GT_RETURN))
         {
-            GenTree* tree = stmt->GetRootNode();
-            switch (tree->OperGet())
+            // Operation has multiple statements which is not supported by SELECT
+            if (found)
             {
-                case GT_STORE_LCL_VAR:
-                {
-                    // Only one per operation per block can be conditionally executed.
-                    if (found)
-                    {
-                        return false;
-                    }
-
-                    // Ensure the local has integer type.
-                    if (!varTypeIsIntegralOrI(tree))
-                    {
-                        return false;
-                    }
-
-#ifndef TARGET_64BIT
-                    // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
-                    // handle contained relops efficiently after decomposition.
-                    if (varTypeIsLong(tree))
-                    {
-                        return false;
-                    }
-#endif
-                    GenTree* op1 = tree->AsLclVar()->Data();
-
-                    // Ensure it won't cause any additional side effects.
-                    if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
-                    {
-                        return false;
-                    }
-
-                    // Ensure the source isn't a phi.
-                    if (op1->OperIs(GT_PHI))
-                    {
-                        return false;
-                    }
-
-                    // Evaluating unconditionally effectively has the same effect as reordering
-                    // with the condition (for example, the condition could be an explicit bounds
-                    // check and the operand could read an array element). Disallow this except
-                    // for some common cases that we know are always side effect free.
-                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op1->IsInvariant() && !op1->OperIsLocal())
-                    {
-                        return false;
-                    }
-
-                    found                 = true;
-                    foundOperation->block = block;
-                    foundOperation->stmt  = stmt;
-                    foundOperation->node  = tree;
-                    break;
-                }
-
-                case GT_RETURN:
-                {
-                    // GT_SWIFT_ERROR_RET not supported
-                    GenTree* const retVal = tree->gtGetOp1();
-
-                    // Only allow RETURNs if else conversion is being used.
-                    if (!m_doElseConversion)
-                    {
-                        return false;
-                    }
-
-                    // Only one per operation per block can be conditionally executed.
-                    if (found || retVal == nullptr)
-                    {
-                        return false;
-                    }
-
-                    // Ensure the operation has integer type.
-                    if (!varTypeIsIntegralOrI(tree))
-                    {
-                        return false;
-                    }
-
-#ifndef TARGET_64BIT
-                    // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
-                    // handle contained relops efficiently after decomposition.
-                    if (varTypeIsLong(tree))
-                    {
-                        return false;
-                    }
-#endif
-
-                    // Ensure it won't cause any additional side effects.
-                    if ((retVal->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
-                    {
-                        return false;
-                    }
-
-                    // Evaluating unconditionally effectively has the same effect as reordering
-                    // with the condition (for example, the condition could be an explicit bounds
-                    // check and the operand could read an array element). Disallow this except
-                    // for some common cases that we know are always side effect free.
-                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !retVal->IsInvariant() &&
-                        !retVal->OperIsLocal())
-                    {
-                        return false;
-                    }
-
-                    found                 = true;
-                    foundOperation->block = block;
-                    foundOperation->stmt  = stmt;
-                    foundOperation->node  = tree;
-                    break;
-                }
-
-                // These do not need conditional execution.
-                case GT_NOP:
-                    break;
-
-                // Cannot optimise this block.
-                default:
-                    return false;
+                return false;
             }
+
+            // Ensure the operation has integer type.
+            if (!varTypeIsIntegralOrI(tree))
+            {
+                return false;
+            }
+
+#ifndef TARGET_64BIT
+            // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
+            // handle contained relops efficiently after decomposition.
+            if (varTypeIsLong(tree))
+            {
+                return false;
+            }
+#endif
+
+            GenTree* op1 = tree->gtGetOp1();
+
+            // Ensure it won't cause any additional side effects.
+            if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+            {
+                return false;
+            }
+
+            // Evaluating unconditionally effectively has the same effect as reordering
+            // with the condition (for example, the condition could be an explicit bounds
+            // check and the operand could read an array element). Disallow this except
+            // for some common cases that we know are always side effect free.
+            if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op1->IsInvariant() && !op1->OperIsLocal())
+            {
+                return false;
+            }
+
+            found                 = true;
+            foundOperation->block = block;
+            foundOperation->stmt  = stmt;
+            foundOperation->node  = tree;
+        }
+        else if (!tree->OperIs(GT_NOP))
+        {
+            // Cannot optimise this block.
+            return false;
         }
     }
-    return found;
-}
 
-//-----------------------------------------------------------------------------
-// IfConvertJoinStmts
-//
-// Move all the statements from a block onto the end of the start block.
-//
-// Arguments:
-//   fromBlock  -- Source block
-//
-void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
-{
-    Statement* stmtList1 = m_startBlock->firstStmt();
-    Statement* stmtList2 = fromBlock->firstStmt();
-    Statement* stmtLast1 = m_startBlock->lastStmt();
-    Statement* stmtLast2 = fromBlock->lastStmt();
-    stmtLast1->SetNextStmt(stmtList2);
-    stmtList2->SetPrevStmt(stmtLast1);
-    stmtList1->SetPrevStmt(stmtLast2);
-    fromBlock->bbStmtList = nullptr;
+    return found;
 }
 
 //-----------------------------------------------------------------------------
@@ -384,19 +227,15 @@ void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
 #ifdef DEBUG
 void OptIfConversionDsc::IfConvertDump()
 {
-    assert(m_startBlock != nullptr);
-    m_comp->fgDumpBlock(m_startBlock);
-    BasicBlock* dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetFalseTarget() : m_startBlock->GetTarget();
-    for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
+    m_compiler->fgDumpBlock(m_startBlock);
+
+    // Then & Else only exist before the transformation
+    if (m_startBlock->KindIs(BBJ_COND))
     {
-        m_comp->fgDumpBlock(dumpBlock);
-    }
-    if (m_doElseConversion)
-    {
-        dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetTrueTarget() : m_startBlock->GetTarget();
-        for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
+        m_compiler->fgDumpBlock(m_thenOperation.block);
+        if (m_doElseConversion)
         {
-            m_comp->fgDumpBlock(dumpBlock);
+            m_compiler->fgDumpBlock(m_elseOperation.block);
         }
     }
 }
@@ -454,9 +293,6 @@ void OptIfConversionDsc::IfConvertDump()
 // the existing value of local var 0 is used:
 //
 // ------------ BB03 [009..00D) -> BB05 (always), preds={BB02} succs={BB05}
-// STMT00004
-//   *  NOP       void
-//
 // STMT00005
 //   *  STORE_LCL_VAR   int    V00 arg0
 //   \--*  SELECT    int
@@ -465,9 +301,6 @@ void OptIfConversionDsc::IfConvertDump()
 //      |  \--*  CNS_INT   int    7 $46
 //      +--*  CNS_INT   int    5 $47
 //      \--*  LCL_VAR   int    V00
-//
-// ------------ BB04 [00D..010), preds={} succs={BB05}
-//
 //
 // Example of simple if conversion with an else condition
 //
@@ -495,9 +328,6 @@ void OptIfConversionDsc::IfConvertDump()
 // Again this is squashed into a single block, with the SELECT node handling both cases.
 //
 // ------------ BB03 [009..00D) -> BB05 (always), preds={BB02} succs={BB05}
-// STMT00004
-//   *  NOP       void
-//
 // STMT00005
 //   *  STORE_LCL_VAR   int    V00 arg0
 //   \--*  SELECT    int
@@ -506,12 +336,6 @@ void OptIfConversionDsc::IfConvertDump()
 //      |  \--*  CNS_INT   int    7 $46
 //      +--*  CNS_INT   int    5 $47
 //      +--*  CNS_INT   int    9 $48
-//
-// STMT00006
-//   *  NOP       void
-//
-// ------------ BB04 [00D..010), preds={} succs={BB06}
-// ------------ BB05 [00D..010), preds={} succs={BB06}
 //
 // Alternatively, an if conversion with an else condition may use RETURNs.
 // return (x < 7) ? 5 : 9;
@@ -523,22 +347,19 @@ void OptIfConversionDsc::IfConvertDump()
 //      +--*  LCL_VAR   int    V02
 //      \--*  CNS_INT   int    7 $46
 //
-// ------------ BB04 [00D..010), preds={BB03} succs={BB06}
+// ------------ BB04 [00D..010) (return), preds={BB03} succs={}
 // STMT00005
 //   *  RETURN    int    $VN.Void
 // +--*  CNS_INT   int    5 $41
 //
-// ------------ BB05 [00D..010), preds={BB03} succs={BB06}
+// ------------ BB05 [00D..010) (return), preds={BB03} succs={}
 // STMT00006
 //   *  RETURN    int    $VN.Void
 // +--*  CNS_INT   int    9 $43
 //
 // becomes:
 //
-// ------------ BB03 [009..00D) -> BB05 (always), preds={BB02} succs={BB05}
-// STMT00004
-//   *  NOP       void
-//
+// ------------ BB03 [009..00D) (return), preds={BB02} succs={}
 // STMT00005
 //   *  RETURN    int    $VN.Void
 //   \--*  SELECT    int
@@ -548,12 +369,6 @@ void OptIfConversionDsc::IfConvertDump()
 //      +--*  CNS_INT   int    5 $41
 //      +--*  CNS_INT   int    9 $43
 //
-// STMT00006
-//   *  NOP       void
-//
-// ------------ BB04 [00D..010), preds={} succs={BB06}
-// ------------ BB05 [00D..010), preds={} succs={BB06}
-//
 bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 {
     if ((*pReachabilityBudget) <= 0)
@@ -561,61 +376,27 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         return false;
     }
 
-    // Does the block end by branching via a JTRUE after a compare?
-    if (!m_startBlock->KindIs(BBJ_COND) || (m_startBlock->NumSucc() != 2))
+    if (m_startBlock->firstStmt() == nullptr)
     {
         return false;
     }
 
-    // Verify the test block ends with a condition that we can manipulate.
     GenTree* last = m_startBlock->lastStmt()->GetRootNode();
-    noway_assert(last->OperIs(GT_JTRUE));
+    if (!last->OperIs(GT_JTRUE))
+    {
+        return false;
+    }
+
     m_cond = last->gtGetOp1();
-    if (!m_cond->OperIsCompare())
+    assert(m_cond->OperIsCompare());
+
+    if (!IfConvertCheck())
     {
         return false;
-    }
-
-    // Look for valid flow of Then and Else blocks.
-    IfConvertFindFlow();
-    if (!m_flowFound)
-    {
-        return false;
-    }
-
-    // Check the Then and Else blocks have a single operation each.
-    if (!IfConvertCheckStmts(m_startBlock->GetFalseTarget(), &m_thenOperation))
-    {
-        return false;
-    }
-    assert(m_thenOperation.node->OperIs(GT_STORE_LCL_VAR, GT_RETURN));
-    if (m_doElseConversion)
-    {
-        if (!IfConvertCheckStmts(m_startBlock->GetTrueTarget(), &m_elseOperation))
-        {
-            return false;
-        }
-
-        // Both operations must be the same node type.
-        if (m_thenOperation.node->OperGet() != m_elseOperation.node->OperGet())
-        {
-            return false;
-        }
-
-        // Currently can only support Else Store Blocks that have the same destination as the Then block.
-        if (m_thenOperation.node->OperIs(GT_STORE_LCL_VAR))
-        {
-            unsigned lclNumThen = m_thenOperation.node->AsLclVarCommon()->GetLclNum();
-            unsigned lclNumElse = m_elseOperation.node->AsLclVarCommon()->GetLclNum();
-            if (lclNumThen != lclNumElse)
-            {
-                return false;
-            }
-        }
     }
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         JITDUMP("\nConditionally executing " FMT_BB, m_thenOperation.block->bbNum);
         if (m_doElseConversion)
@@ -629,7 +410,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 
     // Using SELECT nodes means that both Then and Else operations are fully evaluated.
     // Put a limit on the original source and destinations.
-    if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_COST, 25))
+    if (!m_compiler->compStressCompile(Compiler::STRESS_IF_CONVERSION_COST, 25))
     {
         int thenCost = 0;
         int elseCost = 0;
@@ -637,11 +418,11 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         if (m_mainOper == GT_STORE_LCL_VAR)
         {
             thenCost = m_thenOperation.node->AsLclVar()->Data()->GetCostEx() +
-                       (m_comp->gtIsLikelyRegVar(m_thenOperation.node) ? 0 : 2);
+                       (m_compiler->gtIsLikelyRegVar(m_thenOperation.node) ? 0 : 2);
             if (m_doElseConversion)
             {
                 elseCost = m_elseOperation.node->AsLclVar()->Data()->GetCostEx() +
-                           (m_comp->gtIsLikelyRegVar(m_elseOperation.node) ? 0 : 2);
+                           (m_compiler->gtIsLikelyRegVar(m_elseOperation.node) ? 0 : 2);
             }
         }
         else
@@ -663,13 +444,13 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
     }
 
-    if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
+    if (!m_compiler->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
     {
         // Don't optimise the block if it is inside a loop. Loop-carried
         // dependencies can cause significant stalls if if-converted.
         // Detect via the block weight as that will be high when inside a loop.
 
-        if (m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT * 1.05)
+        if (m_startBlock->getBBWeight(m_compiler) > BB_UNITY_WEIGHT * 1.05)
         {
             JITDUMP("Skipping if-conversion inside loop (via weight)\n");
             return false;
@@ -677,7 +458,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 
         // We may be inside an unnatural loop, so do the expensive check.
         Compiler::ReachabilityResult reachability =
-            m_comp->optReachableWithBudget(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget);
+            m_compiler->optReachableWithBudget(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget);
         if (reachability == Compiler::ReachabilityResult::Reachable)
         {
             JITDUMP("Skipping if-conversion inside loop (via reachability)\n");
@@ -725,15 +506,14 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             // Duplicate the destination of the Then store.
             assert(m_mainOper == GT_STORE_LCL_VAR && !m_doElseConversion);
             GenTreeLclVar* store = m_thenOperation.node->AsLclVar();
-            selectTrueInput      = m_comp->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
+            selectTrueInput      = m_compiler->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
         }
         // Create a select node
-        select = m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
+        select = m_compiler->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
     }
 
+    // Use the SELECT as the source of the Then STORE/RETURN.
     m_thenOperation.node->AddAllEffectsFlags(select);
-
-    // Use the select as the source of the Then operation.
     if (m_mainOper == GT_STORE_LCL_VAR)
     {
         m_thenOperation.node->AsLclVar()->Data() = select;
@@ -742,35 +522,45 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     {
         m_thenOperation.node->AsOp()->SetReturnValue(select);
     }
-    m_comp->gtSetEvalOrder(m_thenOperation.node);
-    m_comp->fgSetStmtSeq(m_thenOperation.stmt);
+    m_compiler->gtSetEvalOrder(m_thenOperation.node);
+    m_compiler->fgSetStmtSeq(m_thenOperation.stmt);
 
-    // Remove statements.
-    last->gtBashToNOP();
-    m_comp->gtSetEvalOrder(last);
-    m_comp->fgSetStmtSeq(m_startBlock->lastStmt());
+    // Replace JTRUE with STORE(SELECT)/RETURN(SELECT) statement
+    m_compiler->fgInsertStmtBefore(m_startBlock, m_startBlock->lastStmt(), m_thenOperation.stmt);
+    m_compiler->fgRemoveStmt(m_startBlock, m_startBlock->lastStmt());
+    m_thenOperation.block->SetFirstStmt(nullptr);
+
+    BasicBlock* falseBb = m_startBlock->GetFalseTarget();
+    BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
+
+    // JTRUE block now contains SELECT. Change it's kind and make it flow
+    // directly into block where flows merge, which is null in case of GT_RETURN.
+    if (m_mainOper == GT_RETURN)
+    {
+        m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
+    }
+    else
+    {
+        FlowEdge* newEdge =
+            m_doElseConversion ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
+        m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+    }
+    assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
+
+    // Remove Then/Else block
+    auto removeBlock = [&](BasicBlock* start) {
+        start->bbWeight = BB_ZERO_WEIGHT;
+        m_compiler->fgRemoveAllRefPreds(start, m_startBlock);
+        m_compiler->fgRemoveBlock(start, true);
+    };
+    removeBlock(falseBb);
     if (m_doElseConversion)
     {
-        m_elseOperation.node->gtBashToNOP();
-        m_comp->gtSetEvalOrder(m_elseOperation.node);
-        m_comp->fgSetStmtSeq(m_elseOperation.stmt);
+        removeBlock(trueBb);
     }
-
-    // Merge all the blocks.
-    IfConvertJoinStmts(m_thenOperation.block);
-    if (m_doElseConversion)
-    {
-        IfConvertJoinStmts(m_elseOperation.block);
-    }
-
-    // Update the flow from the original block.
-    FlowEdge* const removedEdge  = m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
-    FlowEdge* const retainedEdge = m_startBlock->GetTrueEdge();
-    m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
-    m_comp->fgRepairProfileCondToUncond(m_startBlock, retainedEdge, removedEdge);
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         JITDUMP("\nAfter if conversion\n");
         IfConvertDump();
@@ -877,7 +667,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectOperOrLocal(GenTree* trueInput, G
             if (lcl2->OperIs(GT_LCL_VAR) && (lcl2->AsLclVar()->GetLclNum() == lclNum))
             {
                 oper->AsOp()->gtOp1 = lcl2;
-                oper->AsOp()->gtOp2 = isCondReversed ? m_comp->gtReverseCond(m_cond) : m_cond;
+                oper->AsOp()->gtOp2 = isCondReversed ? m_compiler->gtReverseCond(m_cond) : m_cond;
                 if (isDecrement)
                     oper->ChangeOper(GT_SUB);
 
@@ -917,7 +707,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectOperOrZero(GenTree* trueInput, Ge
 
         if (one->IsIntegralConst(1))
         {
-            oper->AsOp()->gtOp1 = isCondReversed ? m_comp->gtReverseCond(m_cond) : m_cond;
+            oper->AsOp()->gtOp1 = isCondReversed ? m_compiler->gtReverseCond(m_cond) : m_cond;
             oper->AsOp()->gtOp2 = expr;
 
             oper->gtFlags |= m_cond->gtFlags & GTF_ALL_EFFECT;
@@ -962,7 +752,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
             else if (trueVal == 0 && falseVal == 1)
             {
                 // compare ? false : true  -->  reversed_compare
-                return m_comp->gtReverseCond(m_cond);
+                return m_compiler->gtReverseCond(m_cond);
             }
         }
 #ifdef TARGET_RISCV64
@@ -978,14 +768,14 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
             if (selectOper.isMatched())
             {
                 GenTree* left  = isCondReversed ? trueInput : falseInput;
-                GenTree* right = isCondReversed ? m_comp->gtReverseCond(m_cond) : m_cond;
+                GenTree* right = isCondReversed ? m_compiler->gtReverseCond(m_cond) : m_cond;
                 if (selectOper.bitIndex > 0)
                 {
                     assert(selectOper.oper == GT_LSH);
                     left->AsIntConCommon()->SetIntegralValue(selectOper.bitIndex);
                     std::swap(left, right);
                 }
-                return m_comp->gtNewOperNode(selectOper.oper, selectOper.type, left, right);
+                return m_compiler->gtNewOperNode(selectOper.oper, selectOper.type, left, right);
             }
         }
 #endif // TARGET_RISCV64

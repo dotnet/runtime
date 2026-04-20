@@ -112,7 +112,7 @@ namespace ILCompiler
             {
                 yield return method;
 
-                // We create an async variant slot for any virtual Task-returning method, not just runtime-async.
+                // We create an async variant slot for any Task-returning method, not just runtime-async.
                 // This is not a problem in practice because the slot is still subject to dependency
                 // analysis and if not used, will not be generated.
                 //
@@ -137,8 +137,14 @@ namespace ILCompiler
                 //     //    didn't know about IFoo in Base either. Who has the slot?
                 //     // A: Base has the runtime-async slot, despite the method not being runtime-async.
                 // }
-                if ((method.IsAsync || method.IsVirtual)
-                    && method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
+                //
+                // The other reason is that when the method is awaited, RyuJIT will prefer the AsyncCallable
+                // variant, no matter if the method is async.
+                //
+                // We restrict this to EcmaMethod since AsyncVariantMethod cannot deal with non-ECMA methods
+                // and we shouldn't be awaiting compiler-generated methods (delegate thunks, etc.) anyway.
+                if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod
+                    && ecmaMethod.Signature.ReturnsTaskOrValueTask())
                 {
                     yield return context.GetAsyncVariantMethod(method);
                 }
@@ -194,6 +200,45 @@ namespace ILCompiler
         }
         private AsyncVariantHashtable _asyncVariantHashtable = new AsyncVariantHashtable();
 
+        public AsyncResumptionStub GetAsyncResumptionStub(MethodDesc targetMethod, TypeDesc owningType)
+        {
+            return _asyncResumptionStubHashtable.GetOrCreateValue(new AsyncResumptionStubKey(targetMethod, owningType));
+        }
+
+        private readonly struct AsyncResumptionStubKey : System.IEquatable<AsyncResumptionStubKey>
+        {
+            public readonly MethodDesc TargetMethod;
+            public readonly TypeDesc OwningType;
+
+            public AsyncResumptionStubKey(MethodDesc targetMethod, TypeDesc owningType)
+            {
+                TargetMethod = targetMethod;
+                OwningType = owningType;
+            }
+
+            public bool Equals(AsyncResumptionStubKey other)
+                => TargetMethod == other.TargetMethod;
+
+            public override bool Equals(object obj)
+                => obj is AsyncResumptionStubKey other && Equals(other);
+
+            public override int GetHashCode()
+                => TargetMethod.GetHashCode();
+        }
+
+        private sealed class AsyncResumptionStubHashtable : LockFreeReaderHashtable<AsyncResumptionStubKey, AsyncResumptionStub>
+        {
+            protected override int GetKeyHashCode(AsyncResumptionStubKey key) => key.GetHashCode();
+            protected override int GetValueHashCode(AsyncResumptionStub value) => value.TargetMethod.GetHashCode();
+            protected override bool CompareKeyToValue(AsyncResumptionStubKey key, AsyncResumptionStub value)
+                => key.TargetMethod == value.TargetMethod;
+            protected override bool CompareValueToValue(AsyncResumptionStub value1, AsyncResumptionStub value2)
+                => value1.TargetMethod == value2.TargetMethod;
+            protected override AsyncResumptionStub CreateValueFromKey(AsyncResumptionStubKey key)
+                => new AsyncResumptionStub(key.TargetMethod, key.OwningType);
+        }
+        private AsyncResumptionStubHashtable _asyncResumptionStubHashtable = new AsyncResumptionStubHashtable();
+
         public MetadataType GetContinuationType(GCPointerMap pointerMap)
         {
             return _continuationTypeHashtable.GetOrCreateValue(pointerMap);
@@ -213,7 +258,10 @@ namespace ILCompiler
                 => value1.PointerMap.Equals(value2.PointerMap);
             protected override AsyncContinuationType CreateValueFromKey(GCPointerMap key)
             {
-                return new AsyncContinuationType(_parent.ContinuationType, key);
+                var cont = new AsyncContinuationType(_parent.ContinuationType, key);
+                // Short circuit loadability checks for this type
+                _parent._validTypes.TryAdd(cont);
+                return cont;
             }
         }
         private ContinuationTypeHashtable _continuationTypeHashtable;

@@ -746,7 +746,7 @@ class MetaSig
         //----------------------------------------------------------
         // Is it an async call?
         //----------------------------------------------------------
-        BOOL IsAsyncCall()
+        bool IsAsyncCall()
         {
             LIMITED_METHOD_CONTRACT;
             return m_CallConv & CORINFO_CALLCONV_ASYNCCALL;
@@ -1096,19 +1096,6 @@ private:
                                              TokenPairList *pVisited);
 
 public:
-
-        //------------------------------------------------------------------
-        // Ensures that all the value types in the sig are loaded. This
-        // should be called on sig's that have value types before they
-        // are passed to Call(). This ensures that value classes will not
-        // be loaded during the operation to determine the size of the
-        // stack. Thus preventing the resulting GC hole.
-        //------------------------------------------------------------------
-        static void EnsureSigValueTypesLoaded(MethodDesc *pMD);
-
-        // this walks the sig and checks to see if all  types in the sig can be loaded
-        static void CheckSigTypesCanBeLoaded(MethodDesc *pMD);
-
         const SigTypeContext *GetSigTypeContext() const { LIMITED_METHOD_CONTRACT; return &m_typeContext; }
 
         // Disallow copy constructor.
@@ -1207,6 +1194,8 @@ BOOL CompareTypeLayout(mdToken tk1, mdToken tk2, Module *pModule1, Module *pModu
 BOOL CompareTypeDefsForEquivalence(mdToken tk1, mdToken tk2, Module *pModule1, Module *pModule2, TokenPairList *pVisited);
 BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule);
 BOOL IsTypeDefExternallyVisible(mdToken tk, Module *pModule, DWORD dwAttrs);
+
+CorInfoCallConvExtension GetUnmanagedCallConvExtension(MetaSig* pSig);
 
 void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTable pMT, PTR_VOID pSrc);
 

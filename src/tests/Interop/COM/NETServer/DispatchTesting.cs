@@ -89,4 +89,29 @@ public class DispatchTesting : Server.Contract.IDispatchTesting
     {
         return Enumerable.Range(0, 10).ToList().GetEnumerator();
     }
+
+    public object TriggerCustomMarshaler(object objIn, ref object objRef)
+    {
+        if (!Marshal.IsComObject(objIn))
+            throw new ArgumentException("objIn is not a COM object");
+
+        if (!Marshal.IsComObject(objRef))
+            throw new ArgumentException("objRef is not a COM object");
+
+        var ret = objRef;
+        objRef = objIn;
+        return ret;
+    }
+
+    [DispId(1000)]
+    public string GetDispIdAsString()
+    {
+        return "1000";
+    }
+
+    [DispId(1001)]
+    public string GetDispIdAsString2()
+    {
+        return "1001";
+    }
 }

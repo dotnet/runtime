@@ -80,6 +80,7 @@ class ComCallWrapperTemplate;
 // The entries in these tables (i.e. the code) are, however, often shared.
 // Clients of TypeHandle don't need to know any of this detail; just use the
 // GetInstantiation and HasInstantiation methods.
+// [cDAC] [RuntimeTypeSystem]: If ever the scheme of having the lower two bits be zero for MethodTables and two for TypeDescs is changed, version the RuntimeTypeSystem cDAC contract.
 
 class TypeHandle
 {
@@ -386,6 +387,7 @@ public:
     // And some types (like ByRef or generic type parameters) have no
     // method table and this function returns NULL for them.
     inline PTR_MethodTable GetMethodTable() const;
+    inline TypeHandle UpCastTypeIfNeeded() const;
 
     // Returns the type which should be used for visibility checking.
     inline MethodTable* GetMethodTableOfRootTypeParam() const;
@@ -696,6 +698,7 @@ public:
 
     bool ContainsAllOneType(TypeHandle th)
     {
+        LIMITED_METHOD_DAC_CONTRACT;
         for (DWORD i = GetNumArgs(); i > 0;)
         {
             if ((*this)[--i] != th)

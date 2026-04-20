@@ -73,17 +73,9 @@ if(CLR_CMAKE_HOST_OS STREQUAL linux)
     set(CLR_CMAKE_HOST_LINUX 1)
 
     # Detect Linux ID
-    set(LINUX_ID_FILE "/etc/os-release")
-    if(CMAKE_CROSSCOMPILING)
-        set(LINUX_ID_FILE "${CMAKE_SYSROOT}${LINUX_ID_FILE}")
-    endif()
-
-    if(EXISTS ${LINUX_ID_FILE})
-        execute_process(
-            COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
-            OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
-            OUTPUT_STRIP_TRAILING_WHITESPACE)
-    endif()
+    # In cross-building scenarios,
+    # cmake_host_system_information looks in the sysroot for the /etc/os-release file.
+    cmake_host_system_information(RESULT CLR_CMAKE_LINUX_ID QUERY DISTRIB_ID)
 
     if(DEFINED CLR_CMAKE_LINUX_ID)
         if(CLR_CMAKE_LINUX_ID STREQUAL tizen)
@@ -404,6 +396,14 @@ if(CLR_CMAKE_TARGET_OS STREQUAL tvos OR CLR_CMAKE_TARGET_OS STREQUAL tvossimulat
     set(CLR_CMAKE_TARGET_TVOS 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL tvos OR CLR_CMAKE_TARGET_OS STREQUAL tvossimulator)
 
+# Umbrella variable for Apple mobile platforms (iOS, tvOS, MacCatalyst).
+# These share the same runtime constraints: static linking, no fork(),
+# no build tools, hybrid globalization, etc. Use per-platform variables
+# only where they genuinely differ (compiler targets, gssapi, Swift).
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(CLR_CMAKE_TARGET_APPLE_MOBILE 1)
+endif()
+
 if(CLR_CMAKE_TARGET_OS STREQUAL freebsd)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_FREEBSD 1)
@@ -506,6 +506,16 @@ else()
             add_link_options(-Wno-unused-command-line-argument)
             add_link_options(-Wl,-error-limit=0)
 
+            add_link_options(-nostdlib)
+            add_link_options(-lbulkmemory)
+            add_link_options(-lstubs)
+            add_link_options(-lc)
+            add_link_options(-lmalloc)
+            add_link_options(-lcompiler_rt)
+            add_link_options(-lc++)
+            add_link_options(-lc++abi)
+            add_link_options(-lunwind)
+
             add_compile_options(-fwasm-exceptions)
             add_compile_options(-mbulk-memory)
             add_compile_options(-msimd128)
@@ -532,14 +542,14 @@ if(LOWERCASE_CMAKE_BUILD_TYPE STREQUAL debug)
     string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 endif()
 
-if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_HOST_ARCH_ARMV6)
+if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_APPLE_MOBILE OR CLR_CMAKE_HOST_ARCH_ARMV6)
     # Some platforms are opted-out from using the in-tree zlib-ng by default:
     # - Android and iOS-like platforms: concerns about extra binary size
     # - Armv6: zlib-ng has build breaks
     set(CLR_CMAKE_USE_SYSTEM_ZLIB 1)
 endif()
 
-if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
+if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     # opt into building tools like ildasm/ilasm
     set(CLR_CMAKE_BUILD_TOOLS 1)
 endif()

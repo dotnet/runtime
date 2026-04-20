@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.WebAssembly">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -27,7 +27,6 @@
   <ItemGroup Condition="'$(TestLazyLoading)' == 'true'">
     <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
     <BlazorWebAssemblyLazyLoad Include="LazyLibrary$(WasmAssemblyExtension)" />
-    <WasmExtraFilesToDeploy Include="profiler.js" />
   </ItemGroup>
 
   <ItemGroup>

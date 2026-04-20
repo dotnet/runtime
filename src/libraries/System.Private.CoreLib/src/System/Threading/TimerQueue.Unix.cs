@@ -5,8 +5,6 @@ namespace System.Threading
 {
     internal sealed partial class TimerQueue
     {
-        public static long TickCount64 => Environment.TickCount64;
-
 #pragma warning disable IDE0060
         private TimerQueue(int id)
         {

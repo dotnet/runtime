@@ -26,6 +26,7 @@ namespace System.Net.Security
         }
 
         internal const bool StartMutualAuthAsAnonymous = true;
+        internal const bool CertValidationInCallback = false;
 
         // SecureTransport is okay with a 0 byte input, but it produces a 0 byte output.
         // Since ST is not producing the framed empty message just call this false and avoid the
@@ -70,7 +71,7 @@ namespace System.Net.Security
                         break;
                     }
                     ReadOnlySpan<byte> protocol = protocols.Slice(1, length);
-                    if (protocol.SequenceCompareTo<byte>(applicationProtocol.Protocol.Span) == 0)
+                    if (protocol.SequenceEqual(applicationProtocol.Protocol.Span))
                     {
                         int osStatus = Interop.AppleCrypto.SslCtxSetAlpnProtocol(context.SslContext, applicationProtocol);
                         if (osStatus == 0)
@@ -176,6 +177,9 @@ namespace System.Net.Security
                                 break;
                             case PAL_TlsIo.WouldBlock:
                                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
+                                break;
+                            case PAL_TlsIo.ClosedGracefully:
+                                token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.ContextExpired);
                                 break;
                             default:
                                 Debug.Fail($"Unknown status value: {status}");
@@ -356,7 +360,7 @@ namespace System.Net.Security
                 sslContext.ReadPendingWrites(ref token);
                 return token;
             }
-            catch (Exception exc)
+            catch (Exception exc) when (exc is not ArgumentException)
             {
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
                 return token;

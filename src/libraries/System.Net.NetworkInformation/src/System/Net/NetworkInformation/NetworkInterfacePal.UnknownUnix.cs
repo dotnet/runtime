@@ -10,6 +10,7 @@ namespace System.Net.NetworkInformation
         /// Returns objects that describe the network interfaces on the local computer.
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public static NetworkInterface[] GetAllNetworkInterfaces()
         {
             throw new PlatformNotSupportedException();
@@ -17,6 +18,7 @@ namespace System.Net.NetworkInformation
 
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public static bool GetIsNetworkAvailable()
         {
             throw new PlatformNotSupportedException();
@@ -24,6 +26,7 @@ namespace System.Net.NetworkInformation
 
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public static int IPv6LoopbackInterfaceIndex
         {
             get { throw new PlatformNotSupportedException(); }
@@ -31,6 +34,7 @@ namespace System.Net.NetworkInformation
 
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public static int LoopbackInterfaceIndex
         {
             get { throw new PlatformNotSupportedException(); }

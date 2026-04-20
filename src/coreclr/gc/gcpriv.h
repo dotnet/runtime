@@ -140,13 +140,15 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now disable regions for standalone GC and macOS builds
+// For now disable regions for standalone GC builds
 // For SunOS or illumos this is temporary, until we can add MAP_PRIVATE
 // to the mmap() calls in unix/gcenv.unix.cpp  More details here:
 //    https://github.com/dotnet/runtime/issues/104211
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(__sun)
+// Apple non-macOS platforms (such as iOS, tvOS, and Mac Catalyst) disallow
+// the large virtual address space reservations that GC regions require.
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__sun) && (!defined(HOST_APPLE) || defined(HOST_OSX))
 #define USE_REGIONS
-#endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
+#endif //HOST_64BIT && !BUILD_AS_STANDALONE && !__sun && (!HOST_APPLE || HOST_OSX)
 
 //#define SPINLOCK_HISTORY
 //#define RECORD_LOH_STATE
@@ -1753,7 +1755,7 @@ private:
     PER_HEAP_ISOLATED_METHOD void move_aged_regions(region_free_list dest[count_free_region_kinds], region_free_list& src, free_region_kind kind, bool joined_last_gc_before_oom);
     PER_HEAP_ISOLATED_METHOD bool aged_region_p(heap_segment* region, free_region_kind kind);
     PER_HEAP_ISOLATED_METHOD void move_regions_to_decommit(region_free_list oregions[count_free_region_kinds]);
-    PER_HEAP_ISOLATED_METHOD size_t compute_basic_region_budgets(size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS], size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS], size_t total_basic_free_regions);
+    PER_HEAP_ISOLATED_METHOD size_t compute_basic_region_budgets(size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS], size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS], size_t total_basic_free_regions);
     PER_HEAP_ISOLATED_METHOD bool near_heap_hard_limit_p();
     PER_HEAP_ISOLATED_METHOD bool distribute_surplus_p(ptrdiff_t balance, int kind, bool aggressive_decommit_large_p);
     PER_HEAP_ISOLATED_METHOD void decide_on_decommit_strategy(bool joined_last_gc_before_oom);
@@ -2483,7 +2485,7 @@ private:
     PER_HEAP_METHOD void decommit_heap_segment (heap_segment* seg);
     PER_HEAP_ISOLATED_METHOD bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED_METHOD bool virtual_commit (void* address, size_t size, int bucket, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
-    PER_HEAP_ISOLATED_METHOD bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1);
+    PER_HEAP_ISOLATED_METHOD bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1, void* end_of_data=nullptr);
     PER_HEAP_ISOLATED_METHOD void reduce_committed_bytes (void* address, size_t size, int bucket, int h_number, bool decommit_succeeded_p);
     friend void destroy_card_table (uint32_t*);
     PER_HEAP_ISOLATED_METHOD void destroy_card_table_helper (uint32_t* c_table);
@@ -3476,6 +3478,8 @@ private:
 
     PER_HEAP_ISOLATED_METHOD BOOL dt_high_memory_load_p();
 
+    PER_HEAP_ISOLATED_METHOD bool compute_hard_limit_from_heap_limits();
+
     PER_HEAP_ISOLATED_METHOD bool compute_hard_limit();
 
     PER_HEAP_ISOLATED_METHOD bool compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config,
@@ -3777,6 +3781,8 @@ private:
     PER_HEAP_FIELD_SINGLE_GC_ALLOC BOOL last_gc_before_oom;
 
 #ifdef MULTIPLE_HEAPS
+    // approximate alloc_context_count. This is updated by multiple threads without locking; the
+    // increments/decrements are non-interlocked so the value is only approximate.
     PER_HEAP_FIELD_SINGLE_GC_ALLOC VOLATILE(int) alloc_context_count;
 
     // Init-ed during a GC and updated by allocator after that GC

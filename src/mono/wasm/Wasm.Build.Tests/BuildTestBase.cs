@@ -26,15 +26,18 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public static readonly string DefaultTargetFramework = $"net{Environment.Version.Major}.0";
-        public static readonly string PreviousTargetFramework = $"net{Environment.Version.Major - 1}.0";
-        public static readonly string Previous2TargetFramework = $"net{Environment.Version.Major - 2}.0";
-        public static readonly string DefaultTargetFrameworkForBlazor = $"net{Environment.Version.Major}.0";
-        public static readonly string TargetFrameworkForTasks = $"net{Environment.Version.Major}.0";
+        private const int TargetMajorVersion = 11; /* net11 */
+        public static readonly string DefaultTargetFramework = $"net{TargetMajorVersion}.0";
+        public static readonly string PreviousTargetFramework = $"net{TargetMajorVersion - 1}.0";
+        public static readonly string Previous2TargetFramework = $"net{TargetMajorVersion - 2}.0";
+        public static readonly string DefaultTargetFrameworkForBlazor = DefaultTargetFramework;
+        public static readonly string DefaultTargetFrameworkForBlazorTemplate = $"net{Environment.Version.Major}.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly string s_unicodeChars = "\u9FC0\u8712\u679B\u906B\u486B\u7149";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
+        private static bool s_xharnessToolRestored;
+        private static readonly object s_xharnessRestoreLock = new();
         protected readonly ITestOutputHelper _testOutput;
         protected string _logPath;
         protected bool _enablePerTestCleanup = false;
@@ -62,8 +65,10 @@ namespace Wasm.Build.Tests
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
+        public static bool IsMonoRuntime => s_buildEnv.IsMonoRuntime;
+        public static bool IsCoreClrRuntime => s_buildEnv.IsCoreClrRuntime;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
-        public static string GetNuGetConfigPathFor(string targetFramework)
+        public static string GetNuGetConfigPath()
             => Path.Combine(BuildEnvironment.TestDataPath, "nuget.config");
 
         public TProvider GetProvider<TProvider>() where TProvider : ProjectProviderBase
@@ -112,6 +117,64 @@ namespace Wasm.Build.Tests
             _testOutput = new TestOutputWrapper(output);
             _logPath = s_buildEnv.LogRootPath; // FIXME:
             _providerOfBaseType = providerBase;
+        }
+
+        /// <summary>
+        /// Ensures the xharness CLI is available as a local dotnet tool by running
+        /// <c>dotnet tool restore</c> if needed.  This is a no-op when
+        /// <c>XHARNESS_CLI_PATH</c> is set (CI provides the tool externally).
+        /// </summary>
+        protected static void EnsureXHarnessAvailable()
+        {
+            if (!string.IsNullOrEmpty(EnvironmentVariables.XHarnessCliPath))
+                return;
+
+            if (s_xharnessToolRestored)
+                return;
+
+            lock (s_xharnessRestoreLock)
+            {
+                if (s_xharnessToolRestored)
+                    return;
+
+                // Find repo root by walking up to NuGet.config
+                DirectoryInfo? repoRoot = new(AppContext.BaseDirectory);
+                while (repoRoot is not null && !File.Exists(Path.Combine(repoRoot.FullName, "NuGet.config")))
+                    repoRoot = repoRoot.Parent;
+
+                if (repoRoot is null)
+                    throw new InvalidOperationException("Could not find repo root (directory containing NuGet.config) to restore xharness tool");
+
+                Console.WriteLine($"[xharness] Restoring dotnet tools from {repoRoot.FullName} using {s_buildEnv.DotNet}");
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = s_buildEnv.DotNet,
+                    Arguments = "tool restore",
+                    WorkingDirectory = repoRoot.FullName,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false
+                };
+                psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+
+                using var process = Process.Start(psi)
+                    ?? throw new InvalidOperationException("Failed to start 'dotnet tool restore' process");
+
+                var stdoutTask = process.StandardOutput.ReadToEndAsync();
+                var stderrTask = process.StandardError.ReadToEndAsync();
+                process.WaitForExit();
+
+                string stdout = stdoutTask.Result;
+                string stderr = stderrTask.Result;
+
+                if (process.ExitCode != 0)
+                    throw new InvalidOperationException(
+                        $"'dotnet tool restore' failed with exit code {process.ExitCode}.\nStdout: {stdout}\nStderr: {stderr}");
+
+                Console.WriteLine($"[xharness] Tool restore completed successfully");
+                s_xharnessToolRestored = true;
+            }
         }
 
         public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, Configuration config = Configuration.Undefined)
@@ -232,9 +295,8 @@ namespace Wasm.Build.Tests
             return (_logPath, _nugetPackagesDir);
         }
 
-        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true, string? targetFramework = null)
+        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true)
         {
-            targetFramework ??= DefaultTargetFramework;
             if (Directory.Exists(dir))
                 Directory.Delete(dir, recursive: true);
             Directory.CreateDirectory(dir);
@@ -248,12 +310,12 @@ namespace Wasm.Build.Tests
             {
                 File.WriteAllText(targetNuGetConfigPath,
                                     GetNuGetConfigWithLocalPackagesPath(
-                                                GetNuGetConfigPathFor(targetFramework),
+                                                GetNuGetConfigPath(),
                                                 s_buildEnv.BuiltNuGetsPath));
             }
             else
             {
-                File.Copy(GetNuGetConfigPathFor(targetFramework), targetNuGetConfigPath);
+                File.Copy(GetNuGetConfigPath(), targetNuGetConfigPath);
             }
         }
 

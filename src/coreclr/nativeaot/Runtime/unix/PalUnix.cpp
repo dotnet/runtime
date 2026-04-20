@@ -439,7 +439,7 @@ void ConfigureSignals()
 
 void InitializeCurrentProcessCpuCount()
 {
-    uint32_t count;
+    uint32_t count = 0;
 
     // If the configuration value has been set, it takes precedence. Otherwise, take into account
     // process affinity and CPU quota limit.
@@ -456,14 +456,41 @@ void InitializeCurrentProcessCpuCount()
     {
 #if HAVE_SCHED_GETAFFINITY
 
-        cpu_set_t cpuSet;
-        int st = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuSet);
-        if (st != 0)
+        int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+        if (configuredCpuCount == -1)
         {
-            _ASSERTE(!"sched_getaffinity failed");
+            // In the unlikely event that sysconf(_SC_NPROCESSORS_CONF) fails, just assume a reasonable default maximum number of CPUs to avoid failing.
+            configuredCpuCount = CPU_SETSIZE;
         }
 
-        count = CPU_COUNT(&cpuSet);
+        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        if (pCpuSet != nullptr)
+        {
+            size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+            CPU_ZERO_S(cpuSetSize, pCpuSet);
+
+            int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
+            if (st == 0)
+            {
+                count = (uint32_t)CPU_COUNT_S(CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            }
+            else
+            {
+                _ASSERTE(!"sched_getaffinity failed");
+            }
+
+            CPU_FREE(pCpuSet);
+        }
+        else
+        {
+            ASSERT("CPU_ALLOC failed!\n");
+        }
+
+        if (count == 0)
+        {
+            // If we failed to get the number of CPUs from sched_getaffinity, fall back to getting the total number of CPUs in the system.
+            count = GCToOSInterface::GetTotalProcessorCount();
+        }
 #else // HAVE_SCHED_GETAFFINITY
         count = GCToOSInterface::GetTotalProcessorCount();
 #endif // HAVE_SCHED_GETAFFINITY
@@ -475,24 +502,6 @@ void InitializeCurrentProcessCpuCount()
 
     _ASSERTE(count > 0);
     g_RhNumberOfProcessors = count;
-}
-
-static uint32_t g_RhPageSize;
-
-void InitializeOsPageSize()
-{
-    g_RhPageSize = (uint32_t)sysconf(_SC_PAGE_SIZE);
-
-#if defined(HOST_AMD64)
-    ASSERT(g_RhPageSize == 0x1000);
-#elif defined(HOST_APPLE)
-    ASSERT(g_RhPageSize == 0x4000);
-#endif
-}
-
-uint32_t PalGetOsPageSize()
-{
-    return g_RhPageSize;
 }
 
 #if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
@@ -531,8 +540,6 @@ bool PalInit()
     InitializeCpuCGroup();
 
     InitializeCurrentProcessCpuCount();
-
-    InitializeOsPageSize();
 
 #ifdef FEATURE_HIJACK
     if (!InitializeSignalHandling())
@@ -1017,24 +1024,24 @@ static struct sigaction g_previousActivationHandler;
 
 static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
-    // Only accept activations from the current process
-    if (siginfo->si_pid == getpid()
-#ifdef HOST_APPLE
-        // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
-        // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
-        || siginfo->si_pid == 0
-#endif
-        )
-    {
-        // Make sure that errno is not modified
-        int savedErrNo = errno;
-        Thread::HijackCallback((NATIVE_CONTEXT*)context, NULL);
-        errno = savedErrNo;
-    }
-
-    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailable();
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailableAsyncSafe();
     if (pThread)
     {
+        // Only accept activations from the current process
+        if (siginfo->si_pid == getpid()
+#ifdef HOST_APPLE
+            // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+            // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
+            || siginfo->si_pid == 0
+#endif
+            )
+        {
+            // Make sure that errno is not modified
+            int savedErrNo = errno;
+            Thread::HijackCallback((NATIVE_CONTEXT*)context, pThread, true /* doInlineSuspend */);
+            errno = savedErrNo;
+        }
+
         pThread->SetActivationPending(false);
     }
 

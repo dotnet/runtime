@@ -224,7 +224,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 var asset = new WasmAsset()
                 {
                     name = a.Key,
-                    integrity = a.Value
+                    hash = a.Value,
+                    cache = GetCacheControl(a.Key, resources)
                 };
 
                 if (bundlerFriendly)
@@ -239,6 +240,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.wasmSymbols = resources.wasmSymbols?.Select(a => new SymbolsAsset()
             {
                 name = a.Key,
+                cache = GetCacheControl(a.Key, resources)
             }).ToList();
 
             assets.icu = MapGeneralAssets(resources.icu);
@@ -284,7 +286,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 {
                     virtualPath = resources.fingerprinting?[a.Key] ?? a.Key,
                     name = a.Key,
-                    integrity = a.Value
+                    hash = a.Value,
+                    cache = GetCacheControl(a.Key, resources)
                 };
 
                 if (bundlerFriendly)
@@ -318,11 +321,13 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
             List<VfsAsset>? MapVfsAssets(Dictionary<string, Dictionary<string, string>>? assets) => assets?.Select(a =>
             {
+                string assetName = a.Value.Keys.First();
                 var asset = new VfsAsset()
                 {
                     virtualPath = a.Key,
-                    name = $"../{a.Value.Keys.First()}",
-                    integrity = a.Value.Values.First()
+                    name = $"../{assetName}",
+                    hash = a.Value.Values.First(),
+                    cache = GetCacheControl(assetName, resources)
                 };
 
                 if (bundlerFriendly)
@@ -339,5 +344,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
             return string.Join(Environment.NewLine, imports);
         }
+
+        private static string? GetCacheControl(string endpoint, ResourcesData resources) => resources.fingerprinting?.ContainsKey(endpoint) ?? false ? "force-cache" : null;
     }
 }

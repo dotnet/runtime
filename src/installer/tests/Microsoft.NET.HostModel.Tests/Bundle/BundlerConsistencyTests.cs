@@ -30,7 +30,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
 
         private static string BundlerHostName = Binaries.GetExeName(SharedTestState.AppName);
         private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true, OSPlatform? targetOS = null)
-            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign, targetOS: targetOS);
+            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetOS ?? Binaries.CurrentOSPlatform, RuntimeInformation.OSArchitecture, version, macosCodesign: macosCodesign);
 
         [Fact]
         public void EnableCompression_Before60_Fails()
@@ -245,7 +245,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             // work correctly in the presence of "."s in the hostName.
             using (var app = TestApp.CreateEmpty("App.With.Periods"))
             {
-                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion);
+                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, HostTestContext.MicrosoftNETCoreAppVersion);
 
                 string hostName = Path.GetFileName(app.AppExe);
                 string depsJsonName = Path.GetFileName(app.DepsJson);
@@ -259,7 +259,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 };
 
                 var bundleDir = new DirectoryInfo(app.GetUniqueSubdirectory("bundle"));
-                var bundler = new Bundler(hostName, bundleDir.FullName);
+                var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.None, Binaries.CurrentOSPlatform, RuntimeInformation.OSArchitecture);
                 bundler.GenerateBundle(fileSpecs);
 
 
@@ -415,7 +415,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 App = TestApp.CreateFromBuiltAssets(AppName);
                 NonAsciiApp = TestApp.CreateFromBuiltAssets("HelloWorld_中文");
 
-                SystemDll = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
+                SystemDll = Path.Combine(HostTestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
             }
 
             public void Dispose()

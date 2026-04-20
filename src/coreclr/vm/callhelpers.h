@@ -1,20 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 /*============================================================
-**
 ** File:    callhelpers.h
 ** Purpose: Provides helpers for making managed calls
-**
-
 ===========================================================*/
+
 #ifndef __CALLHELPERS_H__
 #define __CALLHELPERS_H__
 
+#ifdef TARGET_WASM
+// A sentinel value to indicate to the stack walker that this frame is NOT R2R generated managed code,
+// and it should look for the next Frame in the Frame chain to make further progress.
+#define TERMINATE_R2R_STACK_WALK 1
+
+#endif
+
 struct CallDescrData
 {
-    //
     // Input arguments
-    //
     LPVOID                      pSrc;
     UINT32                      numStackSlots;
 #ifdef CALLDESCR_ARGREGS
@@ -31,7 +35,9 @@ struct CallDescrData
 #ifdef TARGET_WASM
     // size of the arguments and the transition block are used to execute the method with the interpreter
     size_t                      nArgsSize;
-#endif
+    bool                        hasThis;
+    bool                        hasRetBuff;
+#endif // TARGET_WASM
 
 #ifdef CALLDESCR_RETBUFFARGREG
     // Pointer to return buffer arg location
@@ -75,7 +81,7 @@ void* DispatchCallSimple(
     SIZE_T *pSrc,
     DWORD numStackSlotsToCopy,
     PCODE pTargetAddress,
-    DWORD dwDispatchCallSimpleFlags);
+    BOOL fCriticalCall);
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 // Copy structs returned according to floating-point calling convention from 'returnRegs' containing struct fields
@@ -83,8 +89,6 @@ void* DispatchCallSimple(
 // 'dest' respecting the struct's layout described in 'info'.
 void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info, bool handleGcRefs);
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-
-bool IsCerRootMethod(MethodDesc *pMD);
 
 class MethodDescCallSite
 {
@@ -480,7 +484,6 @@ enum EEToManagedCallFlags
 #define BEGIN_CALL_TO_MANAGEDEX(flags)                                          \
 {                                                                               \
     MAKE_CURRENT_THREAD_AVAILABLE();                                            \
-    DECLARE_CPFH_EH_RECORD(CURRENT_THREAD);                                     \
     _ASSERTE(CURRENT_THREAD);                                                   \
     _ASSERTE((CURRENT_THREAD->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);     \
     /* This bit should never be set when we call into managed code.  The */     \
@@ -494,177 +497,209 @@ enum EEToManagedCallFlags
         if (CURRENT_THREAD->IsAbortRequested()) {                               \
             CURRENT_THREAD->HandleThreadAbort();                                \
         }                                                                       \
-    }                                                                           \
-    INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE();
+    }
 
 #define END_CALL_TO_MANAGED()                                                   \
-    UNINSTALL_COMPLUS_EXCEPTION_HANDLER();                                      \
 }
 
 /***********************************************************************/
 /* Macros that provide abstraction to the usage of DispatchCallSimple    */
 /***********************************************************************/
 
-enum DispatchCallSimpleFlags
-{
-    DispatchCallSimple_CriticalCall                  = 0x0001,
-    DispatchCallSimple_CatchHandlerFoundNotification = 0x0002,
-};
-
 #define ARGHOLDER_TYPE LPVOID
-#define OBJECTREF_TO_ARGHOLDER(x) (LPVOID)OBJECTREFToObject(x)
-#define STRINGREF_TO_ARGHOLDER(x) (LPVOID)STRINGREFToObject(x)
-#define PTR_TO_ARGHOLDER(x) (LPVOID)x
-#define DWORD_TO_ARGHOLDER(x)   (LPVOID)(SIZE_T)x
-#define BOOL_TO_ARGHOLDER(x) DWORD_TO_ARGHOLDER(!!(x))
-
-#define INIT_VARIABLES(count)                               \
-        DWORD   __numArgs = count;                          \
-        DWORD   __dwDispatchCallSimpleFlags = 0;            \
-
-#define PREPARE_NONVIRTUAL_CALLSITE(id) \
-        static PCODE s_pAddr##id = 0;                       \
-        PCODE __pSlot = VolatileLoad(&s_pAddr##id);         \
-        if ( __pSlot == 0 )                                 \
-        {                                                   \
-            MethodDesc *pMeth = CoreLibBinder::GetMethod(id);   \
-            _ASSERTE(pMeth);                                \
-            __pSlot = pMeth->GetMultiCallableAddrOfCode();  \
-            VolatileStore(&s_pAddr##id, __pSlot);           \
-        }
-
-#define PREPARE_VIRTUAL_CALLSITE(id, objref)                \
-        MethodDesc *__pMeth = CoreLibBinder::GetMethod(id);     \
-        PCODE __pSlot = __pMeth->GetCallTarget(&objref);
-
-#define PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pMD, objref)                \
-        PCODE __pSlot = pMD->GetCallTarget(&objref);
-
-#ifdef _DEBUG
-#define SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, methodTable)                     \
-        {                                                                        \
-            MethodDesc* __pMeth = methodTable->GetMethodDescForSlot(slotNumber); \
-            _ASSERTE(__pMeth);                                                   \
-            _ASSERTE(!__pMeth->HasMethodInstantiation() &&                       \
-                     !__pMeth->GetMethodTable()->IsInterface());                 \
-        }
-#else
-#define SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, objref)
-#endif
-
-// a simple virtual method is a non-interface/non-generic method
-// Note: objref has to be protected!
-#define PREPARE_SIMPLE_VIRTUAL_CALLSITE(id, objref)                              \
-        static WORD s_slot##id = MethodTable::NO_SLOT;                           \
-        WORD __slot = VolatileLoad(&s_slot##id);                                 \
-        if (__slot == MethodTable::NO_SLOT)                                      \
-        {                                                                        \
-            MethodDesc *pMeth = CoreLibBinder::GetMethod(id);                        \
-            _ASSERTE(pMeth);                                                     \
-            __slot = pMeth->GetSlot();                                           \
-            VolatileStore(&s_slot##id, __slot);                                  \
-        }                                                                        \
-        PREPARE_SIMPLE_VIRTUAL_CALLSITE_USING_SLOT(__slot, objref)               \
-
-// a simple virtual method is a non-interface/non-generic method
-#define PREPARE_SIMPLE_VIRTUAL_CALLSITE_USING_SLOT(slotNumber, objref)           \
-        MethodTable* __pObjMT = (objref)->GetMethodTable();                      \
-        SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, __pObjMT);                       \
-        PCODE __pSlot = (PCODE) __pObjMT->GetRestoredSlot(slotNumber);
-
-#define PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD)   \
-        PCODE __pSlot = (pMD)->GetSingleCallableAddrOfCode();
-
-#define PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pCode)       \
-        PCODE __pSlot = pCode;
-
-#define CRITICAL_CALLSITE                                   \
-        __dwDispatchCallSimpleFlags |= DispatchCallSimple_CriticalCall;
-
-// This flag should be used for callsites that catch exception up the stack inside the VM. The most common causes are
-// such as END_DOMAIN_TRANSITION or EX_CATCH. Catching exceptions in the managed code is properly instrumented and
-// does not need this notification.
-//
-// The notification is what enables both the managed 'unhandled exception' dialog and the 'user unhandled' dialog when
-// JMC is turned on. Many things that VS puts up the unhandled exception dialog for are actually cases where the native
-// exception was caught, for example catching exceptions at the thread base. JMC requires further accuracy - in that case
-// VS is checking to see if an exception escaped particular ranges of managed code frames.
-#define CATCH_HANDLER_FOUND_NOTIFICATION_CALLSITE            \
-        __dwDispatchCallSimpleFlags |= DispatchCallSimple_CatchHandlerFoundNotification;
-
-#define PERFORM_CALL    \
-        void * __retval = NULL;                         \
-        __retval = DispatchCallSimple(__pArgs,          \
-                           __numStackSlotsToCopy,       \
-                           __pSlot,                     \
-                           __dwDispatchCallSimpleFlags);\
-
-#ifdef CALLDESCR_ARGREGS
-
-#if defined(TARGET_X86)
-
-// Arguments on x86 are passed backward
-#define ARGNUM_0    1
-#define ARGNUM_1    0
-#define ARGNUM_N(n)    (__numArgs - (n) + 1)
-
-#else
-
-#define ARGNUM_0    0
-#define ARGNUM_1    1
-#define ARGNUM_N(n)    n
-
-#endif
-
-#define PRECALL_PREP(args)  \
-        DWORD __numStackSlotsToCopy = (__numArgs > NUM_ARGUMENT_REGISTERS) ? (__numArgs - NUM_ARGUMENT_REGISTERS) : 0; \
-        SIZE_T * __pArgs = (SIZE_T *)args;
-
-#define DECLARE_ARGHOLDER_ARRAY(arg, count)             \
-        INIT_VARIABLES(count)                           \
-        ARGHOLDER_TYPE arg[(count <= NUM_ARGUMENT_REGISTERS ? NUM_ARGUMENT_REGISTERS : count)];
-
-#else   // CALLDESCR_ARGREGS
-
-#define ARGNUM_0    0
-#define ARGNUM_1    1
-#define ARGNUM_N(n)    n
-
-#define PRECALL_PREP(args)                              \
-        DWORD __numStackSlotsToCopy = (__numArgs > NUM_ARGUMENT_REGISTERS) ? __numArgs : NUM_ARGUMENT_REGISTERS; \
-        SIZE_T * __pArgs = (SIZE_T *)args;
-
-#define DECLARE_ARGHOLDER_ARRAY(arg, count)             \
-        INIT_VARIABLES(count)                           \
-        ARGHOLDER_TYPE arg[(count <= NUM_ARGUMENT_REGISTERS ? NUM_ARGUMENT_REGISTERS : count)];
-
-#endif  // CALLDESCR_ARGREGS
-
-
-#define CALL_MANAGED_METHOD(ret, rettype, args)         \
-        PRECALL_PREP(args)                              \
-        PERFORM_CALL                                    \
-        ret = *(rettype *)(&__retval);
-
-#define CALL_MANAGED_METHOD_NORET(args)                 \
-        PRECALL_PREP(args)                              \
-        PERFORM_CALL
-
-#define CALL_MANAGED_METHOD_RETREF(ret, reftype, args)  \
-        PRECALL_PREP(args)                              \
-        PERFORM_CALL                                    \
-        ret = (reftype)ObjectToOBJECTREF((Object *)__retval);
-
-#define ARGNUM_2 ARGNUM_N(2)
-#define ARGNUM_3 ARGNUM_N(3)
-#define ARGNUM_4 ARGNUM_N(4)
-#define ARGNUM_5 ARGNUM_N(5)
-#define ARGNUM_6 ARGNUM_N(6)
-#define ARGNUM_7 ARGNUM_N(7)
-#define ARGNUM_8 ARGNUM_N(8)
-
 
 void CallDefaultConstructor(OBJECTREF ref);
+
+//
+// Helper types for calling managed methods marked with [UnmanagedCallersOnly]
+// from native code.
+//
+
+// Use CLR_BOOL_ARG to convert a BOOL value to a CLR_BOOL for passing to
+// UnmanagedCallersOnlyCaller::InvokeThrowing when the managed parameter is bool.
+#define CLR_BOOL_ARG(x) ((CLR_BOOL)(!!(x)))
+
+// Helper class for calling managed methods marked with [UnmanagedCallersOnly].
+// This provides a more efficient alternative to MethodDescCallSite for methods
+// using the reverse P/Invoke infrastructure.
+// This class assumes the target method signature has a trailing argument for
+// returning the exception (that is, Exception* in C#).
+//
+// Example usage:
+//   UnmanagedCallersOnlyCaller caller(BinderMethodID::MyMethod);
+//   ...
+//   caller.InvokeThrowing(arg1, arg2);
+//
+// The corresponding C# method would be declared as:
+//   [UnmanagedCallersOnly]
+//   public static void MyMethod(int arg1, object* arg2, Exception* pException);
+//
+class UnmanagedCallersOnlyCaller final
+{
+    MethodDesc* _pMD;
+public:
+    explicit UnmanagedCallersOnlyCaller(BinderMethodID id)
+        : _pMD{}
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _pMD = CoreLibBinder::GetMethod(id);
+        _ASSERTE(_pMD != NULL);
+        _ASSERTE(_pMD->HasUnmanagedCallersOnlyAttribute());
+    }
+
+    template<typename... Args>
+    void InvokeThrowing(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        // Sanity check - UnmanagedCallersOnly methods must be in CoreLib.
+        // See below load level override.
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        // We're invoking an CoreLib method, so lift the restriction on type load limits. These calls are
+        // limited to CoreLib and only into UnmanagedCallersOnly methods.
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        struct
+        {
+            OBJECTREF Exception;
+        } gc;
+        gc.Exception = NULL;
+        GCPROTECT_BEGIN(gc);
+
+        {
+            GCX_PREEMP();
+
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+            _ASSERTE(methodEntry != (PCODE)NULL);
+
+            // Cast the function pointer to the appropriate type.
+            // Note that we append the exception handle argument.
+            auto fptr = reinterpret_cast<void(*)(Args..., OBJECTREF*)>(methodEntry);
+
+            // The last argument is the implied exception handle for any exceptions.
+            fptr(args..., &gc.Exception);
+        }
+
+        // If an exception was thrown, propagate it
+        if (gc.Exception != NULL)
+            COMPlusThrow(gc.Exception);
+
+        GCPROTECT_END();
+    }
+
+    template<typename Ret, typename... Args>
+    Ret InvokeThrowing_Ret(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        // Sanity check - UnmanagedCallersOnly methods must be in CoreLib.
+        // See below load level override.
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        // We're invoking an CoreLib method, so lift the restriction on type load limits. These calls are
+        // limited to CoreLib and only into UnmanagedCallersOnly methods.
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        Ret ret;
+
+        struct
+        {
+            OBJECTREF Exception;
+        } gc;
+        gc.Exception = NULL;
+        GCPROTECT_BEGIN(gc);
+
+        {
+            GCX_PREEMP();
+
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+            _ASSERTE(methodEntry != (PCODE)NULL);
+
+            // Cast the function pointer to the appropriate type.
+            // Note that we append the exception handle argument.
+            auto fptr = reinterpret_cast<Ret(*)(Args..., OBJECTREF*)>(methodEntry);
+
+            // The last argument is the implied exception handle for any exceptions.
+            ret = fptr(args..., &gc.Exception);
+        }
+
+        // If an exception was thrown, propagate it
+        if (gc.Exception != NULL)
+            COMPlusThrow(gc.Exception);
+
+        GCPROTECT_END();
+
+        return ret;
+    }
+
+    template<typename... Args>
+    void InvokeDirect(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        GCX_PREEMP();
+
+        PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+        _ASSERTE(methodEntry != (PCODE)NULL);
+
+        auto fptr = reinterpret_cast<void(*)(Args...)>(methodEntry);
+        fptr(args...);
+    }
+
+    template<typename Ret, typename... Args>
+    Ret InvokeDirect_Ret(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        GCX_PREEMP();
+
+        PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+        _ASSERTE(methodEntry != (PCODE)NULL);
+
+        auto fptr = reinterpret_cast<Ret(*)(Args...)>(methodEntry);
+        return fptr(args...);
+    }
+};
 
 #endif //!DACCESS_COMPILE
 

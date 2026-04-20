@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Buffers.Binary;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -19,7 +20,7 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal abstract partial class UnixObjectWriter : ObjectWriter
     {
-        private sealed record UnixSectionDefinition(string SymbolName, Stream SectionStream);
+        private sealed record UnixSectionDefinition(Utf8String SymbolName, Stream SectionStream);
         private readonly List<UnixSectionDefinition> _sections = new();
 
         private static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly);
@@ -30,12 +31,12 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
             if (section.Type != SectionType.Debug &&
                 section != LsdaSection &&
                 section != EhFrameSection &&
-                (comdatName is null || Equals(comdatName, symbolName)))
+                (comdatName.IsNull || Equals(comdatName, symbolName)))
             {
                 // Record code and data sections that can be referenced from debugging information
                 _sections.Add(new UnixSectionDefinition(symbolName, sectionStream));

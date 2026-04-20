@@ -276,7 +276,6 @@ namespace System.Runtime.InteropServices.Tests
             ComVariantMarshaller.Free(variant);
         }
 
-#pragma warning disable CS0618 // Type or member is obsolete
         public static IEnumerable<object[]> ValidCurrencyValues()
         {
             yield return new object[] { decimal.FromOACurrency(long.MinValue) };
@@ -295,7 +294,6 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(value, Assert.IsType<decimal>(ComVariantMarshaller.ConvertToManaged(variant)));
             ComVariantMarshaller.Free(variant);
         }
-#pragma warning restore CS0618 // Type or member is obsolete
 
         [GeneratedComInterface]
         [Guid("ADD9E468-1503-48E5-AA18-B6B6BD1FF34A")]

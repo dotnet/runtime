@@ -11,8 +11,10 @@ internal sealed class ProfControlBlock : IData<ProfControlBlock>
     public ProfControlBlock(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ProfControlBlock);
-        GlobalEventMask = target.Read<ulong>(address + (ulong)type.Fields[nameof(GlobalEventMask)].Offset);
+        GlobalEventMask = target.ReadField<ulong>(address, type, nameof(GlobalEventMask));
+        RejitOnAttachEnabled = target.ReadField<byte>(address, type, nameof(RejitOnAttachEnabled)) != 0;
     }
 
     public ulong GlobalEventMask { get; init; }
+    public bool RejitOnAttachEnabled { get; init; }
 }

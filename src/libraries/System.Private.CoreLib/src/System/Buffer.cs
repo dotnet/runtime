@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -100,6 +101,7 @@ namespace System
         // Please do not edit unless intentional.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy)
         {
             if (sourceBytesToCopy > destinationSizeInBytes)
@@ -114,6 +116,7 @@ namespace System
         // Please do not edit unless intentional.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy)
         {
             if (sourceBytesToCopy > destinationSizeInBytes)
@@ -122,27 +125,6 @@ namespace System
             }
 
             Memmove(ref *(byte*)destination, ref *(byte*)source, checked((nuint)sourceBytesToCopy));
-        }
-
-        // Non-inlinable wrapper around the QCall that avoids polluting the fast path
-        // with P/Invoke prolog/epilog.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe void MemmoveInternal(ref byte dest, ref byte src, nuint len)
-        {
-            fixed (byte* pDest = &dest)
-            fixed (byte* pSrc = &src)
-                MemmoveInternal(pDest, pSrc, len);
-        }
-
-        // Non-inlinable wrapper around the QCall that avoids polluting the fast path
-        // with P/Invoke prolog/epilog.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe void ZeroMemoryInternal(ref byte b, nuint byteLength)
-        {
-            fixed (byte* bytePointer = &b)
-            {
-                ZeroMemoryInternal(bytePointer, byteLength);
-            }
         }
 
 #if !MONO // Mono BulkMoveWithWriteBarrier is in terms of elements (not bytes) and takes a type handle.

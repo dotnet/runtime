@@ -72,12 +72,12 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
     else if (addr->IsCnsIntOrI() && addr->isContained())
     {
         GenTreeIntConCommon* icon = addr->AsIntConCommon();
-        assert(!icon->ImmedValNeedsReloc(compiler));
+        assert(!icon->ImmedValNeedsReloc(m_compiler));
         icon->SetIconValue(icon->IconValue() + 8);
     }
     else
     {
-        addr = new (compiler, GT_LEA) GenTreeAddrMode(addr->TypeGet(), addr, nullptr, 0, 8);
+        addr = new (m_compiler, GT_LEA) GenTreeAddrMode(addr->TypeGet(), addr, nullptr, 0, 8);
         addr->SetContained();
     }
 
@@ -138,12 +138,12 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
     else if (addr->IsCnsIntOrI() && addr->isContained())
     {
         GenTreeIntConCommon* icon = addr->AsIntConCommon();
-        assert(!icon->ImmedValNeedsReloc(compiler));
+        assert(!icon->ImmedValNeedsReloc(m_compiler));
         icon->SetIconValue(icon->IconValue() + 8);
     }
     else
     {
-        addr = new (compiler, GT_LEA) GenTreeAddrMode(addr->TypeGet(), addr, nullptr, 0, 8);
+        addr = new (m_compiler, GT_LEA) GenTreeAddrMode(addr->TypeGet(), addr, nullptr, 0, 8);
         addr->SetContained();
     }
 
@@ -175,14 +175,14 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 
     unsigned offs   = treeNode->GetLclOffs();
     unsigned varNum = treeNode->GetLclNum();
-    assert(varNum < compiler->lvaCount);
+    assert(varNum < m_compiler->lvaCount);
 
     GenTree* data = treeNode->Data();
     assert(!data->isContained());
 
     regNumber  tgtReg  = treeNode->GetRegNum();
     regNumber  dataReg = genConsumeReg(data);
-    LclVarDsc* varDsc  = compiler->lvaGetDesc(varNum);
+    LclVarDsc* varDsc  = m_compiler->lvaGetDesc(varNum);
 
     if (tgtReg != REG_NA)
     {
@@ -368,7 +368,7 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
         // The localVar must have a stack home.
 
         unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
         assert(varDsc->lvOnFrame);
 
         if (op1->TypeIs(TYP_SIMD32))
@@ -423,7 +423,7 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
     {
         // The localVar must have a stack home.
         unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
         assert(varDsc->lvOnFrame);
         if (op1->TypeIs(TYP_SIMD32))
         {

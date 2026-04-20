@@ -60,11 +60,11 @@ namespace System.Reflection.Metadata
 #else
             PublicKeyOrToken = parts._publicKeyOrToken is null ? default : parts._publicKeyOrToken.Length == 0
                 ? ImmutableArray<byte>.Empty
-    #if NET
+#if NET
                 : Runtime.InteropServices.ImmutableCollectionsMarshal.AsImmutableArray(parts._publicKeyOrToken);
-    #else
+#else
                 : ImmutableArray.Create(parts._publicKeyOrToken);
-    #endif
+#endif
 #endif
         }
 

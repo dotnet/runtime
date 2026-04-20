@@ -61,7 +61,8 @@ JMP_SMALL(ne    , eq    , bne    )  // NE
 
 #elif defined(TARGET_WASM)
 
-JMP_SMALL(jmp   , jmp   ,  br    )
+JMP_SMALL(jmp   , br    , br     )
+JMP_SMALL(jmpif , br_if , br_if  )
 
 #else
   #error Unsupported or unset target architecture

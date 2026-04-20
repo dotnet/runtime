@@ -9,11 +9,10 @@
 /*****************************************************************************/
 //
 //     Node enum
-//                       , GenTree struct flavor
-//                                           ,commutative
-//                                             ,illegal as VN func
-//                                               ,oper kind | DEBUG oper kind
-
+//                      , GenTree struct flavor
+//                      ,                    ,commutative
+//                      ,                    , ,illegal as VN func
+//                      ,                    , , ,(oper kind | DEBUG oper kind)
 GTNODE(NONE             , char               ,0,0,GTK_SPECIAL)
 
 //-----------------------------------------------------------------------------
@@ -295,6 +294,13 @@ GTNODE(SH3ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(ADD_UW           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Maps to riscv64 slli.uw instruction. Computes result = zext(op1[31..0]) << imm.
 GTNODE(SLLI_UW          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+
+// Maps to bset/bseti instruction. Computes result = op1 | (1 << op2)
+GTNODE(BIT_SET          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to bclr/bclri instruction. Computes result = op1 & ~(1 << op2)
+GTNODE(BIT_CLEAR        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to binv/binvi instruction. Computes result = op1 ^ (1 << op2)
+GTNODE(BIT_INVERT       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------
@@ -307,7 +313,7 @@ GTNODE(JTRUE            , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 //  Other nodes that have special structure:
 //-----------------------------------------------------------------------------
 
-GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,0,GTK_SPECIAL)            // Multi-dimensional array-element address
+GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,0,GTK_SPECIAL|DBK_NOTLIR)  // Multi-dimensional array-element address
 GTNODE(CALL             , GenTreeCall        ,0,0,GTK_SPECIAL|DBK_NOCONTAIN)
 GTNODE(FIELD_LIST       , GenTreeFieldList   ,0,0,GTK_SPECIAL)            // List of fields of a struct, when passed as an argument
 
@@ -325,9 +331,6 @@ GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(PROF_HOOK        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Profiler Enter/Leave/TailCall hook.
 
 GTNODE(RETFILT          , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // End filter with TYP_I_IMPL return value.
-#if defined(FEATURE_EH_WINDOWS_X86)
-GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End locally-invoked finally.
-#endif // FEATURE_EH_WINDOWS_X86
 
 //-----------------------------------------------------------------------------
 //  Swift interop-specific nodes:
@@ -336,6 +339,12 @@ GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End l
 GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)              // Error register value post-Swift call
 GTNODE(SWIFT_ERROR_RET  , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE) // Returns normal return value, and SwiftError pseudolocal's value in REG_SWIFT_ERROR.
 																		 // op1 is the error value, and op2 is the return value (or null if the method returns void).
+//-----------------------------------------------------------------------------
+//  Wasm specific nodes:
+//-----------------------------------------------------------------------------
+
+GTNODE(WASM_JEXCEPT     , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // Special jump for Wasm exception handling
+GTNODE(WASM_THROW_REF   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // Wasm rethrow host exception (exception is an implicit operand)
 
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes
@@ -349,9 +358,6 @@ GTNODE(SWITCH_TABLE     , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 //-----------------------------------------------------------------------------
 
 GTNODE(PHYSREG          , GenTreePhysReg     ,0,0,GTK_LEAF|DBK_NOTHIR)              // read from a physical register
-GTNODE(EMITNOP          , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // emitter-placed nop
-GTNODE(PINVOKE_PROLOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // pinvoke prolog seq
-GTNODE(PINVOKE_EPILOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // pinvoke epilog seq
 GTNODE(RETURNTRAP       , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // a conditional call to wait on gc
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in register
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // operator that places outgoing arg in stack

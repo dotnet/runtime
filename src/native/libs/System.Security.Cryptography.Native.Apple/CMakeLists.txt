@@ -6,7 +6,6 @@ set(NATIVE_LIBS_EXTRA)
 append_extra_cryptography_apple_libs(NATIVE_LIBS_EXTRA)
 
 set(NATIVECRYPTO_SOURCES
-    pal_digest.c
     pal_ecc.c
     pal_hmac.c
     pal_keyagree.c
@@ -24,7 +23,7 @@ set(NATIVECRYPTO_SOURCES
     pal_networkframework.m
 )
 
-if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if (CLR_CMAKE_TARGET_APPLE_MOBILE)
     set(NATIVECRYPTO_SOURCES
         ${NATIVECRYPTO_SOURCES}
         pal_keychain_ios.c
@@ -90,7 +89,7 @@ endif()
 
 add_custom_command(
     OUTPUT pal_swiftbindings.o
-    COMMAND xcrun swiftc -emit-object -static -parse-as-library -enable-library-evolution ${SWIFT_COMPILER_ERRORS_FLAG} -g ${SWIFT_OPTIMIZATION_FLAG} -runtime-compatibility-version none ${SWIFT_SDK_FLAG} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
+    COMMAND xcrun swiftc -emit-object -static -parse-as-library -enable-library-evolution ${SWIFT_COMPILER_ERRORS_FLAG} -gline-tables-only ${SWIFT_OPTIMIZATION_FLAG} -runtime-compatibility-version none ${SWIFT_SDK_FLAG} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
     MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift
     COMMENT "Compiling Swift file pal_swiftbindings.swift"
 )
@@ -116,7 +115,7 @@ if (GEN_SHARED_LIB)
     )
 endif()
 
-if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_APPLE_MOBILE)
     set(NATIVECRYPTO_SOURCES ${NATIVECRYPTO_SOURCES} entrypoints.c)
 endif()
 
@@ -133,7 +132,7 @@ if (GEN_SHARED_LIB)
         ${NATIVE_LIBS_EXTRA}
     )
 
-    if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    if (NOT CLR_CMAKE_TARGET_APPLE_MOBILE)
         add_custom_command(TARGET System.Security.Cryptography.Native.Apple POST_BUILD
             COMMENT "Verifying System.Security.Cryptography.Native.Apple points against entrypoints.c "
             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh

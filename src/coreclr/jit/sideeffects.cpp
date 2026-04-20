@@ -318,6 +318,19 @@ void AliasSet::AddNode(Compiler* compiler, GenTree* node)
     if (nodeInfo.IsLclVarWrite())
     {
         m_lclVarWrites.Add(compiler, nodeInfo.LclNum());
+
+        LclVarDsc* dsc = compiler->lvaGetDesc(nodeInfo.LclNum());
+        if (dsc->lvIsStructField)
+        {
+            m_lclVarWrites.Add(compiler, dsc->lvParentLcl);
+        }
+        else if (dsc->lvPromoted)
+        {
+            for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+            {
+                m_lclVarWrites.Add(compiler, dsc->lvFieldLclStart + i);
+            }
+        }
     }
 }
 
@@ -489,7 +502,10 @@ SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node)
 //
 void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 {
-    m_sideEffectFlags |= node->OperEffects(compiler);
+    ExceptionSetFlags preciseExceptions;
+    GenTreeFlags      operEffects = node->OperEffects(compiler, &preciseExceptions);
+    m_sideEffectFlags |= operEffects;
+    m_preciseExceptions |= preciseExceptions;
     m_aliasSet.AddNode(compiler, node);
 }
 
@@ -507,12 +523,14 @@ void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 //        - One set's reads and writes interfere with the other set's reads and writes
 //
 // Arguments:
-//    otherSideEffectFlags - The side effect flags for the other side effect set.
+//    otherSideEffectFlags   - The side effect flags for the other side effect set.
+//    otherPreciseExceptions - The precise exceptions for the other side effect set.
 //    otherAliasInfo - The alias information for the other side effect set.
 //    strict - True if the analysis should be strict as described above.
 //
 template <typename TOtherAliasInfo>
 bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
+                                   ExceptionSetFlags      otherPreciseExceptions,
                                    const TOtherAliasInfo& otherAliasInfo,
                                    bool                   strict) const
 {
@@ -535,10 +553,15 @@ bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
             return true;
         }
 
-        // If both sets produce an exception, the sets interfere.
+        // If both sets produce non-reorderable exceptions the sets interfere
         if (thisProducesException && otherProducesException)
         {
-            return true;
+            if ((((m_preciseExceptions | otherPreciseExceptions) & ExceptionSetFlags::UnknownException) !=
+                 ExceptionSetFlags::None) ||
+                (genCountBits((uint32_t)m_preciseExceptions) > 1) || (m_preciseExceptions != otherPreciseExceptions))
+            {
+                return true;
+            }
         }
     }
 
@@ -575,7 +598,7 @@ bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
 //
 bool SideEffectSet::InterferesWith(const SideEffectSet& other, bool strict) const
 {
-    return InterferesWith(other.m_sideEffectFlags, other.m_aliasSet, strict);
+    return InterferesWith(other.m_sideEffectFlags, other.m_preciseExceptions, other.m_aliasSet, strict);
 }
 
 //------------------------------------------------------------------------
@@ -593,7 +616,9 @@ bool SideEffectSet::InterferesWith(const SideEffectSet& other, bool strict) cons
 //
 bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, bool strict) const
 {
-    return InterferesWith(node->OperEffects(compiler), AliasSet::NodeInfo(compiler, node), strict);
+    ExceptionSetFlags preciseExceptions;
+    GenTreeFlags      operEffects = node->OperEffects(compiler, &preciseExceptions);
+    return InterferesWith(operEffects, preciseExceptions, AliasSet::NodeInfo(compiler, node), strict);
 }
 
 //------------------------------------------------------------------------
@@ -782,6 +807,7 @@ bool SideEffectSet::IsLirRangeInvariantInRange(
 //
 void SideEffectSet::Clear()
 {
-    m_sideEffectFlags = 0;
+    m_sideEffectFlags   = 0;
+    m_preciseExceptions = ExceptionSetFlags::None;
     m_aliasSet.Clear();
 }

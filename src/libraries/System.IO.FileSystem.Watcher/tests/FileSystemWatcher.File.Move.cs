@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class File_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
@@ -224,20 +223,13 @@ namespace System.IO.Tests
 
             Action action = () => Array.ForEach(files, file => File.Move(file.FileInWatchedDir, file.FileInUnwatchedDir));
 
-            // On macOS, for each file we receive two events as describe in comment below.
-            int expectEvents = filesCount;
-            if (skipOldEvents)
-            {
-                expectEvents = expectEvents * 3;
-            }
+            // Filter out Created and Changed events as there is a race-condition when moving a file and then observing a parent folder. It receives Create and Changed events although Watcher is not registered yet.
+            // Also filter out duplicate events as Mac FSEvents can deliver the same Deleted event multiple times.
+            Func<FiredEvent, bool>? isFilteredOut = skipOldEvents
+                ? CreateDeduplicatingFilter(WatcherChangeTypes.Created | WatcherChangeTypes.Changed)
+                : null;
 
-            IEnumerable<FiredEvent> events = ExpectEvents(watcher, expectEvents, action);
-
-            // Remove Created and Changed events as there is racecondition when create file and then observe parent folder. It receives Create and Changed event altought Watcher is not registered yet.
-            if (skipOldEvents)
-            {
-                events = events.Where(x => (x.EventType & (WatcherChangeTypes.Created | WatcherChangeTypes.Changed)) == 0);
-            }
+            IEnumerable<FiredEvent> events = ExpectEvents(watcher, filesCount, action, isFilteredOut);
 
             var expectedEvents = files.Select(file => new FiredEvent(WatcherChangeTypes.Deleted, file.FileInWatchedDir));
 

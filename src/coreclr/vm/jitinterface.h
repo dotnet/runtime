@@ -1,23 +1,28 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: JITinterface.H
 //
-
 // ===========================================================================
-
 
 #ifndef JITINTERFACE_H
 #define JITINTERFACE_H
 
 #include "corjit.h"
 
-#ifndef TARGET_UNIX
-#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
-#else // !TARGET_UNIX
+#if defined (TARGET_WASM)
+// TODO: Set this value to 0 for Wasm
+#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT (1024 - 1)
+#elif defined (TARGET_UNIX)
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
-#endif // !TARGET_UNIX
+#else
+#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
+#endif
+
 #include "pgo.h"
+
+class ILCodeStream;
 
 enum StompWriteBarrierCompletionAction
 {
@@ -204,12 +209,6 @@ extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
 
-// ARM64 JIT_WriteBarrier uses special ABI and thus is not callable directly
-// Copied write barriers must be called at a different location
-extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
-
-#define WriteBarrier_Helper JIT_WriteBarrier_Callable
-
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
 #ifndef HOST_64BIT
@@ -261,10 +260,6 @@ void ValidateWriteBarrierHelpers();
 
 extern "C"
 {
-#ifndef FEATURE_EH_FUNCLETS
-    void STDCALL JIT_EndCatch();               // JIThelp.asm/JIThelp.s
-#endif // FEATURE_EH_FUNCLETS
-
     void STDCALL JIT_ByRefWriteBarrier();      // JIThelp.asm/JIThelp.s
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
@@ -739,17 +734,15 @@ public:
         m_pPatchpointInfoFromJit = NULL;
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
         m_moduleBase = (TADDR)0;
         m_totalUnwindSize = 0;
         m_usedUnwindSize = 0;
         m_theUnwindBlock = NULL;
         m_totalUnwindInfos = 0;
         m_usedUnwindInfos = 0;
-#endif // FEATURE_EH_FUNCLETS
     }
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
     void SetAllowRel32(BOOL fAllowRel32)
     {
         LIMITED_METHOD_CONTRACT;
@@ -757,7 +750,7 @@ public:
     }
 #endif
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
     void SetJumpStubOverflow(BOOL fJumpStubOverflow)
     {
         LIMITED_METHOD_CONTRACT;
@@ -809,7 +802,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return 0;
     }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     // Called by the runtime to supply patchpoint information to the jit.
@@ -827,18 +820,16 @@ public:
     CEEJitInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header,
                EECodeGenManager* jm)
         : CEECodeGenInfo(config, fd, header, jm)
-#ifdef FEATURE_EH_FUNCLETS
         , m_moduleBase(0),
           m_totalUnwindSize(0),
           m_usedUnwindSize(0),
           m_theUnwindBlock(NULL),
           m_totalUnwindInfos(0),
           m_usedUnwindInfos(0)
-#endif
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
         , m_fAllowRel32(FALSE)
 #endif
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         , m_fJumpStubOverflow(FALSE),
           m_reserveForJumpStubs(0)
 #endif
@@ -920,20 +911,17 @@ protected :
     ComputedPgoData*        m_foundPgoData = nullptr;
 #endif
 
-
-#ifdef FEATURE_EH_FUNCLETS
     TADDR                   m_moduleBase;       // Base for unwind Infos
     ULONG                   m_totalUnwindSize;  // Total reserved unwind space
     uint32_t                m_usedUnwindSize;   // used space in m_theUnwindBlock
     BYTE *                  m_theUnwindBlock;   // start of the unwind memory block
     ULONG                   m_totalUnwindInfos; // Number of RUNTIME_FUNCTION needed
     ULONG                   m_usedUnwindInfos;
-#endif
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
     BOOL                    m_fAllowRel32;      // Use 32-bit PC relative address modes
 #endif
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
     BOOL                    m_fJumpStubOverflow;   // Overflow while trying to alocate jump stub slot within PC relative branch region
                                                    // The code will need to be regenerated (with m_fRel32Allowed == FALSE for AMD64).
     size_t                  m_reserveForJumpStubs; // Space to reserve for jump stubs when allocating code
@@ -980,6 +968,8 @@ public:
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
+    
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
 };
 #endif // FEATURE_INTERPRETER
 
@@ -1009,13 +999,25 @@ struct VMHELPDEF
     bool IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const;
 };
 
+struct VMAUXILIARYSYMBOLDEF
+{
+    PCODE pfnAuxiliarySymbol;
+    PTR_CSTR name;
+};
+
+#define MAX_AUXILIARY_SYMBOLS 7
+
 #if defined(DACCESS_COMPILE)
 
 GARY_DECL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
+GARY_DECL(VMAUXILIARYSYMBOLDEF, hlpAuxiliarySymbolTable, MAX_AUXILIARY_SYMBOLS);
+GVAL_DECL(DWORD, g_auxiliarySymbolCount);
 
 #else
 
 extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
+extern "C" VMAUXILIARYSYMBOLDEF hlpAuxiliarySymbolTable[MAX_AUXILIARY_SYMBOLS];
+extern "C" DWORD g_auxiliarySymbolCount;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 extern "C" PCODE hlpFuncEntryPoints[CORINFO_HELP_COUNT];
@@ -1031,6 +1033,7 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
+void SetAuxiliarySymbol(void* pFunc, const char* name);
 
 PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);

@@ -7,6 +7,7 @@
 #endif
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -239,8 +240,32 @@ namespace System
             Debug.Assert(len > 0);
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
             _ = Unsafe.ReadUnaligned<byte>(ref src);
-            Buffer.MemmoveInternal(ref dest, ref src, len);
+            MemmoveNative(ref dest, ref src, len);
         }
+
+        // Non-inlinable wrapper around the QCall that avoids polluting the fast path
+        // with P/Invoke prolog/epilog.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe void MemmoveNative(ref byte dest, ref byte src, nuint len)
+        {
+            fixed (byte* pDest = &dest)
+            fixed (byte* pSrc = &src)
+            {
+                memmove(pDest, pSrc, len);
+            }
+        }
+
+#if MONO
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe void memmove(void* dest, void* src, nuint len);
+#else
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [RequiresUnsafe]
+        private static unsafe partial void* memmove(void* dest, void* src, nuint len);
+#pragma warning restore CS3016
+#endif
 
         [Intrinsic] // Unrolled for small sizes
         public static void ClearWithoutReferences(ref byte dest, nuint len)
@@ -425,8 +450,46 @@ namespace System
         PInvoke:
             // Implicit nullchecks
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
-            Buffer.ZeroMemoryInternal(ref dest, len);
+            ZeroMemoryNative(ref dest, len);
         }
+
+        // Non-inlinable wrapper around the QCall that avoids polluting the fast path
+        // with P/Invoke prolog/epilog.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe void ZeroMemoryNative(ref byte b, nuint byteLength)
+        {
+            fixed (byte* ptr = &b)
+            {
+                byte* adjustedPtr = ptr;
+#if TARGET_X86 || TARGET_AMD64
+                if (byteLength > 0x100)
+                {
+                    // memset ends up calling rep stosb if the hardware claims to support it efficiently. rep stosb is up to 2x slower
+                    // on misaligned blocks. Workaround this issue by aligning the blocks passed to memset upfront.
+                    Unsafe.WriteUnaligned<Block16>(ptr, default);
+                    Unsafe.WriteUnaligned<Block16>(ptr + byteLength - 16, default);
+
+                    byte* alignedEnd = (byte*)((nuint)(ptr + byteLength - 1) & ~(nuint)(16 - 1));
+
+                    adjustedPtr = (byte*)(((nuint)ptr + 16) & ~(nuint)(16 - 1));
+                    byteLength = (nuint)(alignedEnd - adjustedPtr);
+                }
+#endif
+                memset(adjustedPtr, 0, byteLength);
+            }
+        }
+
+#if MONO
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe void memset(void* dest, int value, nuint len);
+#else
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memset")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [RequiresUnsafe]
+        private static unsafe partial void* memset(void* dest, int value, nuint len);
+#pragma warning restore CS3016
+#endif
 
         internal static void Fill(ref byte dest, byte value, nuint len)
         {

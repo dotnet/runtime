@@ -1,22 +1,9 @@
 include_directories("../../pal/prebuilt/corerror")
 
-add_definitions(-DFX_VER_INTERNALNAME_STR=mscorrc.dll)
-
 if(CLR_CMAKE_HOST_WIN32)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NOENTRY")
-
-    # remove /guard:cf, /guard:ehcont, and /CETCOMPAT from resource-only libraries
-    set_property(DIRECTORY PROPERTY CLR_CONTROL_FLOW_GUARD OFF)
-
-    if (CLR_CMAKE_HOST_ARCH_AMD64)
-        set_property(DIRECTORY PROPERTY CLR_EH_CONTINUATION OFF)
-        string(REPLACE "/CETCOMPAT" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
-    endif (CLR_CMAKE_HOST_ARCH_AMD64)
-
-    add_library_clr(mscorrc SHARED
+    add_library_clr(mscorrc OBJECT
         include.rc
     )
-    install_clr(TARGETS mscorrc DESTINATIONS . sharedFramework COMPONENT runtime)
 
 else()
     build_resources(${CMAKE_CURRENT_SOURCE_DIR}/include.rc mscorrc TARGET_CPP_FILE)

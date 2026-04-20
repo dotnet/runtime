@@ -281,19 +281,19 @@ struct Agnostic_CORINFO_LOOKUP_KIND
 {
     DWORD needsRuntimeLookup;
     DWORD runtimeLookupKind;
-    WORD  runtimeLookupFlags;
 };
 
 struct Agnostic_CORINFO_RUNTIME_LOOKUP
 {
-    DWORDLONG signature;
-    DWORD     helper;
-    DWORD     indirections;
-    DWORD     testForNull;
-    WORD      sizeOffset;
-    DWORDLONG offsets[CORINFO_MAXINDIRECTIONS];
-    DWORD     indirectFirstOffset;
-    DWORD     indirectSecondOffset;
+    DWORDLONG                     signature;
+    DWORD                         helper;
+    DWORD                         indirections;
+    DWORD                         testForNull;
+    WORD                          sizeOffset;
+    DWORDLONG                     offsets[CORINFO_MAXINDIRECTIONS];
+    DWORD                         indirectFirstOffset;
+    DWORD                         indirectSecondOffset;
+    Agnostic_CORINFO_CONST_LOOKUP helperEntryPoint;
 };
 
 struct Agnostic_CORINFO_LOOKUP
@@ -667,6 +667,12 @@ struct Agnostic_GetContinuationTypeIn
     DWORD     objRefsSize;
 };
 
+struct Agnostic_GetWasmTypeSymbol
+{
+    DWORD types;
+    DWORD typesSize;
+};
+
 struct Agnostic_ResolveVirtualMethodKey
 {
     DWORDLONG                       virtualMethod;
@@ -681,7 +687,7 @@ struct Agnostic_ResolveVirtualMethodResult
     bool                            returnValue;
     DWORDLONG                       devirtualizedMethod;
     bool                            isInstantiatingStub;
-    bool                            wasArrayInterfaceDevirt;
+    bool                            needsMethodContext;
     DWORDLONG                       exactContext;
     DWORD                           detail;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
@@ -735,7 +741,6 @@ struct GetCookieForInterpreterCalliSigValue
 struct GetReadyToRunHelper_TOKENin
 {
     Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
-    Agnostic_CORINFO_LOOKUP_KIND    GenericLookupKind;
     DWORD                           id;
     DWORDLONG                       callerHandle;
 };
@@ -768,7 +773,6 @@ struct Capture_AllocMemDetails
     ULONG              coldCodeSize;
     ULONG              roDataSize;
     ULONG              xcptnsCount;
-    CorJitAllocMemFlag flag;
     void*              hotCodeBlock;
     void*              coldCodeBlock;
     void*              roDataBlock;
@@ -792,7 +796,6 @@ struct Agnostic_AllocMemDetails
     DWORD     coldCodeSize;
     DWORD     roDataSize;
     DWORD     xcptnsCount;
-    DWORD     flag;
     DWORD     hotCodeBlock_offset;
     DWORD     coldCodeBlock_offset;
     DWORD     roDataBlock_offset;

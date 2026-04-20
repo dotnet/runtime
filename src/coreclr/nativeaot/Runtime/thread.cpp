@@ -83,6 +83,10 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
     // restored after the wait operation;
     int32_t lastErrorOnEntry = PalGetLastError();
 
+    // Mark that this thread is trapped for suspension.
+    // Used by the sample profiler to determine this thread was in managed code.
+    SetState(TSF_SuspensionTrapped);
+
     do
     {
         // set preemptive mode
@@ -101,6 +105,8 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         VolatileStoreWithoutBarrier(&m_pTransitionFrame, (PInvokeTransitionFrame*)nullptr);
     }
     while (ThreadStore::IsTrapThreadsRequested());
+
+    ClearState(TSF_SuspensionTrapped);
 
     // Restore the saved error
     PalSetLastError(lastErrorOnEntry);
@@ -621,7 +627,7 @@ void Thread::Hijack()
     PalHijack(this);
 }
 
-void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack)
+void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack, bool doInlineSuspend)
 {
     // If we are no longer trying to suspend, no need to do anything.
     // This is just an optimization. It is ok to race with the setting the trap flag here.
@@ -690,9 +696,8 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHij
         ASSERT(codeManager->IsUnwindable(pvAddress) || runtime->IsConservativeStackReportingEnabled());
 #endif
 
-        // if we are not given a thread to hijack
         // perform in-line wait on the current thread
-        if (pThreadToHijack == NULL)
+        if (doInlineSuspend)
         {
             ASSERT(pThread->m_interruptedContext == NULL);
             pThread->InlineSuspend(pThreadContext);

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This file is shared between CoreCLR and NativeAOT. Some of the differences are handled
-// with the FEATURE_NATIVEAOT and FEATURE_EH_FUNCLETS defines. There are three main methods
+// with the FEATURE_NATIVEAOT define. There are three main methods
 // that are used by both runtimes - DecodeGCHdrInfo, UnwindStackFrameX86, and EnumGcRefsX86.
 
 #define RETURN_ADDR_OFFS        1       // in DWORDS
@@ -178,12 +178,8 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
         header.syncEndOffset = decodeUnsigned(table);
 
         _ASSERTE(header.syncStartOffset != INVALID_SYNC_OFFSET && header.syncEndOffset != INVALID_SYNC_OFFSET);
-#ifdef FEATURE_EH_FUNCLETS
         _ASSERTE(header.syncStartOffset == 1);
         _ASSERTE(header.syncEndOffset == 1);
-#else
-        _ASSERTE(header.syncStartOffset < header.syncEndOffset);
-#endif
     }
 
     if (header.revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET)
@@ -372,9 +368,7 @@ size_t GetLocallocSPOffset(hdrInfo * info)
     _ASSERTE(info->localloc && info->ebpFrame);
 
     unsigned position = info->savedRegsCountExclFP +
-#ifdef FEATURE_EH_FUNCLETS
                         ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
-#endif
                         1;
     return position * sizeof(TADDR);
 }
@@ -386,63 +380,13 @@ size_t GetParamTypeArgOffset(hdrInfo * info)
 
     _ASSERTE((info->genericsContext || info->handlers) && info->ebpFrame);
 
-#ifdef FEATURE_EH_FUNCLETS
     unsigned position = info->savedRegsCountExclFP +
                         ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
                         info->localloc +
                         1;  // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
-#else
-    unsigned position = info->savedRegsCountExclFP +
-                        info->localloc +
-                        1;  // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
-#endif
+
     return position * sizeof(TADDR);
 }
-
-#ifndef FEATURE_EH_FUNCLETS
-inline size_t GetStartShadowSPSlotsOffset(hdrInfo * info)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE(info->handlers && info->ebpFrame);
-
-    return GetParamTypeArgOffset(info) +
-           sizeof(TADDR); // Slot for end-of-last-executed-filter
-}
-
-/*****************************************************************************
- *  Returns the start of the hidden slots for the shadowSP for functions
- *  with exception handlers. There is one slot per nesting level starting
- *  near Ebp and is zero-terminated after the active slots.
- */
-
-inline
-PTR_TADDR GetFirstBaseSPslotPtr(TADDR ebp, hdrInfo * info)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE(info->handlers && info->ebpFrame);
-
-    size_t offsetFromEBP = GetStartShadowSPSlotsOffset(info)
-                        + sizeof(TADDR); // to get to the *start* of the next slot
-
-    return PTR_TADDR(ebp - offsetFromEBP);
-}
-
-inline size_t GetEndShadowSPSlotsOffset(hdrInfo * info, unsigned maxHandlerNestingLevel)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE(info->handlers && info->ebpFrame);
-
-    unsigned numberOfShadowSPSlots = maxHandlerNestingLevel +
-                                     1 + // For zero-termination
-                                     1; // For a filter (which can be active at the same time as a catch/finally handler
-
-    return GetStartShadowSPSlotsOffset(info) +
-           (numberOfShadowSPSlots * sizeof(TADDR));
-}
-#endif // FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  *    returns the base frame pointer corresponding to the target nesting level.
@@ -555,71 +499,6 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
     // Since each subsequent slot contains the SP of a more nested EH clause, the contents of the slots are
     // expected to be in decreasing order.
     size_t lvl = 0;
-#ifndef FEATURE_EH_FUNCLETS
-    PTR_TADDR pFirstBaseSPslot = GetFirstBaseSPslotPtr(frameEBP, info);
-    PTR_TADDR pSlot;
-    for(lvl = 0, pSlot = pFirstBaseSPslot;
-        *pSlot && lvl < unwindLevel;
-        pSlot--, lvl++)
-    {
-        // Filters cant have inner funclets
-        FAIL_IF_SPECULATIVE_WALK(!(baseSP & ICodeManager::SHADOW_SP_IN_FILTER));
-
-        TADDR curSlotVal = *pSlot;
-
-        // The shadowSPs have to be less unless the stack has been unwound.
-        FAIL_IF_SPECULATIVE_WALK(baseSP >  curSlotVal ||
-               (baseSP == curSlotVal && pSlot == pFirstBaseSPslot));
-
-        if (curSlotVal == LCL_FINALLY_MARK)
-        {
-            // Locally called finally
-            baseSP -= sizeof(TADDR);
-        }
-        else
-        {
-            // Is this a funclet we unwound before (can only happen with filters) ?
-            // If unwindESP is specified, normally we expect it to be the last entry in the shadow slot array.
-            // Or, if there is a filter, we expect unwindESP to be the second last entry.  However, this may
-            // not be the case in DAC builds.  For example, the user can use .cxr in an EH clause to set a
-            // CONTEXT captured in the try clause.  In this case, unwindESP will be the ESP of the parent
-            // function, but the shadow slot array will contain the SP of the EH clause, which is closer to
-            // the leaf than the parent method.
-
-            if (unwindESP != (TADDR) IGNORE_VAL &&
-                unwindESP > END_FIN_POP_STACK +
-                (curSlotVal & ~ICodeManager::SHADOW_SP_BITS))
-            {
-                // In non-DAC builds, the only time unwindESP is closer to the root than entries in the shadow
-                // slot array is when the last entry in the array is for a filter.  Also, filters can't have
-                // nested handlers.
-                if ((pSlot[0] & ICodeManager::SHADOW_SP_IN_FILTER) &&
-                    (pSlot[-1] == 0) &&
-                    !(baseSP & ICodeManager::SHADOW_SP_IN_FILTER))
-                {
-                    if (pSlot[0] & ICodeManager::SHADOW_SP_FILTER_DONE)
-                        hadInnerFilter = true;
-                    else
-                        hasInnerFilter = true;
-                    break;
-                }
-                else
-                {
-#if defined(DACCESS_COMPILE)
-                    // In DAC builds, this could happen.  We just need to bail out of this loop early.
-                    break;
-#else  // !DACCESS_COMPILE
-                    // In non-DAC builds, this is an error.
-                    FAIL_IF_SPECULATIVE_WALK(FALSE);
-#endif // DACCESS_COMPILE
-                }
-            }
-
-            nonLocalHandlers = true;
-            baseSP = curSlotVal;
-        }
-    }
-#endif // FEATURE_EH_FUNCLETS
 
     if (unwindESP != (TADDR) IGNORE_VAL)
     {
@@ -667,31 +546,18 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
 
 // Returns the number of bytes at the beginning of the stack frame that shouldn't be
 // modified by an EnC.  This is everything except the space for locals and temporaries.
-inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
+inline size_t GetSizeOfFrameHeaderForEnC(MethodDesc* pMD, hdrInfo * info)
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
     _ASSERTE(info->ebpFrame);
     unsigned position = info->savedRegsCountExclFP +
                         info->localloc +
                         info->genericsContext + // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
-                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) // Is this method synchronized
-                        + 1; // for ebpFrame
+                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
+                        (pMD->RequiresAsyncContextSaveAndRestore() ? 2 : 0) + // Does this method save async contexts?
+                        1; // for ebpFrame
     return position * sizeof(TADDR);
-#else
-    // See comment above Compiler::lvaAssignFrameOffsets() in src\jit\il\lclVars.cpp
-    // for frame layout
-
-    // EnC supports increasing the maximum handler nesting level by always
-    // assuming that the max is MAX_EnC_HANDLER_NESTING_LEVEL. Methods with
-    // a higher max cannot be updated by EnC
-
-    // Take the offset (from EBP) of the last slot of the header, plus one for the EBP slot itself
-    // to get the total size of the header.
-    return sizeof(TADDR) +
-            GetEndShadowSPSlotsOffset(info, MAX_EnC_HANDLER_NESTING_LEVEL);
-#endif // FEATURE_EH_FUNCLETS
 }
 #endif // FEATURE_NATIVEAOT
 
@@ -1626,15 +1492,11 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
 
     bool      hasPartialArgInfo;
 
-#ifndef FEATURE_EH_FUNCLETS
-    hasPartialArgInfo = info->ebpFrame;
-#else
     // For funclets, interruptible code always has full arg info
     //
     // This should be aligned with emitFullArgInfo setting at
     // emitter::emitEndCodeGen (in JIT)
     hasPartialArgInfo = false;
-#endif
 
   /*
       Encoding table for methods that are fully interruptible
@@ -2450,7 +2312,7 @@ static void SetLocation(PREGDISPLAY pRD, int ind, PDWORD loc)
 
     SIZE_T offsetOfRegPtr = OFFSET_OF_CALLEE_SAVED_REGISTERS[ind];
     *(LPVOID*)(PBYTE(pRD) + offsetOfRegPtr) = loc;
-#elif defined(FEATURE_EH_FUNCLETS)
+#else
     static const SIZE_T OFFSET_OF_CALLEE_SAVED_REGISTERS[] =
     {
         offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, Edi), // first register to be pushed
@@ -2461,17 +2323,6 @@ static void SetLocation(PREGDISPLAY pRD, int ind, PDWORD loc)
 
     SIZE_T offsetOfRegPtr = OFFSET_OF_CALLEE_SAVED_REGISTERS[ind];
     *(LPVOID*)(PBYTE(pRD->pCurrentContextPointers) + offsetOfRegPtr) = loc;
-#else
-    static const SIZE_T OFFSET_OF_CALLEE_SAVED_REGISTERS[] =
-    {
-        offsetof(REGDISPLAY, pEdi), // first register to be pushed
-        offsetof(REGDISPLAY, pEsi),
-        offsetof(REGDISPLAY, pEbx),
-        offsetof(REGDISPLAY, pEbp), // last register to be pushed
-    };
-
-    SIZE_T offsetOfRegPtr = OFFSET_OF_CALLEE_SAVED_REGISTERS[ind];
-    *(LPVOID*)(PBYTE(pRD) + offsetOfRegPtr) = loc;
 #endif
 }
 
@@ -3042,7 +2893,6 @@ bool UnwindEbpDoubleAlignFrame(
     {
         TADDR baseSP;
 
-#ifdef FEATURE_EH_FUNCLETS
         // Funclets' frame pointers(EBP) are always restored so they can access to main function's local variables.
         // Therefore the value of EBP is invalid for unwinder so we should use ESP instead.
         if (isFunclet)
@@ -3069,55 +2919,6 @@ bool UnwindEbpDoubleAlignFrame(
 
             return true;
         }
-#else // FEATURE_EH_FUNCLETS
-
-        FrameType frameType = GetHandlerFrameInfo(info, curEBP,
-                                                  curESP, (DWORD) IGNORE_VAL,
-                                                  &baseSP);
-
-        /* If we are in a filter, we only need to unwind the funclet stack.
-           For catches/finallies, the normal handling will
-           cause the frame to be unwound all the way up to ebp skipping
-           other frames above it. This is OK, as those frames will be
-           dead. Also, the EE will detect that this has happened and it
-           will handle any EE frames correctly.
-         */
-
-        if (frameType == FR_INVALID)
-        {
-            return false;
-        }
-
-        if (frameType == FR_FILTER)
-        {
-            SetRegdisplayPCTAddr(pContext, (TADDR)baseSP);
-
-            pContext->SP = (DWORD)(baseSP + sizeof(TADDR));
-
-         // pContext->pEbp = same as before;
-
-#ifdef _DEBUG
-            /* The filter has to be called by the VM. So we dont need to
-               update callee-saved registers.
-             */
-
-            if (updateAllRegs)
-            {
-                static DWORD s_badData = 0xDEADBEEF;
-
-                pContext->SetEaxLocation(&s_badData);
-                pContext->SetEcxLocation(&s_badData);
-                pContext->SetEdxLocation(&s_badData);
-
-                pContext->SetEbxLocation(&s_badData);
-                pContext->SetEsiLocation(&s_badData);
-                pContext->SetEdiLocation(&s_badData);
-            }
-#endif
-
-            return true;
-        }
-#endif // !FEATURE_EH_FUNCLETS
     }
 
     //
@@ -3234,13 +3035,11 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
                    GCEnumCallback  pCallBack,
                    LPVOID          hCallBack)
 {
-#ifdef FEATURE_EH_FUNCLETS
     if (flags & ParentOfFuncletStackFrame)
     {
         LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it was already reported via another funclet.\n"));
         return true;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     unsigned  EBP     = GetRegdisplayFP(pContext);
     unsigned  ESP     = pContext->SP;
@@ -3325,53 +3124,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
 
 #endif // _DEBUG
 
-    /* What kind of a frame is this ? */
-
-#ifndef FEATURE_EH_FUNCLETS
-    FrameType   frameType = FR_NORMAL;
-    TADDR       baseSP = 0;
-
-    if (info.handlers)
-    {
-        _ASSERTE(info.ebpFrame);
-
-        bool    hasInnerFilter, hadInnerFilter;
-        frameType = GetHandlerFrameInfo(&info, EBP,
-                                        ESP, (DWORD) IGNORE_VAL,
-                                        &baseSP, NULL,
-                                        &hasInnerFilter, &hadInnerFilter);
-        _ASSERTE(frameType != FR_INVALID);
-
-        /* If this is the parent frame of a filter which is currently
-           executing, then the filter would have enumerated the frame using
-           the filter PC.
-         */
-
-        if (hasInnerFilter)
-            return true;
-
-        /* If are in a try and we had a filter execute, we may have reported
-           GC refs from the filter (and not using the try's offset). So
-           we had better use the filter's end offset, as the try is
-           effectively dead and its GC ref's would be stale */
-
-        if (hadInnerFilter)
-        {
-            PTR_TADDR pFirstBaseSPslot = GetFirstBaseSPslotPtr(EBP, &info);
-            curOffs = (unsigned)pFirstBaseSPslot[1] - 1;
-            _ASSERTE(curOffs < info.methodSize);
-
-            /* Extract the necessary information from the info block header */
-
-            table = PTR_CBYTE(gcInfoToken.Info);
-
-            table += DecodeGCHdrInfo(gcInfoToken,
-                                     curOffs,
-                                     &info);
-        }
-    }
-#endif
-
     bool        willContinueExecution = !(flags & ExecutionAborted);
     unsigned    pushedSize = 0;
 
@@ -3454,7 +3206,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
             {
                 _ASSERTE(willContinueExecution);
 
-#ifdef FEATURE_EH_FUNCLETS
                 // Funclets' frame pointers(EBP) are always restored so they can access to main function's local variables.
                 // Therefore the value of EBP is invalid for unwinder so we should use ESP instead.
                 // See UnwindStackFrame for details.
@@ -3479,13 +3230,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
                     // -sizeof(void*) because we want to point *AT* first parameter
                     pPendingArgFirst = (DWORD *)(size_t)(baseSP - sizeof(void*));
                 }
-#else // FEATURE_EH_FUNCLETS
-                if (info.handlers)
-                {
-                    // -sizeof(void*) because we want to point *AT* first parameter
-                    pPendingArgFirst = (DWORD *)(size_t)(baseSP - sizeof(void*));
-                }
-#endif
                 else if (info.localloc)
                 {
                     TADDR locallocBaseSP = *(DWORD *)(size_t)(EBP - GetLocallocSPOffset(&info));
@@ -3702,7 +3446,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
 
     /* Process the untracked frame variable table */
 
-#if defined(FEATURE_EH_FUNCLETS)   // funclets
     // Filters are the only funclet that run during the 1st pass, and must have
     // both the leaf and the parent frame reported.  In order to avoid double
     // reporting of the untracked variables, do not report them for the filter.
@@ -3715,7 +3458,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
         }
     }
     else
-#endif // FEATURE_EH_FUNCLETS
     {
         count = info.untrackedCnt;
         int lastStkOffs = 0;
@@ -3837,12 +3579,7 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
                 if (dspPtr) {
                     printf("    Frame %s%s local at [E",
                            (lowBits & byref_OFFSET_FLAG) ? "byref "   : "",
-#ifndef FEATURE_EH_FUNCLETS
-                           (lowBits & this_OFFSET_FLAG)  ? "this-ptr" : "");
-#else
                            (lowBits & pinned_OFFSET_FLAG)  ? "pinned" : "");
-#endif
-
 
                     int  dspOffs = ptrAddr;
                     char frameType;
@@ -3864,17 +3601,11 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
 #endif
 
                 unsigned flags = CHECK_APP_DOMAIN;
-#ifndef FEATURE_EH_FUNCLETS
-                // First  Bit : byref
-                // Second Bit : this
-                // The second bit means `this` not `pinned`. So we ignore it.
-                flags |= lowBits & byref_OFFSET_FLAG;
-#else
+
                 // First  Bit : byref
                 // Second Bit : pinned
                 // Both bits are valid
                 flags |= lowBits;
-#endif
 
                 _ASSERTE(byref_OFFSET_FLAG == GC_CALL_INTERIOR);
                 pCallBack(hCallBack, (OBJECTREF*)(size_t)ptrAddr, flags

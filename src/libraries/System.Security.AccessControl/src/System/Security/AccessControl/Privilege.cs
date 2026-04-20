@@ -151,7 +151,7 @@ namespace System.Security.AccessControl
             private SafeTokenHandle? threadHandle = new SafeTokenHandle(IntPtr.Zero);
             private readonly bool isImpersonating;
 
-            private static volatile SafeTokenHandle processHandle = new SafeTokenHandle(IntPtr.Zero);
+            private static SafeTokenHandle processHandle = new SafeTokenHandle(IntPtr.Zero);
             private static readonly object syncRoot = new object();
 
             #region Constructor and Finalizer

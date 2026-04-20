@@ -13,7 +13,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, ISymbolDefinitionNode
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, IMethodCodeNodeWithTypeSignature
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -303,13 +303,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            // Put executable code into .text for PE files as AV software really
-            // doesn't like executable code in non-standard sections.
-            //
-            // For other formats, use the managed code section for managed code.
             return factory.Format switch
             {
-                ReadyToRunContainerFormat.PE => ObjectNodeSection.TextSection,
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.ManagedCodeWindowsContentSection,
+                ReadyToRunContainerFormat.Wasm => ObjectNodeSection.WasmCodeSection,
                 _ => ObjectNodeSection.ManagedCodeUnixContentSection
             };
         }
