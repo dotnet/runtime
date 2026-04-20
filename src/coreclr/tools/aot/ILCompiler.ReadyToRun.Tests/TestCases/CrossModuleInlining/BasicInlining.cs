@@ -9,18 +9,18 @@ public static class BasicInlining
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int TestGetValue()
     {
-        return InlineableLib.GetValue();
+        return SyncInlinableMethods.GetValue();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static string TestGetString()
     {
-        return InlineableLib.GetString();
+        return SyncInlinableMethods.GetString();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int TestAdd()
     {
-        return InlineableLib.Add(10, 32);
+        return SyncInlinableMethods.Add(10, 32);
     }
 }

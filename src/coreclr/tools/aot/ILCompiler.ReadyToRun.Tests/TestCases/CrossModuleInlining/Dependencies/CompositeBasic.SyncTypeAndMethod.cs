@@ -1,6 +1,6 @@
 using System;
 
-public static class CompositeLib
+public static class SyncTypeAndMethod
 {
     public static int GetCompositeValue() => 100;
 

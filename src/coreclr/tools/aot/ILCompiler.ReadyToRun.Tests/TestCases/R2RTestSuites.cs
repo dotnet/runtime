@@ -26,30 +26,30 @@ public class R2RTestSuites
     [Fact]
     public void BasicCrossModuleInlining()
     {
-        var inlineableLib = new CompiledAssembly
+        var syncInlinableMethods = new CompiledAssembly
         {
-            AssemblyName = "InlineableLib",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlineableLib.cs"],
+            AssemblyName = "SyncInlinableMethods",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/BasicInlining.SyncInlinableMethods.cs"],
         };
         var basicCrossModuleInlining = new CompiledAssembly
         {
             AssemblyName = "BasicCrossModuleInlining",
             SourceResourceNames = ["CrossModuleInlining/BasicInlining.cs"],
-            References = [inlineableLib]
+            References = [syncInlinableMethods]
         };
 
-        var cgInlineableLib = new CrossgenAssembly(inlineableLib){ Kind = Crossgen2InputKind.Reference, Options = [Crossgen2AssemblyOption.CrossModuleOptimization] };
+        var cgSyncInlinableMethods = new CrossgenAssembly(syncInlinableMethods){ Kind = Crossgen2InputKind.Reference, Options = [Crossgen2AssemblyOption.CrossModuleOptimization] };
         var cgBasicCrossModuleInlining = new CrossgenAssembly(basicCrossModuleInlining);
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
             nameof(BasicCrossModuleInlining),
-            [new CrossgenCompilation(basicCrossModuleInlining.AssemblyName, [cgInlineableLib, cgBasicCrossModuleInlining]) { Validate = Validate }])
+            [new CrossgenCompilation(basicCrossModuleInlining.AssemblyName, [cgSyncInlinableMethods, cgBasicCrossModuleInlining]) { Validate = Validate }])
         );
 
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "InlineableLib", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "SyncInlinableMethods", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetValue", "GetValue", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetString", "GetString", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
@@ -144,8 +144,8 @@ public class R2RTestSuites
     {
         var compositeLib = new CompiledAssembly
         {
-            AssemblyName = "CompositeLib",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+            AssemblyName = "SyncTypeAndMethod",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeBasic.SyncTypeAndMethod.cs"],
         };
         var compositeBasic = new CompiledAssembly
         {
@@ -171,7 +171,7 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "CompositeLib", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "SyncTypeAndMethod", out diag), diag);
         }
     }
 
@@ -382,16 +382,16 @@ public class R2RTestSuites
     [Fact]
     public void CompositeCrossModuleInlining()
     {
-        var inlineableLib = new CompiledAssembly
+        var syncInlinableMethods = new CompiledAssembly
         {
-            AssemblyName = "InlineableLib",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlineableLib.cs"],
+            AssemblyName = "SyncInlinableMethods",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/BasicInlining.SyncInlinableMethods.cs"],
         };
         var compositeMain = new CompiledAssembly
         {
             AssemblyName = "CompositeCrossModuleInlining",
             SourceResourceNames = ["CrossModuleInlining/BasicInlining.cs"],
-            References = [inlineableLib]
+            References = [syncInlinableMethods]
         };
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
@@ -399,7 +399,7 @@ public class R2RTestSuites
             [
                 new(nameof(CompositeCrossModuleInlining),
                 [
-                    new CrossgenAssembly(inlineableLib),
+                    new CrossgenAssembly(syncInlinableMethods),
                     new CrossgenAssembly(compositeMain),
                 ])
                 {
@@ -411,7 +411,7 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "InlineableLib", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "SyncInlinableMethods", out diag), diag);
             Assert.True(R2RAssert.HasInlinedMethod(reader, "TestGetValue", "GetValue", out diag), diag);
         }
     }
@@ -432,16 +432,16 @@ public class R2RTestSuites
     [Fact]
     public void CompositeDoesNotProduceCrossModuleInliningInfo()
     {
-        var inlineableLib = new CompiledAssembly
+        var syncInlinableMethods = new CompiledAssembly
         {
-            AssemblyName = "InlineableLib",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlineableLib.cs"],
+            AssemblyName = "SyncInlinableMethods",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/BasicInlining.SyncInlinableMethods.cs"],
         };
         var compositeMain = new CompiledAssembly
         {
             AssemblyName = nameof(CompositeDoesNotProduceCrossModuleInliningInfo),
             SourceResourceNames = ["CrossModuleInlining/BasicInlining.cs"],
-            References = [inlineableLib]
+            References = [syncInlinableMethods]
         };
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
@@ -449,7 +449,7 @@ public class R2RTestSuites
             [
                 new(nameof(CompositeDoesNotProduceCrossModuleInliningInfo),
                 [
-                    new CrossgenAssembly(inlineableLib),
+                    new CrossgenAssembly(syncInlinableMethods),
                     new CrossgenAssembly(compositeMain),
                 ])
                 {

@@ -9,12 +9,12 @@ public static class CompositeBasic
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int TestCompositeCall()
     {
-        return CompositeLib.GetCompositeValue();
+        return SyncTypeAndMethod.GetCompositeValue();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static object TestCompositeTypeCreation()
     {
-        return new CompositeLib.CompositeType();
+        return new SyncTypeAndMethod.CompositeType();
     }
 }
