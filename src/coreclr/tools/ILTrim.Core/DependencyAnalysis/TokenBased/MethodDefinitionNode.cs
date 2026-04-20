@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -121,6 +122,23 @@ namespace ILCompiler.DependencyAnalysis
                         dependencies.Add(factory.EventDefinition(_module, eventHandle), "Owning event of accessor method");
                         break;
                     }
+                }
+            }
+
+            var ecmaOwningType = (EcmaType)_module.GetObject(declaringType);
+            if (ecmaOwningType.IsDelegate)
+            {
+                ReadOnlySpan<byte> methodPairName = default;
+                if (reader.StringComparer.Equals(methodDef.Name, "BeginInvoke"))
+                    methodPairName = "EndInvoke"u8;
+                else if (reader.StringComparer.Equals(methodDef.Name, "EndInvoke"))
+                    methodPairName = "BeginInvoke"u8;
+
+                if (methodPairName.Length > 0)
+                {
+                    var pairMethod = ecmaOwningType.GetMethod(methodPairName, null) as EcmaMethod;
+                    if (pairMethod != null)
+                        dependencies.Add(factory.MethodDefinition(_module, pairMethod.Handle), "Delegate BeginInvoke/EndInvoke pair");
                 }
             }
 

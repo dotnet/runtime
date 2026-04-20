@@ -1619,6 +1619,11 @@ typedef CordbEnumerator<RSSmartPtr<CordbThread>,
                         ICorDebugThreadEnum, IID_ICorDebugThreadEnum,
                         QueryInterfaceConvert<RSSmartPtr<CordbThread>, ICorDebugThread, IID_ICorDebugThread> > CordbThreadEnumerator;
 
+typedef CordbEnumerator<RSSmartPtr<CordbAppDomain>,
+                        ICorDebugAppDomain*,
+                        ICorDebugAppDomainEnum, IID_ICorDebugAppDomainEnum,
+                        QueryInterfaceConvert<RSSmartPtr<CordbAppDomain>, ICorDebugAppDomain, IID_ICorDebugAppDomain> > CordbAppDomainEnumerator;
+
 // Template classes must be fully defined rather than just declared in the header
 #include "rsenumerator.hpp"
 
@@ -2466,13 +2471,10 @@ public:
     CordbModule * GetModuleFromMetaDataInterface(IUnknown *pIMetaData);
 
     // Lookup a module from the cache.  Create and to the cache if needed.
-    CordbModule * LookupOrCreateModule(VMPTR_Module vmModuleToken, VMPTR_DomainAssembly vmDomainAssemblyToken);
-
-    // Lookup a module from the cache.  Create and to the cache if needed.
-    CordbModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssemblyToken);
+    CordbModule * LookupOrCreateModule(VMPTR_Assembly vmAssemblyToken, VMPTR_Module vmModuleToken = VMPTR_Module::NullPtr());
 
     // Callback from DAC for module enumeration
-    static void ModuleEnumerationCallback(VMPTR_DomainAssembly vmModule, void * pUserData);
+    static void ModuleEnumerationCallback(VMPTR_Assembly vmAssembly, void * pUserData);
 
     // Use DAC to add any modules for this assembly.
     void PrepopulateModules();
@@ -2482,9 +2484,8 @@ public:
 public:
     ULONG               m_AppDomainId;
 
-    CordbAssembly * LookupOrCreateAssembly(VMPTR_DomainAssembly vmDomainAssembly);
     CordbAssembly * LookupOrCreateAssembly(VMPTR_Assembly vmAssembly);
-    void RemoveAssemblyFromCache(VMPTR_DomainAssembly vmDomainAssembly);
+    void RemoveAssemblyFromCache(VMPTR_Assembly vmAssembly);
 
 
     CordbSafeHashTable<CordbBreakpoint>  m_breakpoints;
@@ -2497,13 +2498,13 @@ public:
                                          // them as special cases.
     CordbSafeHashTable<CordbType>        m_sharedtypes;
 
-    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly, VMPTR_DomainAssembly);
+    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly);
 
 
     // Cache of modules in this appdomain. In the VM, modules live in an assembly.
     // This cache lives on the appdomain because we generally want to do appdomain (or process)
     // wide lookup.
-    // This is indexed by VMPTR_DomainAssembly, which has appdomain affinity.
+    // This is indexed by VMPTR_Module.
     // This is populated by code:CordbAppDomain::LookupOrCreateModule (which may be invoked
     // anytime the RS gets hold of a VMPTR), and are removed at the unload event.
     CordbSafeHashTable<CordbModule>      m_modules;
@@ -2514,7 +2515,7 @@ private:
     // anytime the RS gets hold of a VMPTR), and are removed at the unload event.
     CordbSafeHashTable<CordbAssembly>    m_assemblies;
 
-    static void AssemblyEnumerationCallback(VMPTR_DomainAssembly vmDomainAssembly, void * pThis);
+    static void AssemblyEnumerationCallback(VMPTR_Assembly vmAssembly, void * pThis);
     void PrepopulateAssembliesOrThrow();
 
     // Use DAC to refresh our name
@@ -2527,7 +2528,7 @@ private:
     // List of Sweepable objects owned by this AppDomain.
     // This includes some objects taht hold resources in the left-side (mainly
     // as CordbHandleValue, see code:CordbHandleValue::Dispose), as well as:
-    // - Cordb*Value objects that survive across continues and have appdomain affinity.
+    // - Cordb*Value objects that survive across continues.
     LeftSideResourceCleanupList          m_SweepableNeuterList;
 
     VMPTR_AppDomain     m_vmAppDomain;
@@ -2552,8 +2553,7 @@ class CordbAssembly : public CordbBase, public ICorDebugAssembly, ICorDebugAssem
 {
 public:
     CordbAssembly(CordbAppDomain *      pAppDomain,
-                  VMPTR_Assembly        vmAssembly,
-                  VMPTR_DomainAssembly  vmDomainAssembly);
+                  VMPTR_Assembly        vmAssembly);
     virtual ~CordbAssembly();
     virtual void Neuter();
 
@@ -2625,19 +2625,17 @@ public:
 #ifdef _DEBUG
     void DbgAssertAssemblyDeleted();
 
-    static void DbgAssertAssemblyDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void * pUserData);
+    static void DbgAssertAssemblyDeletedCallback(VMPTR_Assembly vmAssembly, void * pUserData);
 #endif // _DEBUG
 
     CordbAppDomain * GetAppDomain()     { return m_pAppDomain; }
 
-    VMPTR_DomainAssembly    GetDomainAssemblyPtr() { return m_vmDomainAssembly; }
+    VMPTR_Assembly GetAssemblyPtr() { return m_vmAssembly; }
 private:
-    VMPTR_Assembly          m_vmAssembly;
-    VMPTR_DomainAssembly    m_vmDomainAssembly;
-    CordbAppDomain *        m_pAppDomain;
+    VMPTR_Assembly   m_vmAssembly;
+    CordbAppDomain * m_pAppDomain;
 
-    StringCopyHolder        m_strAssemblyFileName;
-    Optional<BOOL>          m_foptIsFullTrust;
+    StringCopyHolder m_strAssemblyFileName;
 };
 
 
@@ -2880,15 +2878,6 @@ public:
     CordbProcess * m_pThis;                     // the "this" process
     EnumerateConnectionsEntry * m_pEntryArray;  // an array of connections to be filled in
     UINT32         m_uIndex;                    // the next entry in the array to be filled
-};
-
-// data structure used in the callback for asserting that an appdomain has been deleted
-// (code:CordbProcess::DbgAssertAppDomainDeleted)
-struct DbgAssertAppDomainDeletedData
-{
-public:
-    CordbProcess *  m_pThis;
-    VMPTR_AppDomain m_vmAppDomainDeleted;
 };
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
@@ -3481,9 +3470,7 @@ public:
 
     // Looks up a previously constructed CordbClass instance without creating. May return NULL if the
     // CordbClass instance doesn't exist.
-    CordbClass * LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_DomainAssembly vmDomainAssembly, mdTypeDef classToken);
-
-    CordbModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
+    CordbClass * LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_Assembly vmAssembly, mdTypeDef classToken);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     CordbUnmanagedThread *GetUnmanagedThread(DWORD dwThreadId)
@@ -3689,26 +3676,7 @@ public:
     WriteableMetadataUpdateMode GetWriteableMetadataUpdateMode() { return m_writableMetadataUpdateMode; }
 private:
 
-#ifdef _DEBUG
-    // Assert that vmAppDomainDeleted doesn't show up in dac enumerations
-    void DbgAssertAppDomainDeleted(VMPTR_AppDomain vmAppDomainDeleted);
-
-    // Callback helper for DbgAssertAppDomainDeleted.
-    static void DbgAssertAppDomainDeletedCallback(VMPTR_AppDomain vmAppDomain, void * pUserData);
-#endif // _DEBUG
-
     static void ThreadEnumerationCallback(VMPTR_Thread vmThread, void * pUserData);
-
-
-    // Callback for AppDomain enumeration
-    static void AppDomainEnumerationCallback(VMPTR_AppDomain vmAppDomain, void * pUserData);
-
-    // Helper to create a new CordbAppDomain around the vmptr and cache it
-    CordbAppDomain * CacheAppDomain(VMPTR_AppDomain vmAppDomain);
-
-    // Helper to traverse Appdomains in target and build up our cache.
-    void PrepopulateAppDomainsOrThrow();
-
 
     void ProcessFirstLogMessage (DebuggerIPCEvent *event);
     void ProcessContinuedLogMessage (DebuggerIPCEvent *event);
@@ -3884,7 +3852,7 @@ public:
     CordbSafeHashTable<CordbUnmanagedThread>  m_unmanagedThreads;
 #endif // FEATURE_INTEROP_DEBUGGING
 
-    CordbSafeHashTable<CordbAppDomain>        m_appDomains;
+    CordbAppDomain*        m_pAppDomain;
 
     // Since a stepper can begin in one appdomain, and complete in another,
     // we put the hashtable here, rather than on specific appdomains.
@@ -4175,7 +4143,7 @@ class CordbModule : public CordbBase,
 public:
     CordbModule(CordbProcess *      process,
                 VMPTR_Module        vmModule,
-                VMPTR_DomainAssembly    vmDomainAssembly);
+                VMPTR_Assembly      vmAssembly);
 
     virtual ~CordbModule();
     virtual void Neuter();
@@ -4380,9 +4348,9 @@ public:
     // Get the module filename, or NULL if none.  Throws on error.
     const WCHAR * GetModulePath();
 
-    const VMPTR_DomainAssembly GetRuntimeDomainAssembly ()
+    const VMPTR_Assembly GetRuntimeAssembly ()
     {
-        return m_vmDomainAssembly;
+        return m_vmAssembly;
     }
 
     const VMPTR_Module GetRuntimeModule()
@@ -4415,13 +4383,13 @@ public:
     // The collection is filled lazily by LookupOrCreateFunction
     CordbSafeHashTable<CordbFunction> m_functions;
 
-    // The real handle into the VM for a module. This is appdomain aware.
+    // The real handle into the VM for a module's assembly.
     // This is the primary VM counterpart for the CordbModule.
-    VMPTR_DomainAssembly m_vmDomainAssembly;
+    VMPTR_Assembly m_vmAssembly;
 
     VMPTR_Module m_vmModule;
 
-    DWORD            m_EnCCount;
+    DWORD        m_EnCCount;
 
 private:
 
@@ -4764,7 +4732,7 @@ public:
     void DestNaryType(Instantiation *pInst);
 
     CorElementType GetElementType() { return m_elementType; }
-    VMPTR_DomainAssembly GetDomainAssembly();
+    VMPTR_Assembly GetAssembly();
     VMPTR_Module GetModule();
 
     // If this is a ptr type, get the CordbType that it points to.
@@ -11094,7 +11062,7 @@ public:
 //
 // Normally we take the process lock before calling out to DAC, and every DAC API takes the DD lock on entry.
 // Moreover, normally DAC doesn't call back into the RS.  The exceptions we currently have are:
-// 1) enumeration callbacks (e.g. code:CordbProcess::AppDomainEnumerationCallback)
+// 1) enumeration callbacks (e.g. code:CordbProcess::ThreadEnumerationCallback)
 // 2) code:IDacDbiInterface::IMetaDataLookup
 // 3) code:IDacDbiInterface::IAllocator
 // 4) code:IStringHolder

@@ -10,11 +10,11 @@ Module Name:
 Abstract:
     Read cpu limits for the current process
 --*/
-#ifdef __FreeBSD__
-#define _WITH_GETLINE
-#endif
-
 #include <cstdint>
+#include "cgroupcpu.h"
+
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+
 #include <cstddef>
 #include <cassert>
 #include <unistd.h>
@@ -22,18 +22,11 @@ Abstract:
 #include <stdio.h>
 #include <string.h>
 #include <sys/resource.h>
-#if defined(__APPLE__) || defined(__FreeBSD__)
-#include <sys/param.h>
-#include <sys/mount.h>
-#elif !defined(__HAIKU__)
 #include <sys/vfs.h>
-#endif
 #include <errno.h>
 #include <limits>
 
 #include "config.gc.h"
-
-#include "cgroupcpu.h"
 
 #define CGROUP2_SUPER_MAGIC 0x63677270
 
@@ -90,10 +83,6 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
-#if !HAVE_NON_LEGACY_STATFS
-        return 0;
-#else
-
         struct statfs stats;
         int result = statfs("/sys/fs/cgroup", &stats);
         if (result != 0)
@@ -110,7 +99,6 @@ private:
             // been seen in the wild.
             return 1;
         }
-#endif
     }
 
     static bool IsCGroup1CpuSubsystem(const char *strTok){
@@ -510,3 +498,16 @@ bool GetCpuLimit(uint32_t* val)
 
     return CGroup::GetCpuLimit(val);
 }
+
+#else // !(TARGET_LINUX || TARGET_ANDROID)
+
+void InitializeCpuCGroup()
+{
+}
+
+bool GetCpuLimit(uint32_t* val)
+{
+    return false;
+}
+
+#endif // TARGET_LINUX || TARGET_ANDROID
