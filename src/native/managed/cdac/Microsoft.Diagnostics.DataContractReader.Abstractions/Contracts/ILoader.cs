@@ -73,6 +73,13 @@ public record struct ModuleLookupTables(
     TargetPointer TypeRefToMethodTable,
     TargetPointer MethodDefToILCodeVersioningState);
 
+public readonly struct LoaderHeapBlockData
+{
+    public TargetPointer Address { get; init; }
+    public TargetNUInt Size { get; init; }
+    public TargetPointer NextBlock { get; init; }
+}
+
 public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
@@ -119,10 +126,8 @@ public interface ILoader : IContract
 
     // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
     TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap) => throw new NotImplementedException();
-    TargetNUInt GetLoaderHeapBlockSize(TargetPointer block) => throw new NotImplementedException();
-    TargetPointer GetLoaderHeapBlockAddress(TargetPointer block) => throw new NotImplementedException();
-    // Returns the next block in the loader heap linked list, or TargetPointer.Null if there are no more blocks
-    TargetPointer GetNextLoaderHeapBlock(TargetPointer block) => throw new NotImplementedException();
+    // Returns the data for the given loader heap block (address, size, and next block pointer).
+    LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block) => throw new NotImplementedException();
     IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 
     DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle) => throw new NotImplementedException();

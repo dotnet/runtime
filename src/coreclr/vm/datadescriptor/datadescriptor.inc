@@ -319,6 +319,7 @@ CDAC_TYPE_FIELD(LoaderHeapBlock, T_POINTER, Next, offsetof(LoaderHeapBlock, pNex
 CDAC_TYPE_FIELD(LoaderHeapBlock, T_POINTER, VirtualAddress, offsetof(LoaderHeapBlock, pVirtualAddress))
 CDAC_TYPE_FIELD(LoaderHeapBlock, T_NUINT, VirtualSize, offsetof(LoaderHeapBlock, dwVirtualSize))
 CDAC_TYPE_END(LoaderHeapBlock)
+
 CDAC_TYPE_BEGIN(VirtualCallStubManager)
 CDAC_TYPE_INDETERMINATE(VirtualCallStubManager)
 CDAC_TYPE_FIELD(VirtualCallStubManager, T_POINTER, IndcellHeap, cdac_data<VirtualCallStubManager>::IndcellHeap)

@@ -672,22 +672,15 @@ internal readonly struct Loader_1 : ILoader
         return _target.ProcessedData.GetOrAdd<Data.LoaderHeap>(loaderHeap).FirstBlock;
     }
 
-    TargetNUInt ILoader.GetLoaderHeapBlockSize(TargetPointer block)
+    LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)
     {
         Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
-        return blockData.VirtualSize;
-    }
-
-    TargetPointer ILoader.GetLoaderHeapBlockAddress(TargetPointer block)
-    {
-        Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
-        return blockData.VirtualAddress;
-    }
-
-    TargetPointer ILoader.GetNextLoaderHeapBlock(TargetPointer block)
-    {
-        Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
-        return blockData.Next;
+        return new LoaderHeapBlockData
+        {
+            Address = blockData.VirtualAddress,
+            Size = blockData.VirtualSize,
+            NextBlock = blockData.Next,
+        };
     }
 
     IReadOnlyDictionary<string, TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)

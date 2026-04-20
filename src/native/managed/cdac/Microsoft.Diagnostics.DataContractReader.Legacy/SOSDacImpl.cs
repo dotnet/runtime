@@ -4667,7 +4667,8 @@ public sealed unsafe partial class SOSDacImpl
         Debug.Assert(found, $"Unexpected loader heap block: address={virtualAddress:x}, size={virtualSize:x}");
     }
 #endif
-    int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
+
+    private int TraverseLoaderHeapCore(ClrDataAddress loaderHeapAddr, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
     {
         int hr = HResults.S_OK;
 #if DEBUG
@@ -4687,22 +4688,20 @@ public sealed unsafe partial class SOSDacImpl
             int i = 0;
             while (block != TargetPointer.Null && i++ < iterationMax)
             {
-                TargetPointer blockAddress;
-                TargetNUInt blockSize;
+                Contracts.LoaderHeapBlockData blockData;
                 try
                 {
-                    blockAddress = loader.GetLoaderHeapBlockAddress(block);
-                    blockSize = loader.GetLoaderHeapBlockSize(block);
+                    blockData = loader.GetLoaderHeapBlockData(block);
                 }
                 catch (VirtualReadException)
                 {
                     throw new NullReferenceException();
                 }
-                pCallback(blockAddress.Value, (nuint)blockSize.Value, block == firstBlock ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+                pCallback(blockData.Address.Value, (nuint)blockData.Size.Value, block == firstBlock ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 #if DEBUG
-                DebugTraverseLoaderHeapBlocks.Add((blockAddress.Value, (nuint)blockSize.Value));
+                DebugTraverseLoaderHeapBlocks.Add((blockData.Address.Value, (nuint)blockData.Size.Value));
 #endif
-                block = loader.GetNextLoaderHeapBlock(block);
+                block = blockData.NextBlock;
                 if (block == firstBlock)
                     throw new NullReferenceException();
             }
@@ -4713,6 +4712,12 @@ public sealed unsafe partial class SOSDacImpl
         {
             hr = ex.HResult;
         }
+        return hr;
+    }
+
+    int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
+    {
+        int hr = TraverseLoaderHeapCore(loaderHeapAddr, pCallback);
 #if DEBUG
         if (_legacyImpl is not null)
         {
@@ -6202,50 +6207,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
     {
-        int hr = HResults.S_OK;
-#if DEBUG
-        DebugTraverseLoaderHeapBlocks.Clear();
-        _debugTraverseLoaderDebugCount = 0;
-#endif
-        try
-        {
-            if (loaderHeapAddr == 0 || pCallback is null)
-                throw new ArgumentException();
-            int iterationMax = 8192;
-
-            Contracts.ILoader loader = _target.Contracts.Loader;
-            TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
-            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
-            TargetPointer firstBlock = block;
-            int i = 0;
-            while (block != TargetPointer.Null && i++ < iterationMax)
-            {
-                TargetPointer blockAddress;
-                TargetNUInt blockSize;
-                try
-                {
-                    blockAddress = loader.GetLoaderHeapBlockAddress(block);
-                    blockSize = loader.GetLoaderHeapBlockSize(block);
-                }
-                catch (VirtualReadException)
-                {
-                    throw new NullReferenceException();
-                }
-                pCallback(blockAddress.Value, (nuint)blockSize.Value, block == firstBlock ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
-#if DEBUG
-                DebugTraverseLoaderHeapBlocks.Add((blockAddress.Value, (nuint)blockSize.Value));
-#endif
-                block = loader.GetNextLoaderHeapBlock(block);
-                if (block == firstBlock)
-                    throw new NullReferenceException();
-            }
-            if (i >= iterationMax)
-                hr = HResults.S_FALSE;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
+        int hr = TraverseLoaderHeapCore(loaderHeapAddr, pCallback);
 #if DEBUG
         if (_legacyImpl13 is not null)
         {

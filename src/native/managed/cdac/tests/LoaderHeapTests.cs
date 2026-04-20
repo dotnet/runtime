@@ -68,11 +68,10 @@ public class LoaderHeapTests
         TargetPointer firstBlock = loader.GetFirstLoaderHeapBlock(heapAddr);
         Assert.NotEqual(TargetPointer.Null, firstBlock);
 
-        Assert.Equal(virtualAddress, loader.GetLoaderHeapBlockAddress(firstBlock).Value);
-        Assert.Equal(virtualSize, loader.GetLoaderHeapBlockSize(firstBlock).Value);
-
-        TargetPointer nextBlock = loader.GetNextLoaderHeapBlock(firstBlock);
-        Assert.Equal(TargetPointer.Null, nextBlock);
+        LoaderHeapBlockData blockData = loader.GetLoaderHeapBlockData(firstBlock);
+        Assert.Equal(virtualAddress, blockData.Address.Value);
+        Assert.Equal(virtualSize, blockData.Size.Value);
+        Assert.Equal(TargetPointer.Null, blockData.NextBlock);
     }
 
     [Theory]
@@ -96,8 +95,9 @@ public class LoaderHeapTests
         TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
         while (block != TargetPointer.Null)
         {
-            blocks.Add((loader.GetLoaderHeapBlockAddress(block).Value, loader.GetLoaderHeapBlockSize(block).Value));
-            block = loader.GetNextLoaderHeapBlock(block);
+            LoaderHeapBlockData blockData = loader.GetLoaderHeapBlockData(block);
+            blocks.Add((blockData.Address.Value, blockData.Size.Value));
+            block = blockData.NextBlock;
         }
 
         Assert.Equal(2, blocks.Count);
