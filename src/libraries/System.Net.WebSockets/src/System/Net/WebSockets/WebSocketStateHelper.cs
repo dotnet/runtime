@@ -16,7 +16,7 @@ namespace System.Net.WebSockets
         /// <summary>Valid states to be in when calling CloseAsync.</summary>
         internal const ManagedWebSocketStates ValidCloseStates = ManagedWebSocketStates.Open | ManagedWebSocketStates.CloseReceived | ManagedWebSocketStates.CloseSent;
 
-        internal static bool IsValidSendState(WebSocketState state) => ValidSendStates.HasFlag(ToFlag(state));
+        internal static bool IsValidSendState(WebSocketState state) => (ValidSendStates & ToFlag(state)) != 0;
 
         internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, Exception? innerException, ManagedWebSocketStates validStates)
         {

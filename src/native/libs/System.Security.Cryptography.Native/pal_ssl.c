@@ -427,14 +427,6 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
     return result;
 }
 
-static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
-{
-    (void)preverify_ok;
-    (void)store;
-    // We don't care. Real verification happens in managed code.
-    return 1;
-}
-
 int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
     ERR_clear_error();
@@ -447,7 +439,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     if (SSL_version(ssl) == TLS1_3_VERSION)
     {
         // Post-handshake auth reqires SSL_VERIFY_PEER to be set
-        CryptoNative_SslSetVerifyPeer(ssl);
+        CryptoNative_SslSetVerifyPeer(ssl, 0);
         return SSL_verify_client_post_handshake(ssl);
     }
 #endif
@@ -458,7 +450,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     int pending = SSL_renegotiate_pending(ssl);
     if (!pending)
     {
-        SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+        CryptoNative_SslSetVerifyPeer(ssl, 0);
         int ret = SSL_renegotiate(ssl);
         if(ret != 1)
         {
@@ -517,11 +509,22 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
+    X509* cert = SSL_get1_peer_certificate(ssl);
+    CryptoNative_SslUpdateOcspStaple(ssl, cert);
+
+    // No error queue impact.
+    return cert;
+}
+
+void CryptoNative_SslUpdateOcspStaple(SSL* ssl, X509* cert)
+{
+    if (ssl == NULL || cert == NULL)
+        return;
+
     const uint8_t* data = NULL;
     long len = SSL_get_tlsext_status_ocsp_resp(ssl, &data);
-    X509* cert = SSL_get1_peer_certificate(ssl);
 
-    if (len > 0 && cert != NULL && !X509_get_ex_data(cert, g_x509_ocsp_index))
+    if (len > 0 && !X509_get_ex_data(cert, g_x509_ocsp_index))
     {
         OCSP_RESPONSE* ocspResp = d2i_OCSP_RESPONSE(NULL, &data, len);
 
@@ -534,9 +537,6 @@ X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
             X509_set_ex_data(cert, g_x509_ocsp_index, ocspResp);
         }
     }
-
-    // No error queue impact.
-    return cert;
 }
 
 X509* CryptoNative_SslGetCertificate(SSL* ssl)
@@ -598,10 +598,15 @@ X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
     return SSL_get_client_CA_list(ssl);
 }
 
-void CryptoNative_SslSetVerifyPeer(SSL* ssl)
+void CryptoNative_SslSetVerifyPeer(SSL* ssl, int32_t failIfNoPeerCert)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
-    SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+    int mode = SSL_VERIFY_PEER;
+    if (failIfNoPeerCert)
+    {
+        mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+    }
+    SSL_set_verify(ssl, mode, NULL);
 }
 
 int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
@@ -1045,6 +1050,14 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
     const SSL_CIPHER* cipher = SSL_get_current_cipher(ssl);
     if (!cipher)
     {
+        // During the handshake (e.g. inside the cert verify callback),
+        // the current cipher may not be set yet (TLS 1.2 sets it at
+        // ChangeCipherSpec). Fall back to the pending cipher which is
+        // available as soon as ServerHello is processed.
+        cipher = SSL_get_pending_cipher(ssl);
+    }
+    if (!cipher)
+    {
         *cipherId = -1;
         return 0;
     }
@@ -1317,4 +1330,31 @@ void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len)
     {
         OPENSSL_free(copy);
     }
+}
+
+void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertVerifyCallback callback)
+{
+    if (ctx != NULL)
+    {
+        SSL_CTX_set_cert_verify_callback(ctx, callback, NULL);
+    }
+}
+
+SSL* CryptoNative_X509StoreCtxGetSslPtr(X509_STORE_CTX* storeCtx)
+{
+    return (SSL*)X509_STORE_CTX_get_ex_data(storeCtx, SSL_get_ex_data_X509_STORE_CTX_idx());
+}
+
+void CryptoNative_X509StoreCtxSetError(X509_STORE_CTX* storeCtx, int32_t error)
+{
+    X509_STORE_CTX_set_error(storeCtx, error);
+}
+
+/*
+Shims SSL_get_SSL_CTX to retrieve the SSL_CTX from the SSL.
+*/
+SSL_CTX* CryptoNative_SslGetSslCtx(SSL* ssl)
+{
+    // No error queue impact.
+    return SSL_get_SSL_CTX(ssl);
 }
