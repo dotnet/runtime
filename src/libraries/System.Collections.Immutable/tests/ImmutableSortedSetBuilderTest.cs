@@ -347,6 +347,22 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void CopyToOverflowValidation()
+        {
+            ImmutableSortedSet<int>.Builder builder = ImmutableSortedSet.Create(1).ToBuilder();
+            var array = new int[5];
+
+            ((ICollection<int>)builder).CopyTo(array, 0);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection<int>)builder).CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection<int>)builder).CopyTo(array, -1));
+
+            ICollection collection = builder;
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(array, -1));
+        }
+
+        [Fact]
         public void Indexer()
         {
             ImmutableSortedSet<int>.Builder builder = ImmutableSortedSet.Create(1, 3, 2).ToBuilder();

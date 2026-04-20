@@ -368,6 +368,15 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void IndexOfWithIndexOverflowValidation()
+        {
+            ImmutableList<int>.Builder builder = ImmutableList.Create(1, 2, 3).ToBuilder();
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.IndexOf(1, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.IndexOf(1, -1));
+        }
+
+        [Fact]
         public void LastIndexOfWithStartIndexThrowsOnEmptyBuilder()
         {
             ImmutableList<int>.Builder builder = ImmutableList<int>.Empty.ToBuilder();

@@ -467,5 +467,30 @@ namespace System.Collections.Immutable.Tests
         {
             return ImmutableSortedDictionary<TKey, TValue>.Empty.WithComparers(keyComparer, valueComparer);
         }
+
+        [Fact]
+        public void KeysAndValuesCopyToOverflowValidation()
+        {
+            ImmutableSortedDictionary<string, int> dictionary = ImmutableSortedDictionary<string, int>.Empty.Add("a", 1);
+
+            // Access Keys/Values through the IDictionary<TKey,TValue> interface to get KeysCollectionAccessor/ValuesCollectionAccessor
+            IDictionary<string, int> idict = dictionary;
+
+            ICollection<string> keys = idict.Keys;
+            var keysArray = new string[5];
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => keys.CopyTo(keysArray, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => keys.CopyTo(keysArray, -1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)keys).CopyTo(keysArray, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)keys).CopyTo(keysArray, -1));
+
+            ICollection<int> values = idict.Values;
+            var valuesArray = new int[5];
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => values.CopyTo(valuesArray, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => values.CopyTo(valuesArray, -1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)values).CopyTo(valuesArray, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)values).CopyTo(valuesArray, -1));
+        }
     }
 }
