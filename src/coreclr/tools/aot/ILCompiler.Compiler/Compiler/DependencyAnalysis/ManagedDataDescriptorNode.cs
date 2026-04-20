@@ -167,13 +167,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
-#if !SUPPORT_JIT
         public override int ClassCode => 0x4d444e01;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return 0; // Singleton
         }
-#endif
     }
 }
