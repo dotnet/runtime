@@ -10,7 +10,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class TrimmingDescriptorNode : DependencyNodeCore<NodeFactory>
 #if !ILTRIM
+#pragma warning disable SA1001
         , ICompilationRootProvider
+#pragma warning restore SA1001
 #endif
     {
         private readonly string _fileName;
