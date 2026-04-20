@@ -1,25 +1,26 @@
-// Dependency library: defines an async interface and sealed implementation
-// for cross-module async devirtualization tests in composite mode.
+// Interface + two implementations (sealed and non-sealed/open) of an
+// async-returning method. Used by consumers to exercise devirtualization
+// of async interface dispatch.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-public interface IAsyncCompositeService
+public interface IAsyncService
 {
     Task<int> GetValueAsync();
 }
 
-public sealed class SealedAsyncService : IAsyncCompositeService
+public sealed class SealedImpl : IAsyncService
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public async Task<int> GetValueAsync()
     {
         await Task.Yield();
-        return 42;
+        return 20;
     }
 }
 
-public class OpenAsyncService : IAsyncCompositeService
+public class OpenImpl : IAsyncService
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public virtual async Task<int> GetValueAsync()

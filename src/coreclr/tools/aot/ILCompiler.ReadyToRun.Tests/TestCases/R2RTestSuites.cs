@@ -258,7 +258,8 @@ public class R2RTestSuites
             AssemblyName = nameof(RuntimeAsyncDevirtualize),
             SourceResourceNames =
             [
-                "RuntimeAsync/AsyncDevirtualize.cs",
+                "RuntimeAsync/AwaitsThroughInterface.cs",
+                "RuntimeAsync/Dependencies/AwaitsThroughInterface.InterfaceAndImpls.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -845,22 +846,22 @@ public class R2RTestSuites
     [Fact]
     public void CompositeAsyncDevirtualize()
     {
-        var asyncInterfaceLib = new CompiledAssembly
+        var interfaceAndImpls = new CompiledAssembly
         {
-            AssemblyName = "AsyncInterfaceLib",
-            SourceResourceNames = ["RuntimeAsync/Dependencies/AsyncInterfaceLib.cs"],
+            AssemblyName = "InterfaceAndImpls",
+            SourceResourceNames = ["RuntimeAsync/Dependencies/AwaitsThroughInterface.InterfaceAndImpls.cs"],
             Features = { RuntimeAsyncFeature },
         };
-        var compositeDevirtMain = new CompiledAssembly
+        var awaitsThroughInterface = new CompiledAssembly
         {
-            AssemblyName = "CompositeAsyncDevirtMain",
+            AssemblyName = "AwaitsThroughInterface",
             SourceResourceNames =
             [
-                "RuntimeAsync/CompositeAsyncDevirtMain.cs",
+                "RuntimeAsync/AwaitsThroughInterface.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
-            References = [asyncInterfaceLib]
+            References = [interfaceAndImpls]
         };
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
@@ -868,8 +869,8 @@ public class R2RTestSuites
             [
                 new(nameof(CompositeAsyncDevirtualize),
                 [
-                    new CrossgenAssembly(asyncInterfaceLib),
-                    new CrossgenAssembly(compositeDevirtMain),
+                    new CrossgenAssembly(interfaceAndImpls),
+                    new CrossgenAssembly(awaitsThroughInterface),
                 ])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
@@ -880,7 +881,7 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncInterfaceLib", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "InterfaceAndImpls", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "CallOnSealed", out diag), diag);
         }
     }
