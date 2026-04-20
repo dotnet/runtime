@@ -408,7 +408,7 @@ WS: [ \t\r\n] -> skip;
 SINGLE_LINE_COMMENT: '//' ~[\r\n]* -> skip;
 COMMENT: '/*' .*? '*/' -> skip;
 
-decls: decl+;
+decls: decl*;
 
 decl:
 	classHead '{' classDecls '}'

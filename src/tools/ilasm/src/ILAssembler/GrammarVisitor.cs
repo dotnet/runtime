@@ -2299,7 +2299,7 @@ namespace ILAssembler
         public GrammarResult.Literal<EntityRegistry.EventEntity> VisitEventHead(CILParser.EventHeadContext context)
         {
             string name = VisitDottedName(context.dottedName()).Value;
-            EventAttributes eventAttributes = context.eventAttr().Select(attr => VisitEventAttr(attr).Value).Aggregate((a, b) => a | b);
+            EventAttributes eventAttributes = context.eventAttr().Select(attr => VisitEventAttr(attr).Value).Aggregate((EventAttributes)0, (a, b) => a | b);
             return new(new EntityRegistry.EventEntity(eventAttributes, VisitTypeSpec(context.typeSpec()).Value, name));
         }
 
