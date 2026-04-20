@@ -567,6 +567,15 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void LastIndexOfWithStartIndexThrowsOnEmptyList()
+        {
+            ImmutableList<int> list = ImmutableList<int>.Empty;
+
+            // LastIndexOf(item, startIndex, count, eq) with count=1 on empty list throws on count.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.LastIndexOf(5, 0, 1, equalityComparer: null));
+        }
+
+        [Fact]
         public void ReplaceTest()
         {
             // Verify replace at beginning, middle, and end.
@@ -938,6 +947,24 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(0, array, -1, 3));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(0, array, 3, 3));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(0, array, 4, 2));
+        }
+
+        [Fact]
+        public void CopyToOverflowValidation()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+            var array = new int[5];
+
+            // Overflow scenarios for CopyTo(T[], arrayIndex)
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(array, -1));
+
+            // Overflow scenarios for CopyTo(int, T[], arrayIndex, count)
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => list.CopyTo(0, array, int.MaxValue, 3));
+
+            // Overflow scenarios for ICollection.CopyTo
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)list).CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)list).CopyTo(array, -1));
         }
 
         [Fact]

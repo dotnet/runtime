@@ -350,6 +350,33 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void CopyToOverflowValidation()
+        {
+            ImmutableList<int>.Builder builder = ImmutableList.Create(1, 2, 3).ToBuilder();
+            var array = new int[5];
+
+            // Overflow scenarios for CopyTo(T[], arrayIndex)
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => builder.CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => builder.CopyTo(array, -1));
+
+            // Overflow scenarios for CopyTo(int, T[], arrayIndex, count)
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => builder.CopyTo(0, array, int.MaxValue, 3));
+
+            // Overflow scenarios for ICollection.CopyTo
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)builder).CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)builder).CopyTo(array, -1));
+        }
+
+        [Fact]
+        public void LastIndexOfWithStartIndexThrowsOnEmptyBuilder()
+        {
+            ImmutableList<int>.Builder builder = ImmutableList<int>.Empty.ToBuilder();
+
+            // LastIndexOf(item, startIndex) should throw on empty builder, matching List<T> behavior.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.LastIndexOf(5, 0));
+        }
+
+        [Fact]
         public void GetEnumeratorExplicit()
         {
             ICollection<int> builder = ImmutableList.Create<int>().ToBuilder();
