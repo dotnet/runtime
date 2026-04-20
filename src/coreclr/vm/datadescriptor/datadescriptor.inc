@@ -48,10 +48,12 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, DebuggerFilterContext, cdac_data<Thread>::Deb
 #ifdef PROFILING_SUPPORTED
 CDAC_TYPE_FIELD(Thread, T_POINTER, ProfilerFilterContext, cdac_data<Thread>::ProfilerFilterContext)
 #endif // PROFILING_SUPPORTED
-CDAC_TYPE_FIELD(Thread, TYPE(GCHandle), GCHandle, cdac_data<Thread>::ExposedObject)
+CDAC_TYPE_FIELD(Thread, T_POINTER, ExposedObject, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, T_POINTER, LastThrownObject, cdac_data<Thread>::LastThrownObject)
+CDAC_TYPE_FIELD(Thread, T_UINT32, LastThrownObjectIsUnhandled, cdac_data<Thread>::LastThrownObjectIsUnhandled)
 CDAC_TYPE_FIELD(Thread, T_POINTER, LinkNext, cdac_data<Thread>::Link)
 CDAC_TYPE_FIELD(Thread, T_POINTER, ThreadLocalDataPtr, cdac_data<Thread>::ThreadLocalDataPtr)
+CDAC_TYPE_FIELD(Thread, T_POINTER, CurrentCustomDebuggerNotification, cdac_data<Thread>::CurrentCustomDebuggerNotification)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(Thread, T_POINTER, UEWatsonBucketTrackerBuckets, cdac_data<Thread>::UEWatsonBucketTrackerBuckets)
 #endif

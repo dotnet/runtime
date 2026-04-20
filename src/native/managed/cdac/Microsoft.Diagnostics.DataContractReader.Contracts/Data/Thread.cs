@@ -23,8 +23,10 @@ internal sealed class Thread : IData<Thread>
         CachedStackBase = target.ReadPointerField(address, type, nameof(CachedStackBase));
         CachedStackLimit = target.ReadPointerField(address, type, nameof(CachedStackLimit));
 
+        ExposedObject = target.ReadPointerField(address, type, nameof(ExposedObject));
         LastThrownObject = target.ProcessedData.GetOrAdd<ObjectHandle>(
             target.ReadPointerField(address, type, nameof(LastThrownObject)));
+        LastThrownObjectIsUnhandled = target.ReadField<uint>(address, type, nameof(LastThrownObjectIsUnhandled));
         LinkNext = target.ReadPointerField(address, type, nameof(LinkNext));
 
         // Address of the exception tracker
@@ -34,6 +36,7 @@ internal sealed class Thread : IData<Thread>
         ThreadLocalDataPtr = target.ReadPointerField(address, type, nameof(ThreadLocalDataPtr));
         DebuggerFilterContext = target.ReadPointerField(address, type, nameof(DebuggerFilterContext));
         ProfilerFilterContext = target.ReadPointerFieldOrNull(address, type, nameof(ProfilerFilterContext));
+        CurrentCustomDebuggerNotification = target.ReadPointerField(address, type, nameof(CurrentCustomDebuggerNotification));
     }
 
     public uint Id { get; init; }
@@ -44,11 +47,14 @@ internal sealed class Thread : IData<Thread>
     public TargetPointer Frame { get; init; }
     public TargetPointer CachedStackBase { get; init; }
     public TargetPointer CachedStackLimit { get; init; }
+    public TargetPointer ExposedObject { get; init; }
     public ObjectHandle LastThrownObject { get; init; }
+    public uint LastThrownObjectIsUnhandled { get; init; }
     public TargetPointer LinkNext { get; init; }
     public TargetPointer ExceptionTracker { get; init; }
     public TargetPointer UEWatsonBucketTrackerBuckets { get; init; }
     public TargetPointer ThreadLocalDataPtr { get; init; }
     public TargetPointer DebuggerFilterContext { get; init; }
     public TargetPointer ProfilerFilterContext { get; init; }
+    public TargetPointer CurrentCustomDebuggerNotification { get; init; }
 }
