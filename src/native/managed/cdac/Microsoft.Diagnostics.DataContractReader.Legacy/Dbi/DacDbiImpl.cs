@@ -232,7 +232,56 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetCompilerFlags(vmAssembly, pfAllowJITOpts, pfEnableEnC) : HResults.E_NOTIMPL;
 
     public int SetCompilerFlags(ulong vmAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.SetCompilerFlags(vmAssembly, fAllowJitOpts, fEnableEnC) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
+
+            // Read the current bits, clear the flags we're about to set, and mask with CONTROL_FLAGS_MASK.
+            Contracts.DebuggerAssemblyControlFlags dwBits = loader.GetDebuggerInfoBits(handle);
+            dwBits &= ~(Contracts.DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS | Contracts.DebuggerAssemblyControlFlags.DACF_ENC_ENABLED);
+            dwBits &= Contracts.DebuggerAssemblyControlFlags.DACF_CONTROL_FLAGS_MASK;
+
+            if (fAllowJitOpts != Interop.BOOL.FALSE)
+            {
+                dwBits |= Contracts.DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS;
+            }
+
+            if (fEnableEnC != Interop.BOOL.FALSE)
+            {
+                dwBits |= Contracts.DebuggerAssemblyControlFlags.DACF_ENC_ENABLED;
+            }
+
+            // SetDebuggerInfoBits handles the EncCapable check, JIT optimization disabled state update,
+            // and EditAndContinue flag logic internally.
+            loader.SetDebuggerInfoBits(handle, dwBits);
+
+            // If EnC was requested, check whether the module actually has EditAndContinue set.
+            // If not, it means the module was not capable of EnC.
+            if (fEnableEnC != Interop.BOOL.FALSE)
+            {
+                Contracts.ModuleFlags flags = loader.GetFlags(handle);
+                if ((flags & Contracts.ModuleFlags.EditAndContinue) == 0)
+                {
+                    hr = CorDbgHResults.CORDBG_S_NOT_ALL_BITS_SET;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.SetCompilerFlags(vmAssembly, fAllowJitOpts, fEnableEnC);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
