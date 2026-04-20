@@ -415,21 +415,9 @@ namespace Internal.JitInterface
             if (result != 0)
                 return result;
 
-            // The OwningType/OwningTypeNotDerivedFromToken should be equivalent if the above conditions are equal.
             result = OwningTypeNotDerivedFromToken.CompareTo(other.OwningTypeNotDerivedFromToken);
             if (result != 0)
                 return result;
-            result = comparer.Compare(OwningType, other.OwningType);
-            if (result != 0)
-                return result;
-
-            if (OwningTypeNotDerivedFromToken != other.OwningTypeNotDerivedFromToken)
-            {
-                if (OwningTypeNotDerivedFromToken)
-                    return 1;
-                else
-                    return -1;
-            }
 
             return comparer.Compare(OwningType, other.OwningType);
         }
