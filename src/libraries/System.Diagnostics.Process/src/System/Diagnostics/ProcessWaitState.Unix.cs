@@ -59,6 +59,13 @@ namespace System.Diagnostics
                 _state = ProcessWaitState.AddRef(processId, isNewChild, usesTerminal);
             }
 
+            /// <summary>Creates an additional holder for the same wait state, incrementing the ref count.</summary>
+            internal Holder(Holder existing)
+            {
+                _state = existing._state;
+                _state.IncrementRefCount();
+            }
+
             ~Holder()
             {
                 // Don't try to Dispose resources (like ManualResetEvents) if
@@ -151,6 +158,16 @@ namespace System.Diagnostics
                     }
                 }
                 return pws;
+            }
+        }
+
+        /// <summary>Increments the ref count for this wait state object.</summary>
+        internal void IncrementRefCount()
+        {
+            Dictionary<int, ProcessWaitState> waitStates = _isChild ? s_childProcessWaitStates : s_processWaitStates;
+            lock (waitStates)
+            {
+                _outstandingRefCount++;
             }
         }
 

@@ -352,7 +352,10 @@ namespace System.Diagnostics
             }
 
             EnsureState(State.HaveNonExitedId | State.IsLocal);
-            return new SafeProcessHandle(_processId, GetSafeWaitHandle());
+            // GetWaitState() ensures _waitStateHolder is initialized.
+            // The SafeProcessHandle constructor creates its own Holder copy (incrementing the ref count).
+            GetWaitState();
+            return new SafeProcessHandle(_processId, _waitStateHolder!, GetSafeWaitHandle());
         }
 
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)

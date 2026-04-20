@@ -30,23 +30,26 @@ namespace Microsoft.Win32.SafeHandles
 
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
-        private ProcessWaitState? _waitState;
-        private ProcessWaitState.Holder? _lazyWaitStateHolder;
+        private readonly ProcessWaitState? _waitState;
+        private readonly ProcessWaitState.Holder? _waitStateHolder;
 
         private SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
             ProcessId = processId;
-            _waitState = waitStateHolder._state;
+            _waitStateHolder = new ProcessWaitState.Holder(waitStateHolder);
+            _waitState = _waitStateHolder._state;
 
             _handle = _waitState.EnsureExitedEvent().GetSafeWaitHandle();
             _handle.DangerousAddRef(ref _releaseRef);
             SetHandle(_handle.DangerousGetHandle());
         }
 
-        internal SafeProcessHandle(int processId, SafeWaitHandle handle) :
+        internal SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder, SafeWaitHandle handle) :
             this(handle.DangerousGetHandle(), ownsHandle: true)
         {
             ProcessId = processId;
+            _waitStateHolder = new ProcessWaitState.Holder(waitStateHolder);
+            _waitState = _waitStateHolder._state;
             _handle = handle;
             handle.DangerousAddRef(ref _releaseRef);
         }
@@ -58,7 +61,7 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_handle != null);
                 _handle.DangerousRelease();
             }
-            _lazyWaitStateHolder?.Dispose();
+            _waitStateHolder?.Dispose();
             return true;
         }
 
@@ -136,44 +139,12 @@ namespace Microsoft.Win32.SafeHandles
 
         private ProcessWaitState GetWaitState()
         {
-            ProcessWaitState? waitState = _waitState;
-            if (waitState is not null)
-            {
-                return waitState;
-            }
-
-            return EnsureWaitStateInitialized();
-        }
-
-        private ProcessWaitState EnsureWaitStateInitialized()
-        {
-            // Double-check: another thread may have initialized it.
-            ProcessWaitState? waitState = _waitState;
-            if (waitState is not null)
-            {
-                return waitState;
-            }
-
-            int processId = ProcessId;
-            if (processId == 0)
+            if (_waitState is null)
             {
                 throw new InvalidOperationException(SR.InvalidProcessHandle);
             }
 
-            ProcessWaitState.Holder holder = new ProcessWaitState.Holder(processId);
-            waitState = holder._state;
-
-            ProcessWaitState? existing = Interlocked.CompareExchange(ref _waitState, waitState, null);
-            if (existing is null)
-            {
-                // We won the race — store the holder so its ref count is released in ReleaseHandle.
-                _lazyWaitStateHolder = holder;
-                return waitState;
-            }
-
-            // Another thread initialized first — release our holder and use theirs.
-            holder.Dispose();
-            return existing;
+            return _waitState;
         }
 
         private static ProcessExitStatus CreateExitStatus(ProcessWaitState waitState, bool canceled)
@@ -193,8 +164,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandlesSnapshot, out ProcessWaitState.Holder? waitStateHolder);
 
-            // For standalone SafeProcessHandle.Start, we dispose the wait state holder immediately.
-            // The DangerousAddRef on the SafeWaitHandle (Unix) keeps the handle alive.
+            // The SafeProcessHandle constructor created its own Holder copy, so we can dispose the original.
             waitStateHolder?.Dispose();
 
             return startedProcess;
