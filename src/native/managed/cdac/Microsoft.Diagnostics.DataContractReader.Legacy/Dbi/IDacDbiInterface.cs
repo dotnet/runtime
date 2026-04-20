@@ -196,9 +196,6 @@ public unsafe partial interface IDacDbiInterface
     int GetAddressType(ulong address, int* pRetVal);
 
     [PreserveSig]
-    int IsTransitionStub(ulong address, Interop.BOOL* pResult);
-
-    [PreserveSig]
     int GetCompilerFlags(ulong vmAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC);
 
     [PreserveSig]
@@ -313,9 +310,6 @@ public unsafe partial interface IDacDbiInterface
     int EnumerateInternalFrames(ulong vmThread, nint fpCallback, nint pUserData);
 
     [PreserveSig]
-    int IsMatchingParentFrame(ulong fpToCheck, ulong fpParent, Interop.BOOL* pResult);
-
-    [PreserveSig]
     int GetStackParameterSize(ulong controlPC, uint* pRetVal);
 
     [PreserveSig]
@@ -412,12 +406,6 @@ public unsafe partial interface IDacDbiInterface
     int GetRcwCachedInterfacePointers(ulong vmObject, Interop.BOOL bIInspectableOnly, nint pDacItfPtrs);
 
     [PreserveSig]
-    int GetCachedWinRTTypesForIIDs(ulong vmAppDomain, nint pIids, nint pTypes);
-
-    [PreserveSig]
-    int GetCachedWinRTTypes(ulong vmAppDomain, nint piids, nint pTypes);
-
-    [PreserveSig]
     int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData);
 
     [PreserveSig]
@@ -428,12 +416,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetBasicObjectInfo(ulong objectAddress, int type, nint pObjectData);
-
-    [PreserveSig]
-    int TestCrst(ulong vmCrst);
-
-    [PreserveSig]
-    int TestRWLock(ulong vmRWLock);
 
     [PreserveSig]
     int GetDebuggerControlBlockAddress(ulong* pRetVal);

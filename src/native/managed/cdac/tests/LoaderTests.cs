@@ -38,7 +38,7 @@ public unsafe class LoaderTests
 
         var target = targetBuilder
             .AddTypes(CreateContractTypes(loader))
-            .AddContract<ILoader>(version: 1)
+            .AddContract<ILoader>(version: "c1")
             .Build();
         return target.Contracts.Loader;
     }
@@ -53,7 +53,7 @@ public unsafe class LoaderTests
         configure(loader, targetBuilder);
 
         targetBuilder.AddTypes(CreateContractTypes(loader));
-        targetBuilder.AddContract<ILoader>(version: 1);
+        targetBuilder.AddContract<ILoader>(version: "c1");
         var target = targetBuilder.Build();
         return (target.Contracts.Loader, target);
     }
@@ -442,7 +442,7 @@ public unsafe class LoaderTests
 
         var target = targetBuilder
             .AddTypes(types)
-            .AddContract<ILoader>(version: 1)
+            .AddContract<ILoader>(version: "c1")
             .Build();
 
         return (target, new TargetPointer(peAssemblyFrag.Address), new TargetPointer(webcilImage.Address));

@@ -1525,14 +1525,14 @@ public:
 
     // Is this something like List<T> or List<Stack<T>>?
     // List<Blah<T>> only exists for reflection and verification.
-    inline DWORD ContainsGenericVariables(BOOL methodVarsOnly = FALSE)
+    inline BOOL ContainsGenericVariables(BOOL methodVarsOnly = FALSE)
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
         if (methodVarsOnly)
             return ContainsGenericMethodVariables();
         else
-            return GetFlag(enum_flag_ContainsGenericVariables);
+            return !!GetFlag(enum_flag_ContainsGenericVariables);
     }
 
     BOOL IsByRefLike()
@@ -2056,12 +2056,6 @@ public:
     // The managed and unmanaged HFA type can differ for types with layout. The following two methods return the unmanaged HFA type.
     bool IsNativeHFA();
     CorInfoHFAElemType GetNativeHFAType();
-
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-    // Returns true if this is the System.Half type, which is passed and returned
-    // in floating point registers on xarch platforms.
-    bool IsNativeHalfType();
-#endif // TARGET_XARCH
 
 #ifdef UNIX_AMD64_ABI
     inline bool IsRegPassedStruct()

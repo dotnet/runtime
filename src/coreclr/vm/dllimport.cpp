@@ -4300,29 +4300,45 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        // The hash blob for a forward P/Invoke stub is just the target MethodDesc pointer.
-        // In order to help avoid collisions, ensure various blob sizes are different.
-        // See asserts below.
-        constexpr size_t forwardPInvokeHashBlobSize = sizeof(ILStubHashBlobBase) + sizeof(MethodDesc*);
+        // Some stubs (forward P/Invoke non-varags, late bound COM) each target a specific method.
+        // The hash blob for an unshared stub is just the target MethodDesc pointer and the stub flags.
+        constexpr size_t unsharedStubHashBlobSize = sizeof(ILStubHashBlobBase) + sizeof(DWORD) + sizeof(MethodDesc*);
 
         DWORD dwStubFlags = pParams->m_dwStubFlags;
 
+        bool isNonSharedStub = false;
+
         // The target MethodDesc may be NULL for field marshalling.
         // Forward P/Invoke stubs (non-CALLI, non-vararg) each target a specific method,
-        // so the hash blob is just the target MethodDesc pointer. This ensures racing
-        // threads for the same P/Invoke converge on the same DynamicMethodDesc in the
-        // ILStubCache, while different P/Invoke methods get distinct cache entries.
+        // so the hash blob includes the target MethodDesc pointer and the stub flags.
+        // This ensures racing threads for the same P/Invoke converge on the same
+        // DynamicMethodDesc in the ILStubCache, while different P/Invoke methods or
+        // differently flagged stubs get distinct cache entries.
         if (pTargetMD != NULL
+            && pTargetMD->IsPInvoke()
             && SF_IsForwardPInvokeStub(dwStubFlags)
             && !SF_IsCALLIStub(dwStubFlags)
             && !SF_IsVarArgStub(dwStubFlags))
         {
-            const size_t blobSize = forwardPInvokeHashBlobSize;
+            isNonSharedStub = true;
+        }
+        // Late-bound COM stubs depend on metadata on the target MethodDesc (DispIdAttribute, associated properties) in addition to just the signature.
+        // Cache based on the target MethodDesc and stub flags instead of the signature to avoid false sharing.
+        else if (SF_IsCOMLateBoundStub(dwStubFlags))
+        {
+            isNonSharedStub = true;
+        }
+
+        if (isNonSharedStub)
+        {
+            _ASSERTE(pTargetMD != NULL);
+            const size_t blobSize = unsharedStubHashBlobSize;
             NewArrayHolder<BYTE> pBytes = new BYTE[blobSize];
             ZeroMemory(pBytes, blobSize);
             ILStubHashBlob* pBlob = (ILStubHashBlob*)(BYTE*)pBytes;
             pBlob->m_cbSizeOfBlob = blobSize;
-            memcpy(pBlob->m_rgbBlobData, &pTargetMD, sizeof(pTargetMD));
+            memcpy(pBlob->m_rgbBlobData, &dwStubFlags, sizeof(dwStubFlags));
+            memcpy(pBlob->m_rgbBlobData + sizeof(dwStubFlags), &pTargetMD, sizeof(pTargetMD));
             pBytes.SuppressRelease();
             return pBlob;
         }
@@ -4381,7 +4397,7 @@ namespace
         if (cbSizeOfBlob.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
 
-        _ASSERTE(cbSizeOfBlob.Value() != forwardPInvokeHashBlobSize);
+        _ASSERTE(cbSizeOfBlob.Value() != unsharedStubHashBlobSize);
 
         static_assert(nltMaxValue   <= 0xFF);
         static_assert(nlfMaxValue   <= 0xFF);
