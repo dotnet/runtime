@@ -3535,5 +3535,324 @@ namespace ILAssembler.Tests
             var param = reader.GetParameter(MetadataTokens.ParameterHandle(1));
             Assert.True(param.Attributes.HasFlag(ParameterAttributes.In));
         }
+
+        [Fact]
+        public void LocalMethodCall_ResolvesToMethodDef()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static int32 Helper() cil managed
+                    {
+                        ldc.i4.1
+                        ret
+                    }
+                    .method public static int32 Caller() cil managed
+                    {
+                        call int32 MyClass::Helper()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // No MemberRef rows should exist for the local method call
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+
+            // Verify the call instruction references a MethodDef token
+            var callerMethod = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "Caller");
+            var body = pe.GetMethodBody(callerMethod.RelativeVirtualAddress);
+            var ilReader = body.GetILReader();
+            Assert.Equal(ILOpCode.Call, (ILOpCode)ilReader.ReadByte());
+            int token = ilReader.ReadInt32();
+            Assert.Equal(0x06, (token >> 24) & 0xFF); // MethodDef table (0x06)
+        }
+
+        [Fact]
+        public void LocalFieldAccess_ResolvesToFieldDef()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .field public static int32 myField
+                    .method public static int32 GetField() cil managed
+                    {
+                        ldsfld int32 MyClass::myField
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // No MemberRef rows should exist for the local field access
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+
+            // Verify the ldsfld instruction references a FieldDef token
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "GetField");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            var ilReader = body.GetILReader();
+            Assert.Equal(ILOpCode.Ldsfld, (ILOpCode)ilReader.ReadByte());
+            int token = ilReader.ReadInt32();
+            Assert.Equal(0x04, (token >> 24) & 0xFF); // FieldDef table (0x04)
+        }
+
+        [Fact]
+        public void MixedLocalAndExternalRefs_ResolvesCorrectly()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .field public static int32 myField
+                    .method public static void Helper() cil managed
+                    {
+                        ret
+                    }
+                    .method public static void Caller() cil managed
+                    {
+                        // Local method call -> should resolve to MethodDef
+                        call void MyClass::Helper()
+                        // External method call -> should remain MemberRef
+                        call string [mscorlib]System.Object::ToString(object)
+                        pop
+                        // Local field access -> should resolve to FieldDef
+                        ldsfld int32 MyClass::myField
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // Only the external call should produce a MemberRef row
+            Assert.Equal(1, reader.GetTableRowCount(TableIndex.MemberRef));
+
+            var memberRef = reader.GetMemberReference(MetadataTokens.MemberReferenceHandle(1));
+            Assert.Equal("ToString", reader.GetString(memberRef.Name));
+        }
+
+        [Fact]
+        public void LocalInstanceFieldAccess_ResolvesToFieldDef()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .field public int32 value
+                    .method public instance int32 GetValue() cil managed
+                    {
+                        ldarg.0
+                        ldfld int32 MyClass::value
+                        ret
+                    }
+                    .method public instance void SetValue(int32 v) cil managed
+                    {
+                        ldarg.0
+                        ldarg.1
+                        stfld int32 MyClass::value
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+        }
+
+        [Fact]
+        public void ExternalMethodCall_KeepsMemberRef()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static void Test() cil managed
+                    {
+                        call int32 [mscorlib]System.Environment::get_CurrentManagedThreadId()
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(1, reader.GetTableRowCount(TableIndex.MemberRef));
+            var memberRef = reader.GetMemberReference(MetadataTokens.MemberReferenceHandle(1));
+            Assert.Equal("get_CurrentManagedThreadId", reader.GetString(memberRef.Name));
+        }
+
+        [Fact]
+        public void LocalVarargMethodCall_EmitsCallSiteMemberRef()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static vararg void VarFunc() cil managed
+                    {
+                        ret
+                    }
+                    .method public static void Caller() cil managed
+                    {
+                        ldc.i4.1
+                        call vararg void MyClass::VarFunc(..., int32)
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            int memberRefCount = reader.GetTableRowCount(TableIndex.MemberRef);
+
+            // There should be MemberRef(s) for the vararg call-site.
+            // The call-site MemberRef has a sentinel in its signature.
+            Assert.True(memberRefCount >= 1, "Should have at least one MemberRef for the vararg call-site");
+
+            bool foundCallSite = false;
+            for (int i = 1; i <= memberRefCount; i++)
+            {
+                var memberRef = reader.GetMemberReference(MetadataTokens.MemberReferenceHandle(i));
+                Assert.Equal("VarFunc", reader.GetString(memberRef.Name));
+                var sigBytes = reader.GetBlobBytes(memberRef.Signature);
+                if (sigBytes.Any(b => b == (byte)SignatureTypeCode.Sentinel))
+                {
+                    foundCallSite = true;
+                }
+            }
+            Assert.True(foundCallSite, "Should have found the vararg call-site MemberRef with sentinel");
+        }
+
+        [Fact]
+        public void MultipleLocalMethodCalls_AllResolveToMethodDef()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static void A() cil managed { ret }
+                    .method public static void B() cil managed { ret }
+                    .method public static void C() cil managed { ret }
+                    .method public static void Caller() cil managed
+                    {
+                        call void MyClass::A()
+                        call void MyClass::B()
+                        call void MyClass::C()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+        }
+
+        [Fact]
+        public void ForwardReferencedLocalMethod_ResolvesToMethodDef()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static void Caller() cil managed
+                    {
+                        // Calls a method defined later in the same type
+                        call void MyClass::Target()
+                        ret
+                    }
+                    .method public static void Target() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+        }
+
+        [Fact]
+        public void CrossTypeLocalMethodCall_ResolvesToMethodDef()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit ClassA extends [mscorlib]System.Object
+                {
+                    .method public static void DoWork() cil managed
+                    {
+                        ret
+                    }
+                }
+                .class public auto ansi beforefieldinit ClassB extends [mscorlib]System.Object
+                {
+                    .method public static void Caller() cil managed
+                    {
+                        call void ClassA::DoWork()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+        }
+
+        [Fact]
+        public void CrossTypeLocalFieldAccess_ResolvesToFieldDef()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit ClassA extends [mscorlib]System.Object
+                {
+                    .field public static int32 SharedValue
+                }
+                .class public auto ansi beforefieldinit ClassB extends [mscorlib]System.Object
+                {
+                    .method public static int32 GetShared() cil managed
+                    {
+                        ldsfld int32 ClassA::SharedValue
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+        }
     }
 }
