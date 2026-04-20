@@ -2758,7 +2758,8 @@ namespace Internal.JitInterface
             }
             else if (helperArg is FieldDesc fieldDesc)
             {
-                helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken, out _));
+                ModuleToken fieldToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
+                helperArg = new FieldWithToken(fieldDesc, fieldToken, forceOwningTypeNotDerivedFromToken: strippedInstantiation);
             }
 
             var methodContext = new GenericContext(callerHandle);
