@@ -515,7 +515,8 @@ namespace ILAssembler
                 or DiagnosticIds.ParameterIndexOutOfRange
                 or DiagnosticIds.GenericParameterNotFound
                 or DiagnosticIds.UnknownGenericParameter
-                or DiagnosticIds.MissingInstanceCallConv;
+                or DiagnosticIds.MissingInstanceCallConv
+                or DiagnosticIds.TooManyGenericParameters;
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
@@ -1272,6 +1273,12 @@ namespace ILAssembler
                     // Two-pass generic parameter processing:
                     // Pass 1: Register all parameter names (without resolving constraints)
                     var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
+                    if (typarContexts.Length > ushort.MaxValue)
+                    {
+                        ReportError(DiagnosticIds.TooManyGenericParameters,
+                            string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
+                            context.typarsClause());
+                    }
                     for (int i = 0; i < typarContexts.Length; i++)
                     {
                         var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -1349,6 +1356,12 @@ namespace ILAssembler
                 {
                     // Two-pass generic parameter processing for forward-referenced types
                     var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
+                    if (typarContexts.Length > ushort.MaxValue)
+                    {
+                        ReportError(DiagnosticIds.TooManyGenericParameters,
+                            string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
+                            context.typarsClause());
+                    }
                     for (int i = 0; i < typarContexts.Length; i++)
                     {
                         var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -4118,6 +4131,12 @@ namespace ILAssembler
             // Pass 1: Register all parameter names (without resolving constraints)
             _currentMethod = new(methodDefinition);
             var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
+            if (typarContexts.Length > ushort.MaxValue)
+            {
+                ReportError(DiagnosticIds.TooManyGenericParameters,
+                    string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
+                    context.typarsClause());
+            }
             for (int i = 0; i < typarContexts.Length; i++)
             {
                 var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
