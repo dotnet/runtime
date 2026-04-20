@@ -143,7 +143,7 @@ public:
         Iterator(Iterator const &it)
             : m_ppCur(it.m_ppCur)
 #ifdef _DEBUG
-              , m_fIsValid(it.m_fIsValid)
+            , m_fIsValid(it.m_fIsValid)
 #endif
         { }
 
