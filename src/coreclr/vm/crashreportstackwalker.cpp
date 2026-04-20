@@ -272,19 +272,12 @@ int
 CrashReportGetException(
     char* exceptionTypeBuf,
     int exceptionTypeBufSize,
-    char* exceptionMsgBuf,
-    int exceptionMsgBufSize,
     uint32_t* hresult)
 {
     Thread* pThread = GetThreadAsyncSafe();
     if (pThread == NULL)
     {
         return 0;
-    }
-
-    if (exceptionMsgBufSize > 0)
-    {
-        exceptionMsgBuf[0] = '\0';
     }
 
     return CrashReportGetExceptionForThread(pThread, exceptionTypeBuf, exceptionTypeBufSize, hresult);

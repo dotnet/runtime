@@ -44,8 +44,6 @@ void InProcCrashReportSetStackWalker(InProcCrashReportWalkStackCallback callback
 typedef int (*InProcCrashReportGetExceptionCallback)(
     char* exceptionTypeBuf,
     int exceptionTypeBufSize,
-    char* exceptionMsgBuf,
-    int exceptionMsgBufSize,
     uint32_t* hresult);
 
 void InProcCrashReportSetExceptionResolver(InProcCrashReportGetExceptionCallback callback);

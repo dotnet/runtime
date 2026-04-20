@@ -201,15 +201,13 @@ InProcCrashReportGenerate(
     (void)siginfo;
 
     char exTypeBuf[256];
-    char exMsgBuf[512];
     uint32_t exHresult = 0;
     exTypeBuf[0] = '\0';
-    exMsgBuf[0] = '\0';
 
     int hasException = 0;
     if (g_getExceptionCallback != NULL && signal != SIGSEGV && signal != SIGBUS)
     {
-        hasException = g_getExceptionCallback(exTypeBuf, sizeof(exTypeBuf), exMsgBuf, sizeof(exMsgBuf), &exHresult);
+        hasException = g_getExceptionCallback(exTypeBuf, sizeof(exTypeBuf), &exHresult);
     }
 
     CrashReportOutputContext outputContext =
