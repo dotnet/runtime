@@ -226,3 +226,14 @@ namespace Microsoft.Extensions.Logging.Abstractions
         void LogRecords(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.Abstractions.BufferedLogRecord> records);
     }
 }
+namespace Microsoft.Extensions.Logging.Abstractions.Internal
+{
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.", error: true)]
+    public partial class NullScope : System.IDisposable
+    {
+        private NullScope() { }
+        public static Microsoft.Extensions.Logging.Abstractions.Internal.NullScope Instance { get { throw null; } }
+        public void Dispose() { }
+    }
+}
