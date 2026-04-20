@@ -463,9 +463,7 @@ private:
         }
     };
 
-    typedef SListTail<FailedTypeInitCleanupListItem> FailedTypeInitCleanupList;
-
-    FailedTypeInitCleanupList m_failedTypeInitCleanupList;
+    SListTail<FailedTypeInitCleanupListItem> m_failedTypeInitCleanupList;
 
     SegmentedHandleIndexStack m_freeHandleIndexesStack;
 #ifdef FEATURE_COMINTEROP
@@ -1028,9 +1026,7 @@ private:
         }
     };
 
-    typedef SListTail<HandleCleanupListItem> HandleCleanupList;
-
-    HandleCleanupList m_handleCleanupList;
+    SListTail<HandleCleanupListItem> m_handleCleanupList;
 #if !defined(DACCESS_COMPILE)
     CustomAssemblyBinder* m_binderToRelease;
 #endif
