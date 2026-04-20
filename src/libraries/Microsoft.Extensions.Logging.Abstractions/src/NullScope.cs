@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Logging.Abstractions.Internal
     /// An empty scope without any logic.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [Obsolete("This type is retained only for compatibility. The recommended alternative is NullScope in the Microsoft.Extensions.Logging.Abstractions namespace.", error: true)]
+    [Obsolete("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Logging.NullScope.", error: true)]
     public class NullScope : IDisposable
     {
         /// <summary>

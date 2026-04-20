@@ -25,19 +25,19 @@ namespace Microsoft.Extensions.Logging.Internal
             _inner = new Microsoft.Extensions.Logging.LogValuesFormatter(format);
         }
 
-        /// <inheritdoc cref="Microsoft.Extensions.Logging.LogValuesFormatter.OriginalFormat"/>
+        /// <summary>Gets the original format string.</summary>
         public string OriginalFormat => _inner.OriginalFormat;
 
-        /// <inheritdoc cref="Microsoft.Extensions.Logging.LogValuesFormatter.ValueNames"/>
+        /// <summary>Gets the list of named format parameter names.</summary>
         public List<string> ValueNames => _inner.ValueNames;
 
-        /// <inheritdoc cref="Microsoft.Extensions.Logging.LogValuesFormatter.Format(object?[])"/>
+        /// <summary>Formats the given values using the format string.</summary>
         public string Format(object?[]? values) => _inner.Format(values);
 
-        /// <inheritdoc cref="Microsoft.Extensions.Logging.LogValuesFormatter.GetValue(object?[], int)"/>
+        /// <summary>Gets the key/value pair for the format item at the specified index.</summary>
         public KeyValuePair<string, object?> GetValue(object?[] values, int index) => _inner.GetValue(values, index);
 
-        /// <inheritdoc cref="Microsoft.Extensions.Logging.LogValuesFormatter.GetValues(object[])"/>
+        /// <summary>Gets an enumerable of key/value pairs for all format items.</summary>
         public IEnumerable<KeyValuePair<string, object?>> GetValues(object[] values) => _inner.GetValues(values);
     }
 }

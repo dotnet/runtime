@@ -14,13 +14,13 @@ namespace Microsoft.Extensions.Logging.Abstractions.Internal
     [Obsolete("This type is retained only for compatibility. Do not use.", error: true)]
     public static class TypeNameHelper
     {
-        /// <inheritdoc cref="Abstractions.TypeNameHelper.GetTypeDisplayName(object?, bool)"/>
+        /// <summary>Gets the display name of a type from an instance.</summary>
         [return: NotNullIfNotNull(nameof(item))]
         public static string? GetTypeDisplayName(object? item, bool fullName = true)
-            => Abstractions.TypeNameHelper.GetTypeDisplayName(item, fullName);
+            => Microsoft.Extensions.Internal.TypeNameHelper.GetTypeDisplayName(item, fullName);
 
-        /// <inheritdoc cref="Abstractions.TypeNameHelper.GetTypeDisplayName(Type, bool, bool, bool, char)"/>
+        /// <summary>Pretty prints a type name.</summary>
         public static string GetTypeDisplayName(Type type, bool fullName = true, bool includeGenericParameterNames = false, bool includeGenericParameters = true, char nestedTypeDelimiter = '+')
-            => Abstractions.TypeNameHelper.GetTypeDisplayName(type, fullName, includeGenericParameterNames, includeGenericParameters, nestedTypeDelimiter);
+            => Microsoft.Extensions.Internal.TypeNameHelper.GetTypeDisplayName(type, fullName, includeGenericParameterNames, includeGenericParameters, nestedTypeDelimiter);
     }
 }
