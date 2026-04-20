@@ -902,8 +902,191 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            ppc_nop (dstRW);
            break;
 
+       case INS_trap:
+           ppc_trap (dstRW);
+           break;
+
        case INS_blr:
-	   ppc_blr (dstRW);
+           ppc_blr (dstRW);
+           break;
+
+       case INS_mflr:
+           // mflr rD - Move from Link Register
+           ppc_mflr (dstRW, id->idReg1());
+           break;
+
+       case INS_mtlr:
+           // mtlr rS - Move to Link Register
+           ppc_mtlr (dstRW, id->idReg1());
+           break;
+
+       case INS_bctr:
+           // bctr - Branch to Count Register (unconditional)
+           ppc_bcctr (dstRW, 20, 0);
+           break;
+
+       case INS_bctrl:
+           // bctrl - Branch to Count Register and Link
+           ppc_bcctrl (dstRW, 20, 0);
+           break;
+
+       case INS_bl:
+           // bl - Branch and Link
+           // Branch offset will be calculated during jump binding
+           ppc_bl (dstRW, 0);
+           break;
+
+       case INS_addi:
+           // addi rD, rA, SIMM
+           ppc_addi (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+           break;
+
+       case INS_li:
+           // li rD, value (pseudo-op: addi rD, 0, value)
+           ppc_li (dstRW, id->idReg1(), emitGetInsSC(id));
+           break;
+
+       case INS_lis:
+           // lis rD, value (pseudo-op: addis rD, 0, value)
+           ppc_lis (dstRW, id->idReg1(), emitGetInsSC(id));
+           break;
+
+       case INS_ori:
+           // ori rA, rS, UIMM
+           ppc_ori (dstRW, id->idReg2(), id->idReg1(), emitGetInsSC(id));
+           break;
+
+       case INS_oris:
+           // oris rA, rS, UIMM
+           ppc_oris (dstRW, id->idReg2(), id->idReg1(), emitGetInsSC(id));
+           break;
+
+       case INS_sldi:
+           // sldi rA, rS, n (pseudo-op: rldicr)
+           ppc_sldi (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+           break;
+
+       case INS_cmpw:
+           // cmpw crD, rA, rB (cmp with L=0)
+           // Assuming crD is in idReg1, rA in idReg2, rB in idReg3
+           ppc_cmpw (dstRW, 0, id->idReg1(), id->idReg2());
+           break;
+
+       case INS_cmpd:
+           // cmpd crD, rA, rB (cmp with L=1)
+           ppc_cmpd (dstRW, 0, id->idReg1(), id->idReg2());
+           break;
+
+       case INS_cmpwi:
+           // cmpwi crD, rA, SIMM (cmpi with L=0)
+           ppc_cmpwi (dstRW, 0, id->idReg1(), emitGetInsSC(id));
+           break;
+
+       case INS_cmpdi:
+           // cmpdi crD, rA, SIMM (cmpi with L=1)
+           ppc_cmpdi (dstRW, 0, id->idReg1(), emitGetInsSC(id));
+           break;
+
+       case INS_lbz:
+           // lbz rD, d(rA) - Load Byte and Zero
+           ppc_lbz (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_lhz:
+           // lhz rD, d(rA) - Load Halfword and Zero
+           ppc_lhz (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_lha:
+           // lha rD, d(rA) - Load Halfword Algebraic
+           ppc_lha (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_lwz:
+           // lwz rD, d(rA) - Load Word and Zero
+           ppc_lwz (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_lwa:
+           // lwa rD, ds(rA) - Load Word Algebraic
+           ppc_lwa (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_ld:
+           // ld rD, ds(rA) - Load Doubleword
+           ppc_ld (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_lfd:
+           // lfd fD, d(rA) - Load Floating-Point Double
+           ppc_lfd (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_stfd:
+           // stfd fS, d(rA) - Store Floating-Point Double
+           ppc_stfd (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_stb:
+           // stb rS, d(rA) - Store Byte
+           ppc_stb (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_sth:
+           // sth rS, d(rA) - Store Halfword
+           ppc_sth (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_stw:
+           // stw rS, d(rA) - Store Word
+           ppc_stw (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_std:
+           // std rS, ds(rA) - Store Doubleword
+           ppc_std (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_stdu:
+           // stdu rS, ds(rA) - Store Doubleword with Update
+           ppc_stdu (dstRW, id->idReg1(), emitGetInsSC(id), id->idReg2());
+           break;
+
+       case INS_b:
+           // b target - Unconditional Branch
+           // Branch offset will be calculated during jump binding
+           ppc_b (dstRW, 0);
+           break;
+
+       case INS_beq:
+           // beq target - Branch if Equal
+           // Branch offset will be calculated during jump binding
+           ppc_bc (dstRW, PPC_BR_TRUE, PPC_BR_EQ, 0);
+           break;
+
+       case INS_bne:
+           // bne target - Branch if Not Equal
+           ppc_bc (dstRW, PPC_BR_FALSE, PPC_BR_EQ, 0);
+           break;
+
+       case INS_blt:
+           // blt target - Branch if Less Than
+           ppc_bc (dstRW, PPC_BR_TRUE, PPC_BR_LT, 0);
+           break;
+
+       case INS_bge:
+           // bge target - Branch if Greater Than or Equal
+           ppc_bc (dstRW, PPC_BR_FALSE, PPC_BR_LT, 0);
+           break;
+
+       case INS_bgt:
+           // bgt target - Branch if Greater Than
+           ppc_bc (dstRW, PPC_BR_TRUE, PPC_BR_GT, 0);
+           break;
+
+       case INS_ble:
+           // ble target - Branch if Less Than or Equal
+           ppc_bc (dstRW, PPC_BR_FALSE, PPC_BR_GT, 0);
            break;
 
        default:

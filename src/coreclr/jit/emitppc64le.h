@@ -4,9 +4,74 @@
 #if defined(TARGET_POWERPC64)
 
 #define ppc_emit32(c,x) do { *((uint32_t *) (c)) = (uint32_t) (x); (c) = ((uint8_t *)(c) + sizeof (uint32_t));} while (0)
-#define   ppc_ori(c,S,A,ui) ppc_emit32 (c, (24 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
-#define          ppc_nop(c)       ppc_ori    (c, 0, 0, 0)
-#define   ppc_blr(c)       ppc_emit32 (c, 0x4e800020)
+
+// Branch instructions
+#define ppc_blr(c)         ppc_emit32 (c, 0x4e800020)
+#define ppc_blrl(c)        ppc_emit32 (c, 0x4e800021)
+#define ppc_b(c,li)        ppc_emit32 (c, (18 << 26) | ((li) << 2))
+#define ppc_bl(c,li)       ppc_emit32 (c, (18 << 26) | ((li) << 2) | 1)
+#define ppc_bcx(c,BO,BI,BD,AA,LK) ppc_emit32(c, (16 << 26) | ((BO) << 21 )| ((BI) << 16) | (BD << 2) | ((AA) << 1) | LK)
+#define ppc_bc(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,0,0)
+#define ppc_bcctrx(c,BO,BI,LK) ppc_emit32(c, (19 << 26) | (BO << 21 )| (BI << 16) | (0 << 11) | (528 << 1) | LK)
+#define ppc_bcctr(c,BO,BI) ppc_bcctrx(c,BO,BI,0)
+#define ppc_bcctrl(c,BO,BI) ppc_bcctrx(c,BO,BI,1)
+
+// Branch condition codes
+#define PPC_BR_FALSE  4
+#define PPC_BR_TRUE   12
+#define PPC_BR_LT     0
+#define PPC_BR_GT     1
+#define PPC_BR_EQ     2
+
+// Special purpose register instructions
+#define ppc_mfspr(c,D,spr) ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((spr) << 11) | (339 << 1))
+#define ppc_mflr(c,D)      ppc_mfspr  (c, D, 256)
+#define ppc_mtspr(c,spr,S) ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((spr) << 11) | (467 << 1))
+#define ppc_mtlr(c,S)      ppc_mtspr  (c, 256, S)
+#define ppc_mtctr(c,S)     ppc_mtspr  (c, 288, S)
+
+// Logical instructions
+#define ppc_ori(c,S,A,ui)  ppc_emit32 (c, (24 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
+#define ppc_oris(c,S,A,ui) ppc_emit32 (c, (25 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
+#define ppc_nop(c)         ppc_ori    (c, 0, 0, 0)
+
+// Arithmetic instructions
+#define ppc_addi(c,D,A,i)  ppc_emit32 (c, (14 << 26) | ((D) << 21) | ((A) << 16) | (uint16_t)(i))
+#define ppc_addis(c,D,A,i) ppc_emit32 (c, (15 << 26) | ((D) << 21) | ((A) << 16) | (uint16_t)(i))
+#define ppc_li(c,D,v)      ppc_addi   (c, D, 0, (uint16_t)(v))
+#define ppc_lis(c,D,v)     ppc_addis  (c, D, 0, (uint16_t)(v))
+
+// Rotate and shift instructions
+#define ppc_rldicr(c,A,S,n,b) ppc_emit32(c, (30 << 26) | ((S) << 21) | ((A) << 16) | (((n) & 0x1f) << 11) | (((b) & 0x1f) << 6) | ((((n) & 0x20) >> 5) << 1) | ((((b) & 0x20) >> 5) << 5) | (1 << 2))
+#define ppc_sldi(c,A,S,n)  ppc_rldicr(c, A, S, n, 63 - (n))
+
+// Compare instructions
+#define ppc_cmp(c,cfrD,L,A,B)   ppc_emit32(c, (31 << 26) | ((cfrD) << 23) | (0 << 22) | ((L) << 21) | ((A) << 16) | ((B) << 11) | (0 << 1) | 0)
+#define ppc_cmpi(c,cfrD,L,A,B)  ppc_emit32(c, (11 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | (uint16_t)(B))
+#define ppc_cmpw(c,cfrD,A,B)    ppc_cmp(c, (cfrD), 0, (A), (B))
+#define ppc_cmpd(c,cfrD,A,B)    ppc_cmp(c, (cfrD), 1, (A), (B))
+#define ppc_cmpwi(c,cfrD,A,B)   ppc_cmpi(c, (cfrD), 0, (A), (B))
+#define ppc_cmpdi(c,cfrD,A,B)   ppc_cmpi(c, (cfrD), 1, (A), (B))
+
+// Load instructions
+#define ppc_lbz(c,D,d,A)   ppc_emit32 (c, (34 << 26) | ((D) << 21) | ((A) << 16) | (uint16_t)(d))
+#define ppc_lhz(c,D,d,A)   ppc_emit32 (c, (40 << 26) | ((D) << 21) | ((A) << 16) | (uint16_t)(d))
+#define ppc_lha(c,D,d,A)   ppc_emit32 (c, (42 << 26) | ((D) << 21) | ((A) << 16) | (uint16_t)(d))
+#define ppc_lwz(c,D,d,A)   ppc_emit32 (c, (32 << 26) | ((D) << 21) | ((A) << 16) | (uint16_t)(d))
+#define ppc_lwa(c,D,ds,A)  ppc_emit32 (c, (58 << 26) | ((D) << 21) | ((A) << 16) | ((ds) & 0xfffc) | 2)
+#define ppc_ld(c,D,ds,A)   ppc_emit32 (c, (58 << 26) | ((D) << 21) | ((A) << 16) | ((uint32_t)(ds) & 0xfffc) | 0)
+#define ppc_lfd(c,D,d,A)   ppc_emit32 (c, (50 << 26) | ((D) << 21) | ((A) << 16) | (uint16_t)(d))
+
+// Store instructions
+#define ppc_stb(c,S,d,A)   ppc_emit32 (c, (38 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(d))
+#define ppc_sth(c,S,d,A)   ppc_emit32 (c, (44 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(d))
+#define ppc_stw(c,S,d,A)   ppc_emit32 (c, (36 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(d))
+#define ppc_std(c,S,ds,A)  ppc_emit32 (c, (62 << 26) | ((S) << 21) | ((A) << 16) | ((uint32_t)(ds) & 0xfffc) | 0)
+#define ppc_stdu(c,S,ds,A) ppc_emit32 (c, (62 << 26) | ((S) << 21) | ((A) << 16) | ((uint32_t)(ds) & 0xfffc) | 1)
+#define ppc_stfd(c,S,d,a)  ppc_emit32 (c, (54 << 26) | ((S) << 21) | ((a) << 16) | (uint16_t)(d))
+
+// Trap instruction
+#define ppc_trap(c)        ppc_emit32 (c, 0x7FE00008)
 
 // The POWERPC64 instructions are all 32 bits in size.
 // we use an unsigned int to hold the encoded instructions.
