@@ -3376,5 +3376,74 @@ namespace ILAssembler.Tests
             var asmDef = reader.GetAssemblyDefinition();
             Assert.Equal("My-Assembly", reader.GetString(asmDef.Name));
         }
+
+        [Fact]
+        public void MethodRtSpecialName_Preserved()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+                    {
+                        ldarg.0
+                        call instance void [mscorlib]System.Object::.ctor()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(1));
+            Assert.Equal(".ctor", reader.GetString(method.Name));
+            Assert.True(method.Attributes.HasFlag(MethodAttributes.RTSpecialName));
+            Assert.True(method.Attributes.HasFlag(MethodAttributes.SpecialName));
+        }
+
+        [Fact]
+        public void FieldRtSpecialName_Preserved()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi sealed TestEnum extends [mscorlib]System.Enum
+                {
+                    .field public specialname rtspecialname uint8 value__
+                    .field public static literal valuetype TestEnum A = uint8(0x00)
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            Assert.Equal("value__", reader.GetString(field.Name));
+            Assert.True(field.Attributes.HasFlag(FieldAttributes.RTSpecialName));
+            Assert.True(field.Attributes.HasFlag(FieldAttributes.SpecialName));
+        }
+
+        [Fact]
+        public void Interface_NoImplicitBaseType()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class interface public abstract auto ansi IMyInterface
+                {
+                    .method public hidebysig newslot abstract virtual instance void DoWork() cil managed { }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal("IMyInterface", reader.GetString(typeDef.Name));
+            Assert.True(typeDef.Attributes.HasFlag(TypeAttributes.Interface));
+            Assert.True(typeDef.BaseType.IsNil);
+        }
     }
 }
