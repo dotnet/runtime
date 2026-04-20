@@ -6492,7 +6492,38 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         var_types dstType = tree->AsCast()->CastToType();
 
-                        if (varTypeIsLong(dstType))
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+                        {
+#if defined(TARGET_X86)
+                            if (varTypeIsLong(dstType))
+                            {
+                                // unsigned: vcvttp*2uqqs xmm0, xmm0
+                                //           vmovq        [mem], xmm0
+                                //
+                                // unsigned: vcvttp*2qqs  xmm0, xmm0
+                                //           vmovq        [mem], xmm0
+
+                                costEx = 4 + FLT_IND_COST_EX; // 4 + FLT_IND_COST_EX
+                                costSz = 6 + 6;               // 12
+
+                                if (op1Type == TYP_FLOAT)
+                                {
+                                    // vector widening float->long instructions take 1 extra cycle
+                                    // compared to same-size conversion
+                                    costEx += 1;
+                                }
+                            }
+                            else
+#endif
+                            {
+                                // signed:   vcvtts*2sis  eax, xmm0
+                                // unsigned: vcvtts*2usis eax, xmm0
+
+                                costEx = 7;
+                                costSz = 6;
+                            }
+                        }
+                        else if (varTypeIsLong(dstType))
                         {
 #if defined(TARGET_AMD64)
                             if (varTypeIsUnsigned(dstType))
@@ -6540,24 +6571,60 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 costSz = 5 + 4 + 10 + 5 + 8 + 4;                    // 36
                             }
 #else
-                            // unsigned: ...
-                            //           call CORINFO_HELP_DBL2ULNG
-                            //
-                            // signed:   ...
-                            //           call CORINFO_HELP_DBL2ULNG
-
-                            costEx = 5 + (3 * IND_COST_EX); // CALL
-                            costSz = 5;                     // 5
-
-                            level++;
-
-                            if (op1Type == TYP_FLOAT)
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                             {
-                                // vcvtss2sd xmm0, xmm0, xmm0
-                                // ...
+                                if (varTypeIsUnsigned(dstType))
+                                {
+                                    // vxorps       xmm1, xmm1, xmm1
+                                    // vmaxs*       xmm0, xmm0, xmm1
+                                    // vcvttp*2uqq  xmm0, xmm0
+                                    // vmovq        [mem], xmm0
 
-                                costEx += 4; // 4 + CALL
-                                costSz += 4; // 9
+                                    costEx = 1 + 4 + 4 + FLT_IND_COST_EX; // 9 + FLT_IND_COST_EX
+                                    costSz = 4 + 4 + 6 + 6;               // 20
+                                }
+                                else
+                                {
+                                    // vcmpords*    k1, xmm0, xmm0
+                                    // vcvttp*2qq   xmm1 {k1}{z}, xmm0
+                                    // vcmpge_oqs*  k1, xmm0, qword ptr [@RWD00]
+                                    // vpcmpeqd     xmm0, xmm0, xmm0
+                                    // vpsrlq       xmm1 {k1}, xmm0, 1
+                                    // vmovq        [mem], xmm0
+
+                                    costEx = 4 + 4 + 4 + FLT_IND_COST_EX + 1 + 1 +
+                                             FLT_IND_COST_EX;        // 14 + (2 * FLT_IND_COST_EX)
+                                    costSz = 7 + 6 + 11 + 4 + 7 + 6; // 41
+                                }
+
+                                if (op1Type == TYP_FLOAT)
+                                {
+                                    // vector widening float->long instructions take 1 extra cycle
+                                    // compared to same-size conversion
+                                    costEx += 1;
+                                }
+                            }
+                            else
+                            {
+                                // unsigned: ...
+                                //           call CORINFO_HELP_DBL2ULNG
+                                //
+                                // signed:   ...
+                                //           call CORINFO_HELP_DBL2ULNG
+
+                                costEx = 5 + (3 * IND_COST_EX); // CALL
+                                costSz = 5;                     // 5
+
+                                level++;
+
+                                if (op1Type == TYP_FLOAT)
+                                {
+                                    // vcvtss2sd xmm0, xmm0, xmm0
+                                    // ...
+
+                                    costEx += 4; // 4 + CALL
+                                    costSz += 4; // 9
+                                }
                             }
 #endif
                         }
