@@ -308,12 +308,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                         continue;
                     }
 
-                    // Skip the runtime helper that invokes the main program entrypoint, the debuggers do not want to see it.
-                    // Environment.CallEntryPoint
-                    if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
-                    {
-                        continue;
-                    }
+                    // Note: Environment.CallEntryPoint is NOT skipped here with continue.
+                    // On x86, GetFrameWorker() unwinds one frame ahead to compute the frame pointer
+                    // (see rsstackwalk.cpp). If we skip this frame, the unwind lands on the wrong
+                    // frame, producing an incorrect frame pointer for the caller (e.g., Main).
+                    // Instead, we let it be enumerated; GetStackWalkCurrentFrameInfo classifies it
+                    // as kRuntimeEntryPointFrame and GetFrameWorker returns S_FALSE to hide it.
 
                     fIsAtEndOfStack = FALSE;
                 }
