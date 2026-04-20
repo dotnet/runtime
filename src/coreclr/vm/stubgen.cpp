@@ -1956,7 +1956,12 @@ void StubSigBuilder::EnsureEnoughQuickBytes(size_t cbToAppend)
     SIZE_T cbBuffer = m_qbSigBuffer.Size();
     if ((m_cbSig + cbToAppend) >= cbBuffer)
     {
-        m_qbSigBuffer.ReSizeThrows(2 * cbBuffer);
+        SIZE_T cbNew = 2 * cbBuffer;
+        while ((m_cbSig + cbToAppend) >= cbNew)
+        {
+            cbNew *= 2;
+        }
+        m_qbSigBuffer.ReSizeThrows(cbNew);
         m_pbSigCursor = ((BYTE*)m_qbSigBuffer.Ptr()) + m_cbSig;
     }
 }
