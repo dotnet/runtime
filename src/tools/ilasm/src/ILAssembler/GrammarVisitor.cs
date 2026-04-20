@@ -1247,7 +1247,7 @@ namespace ILAssembler
                 _currentTypeDefinition.PeekOrDefault(),
                 typeNS,
                 typeFullNameLastDot != -1
-                    ? typeFullName.Substring(typeFullNameLastDot)
+                    ? typeFullName.Substring(typeFullNameLastDot + 1)
                     : typeFullName,
                 (newTypeDef) =>
                 {
@@ -4125,6 +4125,14 @@ namespace ILAssembler
             {
                 var declarativeSecurity = VisitSecDecl(secDecl).Value;
                 declarativeSecurity?.Parent = currentMethod.Definition;
+            }
+            else if (context.customDescrInMethodBody() is {} customDescrInMethod)
+            {
+                var customAttr = VisitCustomDescrInMethodBody(customDescrInMethod).Value;
+                if (customAttr is not null)
+                {
+                    customAttr.Owner = currentMethod.Definition;
+                }
             }
             else if (context.GetChild(0) is CILParser.InstrContext instr)
             {

@@ -632,7 +632,7 @@ namespace ILAssembler
                 ?? FindAssemblyReference("System.Runtime")
                 ?? FindAssemblyReference("mscorlib")
                 ?? FindAssemblyReference("netstandard")
-                ?? GetOrCreateAssemblyReference("mscorlib", new Version(4, 0, 0, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
+                ?? GetOrCreateAssemblyReference("mscorlib", new Version(0, 0, 0, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
         }
 
         public interface IHasHandle
