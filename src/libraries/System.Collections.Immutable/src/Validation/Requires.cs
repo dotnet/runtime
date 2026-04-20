@@ -122,7 +122,8 @@ namespace System.Collections.Immutable
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateRange(int index, int count, int listCount, string indexParameterName = "index")
         {
-            Range(index >= 0 && index <= listCount, indexParameterName);
+            Debug.Assert(listCount >= 0);
+            Range((uint)index <= (uint)listCount, indexParameterName);
             Range(count >= 0 && (uint)(index + count) <= (uint)listCount, nameof(count));
         }
 

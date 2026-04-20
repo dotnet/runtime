@@ -180,6 +180,7 @@ namespace System.Collections.Immutable
             get
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
+
                 return _root.ItemRef(index);
             }
         }
@@ -193,6 +194,7 @@ namespace System.Collections.Immutable
         public ref readonly T ItemRef(int index)
         {
             Requires.Range(index >= 0 && index < this.Count, nameof(index));
+
             return ref _root.ItemRef(index);
         }
 
@@ -407,6 +409,7 @@ namespace System.Collections.Immutable
         public ImmutableList<T> SetItem(int index, T value)
         {
             Requires.Range(index >= 0 && index < this.Count, nameof(index));
+
             return this.Wrap(_root.ReplaceAt(index, value));
         }
 
@@ -534,6 +537,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(array, nameof(array));
             Requires.Range(array.Length >= this.Count, nameof(array));
+
             _root.CopyTo(array);
         }
 
@@ -554,6 +558,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(array, nameof(array));
             Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
             Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
+
             _root.CopyTo(array, arrayIndex);
         }
 
@@ -578,6 +583,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(array, nameof(array));
             Requires.ValidateRange(index, count, this.Count);
             Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + count) <= (uint)array.Length, nameof(arrayIndex));
+
             _root.CopyTo(index, array, arrayIndex, count);
         }
 
@@ -639,6 +645,7 @@ namespace System.Collections.Immutable
         public bool Exists(Predicate<T> match)
         {
             Requires.NotNull(match, nameof(match));
+
             return _root.Exists(match);
         }
 
@@ -657,6 +664,7 @@ namespace System.Collections.Immutable
         public T? Find(Predicate<T> match)
         {
             Requires.NotNull(match, nameof(match));
+
             return _root.Find(match);
         }
 
@@ -676,6 +684,7 @@ namespace System.Collections.Immutable
         public ImmutableList<T> FindAll(Predicate<T> match)
         {
             Requires.NotNull(match, nameof(match));
+
             return _root.FindAll(match);
         }
 
@@ -695,6 +704,7 @@ namespace System.Collections.Immutable
         public int FindIndex(Predicate<T> match)
         {
             Requires.NotNull(match, nameof(match));
+
             return _root.FindIndex(match);
         }
 
@@ -714,6 +724,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(match, nameof(match));
             Requires.Range(startIndex >= 0 && startIndex <= this.Count, nameof(startIndex));
+
             return _root.FindIndex(startIndex, match);
         }
 
@@ -734,6 +745,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(match, nameof(match));
             Requires.ValidateRange(startIndex, count, this.Count, nameof(startIndex));
+
             return _root.FindIndex(startIndex, count, match);
         }
 
@@ -752,6 +764,7 @@ namespace System.Collections.Immutable
         public T? FindLast(Predicate<T> match)
         {
             Requires.NotNull(match, nameof(match));
+
             return _root.FindLast(match);
         }
 
@@ -771,6 +784,7 @@ namespace System.Collections.Immutable
         public int FindLastIndex(Predicate<T> match)
         {
             Requires.NotNull(match, nameof(match));
+
             return _root.FindLastIndex(match);
         }
 
@@ -792,6 +806,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(match, nameof(match));
             Requires.Range(startIndex >= 0, nameof(startIndex));
             Requires.Range(startIndex == 0 || startIndex < this.Count, nameof(startIndex));
+
             return _root.FindLastIndex(startIndex, match);
         }
 
@@ -814,6 +829,7 @@ namespace System.Collections.Immutable
         public int FindLastIndex(int startIndex, int count, Predicate<T> match)
         {
             Requires.NotNull(match, nameof(match));
+
             if (startIndex == 0 && count == 0)
             {
                 return -1;
@@ -822,6 +838,7 @@ namespace System.Collections.Immutable
             Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
             Requires.Range(count >= 0 && count <= this.Count, nameof(count));
             Requires.Range(startIndex - count + 1 >= 0, nameof(count));
+
             return _root.FindLastIndex(startIndex, count, match);
         }
 
@@ -852,6 +869,7 @@ namespace System.Collections.Immutable
         public int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
         {
             Requires.ValidateRange(index, count, this.Count);
+
             return _root.IndexOf(item, index, count, equalityComparer);
         }
 
@@ -882,9 +900,10 @@ namespace System.Collections.Immutable
                 return -1;
             }
 
-            Requires.Range(index >= 0 && index < this.Count, nameof(index));
+            Requires.Range(index >= 0 && index < this.Count, "startIndex");
             Requires.Range(count >= 0 && count <= this.Count, nameof(count));
             Requires.Range(index - count + 1 >= 0, nameof(count));
+
             return _root.LastIndexOf(item, index, count, equalityComparer);
         }
 
@@ -904,6 +923,7 @@ namespace System.Collections.Immutable
         public bool TrueForAll(Predicate<T> match)
         {
             Requires.NotNull(match, nameof(match));
+
             return _root.TrueForAll(match);
         }
 
@@ -1101,6 +1121,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(array, nameof(array));
             Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
             Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
+
             _root.CopyTo(array, arrayIndex);
         }
 
