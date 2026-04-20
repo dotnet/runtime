@@ -577,15 +577,7 @@ namespace System.Collections.Immutable
             public int FindLastIndex(int startIndex, int count, Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
-
-                if (startIndex == 0 && count == 0)
-                {
-                    return -1;
-                }
-
-                Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
-                Requires.Range(count >= 0 && count <= this.Count, nameof(count));
-                Requires.Range(startIndex - count + 1 >= 0, nameof(count));
+                Requires.ValidateReverseRange(startIndex, count, this.Count, nameof(startIndex));
 
                 return _root.FindLastIndex(startIndex, count, match);
             }
@@ -764,14 +756,7 @@ namespace System.Collections.Immutable
             /// </returns>
             public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer)
             {
-                if (startIndex == 0 && count == 0)
-                {
-                    return -1;
-                }
-
-                Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
-                Requires.Range(count >= 0 && count <= this.Count, nameof(count));
-                Requires.Range(startIndex - count + 1 >= 0, nameof(count));
+                Requires.ValidateReverseRange(startIndex, count, this.Count, nameof(startIndex));
 
                 return _root.LastIndexOf(item, startIndex, count, equalityComparer);
             }

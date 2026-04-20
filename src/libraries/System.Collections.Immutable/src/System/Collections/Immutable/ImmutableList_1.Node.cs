@@ -797,12 +797,8 @@ namespace System.Collections.Immutable
             /// </returns>
             internal int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer)
             {
-                if (startIndex == 0 && count == 0)
-                {
-                    return -1;
-                }
-
-                Debug.Assert(startIndex >= 0 && startIndex < this.Count);
+                Debug.Assert(startIndex >= 0);
+                Debug.Assert(startIndex == 0 || startIndex < this.Count);
                 Debug.Assert(count >= 0 && count <= this.Count);
                 Debug.Assert(startIndex - count + 1 >= 0);
 
@@ -1231,13 +1227,8 @@ namespace System.Collections.Immutable
             internal int FindLastIndex(int startIndex, int count, Predicate<T> match)
             {
                 Debug.Assert(match != null);
-
-                if (startIndex == 0 && count == 0)
-                {
-                    return -1;
-                }
-
-                Debug.Assert(startIndex >= 0 && startIndex < this.Count);
+                Debug.Assert(startIndex >= 0);
+                Debug.Assert(startIndex == 0 || startIndex < this.Count);
                 Debug.Assert(count >= 0 && count <= this.Count);
                 Debug.Assert(startIndex - count + 1 >= 0);
 
