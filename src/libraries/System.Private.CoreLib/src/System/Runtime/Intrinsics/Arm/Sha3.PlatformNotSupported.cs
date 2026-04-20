@@ -121,7 +121,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// int8x16_t veor3q_s8(int8x16_t a, int8x16_t b, int8x16_t c)
         ///   EOR3 Vd.16B,Vn.16B,Vm.16B,Va.16B
         /// </summary>
-        public static unsafe Vector128<sbyte> Xor(Vector128<sbyte> value1, Vector128<sbyte> value2, Vector128<sbyte> value3) { throw new PlatformNotSupportedException(); };
+        public static unsafe Vector128<sbyte> Xor(Vector128<sbyte> value1, Vector128<sbyte> value2, Vector128<sbyte> value3) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t veor3q_u16(uint16x8_t a, uint16x8_t b, uint16x8_t c)
