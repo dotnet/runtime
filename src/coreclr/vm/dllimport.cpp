@@ -5833,11 +5833,12 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
-
     // Vararg P/Invoke use shared stubs, they need a precode to push the hidden argument.
     (void)pNMD->GetOrCreatePrecode();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+    // Resolve the target of the P/Invoke method now.
+    // This way we don't need to try to do this every time that this P/Invoke is called with this signature.
     ResolvePInvokeTarget(pNMD);
 
     //
@@ -6003,9 +6004,9 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
 // This function is reached only via PInvokeImportThunk. It's purpose
 // is to ensure that the target DLL is fully loaded and ready to run.
 //
-// FUN FACTS: Though this function is actually entered in unmanaged mode,
-// it can reenter managed mode and throw a CLR exception if the DLL linking
-// fails.
+// This function is called in the following cases:
+// - ReadyToRun fixups for methods that contain inlined P/Invokes (at fixup time)
+// - Inlined P/Invokes in jitted code at invoke time.
 //==========================================================================
 EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 {
@@ -6017,18 +6018,7 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
     {
         THROWS;
         GC_TRIGGERS;
-        if (pMD->ShouldSuppressGCTransition())
-        {
-            // SupressGCTransition P/Invokes that are resolved
-            // at runtime will be in COOP mode.
-            // SuppressGCTransition P/Invokes that are resolved
-            // at R2R load time will be in PREEMP mode.
-            MODE_ANY;
-        }
-        else
-        {
-            MODE_PREEMPTIVE;
-        }
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -6038,38 +6028,7 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
     // any of our internal exceptions into managed exceptions.
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-    if (pMD->IsEarlyBound())
-    {
-        // we need the MD to be populated in case we decide to build an intercept
-        // stub to wrap the target in InitEarlyBoundPInvokeTarget
-        PInvoke::PopulatePInvokeMethodDesc(pMD);
-
-        pMD->InitEarlyBoundPInvokeTarget();
-    }
-    else
-    {
-        //
-        // Otherwise we're in an inlined pinvoke late bound MD
-        //
-        INDEBUG(Thread *pThread = GetThread());
-        {
-            _ASSERTE((pThread->GetFrame() != FRAME_TOP && pThread->GetFrame()->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame)
-                || pMD->ShouldSuppressGCTransition());
-
-            CONSISTENCY_CHECK(pMD->IsPInvoke());
-
-            GCX_PREEMP();
-
-            //
-            // With IL stubs, we don't have to do anything but ensure the DLL is loaded.
-            //
-
-            PInvoke::PopulatePInvokeMethodDesc(pMD);
-            pMD->CheckRestore();
-
-            PInvokeLink(pMD);
-        }
-    }
+    PInvoke::ResolvePInvokeTarget(pMD);
 
     ret = pMD->GetPInvokeTarget();
 
