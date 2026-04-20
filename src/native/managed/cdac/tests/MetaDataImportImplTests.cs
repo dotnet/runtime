@@ -52,6 +52,11 @@ public unsafe class MetaDataImportImplTests
         new BlobEncoder(fieldSigBlob).Field().Type().Int32();
         BlobHandle intFieldSig = mb.GetOrAddBlob(fieldSigBlob);
 
+        // Create a field signature blob: string
+        BlobBuilder stringFieldSigBlob = new();
+        new BlobEncoder(stringFieldSigBlob).Field().Type().String();
+        BlobHandle stringFieldSig = mb.GetOrAddBlob(stringFieldSigBlob);
+
         // TypeDef: <Module> (required, row 1) — owns the global method (method 1) and no fields
         mb.AddTypeDefinition(default, default, mb.GetOrAddString("<Module>"), default,
             MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
@@ -76,7 +81,7 @@ public unsafe class MetaDataImportImplTests
         // FieldDef: StringConst (string) — field row 2, with string constant
         FieldDefinitionHandle stringConstField = mb.AddFieldDefinition(
             FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault,
-            mb.GetOrAddString("StringConst"), intFieldSig);
+            mb.GetOrAddString("StringConst"), stringFieldSig);
 
         // Add a string constant value for StringConst — MetadataBuilder encodes as UTF-16LE
         mb.AddConstant(stringConstField, "test");
@@ -121,7 +126,7 @@ public unsafe class MetaDataImportImplTests
         mb.AddTypeSpecification(mb.GetOrAddBlob(typeSpecSig));
 
         // UserString: "Hello, World!"
-        UserStringHandle userStringHandle = mb.GetOrAddUserString("Hello, World!");
+        _ = mb.GetOrAddUserString("Hello, World!");
 
         // TypeDef with explicit layout for GetClassLayout testing (row 4)
         mb.AddTypeDefinition(
@@ -963,9 +968,7 @@ public unsafe class MetaDataImportImplTests
 
         MetaDataImportImpl wrapper = new MetaDataImportImpl(reader);
 
-        StrategyBasedComWrappers comWrappers = new();
-        nint pUnk = comWrappers.GetOrCreateComInterfaceForObject(wrapper, CreateComInterfaceFlags.None);
-        wrapper._comWrappers = comWrappers;
+        nint pUnk = (nint)ComInterfaceMarshaller<IMetaDataImport2>.ConvertToUnmanaged(wrapper);
 
         try
         {
@@ -1026,7 +1029,7 @@ public unsafe class MetaDataImportImplTests
         }
         finally
         {
-            Marshal.Release(pUnk);
+            ComInterfaceMarshaller<IMetaDataImport2>.Free((void*)pUnk);
         }
     }
 

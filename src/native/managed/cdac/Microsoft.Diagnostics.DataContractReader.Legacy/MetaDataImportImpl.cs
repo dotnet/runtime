@@ -32,10 +32,8 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     // ConcurrentDictionary is used because COM objects may be called from multiple threads.
     private readonly ConcurrentDictionary<nint, byte> _cdacEnumHandles = new();
 
-    // The ComWrappers instance used to create this object's CCW. Set after CCW creation
-    // so that ICustomQueryInterface.GetInterface can obtain the CCW pointer to redirect
-    // IMetaDataImport QIs to IMetaDataImport2. See comment on GetInterface below.
-    internal StrategyBasedComWrappers? _comWrappers;
+    // The ComWrappers instance used to create this object's CCW is no longer stored here.
+    // ICustomQueryInterface.GetInterface uses ComInterfaceMarshaller directly.
 
     public MetaDataImportImpl(MetadataReader reader, IMetaDataImport? legacyImport = null)
     {
@@ -60,9 +58,9 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     {
         ppv = default;
 
-        if (iid == typeof(IMetaDataImport).GUID && _comWrappers is not null)
+        if (iid == typeof(IMetaDataImport).GUID)
         {
-            nint pUnk = _comWrappers.GetOrCreateComInterfaceForObject(this, CreateComInterfaceFlags.None);
+            nint pUnk = (nint)ComInterfaceMarshaller<IMetaDataImport2>.ConvertToUnmanaged(this);
             try
             {
                 Guid iid2 = typeof(IMetaDataImport2).GUID;
@@ -71,7 +69,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             }
             finally
             {
-                Marshal.Release(pUnk);
+                ComInterfaceMarshaller<IMetaDataImport2>.Free((void*)pUnk);
             }
         }
 

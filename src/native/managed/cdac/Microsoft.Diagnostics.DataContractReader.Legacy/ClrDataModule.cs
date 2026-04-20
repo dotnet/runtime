@@ -67,9 +67,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         // [GeneratedComInterface] CCWs which create separate vtables per interface. To handle this, we
         // always return the IMetaDataImport2 vtable pointer when asked for IMetaDataImport. Since
         // IMetaDataImport2 inherits from IMetaDataImport, the first slots are identical.
-        if (iid == typeof(IMetaDataImport).GUID
-            || iid == typeof(IMetaDataImport2).GUID
-            || iid == typeof(IMetaDataAssemblyImport).GUID)
+        if (iid == typeof(IMetaDataImport).GUID)
         {
             MetaDataImportImpl? wrapper = _metaDataImportImpl;
             if (wrapper is null)
@@ -92,8 +90,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                     Guid iidMetaDataImport = typeof(IMetaDataImport).GUID;
                     if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, iidMetaDataImport, out nint ppMdi) >= 0)
                     {
-                        StrategyBasedComWrappers cw = new();
-                        legacyImport = (IMetaDataImport)cw.GetOrCreateObjectForComInstance(ppMdi, CreateObjectFlags.None);
+                        legacyImport = (IMetaDataImport)ComInterfaceMarshaller<IMetaDataImport>.ConvertToManaged((void*)ppMdi)!;
                         Marshal.Release(ppMdi);
                     }
                 }
@@ -110,12 +107,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 wrapper = _metaDataImportImpl;
             }
 
-            StrategyBasedComWrappers comWrappers = new();
-            nint pUnk = comWrappers.GetOrCreateComInterfaceForObject(wrapper, CreateComInterfaceFlags.None);
-
-            // Store the ComWrappers instance so MetaDataImportImpl's ICustomQueryInterface can
-            // obtain its own CCW pointer to redirect IMetaDataImport QIs to IMetaDataImport2.
-            wrapper._comWrappers ??= comWrappers;
+            nint pUnk = (nint)ComInterfaceMarshaller<IMetaDataImport2>.ConvertToUnmanaged(wrapper);
 
             try
             {
@@ -124,13 +116,13 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 // vtable slots beyond the IMetaDataImport boundary. With native C++ COM objects the
                 // vtable is unified, but [GeneratedComInterface] CCWs have separate per-interface
                 // vtables. Returning IMetaDataImport2 ensures the extended slots are accessible.
-                Guid queryGuid = iid == typeof(IMetaDataImport).GUID ? typeof(IMetaDataImport2).GUID : iid;
+                Guid queryGuid = typeof(IMetaDataImport2).GUID;
                 if (Marshal.QueryInterface(pUnk, queryGuid, out ppv) >= 0)
                     return CustomQueryInterfaceResult.Handled;
             }
             finally
             {
-                Marshal.Release(pUnk);
+                ComInterfaceMarshaller<IMetaDataImport2>.Free((void*)pUnk);
             }
         }
 
