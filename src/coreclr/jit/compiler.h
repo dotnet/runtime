@@ -1722,7 +1722,7 @@ struct FuncInfoDsc
     };
 
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
-#endif // defined(TARGET_WASM)  
+#endif // defined(TARGET_WASM)
 
     EHblkDsc*            GetEHDesc(Compiler* comp) const;
     BasicBlock*          GetStartBlock(Compiler* comp) const;
@@ -3826,6 +3826,7 @@ public:
     void gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCostSz, bool isLikelyRegVar);
     void gtGetLclFldNodeCost(GenTreeLclFld* node, int* pCostEx, int* pCostSz);
     bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
+    bool gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile, int* pCostEx, int* pCostSz);
 
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
@@ -4777,6 +4778,11 @@ protected:
     void impRestoreStackState(SavedStack* savePtr);
 
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
+
+#if defined(FEATURE_HW_INTRINSICS)
+    GenTree* impSimdCreateScalarHalf(GenTree* op1);
+    GenTree* impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd);
+#endif // FEATURE_HW_INTRINSICS
 
     enum class BoxPatterns
     {
@@ -9727,6 +9733,17 @@ private:
         }
 
         return isOpaqueSIMDType(varDsc->GetLayout());
+    }
+
+    bool isSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        if (isIntrinsicType(clsHnd))
+        {
+            const char* namespaceName = nullptr;
+            const char* className     = getClassNameFromMetadata(clsHnd, &namespaceName);
+            return (strcmp(className, "Half") == 0) && (strcmp(namespaceName, "System") == 0);
+        }
+        return false;
     }
 
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)

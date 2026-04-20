@@ -176,7 +176,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     // the no metadata part of the method desc
     pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB";
     pMD->InitializeFlags(DynamicMethodDesc::FlagPublic | DynamicMethodDesc::FlagIsILStub);
-    pMD->SetTemporaryEntryPoint(pamTracker);
 
     if (isAsync)
     {
@@ -214,6 +213,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->SetFlags(DynamicMethodDesc::FlagStatic);
         pMD->SetStatic();
     }
+    pMD->SetTemporaryEntryPoint(pamTracker);
 
     pMD->m_pResolver = (ILStubResolver*)pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(sizeof(ILStubResolver))));
 #ifdef _DEBUG

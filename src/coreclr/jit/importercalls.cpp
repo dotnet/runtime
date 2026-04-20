@@ -4365,6 +4365,79 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 
 #ifdef FEATURE_HW_INTRINSICS
+            case NI_System_Half_op_Explicit:
+            {
+                assert(sig->numArgs == 1);
+
+                CORINFO_CLASS_HANDLE retClsHnd  = sig->retTypeSigClass;
+                CorInfoType          retJitType = sig->retType;
+                var_types            retType    = JitType2PreciseVarType(retJitType);
+
+                CORINFO_CLASS_HANDLE op1ClsHnd;
+                CorInfoType          op1JitType = strip(info.compCompHnd->getArgType(sig, sig->args, &op1ClsHnd));
+                var_types            op1Type    = JitType2PreciseVarType(op1JitType);
+
+                if (retType == TYP_STRUCT)
+                {
+                    assert(isSystemHalfClass(retClsHnd));
+                    assert(varTypeIsArithmetic(op1Type));
+
+                    switch (op1Type)
+                    {
+                        case TYP_FLOAT:
+                        {
+#if defined(TARGET_XARCH)
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                            {
+                                GenTree* op1 = impPopStack().val;
+                                op1          = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_FLOAT, 16);
+
+                                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(0),
+                                                                   NI_AVX2_ConvertToVector128Half, TYP_FLOAT, 16);
+                                retNode = impSimdToScalarHalf(retNode, retClsHnd);
+                            }
+#endif
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                }
+                else
+                {
+                    assert(varTypeIsArithmetic(retType));
+                    assert((op1Type == TYP_STRUCT) && isSystemHalfClass(op1ClsHnd));
+
+                    switch (retType)
+                    {
+                        case TYP_FLOAT:
+                        {
+#if defined(TARGET_XARCH)
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                            {
+                                GenTree* op1 = impPopStack().val;
+                                op1          = impSimdCreateScalarHalf(op1);
+
+                                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AVX2_ConvertToVector128Single,
+                                                                   TYP_USHORT, 16);
+                                retNode = gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
+                            }
+#endif
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                }
+                break;
+            }
+
             case NI_System_Math_FusedMultiplyAdd:
             {
                 assert(varTypeIsFloating(callType));
@@ -10511,6 +10584,15 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     break;
                 }
 
+                case 'H':
+                {
+                    if (strcmp(className, "Half") == 0)
+                    {
+                        result = lookupPrimitiveFloatNamedIntrinsic(method, methodName);
+                    }
+                    break;
+                }
+
                 case 'I':
                 {
                     if ((strcmp(className, "Int32") == 0) || (strcmp(className, "Int64") == 0) ||
@@ -11752,6 +11834,20 @@ NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDL
             else if (strcmp(methodName, "Truncate") == 0)
             {
                 result = NI_System_Math_Truncate;
+            }
+            break;
+        }
+
+        case 'o':
+        {
+            if (strncmp(methodName, "op_", 3) == 0)
+            {
+                methodName += 3;
+
+                if (strcmp(methodName, "Explicit") == 0)
+                {
+                    result = NI_System_Half_op_Explicit;
+                }
             }
             break;
         }

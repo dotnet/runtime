@@ -1144,6 +1144,7 @@ protected:
     void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
 #endif // TARGET_XARCH
 
+    void genCodeForCatchArg(GenTree* tree);
     void genCodeForCast(GenTreeOp* tree);
     void genCodeForLclAddr(GenTreeLclFld* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);

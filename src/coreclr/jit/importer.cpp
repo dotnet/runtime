@@ -2803,6 +2803,59 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     return call;
 }
 
+#if defined(FEATURE_HW_INTRINSICS)
+//----------------------------------------------------------------------------------------------
+// Compiler::impSimdCreateScalarHalf: Creates a new Vector128.CreateScalar node for a System.Half value
+//
+//  Arguments:
+//    op1 - The System.Half value
+//
+// Returns:
+//    The Vector128.CreateScalar node that contains op1
+//
+GenTree* Compiler::impSimdCreateScalarHalf(GenTree* op1)
+{
+    unsigned op1Tmp;
+
+    if (!op1->OperIs(GT_LCL_VAR))
+    {
+        op1Tmp = lvaGrabTemp(true DEBUGARG("System.Half tmp"));
+        impStoreToTemp(op1Tmp, op1, CHECK_SPILL_ALL);
+    }
+    else
+    {
+        op1Tmp = op1->AsLclVarCommon()->GetLclNum();
+    }
+
+    op1 = gtNewLclFldNode(op1Tmp, TYP_USHORT, 0);
+    return gtNewSimdCreateScalarNode(TYP_SIMD16, op1, TYP_USHORT, 16);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::impSimdToScalarHalf: Creates a new Vector128.ToScalar node for a System.Half value
+//
+//  Arguments:
+//    op1        - The Vector128 from which to extract the System.Half value
+//    halfClsHnd - The class handle for System.Half
+//
+// Returns:
+//    The System.Half value extracted from op1
+//
+GenTree* Compiler::impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd)
+{
+    assert(isSystemHalfClass(halfClsHnd));
+
+    unsigned resTmp = lvaGrabTemp(true DEBUGARG("System.Half tmp"));
+    lvaSetStruct(resTmp, halfClsHnd, false);
+
+    op1 = gtNewSimdToScalarNode(TYP_INT, op1, TYP_USHORT, 16);
+    op1 = gtNewStoreLclFldNode(resTmp, TYP_USHORT, 0, op1);
+
+    impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+    return gtNewLclvNode(resTmp, TYP_STRUCT);
+}
+#endif // FEATURE_HW_INTRINSICS
+
 //------------------------------------------------------------------------
 // impInlineUnboxNullable: Generate code for unboxing Nullable<T> from an object (obj)
 //     We either inline the unbox operation (if profitable) or call the helper.

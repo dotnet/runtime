@@ -381,7 +381,33 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadHandle(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetThreadObject(ulong vmThread, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadObject(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            if ((threadData.State & (Contracts.ThreadState.Stopped | Contracts.ThreadState.Unstarted | Contracts.ThreadState.Detached)) != 0)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_BAD_THREAD_STATE)!;
+
+            *pRetVal = threadData.ExposedObjectHandle.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.GetThreadObject(vmThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetThreadAllocInfo(ulong vmThread, DacDbiThreadAllocInfo* pThreadAllocInfo)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadAllocInfo(vmThread, pThreadAllocInfo) : HResults.E_NOTIMPL;
@@ -390,7 +416,30 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.SetDebugState(vmThread, debugState) : HResults.E_NOTIMPL;
 
     public int HasUnhandledException(ulong vmThread, Interop.BOOL* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.HasUnhandledException(vmThread, pResult) : HResults.E_NOTIMPL;
+    {
+        *pResult = Interop.BOOL.FALSE;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            *pResult = threadData.HasUnhandledException ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal;
+            int hrLocal = _legacy.HasUnhandledException(vmThread, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetUserState(ulong vmThread, int* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
@@ -493,8 +542,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            TargetPointer throwable = _target.Contracts.Thread.GetThrowableObject(new TargetPointer(vmThread));
-            *pRetVal = throwable.Value;
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+            TargetPointer exceptionHandle = _target.Contracts.Thread.GetCurrentExceptionHandle(threadPtr);
+            if (exceptionHandle == TargetPointer.Null)
+            {
+                ThreadData data = _target.Contracts.Thread.GetThreadData(threadPtr);
+                if (data.LastThrownObjectIsUnhandled)
+                    exceptionHandle = data.LastThrownObjectHandle;
+            }
+            *pRetVal = exceptionHandle.Value;
         }
         catch (System.Exception ex)
         {
@@ -517,7 +573,30 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetObjectForCCW(ccwPtr, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetCurrentCustomDebuggerNotification(ulong vmThread, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetCurrentCustomDebuggerNotification(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            *pRetVal = threadData.CurrentCustomDebuggerNotificationHandle.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.GetCurrentCustomDebuggerNotification(vmThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetCurrentAppDomain(ulong* pRetVal)
     {

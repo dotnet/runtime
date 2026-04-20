@@ -190,15 +190,15 @@ ValueNumFuncDef(SimdType, 2, false, false)  // A value number function to compos
 // In VN all HW intrinsics encode an extra arg for the base type (except when
 // they are variadic), hence the +1 to the arg count below here.
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for x86/x64
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
+ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for x86/x64
 #include "hwintrinsiclistxarch.h"
 #define VNF_HWI_FIRST VNF_HWI_Vector128_Abs
 #define VNF_HWI_LAST  VNF_HWI_AVX512_XnorMask
 
 #elif defined(TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for arm64
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for arm64
 #include "hwintrinsiclistarm64.h"
 #define VNF_HWI_FIRST VNF_HWI_Vector64_Abs
 #define VNF_HWI_LAST  VNF_HWI_Sve_ReverseElement_Predicates

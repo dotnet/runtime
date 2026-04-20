@@ -57,7 +57,7 @@ public class MethodTableTests
         var target = targetBuilder
             .AddTypes(CreateContractTypes(rtsBuilder))
             .AddGlobals(CreateContractGlobals(rtsBuilder))
-            .AddContract<IRuntimeTypeSystem>(version: 1)
+            .AddContract<IRuntimeTypeSystem>(version: "c1")
             .Build();
         return target;
     }

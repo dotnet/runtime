@@ -120,7 +120,7 @@ internal class TestPlaceholderTarget : Target
             return this;
         }
 
-        public Builder AddContract<TContract>(int version) where TContract : IContract
+        public Builder AddContract<TContract>(string version) where TContract : IContract
         {
             _contractSetups.Add(registry => registry.SetVersion<TContract>(version));
             return this;
@@ -527,21 +527,21 @@ internal class TestPlaceholderTarget : Target
 
     internal sealed class TestContractRegistry : ContractRegistry
     {
-        private readonly Dictionary<(Type, int), Func<Target, IContract>> _creators = new();
-        private readonly Dictionary<Type, int> _versions = new();
+        private readonly Dictionary<(Type, string), Func<Target, IContract>> _creators = new();
+        private readonly Dictionary<Type, string> _versions = new();
         private readonly Dictionary<Type, IContract> _mocks = new();
         private readonly Dictionary<Type, IContract> _resolved = new();
         private Target _target = null!;
 
         public void SetTarget(Target target) => _target = target;
 
-        public void SetVersion<TContract>(int version) where TContract : IContract
+        public void SetVersion<TContract>(string version) where TContract : IContract
             => _versions[typeof(TContract)] = version;
 
         public void SetMock<TContract>(TContract mock) where TContract : IContract
             => _mocks[typeof(TContract)] = mock;
 
-        public override void Register<TContract>(int version, Func<Target, TContract> creator)
+        public override void Register<TContract>(string version, Func<Target, TContract> creator)
             => _creators[(typeof(TContract), version)] = t => creator(t);
 
         public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
@@ -559,7 +559,7 @@ internal class TestPlaceholderTarget : Target
             {
                 resolved = mock;
             }
-            else if (_versions.TryGetValue(typeof(TContract), out int version))
+            else if (_versions.TryGetValue(typeof(TContract), out string? version))
             {
                 if (!_creators.TryGetValue((typeof(TContract), version), out var creator))
                 {
