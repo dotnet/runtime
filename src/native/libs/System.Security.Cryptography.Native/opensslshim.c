@@ -123,6 +123,12 @@ static void OpenLibraryOnce(void)
     {
         DlOpen(MAKELIB("1.1"));
     }
+
+    // While it's still in alpha, OpenSSL 4 is probed, but not preferred.
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("4"));
+    }
 }
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;

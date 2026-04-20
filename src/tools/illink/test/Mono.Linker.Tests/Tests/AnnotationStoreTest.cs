@@ -1,23 +1,24 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Cecil;
-using NUnit.Framework;
 
 namespace Mono.Linker.Tests.Tests
 {
+    [TestClass]
     public class AnnotationStoreTest
     {
         AnnotationStore store;
 
-        [SetUp]
+        [TestInitialize]
         public void Setup()
         {
             var ctx = new LinkContext(null, new ConsoleLogger(), string.Empty);
             store = new AnnotationStore(ctx);
         }
 
-        [Test]
+        [TestMethod]
         public void CustomAnnotations()
         {
             var td = new TypeDefinition("ns", "name", TypeAttributes.Public);

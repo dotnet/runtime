@@ -90,11 +90,14 @@ void MethodContext::Destroy()
         break;                                                                                                         \
     }
 
-#define sparseReadFileCR(target, key, value)                                                                           \
+#define sparseReadFileCR(target, key, value, readCompileResults)                                                       \
     case PacketCR_##target:                                                                                            \
     {                                                                                                                  \
-        cr->target = new LightWeightMap<key, value>();                                                                 \
-        cr->target->ReadFromArray(&buff2[buffIndex], localsize);                                                       \
+        if (readCompileResults)                                                                                        \
+        {                                                                                                              \
+            cr->target = new LightWeightMap<key, value>();                                                             \
+            cr->target->ReadFromArray(&buff2[buffIndex], localsize);                                                   \
+        }                                                                                                              \
         break;                                                                                                         \
     }
 
@@ -106,11 +109,14 @@ void MethodContext::Destroy()
         break;                                                                                                         \
     }
 
-#define sparseReadFileCRDense(target, value)                                                                           \
+#define sparseReadFileCRDense(target, value, readCompileResults)                                                       \
     case PacketCR_##target:                                                                                            \
     {                                                                                                                  \
-        cr->target = new DenseLightWeightMap<value>();                                                                 \
-        cr->target->ReadFromArray(&buff2[buffIndex], localsize);                                                       \
+        if (readCompileResults)                                                                                        \
+        {                                                                                                              \
+            cr->target = new DenseLightWeightMap<value>();                                                             \
+            cr->target->ReadFromArray(&buff2[buffIndex], localsize);                                                   \
+        }                                                                                                              \
         break;                                                                                                         \
     }
 
@@ -174,24 +180,24 @@ unsigned int MethodContext::saveToFile(HANDLE hFile)
 // (and sets *ppmc with new MethodContext), false on failure.
 //
 // static
-bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc)
+bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults, /* OUT */ MethodContext** ppmc)
 {
     MethodContext* mc = new MethodContext();
     mc->index         = mcIndex;
     *ppmc             = mc;
-    return mc->Initialize(mcIndex, buff, size);
+    return mc->Initialize(mcIndex, buff, size, readCompileResults);
 }
 
 // static
-bool MethodContext::Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc)
+bool MethodContext::Initialize(int mcIndex, HANDLE hFile, bool readCompileResults, /* OUT */ MethodContext** ppmc)
 {
     MethodContext* mc = new MethodContext();
     mc->index         = mcIndex;
     *ppmc             = mc;
-    return mc->Initialize(mcIndex, hFile);
+    return mc->Initialize(mcIndex, hFile, readCompileResults);
 }
 
-bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size)
+bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults)
 {
     bool result = true;
 
@@ -200,14 +206,15 @@ bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size)
         unsigned char* buff;
         DWORD          size;
         MethodContext* pThis;
+        bool           readCompileResults;
     } param;
     param.buff  = buff;
     param.size  = size;
     param.pThis = this;
-
+    param.readCompileResults = readCompileResults;
     PAL_TRY(Param*, pParam, &param)
     {
-        pParam->pThis->MethodInitHelper(pParam->buff, pParam->size);
+        pParam->pThis->MethodInitHelper(pParam->buff, pParam->size, pParam->readCompileResults);
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchMC)
     {
@@ -219,7 +226,7 @@ bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size)
     return result;
 }
 
-bool MethodContext::Initialize(int mcIndex, HANDLE hFile)
+bool MethodContext::Initialize(int mcIndex, HANDLE hFile, bool readCompileResults)
 {
     bool result = true;
 
@@ -227,13 +234,15 @@ bool MethodContext::Initialize(int mcIndex, HANDLE hFile)
     {
         HANDLE         hFile;
         MethodContext* pThis;
+        bool           readCompileResults;
     } param;
     param.hFile = hFile;
     param.pThis = this;
+    param.readCompileResults = readCompileResults;
 
     PAL_TRY(Param*, pParam, &param)
     {
-        pParam->pThis->MethodInitHelperFile(pParam->hFile);
+        pParam->pThis->MethodInitHelperFile(pParam->hFile, pParam->readCompileResults);
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchMC)
     {
@@ -245,7 +254,7 @@ bool MethodContext::Initialize(int mcIndex, HANDLE hFile)
     return result;
 }
 
-void MethodContext::MethodInitHelperFile(HANDLE hFile)
+void MethodContext::MethodInitHelperFile(HANDLE hFile, bool readCompileResults)
 {
     DWORD        bytesRead;
     char         buff[512];
@@ -258,10 +267,10 @@ void MethodContext::MethodInitHelperFile(HANDLE hFile)
     unsigned char* buff2 = new unsigned char[totalLen + 2]; // total + End Canary
     AssertCode(ReadFile(hFile, buff2, totalLen + 2, &bytesRead, NULL) == TRUE, EXCEPTIONCODE_MC);
     AssertCodeMsg((buff2[totalLen] == '4') && (buff2[totalLen + 1] == '2'), EXCEPTIONCODE_MC, "Didn't find end canary");
-    MethodInitHelper(buff2, totalLen);
+    MethodInitHelper(buff2, totalLen, readCompileResults);
 }
 
-void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen)
+void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen, bool readCompileResults)
 {
     unsigned int   buffIndex = 0;
     unsigned int   localsize = 0;
@@ -282,8 +291,8 @@ void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen
 #define DENSELWM(map, value) sparseReadFileDense(map, value)
 #include "lwmlist.h"
 
-#define LWM(map, key, value) sparseReadFileCR(map, key, value)
-#define DENSELWM(map, value) sparseReadFileCRDense(map, value)
+#define LWM(map, key, value) sparseReadFileCR(map, key, value, readCompileResults)
+#define DENSELWM(map, value) sparseReadFileCRDense(map, value, readCompileResults)
 #include "crlwmlist.h"
 
             default:
@@ -1196,6 +1205,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_ALT_JIT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED:
         return "CORJIT_FLAG_FROZEN_ALLOC_ALLOWED";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PORTABLE_ENTRY_POINTS:
+        return "CORJIT_FLAG_PORTABLE_ENTRY_POINTS";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_AOT:
         return "CORJIT_FLAG_AOT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_ENTERLEAVE:
@@ -1237,6 +1248,9 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SOFTFP_ABI:
         return "CORJIT_FLAG_SOFTFP_ABI";
 #endif // defined(TARGET_ARM)
+
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ASYNC:
+        return "CORJIT_FLAG_ASYNC";
 
     default:
         return "<unknown>";
@@ -3395,6 +3409,38 @@ CORINFO_METHOD_HANDLE MethodContext::repGetInstantiatedEntry(CORINFO_METHOD_HAND
     *classHandle = (CORINFO_CLASS_HANDLE)value.classHandle;
 
     return (CORINFO_METHOD_HANDLE)(value.result);
+}
+
+void MethodContext::recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn,
+                                            bool                  variantIsThunk,
+                                            CORINFO_METHOD_HANDLE result)
+{
+    if (GetAsyncOtherVariant == nullptr)
+    {
+        GetAsyncOtherVariant = new LightWeightMap<DWORDLONG, DLD>();
+    }
+
+    DWORDLONG key = CastHandle(ftn);
+    DLD       value;
+    value.A = CastHandle(result);
+    value.B = (DWORD)variantIsThunk ? 1 : 0;
+    GetAsyncOtherVariant->Add(key, value);
+    DEBUG_REC(dmpGetAsyncOtherVariant(key, value));
+}
+
+void MethodContext::dmpGetAsyncOtherVariant(DWORDLONG key, DLD value)
+{
+    printf("GetAsyncOtherVariant ftn-%016" PRIX64 ", result-%016" PRIX64 ", variantIsThunk-%u", key, value.A, value.B);
+}
+
+CORINFO_METHOD_HANDLE MethodContext::repGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk)
+{
+    DWORDLONG key = CastHandle(ftn);
+
+    DLD value = LookupByKeyOrMiss(GetAsyncOtherVariant, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetAsyncOtherVariant(key, value));
+    *variantIsThunk = (value.B != 0);
+    return (CORINFO_METHOD_HANDLE)(value.A);
 }
 
 void MethodContext::recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)

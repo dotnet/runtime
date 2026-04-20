@@ -15,6 +15,7 @@ function delay(ms) {
 try {
     const { setModuleImports, getAssemblyExports } = await dotnet
         .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, forwardConsole: true, logExitCode: true })
+        .withDiagnosticTracing(true)
         .create();
 
     setModuleImports("main.js", {
@@ -32,5 +33,7 @@ try {
     exit(exitCode);
 }
 catch (err) {
-    exit(2, err);
+    if (!err || typeof err.status !== "number") {
+        exit(2, err);
+    }
 }

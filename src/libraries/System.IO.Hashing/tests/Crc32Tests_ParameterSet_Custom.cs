@@ -78,7 +78,36 @@ namespace System.IO.Hashing.Tests
             };
     }
 
+    public class Crc32HD16ForwardDriver : Crc32DriverBase
+    {
+        // Koopman's HD-13 CRC-32 polynomial with an arbitrary non-zero initial and final value.
+        // This value is really just a polynomial with a lot of high bits set to ensure the vector code
+        // isn't depending on the common 0x04... 
+        internal override Crc32ParameterSet ParameterSet => Crc32ParameterSet.Create(
+            polynomial: 0xE89061DB,
+            initialValue: 0x00000001,
+            finalXorValue: 0x00000003,
+            reflectValues: false);
+
+        internal override string EmptyOutput => "00000002";
+        internal override string Residue => "D120C3B5";
+
+        internal override string? GetExpectedOutput(string testCaseName) =>
+            testCaseName switch
+            {
+                "One" => "E89060D8",
+                "Zero" => "E89061D8",
+                "Self-test 123456789" => "00FA61B6",
+                "The quick brown fox jumps over the lazy dog" => "A81AC12F",
+                "Lorem ipsum 128" => "7B773166",
+                "Lorem ipsum 144" => "D3A67D09",
+                "Lorem ipsum 1001" => "2E99E5F2",
+                _ => null,
+            };
+    }
+
     public class Crc32Tests_ParameterSet_Custom_Cksum : Crc32Tests_Parameterized<Crc32CksumDriver>;
     public class Crc32Tests_ParameterSet_Custom_CDRomEdc : Crc32Tests_Parameterized<Crc32CDRomEdcDriver>;
     public class Crc32Tests_ParameterSet_Custom_Mef : Crc32Tests_Parameterized<Crc32MefDriver>;
+    public class Crc32Tests_ParameterSet_Custom_HD16Forward : Crc32Tests_Parameterized<Crc32HD16ForwardDriver>;
 }

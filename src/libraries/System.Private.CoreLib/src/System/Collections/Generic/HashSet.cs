@@ -233,7 +233,7 @@ namespace System.Collections.Generic
                     // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     int hashCode = item!.GetHashCode();
                     int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
-                    while (i >= 0)
+                    while ((uint)i < (uint)entries.Length)
                     {
                         ref Entry entry = ref entries[i];
                         if (entry.HashCode == hashCode && EqualityComparer<T>.Default.Equals(entry.Value, item))
@@ -255,7 +255,7 @@ namespace System.Collections.Generic
                     Debug.Assert(comparer is not null);
                     int hashCode = item != null ? comparer.GetHashCode(item) : 0;
                     int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
-                    while (i >= 0)
+                    while ((uint)i < (uint)entries.Length)
                     {
                         ref Entry entry = ref entries[i];
                         if (entry.HashCode == hashCode && comparer.Equals(entry.Value, item))
@@ -309,7 +309,7 @@ namespace System.Collections.Generic
                 ref int bucket = ref GetBucketRef(hashCode);
                 int i = bucket - 1; // Value in buckets is 1-based
 
-                while (i >= 0)
+                while ((uint)i < (uint)entries.Length)
                 {
                     ref Entry entry = ref entries[i];
 
@@ -473,7 +473,7 @@ namespace System.Collections.Generic
                 hashCode = comparer.GetHashCode(item);
                 bucket = ref set.GetBucketRef(hashCode);
                 int i = bucket - 1; // Value in _buckets is 1-based
-                while (i >= 0)
+                while ((uint)i < (uint)entries.Length)
                 {
                     ref Entry entry = ref entries[i];
                     if (entry.HashCode == hashCode && comparer.Equals(item, entry.Value))
@@ -556,7 +556,7 @@ namespace System.Collections.Generic
                     ref int bucket = ref set.GetBucketRef(hashCode);
                     int i = bucket - 1; // Value in buckets is 1-based
 
-                    while (i >= 0)
+                    while ((uint)i < (uint)entries.Length)
                     {
                         ref Entry entry = ref entries[i];
 
@@ -1441,7 +1441,7 @@ namespace System.Collections.Generic
                 int i = bucket - 1; // Value in _buckets is 1-based
 
                 // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
-                while (i >= 0)
+                while ((uint)i < (uint)entries.Length)
                 {
                     ref Entry entry = ref entries[i];
                     if (entry.HashCode == hashCode && EqualityComparer<T>.Default.Equals(entry.Value, value))
@@ -1465,7 +1465,7 @@ namespace System.Collections.Generic
                 hashCode = value != null ? comparer.GetHashCode(value) : 0;
                 bucket = ref GetBucketRef(hashCode);
                 int i = bucket - 1; // Value in _buckets is 1-based
-                while (i >= 0)
+                while ((uint)i < (uint)entries.Length)
                 {
                     ref Entry entry = ref entries[i];
                     if (entry.HashCode == hashCode && comparer.Equals(entry.Value, value))

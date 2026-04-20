@@ -118,13 +118,16 @@ bool CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg)
 }
 
 //------------------------------------------------------------------------
-// genCallFinally: Generate a call to the finally block.
+// genCallFinally: Generate a call to a finally.
 //
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
-    BasicBlock* nextBlock = block->Next();
+    BasicBlock* const nextBlock = block->Next();
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
@@ -135,7 +138,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
             instGen(INS_BREAKPOINT);
         }
 
-        return block;
+        return;
     }
     else
     {
@@ -163,8 +166,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
 
         GetEmitter()->emitEnableGC();
-
-        return nextBlock;
     }
 }
 
@@ -2151,9 +2152,8 @@ regMaskTP CodeGen::genPrespilledUnmappedRegs()
 
     if (m_compiler->m_paramRegLocalMappings != nullptr)
     {
-        for (int i = 0; i < m_compiler->m_paramRegLocalMappings->Height(); i++)
+        for (const ParameterRegisterLocalMapping& mapping : m_compiler->m_paramRegLocalMappings->BottomUpOrder())
         {
-            const ParameterRegisterLocalMapping& mapping = m_compiler->m_paramRegLocalMappings->BottomRef(i);
             regs &= ~mapping.RegisterSegment->GetRegisterMask();
         }
     }
@@ -2338,14 +2338,14 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         m_compiler->unwindPushMaskFloat(maskPushRegsFloat);
     }
 
-    bool isFilter = (block->bbCatchTyp == BBCT_FILTER);
+    bool isFilter = block->CatchTypeIs(BBCT_FILTER);
 
     regMaskTP maskArgRegsLiveIn;
     if (isFilter)
     {
         maskArgRegsLiveIn = RBM_R0 | RBM_R1;
     }
-    else if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
+    else if (block->CatchTypeIs(BBCT_FINALLY, BBCT_FAULT))
     {
         maskArgRegsLiveIn = RBM_NONE;
     }
@@ -2371,7 +2371,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Generates code for an EH funclet epilog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)

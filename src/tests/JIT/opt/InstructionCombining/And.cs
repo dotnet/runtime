@@ -125,6 +125,16 @@ namespace TestAnd
                 fail = true;
             }
 
+            if (AndsUnsignedStaticBranchLe() != 0)
+            {
+                fail = true;
+            }
+
+            if (AndsUnsignedStaticBranchGt() == 0)
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -288,29 +298,62 @@ namespace TestAnd
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool AndsGreaterThan(int a, int b)
         {
-            //ARM64-FULL-LINE: ands w0, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: ands {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return (a & b) > 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool AndsGreaterThanEq(int a, int b)
         {
-            //ARM64-FULL-LINE: ands w0, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: ands {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return (a & b) >= 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool AndsLessThan(int a, int b)
         {
-            //ARM64-FULL-LINE: ands w0, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: ands {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return (a & b) < 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool AndsLessThanEq(int a, int b)
         {
-            //ARM64-FULL-LINE: ands w0, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: ands {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return (a & b) <= 0;
+        }
+
+        static ulong s_a = 8013948595597981922UL;
+        static byte s_b = 0;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AndsUnsignedStaticBranchLe()
+        {
+            //ARM64-FULL-LINE: ands {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, eq
+            uint left = (uint)(s_a & 0xB79E3846u);
+            uint right = (ushort)(s_b % 1);
+
+            if (left <= right)
+            {
+                return 1;
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AndsUnsignedStaticBranchGt()
+        {
+            //ARM64-FULL-LINE: tst {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, ne
+            uint left = (uint)(s_a & 0xB79E3846u);
+            uint right = (ushort)(s_b % 1);
+
+            if (left > right)
+            {
+                return 1;
+            }
+            return 0;
         }
     }
 }

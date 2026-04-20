@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -16,18 +15,10 @@ public unsafe class GetRegisterNameTests
         MockTarget.Architecture arch,
         RuntimeInfoArchitecture targetArch)
     {
-        MockMemorySpace.Builder builder = new MockMemorySpace.Builder(new TargetTestHelpers(arch));
-        TestPlaceholderTarget target = new TestPlaceholderTarget(
-            arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            [],
-            [],
-            [(Constants.Globals.Architecture, targetArch.ToString().ToLowerInvariant())]);
-
-        IContractFactory<IRuntimeInfo> runtimeInfoFactory = new RuntimeInfoFactory();
-        ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.RuntimeInfo == runtimeInfoFactory.CreateContract(target, 1));
-        target.SetContracts(reg);
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobalStrings((Constants.Globals.Architecture, targetArch.ToString().ToLowerInvariant()))
+            .AddContract<IRuntimeInfo>(version: "c1")
+            .Build();
 
         return new SOSDacImpl(target, legacyObj: null);
     }
@@ -61,7 +52,7 @@ public unsafe class GetRegisterNameTests
         yield return [RuntimeInfoArchitecture.LoongArch64, 3, "SP"];
 
         // RiscV64 registers
-        yield return [RuntimeInfoArchitecture.RiscV64, 0, "R0"];
+        yield return [RuntimeInfoArchitecture.RiscV64, 0, "zero"];
         yield return [RuntimeInfoArchitecture.RiscV64, 1, "RA"];
         yield return [RuntimeInfoArchitecture.RiscV64, 2, "SP"];
     }
@@ -93,6 +84,8 @@ public unsafe class GetRegisterNameTests
     [InlineData(RuntimeInfoArchitecture.X64, 0, "rax")]
     [InlineData(RuntimeInfoArchitecture.X86, 3, "ebx")]
     [InlineData(RuntimeInfoArchitecture.Arm64, 0, "X0")]
+    [InlineData(RuntimeInfoArchitecture.LoongArch64, 1, "RA")]
+    [InlineData(RuntimeInfoArchitecture.RiscV64, 1, "RA")]
     public void GetRegisterName_CallerFrame_PrependsCaller(
         RuntimeInfoArchitecture targetArch,
         int regNum,

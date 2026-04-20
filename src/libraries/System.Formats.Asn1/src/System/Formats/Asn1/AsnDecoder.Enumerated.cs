@@ -408,4 +408,149 @@ namespace System.Formats.Asn1
             return ret;
         }
     }
+
+    public ref partial struct ValueAsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as an Enumerated with a specified tag, returning the contents
+        ///   as a <see cref="ReadOnlySpan{T}"/> over the original data.
+        /// </summary>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 10).
+        /// </param>
+        /// <returns>
+        ///   The bytes of the Enumerated value, in signed big-endian form.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        /// <seealso cref="ReadEnumeratedValue{TEnum}"/>
+        public ReadOnlySpan<byte> ReadEnumeratedBytes(Asn1Tag? expectedTag = null)
+        {
+            ReadOnlySpan<byte> bytes =
+                AsnDecoder.ReadEnumeratedBytes(_data, RuleSet, out int consumed, expectedTag);
+
+            _data = _data.Slice(consumed);
+            return bytes;
+        }
+
+        /// <summary>
+        ///   Reads the next value as an Enumerated with a specified tag, converting it to the
+        ///   non-[<see cref="FlagsAttribute"/>] enum specified by <typeparamref name="TEnum"/>.
+        /// </summary>
+        /// <typeparam name="TEnum">The destination enum type.</typeparam>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 10).
+        /// </param>
+        /// <returns>
+        ///   The Enumerated value converted to a <typeparamref name="TEnum"/>.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The encoded value is too big to fit in a <typeparamref name="TEnum"/> value.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <typeparamref name="TEnum"/> is not an enum type.
+        ///
+        ///   -or-
+        ///
+        ///   <typeparamref name="TEnum"/> was declared with <see cref="FlagsAttribute"/>.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        /// <remarks>
+        ///   This method does not validate that the return value is defined within
+        ///   <typeparamref name="TEnum"/>.
+        /// </remarks>
+        public TEnum ReadEnumeratedValue<TEnum>(Asn1Tag? expectedTag = null) where TEnum : Enum
+        {
+            TEnum ret = AsnDecoder.ReadEnumeratedValue<TEnum>(_data, RuleSet, out int consumed, expectedTag);
+            _data = _data.Slice(consumed);
+            return ret;
+        }
+
+        /// <summary>
+        ///   Reads the next value as an Enumerated with a specified tag, converting it to the
+        ///   non-[<see cref="FlagsAttribute"/>] enum specified by <paramref name="enumType"/>.
+        /// </summary>
+        /// <param name="enumType">Type object representing the destination type.</param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 10).
+        /// </param>
+        /// <returns>
+        ///   The Enumerated value converted to a <paramref name="enumType"/>.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The encoded value is too big to fit in a <paramref name="enumType"/> value.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="enumType"/> is not an enum type.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="enumType"/> was declared with <see cref="FlagsAttribute"/>.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="enumType"/> is <see langword="null" />.
+        /// </exception>
+        /// <remarks>
+        ///   This method does not validate that the return value is defined within
+        ///   <paramref name="enumType"/>.
+        /// </remarks>
+        public Enum ReadEnumeratedValue(Type enumType, Asn1Tag? expectedTag = null)
+        {
+            Enum ret = AsnDecoder.ReadEnumeratedValue(_data, RuleSet, enumType, out int consumed, expectedTag);
+            _data = _data.Slice(consumed);
+            return ret;
+        }
+    }
 }

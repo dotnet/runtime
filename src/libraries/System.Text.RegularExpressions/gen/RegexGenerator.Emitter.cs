@@ -43,7 +43,8 @@ namespace System.Text.RegularExpressions.Generator
                         case '>': sb.Append("&gt;"); break;
 
                         // Propagate all other valid XML characters as-is. Control chars are considered invalid.
-                        case (>= 0x20 and <= 0x7F) or (>= 0xA0 and <= 0xD7FF) or (>= 0xE000 and <= 0xFFFD): sb.Append(c); break;
+                        // U+2028 and U+2029 are valid XML but are C# line terminators, so they'd break /// comments.
+                        case (>= 0x20 and <= 0x7F) or (>= 0xA0 and <= 0xD7FF and not 0x2028 and not 0x2029) or (>= 0xE000 and <= 0xFFFD): sb.Append(c); break;
 
                         // Use Unicode escape sequences for everything else.
                         default: sb.Append($"\\u{(int)c:X4}"); break;
@@ -1106,6 +1107,7 @@ namespace System.Text.RegularExpressions.Generator
                                 noMatchFoundLabelNeeded = true;
                                 Goto(NoMatchFound);
                             }
+                            writer.WriteLine("base.runtextpos = pos;");
                         }
                         writer.WriteLine();
                         break;
@@ -1605,9 +1607,10 @@ namespace System.Text.RegularExpressions.Generator
             // "doneLabel" is simply the final return location from the TryMatchAtCurrentPosition method that will undo any captures and exit, signaling to
             // the calling scan loop that nothing was matched.
 
-            // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
-            // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
-            const int MaxUnrollSize = 16;
+            // Limit for unrolling vs creating a loop. Benchmarking shows vectorized operations
+            // (e.g. ContainsAnyExcept) beat unrolled scalar checks at counts above ~4-8, so
+            // we unroll up to/including this threshold and use a loop with vectorization beyond it.
+            const int MaxUnrollSize = 7;
 
             RegexOptions options = rm.Options;
             RegexTree regexTree = rm.Tree;
@@ -2524,7 +2527,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 string postYesDoneLabel = doneLabel;
-                if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                 {
                     writer.WriteLine($"{resumeAt} = 0;");
                 }
@@ -2553,7 +2556,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (!isAtomic && postNoDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postNoDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 1;");
                     }
@@ -2563,7 +2566,7 @@ namespace System.Text.RegularExpressions.Generator
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 2;");
                     }
@@ -3481,19 +3484,59 @@ namespace System.Text.RegularExpressions.Generator
                     subsequent?.FindStartingLiteralNode() is RegexNode literalNode &&
                     TryEmitIndexOf(requiredHelpers, literalNode, useLast: true, negate: false, out int literalLength, out string? indexOfExpr))
                 {
-                    writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
-
-                    string setEndingPosCondition = $"    ({endingPos} = inputSpan.Slice({startingPos}, ";
-                    setEndingPosCondition = literalLength > 1 ?
-                        $"{setEndingPosCondition}Math.Min(inputSpan.Length, {endingPos} + {literalLength - 1}) - {startingPos})" :
-                        $"{setEndingPosCondition}{endingPos} - {startingPos})";
-
-                    using (EmitBlock(writer, $"{setEndingPosCondition}.{indexOfExpr}) < 0)"))
+                    // If CanReduceLoopBacktrackingToSinglePosition determines only the last consumed character
+                    // can succeed, we can just check it directly instead of repeatedly searching with LastIndexOf.
+                    if (subsequent is not null && RegexNode.CanReduceLoopBacktrackingToSinglePosition(node, subsequent))
                     {
-                        Goto(doneLabel);
+                        using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
+                        {
+                            Goto(doneLabel);
+                        }
+                        writer.WriteLine($"{endingPos}--;");
+
+                        string charAccessExpr = $"inputSpan[{endingPos}]";
+                        string condition = literalNode.Kind switch
+                        {
+                            RegexNodeKind.One or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy =>
+                                $"{charAccessExpr} != {Literal(literalNode.Ch)}",
+                            RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy =>
+                                $"{charAccessExpr} == {Literal(literalNode.Ch)}",
+                            RegexNodeKind.Multi =>
+                                $"{charAccessExpr} != {Literal(literalNode.Str![0])}",
+                            _ => // Set, Setloop, Setloopatomic, Setlazy
+                                $"!{MatchCharacterClass(charAccessExpr, literalNode.Str!, negate: false, additionalDeclarations, requiredHelpers)}",
+                        };
+                        using (EmitBlock(writer, $"if ({condition})"))
+                        {
+                            Goto(doneLabel);
+                        }
+
+                        writer.WriteLine($"pos = {endingPos};");
+
+                        // We've now checked the only backtrack position that can succeed. Force any
+                        // subsequent backtrack to fail immediately by setting endingPos to 0, which
+                        // guarantees the "startingPos >= endingPos" guard (emitted above) will be true
+                        // on re-entry. Note: if the emitter's backtracking structure changes (e.g. the
+                        // guard condition or how endingPos is used beyond the guard and stack save/restore),
+                        // this assumption would need to be revisited.
+                        writer.WriteLine($"{endingPos} = 0;");
                     }
-                    writer.WriteLine($"{endingPos} += {startingPos};");
-                    writer.WriteLine($"pos = {endingPos};");
+                    else
+                    {
+                        writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
+
+                        string setEndingPosCondition = $"    ({endingPos} = inputSpan.Slice({startingPos}, ";
+                        setEndingPosCondition = literalLength > 1 ?
+                            $"{setEndingPosCondition}Math.Min(inputSpan.Length, {endingPos} + {literalLength - 1}) - {startingPos})" :
+                            $"{setEndingPosCondition}{endingPos} - {startingPos})";
+
+                        using (EmitBlock(writer, $"{setEndingPosCondition}.{indexOfExpr}) < 0)"))
+                        {
+                            Goto(doneLabel);
+                        }
+                        writer.WriteLine($"{endingPos} += {startingPos};");
+                        writer.WriteLine($"pos = {endingPos};");
+                    }
                 }
                 else
                 {

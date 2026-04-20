@@ -300,7 +300,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                         "Thread::SuspendThread[%p]:  EIP=%p. nCnt=%d. result=%d.\n"
                         "\t\t\t\t\t\t\t\t\t     forbidSuspend=%d. coop=%d. state=%x.\n",
                         this, GetIP(&ctx), nCnt, dwSuspendCount,
-                        (LONG)this->m_dwForbidSuspendThread, (ULONG)this->m_fPreemptiveGCDisabled, this->GetSnapshotState());
+                        (LONG)this->m_dwForbidSuspendThread, (ULONG)this->m_fPreemptiveGCDisabled, this->GetState());
 
                     // Enable a preemptive assert in diagnostic mode: before we
                     // resume the target thread to get its current state in the debugger
@@ -2648,7 +2648,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     if (Thread::UseRedirectForGcStress() && (reason == RedirectReason_GCStress))
     {
         _ASSERTE(pThread->PreemptiveGCDisabledOther());
-        DoGcStress(frame.GetContext(), NULL);
+        DoGcStress(frame.GetContext(), NativeCodeVersion());
     }
     else
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
@@ -2893,12 +2893,8 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 #ifdef _DEBUG
         // In some rare cases the stack pointer may be outside the stack limits.
         // SetThreadContext would fail assuming that we are trying to bypass CFG.
-        //
-        // NB: the check here is slightly more strict than what OS requires,
-        //     but it is simple and uses only documented parts of TEB
-        auto pTeb = this->GetTEB();
         void* stackPointer = (void*)GetSP(pCtx);
-        if ((stackPointer < pTeb->StackLimit) || (stackPointer > pTeb->StackBase))
+        if ((stackPointer < this->GetCachedStackLimit()) || (stackPointer > this->GetCachedStackBase()))
         {
             return (FALSE);
         }
@@ -5339,12 +5335,9 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded)
 #endif //TARGET_ARM || TARGET_ARM64
 
     //
-    // SyncClean holds a list of things to be cleaned up when it's possible.
-    // SyncClean uses the GC mode to synchronize access to this list.  Threads must be
-    // in COOP mode to add things to the list, and the list can only be cleaned up
-    // while no threads are adding things.
-    // Since we know that no threads are in COOP mode at this point (because the EE is
-    // suspended), we clean up the list here.
+    // SyncClean::CleanUp reclaims resources that are safe to free only
+    // when no threads are running managed code. Since the EE is
+    // suspended at this point, we know it's safe to clean up here.
     //
     SyncClean::CleanUp();
 

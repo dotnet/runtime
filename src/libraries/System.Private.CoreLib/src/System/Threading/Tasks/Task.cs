@@ -218,37 +218,70 @@ namespace System.Threading.Tasks
         }
 
 #if !MONO
-        internal static void SetRuntimeAsyncContinuationTimestamp(Continuation continuation, long timestamp)
+        private static Dictionary<object, long> GetOrCreateRuntimeAsyncContinuationTimestamps()
         {
-            Dictionary<object, long> continuationTimestamps =
-                Volatile.Read(ref s_runtimeAsyncContinuationTimestamps) ??
+            return Volatile.Read(ref s_runtimeAsyncContinuationTimestamps) ??
                 Interlocked.CompareExchange(ref s_runtimeAsyncContinuationTimestamps, new Dictionary<object, long>(ReferenceEqualityComparer.Instance), null) ??
-                s_runtimeAsyncContinuationTimestamps;
+                s_runtimeAsyncContinuationTimestamps!;
+        }
 
+        private static Dictionary<int, long> GetOrCreateRuntimeAsyncTaskTimestamps()
+        {
+            return Volatile.Read(ref s_runtimeAsyncTaskTimestamps) ??
+                Interlocked.CompareExchange(ref s_runtimeAsyncTaskTimestamps, new Dictionary<int, long>(), null) ??
+                s_runtimeAsyncTaskTimestamps!;
+        }
+
+        internal static void ReplaceOrAddRuntimeAsyncContinuationTimestamp(Continuation curContinuation, Continuation newContinuation)
+        {
+            var continuationTimestamps = GetOrCreateRuntimeAsyncContinuationTimestamps();
             lock (continuationTimestamps)
             {
-                continuationTimestamps.TryAdd(continuation, timestamp);
+                if (continuationTimestamps.TryGetValue(curContinuation, out long timestampVal))
+                {
+                    continuationTimestamps.Remove(curContinuation);
+                    continuationTimestamps[newContinuation] = timestampVal;
+                }
+                else
+                {
+                    continuationTimestamps.TryAdd(newContinuation, Stopwatch.GetTimestamp());
+                }
             }
         }
 
-        internal static bool GetRuntimeAsyncContinuationTimestamp(Continuation continuation, out long timestamp)
+        internal static void TryAddRuntimeAsyncContinuationChainTimestamps(Continuation continuationChain)
         {
-            Dictionary<object, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
-            if (continuationTimestamps is null)
-            {
-                timestamp = 0;
-                return false;
-            }
-
+            var continuationTimestamps = GetOrCreateRuntimeAsyncContinuationTimestamps();
+            long timestamp = Stopwatch.GetTimestamp();
             lock (continuationTimestamps)
             {
-                return continuationTimestamps.TryGetValue(continuation, out timestamp);
+                Continuation? nc = continuationChain;
+                while (nc != null)
+                {
+                    continuationTimestamps.TryAdd(nc, timestamp);
+                    nc = nc.Next;
+                }
+            }
+        }
+
+        internal static void TryAddRuntimeAsyncContinuationChainTimestamps(Continuation continuationChain, Continuation timestampSource)
+        {
+            var continuationTimestamps = GetOrCreateRuntimeAsyncContinuationTimestamps();
+            lock (continuationTimestamps)
+            {
+                long timestamp = continuationTimestamps.TryGetValue(timestampSource, out long timestampVal) ? timestampVal : Stopwatch.GetTimestamp();
+                Continuation? nc = continuationChain;
+                while (nc != null)
+                {
+                    continuationTimestamps.TryAdd(nc, timestamp);
+                    nc = nc.Next;
+                }
             }
         }
 
         internal static void RemoveRuntimeAsyncContinuationTimestamp(Continuation continuation)
         {
-            Dictionary<object, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            var continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
             if (continuationTimestamps is null)
                 return;
 
@@ -258,21 +291,51 @@ namespace System.Threading.Tasks
             }
         }
 
-        internal static void UpdateRuntimeAsyncTaskTimestamp(Task task, long inflightTimestamp)
+        internal static void RemoveRuntimeAsyncContinuationChainTimestamps(Continuation continuation, uint count)
         {
-            Dictionary<int, long> runtimeAsyncTaskTimestamps =
-                Volatile.Read(ref s_runtimeAsyncTaskTimestamps) ??
-                Interlocked.CompareExchange(ref s_runtimeAsyncTaskTimestamps, new Dictionary<int, long>(), null) ??
-                s_runtimeAsyncTaskTimestamps;
+            var continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            if (continuationTimestamps is null)
+                return;
 
-            lock (runtimeAsyncTaskTimestamps)
+            lock (continuationTimestamps)
             {
-                runtimeAsyncTaskTimestamps[task.Id] = inflightTimestamp;
+                Continuation? nc = continuation;
+                for (uint i = 0; i < count && nc != null; i++)
+                {
+                    continuationTimestamps.Remove(nc);
+                    nc = nc.Next;
+                }
             }
         }
 
-        internal static void RemoveRuntimeAsyncTaskTimestamp(Task task)
+        internal static void UpdateRuntimeAsyncTaskTimestamp(Task task, Continuation timestampSource)
         {
+            long timestamp = 0;
+            var continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            if (continuationTimestamps != null)
+            {
+                lock (continuationTimestamps)
+                {
+                    continuationTimestamps.TryGetValue(timestampSource, out timestamp);
+                }
+            }
+
+            if (timestamp == 0)
+            {
+                timestamp = Stopwatch.GetTimestamp();
+            }
+
+            var runtimeAsyncTaskTimestamps = GetOrCreateRuntimeAsyncTaskTimestamps();
+            lock (runtimeAsyncTaskTimestamps)
+            {
+                runtimeAsyncTaskTimestamps[task.Id] = timestamp;
+            }
+        }
+
+        internal static void RemoveRuntimeAsyncTask(Task task)
+        {
+            RemoveFromActiveTasks(task);
+
             Dictionary<int, long>? runtimeAsyncTaskTimestamps = s_runtimeAsyncTaskTimestamps;
             if (runtimeAsyncTaskTimestamps is null)
                 return;
@@ -280,6 +343,25 @@ namespace System.Threading.Tasks
             lock (runtimeAsyncTaskTimestamps)
             {
                 runtimeAsyncTaskTimestamps.Remove(task.Id);
+            }
+        }
+
+        internal static void RemoveRuntimeAsyncTask(Task task, Continuation continuationChain)
+        {
+            RemoveRuntimeAsyncTask(task);
+
+            Dictionary<object, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            if (continuationTimestamps is null)
+                return;
+
+            lock (continuationTimestamps)
+            {
+                Continuation? nc = continuationChain;
+                while (nc != null)
+                {
+                    continuationTimestamps.Remove(nc);
+                    nc = nc.Next;
+                }
             }
         }
 #endif
@@ -3081,7 +3163,7 @@ namespace System.Threading.Tasks
             }
             else
             {
-                Thread.ThrowIfMultithreadingIsNotSupported();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 returnValue = SpinThenBlockingWait(millisecondsTimeout, cancellationToken);
             }
@@ -3138,7 +3220,7 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
-                Thread.ThrowIfMultithreadingIsNotSupported();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 // We're about to block waiting for the task to complete, which is expensive, and if
                 // the task being waited on depends on some other work to run, this thread could end up
@@ -3218,7 +3300,7 @@ namespace System.Threading.Tasks
         {
             if (IsCompleted) return true;
 
-            if (!Thread.IsMultithreadingSupported)
+            if (!RuntimeFeature.IsMultithreadingSupported)
             {
                 return false;
             }
@@ -5075,7 +5157,7 @@ namespace System.Threading.Tasks
 
             if (waitedOnTaskList != null)
             {
-                Thread.ThrowIfMultithreadingIsNotSupported();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 // Block waiting for the tasks to complete.
                 returnValue = WaitAllBlockingCore(waitedOnTaskList, millisecondsTimeout, cancellationToken);
@@ -5150,7 +5232,7 @@ namespace System.Threading.Tasks
             Debug.Assert(tasks != null, "Expected a non-null list of tasks");
             Debug.Assert(tasks.Count > 0, "Expected at least one task");
 
-            Thread.ThrowIfMultithreadingIsNotSupported();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             bool waitCompleted = false;
             var mres = new SetOnCountdownMres(tasks.Count);
@@ -5417,7 +5499,7 @@ namespace System.Threading.Tasks
 
             if (signaledTaskIndex == -1 && tasks.Length != 0)
             {
-                Thread.ThrowIfMultithreadingIsNotSupported();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 Task<Task> firstCompleted = TaskFactory.CommonCWAnyLogic(tasks, isSyncBlocking: true);
                 bool waitCompleted = firstCompleted.Wait(millisecondsTimeout, cancellationToken);

@@ -1112,9 +1112,6 @@ private:
             return m_asyncMethodFlags;
         }
 
-        bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
-        void              SetAsyncOtherVariant(bmtMDMethod* pAsyncOtherVariant) { m_asyncOtherVariant = pAsyncOtherVariant; }
-
     private:
         //-----------------------------------------------------------------------------------------
         bmtMDType *       m_pOwningType;
@@ -1126,7 +1123,6 @@ private:
         AsyncMethodFlags  m_asyncMethodFlags;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
-        bmtMDMethod*      m_asyncOtherVariant = NULL;
 
         MethodDesc *      m_pMD;                // MethodDesc created and assigned to this method
         MethodDesc *      m_pUnboxedMD;         // Unboxing MethodDesc if this is a virtual method on a valuetype
@@ -2027,11 +2023,7 @@ private:
                 if ((*this)[i]->GetMethodSignature().GetToken() == tok)
                 {
                     auto result = (*this)[i];
-                    if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
-                    {
-                        return result->GetAsyncOtherVariant();
-                    }
-                    else
+                    if ((variantLookup == AsyncVariantLookup::Async) == result->IsAsyncVariant())
                     {
                         return result;
                     }

@@ -522,7 +522,11 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_ALIGN, "has-align"},
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
-        {BBF_ASYNC_RESUMPTION, "resume"},
+        {BBF_HAS_VALUE_PROFILE, "val-prof"},
+        {BBF_MAY_HAVE_BOUNDS_CHECKS, "bnds-chk"},
+        {BBF_ASYNC_RESUMPTION, "a-resume"},
+        {BBF_CATCH_RESUMPTION, "c-resume"},
+        {BBF_THROW_HELPER, "throw-hlpr"},
     };
 
     bool first = true;
@@ -793,10 +797,9 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
     to->CopyFlags(from);
     to->bbWeight = from->bbWeight;
     to->copyEHRegion(from);
-    to->bbCatchTyp    = from->bbCatchTyp;
+    to->bbCatchType   = from->bbCatchType;
     to->bbStkTempsIn  = from->bbStkTempsIn;
     to->bbStkTempsOut = from->bbStkTempsOut;
-    to->bbStkDepth    = from->bbStkDepth;
     to->bbCodeOffs    = from->bbCodeOffs;
     to->bbCodeOffsEnd = from->bbCodeOffsEnd;
 #ifdef DEBUG
@@ -1010,6 +1013,38 @@ bool BasicBlock::isEmpty() const
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// hasSideEffects: check if block has side effects
+//
+// Returns:
+//   True if any non-phi statement or node in the block has side effects.
+//
+bool BasicBlock::hasSideEffects() const
+{
+    if (!IsLIR())
+    {
+        for (Statement* const stmt : NonPhiStatements())
+        {
+            if ((stmt->GetRootNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
+            {
+                return true;
+            }
+        }
+    }
+    else
+    {
+        for (GenTree* node : LIR::AsRange(this))
+        {
+            if ((node->gtFlags & GTF_SIDE_EFFECT) != 0)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -1525,7 +1560,7 @@ bool BasicBlock::isBBCallFinallyPairTail() const
 //
 bool BasicBlock::hasEHBoundaryIn() const
 {
-    return (bbCatchTyp != BBCT_NONE);
+    return (bbCatchType != BBCT_NONE);
 }
 
 //------------------------------------------------------------------------

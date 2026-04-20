@@ -51,6 +51,16 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.ARM64_Sve_Arm64: return ReadyToRunInstructionSet.Sve;
                             case InstructionSet.ARM64_Sve2: return ReadyToRunInstructionSet.Sve2;
                             case InstructionSet.ARM64_Sve2_Arm64: return ReadyToRunInstructionSet.Sve2;
+                            case InstructionSet.ARM64_Sha3: return ReadyToRunInstructionSet.Sha3;
+                            case InstructionSet.ARM64_Sha3_Arm64: return ReadyToRunInstructionSet.Sha3;
+                            case InstructionSet.ARM64_Sm4: return ReadyToRunInstructionSet.Sm4;
+                            case InstructionSet.ARM64_Sm4_Arm64: return ReadyToRunInstructionSet.Sm4;
+                            case InstructionSet.ARM64_SveAes: return ReadyToRunInstructionSet.SveAes;
+                            case InstructionSet.ARM64_SveAes_Arm64: return ReadyToRunInstructionSet.SveAes;
+                            case InstructionSet.ARM64_SveSha3: return ReadyToRunInstructionSet.SveSha3;
+                            case InstructionSet.ARM64_SveSha3_Arm64: return ReadyToRunInstructionSet.SveSha3;
+                            case InstructionSet.ARM64_SveSm4: return ReadyToRunInstructionSet.SveSm4;
+                            case InstructionSet.ARM64_SveSm4_Arm64: return ReadyToRunInstructionSet.SveSm4;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -100,6 +110,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_AVXIFMA_X64: return ReadyToRunInstructionSet.AvxIfma;
                             case InstructionSet.X64_AVXVNNI: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X64_AVXVNNI_X64: return ReadyToRunInstructionSet.AvxVnni;
+                            case InstructionSet.X64_AVX512BMM: return ReadyToRunInstructionSet.Avx512Bmm;
                             case InstructionSet.X64_GFNI: return ReadyToRunInstructionSet.Gfni;
                             case InstructionSet.X64_GFNI_X64: return ReadyToRunInstructionSet.Gfni;
                             case InstructionSet.X64_GFNI_V256: return ReadyToRunInstructionSet.Gfni_V256;
@@ -154,6 +165,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_AVXIFMA_X64: return null;
                             case InstructionSet.X86_AVXVNNI: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X86_AVXVNNI_X64: return null;
+                            case InstructionSet.X86_AVX512BMM: return ReadyToRunInstructionSet.Avx512Bmm;
                             case InstructionSet.X86_GFNI: return ReadyToRunInstructionSet.Gfni;
                             case InstructionSet.X86_GFNI_X64: return null;
                             case InstructionSet.X86_GFNI_V256: return ReadyToRunInstructionSet.Gfni_V256;
