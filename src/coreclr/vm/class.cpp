@@ -1366,12 +1366,6 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
                 continue;
             }
             MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
-
-            // Skip validation for async variant methods, as they have different signatures by design
-            // to support the async calling convention
-            if (pMD->IsAsyncVariantMethod())
-                continue;
-
             MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
 
             if (pMD == pParentMD)
@@ -1560,11 +1554,6 @@ BOOL TypeHandle::NotifyDebuggerLoad(BOOL attaching) const
         return FALSE;
     }
 
-    if (!GetModule()->IsVisibleToDebugger())
-    {
-        return FALSE;
-    }
-
     return g_pDebugInterface->LoadClass(
         *this, GetCl(), GetModule());
 }
@@ -1573,9 +1562,6 @@ BOOL TypeHandle::NotifyDebuggerLoad(BOOL attaching) const
 void TypeHandle::NotifyDebuggerUnload() const
 {
     LIMITED_METHOD_CONTRACT;
-
-    if (!GetModule()->IsVisibleToDebugger())
-        return;
 
     if (!AppDomain::GetCurrentDomain()->IsDebuggerAttached())
         return;

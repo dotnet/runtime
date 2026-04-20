@@ -10,9 +10,11 @@ public sealed class ExecutionManager_1 : IExecutionManager
 {
     private IExecutionManager _executionManagerCore;
 
-    internal ExecutionManager_1(Target target, Data.RangeSectionMap topRangeSectionMap)
+    internal ExecutionManager_1(Target target)
     {
-        _executionManagerCore = new ExecutionManagerCore<NibbleMapLinearLookup>(target, topRangeSectionMap);
+        TargetPointer addr = target.ReadGlobalPointer(Constants.Globals.ExecutionManagerCodeRangeMapAddress);
+        Data.RangeSectionMap map = target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(addr);
+        _executionManagerCore = new ExecutionManagerCore<NibbleMapLinearLookup>(target, map);
     }
 
     public CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => _executionManagerCore.GetCodeBlockHandle(ip);
@@ -31,5 +33,6 @@ public sealed class ExecutionManager_1 : IExecutionManager
     public TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetRelativeOffset(codeInfoHandle);
     public List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetExceptionClauses(codeInfoHandle);
     public JitManagerInfo GetEEJitManagerInfo() => _executionManagerCore.GetEEJitManagerInfo();
+    public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => _executionManagerCore.GetCodeHeapInfos();
     public void Flush() => _executionManagerCore.Flush();
 }

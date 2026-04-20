@@ -12,14 +12,14 @@ internal sealed class Exception : IData<Exception>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Exception);
 
-        Message = target.ReadPointer(address + (ulong)type.Fields["_message"].Offset);
-        InnerException = target.ReadPointer(address + (ulong)type.Fields["_innerException"].Offset);
-        StackTrace = target.ReadPointer(address + (ulong)type.Fields["_stackTrace"].Offset);
-        WatsonBuckets = target.ReadPointer(address + (ulong)type.Fields["_watsonBuckets"].Offset);
-        StackTraceString = target.ReadPointer(address + (ulong)type.Fields["_stackTraceString"].Offset);
-        RemoteStackTraceString = target.ReadPointer(address + (ulong)type.Fields["_remoteStackTraceString"].Offset);
-        HResult = target.Read<int>(address + (ulong)type.Fields["_HResult"].Offset);
-        XCode = target.Read<int>(address + (ulong)type.Fields["_xcode"].Offset);
+        Message = target.ReadPointerField(address, type, "_message");
+        InnerException = target.ReadPointerField(address, type, "_innerException");
+        StackTrace = target.ReadPointerField(address, type, "_stackTrace");
+        WatsonBuckets = target.ReadPointerField(address, type, "_watsonBuckets");
+        StackTraceString = target.ReadPointerField(address, type, "_stackTraceString");
+        RemoteStackTraceString = target.ReadPointerField(address, type, "_remoteStackTraceString");
+        HResult = target.ReadField<int>(address, type, "_HResult");
+        XCode = target.ReadField<int>(address, type, "_xcode");
     }
 
     public TargetPointer Message { get; init; }

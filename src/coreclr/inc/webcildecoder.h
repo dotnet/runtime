@@ -36,16 +36,30 @@
 #define WEBCIL_MAGIC_I 'I'
 #define WEBCIL_MAGIC_L 'L'
 
-#define WEBCIL_VERSION_MAJOR 0
+#define WEBCIL_VERSION_MAJOR_0 0
+#define WEBCIL_VERSION_MAJOR_1 1
 #define WEBCIL_VERSION_MINOR 0
 
 #pragma pack(push, 1)
 
 // [cDAC] [Loader]: Contract depends on WebcilHeader layout (size and CoffSections field).
-struct WebcilHeader
+struct WebcilHeader // For version 0
 {
     uint8_t Id[4];           // 'W' 'b' 'I' 'L'
     uint16_t VersionMajor;   // 0
+    uint16_t VersionMinor;   // 0
+    uint16_t CoffSections;
+    uint16_t Reserved0;      // 1-based index of the base relocations section, or 0 if none
+    uint32_t PeCliHeaderRva;
+    uint32_t PeCliHeaderSize;
+    uint32_t PeDebugRva;
+    uint32_t PeDebugSize;
+};
+
+struct WebcilHeader_1  // For version 1
+{
+    uint8_t Id[4];           // 'W' 'b' 'I' 'L'
+    uint16_t VersionMajor;   // 1
     uint16_t VersionMinor;   // 0
     uint16_t CoffSections;
     uint16_t Reserved0;
@@ -53,6 +67,7 @@ struct WebcilHeader
     uint32_t PeCliHeaderSize;
     uint32_t PeDebugRva;
     uint32_t PeDebugSize;
+    uint32_t TableBase;
 };
 
 // [cDAC] [Loader]: Contract depends on WebcilSectionHeader layout (size and all fields).
@@ -67,6 +82,7 @@ struct WebcilSectionHeader
 #pragma pack(pop)
 
 static_assert(sizeof(WebcilHeader) == 28, "WebcilHeader must be 28 bytes");
+static_assert(sizeof(WebcilHeader_1) == 32, "WebcilHeader_1 must be 32 bytes");
 static_assert(sizeof(WebcilSectionHeader) == 16, "WebcilSectionHeader must be 16 bytes");
 
 // [cDAC] [Loader]: Contract depends on WEBCIL_MAX_SECTIONS value.
@@ -137,7 +153,8 @@ private:
 
     // Webcil is always flat, never mapped in the PE sense
     BOOL IsMapped() const { return FALSE; }
-    BOOL IsRelocated() const { return FALSE; }
+    BOOL IsRelocated() const { return m_relocated; }
+    void SetRelocated() { m_relocated = TRUE; }
     BOOL IsFlat() const { return HasContents(); }
 
     // ------------------------------------------------------------
@@ -151,7 +168,7 @@ private:
     BOOL HasNTHeaders() const { return FALSE; }
     CHECK CheckNTHeaders() const;
     BOOL Has32BitNTHeaders() const { return FALSE; }
-    BOOL HasBaseRelocations() const { return FALSE; }
+    BOOL HasBaseRelocations() const;
     BOOL HasWriteableSections() const { return FALSE; }
     BOOL HasTls() const { return FALSE; }
 
@@ -258,7 +275,10 @@ private:
     TADDR                m_base;
     COUNT_T              m_size;
     BOOL                 m_hasContents;
+    BOOL                 m_relocated = FALSE;
     const WebcilHeader  *m_pHeader;
+    const WebcilSectionHeader *m_sections;
+
     mutable IMAGE_COR20_HEADER *m_pCorHeader;
 };
 
