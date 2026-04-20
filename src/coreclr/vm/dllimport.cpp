@@ -6005,8 +6005,9 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
 // is to ensure that the target DLL is fully loaded and ready to run.
 //
 // This function is called in the following cases:
-// - ReadyToRun fixups for methods that contain inlined P/Invokes (at fixup time)
-// - Inlined P/Invokes in jitted code at invoke time.
+// - Inlined non-SuppressGCTransition P/Invokes in jitted code at invoke time
+//   after we have already transitioned to unmanaged code.
+//   As far as the jitted code is concerned, we are in the unmanaged call right now.
 //==========================================================================
 EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 {
