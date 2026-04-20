@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
@@ -28,7 +29,8 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
 
     // Tracks GCHandle values allocated by AllocEnum so that CountEnum, ResetEnum,
     // and CloseEnum can distinguish cDAC-created enum handles from legacy HENUMInternal*.
-    private readonly HashSet<nint> _cdacEnumHandles = new();
+    // ConcurrentDictionary is used because COM objects may be called from multiple threads.
+    private readonly ConcurrentDictionary<nint, byte> _cdacEnumHandles = new();
 
     // The ComWrappers instance used to create this object's CCW. Set after CCW creation
     // so that ICustomQueryInterface.GetInterface can obtain the CCW pointer to redirect
@@ -160,7 +162,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         MetadataEnum e = new(tokens);
         GCHandle handle = GCHandle.Alloc(e);
         nint ptr = GCHandle.ToIntPtr(handle);
-        _cdacEnumHandles.Add(ptr);
+        _cdacEnumHandles.TryAdd(ptr, 0);
         return ptr;
     }
 
@@ -201,7 +203,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         if (hEnum == 0)
             return;
 
-        if (_cdacEnumHandles.Remove(hEnum))
+        if (_cdacEnumHandles.TryRemove(hEnum, out _))
         {
             GCHandle handle = GCHandle.FromIntPtr(hEnum);
             handle.Free();
@@ -221,7 +223,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             return HResults.S_OK;
         }
 
-        if (_cdacEnumHandles.Contains(hEnum))
+        if (_cdacEnumHandles.ContainsKey(hEnum))
         {
             MetadataEnum? e = GetEnum(hEnum);
             if (e is null)
@@ -239,7 +241,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         if (hEnum == 0)
             return HResults.S_OK;
 
-        if (_cdacEnumHandles.Contains(hEnum))
+        if (_cdacEnumHandles.ContainsKey(hEnum))
         {
             MetadataEnum? e = GetEnum(hEnum);
             if (e is null)
@@ -1532,19 +1534,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             AssemblyDefinition assemblyDef = _reader.GetAssemblyDefinition();
             string name = _reader.GetString(assemblyDef.Name);
 
-            bool truncated = false;
-
-            if (pchName is not null)
-                *pchName = (uint)(name.Length + 1);
-
-            if (szName is not null && cchName > 0)
-            {
-                int copyLen = Math.Min(name.Length, (int)cchName - 1);
-                name.AsSpan(0, copyLen).CopyTo(new Span<char>(szName, copyLen));
-                szName[copyLen] = '\0';
-                if (name.Length + 1 > cchName)
-                    truncated = true;
-            }
+            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
 
             if (!assemblyDef.PublicKey.IsNil)
             {
@@ -1573,14 +1563,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 pMetaData->usRevisionNumber = (ushort)version.Revision;
 
                 string culture = _reader.GetString(assemblyDef.Culture);
-                if (pMetaData->szLocale is not null && pMetaData->cbLocale > 0)
-                {
-                    int locCopyLen = Math.Min(culture.Length, (int)pMetaData->cbLocale - 1);
-                    culture.AsSpan(0, locCopyLen).CopyTo(new Span<char>(pMetaData->szLocale, locCopyLen));
-                    pMetaData->szLocale[locCopyLen] = '\0';
-                    if (culture.Length + 1 > pMetaData->cbLocale)
-                        truncated = true;
-                }
+                truncated |= OutputBufferHelpers.CopyStringToBuffer(pMetaData->szLocale, pMetaData->cbLocale, null, culture);
                 pMetaData->cbLocale = (uint)(culture.Length + 1);
                 pMetaData->ulProcessor = 0;
                 pMetaData->ulOS = 0;
@@ -1646,19 +1629,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             AssemblyReference assemblyRef = _reader.GetAssemblyReference(refHandle);
             string name = _reader.GetString(assemblyRef.Name);
 
-            bool truncated = false;
-
-            if (pchName is not null)
-                *pchName = (uint)(name.Length + 1);
-
-            if (szName is not null && cchName > 0)
-            {
-                int copyLen = Math.Min(name.Length, (int)cchName - 1);
-                name.AsSpan(0, copyLen).CopyTo(new Span<char>(szName, copyLen));
-                szName[copyLen] = '\0';
-                if (name.Length + 1 > cchName)
-                    truncated = true;
-            }
+            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
 
             if (!assemblyRef.PublicKeyOrToken.IsNil)
             {
@@ -1685,14 +1656,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 pMetaData->usRevisionNumber = (ushort)version.Revision;
 
                 string culture = _reader.GetString(assemblyRef.Culture);
-                if (pMetaData->szLocale is not null && pMetaData->cbLocale > 0)
-                {
-                    int locCopyLen = Math.Min(culture.Length, (int)pMetaData->cbLocale - 1);
-                    culture.AsSpan(0, locCopyLen).CopyTo(new Span<char>(pMetaData->szLocale, locCopyLen));
-                    pMetaData->szLocale[locCopyLen] = '\0';
-                    if (culture.Length + 1 > pMetaData->cbLocale)
-                        truncated = true;
-                }
+                truncated |= OutputBufferHelpers.CopyStringToBuffer(pMetaData->szLocale, pMetaData->cbLocale, null, culture);
                 pMetaData->cbLocale = (uint)(culture.Length + 1);
                 pMetaData->ulProcessor = 0;
                 pMetaData->ulOS = 0;
