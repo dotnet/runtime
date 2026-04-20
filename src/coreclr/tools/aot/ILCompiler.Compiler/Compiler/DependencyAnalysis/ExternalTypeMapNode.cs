@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     else if (effectiveTrimTargetType is ArrayType arrayType)
                     {
-                        // Some arrays don't have array templates (e.g. MD arrays, arrays of pointers).
+                        // Some arrays don't have array templates (e.g. multidimensional arrays, arrays of pointers).
                         // If the element type is template-loadable, the runtime can still construct the array type.
                         TypeDesc effectiveElementType = GetEffectiveTrimTargetType(arrayType.ElementType);
                         TypeDesc canonElementType = effectiveElementType.ConvertToCanonForm(CanonicalFormKind.Specific);

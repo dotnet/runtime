@@ -1453,7 +1453,7 @@ class DeadCodeElimination
                 throw new Exception("Expected entry G");
             ThrowIfUsableMethodTable(typeG);
 
-            // D, E, H: array trim targets are unreachable — entries must be absent
+            // D, E: trim target element type is unreachable. H: element is reachable, but TrimTarget8[] is unreachable.
             if (map.TryGetValue("D", out _))
                 throw new Exception("Unexpected entry D");
             if (map.TryGetValue("E", out _))
