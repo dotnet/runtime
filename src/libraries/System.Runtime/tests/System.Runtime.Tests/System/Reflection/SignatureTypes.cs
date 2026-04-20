@@ -741,7 +741,7 @@ namespace System.Reflection.Tests
         private class NoOneSubclasses { }
         private class NoOneSubclassesThisEither { }
 
-        private class GenericType<T>
+        public class GenericType<T>
         {
             public enum GenericEnum
             {

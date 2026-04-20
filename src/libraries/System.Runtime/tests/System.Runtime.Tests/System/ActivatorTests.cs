@@ -97,12 +97,12 @@ namespace System.Tests
 
         // Add attribute to avoid unused field warning
         [StructLayout(LayoutKind.Sequential)]
-        ref struct RSNoCtor
+        public ref struct RSNoCtor
         {
             public int Value;
         }
 
-        ref struct RSCtor
+        public ref struct RSCtor
         {
             public int Value;
             public RSCtor() => Value = 10;
