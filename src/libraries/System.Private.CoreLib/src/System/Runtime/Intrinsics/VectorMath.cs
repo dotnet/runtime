@@ -3259,7 +3259,7 @@ namespace System.Runtime.Intrinsics
             const double PIBY2 = 1.5707963267948966;    // 0x1.921fb54442d18p+0
             const double PIBY4 = 0.78539816339744828;   // 0x1.921fb54442d18p-1
 
-            TVectorDouble xneg = TVectorDouble.LessThan(x, TVectorDouble.Zero);
+            TVectorDouble xneg = TVectorDouble.IsNegative(x);
             TVectorDouble ax = TVectorDouble.Abs(x);
 
             TVectorDouble gtHalf = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(0.5));
@@ -3358,7 +3358,7 @@ namespace System.Runtime.Intrinsics
             const double PIBY2 = 1.5707963267948966;    // 0x1.921fb54442d18p+0
             const double PIBY4 = 0.78539816339744828;   // 0x1.921fb54442d18p-1
 
-            TVectorDouble xneg = TVectorDouble.LessThan(dx, TVectorDouble.Zero);
+            TVectorDouble xneg = TVectorDouble.IsNegative(dx);
             TVectorDouble ax = TVectorDouble.Abs(dx);
 
             TVectorDouble gtHalf = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(0.5));
