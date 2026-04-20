@@ -220,7 +220,7 @@ public class R2RTestSuites
             AssemblyName = nameof(RuntimeAsyncContinuationLayout),
             SourceResourceNames =
             [
-                "RuntimeAsync/AsyncWithContinuation.cs",
+                "RuntimeAsync/Dependencies/AwaitsLocalsCapturedAcrossAwait.LocalsCapturedAcrossAwait.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -238,11 +238,11 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasAsyncVariant(reader, "CaptureObjectAcrossAwait", out diag), diag);
-            Assert.True(R2RAssert.HasAsyncVariant(reader, "CaptureMultipleRefsAcrossAwait", out diag), diag);
-            Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureObjectAcrossAwait", out diag), diag);
-            Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureMultipleRefsAcrossAwait", out diag), diag);
-            Assert.True(R2RAssert.HasResumptionStubFixup(reader, "CaptureObjectAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CaptureRefAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "CaptureArrayAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureRefAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureArrayAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.HasResumptionStubFixup(reader, "CaptureRefAcrossAwait", out diag), diag);
         }
     }
 
@@ -293,7 +293,7 @@ public class R2RTestSuites
             AssemblyName = nameof(RuntimeAsyncNoYield),
             SourceResourceNames =
             [
-                "RuntimeAsync/AsyncNoYield.cs",
+                "RuntimeAsync/AsyncWithoutYield.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -536,14 +536,14 @@ public class R2RTestSuites
     {
         var asyncInlineCandidatesLib = new CompiledAssembly
         {
-            AssemblyName = "AsyncInlineCandidatesLib",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/AsyncInlineCandidatesLib.cs"],
+            AssemblyName = "InlineCandidateMatrix",
+            SourceResourceNames = ["RuntimeAsync/Dependencies/AwaitsInlineCandidateMatrix.InlineCandidateMatrix.cs"],
             Features = { RuntimeAsyncFeature },
         };
         var asyncInlineCallers = new CompiledAssembly
         {
-            AssemblyName = "AsyncInlineCallers",
-            SourceResourceNames = ["CrossModuleInlining/AsyncInlineCallers.cs"],
+            AssemblyName = "AwaitsInlineCandidateMatrix",
+            SourceResourceNames = ["RuntimeAsync/AwaitsInlineCandidateMatrix.cs"],
             Features = { RuntimeAsyncFeature },
             References = [asyncInlineCandidatesLib]
         };
@@ -565,7 +565,7 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncInlineCandidatesLib", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "InlineCandidateMatrix", out diag), diag);
 
             // Awaitless async candidates: should be inlined into their callers.
             Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskNoAwait", "ReturnTaskNoAwait", out diag), diag);
@@ -663,20 +663,20 @@ public class R2RTestSuites
     {
         var asyncGenericTypeLib = new CompiledAssembly
         {
-            AssemblyName = "AsyncGenericTypeLib",
+            AssemblyName = "AwaitsAsyncMethodsOnGenericType.GenericContainer",
             SourceResourceNames =
             [
-                "RuntimeAsync/Dependencies/AsyncGenericTypeLib.cs",
+                "RuntimeAsync/Dependencies/AwaitsAsyncMethodsOnGenericType.GenericContainer.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
         };
         var compositeAsyncGenericTypesMain = new CompiledAssembly
         {
-            AssemblyName = "CompositeAsyncGenericTypesMain",
+            AssemblyName = "AwaitsAsyncMethodsOnGenericType",
             SourceResourceNames =
             [
-                "RuntimeAsync/CompositeAsyncGenericTypesMain.cs",
+                "RuntimeAsync/AwaitsAsyncMethodsOnGenericType.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -783,13 +783,13 @@ public class R2RTestSuites
     {
         var libA = new CompiledAssembly
         {
-            AssemblyName = "MultiStepLibA",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/MultiStepLibA.cs"],
+            AssemblyName = "MultiStepLeaf",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/MultiStepConsumer.Leaf.cs"],
         };
         var libB = new CompiledAssembly
         {
-            AssemblyName = "MultiStepLibB",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/MultiStepLibB.cs"],
+            AssemblyName = "MultiStepMid",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/MultiStepConsumer.Mid.cs"],
             References = [libA]
         };
         var consumer = new CompiledAssembly
@@ -812,7 +812,7 @@ public class R2RTestSuites
                     Validate = reader =>
                     {
                         string diag;
-                        Assert.True(R2RAssert.HasManifestRef(reader, "MultiStepLibA", out diag), diag);
+                        Assert.True(R2RAssert.HasManifestRef(reader, "MultiStepLeaf", out diag), diag);
                     },
                 },
                 new("NonCompositeStep",
@@ -828,7 +828,7 @@ public class R2RTestSuites
                     Validate = reader =>
                     {
                         string diag;
-                        Assert.True(R2RAssert.HasManifestRef(reader, "MultiStepLibA", out diag), diag);
+                        Assert.True(R2RAssert.HasManifestRef(reader, "MultiStepLeaf", out diag), diag);
                         Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "GetValueFromLibA", "GetValue", out diag), diag);
                     },
                 },
@@ -1134,8 +1134,8 @@ public class R2RTestSuites
     {
         var crossModuleGenericLib = new CompiledAssembly
         {
-            AssemblyName = "CrossModuleGenericLib",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/CrossModuleGenericLib.cs"],
+            AssemblyName = "MultiInlinerConsumer.GenericWrappers",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/MultiInlinerConsumer.GenericWrappers.cs"],
         };
         var consumer = new CompiledAssembly
         {
@@ -1164,7 +1164,7 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "CrossModuleGenericLib", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "MultiInlinerConsumer.GenericWrappers", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
 
             // Verify that GetValue has cross-module inliners from both GenericWrapperA and GenericWrapperB.

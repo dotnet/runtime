@@ -7,7 +7,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-public static class AsyncInlineCandidatesLib
+public static class InlineCandidateMatrix
 {
     // --- Awaitless variants: should be inlinable ---
 

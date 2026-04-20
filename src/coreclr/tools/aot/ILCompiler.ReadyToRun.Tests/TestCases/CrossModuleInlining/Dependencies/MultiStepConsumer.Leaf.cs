@@ -3,7 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public static class MultiStepLibA
+public static class MultiStepLeaf
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int GetValue() => 42;
