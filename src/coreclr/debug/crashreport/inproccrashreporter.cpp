@@ -243,6 +243,10 @@ InProcCrashReportGenerate(
         CrashJsonWriteString(&s_jsonWriter, "process_name", processName);
     }
 
+    char pidBuf[16];
+    (void)snprintf(pidBuf, sizeof(pidBuf), "%u", static_cast<unsigned>(getpid()));
+    CrashJsonWriteString(&s_jsonWriter, "pid", pidBuf);
+
     CrashJsonOpenArray(&s_jsonWriter, "threads");
     if (g_enumerateThreadsCallback != NULL)
     {
