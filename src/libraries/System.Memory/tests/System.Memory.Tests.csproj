@@ -196,6 +196,7 @@
     <Compile Include="ReadOnlySpan\ToArray.cs" />
     <Compile Include="ReadOnlySpan\ToString.cs" />
     <Compile Include="ReadOnlySpan\ToUpperLower.cs" />
+    <Compile Include="ReadOnlySpan\WhiteSpace.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Memory\AsMemory.cs" />

@@ -15,7 +15,6 @@
 #include "appdomain.inl"
 #include <peimage.h>
 #include "peimagelayout.inl"
-#include "domainassembly.h"
 #include "holder.h"
 #include <assemblyprobeextension.h>
 #include "strongnameinternal.h"
@@ -86,7 +85,7 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
 
     EX_TRY
     {
-        PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, probeExtensionResult);
+        PEImageHolder pImage(PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, probeExtensionResult));
 
         // Make sure that the IL image can be opened.
         if (pImage->IsFile())
@@ -99,7 +98,7 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
         }
 
         if (pImage)
-            *ppPEImage = pImage.Extract();
+            *ppPEImage = pImage.Detach();
     }
     EX_CATCH_HRESULT(hr);
 
@@ -159,11 +158,8 @@ void BaseAssemblySpec::Init(SString& assemblyDisplayName)
 
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLY_NAME__PARSE_AS_ASSEMBLYSPEC);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pAssemblyDisplayName);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(this);
-    CALL_MANAGED_METHOD_NORET(args);
+    UnmanagedCallersOnlyCaller parseAsAssemblySpec(METHOD__ASSEMBLY_NAME__PARSE_AS_ASSEMBLYSPEC);
+    parseAsAssemblySpec.InvokeThrowing(pAssemblyDisplayName, (void*)this);
 }
 
 extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec)

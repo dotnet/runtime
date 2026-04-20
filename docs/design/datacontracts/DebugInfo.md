@@ -293,7 +293,7 @@ Version 1 packs each bounds entry using: `[2 bits sourceType][nativeDeltaBits][i
 
 Version 2 extends this to three independent flag bits for source type and so uses: `[3 bits sourceFlags][nativeDeltaBits][ilOffsetBits]`.
 
-Source type bits (low → high):
+Source type bits (low -> high):
 | Bit | Mask | Meaning |
 | --- | --- | --- |
 | 0 | 0x1 | `CallInstruction` |
@@ -311,3 +311,80 @@ if ((encoded & 0x4) != 0) sourceType |= SourceTypes.Async; // New bit
 ```
 
 After masking the 3 bits, shift them out before reading native delta and IL offset fields as before.
+
+### Variable Location APIs (Version 2+)
+
+Version 2 adds support for decoding native variable location info from the Vars section of the debug info blob.
+
+Additional APIs:
+```csharp
+// Describes the kind of location where a variable is stored.
+public enum DebugVarLocKind
+{
+    Register,
+    Stack,
+    RegisterRegister,
+    RegisterStack,
+    StackRegister,
+    DoubleStack,
+}
+
+public readonly struct DebugVarInfo
+{
+    public uint StartOffset { get; init; }
+    public uint EndOffset { get; init; }
+    public uint VarNumber { get; init; }
+    public DebugVarLocKind Kind { get; init; }
+    public bool IsByRef { get; init; }
+    public uint Register { get; init; }
+    public uint Register2 { get; init; }
+    public uint BaseRegister { get; init; }
+    public int StackOffset { get; init; }
+    public uint BaseRegister2 { get; init; }
+    public int StackOffset2 { get; init; }
+}
+
+// Given a code pointer, return the variable location info for the method.
+IEnumerable<DebugVarInfo> GetMethodVarInfo(TargetCodePointer pCode, out uint codeOffset);
+```
+
+Additional constants (Version 2):
+| Constant Name | Meaning | Value |
+| --- | --- | --- |
+| `MAX_ILNUM` | Bias for adjusted encoding of variable numbers | `0xfffffffc` (-4) |
+| `VLT_REG` | Variable is in a register | `0` |
+| `VLT_REG_BYREF` | Address of the variable is in a register | `1` |
+| `VLT_REG_FP` | Variable is in an FP register | `2` |
+| `VLT_STK` | Variable is on the stack | `3` |
+| `VLT_STK_BYREF` | Address of the variable is on the stack | `4` |
+| `VLT_REG_REG` | Variable lives in two registers | `5` |
+| `VLT_REG_STK` | Variable lives partly in a register and partly on the stack | `6` |
+| `VLT_STK_REG` | Reverse of VLT_REG_STK | `7` |
+| `VLT_STK2` | Variable lives in two stack slots | `8` |
+| `VLT_FPSTK` | Variable is on the floating-point stack | `9` |
+| `VLT_FIXED_VA` | Fixed argument in a varargs function | `10` |
+| `VLT_COUNT` | Number of valid VarLocType values | `11` |
+| `VLT_INVALID` | Sentinel for invalid locations | `12` |
+
+### Vars Data Encoding
+
+Each variable entry in the Vars section is nibble-encoded as follows:
+
+1. `startOffset` — encoded unsigned 32-bit integer
+2. `endOffset` — encoded as delta from `startOffset` (unsigned)
+3. `varNumber` — encoded as adjusted unsigned (`value - MAX_ILNUM`)
+4. `VarLocType` — encoded unsigned 32-bit integer
+5. Location fields depend on the `VarLocType`:
+
+| VarLocType | Fields (in encoding order) |
+| --- | --- |
+| `VLT_REG`, `VLT_REG_FP`, `VLT_REG_BYREF` | register (encoded unsigned) |
+| `VLT_STK`, `VLT_STK_BYREF` | baseRegister (encoded unsigned), stackOffset (encoded signed, x86: ×4) |
+| `VLT_REG_REG` | register1 (encoded unsigned), register2 (encoded unsigned) |
+| `VLT_REG_STK` | register (encoded unsigned), baseRegister (encoded unsigned), stackOffset (encoded signed, x86: ×4) |
+| `VLT_STK_REG` | stackOffset (encoded signed, x86: ×4), baseRegister (encoded unsigned), register (encoded unsigned) |
+| `VLT_STK2` | baseRegister (encoded unsigned), stackOffset (encoded signed, x86: ×4) |
+| `VLT_FPSTK` | fpRegister (encoded unsigned) |
+| `VLT_FIXED_VA` | offset (encoded unsigned) |
+
+Signed integers are encoded using the same unsigned scheme, with the sign bit stored in bit 0 (`value = unsigned >> 1`, negate if `unsigned & 1`). On x86, stack offsets are DWORD-aligned and stored divided by `sizeof(DWORD)`.

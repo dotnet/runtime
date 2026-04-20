@@ -1735,12 +1735,12 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
 
     // We'll likely need to put this lock object into the sync block.
     // Create the handle here.
-    OBJECTHANDLEHolder lockHandle = GetAppDomain()->CreateHandle(lockObj);
+    OBJECTHANDLEHolder lockHandle(GetAppDomain()->CreateHandle(lockObj));
 
-    if (TryUpgradeThinLockToFullLock(lockHandle.GetValue()))
+    if (TryUpgradeThinLockToFullLock(lockHandle))
     {
         // Our lock instance is the one in the sync block now.
-        return lockHandle.Extract();
+        return lockHandle.Detach();
     }
 
     return VolatileLoad(&m_Lock);
@@ -1782,16 +1782,15 @@ bool SyncBlock::TryUpgradeThinLockToFullLock(OBJECTHANDLE lockHandle)
         DWORD lockThreadId = thinLock & SBLK_MASK_LOCK_THREADID;
         DWORD recursionLevel = (thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
         _ASSERTE(lockThreadId != 0);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__LOCK__INITIALIZE_FOR_MONITOR);
 
         // We have thin-lock info that needs to be transferred to the lock object.
         OBJECTREF lockObj = ObjectFromHandle(lockHandle);
+        GCPROTECT_BEGIN(lockObj);
 
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(lockObj);
-        args[ARGNUM_1] = DWORD_TO_ARGHOLDER(lockThreadId);
-        args[ARGNUM_2] = DWORD_TO_ARGHOLDER(recursionLevel);
-        CALL_MANAGED_METHOD_NORET(args);
+        UnmanagedCallersOnlyCaller initializeForMonitor(METHOD__LOCK__INITIALIZE_FOR_MONITOR);
+        initializeForMonitor.InvokeThrowing(&lockObj, (int32_t)lockThreadId, (uint32_t)recursionLevel);
+
+        GCPROTECT_END();
     }
 
     VolatileStore(&m_Lock, lockHandle);

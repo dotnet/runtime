@@ -177,6 +177,7 @@ export function dotnetUpdateInternalsSubscriber() {
         const interopLocal: NativeBrowserExports = {
             getWasmMemory: table[0],
             getWasmTable: table[1],
+            SystemJS_ScheduleDiagnosticServer: table[2],
         };
         Object.assign(interop, interopLocal);
     }
@@ -186,6 +187,11 @@ export function dotnetUpdateInternalsSubscriber() {
         const interopLocal: DiagnosticsExports = {
             symbolicateStackTrace: table[0],
             installNativeSymbols: table[1],
+            ds_rt_websocket_create: table[2],
+            ds_rt_websocket_send: table[3],
+            ds_rt_websocket_poll: table[4],
+            ds_rt_websocket_recv: table[5],
+            ds_rt_websocket_close: table[6],
         };
         Object.assign(interop, interopLocal);
     }
@@ -198,12 +204,14 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF16Ptr: table[2],
             stringToUTF8Ptr: table[3],
             stringToUTF8: table[4],
-            zeroRegion: table[5],
-            isSharedArrayBuffer: table[6],
-            abortBackgroundTimers: table[7],
-            abortPosix: table[8],
-            getExitStatus: table[9],
-            runBackgroundTimers: table[10],
+            utf8ToStringRelaxed: table[5],
+            zeroRegion: table[6],
+            isSharedArrayBuffer: table[7],
+            viewOrCopy: table[8],
+            abortBackgroundTimers: table[9],
+            abortPosix: table[10],
+            getExitStatus: table[11],
+            runBackgroundTimers: table[12],
         };
         Object.assign(interop, interopLocal);
     }

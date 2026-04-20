@@ -1168,34 +1168,46 @@ namespace System.Numerics.Tensors.Tests
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 3).ToArray());
             Tensor<int> t1 = Tensor.Create(Enumerable.Range(0, 3).ToArray(), lengths: [3, 1]);
 
-            // TODO: This double broadcast will be added back in the future
-            //Tensor<int> t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
-            //Assert.Equal([3,3], t2.Lengths);
-            //Assert.Equal(0, t2[0, 0]);
-            //Assert.Equal(0, t2[0, 1]);
-            //Assert.Equal(0, t2[0, 2]);
-            //Assert.Equal(0, t2[1, 0]);
-            //Assert.Equal(1, t2[1, 1]);
-            //Assert.Equal(2, t2[1, 2]);
-            //Assert.Equal(0, t2[2, 0]);
-            //Assert.Equal(2, t2[2, 1]);
-            //Assert.Equal(4, t2[2, 2]);
+            Tensor<int> t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
+            Assert.Equal([3, 3], t2.Lengths);
+            Assert.Equal(0, t2[0, 0]);
+            Assert.Equal(0, t2[0, 1]);
+            Assert.Equal(0, t2[0, 2]);
+            Assert.Equal(0, t2[1, 0]);
+            Assert.Equal(1, t2[1, 1]);
+            Assert.Equal(2, t2[1, 2]);
+            Assert.Equal(0, t2[2, 0]);
+            Assert.Equal(2, t2[2, 1]);
+            Assert.Equal(4, t2[2, 2]);
 
-            //t2 = Tensor.Multiply(t1.AsReadOnlyTensorSpan(), t0);
+            t2 = Tensor.Multiply(t1.AsReadOnlyTensorSpan(), t0);
 
-            //Assert.Equal([3, 3], t2.Lengths);
-            //Assert.Equal(0, t2[0, 0]);
-            //Assert.Equal(0, t2[0, 1]);
-            //Assert.Equal(0, t2[0, 2]);
-            //Assert.Equal(0, t2[1, 0]);
-            //Assert.Equal(1, t2[1, 1]);
-            //Assert.Equal(2, t2[1, 2]);
-            //Assert.Equal(0, t2[2, 0]);
-            //Assert.Equal(2, t2[2, 1]);
-            //Assert.Equal(4, t2[2, 2]);
+            Assert.Equal([3, 3], t2.Lengths);
+            Assert.Equal(0, t2[0, 0]);
+            Assert.Equal(0, t2[0, 1]);
+            Assert.Equal(0, t2[0, 2]);
+            Assert.Equal(0, t2[1, 0]);
+            Assert.Equal(1, t2[1, 1]);
+            Assert.Equal(2, t2[1, 2]);
+            Assert.Equal(0, t2[2, 0]);
+            Assert.Equal(2, t2[2, 1]);
+            Assert.Equal(4, t2[2, 2]);
+
+            // Same rank with broadcasting: [2,3] * [2,1] should broadcast to [2,3]
+            Tensor<int> t3 = Tensor.Create([2, 3, 5, 7, 11, 13], [2, 3]);
+            Tensor<int> t4 = Tensor.Create([-2, -3], [2, 1]);
+            t2 = Tensor.Multiply(t3.AsReadOnlyTensorSpan(), t4);
+
+            Assert.Equal([2, 3], t2.Lengths);
+            Assert.Equal(-4, t2[0, 0]);
+            Assert.Equal(-6, t2[0, 1]);
+            Assert.Equal(-10, t2[0, 2]);
+            Assert.Equal(-21, t2[1, 0]);
+            Assert.Equal(-33, t2[1, 1]);
+            Assert.Equal(-39, t2[1, 2]);
 
             t1 = Tensor.Create(Enumerable.Range(0, 9).ToArray(), lengths: [3, 3]);
-            Tensor<int> t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
+            t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
 
             Assert.Equal([3, 3], t2.Lengths);
             Assert.Equal(0, t2[0, 0]);

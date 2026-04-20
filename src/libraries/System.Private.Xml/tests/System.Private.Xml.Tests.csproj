@@ -422,6 +422,7 @@
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateAttribute_String.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateElement.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateMisc.cs" />
+    <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidationErrorMessageTests.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateText_EndElement.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateText_String.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateWhitespace_String.cs" />
