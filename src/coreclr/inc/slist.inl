@@ -2,14 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 // Implementation of SList methods that depend on platform atomics.
-// Include this file after platform headers are available (e.g., after
-// Pal.h on NativeAOT or utilcode.h on CoreCLR).
 //
 
 #ifndef _H_SLIST_INL_
 #define _H_SLIST_INL_
 
 #include "slist.h"
+
+#if defined(FEATURE_NATIVEAOT)
+#include "Pal.h"            // PalInterlockedCompareExchangePointer
+#else
+#include "utilcode.h"       // InterlockedCompareExchangeT
+#endif
 
 template <typename T, typename Traits>
 void SList<T, Traits>::InsertHeadInterlocked(PTR_T pItem)
