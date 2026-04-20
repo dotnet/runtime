@@ -55,6 +55,20 @@ namespace ILCompiler.DependencyAnalysis
                             context.NativeLayout.TemplateTypeLayout(canonTrimmingType),
                             "External type map trim target that could be loaded at runtime");
                     }
+                    else if (effectiveTrimTargetType is ArrayType arrayType)
+                    {
+                        // Some arrays don't have array templates (e.g. MD arrays, arrays of pointers).
+                        // If the element type is template-loadable, the runtime can still construct the array type.
+                        TypeDesc effectiveElementType = GetEffectiveTrimTargetType(arrayType.ElementType);
+                        TypeDesc canonElementType = effectiveElementType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                        if (canonElementType != effectiveElementType && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonElementType))
+                        {
+                            yield return new CombinedDependencyListEntry(
+                                context.NecessaryTypeSymbol(effectiveTrimTargetType),
+                                context.NativeLayout.TemplateTypeLayout(canonElementType),
+                                "External type map array trim target with template-loadable element type");
+                        }
+                    }
                 }
             }
         }
@@ -100,12 +114,12 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        // Strip parameterized type wrappers (arrays, pointers, byrefs) to get the effective
-        // type for trimming purposes. If the trim target is Foo[], the TypeMap entry should be
-        // included when Foo is reachable, matching ILLink's TypeMapHandler stripping behavior.
+        // Strip non-array parameterized wrappers (pointers, byrefs) to get the effective
+        // trimming target type. Arrays are preserved so trim dependencies can be conditioned
+        // on array existence rather than just element type reachability.
         private static TypeDesc GetEffectiveTrimTargetType(TypeDesc trimmingTargetType)
         {
-            while (trimmingTargetType is ParameterizedType parameterized)
+            while (trimmingTargetType is ParameterizedType parameterized && !trimmingTargetType.IsArray)
                 trimmingTargetType = parameterized.ParameterType;
             return trimmingTargetType;
         }

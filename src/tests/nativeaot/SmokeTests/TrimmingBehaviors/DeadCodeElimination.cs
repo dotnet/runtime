@@ -23,6 +23,7 @@ using System.Runtime.InteropServices;
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("E", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target5), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget5[]))]
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("F", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target6), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget6[]))]
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("G", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target7), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget7[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("H", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target8), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget8[]))]
 
 class DeadCodeElimination
 {
@@ -1387,6 +1388,7 @@ class DeadCodeElimination
         public struct TrimTarget5;
         public struct TrimTarget6;
         public struct TrimTarget7;
+        public struct TrimTarget8;
         public class Target1;
         public class Target2;
         public class Target3;
@@ -1394,6 +1396,7 @@ class DeadCodeElimination
         public class Target5;
         public class Target6;
         public class Target7;
+        public class Target8;
         public class Atom;
 
         public static unsafe object[] MakeGenerics<T>()
@@ -1417,6 +1420,10 @@ class DeadCodeElimination
         public static void Run()
         {
             if (GetUnknown() is TrimTarget7[])
+            {
+                Console.WriteLine("Unexpected");
+            }
+            if (GetUnknown() is TrimTarget8)
             {
                 Console.WriteLine("Unexpected");
             }
@@ -1446,11 +1453,13 @@ class DeadCodeElimination
                 throw new Exception("Expected entry G");
             ThrowIfUsableMethodTable(typeG);
 
-            // D, E: element type is unreachable — entries must be absent
+            // D, E, H: array trim targets are unreachable — entries must be absent
             if (map.TryGetValue("D", out _))
                 throw new Exception("Unexpected entry D");
             if (map.TryGetValue("E", out _))
                 throw new Exception("Unexpected entry E");
+            if (map.TryGetValue("H", out _))
+                throw new Exception("Unexpected entry H");
         }
     }
 
