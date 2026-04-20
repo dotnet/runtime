@@ -1854,7 +1854,7 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
                 //
                 if (ssaVarDsc->HasGlobalUse())
                 {
-                    JITDUMP(FMT_BB " has global phi for V%02u.%u; no phi-based threading\n", block->bbNum, lclNum,
+                    JITDUMP(FMT_BB " has global phi for V%02u.%u; must look for phi uses\n", block->bbNum, lclNum,
                             ssaNum);
                     hasGlobalPhiUses = true;
                 }
