@@ -70,10 +70,17 @@ INST(lgb,		"lgb",			0,		0xe377)
 INST(lgh,		"lgh",			0,		0xe315)
 INST(llgh,		"lgh",			0,		0xe391)
 INST(l,			"l",			0,		0x58)
+INST(afi,       "afi",          0,      0xc29)
+INST(agfi,      "agfi",         0,      0xc28)
+INST(msfi,      "msfi",         0,      0xc21)
+INST(msgfi,     "msgfi",        0,      0xc20)
+INST(oill,      "oill",         0,      0xa5b)
 INST(ley,          "ley",                      0,              0xed64)
 INST(ldy,          "ldy",                      0,              0xed65)
 INST(stey,      "stey",         0,      0xed66)
 INST(stdy,      "stdy",         0,      0xed67)
+INST(xihf,      "xifh",         0,      0xc06)
+INST(nihf,      "nihf",         0,      0xc0a)
 
 //// R_R_I
 INST(stc,		"stc",			0,		0x42)
@@ -89,20 +96,25 @@ INST(agrk,		"agrk",			0,		0xb9e8)
 INST(srk,       "srk",          0,      0xb9f9)
 INST(sgrk,      "sgrk",         0,      0xb9e9)
 INST(nrk,       "nrk",          0,      0xb9f4)
+INST(ngrk,      "ngrk",         0,      0xb9e4)
 INST(ncrk,      "ncrk",         0,      0xb9f5)
 INST(ork,       "ork",          0,      0xb9f6)
+INST(ogrk,      "ogrk",         0,      0xb9e6)
 INST(xrk,       "xrk",          0,      0xb9f7)
+INST(xgrk,      "xgrk",         0,      0xb9e7)
 INST(mul,		"msrkc",		0,		0xb9fd)
 INST(msgrkc,	"msgrkc",		0,		0xb9ed)
 
 //// R_R_R_I
 INST(stmg,		"stmg",			0,		0xeb24)
 INST(lmg,		"lmg",			0,		0xeb04)
-
+INST(srag,      "srag",         0,      0xeb0a)
+INST(sllg,      "sllg",         0,      0xeb0d)
 //// R_I_R
 
 //// R_I_I
-
+INST(ni,        "ni",           0,      0x94)
+INST(xi,        "xi",           0,      0x97)
 
 //// R_R_I
 

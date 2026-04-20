@@ -3479,10 +3479,10 @@ void emitter::emitIns_R_I(instruction ins,
             break;
 #endif
         default:
+            break;
             // fallback to emit SVE instructions.
       //      return emitInsSve_R_I(ins, attr, reg, imm, opt, sopt);
         
-	    _ASSERTE(!"NYI");
     } // end switch (ins)
 
     //assert(canEncode);
@@ -5662,8 +5662,11 @@ void emitter::emitIns_R_R_R(instruction     ins,
 #endif
 
         case INS_nrk:
+        case INS_ngrk:
         case INS_ork:
+        case INS_ogrk:
         case INS_xrk:
+        case INS_xgrk:
         case INS_ncrk:
 #if 0
         case INS_bic:
@@ -10239,7 +10242,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
             break;
 
+        case INS_ngrk:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+            break;
+
         case INS_ork:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+            break;
+
+        case INS_ogrk:
             op = emitInsCode(ins, fmt);
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
             break;
@@ -10397,6 +10410,60 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_ldebr:
             op = emitInsCode(ins, fmt);
             S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+        case INS_afi:
+            imm = emitGetInsSC(id);
+            op = emitInsCode(ins, fmt);
+            S390_RIL_a(dst, op, id->idReg1(), imm);
+            break;
+
+        case INS_agfi:
+            imm = emitGetInsSC(id);
+            op = emitInsCode(ins, fmt);
+            S390_RIL_a(dst, op, id->idReg1(), imm);
+            break;
+
+        case INS_msfi:
+            imm = emitGetInsSC(id);
+            op = emitInsCode(ins, fmt);
+            S390_RIL_a(dst, op, id->idReg1(), imm);
+            break;
+
+        case INS_msgfi:
+            imm = emitGetInsSC(id);
+            op = emitInsCode(ins, fmt);
+            S390_RIL_a(dst, op, id->idReg1(), imm);
+            break;
+
+        case INS_oill:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RI(dst, op, id->idReg1(), 0x80);
+            break;
+
+        case INS_srag:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3(), imm & 0x3f);
+            break;
+
+        case INS_sllg:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3(), imm & 0x3f);
+            break;
+
+        case INS_nihf:
+            imm = emitGetInsSC(id);
+            op = emitInsCode(ins, fmt);
+            S390_RIL_a(dst, op, id->idReg1(), imm);
+            break;
+
+        case INS_xihf:
+            imm = emitGetInsSC(id);
+            op = emitInsCode(ins, fmt);
+            S390_RIL_a(dst, op, id->idReg1(), imm);
             break;
 
         default:
@@ -12896,8 +12963,6 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
 regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src)
 {
-    _ASSERTE(!"NYI");
-#if 0
     // dst can only be a reg
     assert(!dst->isContained());
 
@@ -12921,7 +12986,6 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         emitIns_R_R(ins, attr, dst->GetRegNum(), src->GetRegNum());
         return dst->GetRegNum();
     }
-#endif
 }
 
 // The callee must call genConsumeReg() for any non-contained srcs

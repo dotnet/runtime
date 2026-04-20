@@ -51,9 +51,6 @@ bool Lowering::IsCallTargetInRange(void* addr)
 //
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
-    return false;
-    //_ASSERTE(!"NYI");
-//#if 0 
     if (!varTypeIsFloating(parentNode->TypeGet()))
     {
         if (parentNode->OperIsCompare() && childNode->IsFloatPositiveZero())
@@ -97,7 +94,10 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         {
             case GT_ADD:
             case GT_SUB:
-                return emitter::emitIns_valid_imm_for_add(immVal, size);
+            case GT_MUL:
+                //return emitter::emitIns_valid_imm_for_add(immVal, size); // Need to implement these
+                return (immVal >= INT32_MIN && immVal <= INT32_MAX);
+#if 0
             case GT_CMPXCHG:
             case GT_LOCKADD:
             case GT_XORR:
@@ -113,12 +113,17 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_CMP:
             case GT_BOUNDS_CHECK:
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
+#endif
             case GT_AND:
             case GT_OR:
             case GT_XOR:
+#if 0
             case GT_TEST_EQ:
             case GT_TEST_NE:
-                return emitter::emitIns_valid_imm_for_alu(immVal, size);
+#endif
+                //return emitter::emitIns_valid_imm_for_alu(immVal, size); // Need to implement these
+                return (immVal >= INT32_MIN && immVal <= INT32_MAX);
+#if 0
             case GT_JCMP:
                 assert(immVal == 0);
                 return true;
@@ -130,6 +135,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
                 if (immVal == 0)
                     return true;
                 break;
+#endif
             default:
                 break;
         }

@@ -1269,7 +1269,7 @@ protected:
     unsigned genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
     void     genJumpTable(GenTree* tree);
     void     genTableBasedSwitch(GenTree* tree);
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
     instruction genGetInsForOper(GenTree* treeNode);
 #else
     instruction genGetInsForOper(genTreeOps oper, var_types type);
