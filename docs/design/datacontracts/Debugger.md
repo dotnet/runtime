@@ -12,6 +12,10 @@ record struct DebuggerData(uint DefinesBitField, uint MDStructuresVersion);
 bool TryGetDebuggerData(out DebuggerData data);
 int GetAttachStateFlags();
 bool MetadataUpdatesApplied();
+void RequestSyncAtEvent();
+void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC);
+TargetPointer GetDebuggerControlBlockAddress();
+void EnableGCNotificationEvents(bool fEnable);
 ```
 
 ## Version 1
@@ -31,6 +35,11 @@ The contract additionally depends on these data descriptors
 | `Debugger` | `LeftSideInitialized` | Whether the left-side debugger infrastructure is initialized |
 | `Debugger` | `Defines` | Bitfield of compile-time debugger feature defines |
 | `Debugger` | `MDStructuresVersion` | Version of metadata data structures |
+| `Debugger` | `RCThread` | Pointer to `DebuggerRCThread` |
+| `Debugger` | `RSRequestedSync` | Sync-at-event request flag |
+| `Debugger` | `SendExceptionsOutsideOfJMC` | Exception delivery policy flag |
+| `Debugger` | `GCNotificationEventsEnabled` | Whether GC notification events are enabled |
+| `DebuggerRCThread` | `DCB` | Pointer to `DebuggerIPCControlBlock` |
 
 ```csharp
 bool TryGetDebuggerData(out DebuggerData data)
@@ -64,5 +73,45 @@ bool MetadataUpdatesApplied()
     if (target.TryReadGlobalPointer("MetadataUpdatesApplied", out TargetPointer addr))
         return target.Read<byte>(addr) != 0;
     return false;
+}
+
+void RequestSyncAtEvent()
+{
+    if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+        return;
+
+    target.Write<int>(debuggerAddress + /* Debugger::RSRequestedSync offset */, 1);
+}
+
+void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC)
+{
+    if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+        return;
+
+    target.Write<int>(
+        debuggerAddress + /* Debugger::SendExceptionsOutsideOfJMC offset */,
+        sendExceptionsOutsideOfJMC ? 1 : 0);
+}
+
+TargetPointer GetDebuggerControlBlockAddress()
+{
+    if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+        return TargetPointer.Null;
+
+    TargetPointer rcThread = target.ReadPointer(debuggerAddress + /* Debugger::RCThread offset */);
+    if (rcThread == TargetPointer.Null)
+        return TargetPointer.Null;
+
+    return target.ReadPointer(rcThread + /* DebuggerRCThread::DCB offset */);
+}
+
+void EnableGCNotificationEvents(bool fEnable)
+{
+    if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+        return;
+
+    target.Write<int>(
+        debuggerAddress + /* Debugger::GCNotificationEventsEnabled offset */,
+        fEnable ? 1 : 0);
 }
 ```

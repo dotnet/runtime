@@ -1722,7 +1722,7 @@ struct FuncInfoDsc
     };
 
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
-#endif // defined(TARGET_WASM)  
+#endif // defined(TARGET_WASM)
 
     EHblkDsc*            GetEHDesc(Compiler* comp) const;
     BasicBlock*          GetStartBlock(Compiler* comp) const;
@@ -3826,6 +3826,7 @@ public:
     void gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCostSz, bool isLikelyRegVar);
     void gtGetLclFldNodeCost(GenTreeLclFld* node, int* pCostEx, int* pCostSz);
     bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
+    bool gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile, int* pCostEx, int* pCostSz);
 
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
@@ -4778,6 +4779,11 @@ protected:
 
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
+#if defined(FEATURE_HW_INTRINSICS)
+    GenTree* impSimdCreateScalarHalf(GenTree* op1);
+    GenTree* impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd);
+#endif // FEATURE_HW_INTRINSICS
+
     enum class BoxPatterns
     {
         None                  = 0,
@@ -5371,6 +5377,30 @@ private:
                                                             GenTree*    dereferencedAddress,
                                                             InlArgInfo* inlArgInfo);
 
+    typedef JitHashTable<CORINFO_METHOD_HANDLE, JitPtrKeyFuncs<struct CORINFO_METHOD_STRUCT_>, CORINFO_METHOD_HANDLE> HelperToManagedMap;
+    HelperToManagedMap* m_helperToManagedMap = nullptr;
+
+public:
+    HelperToManagedMap* GetHelperToManagedMap()
+    {
+        if (m_helperToManagedMap == nullptr)
+        {
+            m_helperToManagedMap = new (getAllocator()) HelperToManagedMap(getAllocator());
+        }
+        return m_helperToManagedMap;
+    }
+    bool HelperToManagedMapLookup(CORINFO_METHOD_HANDLE helperCallHnd, CORINFO_METHOD_HANDLE* userCallHnd)
+    {
+        if (m_helperToManagedMap == nullptr)
+        {
+            return false;
+        }
+        bool found = m_helperToManagedMap->Lookup(helperCallHnd, userCallHnd);
+        return found;
+    }
+private:
+
+    void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
@@ -9703,6 +9733,17 @@ private:
         }
 
         return isOpaqueSIMDType(varDsc->GetLayout());
+    }
+
+    bool isSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        if (isIntrinsicType(clsHnd))
+        {
+            const char* namespaceName = nullptr;
+            const char* className     = getClassNameFromMetadata(clsHnd, &namespaceName);
+            return (strcmp(className, "Half") == 0) && (strcmp(namespaceName, "System") == 0);
+        }
+        return false;
     }
 
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
