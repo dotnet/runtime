@@ -908,13 +908,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     return emitSizeOfInsDsc(id);
 }
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 {
     insFormat fmt = IF_NONE;
 
     if (dst != nullptr)
     {
         assert(dst->HasFlag(BBF_HAS_LABEL));
+    }
+    else
+    {
+        // When dst is NULL, instrCount must be provided for backward branches
+        assert(instrCount != 0);
     }
 
     /* Figure out the encoding format of the instruction */
@@ -964,8 +969,13 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst)
     }
     else
     {
-        // This should not happen for PPC64LE - all jumps should have a destination
-        unreached();
+        // Handle backward branch with instruction count (used in prolog for stack probing loop)
+        // instrCount is negative, indicating how many instructions to branch back
+        id->idAddr()->iiaSetInstrCount(instrCount);
+        id->idjKeepLong = false;
+        /* This jump must be short */
+        emitSetShortJump(id);
+        id->idSetIsBound();
     }
 
     /* Record the jump's IG and offset within it */

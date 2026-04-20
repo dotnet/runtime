@@ -1824,12 +1824,10 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 //      This only does the probing; allocating the frame is done when callee-saved registers are saved.
 //      This is done before anything has been pushed. The previous frame might have a large outgoing argument
 //      space that has been allocated, but the lowest addresses have not been touched. Our frame setup might
-//      not touch up to the first 504 bytes. This means we could miss a guard page. On Windows, however,
-//      there are always three guard pages, so we will not miss them all. On Linux, there is only one guard
-//      page by default, so we need to be more careful. We do an extra probe if we might not have probed
-//      recently enough. That is, if a call and prolog establishment might lead to missing a page. We do this
-//      on Windows as well just to be consistent, even though it should not be necessary.
-//  
+//      not touch up to the first 504 bytes. This means we could miss a guard page. On Linux (where PPC64LE runs),
+//      there is only one guard page by default, so we need to be very careful. We do an extra probe if we might
+//      not have probed recently enough. That is, if a call and prolog establishment might lead to missing a page.
+//
 // Arguments:
 //      frameSize         - the size of the stack frame being allocated.
 //      initReg           - register to use as a scratch register.
@@ -1842,8 +1840,126 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(compiler->compGeneratingProlog);
+
+    if (frameSize == 0)
+    {
+        return;
+    }
+
+    const target_size_t pageSize = compiler->eeGetPageSize();
+
+    // What offset from the final SP was the last probe? If we haven't probed almost a complete page, and
+    // if the next action on the stack might subtract from SP first, before touching the current SP, then
+    // we do one more probe at the very bottom. This is especially important on Linux (where PPC64LE runs)
+    // which has only one guard page by default. Note that we probe here for PPC64LE, but we don't alter SP.
+    target_size_t lastTouchDelta = 0;
+
+    assert(!compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
+
+    if (frameSize < pageSize)
+    {
+        lastTouchDelta = frameSize;
+    }
+    else if (frameSize < 3 * pageSize)
+    {
+        // The probing loop in "else"-case below would require at least 6 instructions (and more if
+        // 'frameSize' or 'pageSize' cannot be encoded with immediate instructions).
+        // Hence for frames that are smaller than 3 * PAGE_SIZE the JIT inlines the following probing code
+        // to decrease code size. This is a code size optimization heuristic, not related to the number of guard pages.
+        // TODO-PPC64: The probing mechanisms should be replaced by a call to stack probe helper
+        // as it is done on other platforms.
+
+        lastTouchDelta = frameSize;
+
+        for (target_size_t probeOffset = pageSize; probeOffset <= frameSize; probeOffset += pageSize)
+        {
+            // Generate:
+            //    li initReg, -probeOffset
+            //    lwzx r0, sp, initReg      // Load word indexed (probe the stack)
+            // On PPC64LE, we use lwz with indexed addressing to probe the stack
+
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -(ssize_t)probeOffset);
+            // Use lwz (load word and zero) with base+index addressing to probe
+            // lwzx rD, rA, rB loads from address (rA + rB)
+            // We load into r0 (which is a scratch register) from (sp + initReg)
+            GetEmitter()->emitIns_R_R_I(INS_lwz, EA_4BYTE, REG_R0, REG_SPBASE, -(ssize_t)probeOffset);
+            regSet.verifyRegUsed(initReg);
+            *pInitRegZeroed = false; // The initReg does not contain zero
+
+            lastTouchDelta -= pageSize;
+        }
+
+        assert(lastTouchDelta == frameSize % pageSize);
+        compiler->unwindPadding();
+    }
+    else
+    {
+        // Emit the following sequence to 'tickle' the pages. Note it is important that stack pointer not change
+        // until this is complete since the tickles could cause a stack overflow, and we need to be able to crawl
+        // the stack afterward (which means the stack pointer needs to be known).
+        // This is critical on Linux where there is only one guard page.
+
+        regMaskTP availMask = RBM_ALLINT & (regSet.rsGetModifiedRegsMask() | ~RBM_INT_CALLEE_SAVED);
+        availMask &= ~maskArgRegsLiveIn;   // Remove all of the incoming argument registers as they are currently live
+        availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg
+
+        regNumber rOffset = initReg;
+        regNumber rLimit;
+        regMaskTP tempMask;
+
+        // We pick the next lowest register number for rLimit
+        noway_assert(availMask != RBM_NONE);
+        tempMask = genFindLowestBit(availMask);
+        rLimit   = genRegNumFromMask(tempMask);
+
+        // Generate:
+        //
+        //      li rOffset, -pageSize
+        //      li rLimit, -frameSize
+        // loop:
+        //      lwz r0, 0(sp + rOffset)    // Probe the stack
+        //      addi rOffset, rOffset, -pageSize
+        //      cmpd rLimit, rOffset
+        //      ble loop                   // If rLimit <= rOffset, we need to probe this rOffset
+
+        noway_assert((ssize_t)(int)frameSize == (ssize_t)frameSize); // make sure framesize safely fits within an int
+
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, rOffset, -(ssize_t)pageSize);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, rLimit, -(ssize_t)frameSize);
+
+        // There's a "virtual" label here. But we can't create a label in the prolog, so we use the magic
+        // `emitIns_J` with a negative `instrCount` to branch back a specific number of instructions.
+
+        // lwz r0, 0(sp + rOffset) - probe the stack
+        GetEmitter()->emitIns_R_R_I(INS_lwz, EA_4BYTE, REG_R0, REG_SPBASE, 0); // This will need rOffset added
+        // addi rOffset, rOffset, -pageSize
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rOffset, rOffset, -(ssize_t)pageSize);
+        // cmpd rLimit, rOffset
+        GetEmitter()->emitIns_R_R(INS_cmpd, EA_PTRSIZE, rLimit, rOffset);
+        // ble loop (branch if less than or equal)
+        // Branch back 4 instructions to create the probing loop
+        // The -4 means: branch back to the lwz instruction (4 instructions ago: lwz, addi, cmpd, ble)
+        GetEmitter()->emitIns_J(INS_ble, NULL, -4);
+
+        *pInitRegZeroed = false; // The initReg does not contain zero
+
+        compiler->unwindPadding();
+
+        lastTouchDelta = frameSize % pageSize;
+    }
+
+    if (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
+    {
+        assert(lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES < 2 * pageSize);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -(ssize_t)frameSize);
+        // lwz r0, 0(sp + initReg) - final probe
+        GetEmitter()->emitIns_R_R_I(INS_lwz, EA_4BYTE, REG_R0, REG_SPBASE, -(ssize_t)frameSize);
+        compiler->unwindPadding();
+
+        regSet.verifyRegUsed(initReg);
+        *pInitRegZeroed = false; // The initReg does not contain zero
+    }
 }
 
 
