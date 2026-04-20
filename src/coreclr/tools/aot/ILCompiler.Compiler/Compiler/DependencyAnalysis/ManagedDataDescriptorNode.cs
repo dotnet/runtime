@@ -123,7 +123,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private static void WriteType(Utf8JsonWriter writer, EcmaType type)
         {
-            writer.WriteStartObject(type.GetName());
+            // Use the Name property from CdacTypeAttribute if set, otherwise use the simple type name
+            string descriptorName = GetCdacTypeName(type);
+            writer.WriteStartObject(descriptorName);
 
             if (type.IsValueType)
             {
@@ -142,6 +144,25 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Returns the descriptor name for a type annotated with [CdacType].
+        /// Uses the Name property if set, otherwise falls back to the simple type name.
+        /// </summary>
+        private static string GetCdacTypeName(EcmaType type)
+        {
+            var decoded = type.GetDecodedCustomAttribute(CdacTypeAttributeNamespace, CdacTypeAttributeName);
+            if (decoded.HasValue)
+            {
+                foreach (var named in decoded.Value.NamedArguments)
+                {
+                    if (named.Name == "Name" && named.Value is string nameOverride && !string.IsNullOrEmpty(nameOverride))
+                        return nameOverride;
+                }
+            }
+
+            return type.GetName();
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

@@ -12,7 +12,6 @@ class MethodTable;
 class TypeManager;
 struct TypeManagerHandle;
 
-// cdac_data<T> template for exposing private members to the cDAC data descriptor.
 #include "cdacdata.h"
 
 //-------------------------------------------------------------------------------------------------

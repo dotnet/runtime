@@ -11,10 +11,16 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     /// <remarks>
     /// Fields to include must be individually annotated with <see cref="CdacFieldAttribute"/>.
-    /// The type and field names used in the descriptor match the actual managed names.
+    /// By default, the type's simple name is used in the descriptor. Set <see cref="Name"/>
+    /// to override the descriptor key (e.g., to use a fully-qualified name or avoid collisions).
     /// </remarks>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
     internal sealed class CdacTypeAttribute : Attribute
     {
+        /// <summary>
+        /// Optional override for the type name used in the cDAC descriptor JSON.
+        /// When null, the type's simple metadata name is used.
+        /// </summary>
+        public string? Name { get; set; }
     }
 }
