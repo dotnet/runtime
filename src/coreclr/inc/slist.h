@@ -375,8 +375,11 @@ public:
                 else
                     *Traits::GetNextPtr(prev) = next;
 
-                if constexpr (Traits::HasTail) if (cur == this->m_pTail)
-                    this->m_pTail = prev;
+                if constexpr (Traits::HasTail)
+                {
+                    if (cur == this->m_pTail)
+                        this->m_pTail = prev;
+                }
 
                 return true;
             }
