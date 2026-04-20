@@ -18,10 +18,9 @@ namespace System.Diagnostics.Tests
         public void StartAndForget_StartsProcessAndReturnsValidPid(bool useProcessStartInfo)
         {
             using Process template = CreateSleepProcess((int)TimeSpan.FromHours(1).TotalMilliseconds);
-            List<string>? arguments = MapToArgumentList(template.StartInfo);
             int pid = useProcessStartInfo
                 ? Process.StartAndForget(template.StartInfo)
-                : Process.StartAndForget(template.StartInfo.FileName, arguments);
+                : Process.StartAndForget(template.StartInfo.FileName, MapToArgumentList(template.StartInfo));
 
             Assert.True(pid > 0);
 
