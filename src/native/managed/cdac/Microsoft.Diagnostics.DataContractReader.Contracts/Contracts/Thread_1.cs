@@ -26,7 +26,15 @@ internal readonly struct Thread_1 : IThread
         Background = 0x200,
         Unstarted = 0x400,
         Stopped = 0x10000,
-        ThreadPoolWorker = 0x1000000
+        ThreadPoolWorker = 0x1000000,
+        Detached = unchecked((int)0x80000000)
+    }
+
+    [Flags]
+    private enum ExceptionFlags
+    {
+        DebuggerInterceptInfo = 0x00000200,
+        IsUnhandled = 0x00000800,
     }
 
     internal Thread_1(Target target)
@@ -73,6 +81,8 @@ internal readonly struct Thread_1 : IThread
             result |= Contracts.ThreadState.Stopped;
         if (state.HasFlag(ThreadState_1.ThreadPoolWorker))
             result |= Contracts.ThreadState.ThreadPoolWorker;
+        if (state.HasFlag(ThreadState_1.Detached))
+            result |= Contracts.ThreadState.Detached;
         return result;
     }
 
@@ -82,11 +92,22 @@ internal readonly struct Thread_1 : IThread
 
         TargetPointer address = _target.ReadPointer(thread.ExceptionTracker);
         TargetPointer firstNestedException = TargetPointer.Null;
+        bool hasUnhandledException = false;
         if (address != TargetPointer.Null)
         {
             Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(address);
             firstNestedException = exceptionInfo.PreviousNestedInfo;
+
+            if (exceptionInfo.ThrownObjectHandle != TargetPointer.Null)
+            {
+                uint exceptionFlags = exceptionInfo.ExceptionFlags;
+                hasUnhandledException = (exceptionFlags & (uint)ExceptionFlags.IsUnhandled) != 0
+                    && (exceptionFlags & (uint)ExceptionFlags.DebuggerInterceptInfo) == 0;
+            }
         }
+
+        if (thread.LastThrownObjectIsUnhandled != 0)
+            hasUnhandledException = true;
 
         return new ThreadData(
             threadPointer,
@@ -98,7 +119,11 @@ internal readonly struct Thread_1 : IThread
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Limit ?? TargetPointer.Null,
             thread.Frame,
             firstNestedException,
+            thread.ExposedObject,
             thread.LastThrownObject.Handle,
+            thread.CurrentCustomDebuggerNotification,
+            thread.LastThrownObjectIsUnhandled != 0,
+            hasUnhandledException,
             GetThreadFromLink(thread.LinkNext));
     }
 

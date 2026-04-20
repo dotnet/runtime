@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
@@ -10,6 +11,8 @@ namespace System.Diagnostics
 {
     public partial class Process
     {
+        private static SafeFileHandle GetSafeHandleFromStreamReader(StreamReader reader) => ((FileStream)reader.BaseStream).SafeFileHandle;
+
         /// <summary>
         /// Reads from both standard output and standard error pipes using Windows overlapped IO
         /// with wait handles for single-threaded synchronous multiplexing.
