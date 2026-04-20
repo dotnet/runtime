@@ -11,7 +11,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-public static class AwaitsAsyncMethodsOnGenericType
+public static class CompositeAsyncGenericTypesMain
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static async Task<int> CallGenericContainerInt()

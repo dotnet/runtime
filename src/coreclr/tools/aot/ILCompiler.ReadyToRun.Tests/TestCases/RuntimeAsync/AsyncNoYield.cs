@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-public static class AsyncWithoutYield
+public static class AsyncNoYield
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static async Task<int> AsyncButNoAwait()

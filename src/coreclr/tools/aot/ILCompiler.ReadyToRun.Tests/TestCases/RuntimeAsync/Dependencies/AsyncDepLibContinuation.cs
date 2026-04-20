@@ -1,22 +1,22 @@
-// Runtime-async methods that capture GC refs across an await point.
-// These force ContinuationLayout fixup emission when they are called
-// (and optionally cross-module inlined) by another assembly.
+// Dependency library for async cross-module continuation tests.
+// Contains runtime-async methods that capture GC refs across await points,
+// forcing ContinuationLayout fixup emission when cross-module inlined.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-public static class LocalsCapturedAcrossAwait
+public static class AsyncDepLibContinuation
 {
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static async Task<string> CaptureRefAcrossAwait()
     {
         object o = new object();
-        string s = "captured";
+        string s = "cross_module";
         await Task.Yield();
         return s + o.GetHashCode();
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static async Task<int> CaptureArrayAcrossAwait()
     {
         int[] arr = new int[] { 10, 20, 30 };

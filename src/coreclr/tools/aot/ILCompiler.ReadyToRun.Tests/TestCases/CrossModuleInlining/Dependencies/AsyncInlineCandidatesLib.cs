@@ -7,7 +7,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-public static class InlineCandidateMatrix
+public static class AsyncInlineCandidatesLib
 {
     // --- Awaitless variants: should be inlinable ---
 
@@ -43,9 +43,4 @@ public static class InlineCandidateMatrix
         await Task.Yield();
         return "with_await";
     }
-
-    // --- Sync helper used by cross-module inlining tests ---
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetValueSync() => 99;
 }
