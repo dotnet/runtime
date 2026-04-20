@@ -127,8 +127,10 @@ namespace Internal.JitInterface
             result = comparer.Compare(Field, other.Field);
             if (result != 0)
                 return result;
-
-            return Token.CompareTo(other.Token);
+            result = Token.CompareTo(other.Token);
+            if (result != 0)
+                return result;
+            return OwningTypeNotDerivedFromToken.CompareTo(other.OwningTypeNotDerivedFromToken);
         }
     }
 
