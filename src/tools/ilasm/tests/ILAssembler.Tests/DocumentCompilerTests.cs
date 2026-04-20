@@ -3445,5 +3445,50 @@ namespace ILAssembler.Tests
             Assert.True(typeDef.Attributes.HasFlag(TypeAttributes.Interface));
             Assert.True(typeDef.BaseType.IsNil);
         }
+
+        [Fact]
+        public void CustomAttributeOnMethod_EmittedCorrectly()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static int32 Main() cil managed
+                    {
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = ( 01 00 00 00 )
+                        .entrypoint
+                        ldc.i4 100
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(1));
+            Assert.Equal("Main", reader.GetString(method.Name));
+
+            var customAttrs = method.GetCustomAttributes();
+            Assert.Equal(1, customAttrs.Count);
+        }
+
+        [Fact]
+        public void TypeName_NoDotPrefix()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi beforefieldinit MyNamespace.MyType extends [mscorlib]System.Object { }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal("MyType", reader.GetString(typeDef.Name));
+            Assert.Equal("MyNamespace", reader.GetString(typeDef.Namespace));
+        }
     }
 }
