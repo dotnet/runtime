@@ -6500,7 +6500,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 // unsigned: vcvttp*2uqqs xmm0, xmm0
                                 //           vmovq        [mem], xmm0
                                 //
-                                // unsigned: vcvttp*2qqs  xmm0, xmm0
+                                // signed:   vcvttp*2qqs  xmm0, xmm0
                                 //           vmovq        [mem], xmm0
 
                                 costEx = 4 + FLT_IND_COST_EX; // 4 + FLT_IND_COST_EX
