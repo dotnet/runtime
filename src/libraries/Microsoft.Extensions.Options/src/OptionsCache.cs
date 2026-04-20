@@ -114,7 +114,10 @@ namespace Microsoft.Extensions.Options
                 () =>
 #endif
                 options));
-            Interlocked.Increment(ref _generation);
+            if (added)
+            {
+                Interlocked.Increment(ref _generation);
+            }
             return added;
         }
 
@@ -126,7 +129,10 @@ namespace Microsoft.Extensions.Options
         public virtual bool TryRemove(string? name)
         {
             bool removed = _cache.TryRemove(name ?? Options.DefaultName, out _);
-            Interlocked.Increment(ref _generation);
+            if (removed)
+            {
+                Interlocked.Increment(ref _generation);
+            }
             return removed;
         }
     }
