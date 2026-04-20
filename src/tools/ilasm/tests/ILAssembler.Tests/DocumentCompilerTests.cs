@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -3301,6 +3302,79 @@ namespace ILAssembler.Tests
             // doc2 should have the type named "TestAssembly" (from the macro)
             var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
             Assert.Equal("TestAssembly", reader.GetString(typeDef.Name));
+        }
+
+        [Fact]
+        public void ClassVisibility_PublicIsPreserved()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi beforefieldinit PublicType extends [mscorlib]System.Object { }
+                .class private auto ansi beforefieldinit PrivateType extends [mscorlib]System.Object { }
+                .class auto ansi beforefieldinit DefaultType extends [mscorlib]System.Object { }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var pub = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal("PublicType", reader.GetString(pub.Name));
+            Assert.Equal(TypeAttributes.Public, pub.Attributes & TypeAttributes.VisibilityMask);
+
+            var priv = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(3));
+            Assert.Equal("PrivateType", reader.GetString(priv.Name));
+            Assert.Equal(TypeAttributes.NotPublic, priv.Attributes & TypeAttributes.VisibilityMask);
+
+            var def = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(4));
+            Assert.Equal("DefaultType", reader.GetString(def.Name));
+            Assert.Equal(TypeAttributes.NotPublic, def.Attributes & TypeAttributes.VisibilityMask);
+        }
+
+        [Fact]
+        public void HexByteBlob_DigitLetterPairsCorrect()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = ( 01 00 3F 5F 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var customAttrs = reader.GetCustomAttributes(MetadataTokens.MethodDefinitionHandle(1));
+            foreach (var caHandle in customAttrs)
+            {
+                var ca = reader.GetCustomAttribute(caHandle);
+                var blob = reader.GetBlobBytes(ca.Value);
+                // Blob should be exactly: 01 00 3F 5F 00 00
+                Assert.Equal(6, blob.Length);
+                Assert.Equal(0x3F, blob[2]);
+                Assert.Equal(0x5F, blob[3]);
+            }
+        }
+
+        [Fact]
+        public void DottedName_SQStringQuotesStripped()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly 'My-Assembly' { }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var asmDef = reader.GetAssemblyDefinition();
+            Assert.Equal("My-Assembly", reader.GetString(asmDef.Name));
         }
     }
 }
