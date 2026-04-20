@@ -557,7 +557,7 @@ namespace ILAssembler.Tests
                 .First(h => reader.GetString(reader.GetTypeDefinition(h).Name) == "UnionStruct");
 
             var typeDef = reader.GetTypeDefinition(typeHandle);
-            
+
             // Verify ExplicitLayout is set (this was a regression bug - EXPLICIT token wasn't being parsed)
             Assert.True(typeDef.Attributes.HasFlag(System.Reflection.TypeAttributes.ExplicitLayout),
                 $"Expected ExplicitLayout, got {typeDef.Attributes} (0x{(int)typeDef.Attributes:X8})");
@@ -1550,7 +1550,7 @@ namespace ILAssembler.Tests
             var sourceText = new ILAssembler.SourceText(source, "test.il");
             var compiler = new ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
-            
+
             // Check for diagnostics
             foreach (var d in diagnostics)
             {
@@ -1596,7 +1596,7 @@ namespace ILAssembler.Tests
             var sourceText = new ILAssembler.SourceText(source, "test.il");
             var compiler = new ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
-            
+
             foreach (var d in diagnostics)
             {
                 throw new Exception($"Unexpected diagnostic: {d.Id} - {d.Message}");
@@ -1613,7 +1613,7 @@ namespace ILAssembler.Tests
             var property = reader.GetPropertyDefinition(propertyHandle);
 
             // Check attributes include HasDefault
-            Assert.True((property.Attributes & System.Reflection.PropertyAttributes.HasDefault) != 0, 
+            Assert.True((property.Attributes & System.Reflection.PropertyAttributes.HasDefault) != 0,
                 $"Expected HasDefault attribute, got {property.Attributes}");
 
             // Check for constant
@@ -1652,7 +1652,7 @@ namespace ILAssembler.Tests
             var sourceText = new ILAssembler.SourceText(source, "test.il");
             var compiler = new ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
-            
+
             foreach (var d in diagnostics)
             {
                 throw new Exception($"Unexpected diagnostic: {d.Id} - {d.Message}");
@@ -1762,7 +1762,7 @@ namespace ILAssembler.Tests
                     {
                         .maxstack 1
                         .locals init (int32 V_0)
-                        
+
                         .try
                         {
                             ldc.i4.0
@@ -3154,7 +3154,7 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void TrailingDotFloat_StillWorks()
+        public void TrailingDotFloat()
         {
             string source = """
                 .assembly extern mscorlib { }
