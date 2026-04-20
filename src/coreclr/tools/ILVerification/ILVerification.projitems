@@ -372,5 +372,8 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemConstraintsHelpers.cs">
       <Link>TypeSystem\Common\TypeSystemConstraintsHelpers.cs</Link>
     </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemConstraintsHelpers.NonCanon.cs">
+        <Link>TypeSystem\Common\TypeSystemConstraintsHelpers.NonCanon.cs</Link>
+    </Compile>
   </ItemGroup>
 </Project>
