@@ -3285,7 +3285,7 @@ namespace ILAssembler.Tests
 
             var compiler = new DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(
-                ImmutableArray.Create(doc1, doc2),
+                [doc1, doc2],
                 _ => { Assert.Fail("Expected no includes"); return default; },
                 _ => { Assert.Fail("Expected no resources"); return default; },
                 new Options());
