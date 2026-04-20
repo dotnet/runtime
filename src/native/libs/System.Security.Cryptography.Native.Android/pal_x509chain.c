@@ -310,11 +310,8 @@ static void PopulateValidationError(JNIEnv* env, jobject error, bool isRevocatio
 
         // Get the reason and convert it to a chain status flag.
         jobject reason = (*env)->CallObjectMethod(env, error, g_CertPathValidatorExceptionGetReason);
-        if (!CheckJNIExceptions(env) && reason != NULL)
-        {
-            chainStatus = ChainStatusFromValidatorExceptionReason(env, reason);
-            (*env)->DeleteLocalRef(env, reason);
-        }
+        chainStatus = ChainStatusFromValidatorExceptionReason(env, reason);
+        (*env)->DeleteLocalRef(env, reason);
     }
     else
     {
@@ -504,6 +501,9 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
 
             // Only add the ONLY_END_ENTITY if we are not just checking the trust anchor. If ONLY_END_ENTITY is
             // specified, revocation checking will skip the trust anchor even if it is the only certificate.
+
+            // HashSet<PKIXRevocationChecker.Option> options = new HashSet<PKIXRevocationChecker.Option>(3);
+            // options.add(PKIXRevocationChecker.Option.ONLY_END_ENTITY);
             loc[options] = (*env)->NewObject(env, g_HashSetClass, g_HashSetCtorWithCapacity, 3);
             jobject endOnly = (*env)->GetStaticObjectField(
                 env, g_PKIXRevocationCheckerOptionClass, g_PKIXRevocationCheckerOptionOnlyEndEntity);
