@@ -10072,7 +10072,7 @@ void CodeGen::genPushCalleeSavedRegisters()
         {
 #ifdef TARGET_AMD64
             insOpts instOptions =
-                (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX()) ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
+                (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPHint()) ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
             GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, reg, instOptions);
 #else
             inst_RV(INS_push, reg, TYP_REF);
@@ -10212,7 +10212,7 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
 {
     unsigned popCount = 0;
     insOpts  instOptions =
-        (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX()) ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
+        (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPHint()) ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
     if ((rsPopRegs & RBM_EBX) != 0)
     {
         popCount++;
@@ -10242,105 +10242,12 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
 #endif // !defined(UNIX_AMD64_ABI)
 
 #ifdef TARGET_AMD64
-    if ((rsPopRegs & RBM_R12) != 0)
+    regMaskTP popRegs = rsPopRegs & (RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15 | RBM_HIGHINT);
+    while (popRegs != RBM_NONE)
     {
+        regNumber reg = genFirstRegNumFromMaskAndToggle(popRegs);
         popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R12, instOptions);
-    }
-    if ((rsPopRegs & RBM_R13) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R13, instOptions);
-    }
-    if ((rsPopRegs & RBM_R14) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R14, instOptions);
-    }
-    if ((rsPopRegs & RBM_R15) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R15, instOptions);
-    }
-    if ((rsPopRegs & RBM_R16) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R16, instOptions);
-    }
-    if ((rsPopRegs & RBM_R17) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R17, instOptions);
-    }
-    if ((rsPopRegs & RBM_R18) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R18, instOptions);
-    }
-    if ((rsPopRegs & RBM_R19) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R19, instOptions);
-    }
-    if ((rsPopRegs & RBM_R20) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R20, instOptions);
-    }
-    if ((rsPopRegs & RBM_R21) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R21, instOptions);
-    }
-    if ((rsPopRegs & RBM_R22) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R22, instOptions);
-    }
-    if ((rsPopRegs & RBM_R23) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R23, instOptions);
-    }
-    if ((rsPopRegs & RBM_R24) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R24, instOptions);
-    }
-    if ((rsPopRegs & RBM_R25) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R25, instOptions);
-    }
-    if ((rsPopRegs & RBM_R26) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R26, instOptions);
-    }
-    if ((rsPopRegs & RBM_R27) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R27, instOptions);
-    }
-    if ((rsPopRegs & RBM_R28) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R28, instOptions);
-    }
-    if ((rsPopRegs & RBM_R29) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R29, instOptions);
-    }
-    if ((rsPopRegs & RBM_R30) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R30, instOptions);
-    }
-    if ((rsPopRegs & RBM_R31) != 0)
-    {
-        popCount++;
-        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_R31, instOptions);
+        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, reg, instOptions);
     }
 #endif // TARGET_AMD64
 
