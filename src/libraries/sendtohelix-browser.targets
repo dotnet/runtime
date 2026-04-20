@@ -91,24 +91,22 @@
   </PropertyGroup>
 
   <!--
-    Provision emsdk locally (via AcquireEmscriptenSdk) before staging it as a Helix payload.
-    When EMSDK_PATH is already set (e.g. Mono WBT agents that built the wasm runtime), the
-    AcquireEmscriptenSdkUnconditional target is effectively a no-op. For CoreCLR WBT agents
-    that only build Wasm.Build.Tests.csproj, emsdk is not otherwise provisioned, so without
-    this target SourcePath="$(EMSDK_PATH)" would be empty and StageDependenciesForHelix would
-    fail with "Could not find emsdk at ,".
+    Stage emsdk as a Helix dependency so it ends up at $(EmSdkDirForHelixPayload) and can be
+    packaged into the correlation payload. This is needed for CoreCLR WBT agents, which do not
+    build the wasm runtime locally and therefore do not pre-populate emsdk at $(ProvisionEmscriptenDir).
+    Those agents provision emsdk in a separate pipeline step before sendtohelix runs, at which
+    point AcquireEmscriptenSdk.props/targets set $(EMSDK_PATH) during project evaluation.
+
+    This ItemGroup must be at project-evaluation scope (not inside a target), because
+    StageDependenciesForHelix guards its body with a condition over @(HelixDependenciesToStage)
+    that is evaluated before any BeforeTargets hook can populate the item.
   -->
-  <Target Name="IncludeEmsdkForHelixStaging"
-          Condition="'$(NeedsEMSDK)' == 'true' or '$(IncludeNodePayload)' == 'true'"
-          DependsOnTargets="AcquireEmscriptenSdkUnconditional"
-          BeforeTargets="StageDependenciesForHelix">
-    <ItemGroup>
-      <HelixDependenciesToStage
-            Name="emsdk"
-            Include="$(EmSdkDirForHelixPayload)"
-            SourcePath="$(EMSDK_PATH)" />
-    </ItemGroup>
-  </Target>
+  <ItemGroup Condition="('$(NeedsEMSDK)' == 'true' or '$(IncludeNodePayload)' == 'true') and '$(EMSDK_PATH)' != ''">
+    <HelixDependenciesToStage
+          Name="emsdk"
+          Include="$(EmSdkDirForHelixPayload)"
+          SourcePath="$(EMSDK_PATH)" />
+  </ItemGroup>
 
   <ItemGroup>
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="$(EnvVarCommand) SCENARIO=$(Scenario)" />
