@@ -210,7 +210,9 @@ typedef struct _T_DISPATCHER_CONTEXT {
 #define ARM64_MAX_BREAKPOINTS     8
 #define ARM64_MAX_WATCHPOINTS     2
 
+#ifndef CONTEXT_UNWOUND_TO_CALL
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
+#endif
 
 typedef union _NEON128 {
     struct {
