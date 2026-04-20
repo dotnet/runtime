@@ -153,8 +153,17 @@ CrashJsonAppend(
     const char* str,
     int len)
 {
-    if (w->writeFailed || str == NULL || len < 0)
+    if (w->writeFailed)
     {
+        return 0;
+    }
+
+    if (str == NULL || len < 0)
+    {
+        // Invalid input mid-document would corrupt the JSON. Latch the
+        // failure so subsequent writes become no-ops, matching the
+        // behavior when the output callback reports an I/O failure.
+        w->writeFailed = true;
         return 0;
     }
 
@@ -194,6 +203,7 @@ CrashJsonAppendStr(
 {
     if (str == NULL)
     {
+        w->writeFailed = true;
         return 0;
     }
 
