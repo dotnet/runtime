@@ -22,11 +22,11 @@ namespace ILAssembler
         private readonly Dictionary<string, string?> _definedVars = new();
         private readonly Stack<(string Var, bool Defined, bool IsElse)> _activeIfDefBlocks = new();
 
-        public PreprocessedTokenSource(ITokenSource underlyingSource, Func<string, ITokenSource> loadIncludedDocument, Func<string, ITokenSource>? createLexer = null)
+        public PreprocessedTokenSource(ITokenSource underlyingSource, Func<string, ITokenSource> loadIncludedDocument, Func<string, ITokenSource> createLexer)
         {
             _includeSourceStack.Push((underlyingSource, 0, null, 0));
             _loadIncludedDocument = loadIncludedDocument;
-            _createLexer = createLexer ?? (text => new CILLexer(new AntlrInputStream(text)));
+            _createLexer = createLexer;
         }
 
         private ITokenSource CurrentTokenSource => _includeSourceStack.Peek().Source;

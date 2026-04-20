@@ -22,7 +22,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -46,7 +46,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -71,7 +71,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -101,7 +101,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -125,7 +125,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -156,7 +156,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -183,7 +183,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -214,7 +214,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -240,7 +240,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -269,7 +269,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -294,7 +294,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -325,7 +325,7 @@ namespace ILAssembler.Tests
             {
                 Assert.Equal($"{nameof(source2)}.il", path);
                 return CreateLexerForSource(source2, nameof(source2));
-            });
+            }, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -365,6 +365,11 @@ namespace ILAssembler.Tests
                 });
         }
 
+        private static Func<string, ITokenSource> CreateDefaultLexer()
+        {
+            return text => new CILLexer(new AntlrInputStream(text));
+        }
+
         private static ITokenSource NoIncludeDirectivesCallback(string path)
         {
             Assert.Fail("The included-file callback was called when no #include was provided in source.");
@@ -380,7 +385,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -409,7 +414,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -431,7 +436,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();
@@ -453,7 +458,7 @@ namespace ILAssembler.Tests
                 """;
 
             ITokenSource lexer = CreateLexerForSource(source);
-            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
             preprocessor.OnPreprocessorSyntaxError += NoLexerDiagnosticsCallback;
             BufferedTokenStream stream = new(preprocessor);
             stream.Fill();

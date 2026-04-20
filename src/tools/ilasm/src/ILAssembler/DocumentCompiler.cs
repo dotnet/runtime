@@ -34,7 +34,7 @@ public sealed class DocumentCompiler
             };
             loadedDocuments.Add(includedDocument.Path, includedDocument);
             return new CILLexer(includedSource);
-        });
+        }, text => new CILLexer(new AntlrInputStream(text)));
 
         ImmutableArray<Diagnostic>.Builder diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
         preprocessor.OnPreprocessorSyntaxError += (source, start, length, msg) =>
