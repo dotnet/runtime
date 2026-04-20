@@ -125,9 +125,7 @@ namespace System.Collections.Immutable
         public int IndexOf(T item, int startIndex, IEqualityComparer<T>? equalityComparer)
         {
             ImmutableArray<T> self = this;
-            self.ThrowNullRefIfNotInitialized();
-            Requires.Range((uint)startIndex <= (uint)self.Length, nameof(startIndex));
-            return self.IndexOfCore(item, startIndex, self.Length - startIndex, equalityComparer);
+            return self.IndexOf(item, startIndex, self.Length - startIndex, equalityComparer);
         }
 
         /// <summary>
@@ -139,9 +137,7 @@ namespace System.Collections.Immutable
         public int IndexOf(T item, int startIndex)
         {
             ImmutableArray<T> self = this;
-            self.ThrowNullRefIfNotInitialized();
-            Requires.Range((uint)startIndex <= (uint)self.Length, nameof(startIndex));
-            return self.IndexOfCore(item, startIndex, self.Length - startIndex, EqualityComparer<T>.Default);
+            return self.IndexOf(item, startIndex, self.Length - startIndex, EqualityComparer<T>.Default);
         }
 
         /// <summary>
@@ -179,21 +175,16 @@ namespace System.Collections.Immutable
 
             Requires.ValidateRange(startIndex, count, self.Length, nameof(startIndex));
 
-            return self.IndexOfCore(item, startIndex, count, equalityComparer);
-        }
-
-        private int IndexOfCore(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer)
-        {
             equalityComparer ??= EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)
             {
-                return Array.IndexOf(array!, item, startIndex, count);
+                return Array.IndexOf(self.array, item, startIndex, count);
             }
             else
             {
                 for (int i = startIndex; i < startIndex + count; i++)
                 {
-                    if (equalityComparer.Equals(array![i], item))
+                    if (equalityComparer.Equals(self.array[i], item))
                     {
                         return i;
                     }
@@ -228,14 +219,12 @@ namespace System.Collections.Immutable
         public int LastIndexOf(T item, int startIndex)
         {
             ImmutableArray<T> self = this;
-            self.ThrowNullRefIfNotInitialized();
             if (self.IsEmpty && startIndex == 0)
             {
                 return -1;
             }
 
-            Requires.Range((uint)startIndex < (uint)self.Length, nameof(startIndex));
-            return self.LastIndexOfCore(item, startIndex, startIndex + 1, EqualityComparer<T>.Default);
+            return self.LastIndexOf(item, startIndex, startIndex + 1, EqualityComparer<T>.Default);
         }
 
         /// <summary>
@@ -271,21 +260,16 @@ namespace System.Collections.Immutable
             Requires.Range(startIndex >= 0 && startIndex < self.Length, nameof(startIndex));
             Requires.Range(count >= 0 && startIndex - count + 1 >= 0, nameof(count));
 
-            return self.LastIndexOfCore(item, startIndex, count, equalityComparer);
-        }
-
-        private int LastIndexOfCore(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer)
-        {
             equalityComparer ??= EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)
             {
-                return Array.LastIndexOf(array!, item, startIndex, count);
+                return Array.LastIndexOf(self.array, item, startIndex, count);
             }
             else
             {
                 for (int i = startIndex; i >= startIndex - count + 1; i--)
                 {
-                    if (equalityComparer.Equals(item, array![i]))
+                    if (equalityComparer.Equals(item, self.array[i]))
                     {
                         return i;
                     }
