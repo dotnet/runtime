@@ -1411,6 +1411,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Throws NullReferenceException on .NET Framework")]
         public static void DecryptDocument_RetrievalMethodWithoutUri_ThrowsCryptographicException()
         {
             const string xml =
