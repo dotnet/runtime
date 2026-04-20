@@ -197,15 +197,26 @@ private:
     void *GetNativeEntryPoint() const { return NULL; }
 
     // ------------------------------------------------------------
-    // R2R — not supported for Webcil
+    // R2R
     // ------------------------------------------------------------
 
-    BOOL HasReadyToRunHeader() const { return FALSE; }
+    BOOL HasReadyToRunHeader() const;
     BOOL IsComponentAssembly() const { return FALSE; }
-    READYTORUN_HEADER *GetReadyToRunHeader() const { return NULL; }
-    BOOL IsNativeMachineFormat() const { return FALSE; }
-    PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize = NULL) const;
+    READYTORUN_HEADER *GetReadyToRunHeader() const;
+    BOOL IsNativeMachineFormat() const { return TRUE; }
+    PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize) const;
 
+    CHECK CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags = 0, IsNullOK ok = NULL_NOT_OK) const;
+    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const;
+    SSIZE_T GetTableBaseOffset() const
+    {
+        if (m_pHeader == NULL)
+            return 0;
+        return m_pHeader->VersionMajor >= WEBCIL_VERSION_MAJOR_1 ? ((const WebcilHeader_1 *)m_pHeader)->TableBase : 0;
+    }
+private:
+    READYTORUN_HEADER *FindReadyToRunHeader() const;
+public:
     // ------------------------------------------------------------
     // RVA operations (remaining private)
     // ------------------------------------------------------------
@@ -274,12 +285,14 @@ private:
     // Instance members
     TADDR                m_base;
     COUNT_T              m_size;
-    BOOL                 m_hasContents;
-    BOOL                 m_relocated = FALSE;
+    bool                 m_relocated = FALSE;
+    bool                 m_hasContents;
+    mutable bool         m_hasNoReadyToRunHeader;
     const WebcilHeader  *m_pHeader;
     const WebcilSectionHeader *m_sections;
 
     mutable IMAGE_COR20_HEADER *m_pCorHeader;
+    mutable PTR_READYTORUN_HEADER m_pReadyToRunHeader;
 };
 
 #endif // FEATURE_WEBCIL
