@@ -56,6 +56,13 @@ extern "C" void STDCALL GenericPInvokeCalliHelper(void);
 
 extern "C" PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule);
 
+// cDAC-visible TADDR wrappers for function entrypoints.
+inline const TADDR g_cdacGenericPInvokeCalliHelper = (TADDR)(void*)GenericPInvokeCalliHelper;
+inline const TADDR g_cdacVarargPInvokeStub = (TADDR)(void*)VarargPInvokeStub;
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+inline const TADDR g_cdacVarargPInvokeStub_RetBuffArg = (TADDR)(void*)VarargPInvokeStub_RetBuffArg;
+#endif
+
 extern "C" void STDCALL VirtualMethodFixupStub(void);
 extern "C" void STDCALL VirtualMethodFixupPatchLabel(void);
 

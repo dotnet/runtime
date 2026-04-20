@@ -160,7 +160,10 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
 
         for (uint i = 0; i < count; i++)
         {
-            TargetPointer candidateAddr = new TargetPointer(aligned - (i * pointerSize));
+            ulong offset = i * pointerSize;
+            if (aligned < offset)
+                yield break;
+            TargetPointer candidateAddr = new TargetPointer(aligned - offset);
             yield return CodePointerUtils.CodePointerFromAddress(candidateAddr, _target);
         }
     }

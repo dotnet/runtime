@@ -1955,6 +1955,9 @@ inline BOOL EEClass::IsInt128OrHasInt128Fields()
 VOID InitPreStubManager();
 
 EXTERN_C void STDCALL ThePreStub();
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+inline const TADDR g_cdacThePreStub = (TADDR)(void*)ThePreStub;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 inline PCODE GetPreStubEntryPoint()
 {

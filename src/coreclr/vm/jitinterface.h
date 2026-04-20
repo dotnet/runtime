@@ -273,6 +273,10 @@ extern "C"
 #endif // !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 };
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+inline const TADDR g_cdacTailCallJitHelper = (TADDR)(void*)JIT_TailCall;
+#endif // TARGET_X86 && !UNIX_X86_ABI
+
 /*********************************************************************/
 /*********************************************************************/
 

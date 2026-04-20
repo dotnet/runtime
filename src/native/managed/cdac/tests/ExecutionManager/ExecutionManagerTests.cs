@@ -662,12 +662,12 @@ public class ExecutionManagerTests
     {
         IExecutionManager em = CreateExecutionManagerContract(version, arch);
 
-        Assert.Equal(StubKind.PreStub, em.TryGetStubKind(new TargetCodePointer(0x00aa_1000)));
-        Assert.Equal(StubKind.InteropDispatchStub, em.TryGetStubKind(new TargetCodePointer(0x00aa_2000)));
-        Assert.Equal(StubKind.InteropDispatchStub, em.TryGetStubKind(new TargetCodePointer(0x00aa_3000)));
-        Assert.Equal(StubKind.InteropDispatchStub, em.TryGetStubKind(new TargetCodePointer(0x00aa_4000)));
-        Assert.Equal(StubKind.TailCallStub, em.TryGetStubKind(new TargetCodePointer(0x00aa_5000)));
-        Assert.Equal(StubKind.CodeBlockUnknown, em.TryGetStubKind(new TargetCodePointer(0x00aa_9000)));
+        Assert.Equal(StubKind.PreStub, em.GetStubKind(new TargetCodePointer(0x00aa_1000)));
+        Assert.Equal(StubKind.InteropDispatchStub, em.GetStubKind(new TargetCodePointer(0x00aa_2000)));
+        Assert.Equal(StubKind.InteropDispatchStub, em.GetStubKind(new TargetCodePointer(0x00aa_3000)));
+        Assert.Equal(StubKind.InteropDispatchStub, em.GetStubKind(new TargetCodePointer(0x00aa_4000)));
+        Assert.Equal(StubKind.TailCallStub, em.GetStubKind(new TargetCodePointer(0x00aa_5000)));
+        Assert.Equal(StubKind.CodeBlockUnknown, em.GetStubKind(new TargetCodePointer(0x00aa_9000)));
     }
 
     [Theory]
@@ -689,7 +689,7 @@ public class ExecutionManagerTests
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        StubKind kind = em.TryGetStubKind(new TargetCodePointer(codeRangeStart + 0x100));
+        StubKind kind = em.GetStubKind(new TargetCodePointer(codeRangeStart + 0x100));
         Assert.Equal(StubKind.CodeBlockPrecode, kind);
     }
 
@@ -720,7 +720,7 @@ public class ExecutionManagerTests
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        StubKind kind = em.TryGetStubKind(new TargetCodePointer(stubCodeAddress));
+        StubKind kind = em.GetStubKind(new TargetCodePointer(stubCodeAddress));
         Assert.Equal(StubKind.CodeBlockJumpStub, kind);
     }
 

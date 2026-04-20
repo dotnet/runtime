@@ -44,9 +44,10 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     private static TargetPointer ReadOptionalGlobalPointer(Target target, string name)
     {
-        return target.TryReadGlobalPointer(name, out TargetPointer? ptr)
-            ? ptr.Value
-            : TargetPointer.Null;
+        if (!target.TryReadGlobalPointer(name, out TargetPointer? ptr))
+            return TargetPointer.Null;
+
+        return target.ReadPointer(ptr.Value);
     }
 
     public void Flush()

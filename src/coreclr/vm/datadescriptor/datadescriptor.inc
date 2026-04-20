@@ -1419,15 +1419,15 @@ CDAC_GLOBAL(SyncBlockValueToObjectOffset, T_UINT16, OBJHEADER_SIZE - cdac_data<O
 CDAC_GLOBAL(StubCodeBlockLast, T_UINT8, STUB_CODE_BLOCK_LAST)
 CDAC_GLOBAL(DefaultADID, T_UINT32, DefaultADID)
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
-CDAC_GLOBAL_POINTER(ThePreStub, &ThePreStub)
+CDAC_GLOBAL_POINTER(ThePreStub, &g_cdacThePreStub)
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-CDAC_GLOBAL_POINTER(GenericPInvokeCalliHelper, &GenericPInvokeCalliHelper)
-CDAC_GLOBAL_POINTER(VarargPInvokeStub, &VarargPInvokeStub)
+CDAC_GLOBAL_POINTER(GenericPInvokeCalliHelper, &g_cdacGenericPInvokeCalliHelper)
+CDAC_GLOBAL_POINTER(VarargPInvokeStub, &g_cdacVarargPInvokeStub)
 #if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-CDAC_GLOBAL_POINTER(VarargPInvokeStub_RetBuffArg, &VarargPInvokeStub_RetBuffArg)
+CDAC_GLOBAL_POINTER(VarargPInvokeStub_RetBuffArg, &g_cdacVarargPInvokeStub_RetBuffArg)
 #endif
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-CDAC_GLOBAL_POINTER(TailCallJitHelper, &JIT_TailCall)
+CDAC_GLOBAL_POINTER(TailCallJitHelper, &g_cdacTailCallJitHelper)
 #endif // TARGET_X86 && !UNIX_X86_ABI
 #ifndef TARGET_UNIX
 CDAC_GLOBAL(SizeOfGenericModeBlock, T_UINT32, sizeof(GenericModeBlock))

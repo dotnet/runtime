@@ -596,11 +596,11 @@ internal sealed class MockExecutionManagerBuilder
         };
         globals.Add((nameof(Constants.Globals.HashMapSlotsPerBucket), MockHashMapBucket.SlotsPerBucket));
         globals.Add((nameof(Constants.Globals.HashMapValueMask), Builder.TargetTestHelpers.MaxSignedTargetAddress));
-        globals.Add((nameof(Constants.Globals.ThePreStub), 0x00aa_1000));
-        globals.Add((nameof(Constants.Globals.GenericPInvokeCalliHelper), 0x00aa_2000));
-        globals.Add((nameof(Constants.Globals.VarargPInvokeStub), 0x00aa_3000));
-        globals.Add((nameof(Constants.Globals.VarargPInvokeStub_RetBuffArg), 0x00aa_4000));
-        globals.Add((nameof(Constants.Globals.TailCallJitHelper), 0x00aa_5000));
+        globals.Add((nameof(Constants.Globals.ThePreStub), AddPointerGlobal(0x00aa_1000, "ThePreStub")));
+        globals.Add((nameof(Constants.Globals.GenericPInvokeCalliHelper), AddPointerGlobal(0x00aa_2000, "GenericPInvokeCalliHelper")));
+        globals.Add((nameof(Constants.Globals.VarargPInvokeStub), AddPointerGlobal(0x00aa_3000, "VarargPInvokeStub")));
+        globals.Add((nameof(Constants.Globals.VarargPInvokeStub_RetBuffArg), AddPointerGlobal(0x00aa_4000, "VarargPInvokeStub_RetBuffArg")));
+        globals.Add((nameof(Constants.Globals.TailCallJitHelper), AddPointerGlobal(0x00aa_5000, "TailCallJitHelper")));
         Globals = [.. globals];
     }
 
