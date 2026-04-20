@@ -191,17 +191,9 @@ void ThreadStore::DetachCurrentThread()
         // Note that when process is shutting down, the threads may be rudely terminated,
         // possibly while holding the threadstore lock. That is ok, since the process is being torn down.
         CrstHolder threadStoreLock(&pTS->m_Lock);
-#ifdef _DEBUG
-        {
-            uintptr_t count = 0;
-            for (auto it = pTS->m_ThreadList.begin(); it != pTS->m_ThreadList.end(); ++it)
-                if (*it == pDetachingThread)
-                    ++count;
-            ASSERT(count == 1);
-        }
-#endif
         // remove the thread from the list of managed threads.
-        pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        bool removed = pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        ASSERT(removed);
         // tidy up GC related stuff (release allocation context, etc..)
         pDetachingThread->Detach();
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
