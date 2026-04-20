@@ -731,6 +731,11 @@ static int32_t ForkAndExecProcessInternal(
     uint32_t* getGroupsBuffer = NULL;
     sigset_t signal_set;
     sigset_t old_signal_set;
+#if HAVE_PR_SET_PDEATHSIG
+    // Capture the parent PID before fork so the child can verify it hasn't been
+    // reparented (e.g., to a subreaper) between fork and prctl.
+    pid_t expectedParentPid = getpid();
+#endif
 
 #if HAVE_PTHREAD_SETCANCELSTATE
     int thread_cancel_state;
@@ -765,12 +770,6 @@ static int32_t ForkAndExecProcessInternal(
     // handle being raised in the child process correctly
     sigfillset(&signal_set);
     pthread_sigmask(SIG_SETMASK, &signal_set, &old_signal_set);
-
-#if HAVE_PR_SET_PDEATHSIG
-    // Capture the parent PID before fork so the child can verify it hasn't been
-    // reparented (e.g., to a subreaper) between fork and prctl.
-    pid_t expectedParentPid = getpid();
-#endif
 
 // vfork on OS X is deprecated
 // On Android, signal handlers between parent and child processes are shared with vfork, so when we reset
