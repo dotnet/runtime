@@ -10616,12 +10616,9 @@ bool Lowering::GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* d
     data->lclNum           = lclStore->GetLclNum();
     data->isLocalStoreNode = true;
     data->isAddressExposed = varDsc->IsAddressExposed();
-    // Local stores don't use the GTF_IND_* flag space semantically. In particular, GT_STORE_LCL_FLD
-    // may carry GTF_VAR_USEASG, which shares the same bit as GTF_IND_VOLATILE. Keep only the flags
-    // that are actually meaningful for indir coalescing decisions.
-    data->storeFlags       = GTF_EMPTY;
-    data->rangeStart       = range.FirstNode();
-    data->rangeEnd         = range.LastNode();
+    data->storeFlags = GTF_EMPTY;
+    data->rangeStart = range.FirstNode();
+    data->rangeEnd   = range.LastNode();
 
     return true;
 }
