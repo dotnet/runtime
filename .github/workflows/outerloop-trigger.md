@@ -16,9 +16,6 @@ network:
   allowed:
     - defaults
 
-checkout:
-  fetch-depth: 1
-
 tools:
   github:
     mode: remote
@@ -95,10 +92,17 @@ analyze the files changed in pull request #${{ github.event.pull_request.number 
 and determine which outerloop CI pipelines need to be triggered by posting
 `/azp run <pipeline>` comments.
 
+**IMPORTANT: Do NOT check out the pull request branch or use local filesystem
+operations to inspect PR changes.** All file listings, diffs, patches, and file
+contents must be obtained exclusively through the GitHub API (REST or GraphQL),
+the GitHub MCP tools, or the `gh` CLI.
+
 ## Step 1: Get Changed Files
 
-Use the GitHub API to list all files changed in PR #${{ github.event.pull_request.number }}.
-Collect the full list of file paths before evaluating any rules.
+Use the GitHub API (e.g. `GET /repos/{owner}/{repo}/pulls/{pull_number}/files`)
+to list all files changed in PR #${{ github.event.pull_request.number }}.
+This returns file paths, status, and patch diffs. Collect the full list of file
+paths and their patches before evaluating any rules.
 
 ## Step 2: Evaluate Trigger Rules
 
@@ -249,7 +253,9 @@ Trigger `/azp run runtime-coreclr outerloop` if **any** changed file under
    `<CLRTestPriority>1</CLRTestPriority>`, or the diff introduces that
    property. Also match if a changed `.cs` test file belongs to a project
    whose `.csproj` (in the same directory or a parent directory) already sets
-   `<CLRTestPriority>1</CLRTestPriority>` — read the `.csproj` to check.
+   `<CLRTestPriority>1</CLRTestPriority>` — use the GitHub API
+   (e.g. `GET /repos/{owner}/{repo}/contents/{path}`) to read the `.csproj`
+   from the repository's default branch to check.
 
 ### Rule: Linked issue pipeline triggers
 
