@@ -15,6 +15,8 @@
 #include "utilcode.h"       // InterlockedCompareExchangeT
 #endif
 
+#ifndef DACCESS_COMPILE
+
 template <typename T, typename Traits>
 void SList<T, Traits>::InsertHeadInterlocked(PTR_T pItem)
 {
@@ -42,5 +44,7 @@ void SList<T, Traits>::InsertHeadInterlocked(PTR_T pItem)
         }
     }
 }
+
+#endif // !DACCESS_COMPILE
 
 #endif // _H_SLIST_INL_
