@@ -15,7 +15,7 @@ public sealed class DocumentCompiler
 {
     public (ImmutableArray<Diagnostic>, PEBuilder?) Compile(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
     {
-        return Compile(ImmutableArray.Create(document), includedDocumentLoader, resourceLocator, options);
+        return Compile([document], includedDocumentLoader, resourceLocator, options);
     }
 
     public (ImmutableArray<Diagnostic>, PEBuilder?) Compile(ImmutableArray<SourceText> documents, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
