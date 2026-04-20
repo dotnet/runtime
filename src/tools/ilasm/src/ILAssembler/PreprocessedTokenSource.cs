@@ -22,11 +22,19 @@ namespace ILAssembler
         private readonly Dictionary<string, string?> _definedVars = new();
         private readonly Stack<(string Var, bool Defined, bool IsElse)> _activeIfDefBlocks = new();
 
-        public PreprocessedTokenSource(ITokenSource underlyingSource, Func<string, ITokenSource> loadIncludedDocument, Func<string, ITokenSource> createLexer)
+        public PreprocessedTokenSource(ITokenSource underlyingSource, Func<string, ITokenSource> loadIncludedDocument, Func<string, ITokenSource> createLexer, IReadOnlyDictionary<string, string?>? initialDefinedVars = null)
         {
             _includeSourceStack.Push((underlyingSource, 0, null, 0));
             _loadIncludedDocument = loadIncludedDocument;
             _createLexer = createLexer;
+
+            if (initialDefinedVars != null)
+            {
+                foreach (var kvp in initialDefinedVars)
+                {
+                    _definedVars[kvp.Key] = kvp.Value;
+                }
+            }
         }
 
         private ITokenSource CurrentTokenSource => _includeSourceStack.Peek().Source;
@@ -37,6 +45,8 @@ namespace ILAssembler
         public int Column => CurrentTokenSource.Column;
 
         public ICharStream InputStream => CurrentTokenSource.InputStream;
+
+        public IReadOnlyDictionary<string, string?> DefinedVariables => _definedVars;
 
         /// <summary>
         /// Returns the source name with include stack information for better error reporting.
