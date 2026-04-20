@@ -22,7 +22,7 @@ public class SyncBlockTests
         var target = builder
             .AddTypes(CreateContractTypes(syncBlock))
             .AddGlobals(CreateContractGlobals(syncBlock))
-            .AddContract<ISyncBlock>(version: 1)
+            .AddContract<ISyncBlock>(version: "c1")
             .Build();
         return target.Contracts.SyncBlock;
     }

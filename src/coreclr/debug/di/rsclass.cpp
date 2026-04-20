@@ -245,9 +245,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
         {
             EX_TRY
             {
-                IfFailThrow(pProcess->GetDAC()->GetCollectibleTypeStaticAddress(pFieldData->m_vmFieldDesc,
-                                                                                      pModule->GetAppDomain()->GetADToken(),
-                                                                                      &pRmtStaticValue));
+                IfFailThrow(pProcess->GetDAC()->GetCollectibleTypeStaticAddress(pFieldData->m_vmFieldDesc, &pRmtStaticValue));
             }
             EX_CATCH_HRESULT(hr);
             if(FAILED(hr))
@@ -786,15 +784,7 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
         // full info load level
         if(desiredLoadLevel == FullInfo)
         {
-            VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
-            VMPTR_DomainAssembly vmDomainAssembly = m_pModule->GetRuntimeDomainAssembly();
-            if (!vmDomainAssembly.IsNull())
-            {
-                DomainAssemblyInfo info;
-                IfFailThrow(pDac->GetDomainAssemblyData(vmDomainAssembly, &info));
-                vmAppDomain = info.vmAppDomain;
-            }
-            IfFailThrow(pDac->GetClassInfo(vmAppDomain, vmTypeHandle, &m_classInfo));
+            IfFailThrow(pDac->GetClassInfo(vmTypeHandle, &m_classInfo));
 
             BOOL fGotUnallocatedStatic = GotUnallocatedStatic(&m_classInfo.m_fieldList);
 
@@ -947,7 +937,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
                         fieldToken,
                         ELEMENT_TYPE_MAX,
                         classToken,
-                        m_pModule->GetRuntimeDomainAssembly());
+                        m_pModule->GetRuntimeAssembly());
     }
     else
     {
@@ -974,7 +964,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
                                                                     // This is used only for log messages, and could
                                                                     // be removed.
                         classToken,                                 // metadata token for the class
-                        m_pModule->GetRuntimeDomainAssembly());         // Domain file for the class
+                        m_pModule->GetRuntimeAssembly());           // assembly for the class
     }
 } // CordbClass::InitFieldData
 
