@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Runtime.CompilerServices;
+#if NET
+using System.Buffers;
+using System.Text.Unicode;
+#else
 using System.Runtime.InteropServices;
 using System.Text;
-#if NET
-using System.Text.Unicode;
 #endif
 
 namespace System.Reflection
