@@ -9,9 +9,7 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
     TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint);
 
     // Enumerates candidate precode entry points near a given code address.
-    // The address is pointer-aligned and then iterated backwards in pointer-sized
-    // steps up to StubPrecodeSize / PointerSize candidates. This is used by
-    // GetRuntimeNameByAddress to resolve a code address that falls within a
+    // This is used to resolve a code address that falls within a
     // precode stub back to its entry point.
     IEnumerable<TargetCodePointer> GetCandidateEntryPoints(TargetCodePointer address);
 ```
