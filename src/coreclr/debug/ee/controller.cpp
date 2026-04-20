@@ -8087,7 +8087,7 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     // let the process exit naturally.
     if (fd == g_pEnvironmentCallEntryPointMethodDesc || fd->IsInteropStub())
     {
-        LOG((LF_CORDB,LL_INFO10000, "DS::TSS: in runtime entrypoint or interop stub, Returning false (case 0)!\n"));
+        LOG((LF_CORDB,LL_INFO10000, "DS::TSS: in CallEntryPoint or interop stub, Returning false (case 0)!\n"));
         if (this->GetDCType() == DEBUGGER_CONTROLLER_STEPPER)
         {
             EnableTraceCall(info.m_activeFrame.fp);
