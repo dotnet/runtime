@@ -139,10 +139,24 @@ namespace Microsoft.Win32.SafeHandles
 
         private ProcessExitStatus GetExitStatus(bool canceled = false) => CreateExitStatus(GetWaitState(), canceled);
 
-        private ProcessWaitState GetWaitState() => _waitStateHolder is null ? throw new InvalidOperationException(SR.InvalidProcessHandle) : _waitStateHolder._state;
+        private ProcessWaitState GetWaitState()
+        {
+            if (_waitStateHolder is null)
+            {
+                throw new InvalidOperationException(SR.InvalidProcessHandle);
+            }
+
+            if (!_waitStateHolder._state.IsChild)
+            {
+                throw new NotSupportedException(SR.NotSupportedForNonChildProcess);
+            }
+
+            return _waitStateHolder._state;
+        }
 
         private static ProcessExitStatus CreateExitStatus(ProcessWaitState waitState, bool canceled)
         {
+            // GetWaitState ensures the process is not a child process, so obtaining the exit status should never fail.
             bool exited = waitState.GetExited(out ProcessExitStatus? exitStatus, refresh: false);
             Debug.Assert(exited);
             Debug.Assert(exitStatus is not null);

@@ -457,5 +457,60 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(exitStatus.Signal);
             Assert.Equal(signal, exitStatus.Signal);
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task WaitForExit_NonChildProcess_NotSupportedOnUnix()
+        {
+            RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false };
+            remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
+            remoteInvokeOptions.StartInfo.RedirectStandardInput = true;
+
+            using RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(
+                () =>
+                {
+                    using Process grandChild = CreateProcessLong();
+                    grandChild.Start();
+
+                    Console.WriteLine(grandChild.Id);
+
+                    // Keep it alive to avoid any kind of re-parenting on Unix
+                    _ = Console.ReadLine();
+
+                    return RemoteExecutor.SuccessExitCode;
+                }, remoteInvokeOptions);
+
+            int grandChildPid = int.Parse(childHandle.Process.StandardOutput.ReadLine());
+
+            // Obtain a Process instance before the child exits to avoid PID reuse issues.
+            using Process grandchild = Process.GetProcessById(grandChildPid);
+
+            try
+            {
+                await Verify(grandchild.SafeHandle);
+            }
+            finally
+            {
+                grandchild.Kill();
+                childHandle.Process.Kill();
+            }
+
+            static async Task Verify(SafeProcessHandle handle)
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.False(handle.TryWaitForExit(TimeSpan.Zero, out _));
+
+                    handle.Kill();
+                    ProcessExitStatus processExitStatus = await handle.WaitForExitAsync();
+                    Assert.Equal(-1, processExitStatus.ExitCode);
+                }
+                else
+                {
+                    Assert.Throws<NotSupportedException>(() => handle.WaitForExit());
+                    Assert.Throws<NotSupportedException>(() => handle.TryWaitForExit(TimeSpan.FromSeconds(1), out _));
+                    await Assert.ThrowsAsync<NotSupportedException>(async () => await handle.WaitForExitAsync());
+                }
+            }
+        }
     }
 }

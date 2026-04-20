@@ -167,6 +167,9 @@ namespace Microsoft.Win32.SafeHandles
         /// Waits indefinitely for the process to exit.
         /// </summary>
         /// <returns>The exit status of the process.</returns>
+        /// <remarks>
+        /// On Unix it's impossible to obtain exit status of a non-child process.
+        /// </remarks>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
         public ProcessExitStatus WaitForExit()
         {
@@ -181,6 +184,9 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="timeout">The maximum time to wait for the process to exit.</param>
         /// <param name="exitStatus">When this method returns <see langword="true"/>, contains the exit status of the process.</param>
         /// <returns><see langword="true"/> if the process exited before the timeout; otherwise, <see langword="false"/>.</returns>
+        /// <remarks>
+        /// On Unix it's impossible to obtain exit status of a non-child process.
+        /// </remarks>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan"/>,
         /// or is greater than <see cref="int.MaxValue"/> milliseconds.</exception>
@@ -198,6 +204,9 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="timeout">The maximum time to wait for the process to exit before killing it.</param>
         /// <returns>The exit status of the process. If the process was killed due to timeout,
         /// <see cref="ProcessExitStatus.Canceled"/> will be <see langword="true"/>.</returns>
+        /// <remarks>
+        /// On Unix it's impossible to obtain exit status of a non-child process.
+        /// </remarks>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan"/>,
         /// or is greater than <see cref="int.MaxValue"/> milliseconds.</exception>
@@ -224,9 +233,12 @@ namespace Microsoft.Win32.SafeHandles
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
         /// <exception cref="OperationCanceledException">The cancellation token was canceled.</exception>
         /// <remarks>
+        /// <para>
         /// When the cancellation token is canceled, this method stops waiting and throws <see cref="OperationCanceledException"/>.
         /// The process is NOT killed and continues running. If you want to kill the process on cancellation,
         /// use <see cref="WaitForExitOrKillOnCancellationAsync"/> instead.
+        /// </para>
+        /// <para>On Unix it's impossible to obtain exit status of a non-child process.</para>
         /// </remarks>
         public async Task<ProcessExitStatus> WaitForExitAsync(CancellationToken cancellationToken = default)
         {
@@ -284,10 +296,13 @@ namespace Microsoft.Win32.SafeHandles
         /// If the process was killed due to cancellation, <see cref="ProcessExitStatus.Canceled"/> will be <see langword="true"/>.</returns>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
         /// <remarks>
+        /// <para>
         /// When the cancellation token is canceled, this method kills the process and waits for it to exit.
         /// The returned exit status will have the <see cref="ProcessExitStatus.Canceled"/> property set to <see langword="true"/> if the process was killed.
         /// If the cancellation token cannot be canceled (e.g., <see cref="CancellationToken.None"/>), this method behaves identically
         /// to <see cref="WaitForExitAsync"/> and will wait indefinitely for the process to exit.
+        /// </para>
+        /// <para>On Unix it's impossible to obtain exit status of a non-child process.</para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]

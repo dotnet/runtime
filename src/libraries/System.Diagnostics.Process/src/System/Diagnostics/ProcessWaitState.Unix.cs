@@ -161,7 +161,7 @@ namespace System.Diagnostics
         /// <summary>Increments the ref count for this wait state object.</summary>
         internal void IncrementRefCount()
         {
-            Dictionary<int, ProcessWaitState> waitStates = _isChild ? s_childProcessWaitStates : s_processWaitStates;
+            Dictionary<int, ProcessWaitState> waitStates = IsChild ? s_childProcessWaitStates : s_processWaitStates;
             lock (waitStates)
             {
                 _outstandingRefCount++;
@@ -175,7 +175,7 @@ namespace System.Diagnostics
         internal void ReleaseRef()
         {
             ProcessWaitState? pws;
-            Dictionary<int, ProcessWaitState> waitStates = _isChild ? s_childProcessWaitStates : s_processWaitStates;
+            Dictionary<int, ProcessWaitState> waitStates = IsChild ? s_childProcessWaitStates : s_processWaitStates;
             lock (waitStates)
             {
                 bool foundState = waitStates.TryGetValue(ProcessId, out pws);
@@ -209,7 +209,7 @@ namespace System.Diagnostics
         /// <summary>ID of the associated process.</summary>
         internal readonly int ProcessId;
         /// <summary>Associated process is a child process.</summary>
-        private readonly bool _isChild;
+        internal readonly bool IsChild;
         /// <summary>Associated process is a child that can use the terminal.</summary>
         private readonly bool _usesTerminal;
 
@@ -240,7 +240,7 @@ namespace System.Diagnostics
         {
             Debug.Assert(processId >= 0);
             ProcessId = processId;
-            _isChild = isChild;
+            this.IsChild = isChild;
             _usesTerminal = usesTerminal;
             _exitTime = exitTime;
         }
@@ -288,7 +288,7 @@ namespace System.Diagnostics
                     _exitedEvent = new ManualResetEvent(initialState: _exited);
                     if (!_exited)
                     {
-                        if (!_isChild)
+                        if (!IsChild)
                         {
                             // If we haven't exited, we need to spin up an asynchronous operation that
                             // will complete the _exitedEvent when the other process exits. If there's already
@@ -359,7 +359,7 @@ namespace System.Diagnostics
         private void CheckForNonChildExit()
         {
             Debug.Assert(Monitor.IsEntered(_gate));
-            if (!_isChild)
+            if (!IsChild)
             {
                 bool exited;
                 // We won't be able to get an exit code, but we'll at least be able to determine if the process is
@@ -409,7 +409,7 @@ namespace System.Diagnostics
         {
             Debug.Assert(!Monitor.IsEntered(_gate));
 
-            if (_isChild)
+            if (IsChild)
             {
                 lock (_gate)
                 {
@@ -517,7 +517,7 @@ namespace System.Diagnostics
         private async Task WaitForExitAsync(CancellationToken cancellationToken)
         {
             Debug.Assert(Monitor.IsEntered(_gate));
-            Debug.Assert(!_isChild);
+            Debug.Assert(!IsChild);
 
             // Wait for the previous waiting task to complete. We need to ensure that this call completes asynchronously,
             // in order to escape the caller's lock and avoid blocking the caller by any work in the below loop, so
