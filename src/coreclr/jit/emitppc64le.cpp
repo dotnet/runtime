@@ -689,13 +689,20 @@ void emitter::emitIns_R_R(instruction     ins,
     {
         case INS_lwa:
 	    break;
-	
+	case INS_cmpd:
+    	case INS_cmpw:
+            // Comparison instructions - these are X-form instructions
+            // cmpd rA, rB compares two registers
+            fmt = IF_NONE;  // Will set proper format later
+            break;
 	default:
 	    abort();
     }
 
     instrDesc* id = emitNewInstr(size);
     id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
     appendToCurIG(id);
 
 }
