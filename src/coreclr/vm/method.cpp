@@ -1712,23 +1712,6 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
         }
         CONSISTENCY_CHECK(TypeHandle(pMT).CheckFullyLoaded());
         MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
-
-#ifdef FEATURE_METADATA_UPDATER
-        // For EnC-added async variants, the type-def's variant may not exist yet
-        // (all async variants are created lazily). Find the primary thunk on the
-        // type-def and use FCAMD to trigger lazy creation.
-        if (resultMD == NULL && IsEnCAddedMethod() && IsAsyncVariantMethod())
-        {
-            MethodDesc* pPrimaryOnTypeDef = pMT->GetParallelMethodDesc(this, AsyncVariantLookup::Ordinary);
-            if (pPrimaryOnTypeDef != NULL)
-            {
-                resultMD = FindOrCreateAssociatedMethodDesc(
-                    pPrimaryOnTypeDef, pMT, FALSE, Instantiation(), TRUE,
-                    AsyncVariantLookup::Async, FALSE, TRUE);
-            }
-        }
-#endif // FEATURE_METADATA_UPDATER
-
         _ASSERTE(resultMD != NULL);
         resultMD->CheckRestore();
         RETURN (resultMD);
@@ -3418,15 +3401,11 @@ void MethodDesc::ResetCodeEntryPointForEnC()
     // Updates are expressed via metadata diff and a methoddef of a runtime async method
     // would be resolved to the task-returning thunk.
     // If we see a thunk here, fetch the async variant that owns the IL and reset that.
-    // For EnC-added methods, the variant may not exist yet (created lazily on first call);
-    // if so, there is no compiled code to reset.
     if (IsAsyncThunkMethod())
     {
         MethodDesc *otherVariant = GetAsyncVariantNoCreate();
-        if (otherVariant != NULL)
-        {
-            otherVariant->ResetCodeEntryPointForEnC();
-        }
+        _ASSERTE(otherVariant != NULL);
+        otherVariant->ResetCodeEntryPointForEnC();
         return;
     }
 

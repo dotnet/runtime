@@ -369,15 +369,11 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     if (!pMethod->HasClassOrMethodInstantiation())
     {
         // Not a method impacted by generics, so this is the MethodDesc to use.
-        // For runtime-async methods, ResetCodeEntryPointForEnC detects the thunk
-        // and cascades the reset to the async variant (see method.cpp).
         pMethod->ResetCodeEntryPointForEnC();
     }
     else
     {
         // Generics are involved so we need to search for all related MethodDescs.
-        // For runtime-async methods, ResetCodeEntryPointForEnC detects the thunk
-        // and cascades the reset to the async variant (see method.cpp).
         Module* module = pMethod->GetLoaderModule();
         mdMethodDef tkMethod = pMethod->GetMemberDef();
 

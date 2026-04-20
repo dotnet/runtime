@@ -561,10 +561,12 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
 #endif // _DEBUG
 
     // Runtime-async methods (IsMiAsync) that return Task/ValueTask need two MethodDescs:
-    // the task-returning thunk and the async variant that owns the IL. The async variant
-    // is created lazily by FindOrCreateAssociatedMethodDesc when first needed
-    // (see "EnC async variants" in genmeth.cpp).
+    // the task-returning thunk and the async variant that owns the IL. Both are created
+    // eagerly here to avoid lazy creation complexity in FindOrCreateAssociatedMethodDesc.
     AsyncMethodFlags primaryAsyncFlags = AsyncMethodFlags::None;
+    AsyncMethodFlags variantAsyncFlags = AsyncMethodFlags::None;
+    BYTE* pAsyncVariantSig = NULL;
+    ULONG cAsyncVariantSig = 0;
 
     if (IsMiAsync(dwImplFlags))
     {
@@ -602,6 +604,21 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
         }
 
         primaryAsyncFlags = AsyncMethodFlags::ReturnsTaskOrValueTask | AsyncMethodFlags::Thunk;
+
+        // Compute the async variant signature by stripping Task/ValueTask from the return type.
+        // This is done once here and then reused for all instantiations.
+        // Each instantiation gets its own copy allocated from its loader allocator.
+        variantAsyncFlags = AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant;
+        if (returnsValueTask)
+            variantAsyncFlags |= AsyncMethodFlags::IsAsyncVariantForValueTask;
+
+        BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
+                                   nullptr, &cAsyncVariantSig);
+
+        LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
+        pAsyncVariantSig = (BYTE*)(void*)pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cAsyncVariantSig));
+        BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
+                                   pAsyncVariantSig, &cAsyncVariantSig);
     }
 
     // Create the primary MethodDesc (task-returning thunk for async, or the only MethodDesc for non-async).
@@ -621,9 +638,20 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Added pMD:%p for token 0x%08x\n",
         pNewMD, methodDef));
 
-    // For runtime-async task-returning methods, the async variant MethodDesc is created
-    // lazily by FindOrCreateAssociatedMethodDesc (or LoadTypicalMethodDefinition for
-    // generic type definitions) when first needed. Only the primary thunk is created here.
+    // Create the async variant eagerly alongside the primary thunk.
+    if (pAsyncVariantSig != NULL)
+    {
+        MethodDesc* pAsyncVariant = NULL;
+        if (FAILED(hr = AddMethodDesc(pMT, methodDef, dwImplFlags, dwMemberAttrs,
+                                      variantAsyncFlags, pAsyncVariantSig, cAsyncVariantSig, &pAsyncVariant)))
+        {
+            LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod async variant failed: 0x%08x\n", hr));
+            return hr;
+        }
+
+        LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Added async variant pMD:%p for token 0x%08x\n",
+            pAsyncVariant, methodDef));
+    }
 
     // If the type is generic, then we need to update all existing instantiated types
     if (pMT->IsGenericTypeDefinition())
@@ -657,8 +685,7 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
                     continue;
                 }
 
-                // Create a primary thunk on this instantiation. The async variant
-                // will be created lazily by FindOrCreateAssociatedMethodDesc.
+                // Create a primary thunk on this instantiation.
                 MethodDesc* pNewMDUnused;
                 if (FAILED(AddMethodDesc(pMTMaybe, methodDef, dwImplFlags, dwMemberAttrs,
                                          primaryAsyncFlags, NULL, 0, &pNewMDUnused)))
@@ -667,6 +694,25 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
                         W("Failed to add method to existing instantiated type instance"));
                     return E_FAIL;
+                }
+
+                // Also create the async variant eagerly on this instantiation.
+                if (pAsyncVariantSig != NULL)
+                {
+                    // Allocate a per-MT copy of the variant signature from the correct loader allocator.
+                    LoaderAllocator* pInstAllocator = pMTMaybe->GetLoaderAllocator();
+                    BYTE* pInstVariantSig = (BYTE*)(void*)pInstAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cAsyncVariantSig));
+                    memcpy(pInstVariantSig, pAsyncVariantSig, cAsyncVariantSig);
+
+                    MethodDesc* pInstVariant = NULL;
+                    if (FAILED(AddMethodDesc(pMTMaybe, methodDef, dwImplFlags, dwMemberAttrs,
+                                             variantAsyncFlags, pInstVariantSig, cAsyncVariantSig, &pInstVariant)))
+                    {
+                        LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod async variant failed on instantiation: 0x%08x\n", hr));
+                        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
+                            W("Failed to add async variant to existing instantiated type instance"));
+                        return E_FAIL;
+                    }
                 }
             }
         }
@@ -677,98 +723,6 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
         *ppMethod = pNewMD;
 
     return S_OK;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// AddAsyncVariant - lazily creates an async variant MethodDesc from a primary thunk.
-// Called from FindOrCreateAssociatedMethodDesc when GetAsyncVariant() is first invoked
-// on any EnC-added async primary thunk (both generic and non-generic types).
-//
-// The variant signature is computed on-demand from the method's metadata by stripping
-// the Task/ValueTask wrapper from the return type (via ClassifyMethodReturnKind +
-// BuildAsyncVariantSignature). The variant flags are derived from the return kind.
-//
-HRESULT EEClass::AddAsyncVariant(
-    MethodDesc* pPrimaryThunk,
-    MethodDesc** ppNewVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pPrimaryThunk != NULL);
-        PRECONDITION(pPrimaryThunk->IsEnCAddedMethod());
-        PRECONDITION(ppNewVariant != NULL);
-    }
-    CONTRACTL_END;
-
-    *ppNewVariant = NULL;
-
-    mdMethodDef methodDef = pPrimaryThunk->GetMemberDef();
-    MethodTable* pMT = pPrimaryThunk->GetMethodTable();
-
-    Module* pModule = pMT->GetModule();
-    IMDInternalImport* pImport = pModule->GetMDImport();
-
-    DWORD dwDescrOffset, dwImplFlags, dwMemberAttrs;
-    HRESULT hr;
-    if (FAILED(hr = pImport->GetMethodImplProps(methodDef, &dwDescrOffset, &dwImplFlags)))
-        return hr;
-    if (FAILED(hr = pImport->GetMethodDefProps(methodDef, &dwMemberAttrs)))
-        return hr;
-
-    // Fetch the method signature from metadata and compute the async variant signature
-    // by stripping the Task/ValueTask wrapper from the return type.
-    ULONG sigLen;
-    PCCOR_SIGNATURE pMemberSignature;
-    if (FAILED(hr = pImport->GetSigOfMethodDef(methodDef, &sigLen, &pMemberSignature)))
-        return hr;
-
-    ULONG offsetOfAsyncDetails = 0;
-    bool returnsValueTask = false;
-    ULONG elementTypeLength = 0;
-    MethodReturnKind returnKind = ClassifyMethodReturnKind(
-        SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &elementTypeLength, &returnsValueTask);
-
-    if (!IsTaskReturning(returnKind))
-    {
-        _ASSERTE(!"AddAsyncVariant called on non-task-returning method");
-        return COR_E_BADIMAGEFORMAT;
-    }
-
-    ULONG cAsyncVariantSig = 0;
-    BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
-                               nullptr, &cAsyncVariantSig);
-
-    LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
-    BYTE* pAsyncVariantSig = (BYTE*)(void*)pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cAsyncVariantSig));
-    BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
-                               pAsyncVariantSig, &cAsyncVariantSig);
-
-    AsyncMethodFlags variantFlags = AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant;
-    if (returnsValueTask)
-        variantFlags |= AsyncMethodFlags::IsAsyncVariantForValueTask;
-
-    hr = AddMethodDesc(
-        pMT,
-        methodDef,
-        dwImplFlags,
-        dwMemberAttrs,
-        variantFlags,
-        pAsyncVariantSig,
-        cAsyncVariantSig,
-        ppNewVariant);
-
-    if (SUCCEEDED(hr) && *ppNewVariant != NULL)
-    {
-        LOG((LF_ENC, LL_INFO100,
-            "EEClass::AddAsyncVariant: created async variant pMD:%p for pMT:%p from primary:%p\n",
-            *ppNewVariant, pMT, pPrimaryThunk));
-    }
-
-    return hr;
 }
 
 //---------------------------------------------------------------------------------------
