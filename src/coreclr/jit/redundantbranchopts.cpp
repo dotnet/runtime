@@ -974,8 +974,60 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         rii.domCmpNormVN = blockPathVN;
 
         optRelopImpliesRelop(&rii);
+        bool canOptimize = rii.canInfer && rii.canInferFromTrue && !rii.reverseSense;
 
-        if (!(rii.canInfer && rii.canInferFromTrue && !rii.reverseSense))
+        genTreeOps newRelop = GT_NONE;
+
+        if (!canOptimize)
+        {
+            if (rii.canInfer)
+            {
+                JITDUMP("Can't infer along the path we care about; trying simplification instead\n");
+            }
+            else
+            {
+                JITDUMP("Can't infer, trying simplification instead\n");
+            }
+
+            // See if we can simplfy the VN for blockPathVN AND domPathVN
+            //
+            ValueNum  andVN = vnStore->VNForFunc(TYP_INT, VNF_AND, blockPathVN, domPathVN);
+            VNFuncApp andApp;
+            VNFuncApp pathApp;
+            if (vnStore->IsVNRelop(andVN, &andApp) && vnStore->GetVNFunc(blockPathVN, &pathApp))
+            {
+                if (andApp.m_args[0] == pathApp.m_args[0] && andApp.m_args[1] == pathApp.m_args[1])
+                {
+                    newRelop = (genTreeOps)andApp.m_func;
+                }
+                else if (andApp.m_args[0] == pathApp.m_args[1] && andApp.m_args[1] == pathApp.m_args[0])
+                {
+                    vnStore->GetRelatedRelop(andVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
+                    vnStore->GetVNFunc(andVN, &andApp);
+                    newRelop = (genTreeOps)andApp.m_func;
+                }
+
+                JITDUMPEXEC(vnStore->vnDump(this, blockPathVN));
+                JITDUMP(" AND");
+                JITDUMPEXEC(vnStore->vnDump(this, domPathVN));
+                JITDUMP(" ==>");
+                JITDUMPEXEC(vnStore->vnDump(this, andVN));
+            }
+
+            // Might need to reverse the sense here?
+            //
+            if (newRelop != GT_NONE)
+            {
+                JITDUMP("; simplified to %s\n", GenTree::OpName(newRelop));
+                canOptimize = true;
+            }
+            else
+            {
+                JITDUMP("; not a relop, cannot simplify\n");
+            }
+        }
+
+        if (!canOptimize)
         {
             JITDUMP("failed -- Dominated VN " FMT_VN " does not imply dominating VN " FMT_VN "\n", blockPathVN,
                     domPathVN);
@@ -1008,6 +1060,12 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         fgMorphBlockStmt(domBlockProbe, domStmt DEBUGARG(__FUNCTION__), /* allowFGChange */ true,
                          /* invalidateDFSTreeOnFGChange */ false);
         Metrics.RedundantBranchesEliminated++;
+
+        if (newRelop != GT_NONE)
+        {
+            tree->SetOper(newRelop);
+            fgValueNumberTree(tree);
+        }
         madeChanges = true;
 
         // We can keep looking if we haven't seen any side effects yet along the path to block.
