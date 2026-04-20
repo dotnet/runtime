@@ -20,7 +20,7 @@ public class NotificationsTests
     {
         var target = new TestPlaceholderTarget.Builder(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true })
             .UseReader((_, _) => -1)
-            .AddContract<INotifications>(version: 1)
+            .AddContract<INotifications>(version: "c1")
             .Build();
         return target.Contracts.Notifications;
     }

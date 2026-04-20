@@ -23,7 +23,6 @@ public unsafe class ExceptionStateTests
 
         MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
         helpers.WritePointer(handleFragment.Data, exceptionObjectAddr);
-        targetBuilder.MemoryBuilder.AddHeapFragment(handleFragment);
 
         TargetPointer thrownObjectHandle = new TargetPointer(handleFragment.Address);
 
@@ -85,8 +84,11 @@ public unsafe class ExceptionStateTests
             AllocContextLimit: TargetPointer.Null,
             Frame: TargetPointer.Null,
             FirstNestedException: firstNestedException,
-            TEB: TargetPointer.Null,
+            ExposedObjectHandle: TargetPointer.Null,
             LastThrownObjectHandle: lastThrownObjectHandle,
+            CurrentCustomDebuggerNotificationHandle: TargetPointer.Null,
+            LastThrownObjectIsUnhandled: false,
+            HasUnhandledException: false,
             NextThread: TargetPointer.Null));
 
         var target = new TestPlaceholderTarget.Builder(arch)
@@ -450,7 +452,6 @@ public unsafe class ExceptionStateTests
 
         MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "LastThrownObjectHandle");
         helpers.WritePointer(handleFragment.Data, exceptionObjectAddr);
-        targetBuilder.MemoryBuilder.AddHeapFragment(handleFragment);
         TargetPointer lastThrownObjectHandle = new TargetPointer(handleFragment.Address);
 
         var mockThread = new Mock<IThread>();
@@ -464,8 +465,11 @@ public unsafe class ExceptionStateTests
             AllocContextLimit: TargetPointer.Null,
             Frame: TargetPointer.Null,
             FirstNestedException: firstNestedException,
-            TEB: TargetPointer.Null,
+            ExposedObjectHandle: TargetPointer.Null,
             LastThrownObjectHandle: lastThrownObjectHandle,
+            CurrentCustomDebuggerNotificationHandle: TargetPointer.Null,
+            LastThrownObjectIsUnhandled: false,
+            HasUnhandledException: false,
             NextThread: TargetPointer.Null));
 
         var mockException = new Mock<IException>();

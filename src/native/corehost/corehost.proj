@@ -190,6 +190,8 @@
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js.symbols" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.wasm" />
+      <!-- extpost.js is needed for per-app native relinking via emcc -->
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(MSBuildThisFileDirectory)..\libs\System.Native.Browser\libSystem.Native.Browser.extpost.js" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MicrosoftNetCoreAppRuntimePackNativeDirFiles)"
