@@ -470,6 +470,61 @@ public class R2RTestSuites
     }
 
     /// <summary>
+    /// Positive complement to <see cref="CompositeDoesNotProduceCrossModuleInliningInfo"/>:
+    /// composite mode DOES produce a CrossModuleInlineInfo section when an inlineable method
+    /// comes from an assembly outside the version bubble (passed as a Reference with
+    /// --opt-cross-module). Crossgen2 only treats modules NOT in the version bubble as
+    /// cross-module inlineable, so an external Reference is required to exercise this.
+    /// </summary>
+    [Fact]
+    public void CompositeProducesCrossModuleInliningInfoForExternalReference()
+    {
+        var inlineableLib = new CompiledAssembly
+        {
+            AssemblyName = "InlineableLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlineableLib.cs"],
+        };
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "CompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var compositeMain = new CompiledAssembly
+        {
+            AssemblyName = nameof(CompositeProducesCrossModuleInliningInfoForExternalReference),
+            SourceResourceNames = ["CrossModuleInlining/BasicInlining.cs"],
+            References = [inlineableLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeProducesCrossModuleInliningInfoForExternalReference),
+            [
+                new(nameof(CompositeProducesCrossModuleInliningInfoForExternalReference),
+                [
+                    new CrossgenAssembly(inlineableLib)
+                    {
+                        Kind = Crossgen2InputKind.Reference,
+                        Options = [Crossgen2AssemblyOption.CrossModuleOptimization],
+                    },
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(compositeMain),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "InlineableLib", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetValue", "GetValue", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
+        }
+    }
+
+    /// <summary>
     /// Composite mode with runtime-async methods in both assemblies.
     /// Validates async variants exist in composite output.
     /// </summary>
