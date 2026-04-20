@@ -3048,7 +3048,12 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitId(CILParser.IdContext context) => VisitId(context);
         public static GrammarResult.String VisitId(CILParser.IdContext context)
         {
-            return new GrammarResult.String(context.GetText());
+            string text = context.GetText();
+            if (context.SQSTRING() is not null && text.Length >= 2 && text[0] == '\'')
+            {
+                text = text.Substring(1, text.Length - 2);
+            }
+            return new GrammarResult.String(text);
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitIidParamIndex(CILParser.IidParamIndexContext context) => VisitIidParamIndex(context);
@@ -3885,7 +3890,7 @@ namespace ILAssembler
                     // Otherwise, it will only be accessible via its index.
                     if (loc.Name is not null)
                     {
-                        localsScope.Add(loc.Name, currentMethod.AllLocals.Count);
+                        localsScope.TryAdd(loc.Name, currentMethod.AllLocals.Count);
                     }
                     currentMethod.AllLocals.Add(loc);
                 }
