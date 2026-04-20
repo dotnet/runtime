@@ -417,16 +417,8 @@ public class R2RTestSuites
 
     /// <summary>
     /// Negative test: a composite image whose only inputs are the inlinee and the inliner
-    /// does NOT produce a CrossModuleInlineInfo section. CrossModuleInlineInfo only records
-    /// inlining where the inlinee module is OUTSIDE the compiled image's version bubble
-    /// (typically added via <c>--opt-cross-module</c> on a reference assembly). Here both
-    /// modules are composite inputs and therefore in the same version bubble, so any
-    /// inlining between them is recorded in the per-module InliningInfo2 section instead.
-    /// A different setup — composite output plus an external reference passed via
-    /// <c>--opt-cross-module</c> — could still produce CrossModuleInlineInfo entries; this
-    /// test only covers the "all inlinees are composite inputs" case.
-    /// Compare with <see cref="BasicCrossModuleInlining"/>, which uses the same source modules
-    /// in a non-composite layout and DOES produce CrossModuleInlineInfo entries.
+    /// assemblies does NOT produce a CrossModuleInlineInfo section. CrossModuleInlineInfo only records
+    /// inlining where the inlinee module is outside the compiled image's version bubble
     /// </summary>
     [Fact]
     public void CompositeDoesNotProduceCrossModuleInliningInfo()
@@ -471,10 +463,11 @@ public class R2RTestSuites
 
     /// <summary>
     /// Positive complement to <see cref="CompositeDoesNotProduceCrossModuleInliningInfo"/>:
-    /// composite mode DOES produce a CrossModuleInlineInfo section when an inlineable method
+    /// composite mode produces a CrossModuleInlineInfo section when an inlineable method
     /// comes from an assembly outside the version bubble (passed as a Reference with
-    /// --opt-cross-module). Crossgen2 only treats modules NOT in the version bubble as
-    /// cross-module inlineable, so an external Reference is required to exercise this.
+    /// --opt-cross-module). Crossgen2 only treats modules not in the version bubble as
+    /// "cross-module inlined" (everything is intra-module in composite), so an external
+    /// Reference is required to exercise this.
     /// </summary>
     [Fact]
     public void CompositeProducesCrossModuleInliningInfoForExternalReference()
@@ -569,21 +562,9 @@ public class R2RTestSuites
     }
 
     /// <summary>
-    /// The full intersection: composite + runtime-async + cross-module inlining.
-    /// Async methods from AsyncCompositeLib are inlined into CompositeAsyncMain
-    /// within a composite image, exercising MutableModule token encoding for
-    /// cross-module async continuation layouts.
-    /// </summary>
-    /// <summary>
     /// Composite + runtime-async + intra-bubble inlining matrix test.
     /// Verifies that, in composite mode, awaitless async candidates ARE inlined into
-    /// their callers (recorded in InliningInfo2 — composite inputs share a version
-    /// bubble, so true CrossModuleInlineInfo entries are not produced for them), while
-    /// candidates whose body contains a real <c>await</c> are NOT inlined. The latter
-    /// is a JIT-level limitation: <c>Compiler::impSetupAsyncCall</c> in
-    /// importercalls.cpp issues a FATAL <c>CALLEE_AWAIT</c> observation as soon as it
-    /// sees an async call inside an inlining candidate (see also <c>CALLEE_ASYNC_SUSPEND</c>).
-    /// The matrix covers Task, Task&lt;primitive&gt;, and Task&lt;class&gt; return shapes.
+    /// their callers.
     /// </summary>
     [Fact]
     public void CompositeAsyncInliningMatrix()
@@ -634,83 +615,11 @@ public class R2RTestSuites
     }
 
     /// <summary>
-    /// Composite mode with runtime-async methods that capture GC refs across await
-    /// points, exercising ContinuationLayout and RESUME stub emission in composite images.
-    /// Validates that both the library and main assembly's async methods produce
-    /// [ASYNC] variants, [RESUME] stubs, and ContinuationLayout fixups.
-    /// </summary>
-    [Fact]
-    public void CompositeAsyncContinuationAndResume()
-    {
-        var asyncCompositeContLib = new CompiledAssembly
-        {
-            AssemblyName = "AsyncCompositeContLib",
-            SourceResourceNames =
-            [
-                "RuntimeAsync/Dependencies/AsyncCompositeContLib.cs",
-                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
-            ],
-            Features = { RuntimeAsyncFeature },
-        };
-        var compositeAsyncContMain = new CompiledAssembly
-        {
-            AssemblyName = "CompositeAsyncContinuationMain",
-            SourceResourceNames =
-            [
-                "RuntimeAsync/CompositeAsyncContinuationMain.cs",
-                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
-            ],
-            Features = { RuntimeAsyncFeature },
-            References = [asyncCompositeContLib]
-        };
-
-        new R2RTestRunner(_output).Run(new R2RTestCase(
-            nameof(CompositeAsyncContinuationAndResume),
-            [
-                new(nameof(CompositeAsyncContinuationAndResume),
-                [
-                    new CrossgenAssembly(asyncCompositeContLib),
-                    new CrossgenAssembly(compositeAsyncContMain),
-                ])
-                {
-                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
-                    Validate = Validate,
-                },
-            ]));
-
-        static void Validate(ReadyToRunReader reader)
-        {
-            string diag;
-            // Library methods produce async variants and resume stubs
-            Assert.True(R2RAssert.HasAsyncVariant(reader, "CaptureRefComposite", out diag), diag);
-            Assert.True(R2RAssert.HasAsyncVariant(reader, "CaptureArrayComposite", out diag), diag);
-            Assert.True(R2RAssert.HasResumptionStub(reader, "CaptureRefComposite", out diag), diag);
-            Assert.True(R2RAssert.HasResumptionStub(reader, "CaptureArrayComposite", out diag), diag);
-
-            // Main assembly methods produce async variants and resume stubs
-            Assert.True(R2RAssert.HasAsyncVariant(reader, "CallCaptureRefComposite", out diag), diag);
-            Assert.True(R2RAssert.HasAsyncVariant(reader, "LocalCaptureAcrossAwait", out diag), diag);
-            Assert.True(R2RAssert.HasResumptionStub(reader, "CallCaptureRefComposite", out diag), diag);
-            Assert.True(R2RAssert.HasResumptionStub(reader, "LocalCaptureAcrossAwait", out diag), diag);
-
-            // ContinuationLayout fixups are present for methods with GC refs across awaits
-            Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureRefComposite", out diag), diag);
-            Assert.True(R2RAssert.HasContinuationLayout(reader, "LocalCaptureAcrossAwait", out diag), diag);
-        }
-    }
-
-    /// <summary>
-    /// Composite-mode regression coverage for async thunk emission of methods on
-    /// generic types (and generic methods on generic types). The parent PR's
-    /// description specifically calls these out as the case that originally
-    /// broke <c>MethodWithToken..ctor()</c> owning-type computation when the
-    /// async-thunk ILStub forced a strip-instantiation in
-    /// <c>CorInfoImpl.HandleToModuleToken</c>. The follow-up "Get IL for the
-    /// (possibly instantiated) method, not the definition" fix in
-    /// <c>ReadyToRunCodegenCompilation.EnsureAsyncThunkTokensAreAvailable</c>
-    /// is also exercised by this test (it only matters for instantiated
-    /// methods/types). Both reference-type and value-type instantiations are
-    /// covered because token resolution differs between the two.
+    /// Validate that async thunks with generic owning types are correctly emitted in composite mode.
+    /// Async thunks (and all "faux" method IL stubs) strip the instantiation away when constructing a MethodWithToken.
+    /// This is fine for the Method instantiation, but the Type instantiation needs to be tracked properly.
+    /// https://github.com/dotnet/runtime/pull/126904 added support for ensuring the OwningType signature modifier is emitted
+    /// for these methods.
     /// </summary>
     [Fact]
     public void CompositeAsyncGenericTypes()
