@@ -506,9 +506,9 @@ namespace System.Diagnostics.Tests
                 }
                 else
                 {
-                    Assert.Throws<NotSupportedException>(() => handle.WaitForExit());
-                    Assert.Throws<NotSupportedException>(() => handle.TryWaitForExit(TimeSpan.FromSeconds(1), out _));
-                    await Assert.ThrowsAsync<NotSupportedException>(async () => await handle.WaitForExitAsync());
+                    Assert.Throws<PlatformNotSupportedException>(() => handle.WaitForExit());
+                    Assert.Throws<PlatformNotSupportedException>(() => handle.TryWaitForExit(TimeSpan.FromSeconds(1), out _));
+                    await Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await handle.WaitForExitAsync());
                 }
             }
         }

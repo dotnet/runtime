@@ -148,7 +148,7 @@ namespace Microsoft.Win32.SafeHandles
 
             if (!_waitStateHolder._state.IsChild)
             {
-                throw new NotSupportedException(SR.NotSupportedForNonChildProcess);
+                throw new PlatformNotSupportedException(SR.NotSupportedForNonChildProcess);
             }
 
             return _waitStateHolder._state;
