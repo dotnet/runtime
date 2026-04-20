@@ -50,8 +50,7 @@ public partial class ContractDescriptorParser
                                 ReadCommentHandling = JsonCommentHandling.Skip,
                                 UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
                                 UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement,
-                                Converters = [typeof(ContractsDictionaryConverter),
-                                            typeof(TypeDescriptorConverter),
+                                Converters = [typeof(TypeDescriptorConverter),
                                             typeof(FieldDescriptorConverter),
                                             typeof(GlobalDescriptorConverter)])]
     internal sealed partial class ContractDescriptorContext : JsonSerializerContext
@@ -62,7 +61,6 @@ public partial class ContractDescriptorParser
     {
         public int? Version { get; set; }
         public string? Baseline { get; set; }
-        [JsonConverter(typeof(ContractsDictionaryConverter))]
         public Dictionary<string, string>? Contracts { get; set; }
 
         public Dictionary<string, TypeDescriptor>? Types { get; set; }
@@ -193,49 +191,6 @@ public partial class ContractDescriptorParser
         public override void Write(Utf8JsonWriter writer, FieldDescriptor value, JsonSerializerOptions options)
         {
             throw new JsonException();
-        }
-    }
-
-    // Reads a Dictionary<string, string> where values can be either JSON strings or numbers.
-    // Numbers are converted to their string representation for backward compatibility with
-    // older runtimes that used integer contract versions.
-    internal sealed class ContractsDictionaryConverter : JsonConverter<Dictionary<string, string>>
-    {
-        public override Dictionary<string, string> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType != JsonTokenType.StartObject)
-                throw new JsonException();
-
-            var dict = new Dictionary<string, string>();
-            while (reader.Read())
-            {
-                if (reader.TokenType == JsonTokenType.EndObject)
-                    return dict;
-
-                if (reader.TokenType != JsonTokenType.PropertyName)
-                    throw new JsonException();
-
-                string key = reader.GetString()!;
-                reader.Read();
-
-                string value = reader.TokenType switch
-                {
-                    JsonTokenType.String => reader.GetString()!,
-                    // Backward compat: old runtimes used integer versions (1, 2, ...).
-                    // Map them to the current "c<N>" naming convention.
-                    JsonTokenType.Number => "c" + reader.GetInt64().ToString(),
-                    _ => throw new JsonException($"Unexpected token type {reader.TokenType} for contract version of '{key}'.")
-                };
-
-                dict[key] = value;
-            }
-
-            throw new JsonException();
-        }
-
-        public override void Write(Utf8JsonWriter writer, Dictionary<string, string> value, JsonSerializerOptions options)
-        {
-            throw new NotImplementedException();
         }
     }
 
