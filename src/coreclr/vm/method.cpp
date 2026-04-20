@@ -3480,10 +3480,9 @@ BOOL PInvokeMethodDesc::TryGetResolvedPInvokeTarget(_In_ PInvokeMethodDesc* pMD,
         return TRUE;
     }
 
-    // We only resolve P/Invoke targets early
-    // for SuppressGCTransition inlined P/Invokes.
+    // We only resolve P/Invoke targets early for SuppressGCTransition inlined P/Invokes.
     // We do so because we cannot resolve the target of a SuppressGCTransition inlined P/Invoke at the time of the call
-    // as the resolution logic violates the rules of SuppressGCTransition.
+    // as the resolution logic violates the rules of SuppressGCTransition (this behavior is documented).
     if (!pMD->ShouldSuppressGCTransition())
         return FALSE;
 
