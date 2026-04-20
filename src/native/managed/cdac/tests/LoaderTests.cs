@@ -716,14 +716,12 @@ public unsafe class LoaderTests
     {
         foreach (var arch in new MockTarget.StdArch())
         {
-            // Both flags set
-            yield return [DebuggerAllowJitOptsPriv | DebuggerEncEnabledPriv, Interop.BOOL.TRUE, Interop.BOOL.TRUE, arch[0]];
-            // No flags set
-            yield return [0u, Interop.BOOL.FALSE, Interop.BOOL.FALSE, arch[0]];
-            // Only AllowJITOpts
-            yield return [DebuggerAllowJitOptsPriv, Interop.BOOL.TRUE, Interop.BOOL.FALSE, arch[0]];
-            // Only EnC enabled
-            yield return [DebuggerEncEnabledPriv, Interop.BOOL.FALSE, Interop.BOOL.TRUE, arch[0]];
+            yield return [IsJitOptimizationDisabled | IsEditAndContinue, Interop.BOOL.FALSE, Interop.BOOL.TRUE, arch[0]];
+            yield return [0u, Interop.BOOL.TRUE, Interop.BOOL.FALSE, arch[0]];
+            yield return [IsJitOptimizationDisabled, Interop.BOOL.FALSE, Interop.BOOL.FALSE, arch[0]];
+            yield return [IsEditAndContinue, Interop.BOOL.TRUE, Interop.BOOL.TRUE, arch[0]];
+            // Debugger allows JIT opts but profiler disables them (IS_JIT_OPTIMIZATION_DISABLED wins)
+            yield return [DebuggerAllowJitOptsPriv | IsJitOptimizationDisabled, Interop.BOOL.FALSE, Interop.BOOL.FALSE, arch[0]];
         }
     }
 

@@ -237,11 +237,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
-            Contracts.DebuggerAssemblyControlFlags flags = loader.GetDebuggerInfoBits(handle);
-            *pfAllowJITOpts = (flags & Contracts.DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS) != 0
+            Contracts.ModuleFlags flags = loader.GetFlags(handle);
+            *pfAllowJITOpts = (flags & Contracts.ModuleFlags.JitOptimizationDisabled) == 0
                 ? Interop.BOOL.TRUE
                 : Interop.BOOL.FALSE;
-            *pfEnableEnC = (flags & Contracts.DebuggerAssemblyControlFlags.DACF_ENC_ENABLED) != 0
+            *pfEnableEnC = (flags & Contracts.ModuleFlags.EditAndContinue) != 0
                 ? Interop.BOOL.TRUE
                 : Interop.BOOL.FALSE;
         }
