@@ -510,15 +510,16 @@ namespace System.Net.WebSockets
                 if (writeTask.IsCompleted)
                 {
                     writeTask.GetAwaiter().GetResult();
-                    ValueTask flushTask = new ValueTask(_stream.FlushAsync());
+                    Task flushTask = _stream.FlushAsync();
                     if (flushTask.IsCompleted)
                     {
-                        return flushTask;
+                        flushTask.GetAwaiter().GetResult();
+                        return ValueTask.CompletedTask;
                     }
                     else
                     {
                         releaseSendBufferAndSemaphore = false;
-                        return WaitForWriteTaskAsync(flushTask, shouldFlush: false);
+                        return WaitForWriteTaskAsync(new ValueTask(flushTask), shouldFlush: false);
                     }
                 }
 
