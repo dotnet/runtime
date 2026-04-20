@@ -597,6 +597,10 @@ int CEEInfo::getStringLiteral (
         int                         bufferSize,
         int                         startIndex)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
@@ -646,6 +650,7 @@ int CEEInfo::getStringLiteral (
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 size_t CEEInfo::printObjectDescription (
@@ -654,6 +659,10 @@ size_t CEEInfo::printObjectDescription (
         size_t                 bufferSize,
         size_t*                pRequiredBufferSize)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
@@ -702,6 +711,7 @@ size_t CEEInfo::printObjectDescription (
     EE_TO_JIT_TRANSITION();
 
     return bytesWritten;
+#endif
 }
 
 /* static */
@@ -1320,6 +1330,10 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
 
 void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -1329,6 +1343,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     JIT_TO_EE_TRANSITION();
     GetThreadLocalStaticBlocksInfo(pInfo);
     EE_TO_JIT_TRANSITION();
+#endif
 }
 
 /*********************************************************************/
@@ -1629,6 +1644,10 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 //
 bool CEEInfo::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -1641,10 +1660,15 @@ bool CEEInfo::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     res = (field->IsStatic() != 0);
     EE_TO_JIT_TRANSITION_LEAF();
     return res;
+#endif
 }
 
 int CEEInfo::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -1671,6 +1695,7 @@ int CEEInfo::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 
     EE_TO_JIT_TRANSITION();
     return arrLen;
+#endif
 }
 
 //---------------------------------------------------------------------------------------
@@ -1682,6 +1707,10 @@ CEEInfo::findCallSiteSig(
     CORINFO_CONTEXT_HANDLE context,
     CORINFO_SIG_INFO *     sigRet)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -1750,6 +1779,7 @@ CEEInfo::findCallSiteSig(
         CONV_TO_JITSIG_FLAGS_NONE,
         sigRet);
     EE_TO_JIT_TRANSITION();
+#endif
 } // CEEInfo::findCallSiteSig
 
 //---------------------------------------------------------------------------------------
@@ -1835,6 +1865,10 @@ unsigned
 CEEInfo::getHeapClassSize(
     CORINFO_CLASS_HANDLE clsHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL{
         NOTHROW;
         GC_NOTRIGGER;
@@ -1856,6 +1890,7 @@ CEEInfo::getHeapClassSize(
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
+#endif
 }
 
 //---------------------------------------------------------------------------------------
@@ -1863,6 +1898,10 @@ CEEInfo::getHeapClassSize(
 // Return TRUE if an object of this type can be allocated on the stack.
 bool CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL{
         NOTHROW;
         GC_NOTRIGGER;
@@ -1885,6 +1924,7 @@ bool CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
+#endif
 }
 
 unsigned CEEInfo::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE type, bool fDoubleAlignHint)
@@ -1974,6 +2014,10 @@ unsigned CEEInfo::getClassAlignmentRequirementStatic(TypeHandle clsHnd)
 CORINFO_FIELD_HANDLE
 CEEInfo::getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -1993,6 +2037,7 @@ CEEInfo::getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num)
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 static GetTypeLayoutResult GetTypeLayoutHelper(
@@ -2136,6 +2181,10 @@ GetTypeLayoutResult CEEInfo::getTypeLayout(
     CORINFO_TYPE_LAYOUT_NODE* treeNodes,
     size_t* numTreeNodes)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     STANDARD_VM_CONTRACT;
 
     GetTypeLayoutResult result = GetTypeLayoutResult::Failure;
@@ -2176,11 +2225,16 @@ GetTypeLayoutResult CEEInfo::getTypeLayout(
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 mdMethodDef
 CEEInfo::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -2206,12 +2260,17 @@ CEEInfo::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 bool CEEInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod,
                                   LPCSTR modifier,
                                   bool fOptional)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -2233,6 +2292,7 @@ bool CEEInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod,
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 static unsigned MarkGCField(BYTE* gcPtrs, CorInfoGCType type)
@@ -2411,6 +2471,10 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
                                                 /*IN*/  CORINFO_CLASS_HANDLE structHnd,
                                                 /*OUT*/ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -2511,10 +2575,15 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 #else // !defined(UNIX_AMD64_ABI_ITF)
     return false;
 #endif // !defined(UNIX_AMD64_ABI_ITF)
+#endif
 }
 
 void CEEInfo::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
@@ -2542,6 +2611,7 @@ void CEEInfo::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOW
     methodTablePtr->GetNativeSwiftPhysicalLowering(pLowering, useNativeLayout);
 
     EE_TO_JIT_TRANSITION();
+#endif
 }
 
 CorInfoWasmType CEEInfo::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
@@ -2555,6 +2625,10 @@ CorInfoWasmType CEEInfo::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
 /*********************************************************************/
 unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -2580,6 +2654,7 @@ unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 
@@ -3565,6 +3640,10 @@ const char* CEEInfo::getClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd)
 /*********************************************************************/
 void* CEEInfo::LongLifetimeMalloc(size_t sz)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -3578,11 +3657,16 @@ void* CEEInfo::LongLifetimeMalloc(size_t sz)
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
 void CEEInfo::LongLifetimeFree(void* obj)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -3592,12 +3676,17 @@ void CEEInfo::LongLifetimeFree(void* obj)
     JIT_TO_EE_TRANSITION_LEAF();
     (operator delete)(obj);
     EE_TO_JIT_TRANSITION_LEAF();
+#endif
 }
 
 
 /*********************************************************************/
 bool CEEInfo::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -3627,11 +3716,16 @@ bool CEEInfo::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONS
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
 bool CEEInfo::getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -3662,6 +3756,7 @@ bool CEEInfo::getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -3964,6 +4059,10 @@ exit: ;
 
 void CEEInfo::classMustBeLoadedBeforeCodeIsRun (CORINFO_CLASS_HANDLE typeToLoadHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -3978,11 +4077,16 @@ void CEEInfo::classMustBeLoadedBeforeCodeIsRun (CORINFO_CLASS_HANDLE typeToLoadH
     _ASSERTE(th.IsFullyLoaded());
 
     EE_TO_JIT_TRANSITION_LEAF();
+#endif
 }
 
 /*********************************************************************/
 void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -3997,6 +4101,7 @@ void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
     _ASSERTE(pMD->GetMethodTable()->IsFullyLoaded());
 
     EE_TO_JIT_TRANSITION_LEAF();
+#endif
 }
 
 /*********************************************************************/
@@ -4081,6 +4186,10 @@ CorInfoType CEEInfo::getTypeForPrimitiveValueClass(
 CorInfoType CEEInfo::getTypeForPrimitiveNumericClass(
         CORINFO_CLASS_HANDLE clsHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL{
         NOTHROW;
         GC_NOTRIGGER;
@@ -4142,11 +4251,16 @@ CorInfoType CEEInfo::getTypeForPrimitiveNumericClass(
     JIT_TO_EE_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 
 void CEEInfo::getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4166,6 +4280,7 @@ void CEEInfo::getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal)
     }
 
     EE_TO_JIT_TRANSITION();
+#endif
 }
 
 
@@ -4176,6 +4291,10 @@ bool CEEInfo::canCast(
         CORINFO_CLASS_HANDLE        child,
         CORINFO_CLASS_HANDLE        parent)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4191,6 +4310,7 @@ bool CEEInfo::canCast(
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -4414,6 +4534,10 @@ bool CEEInfo::isMoreSpecificType(
         CORINFO_CLASS_HANDLE        cls1,
         CORINFO_CLASS_HANDLE        cls2)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4428,6 +4552,7 @@ bool CEEInfo::isMoreSpecificType(
 
     EE_TO_JIT_TRANSITION();
     return result;
+#endif
 }
 
 static bool isExactTypeHelper(TypeHandle th)
@@ -4475,6 +4600,10 @@ static bool isExactTypeHelper(TypeHandle th)
 // Returns true if a class handle can only describe values of exactly one type.
 bool CEEInfo::isExactType(CORINFO_CLASS_HANDLE cls)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4489,11 +4618,16 @@ bool CEEInfo::isExactType(CORINFO_CLASS_HANDLE cls)
 
     EE_TO_JIT_TRANSITION();
     return result;
+#endif
 }
 
 // Returns whether a class handle represents a generic type, if that can be statically determined.
 TypeCompareState CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -4513,11 +4647,16 @@ TypeCompareState CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
+#endif
 }
 
 // Returns whether a class handle represents a Nullable type, if that can be statically determined.
 TypeCompareState CEEInfo::isNullableType(CORINFO_CLASS_HANDLE cls)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -4534,6 +4673,7 @@ TypeCompareState CEEInfo::isNullableType(CORINFO_CLASS_HANDLE cls)
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -4546,6 +4686,10 @@ TypeCompareState CEEInfo::isEnum(
         CORINFO_CLASS_HANDLE        cls,
         CORINFO_CLASS_HANDLE*       underlyingType)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4585,6 +4729,7 @@ TypeCompareState CEEInfo::isEnum(
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -4594,6 +4739,10 @@ TypeCompareState CEEInfo::isEnum(
 CORINFO_CLASS_HANDLE CEEInfo::getParentType(
             CORINFO_CLASS_HANDLE    cls)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4628,6 +4777,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getParentType(
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 
@@ -4641,6 +4791,10 @@ CorInfoType CEEInfo::getChildType (
         CORINFO_CLASS_HANDLE       *clsRet
         )
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4673,12 +4827,17 @@ CorInfoType CEEInfo::getChildType (
     EE_TO_JIT_TRANSITION();
 
     return ret;
+#endif
 }
 
 /*********************************************************************/
 // Check if this is a single dimensional, zero based array type
 bool CEEInfo::isSDArray(CORINFO_CLASS_HANDLE  cls)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4704,12 +4863,17 @@ bool CEEInfo::isSDArray(CORINFO_CLASS_HANDLE  cls)
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
 // Get the number of dimensions in an array
 unsigned CEEInfo::getArrayRank(CORINFO_CLASS_HANDLE  cls)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4735,12 +4899,17 @@ unsigned CEEInfo::getArrayRank(CORINFO_CLASS_HANDLE  cls)
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
 // Get the index of runtime provided array method
 CorInfoArrayIntrinsic CEEInfo::getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4773,6 +4942,7 @@ CorInfoArrayIntrinsic CEEInfo::getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn)
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -4785,6 +4955,10 @@ void * CEEInfo::getArrayInitializationData(
             uint32_t                    size
             )
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4811,6 +4985,7 @@ void * CEEInfo::getArrayInitializationData(
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
@@ -5940,6 +6115,10 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
 /***********************************************************************/
 CorInfoHelpFunc CEEInfo::getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -5962,6 +6141,7 @@ CorInfoHelpFunc CEEInfo::getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
         result = CORINFO_HELP_INITCLASS;
 
     return result;
+#endif
 }
 
 /***********************************************************************/
@@ -6009,6 +6189,10 @@ CORINFO_OBJECT_HANDLE CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd
 /***********************************************************************/
 bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
@@ -6044,11 +6228,16 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
     EE_TO_JIT_TRANSITION();
 
     return isImmutable;
+#endif
 }
 
 /***********************************************************************/
 bool CEEInfo::getStringChar(CORINFO_OBJECT_HANDLE obj, int index, uint16_t* value)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
@@ -6077,11 +6266,16 @@ bool CEEInfo::getStringChar(CORINFO_OBJECT_HANDLE obj, int index, uint16_t* valu
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /***********************************************************************/
 CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
@@ -6101,6 +6295,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
     EE_TO_JIT_TRANSITION();
 
     return handle;
+#endif
 }
 
 /***********************************************************************/
@@ -6186,6 +6381,10 @@ CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
                                                  CORINFO_METHOD_HANDLE methHnd,
                                                  void **ppIndirection)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -6210,11 +6409,16 @@ CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /***********************************************************************/
 unsigned CEEInfo::getMethodHash (CORINFO_METHOD_HANDLE ftnHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -6232,11 +6436,16 @@ unsigned CEEInfo::getMethodHash (CORINFO_METHOD_HANDLE ftnHnd)
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /***********************************************************************/
 size_t CEEInfo::printMethodName(CORINFO_METHOD_HANDLE ftnHnd, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
@@ -6266,6 +6475,7 @@ size_t CEEInfo::printMethodName(CORINFO_METHOD_HANDLE ftnHnd, char* buffer, size
     EE_TO_JIT_TRANSITION();
 
     return bytesWritten;
+#endif
 }
 
 const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, const char** className, const char** namespaceName, const char** enclosingClassNames, size_t maxEnclosingClassNames)
@@ -6335,6 +6545,10 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
 /*********************************************************************/
 const char* CEEInfo::getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -6360,11 +6574,16 @@ const char* CEEInfo::getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const ch
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
 CORINFO_CLASS_HANDLE CEEInfo::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -6383,10 +6602,15 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE 
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -6407,6 +6631,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getMethodInstantiationArgument(CORINFO_METHOD_HAND
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -6434,6 +6659,10 @@ bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
 
 bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -6453,6 +6682,7 @@ bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
     EE_TO_JIT_TRANSITION();
 
     return true;
+#endif
 }
 
 /*********************************************************************/
@@ -6600,6 +6830,10 @@ void CEEInfo::setMethodAttribs (
         CORINFO_METHOD_HANDLE ftnHnd,
         CorInfoMethodRuntimeFlags attribs)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -6636,6 +6870,7 @@ void CEEInfo::setMethodAttribs (
     }
 
     EE_TO_JIT_TRANSITION();
+#endif
 }
 
 /*********************************************************************/
@@ -7722,6 +7957,10 @@ CEEInfo::getMethodInfo(
     CORINFO_METHOD_INFO * methInfo,
     CORINFO_CONTEXT_HANDLE context)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -7757,12 +7996,17 @@ CEEInfo::getMethodInfo(
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 bool CEEInfo::haveSameMethodDefinition(
     CORINFO_METHOD_HANDLE meth1Hnd,
     CORINFO_METHOD_HANDLE meth2Hnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -7780,10 +8024,15 @@ bool CEEInfo::haveSameMethodDefinition(
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -7814,6 +8063,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
     _ASSERTE(result != NULL);
 
     return result;
+#endif
 }
 
 /*************************************************************
@@ -7824,6 +8074,10 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
 CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
                                   CORINFO_METHOD_HANDLE hCallee)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -8020,6 +8274,7 @@ exit: ;
     }
 
     return result;
+#endif
 }
 
 void CEEInfo::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
@@ -8033,6 +8288,10 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                                       CorInfoInline inlineResult,
                                       const char * reason)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
@@ -8192,6 +8451,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
 #endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 
     EE_TO_JIT_TRANSITION();
+#endif
 }
 
 
@@ -8298,6 +8558,10 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
                                      CorInfoTailCall tailCallResult,
                                      const char * reason)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
@@ -8416,6 +8680,7 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
 
 
     EE_TO_JIT_TRANSITION();
+#endif
 }
 
 static void getEHinfoHelper(
@@ -8547,6 +8812,10 @@ CEEInfo::getMethodClass(
 /*********************************************************************/
 bool CEEInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -8562,6 +8831,7 @@ bool CEEInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -8570,6 +8840,10 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
                                      unsigned * pOffsetAfterIndirection,
                                      bool * isRelative)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -8594,6 +8868,7 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
     *isRelative = false;
 
     EE_TO_JIT_TRANSITION();
+#endif
 }
 
 /*********************************************************************/
@@ -8897,6 +9172,10 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
 bool CEEInfo::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -8912,6 +9191,7 @@ bool CEEInfo::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -8919,6 +9199,10 @@ CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
     CORINFO_METHOD_HANDLE ftn,
     bool* requiresInstMethodTableArg)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -8946,6 +9230,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -8954,6 +9239,10 @@ CORINFO_METHOD_HANDLE CEEInfo::getInstantiatedEntry(
     CORINFO_METHOD_HANDLE* methodArg,
     CORINFO_CLASS_HANDLE* classArg)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -8987,6 +9276,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getInstantiatedEntry(
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
@@ -9036,6 +9326,10 @@ void CEEInfo::expandRawHandleIntrinsic(
 /*********************************************************************/
 CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClass(CORINFO_CLASS_HANDLE elemType)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9051,6 +9345,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClass(CORINFO_CLASS_HANDLE elemT
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE elemType)
@@ -9104,6 +9399,10 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE
 /*********************************************************************/
 CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9119,6 +9418,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClass(CORINFO_CLASS_HAND
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLASS_HANDLE elemType)
@@ -9180,6 +9480,10 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
 /*********************************************************************/
 CORINFO_CLASS_HANDLE CEEInfo::getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE elemType)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9195,6 +9499,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HAND
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::getSZArrayHelperEnumeratorClassHelper(CORINFO_CLASS_HANDLE elemType)
@@ -9220,6 +9525,10 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
                                     CORINFO_CONST_LOOKUP * pResult,
                                     CORINFO_ACCESS_FLAGS   accessFlags)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9287,6 +9596,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
 
     pResult->accessType = accessType;
     pResult->addr = ret;
+#endif
 }
 
 /*********************************************************************/
@@ -9316,6 +9626,10 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
 /*********************************************************************/
 size_t CEEInfo::printFieldName(CORINFO_FIELD_HANDLE fieldHnd, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
@@ -9344,12 +9658,17 @@ size_t CEEInfo::printFieldName(CORINFO_FIELD_HANDLE fieldHnd, char* buffer, size
     EE_TO_JIT_TRANSITION();
 
     return bytesWritten;
+#endif
 }
 
 /*********************************************************************/
 // Get the type that declares the field
 CORINFO_CLASS_HANDLE CEEInfo::getFieldClass (CORINFO_FIELD_HANDLE fieldHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -9366,6 +9685,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getFieldClass (CORINFO_FIELD_HANDLE fieldHnd)
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -9379,6 +9699,10 @@ CorInfoType CEEInfo::getFieldType (CORINFO_FIELD_HANDLE fieldHnd,
                                    CORINFO_CLASS_HANDLE* pTypeHnd,
                                    CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9394,6 +9718,7 @@ CorInfoType CEEInfo::getFieldType (CORINFO_FIELD_HANDLE fieldHnd,
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -9466,6 +9791,10 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
 /*********************************************************************/
 unsigned CEEInfo::getFieldOffset (CORINFO_FIELD_HANDLE fieldHnd)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9498,11 +9827,16 @@ unsigned CEEInfo::getFieldOffset (CORINFO_FIELD_HANDLE fieldHnd)
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
 uint32_t CEEInfo::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE fieldHnd, void **ppIndirection)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9527,6 +9861,7 @@ uint32_t CEEInfo::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE fieldHnd, void
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 void *CEEInfo::allocateArray(size_t cBytes)
@@ -9578,6 +9913,10 @@ void CEEInfo::getBoundaries(CORINFO_METHOD_HANDLE ftn,
                                unsigned int *cILOffsets, uint32_t **pILOffsets,
                                ICorDebugInfo::BoundaryTypes *implicitBoundaries)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9601,11 +9940,16 @@ void CEEInfo::getBoundaries(CORINFO_METHOD_HANDLE ftn,
 #endif // DEBUGGING_SUPPORTED
 
     EE_TO_JIT_TRANSITION();
+#endif
 }
 
 void CEEInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
                          bool *extendOthers)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9630,6 +9974,7 @@ void CEEInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::
 #endif // DEBUGGING_SUPPORTED
 
     EE_TO_JIT_TRANSITION();
+#endif
 }
 
 /*********************************************************************/
@@ -9785,6 +10130,10 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 // see the struct `CORINFO_FPSTRUCT_LOWERING`.
 void CEEInfo::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -9828,6 +10177,7 @@ void CEEInfo::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRU
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
     EE_TO_JIT_TRANSITION();
+#endif
 }
 
 /*********************************************************************/
@@ -9838,6 +10188,10 @@ int CEEInfo::getExactClasses (
         CORINFO_CLASS_HANDLE* exactClsRet
         )
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -9852,6 +10206,7 @@ int CEEInfo::getExactClasses (
     EE_TO_JIT_TRANSITION();
 
     return -1;
+#endif
 }
 
 /*********************************************************************/
@@ -9861,6 +10216,10 @@ CORINFO_CLASS_HANDLE CEEInfo::getArgClass (
     CORINFO_ARG_LIST_HANDLE args
     )
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9900,12 +10259,17 @@ CORINFO_CLASS_HANDLE CEEInfo::getArgClass (
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
 
 CorInfoHFAElemType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9923,6 +10287,7 @@ CorInfoHFAElemType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 namespace
@@ -10137,9 +10502,14 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
 LPVOID CEEInfo::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig,
                                             void **ppIndirection)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     WRAPPER_NO_CONTRACT;
 
     return getVarArgsHandle(szMetaSig, NULL, ppIndirection);
+#endif
 }
 
 // Check any constraints on method type arguments
@@ -10147,6 +10517,10 @@ bool CEEInfo::satisfiesMethodConstraints(
     CORINFO_CLASS_HANDLE        parent,
     CORINFO_METHOD_HANDLE       method)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -10164,6 +10538,7 @@ bool CEEInfo::satisfiesMethodConstraints(
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 
@@ -10209,6 +10584,10 @@ CORINFO_WASM_TYPE_SYMBOL_HANDLE CEEInfo::getWasmTypeSymbol(
 
 CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -10243,6 +10622,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -10250,6 +10630,10 @@ CORINFO_JUST_MY_CODE_HANDLE CEEInfo::getJustMyCodeHandle(
                 CORINFO_METHOD_HANDLE       method,
                 CORINFO_JUST_MY_CODE_HANDLE**ppIndirection)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -10277,6 +10661,7 @@ CORINFO_JUST_MY_CODE_HANDLE CEEInfo::getJustMyCodeHandle(
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -10313,6 +10698,10 @@ CORINFO_OS getClrVmOs()
 // Return details about EE internal data structures
 void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -10357,6 +10746,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->osType = getClrVmOs();
 
     EE_TO_JIT_TRANSITION();
+#endif
 }
 
 void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
@@ -10436,6 +10826,10 @@ CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
 // Return details about EE internal data structures
 uint32_t CEEInfo::getThreadTLSIndex(void **ppIndirection)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -10448,11 +10842,16 @@ uint32_t CEEInfo::getThreadTLSIndex(void **ppIndirection)
         *ppIndirection = NULL;
 
     return result;
+#endif
 }
 
 
 int32_t * CEEInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -10471,6 +10870,7 @@ int32_t * CEEInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
+#endif
 }
 
 // This code is called if FilterException chose to handle the exception.
@@ -10553,6 +10953,10 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
 CORINFO_MODULE_HANDLE CEEInfo::embedModuleHandle(CORINFO_MODULE_HANDLE handle,
                                                  void **ppIndirection)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -10569,6 +10973,7 @@ CORINFO_MODULE_HANDLE CEEInfo::embedModuleHandle(CORINFO_MODULE_HANDLE handle,
     EE_TO_JIT_TRANSITION_LEAF();
 
     return handle;
+#endif
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::embedClassHandle(CORINFO_CLASS_HANDLE handle,
@@ -10594,6 +10999,10 @@ CORINFO_CLASS_HANDLE CEEInfo::embedClassHandle(CORINFO_CLASS_HANDLE handle,
 CORINFO_FIELD_HANDLE CEEInfo::embedFieldHandle(CORINFO_FIELD_HANDLE handle,
                                                void **ppIndirection)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -10609,6 +11018,7 @@ CORINFO_FIELD_HANDLE CEEInfo::embedFieldHandle(CORINFO_FIELD_HANDLE handle,
     EE_TO_JIT_TRANSITION_LEAF();
 
     return handle;
+#endif
 }
 
 CORINFO_METHOD_HANDLE CEEInfo::embedMethodHandle(CORINFO_METHOD_HANDLE handle,
@@ -10654,6 +11064,10 @@ uint32_t CEEInfo::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
 
 bool CEEInfo::runWithSPMIErrorTrap(void (*function)(void*), void* param)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     // No dynamic contract here because SEH is used
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -10667,10 +11081,15 @@ bool CEEInfo::runWithSPMIErrorTrap(void (*function)(void*), void* param)
 
     function(param);
     return true;
+#endif
 }
 
 bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -10702,6 +11121,7 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
     catchFrame.Pop();
 
     return success;
+#endif
 }
 
 /*********************************************************************/
@@ -12408,6 +12828,10 @@ bool CEEInfo::getStaticObjRefContent(OBJECTREF obj, uint8_t* buffer, bool ignore
 
 bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -12532,10 +12956,15 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, int bufferSize, int valueOffset)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -12580,6 +13009,7 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     EE_TO_JIT_TRANSITION();
 
     return result;
+#endif
 }
 
 /*********************************************************************/
@@ -14777,6 +15207,10 @@ bool CEEInfo::getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken,
                                  CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
                                  CORINFO_TAILCALL_HELPERS* pResult)
 {
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_MSG("Not needed in interpreter-only builds");
+#else
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -14792,6 +15226,7 @@ bool CEEInfo::getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken,
     EE_TO_JIT_TRANSITION();
 
     return success;
+#endif
 }
 
 static Signature AllocateSignature(LoaderAllocator* alloc, SigBuilder& sigBuilder, AllocMemTracker* pamTracker)
