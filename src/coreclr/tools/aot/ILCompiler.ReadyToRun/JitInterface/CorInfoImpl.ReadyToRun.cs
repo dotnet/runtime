@@ -2759,6 +2759,7 @@ namespace Internal.JitInterface
             else if (helperArg is FieldDesc fieldDesc)
             {
                 ModuleToken fieldToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
+                Debug.Assert(!strippedInstantiation);
                 helperArg = new FieldWithToken(fieldDesc, fieldToken, forceOwningTypeNotDerivedFromToken: strippedInstantiation);
             }
 
