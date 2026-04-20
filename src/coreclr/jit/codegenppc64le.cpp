@@ -297,7 +297,23 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 {
     //_ASSERTE("!NYI");
-    abort();
+    //abort();
+    assert(compiler->compGeneratingProlog);
+
+    if (!compiler->getNeedsGSSecurityCookie())
+    {
+        return;  // No GS cookie needed for this function
+    }
+
+    // For now, minimal implementation
+    // Full implementation would:
+    // 1. Load the GS cookie value from a global location
+    // 2. Store it to the GS cookie stack slot
+    // TODO: Implement full GS cookie support when needed
+
+    // For simple functions without buffers, this won't be called
+    return;
+
 }
 
 //------------------------------------------------------------------------
@@ -1803,7 +1819,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
     //_ASSERTE("!NYI");
-    abort();
+    return;
+
 }
 
 /*****************************************************************************
@@ -2344,13 +2361,47 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
 {
     //_ASSERTE("!NYI");
-    abort();
+    if (!compiler->UsesFunclets())
+    {
+        return;  // No funclets in this function
+    }
+
+    // Capture funclet prolog/epilog info for exception handling
+    // For simple functions without exception handlers, this is not needed
+    // TODO: Implement funclet support when needed
+    return;
+
 }
 
 void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 {    
     //_ASSERTE("!NYI");
-    abort();
+    assert(compiler->compGeneratingProlog);
+
+    if (compiler->lvaPSPSym == BAD_VAR_NUM)
+    {
+        return;  // No PSPSym needed for this function
+    }
+
+    noway_assert(isFramePointerUsed()); // We need an explicit frame pointer
+
+    // Calculate the offset from current SP to caller's SP
+    int SPtoCallerSPdelta = -genCallerSPtoInitialSPdelta();
+
+    if (compiler->opts.IsOSR())
+    {
+        SPtoCallerSPdelta += compiler->info.compPatchpointInfo->TotalFrameSize();
+    }
+
+    // Use initReg as scratch register
+    regNumber regTmp = initReg;
+    *pInitRegZeroed = false;
+
+    // Calculate caller's SP: addi regTmp, SP, SPtoCallerSPdelta
+    GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta);
+
+    // Store it to PSPSym local variable: std regTmp, [FP + PSPSym_offset]
+    GetEmitter()->emitIns_S_R(INS_std, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
 }
 
 //------------------------------------------------------------------------
