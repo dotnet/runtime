@@ -4059,10 +4059,6 @@ exit: ;
 
 void CEEInfo::classMustBeLoadedBeforeCodeIsRun (CORINFO_CLASS_HANDLE typeToLoadHnd)
 {
-#ifndef FEATURE_DYNAMIC_CODE_COMPILED
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_MSG("Not needed in interpreter-only builds");
-#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -4077,16 +4073,11 @@ void CEEInfo::classMustBeLoadedBeforeCodeIsRun (CORINFO_CLASS_HANDLE typeToLoadH
     _ASSERTE(th.IsFullyLoaded());
 
     EE_TO_JIT_TRANSITION_LEAF();
-#endif
 }
 
 /*********************************************************************/
 void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
 {
-#ifndef FEATURE_DYNAMIC_CODE_COMPILED
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_MSG("Not needed in interpreter-only builds");
-#else
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -4101,7 +4092,6 @@ void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
     _ASSERTE(pMD->GetMethodTable()->IsFullyLoaded());
 
     EE_TO_JIT_TRANSITION_LEAF();
-#endif
 }
 
 /*********************************************************************/
@@ -8558,10 +8548,6 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
                                      CorInfoTailCall tailCallResult,
                                      const char * reason)
 {
-#ifndef FEATURE_DYNAMIC_CODE_COMPILED
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_MSG("Not needed in interpreter-only builds");
-#else
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
@@ -8680,7 +8666,6 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
 
 
     EE_TO_JIT_TRANSITION();
-#endif
 }
 
 static void getEHinfoHelper(
