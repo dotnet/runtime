@@ -3,5 +3,3 @@
 
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(Microsoft.Extensions.Logging.ILoggingBuilder))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(Microsoft.Extensions.Logging.ProviderAliasAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(Microsoft.Extensions.Logging.Internal.FormattedLogValues))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(Microsoft.Extensions.Logging.Internal.LogValuesFormatter))]
