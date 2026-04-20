@@ -168,9 +168,10 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         /// <returns>The exit status of the process.</returns>
         /// <remarks>
-        /// On Unix it's impossible to obtain exit status of a non-child process.
+        /// On Unix, it's impossible to obtain the exit status of a non-child process.
         /// </remarks>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="PlatformNotSupportedException">On Unix, the process is not a child process.</exception>
         public ProcessExitStatus WaitForExit()
         {
             Validate();
@@ -185,9 +186,10 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="exitStatus">When this method returns <see langword="true"/>, contains the exit status of the process.</param>
         /// <returns><see langword="true"/> if the process exited before the timeout; otherwise, <see langword="false"/>.</returns>
         /// <remarks>
-        /// On Unix it's impossible to obtain exit status of a non-child process.
+        /// On Unix, it's impossible to obtain the exit status of a non-child process.
         /// </remarks>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="PlatformNotSupportedException">On Unix, the process is not a child process.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan"/>,
         /// or is greater than <see cref="int.MaxValue"/> milliseconds.</exception>
         public bool TryWaitForExit(TimeSpan timeout, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
@@ -205,9 +207,10 @@ namespace Microsoft.Win32.SafeHandles
         /// <returns>The exit status of the process. If the process was killed due to timeout,
         /// <see cref="ProcessExitStatus.Canceled"/> will be <see langword="true"/>.</returns>
         /// <remarks>
-        /// On Unix it's impossible to obtain exit status of a non-child process.
+        /// On Unix, it's impossible to obtain the exit status of a non-child process.
         /// </remarks>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="PlatformNotSupportedException">On Unix, the process is not a child process.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan"/>,
         /// or is greater than <see cref="int.MaxValue"/> milliseconds.</exception>
         [UnsupportedOSPlatform("ios")]
@@ -238,8 +241,9 @@ namespace Microsoft.Win32.SafeHandles
         /// The process is NOT killed and continues running. If you want to kill the process on cancellation,
         /// use <see cref="WaitForExitOrKillOnCancellationAsync"/> instead.
         /// </para>
-        /// <para>On Unix it's impossible to obtain exit status of a non-child process.</para>
+        /// <para>On Unix, it's impossible to obtain the exit status of a non-child process.</para>
         /// </remarks>
+        /// <exception cref="PlatformNotSupportedException">On Unix, the process is not a child process.</exception>
         public async Task<ProcessExitStatus> WaitForExitAsync(CancellationToken cancellationToken = default)
         {
             Validate();
@@ -302,8 +306,9 @@ namespace Microsoft.Win32.SafeHandles
         /// If the cancellation token cannot be canceled (e.g., <see cref="CancellationToken.None"/>), this method behaves identically
         /// to <see cref="WaitForExitAsync"/> and will wait indefinitely for the process to exit.
         /// </para>
-        /// <para>On Unix it's impossible to obtain exit status of a non-child process.</para>
+        /// <para>On Unix, it's impossible to obtain the exit status of a non-child process.</para>
         /// </remarks>
+        /// <exception cref="PlatformNotSupportedException">On Unix, the process is not a child process.</exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]

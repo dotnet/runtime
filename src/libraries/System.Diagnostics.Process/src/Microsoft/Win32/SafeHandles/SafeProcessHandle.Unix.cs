@@ -156,7 +156,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static ProcessExitStatus CreateExitStatus(ProcessWaitState waitState, bool canceled)
         {
-            // GetWaitState ensures the process is not a child process, so obtaining the exit status should never fail.
+            // GetWaitState ensures the process is a child process, so obtaining the exit status should never fail.
             bool exited = waitState.GetExited(out ProcessExitStatus? exitStatus, refresh: false);
             Debug.Assert(exited);
             Debug.Assert(exitStatus is not null);

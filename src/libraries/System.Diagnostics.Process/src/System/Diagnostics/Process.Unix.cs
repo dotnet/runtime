@@ -353,7 +353,7 @@ namespace System.Diagnostics
 
             EnsureState(State.HaveNonExitedId | State.IsLocal);
             // GetWaitState() ensures _waitStateHolder is initialized.
-            // The SafeProcessHandle constructor creates its own Holder copy (incrementing the ref count).
+            // IncrementRefCount() creates the Holder reference that is passed to SafeProcessHandle.
             GetWaitState();
             return new SafeProcessHandle(_waitStateHolder!.IncrementRefCount());
         }
