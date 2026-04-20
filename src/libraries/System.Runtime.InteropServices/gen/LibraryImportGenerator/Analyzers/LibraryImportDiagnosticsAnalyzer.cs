@@ -108,17 +108,39 @@ namespace Microsoft.Interop.Analyzers
             if (libraryImportAttr is null)
                 return false;
 
-            // Find the method syntax
+            // Find the method syntax - prefer the partial declaration (no body) over the generated implementation.
+            // With Analyze | ReportDiagnostics, both parts of a partial method appear in DeclaringSyntaxReferences.
+            // If we encounter the generated implementation (which has a body and is marked with [GeneratedCode]
+            // from our generator), skip it to avoid reporting SYSLIB1050 on it.
             foreach (SyntaxReference syntaxRef in method.DeclaringSyntaxReferences)
             {
                 if (syntaxRef.GetSyntax(context.CancellationToken) is MethodDeclarationSyntax methodSyntax)
                 {
+                    if (methodSyntax.Body is not null && IsGeneratedByOurGenerator(method))
+                        continue;
+
                     AnalyzeMethodSyntax(context, methodSyntax, method, libraryImportAttr, env, options);
                     break;
                 }
             }
 
             return true;
+        }
+
+        private static bool IsGeneratedByOurGenerator(IMethodSymbol method)
+        {
+            foreach (AttributeData attr in method.GetAttributes())
+            {
+                // The generator marks its output with [GeneratedCode("Microsoft.Interop.LibraryImportGenerator", "...")]
+                if (attr.AttributeClass is { Name: "GeneratedCodeAttribute", ContainingNamespace.Name: "Compiler", ContainingNamespace.ContainingNamespace.Name: "CodeDom", ContainingNamespace.ContainingNamespace.ContainingNamespace.Name: "System" }
+                    && attr.ConstructorArguments.Length >= 1
+                    && attr.ConstructorArguments[0].Value is string toolName
+                    && toolName.StartsWith("Microsoft.Interop.LibraryImportGenerator", StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static void AnalyzeMethodSyntax(
