@@ -1145,8 +1145,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
 #if defined(FEATURE_HW_INTRINSICS)
             case GT_CNS_VEC:
             {
-                // Only handle SIMD locals where the type matches; LCL_VAR's type tells us the SIMD width.
-                if (!varTypeIsSIMD(op1) || (op1->TypeGet() != op2->TypeGet()))
+                // For now, only support SIMD constants up to 16 bytes (SIMD8/12/16).
+                if (!op1->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16) || (op1->TypeGet() != op2->TypeGet()))
                 {
                     return NO_ASSERTION_INDEX;
                 }
@@ -1159,8 +1159,11 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
                     return NO_ASSERTION_INDEX;
                 }
 
-                AssertionDsc dsc = AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN,
-                                                                            op2->AsVecCon()->gtSimdVal, op2VN, equals);
+                simd16_t simdVal = {};
+                memcpy(&simdVal, &op2->AsVecCon()->gtSimdVal, genTypeSize(op2->TypeGet()));
+
+                AssertionDsc dsc =
+                    AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, simdVal, op2VN, equals);
                 return optAddAssertion(dsc);
             }
 #endif // FEATURE_HW_INTRINSICS
@@ -1906,6 +1909,11 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
             }
 
             if (!op2->OperIs(GT_CNS_VEC))
+            {
+                return NO_ASSERTION_INDEX;
+            }
+
+            if (!op1->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16) || (op1->TypeGet() != op2->TypeGet()))
             {
                 return NO_ASSERTION_INDEX;
             }
@@ -3267,8 +3275,9 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
 #if defined(FEATURE_HW_INTRINSICS)
         case O2K_CONST_VEC:
         {
-            // The assertion was created from a LCL_VAR == CNS_VEC where types matched. Verify type still matches.
-            if (!varTypeIsSIMD(tree) || !tree->TypeIs(lvaGetDesc(lclNum)->TypeGet()))
+            // The assertion was created from a LCL_VAR == CNS_VEC where types matched.
+            // For now, only support SIMD constants up to 16 bytes (SIMD8/12/16).
+            if (!tree->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16) || !tree->TypeIs(lvaGetDesc(lclNum)->TypeGet()))
             {
                 return nullptr;
             }
