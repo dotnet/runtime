@@ -55,11 +55,6 @@ int64_t NativeSum18ByRef()
         w[8], w[9], w[10], w[11], w[12], w[13], w[14], w[15], a17);
 }
 
-extern "C" DLL_EXPORT int64_t __cdecl NativeSum18ByRefEntryPoint()
-{
-    return NativeSum18ByRef();
-}
-
 #pragma managed
 
 // Needed to provide a regression case for https://github.com/dotnet/runtime/issues/110365
