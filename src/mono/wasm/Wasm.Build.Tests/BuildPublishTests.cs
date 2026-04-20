@@ -80,6 +80,15 @@ namespace Wasm.Build.Tests
                     pathsDict[nativeName] = (Path.Combine(paths.ObjWasmDir, nativeName), entry.unchanged);
                 }
             }
+
+            // dotnet.runtime.js lives in the materialized fx dir under its canonical (non-fingerprinted)
+            // name during build — fingerprinting is applied later when publishing to bin. GetFilesTable
+            // rewrites this entry to the fingerprinted name (from the boot config, which already reflects
+            // the publish layout), so override it back to the unfingerprinted obj/fx path.
+            if (pathsDict.TryGetValue("dotnet.runtime.js", out var runtimeJsEntry))
+            {
+                pathsDict["dotnet.runtime.js"] = (Path.Combine(fxFrameworkDir, "dotnet.runtime.js"), runtimeJsEntry.unchanged);
+            }
             
             string mainDll = $"{info.ProjectName}.dll";
             var firstBuildStat = StatFiles(pathsDict);
