@@ -36,6 +36,33 @@ public class DacDbiLoaderDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetModuleForAssembly_ReturnsNonNullModule(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        ILoader loader = Target.Contracts.Loader;
+
+        TargetPointer appDomainPtr = Target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        ulong appDomain = Target.ReadPointer(appDomainPtr);
+        var modules = loader.GetModuleHandles(new TargetPointer(appDomain),
+            AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
+
+        foreach (ModuleHandle module in modules)
+        {
+            TargetPointer assemblyPtr = loader.GetAssembly(module);
+            TargetPointer expectedModulePtr = loader.GetModule(module);
+
+            ulong resultModule;
+            int hr = dbi.GetModuleForAssembly(assemblyPtr.Value, &resultModule);
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.NotEqual(0UL, resultModule);
+            Assert.Equal(expectedModulePtr.Value, resultModule);
+            break;
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
     public unsafe void GetTypeHandle_ReturnsMethodTableForTypeDef(TestConfiguration config)
     {
         InitializeDumpTest(config);
