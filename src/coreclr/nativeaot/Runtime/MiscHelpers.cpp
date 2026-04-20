@@ -90,7 +90,7 @@ FCIMPL1(uint32_t, RhGetLoadedOSModules, Array * pResultArray)
 
     RuntimeInstance::OsModuleList *osModules = GetRuntimeInstance()->GetOsModuleList();
 
-    for (RuntimeInstance::OsModuleList::Iterator iter = osModules->begin(); iter != osModules->end(); iter++)
+    for (RuntimeInstance::OsModuleList::Iterator iter = osModules->Begin(); iter != osModules->End(); iter++)
     {
         if (pResultArray && (cModules < cResultArrayElements))
             pResultElements[cModules] = iter->m_osModule;

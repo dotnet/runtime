@@ -260,20 +260,20 @@ public:
         }
     };
 
-    Iterator begin()
+    Iterator Begin()
     {
         typedef SList<T, Traits> T_THIS;
         return Iterator(dac_cast<PTR_PTR_T>(
             dac_cast<TADDR>(this) + offsetof(T_THIS, m_pHead)));
     }
 
-    Iterator end()
+    Iterator End()
     { return Iterator::End(); }
 
     Iterator FindFirst(PTR_T pItem)
     {
-        Iterator it = begin();
-        for (; it != end(); ++it)
+        Iterator it = Begin();
+        for (; it != End(); ++it)
         {
             if (Traits::Equals(*it, pItem))
                 break;
