@@ -25,8 +25,6 @@
 #include <minipal/thread.h>
 #include "SignalSafeThreadMap.h"
 
-#include "slist.inl"
-
 EXTERN_C volatile uint32_t RhpTrapThreads;
 volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
 
@@ -193,7 +191,15 @@ void ThreadStore::DetachCurrentThread()
         // Note that when process is shutting down, the threads may be rudely terminated,
         // possibly while holding the threadstore lock. That is ok, since the process is being torn down.
         CrstHolder threadStoreLock(&pTS->m_Lock);
-        ASSERT(rh::std::count(pTS->m_ThreadList.begin(), pTS->m_ThreadList.end(), pDetachingThread) == 1);
+#ifdef _DEBUG
+        {
+            uintptr_t count = 0;
+            for (auto it = pTS->m_ThreadList.begin(); it != pTS->m_ThreadList.end(); ++it)
+                if (*it == pDetachingThread)
+                    ++count;
+            ASSERT(count == 1);
+        }
+#endif
         // remove the thread from the list of managed threads.
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
         // tidy up GC related stuff (release allocation context, etc..)
