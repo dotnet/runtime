@@ -110,8 +110,7 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            MountHelper.Unmount(mountedDirName);
-                            DeleteDir(mountedDirName, true);
+                            MountHelper.Unmount(mountedDirName, deleteDirectory: true);
                         }
                     }
                     else
@@ -187,8 +186,7 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            MountHelper.Unmount(mountedDirName);
-                            DeleteDir(mountedDirName, true);
+                            MountHelper.Unmount(mountedDirName, deleteDirectory: true);
                         }
                     }
                     else
@@ -262,8 +260,7 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            MountHelper.Unmount(mountedDirName);
-                            DeleteDir(mountedDirName, true);
+                            MountHelper.Unmount(mountedDirName, deleteDirectory: true);
                         }
                     }
                     else
@@ -337,8 +334,7 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            MountHelper.Unmount(mountedDirName);
-                            DeleteDir(mountedDirName, true);
+                            MountHelper.Unmount(mountedDirName, deleteDirectory: true);
                         }
                     }
                     else

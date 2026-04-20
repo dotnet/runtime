@@ -4,18 +4,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using ILLink.Shared.TypeSystemProxy;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Cecil;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
 using Mono.Linker.Tests.TestCasesRunner;
-using NUnit.Framework;
 
 namespace Mono.Linker.Tests.Tests
 {
-    [TestFixture]
+    [TestClass]
     public class TestFrameworkRulesAndConventions
     {
-        [Test]
+        [TestMethod]
         public void OnlyAttributeTypesInExpectations()
         {
             foreach (var expectationsAssemblyPath in ExpectationAssemblies())
@@ -24,12 +24,12 @@ namespace Mono.Linker.Tests.Tests
                 {
                     var nonAttributeTypes = assembly.MainModule.AllDefinedTypes().Where(t => !IsAcceptableExpectationsAssemblyType(t)).ToArray();
 
-                    Assert.That(nonAttributeTypes, Is.Empty);
+                    Assert.IsEmpty(nonAttributeTypes);
                 }
             }
         }
 
-        [Test]
+        [TestMethod]
         public void CanFindATypeForAllCsFiles()
         {
             var collector = CreateCollector();
@@ -40,7 +40,7 @@ namespace Mono.Linker.Tests.Tests
             })
                 .ToArray();
 
-            Assert.That(missing, Is.Empty, $"Could not locate a type for the following files.  Verify the type name and file name match and that the type is not excluded by a #if");
+            Assert.IsEmpty(missing, $"Could not locate a type for the following files.  Verify the type name and file name match and that the type is not excluded by a #if");
         }
 
         /// <summary>

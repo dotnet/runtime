@@ -615,7 +615,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return false;
     }
     GenTreeCall* call = tree->AsCall();
-    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
+    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(call->GetHelperNum()))
     {
         assert(call->IsNoReturn());
         noway_assert(call->gtFlags & GTF_EXCEPT);
@@ -1049,7 +1049,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         fptrValTree->gtFptrDelegateTarget = true;
         targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
-    else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    else if (oper == GT_CALL && targetMethod->AsCall()->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
         assert(targetMethod->AsCall()->gtArgs.CountArgs() == 3);
         GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
@@ -3154,6 +3154,18 @@ PhaseStatus Compiler::fgCreateFunclets()
     // Setup the root FuncInfoDsc and prepare to start associating
     // FuncInfoDsc's with their corresponding EH region
     memset((void*)funcInfo, 0, funcCnt * sizeof(FuncInfoDsc));
+#if !HAS_FIXED_REGISTER_SET || defined(TARGET_WASM)
+    for (unsigned i = 0; i < funcCnt; i++)
+    {
+#if !HAS_FIXED_REGISTER_SET
+        funcInfo[i].funStackPointerReg = REG_NA;
+        funcInfo[i].funFramePointerReg = REG_NA;
+#endif
+#ifdef TARGET_WASM
+        funcInfo[i].funWasmLocalDecls = nullptr;
+#endif
+    }
+#endif
     assert(funcInfo[0].funKind == FUNC_ROOT);
     funcIdx = 1;
 
@@ -7769,6 +7781,59 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
     }
 
     return regions;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegions::AddMultipleEntryRegionEdges: Add temporary
+//    edges for multiple entry try regions.
+//
+// Arguments:
+//    edges -- collection of temporary edges to augment
+//
+void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
+{
+    for (FlowGraphTryRegion* region : m_tryRegions)
+    {
+        if (region != nullptr && region->HasCatchHandler() && region->HasSideEntry())
+        {
+            BasicBlock* const headerBlock = region->GetHeaderBlock();
+
+            for (FlowEdge* edge : region->EntryEdges())
+            {
+                BasicBlock* const destBlock = edge->getDestinationBlock();
+
+                // Skip the normal entry edges.
+                //
+                if (destBlock == headerBlock)
+                {
+                    continue;
+                }
+
+                // We need an edge from dest to try header.
+                FlowEdge* const destheaderEdge = m_compiler->fgAddRefPred(headerBlock, destBlock);
+                edges.Push(destheaderEdge);
+
+                // And an edge from method entry to dest.
+                FlowEdge* const entryDestEdge = m_compiler->fgAddRefPred(destBlock, m_compiler->fgFirstBB);
+                edges.Push(entryDestEdge);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegions::RemoveMultipleEntryRegionEdges: Remove temporary
+//    edges added for multiple entry try regions.
+//
+// Arguments:
+//    edges -- collection of edges to remove
+//
+void FlowGraphTryRegions::RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
+{
+    for (FlowEdge* const edge : edges.BottomUpOrder())
+    {
+        m_compiler->fgRemoveRefPred(edge);
+    }
 }
 
 //------------------------------------------------------------------------

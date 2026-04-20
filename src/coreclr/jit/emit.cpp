@@ -2226,7 +2226,7 @@ void emitter::emitGeneratePrologEpilog()
             case IGPT_FUNCLET_EPILOG:
                 INDEBUG(++funcletEpilogCnt);
                 emitBegFuncletEpilog(igPh);
-                codeGen->genFuncletEpilog();
+                codeGen->genFuncletEpilog(igPhBB);
                 emitEndFuncletEpilog();
                 break;
 
@@ -6546,7 +6546,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
             assert(tgtEH->HasFinallyHandler());
 
             // Only to the first block of the finally (which is properly marked)
-            BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
+            BasicBlock* tgtBlk = tgtFunc->GetStartBlock(m_compiler);
             assert(m_compiler->bbIsFuncletBeg(tgtBlk));
 
             // And now we made it back to where we started

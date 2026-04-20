@@ -12,15 +12,15 @@ internal sealed class MethodDesc : IData<MethodDesc>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.MethodDesc);
 
-        ChunkIndex = target.Read<byte>(address + (ulong)type.Fields[nameof(ChunkIndex)].Offset);
-        Slot = target.Read<ushort>(address + (ulong)type.Fields[nameof(Slot)].Offset);
-        Flags = target.Read<ushort>(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        Flags3AndTokenRemainder = target.Read<ushort>(address + (ulong)type.Fields[nameof(Flags3AndTokenRemainder)].Offset);
-        EntryPointFlags = target.Read<byte>(address + (ulong)type.Fields[nameof(EntryPointFlags)].Offset);
-        CodeData = target.ReadPointer(address + (ulong)type.Fields[nameof(CodeData)].Offset);
+        ChunkIndex = target.ReadField<byte>(address, type, nameof(ChunkIndex));
+        Slot = target.ReadField<ushort>(address, type, nameof(Slot));
+        Flags = target.ReadField<ushort>(address, type, nameof(Flags));
+        Flags3AndTokenRemainder = target.ReadField<ushort>(address, type, nameof(Flags3AndTokenRemainder));
+        EntryPointFlags = target.ReadField<byte>(address, type, nameof(EntryPointFlags));
+        CodeData = target.ReadPointerField(address, type, nameof(CodeData));
         if (type.Fields.ContainsKey(nameof(GCCoverageInfo)))
         {
-            GCCoverageInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCCoverageInfo)].Offset);
+            GCCoverageInfo = target.ReadPointerField(address, type, nameof(GCCoverageInfo));
         }
     }
 
@@ -42,9 +42,9 @@ internal sealed class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.InstantiatedMethodDesc);
 
-        PerInstInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PerInstInfo)].Offset);
-        NumGenericArgs = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumGenericArgs)].Offset);
-        Flags2 = target.Read<ushort>(address + (ulong)type.Fields[nameof(Flags2)].Offset);
+        PerInstInfo = target.ReadPointerField(address, type, nameof(PerInstInfo));
+        NumGenericArgs = target.ReadField<ushort>(address, type, nameof(NumGenericArgs));
+        Flags2 = target.ReadField<ushort>(address, type, nameof(Flags2));
     }
 
     public TargetPointer PerInstInfo { get; init; }
@@ -59,7 +59,7 @@ internal sealed class DynamicMethodDesc : IData<DynamicMethodDesc>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicMethodDesc);
 
-        MethodName = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodName)].Offset);
+        MethodName = target.ReadPointerField(address, type, nameof(MethodName));
     }
 
     public TargetPointer MethodName { get; init; }
@@ -72,9 +72,9 @@ internal sealed class StoredSigMethodDesc : IData<StoredSigMethodDesc>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.StoredSigMethodDesc);
 
-        Sig = target.ReadPointer(address + (ulong)type.Fields[nameof(Sig)].Offset);
-        cSig = target.Read<uint>(address + (ulong)type.Fields[nameof(cSig)].Offset);
-        ExtendedFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(ExtendedFlags)].Offset);
+        Sig = target.ReadPointerField(address, type, nameof(Sig));
+        cSig = target.ReadField<uint>(address, type, nameof(cSig));
+        ExtendedFlags = target.ReadField<uint>(address, type, nameof(ExtendedFlags));
     }
 
     public TargetPointer Sig { get; init; }

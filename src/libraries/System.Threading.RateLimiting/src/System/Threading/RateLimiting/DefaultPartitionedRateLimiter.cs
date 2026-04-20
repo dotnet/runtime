@@ -259,7 +259,7 @@ namespace System.Threading.RateLimiting
                     }
                     catch (Exception ex)
                     {
-                        aggregateExceptions ??= new List<Exception>();
+                        aggregateExceptions ??= [];
                         aggregateExceptions.Add(ex);
                     }
                 }

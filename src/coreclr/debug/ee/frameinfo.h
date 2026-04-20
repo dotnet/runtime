@@ -100,15 +100,6 @@ public:
     bool IsFilterFrame()           { return fIsFilter;  }
     bool IsNonFilterFuncletFrame() { return (fIsFunclet && !fIsFilter); }
 
-    // A ridiculous flag that is targeting a very narrow fix at issue 650903 (4.5.1/Blue).
-    // This is set when the currently walked frame is a CLRToCOMMethodFrameGeneric. If the
-    // dude doing the walking is trying to ignore such frames (see
-    // code:ControllerStackInfo::m_suppressUMChainFromCLRToCOMMethodFrameGeneric), AND
-    // this is set, then the walker just continues on to the next frame, without
-    // erroneously identifying this frame as the target frame. Only used during "Step
-    // Out" to a managed frame (i.e., managed-only debugging).
-    bool                fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric;
-
     // In addition to a Method, a FrameInfo may also represent either a Chain or a Stub (but not both).
     // chainReason corresponds to ICorDebugChain::GetReason().
     CorDebugChainReason  chainReason;
@@ -117,7 +108,6 @@ public:
     // Helpers for initializing a FrameInfo for a chain or a stub frame.
     void InitForM2UInternalFrame(CrawlFrame * pCF);
     void InitForU2MInternalFrame(CrawlFrame * pCF);
-    void InitForADTransition(CrawlFrame * pCF);
     void InitForDynamicMethod(CrawlFrame * pCF);
     void InitForFuncEval(CrawlFrame * pCF);
     void InitForThreadStart(Thread *thread, REGDISPLAY * pRDSrc);

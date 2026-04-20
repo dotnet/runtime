@@ -124,14 +124,15 @@ namespace TestStackOverflow
         public static void TestStackOverflowLargeFrameMainThread()
         {
             if (((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) || (RuntimeInformation.ProcessArchitecture == Architecture.X64) || (RuntimeInformation.ProcessArchitecture == Architecture.RiscV64) ||
-                (RuntimeInformation.ProcessArchitecture == Architecture.LoongArch64)) &&
+                (RuntimeInformation.ProcessArchitecture == Architecture.LoongArch64) || (RuntimeInformation.ProcessArchitecture == Architecture.Arm)) &&
                 ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX)))
             {
-                // Disabled on Unix ARM64, X64, RISCV64, and LoongArch64.
+                // Disabled on Unix RISCV64 and LoongArch64, similar to ARM64.
                 // LoongArch64 hit this issue on Alpine. TODO: implement stack probing using helpers.
-                // ARM64 and X64 disabled due to https://github.com/dotnet/runtime/issues/13519
+                // Disabled on Unix ARM64 due to https://github.com/dotnet/runtime/issues/13519
                 // The current stack probing doesn't move the stack pointer and so the runtime sometimes cannot
                 // recognize the underlying sigsegv as stack overflow when it probes too far from SP.
+                // Disabled on Unix X64/Arm due to https://github.com/dotnet/runtime/issues/110173 which needs investigation.
                 return;
             }
 
