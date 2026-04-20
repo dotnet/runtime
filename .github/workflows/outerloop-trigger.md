@@ -327,8 +327,11 @@ To evaluate this rule:
 2. For each comment that contains `/azp run`, check whether the comment author
    has write access to the repository. Use the GitHub API to check the
    author's permission level (look for `permission` of `write`, `maintain`, or
-   `admin`). **Ignore** comments from bots (e.g. `github-actions[bot]`,
-   `azure-pipelines[bot]`) — only consider human contributors.
+   `admin`). **Ignore** comments from bots and service accounts (e.g.
+   `github-actions[bot]`, `azure-pipelines[bot]`, `dependabot[bot]`, or any
+   account ending in `[bot]`). Also **ignore comments posted under the
+   Copilot PAT pool accounts** — only consider human contributors with real
+   GitHub user accounts.
 3. Parse the `/azp run` line(s) to extract pipeline names. The format is
    `/azp run <name1>, <name2>, ...` (comma-separated) or one pipeline per
    `/azp run` line.
@@ -360,8 +363,8 @@ Use the `add-comment` safe output to post each batch comment.
 - **If any pipelines were posted as comments**: Do NOT call the `noop` tool.
   The `/azp run` comments already serve as the report.
 - **If all candidate pipelines were skipped as duplicates** (because they are
-  already running on this PR): Do NOT call the `noop` tool. The duplicate
-  detection itself is sufficient.
+  already running on this PR): Call the `noop` tool with a message like
+  "All candidate pipelines are already running on this PR."
 - **Only if NO pipelines are triggered AND no duplicates were found**: Call the
   `noop` tool with a short message explaining why no outerloop pipelines are
   needed for this change set (e.g., "No outerloop pipelines triggered: changes
