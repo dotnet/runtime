@@ -686,6 +686,22 @@ internal partial class StackWalk_1 : IStackWalk
         return handle.Context.InstructionPointer;
     }
 
+    bool IStackWalk.AreContextsEqual(byte[] context1, byte[] context2)
+    {
+        IPlatformAgnosticContext ctx1 = IPlatformAgnosticContext.GetContextForPlatform(_target);
+        IPlatformAgnosticContext ctx2 = IPlatformAgnosticContext.GetContextForPlatform(_target);
+
+        ArgumentOutOfRangeException.ThrowIfLessThan((uint)context1.Length, ctx1.Size, nameof(context1));
+        ArgumentOutOfRangeException.ThrowIfLessThan((uint)context2.Length, ctx2.Size, nameof(context2));
+
+        ctx1.FillFromBuffer(context1);
+        ctx2.FillFromBuffer(context2);
+
+        return ctx1.StackPointer == ctx2.StackPointer
+            && ctx1.FramePointer == ctx2.FramePointer
+            && ctx1.InstructionPointer == ctx2.InstructionPointer;
+    }
+
     string IStackWalk.GetFrameName(TargetPointer frameIdentifier)
         => FrameIterator.GetFrameName(_target, frameIdentifier);
 
@@ -760,37 +776,11 @@ internal partial class StackWalk_1 : IStackWalk
 
     private void FillContextFromThread(IPlatformAgnosticContext context, ThreadData threadData)
     {
-        byte[] bytes = new byte[context.Size];
-        Span<byte> buffer = new Span<byte>(bytes);
-
-        // Match the native DacStackReferenceWalker behavior: if the thread has a
-        // FilterContext or ProfilerFilterContext set, use that instead of calling
-        // GetThreadContext. During debugger breaks, GC stress redirection, or
-        // profiler stack walks, these contexts hold the correct managed frame state.
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
-
-        TargetPointer filterContext = thread.DebuggerFilterContext;
-        if (filterContext == TargetPointer.Null)
-            filterContext = thread.ProfilerFilterContext;
-
-        if (filterContext != TargetPointer.Null)
-        {
-            _target.ReadBuffer(filterContext.Value, buffer);
-            context.FillFromBuffer(buffer);
-            return;
-        }
-
-        // The underlying ICLRDataTarget.GetThreadContext has some variance depending on the host.
-        // SOS's managed implementation sets the ContextFlags to platform specific values defined in ThreadService.cs (diagnostics repo)
-        // SOS's native implementation keeps the ContextFlags passed into this function.
-        // To match the DAC behavior, the DefaultContextFlags are what the DAC passes in in DacGetThreadContext.
-        // In most implementations, this will be overridden by the host, but in some cases, it may not be.
-        if (!_target.TryGetThreadContext(threadData.OSId.Value, context.DefaultContextFlags, buffer))
-        {
-            throw new InvalidOperationException($"GetThreadContext failed for thread {threadData.OSId.Value}");
-        }
-
-        context.FillFromBuffer(buffer);
+        byte[] bytes = _target.Contracts.Thread.GetContext(
+            threadData.ThreadAddress,
+            ThreadContextSource.Debugger | ThreadContextSource.Profiler,
+            context.FullContextFlags);
+        context.FillFromBuffer(bytes);
     }
 
     private static StackDataFrameHandle AssertCorrectHandle(IStackDataFrameHandle stackDataFrameHandle)
