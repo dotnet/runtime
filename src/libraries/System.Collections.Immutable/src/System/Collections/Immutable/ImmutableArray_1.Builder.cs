@@ -765,7 +765,8 @@ namespace System.Collections.Immutable
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
             public int IndexOf(T item, int startIndex)
             {
-                return this.IndexOf(item, startIndex, this.Count - startIndex, EqualityComparer<T>.Default);
+                Requires.Range((uint)startIndex <= (uint)this.Count, nameof(startIndex));
+                return IndexOfCore(item, startIndex, this.Count - startIndex, EqualityComparer<T>.Default);
             }
 
             /// <summary>
@@ -800,6 +801,11 @@ namespace System.Collections.Immutable
 
                 Requires.ValidateRange(startIndex, count, this.Count, nameof(startIndex));
 
+                return IndexOfCore(item, startIndex, count, equalityComparer);
+            }
+
+            private int IndexOfCore(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer)
+            {
                 equalityComparer ??= EqualityComparer<T>.Default;
                 if (equalityComparer == EqualityComparer<T>.Default)
                 {
@@ -831,7 +837,8 @@ namespace System.Collections.Immutable
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
             public int IndexOf(T item, int startIndex, IEqualityComparer<T>? equalityComparer)
             {
-                return this.IndexOf(item, startIndex, this.Count - startIndex, equalityComparer);
+                Requires.Range((uint)startIndex <= (uint)this.Count, nameof(startIndex));
+                return IndexOfCore(item, startIndex, this.Count - startIndex, equalityComparer);
             }
 
             /// <summary>
