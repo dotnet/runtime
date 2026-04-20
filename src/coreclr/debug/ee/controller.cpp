@@ -8079,11 +8079,11 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     StackTraceTicket ticket(ip);
     info.GetStackInfo(ticket, GetThread(), LEAF_MOST_FRAME, NULL);
 
-    // This is a special case where we return from a managed method back to the runtime entrypoint
-    // (Environment.CallEntryPoint) or an interop stub.  These are not interesting frames for the
-    // debugger — single-stepping into them should be treated like stepping into native code.
-    // Disable the single step and enable trace call / method enter so the stepper can catch
-    // the next interesting transition or, if stepping out through Environment.CallEntryPoint,
+    // This is a special case where we return from a managed method back to the helper that invokes
+    // the main program entrypoint (Environment.CallEntryPoint) or an interop stub.  These are not
+    // interesting frames for the debugger - single-stepping into them should be treated like stepping
+    // into native code. Disable the single step and enable trace call / method enter so the stepper can
+    // catch the next interesting transition or, if stepping out through Environment.CallEntryPoint,
     // let the process exit naturally.
     if (fd == g_pEnvironmentCallEntryPointMethodDesc || fd->IsInteropStub())
     {
