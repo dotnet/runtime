@@ -855,8 +855,7 @@ namespace System.Collections.Immutable
             internal void CopyTo(T[] array, int arrayIndex)
             {
                 Debug.Assert(array != null);
-                Debug.Assert(arrayIndex >= 0);
-                Debug.Assert(array.Length >= arrayIndex + this.Count);
+                Debug.Assert(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length);
 
                 foreach (T element in this)
                 {
@@ -904,8 +903,7 @@ namespace System.Collections.Immutable
             internal void CopyTo(Array array, int arrayIndex)
             {
                 Debug.Assert(array != null);
-                Debug.Assert(arrayIndex >= 0);
-                Debug.Assert(array.Length >= arrayIndex + this.Count);
+                Debug.Assert(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length);
 
                 foreach (T element in this)
                 {

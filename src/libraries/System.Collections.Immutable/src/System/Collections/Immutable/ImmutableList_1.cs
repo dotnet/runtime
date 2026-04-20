@@ -556,8 +556,7 @@ namespace System.Collections.Immutable
         public void CopyTo(T[] array, int arrayIndex)
         {
             Requires.NotNull(array, nameof(array));
-            Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
-            Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
+            Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length, nameof(arrayIndex));
 
             _root.CopyTo(array, arrayIndex);
         }
@@ -804,8 +803,7 @@ namespace System.Collections.Immutable
         public int FindLastIndex(int startIndex, Predicate<T> match)
         {
             Requires.NotNull(match, nameof(match));
-            Requires.Range(startIndex >= 0, nameof(startIndex));
-            Requires.Range(startIndex == 0 || startIndex < this.Count, nameof(startIndex));
+            Requires.Range(startIndex == 0 || (uint)startIndex < (uint)this.Count, nameof(startIndex));
 
             return _root.FindLastIndex(startIndex, match);
         }
@@ -1104,8 +1102,7 @@ namespace System.Collections.Immutable
         void System.Collections.ICollection.CopyTo(Array array, int arrayIndex)
         {
             Requires.NotNull(array, nameof(array));
-            Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
-            Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
+            Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length, nameof(arrayIndex));
 
             _root.CopyTo(array, arrayIndex);
         }
