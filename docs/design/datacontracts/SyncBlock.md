@@ -149,7 +149,7 @@ TargetPointer GetSyncBlockFromCleanupList()
     TargetPointer cleanupBlockList = target.ReadPointer(syncBlockCache + /* SyncBlockCache::CleanupBlockList offset */);
     if (cleanupBlockList == TargetPointer.Null)
         return TargetPointer.Null;
-    return cleanupBlockList - /* SyncBlock::LinkNext offset */;
+    return cleanupBlockList;
 }
 
 // Returns the next sync block in the cleanup list after syncBlock, or TargetPointer.Null if there is none.
@@ -158,7 +158,7 @@ TargetPointer GetNextSyncBlock(TargetPointer syncBlock)
     TargetPointer linkNext = target.ReadPointer(syncBlock + /* SyncBlock::LinkNext offset */);
     if (linkNext == TargetPointer.Null)
         return TargetPointer.Null;
-    return linkNext - /* SyncBlock::LinkNext offset */;
+    return linkNext;
 }
 
 // Gets the built-in COM interop data directly from a sync block.
