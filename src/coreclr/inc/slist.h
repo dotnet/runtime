@@ -197,7 +197,7 @@ public:
         Iterator(PTR_PTR_T ppItem)
             : m_ppCur(ppItem)
 #ifdef _DEBUG
-              , m_fIsValid(true)
+            , m_fIsValid(true)
 #endif
         { }
 
