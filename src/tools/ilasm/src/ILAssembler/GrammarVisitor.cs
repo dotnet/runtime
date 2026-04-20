@@ -5158,7 +5158,7 @@ namespace ILAssembler
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitSigArgs(CILParser.SigArgsContext context) => VisitSigArgs(context);
-        public GrammarResult.Sequence<SignatureArg> VisitSigArgs(CILParser.SigArgsContext context) => new(ImmutableArray.CreateRange(context.sigArg().Select(arg => VisitSigArg(arg).Value)));
+        public GrammarResult.Sequence<SignatureArg> VisitSigArgs(CILParser.SigArgsContext context) => new([.. context.sigArg().Select(arg => VisitSigArg(arg).Value)]);
         GrammarResult ICILVisitor<GrammarResult>.VisitSimpleType(CILParser.SimpleTypeContext context) => VisitSimpleType(context);
         public GrammarResult.Literal<SignatureTypeCode> VisitSimpleType(CILParser.SimpleTypeContext context)
         {
