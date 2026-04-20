@@ -94,7 +94,6 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - linux_arm64
-          - linux_musl_x64
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr+libs+host+packs -rc Release -c Release -lc $(_BuildConfig)
@@ -238,7 +237,7 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       #
-      # Build CoreCLR and Libraries with Libraries tests
+      # Build all subsets with Libraries tests
       # For running libraries tests and installer tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -251,7 +250,7 @@ extends:
           - osx_arm64
           - windows_x64
           jobParameters:
-            nameSuffix: CoreCLR_Libraries
+            nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr+libs+libs.tests+host+packs -rc Release -c $(_BuildConfig) -hc Release /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
@@ -262,7 +261,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: AllSubsets_CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -271,7 +270,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: AllSubsets_CoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/tests
@@ -294,7 +293,7 @@ extends:
           platforms:
           - windows_x86
           jobParameters:
-            nameSuffix: CoreCLR_Libraries
+            nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr+libs+libs.tests+host+packs -c $(_BuildConfig) -hc $(debugOnPrReleaseOnRolling) /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
@@ -305,7 +304,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: AllSubsets_CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -314,7 +313,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: AllSubsets_CoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/tests
@@ -331,7 +330,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR and Libraries
+      # Build all subsets
       # For running installer tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -341,7 +340,7 @@ extends:
           platforms:
           - osx_x64
           jobParameters:
-            nameSuffix: CoreCLR_Libraries
+            nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -hc $(debugOnPrReleaseOnRolling)
             timeoutInMinutes: 120
             postBuildSteps:
@@ -352,7 +351,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: AllSubsets_CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -1580,9 +1579,9 @@ extends:
           helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
             dependsOnGlobalBuilds:
-              - nameSuffix: CoreCLR_Libraries
+              - nameSuffix: AllSubsets_CoreCLR
                 buildConfig: release
-            buildArtifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
+            buildArtifactName: AllSubsets_CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
             testArtifactName: Installer_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
             timeoutInMinutes: 150
             condition: >-
@@ -1600,9 +1599,9 @@ extends:
           jobParameters:
             hostedOs: linux
             dependsOnGlobalBuilds:
-              - nameSuffix: CoreCLR_Libraries
+              - nameSuffix: AllSubsets_CoreCLR
                 buildConfig: release
-            buildArtifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
+            buildArtifactName: AllSubsets_CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
             testArtifactName: Installer_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
             timeoutInMinutes: 150
             condition: >-
@@ -1620,9 +1619,9 @@ extends:
           helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
             dependsOnGlobalBuilds:
-              - nameSuffix: CoreCLR_Libraries
+              - nameSuffix: AllSubsets_CoreCLR
                 buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-            buildArtifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            buildArtifactName: AllSubsets_CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             testArtifactName: Installer_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             timeoutInMinutes: 150
             condition: >-
@@ -1640,9 +1639,9 @@ extends:
           jobParameters:
             hostedOs: linux
             dependsOnGlobalBuilds:
-              - nameSuffix: CoreCLR_Libraries
+              - nameSuffix: AllSubsets_CoreCLR
                 buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-            buildArtifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            buildArtifactName: AllSubsets_CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             testArtifactName: Installer_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             timeoutInMinutes: 150
             condition: >-
@@ -1902,9 +1901,9 @@ extends:
             isOfficialBuild: false
             testScope: innerloop
             liveRuntimeBuildConfig: release
-            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            helixArtifactsName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            unifiedBuildNameSuffix: CoreCLR_Libraries
+            unifiedArtifactsName: AllSubsets_CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            helixArtifactsName: AllSubsets_CoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedBuildNameSuffix: AllSubsets_CoreCLR
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1928,9 +1927,9 @@ extends:
             isOfficialBuild: false
             testScope: innerloop
             liveRuntimeBuildConfig: release
-            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
-            helixArtifactsName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
-            unifiedBuildNameSuffix: CoreCLR_Libraries
+            unifiedArtifactsName: AllSubsets_CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            helixArtifactsName: AllSubsets_CoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            unifiedBuildNameSuffix: AllSubsets_CoreCLR
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
               or(
