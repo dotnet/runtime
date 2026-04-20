@@ -1,10 +1,10 @@
-// Dependency library for async cross-module tests.
-// Contains runtime-async methods that should be inlineable.
+// Inlinable runtime-async methods used to exercise cross-module inlining
+// and composite-mode emission of async variants.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-public static class AsyncDepLib
+public static class InlinableAsyncMethods
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static async Task<int> GetValueAsync()
@@ -17,12 +17,9 @@ public static class AsyncDepLib
     public static async Task<string> GetStringAsync()
     {
         await Task.Yield();
-        return "async_hello";
+        return "hello_from_async";
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetValueSync()
-    {
-        return 99;
-    }
+    public static int GetValueSync() => 99;
 }
