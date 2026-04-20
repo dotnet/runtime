@@ -14,6 +14,13 @@ void InterpConfigValues::Initialize(ICorJitHost* host)
 #define RELEASE_CONFIG_INTEGER(name, key, defaultValue)   m_##name = host->getIntConfigValue(key, defaultValue);
 #include "interpconfigvalues.h"
 
+#ifdef TARGET_WASM
+    // WASM-TODO: update when R2R is enabled
+    // Default to InterpMode 3 unless explicitly overridden via DOTNET_InterpMode.
+    if (m_InterpMode == 0)
+        m_InterpMode = 3;
+#endif
+
     m_isInitialized = true;
 }
 
