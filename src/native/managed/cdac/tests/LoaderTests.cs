@@ -562,7 +562,8 @@ public unsafe class LoaderTests
     public void IsModuleMapped_ReturnsExpected(MockTarget.Architecture arch, uint format, uint flags, bool expected)
     {
         TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.Builder builder = targetBuilder.MemoryBuilder;
         MockLoaderBuilder loader = new(builder);
         var allocator = builder.CreateAllocator(0x0010_0000, 0x0020_0000);
 
@@ -604,10 +605,6 @@ public unsafe class LoaderTests
 
         module.PEAssembly = peAssemblyFrag.Address;
 
-        var targetBuilder = new TestPlaceholderTarget.Builder(arch)
-        {
-            MemoryBuilder = { builder }
-        };
         var types = CreateContractTypes(loader);
         types[DataType.PEAssembly] = new() { Fields = peAssemblyLayout.Fields, Size = peAssemblyLayout.Stride };
         types[DataType.PEImage] = new() { Fields = peImageLayout.Fields, Size = peImageLayout.Stride };
