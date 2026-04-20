@@ -1201,7 +1201,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     // There may be new opportunities for distributive arithmetic optimization
     if (m_foldOp == GT_OR || m_foldOp == GT_AND)
     {
-        cmpOp1 = m_compiler->fgOptimizeDistributiveArithemtic(cmpOp1->AsOp());
+        cmpOp1 = m_compiler->fgOptimizeDistributiveArithmetic(cmpOp1->AsOp());
     }
 
     GenTree* t1Comp = m_testInfo1.compTree;

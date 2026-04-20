@@ -8152,7 +8152,7 @@ DONE_MORPHING_CHILDREN:
         case GT_OR:
         case GT_XOR:
         case GT_AND:
-            if (oper != GT_MUL)
+            if (oper == GT_ADD || oper == GT_OR || oper == GT_AND)
             {
                 tree = fgOptimizeDistributiveArithemtic(tree->AsOp());
             }
@@ -10407,14 +10407,14 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
 // fgOptimizeDistributiveArithemtic: Optimizes distributive arithemtic.
 //
 // Arguments:
-//   tree - the unchecked GT_AND/GT_OR/GT_XOR/GT_ADD/GT_SUB tree to optimize.
+//   tree - the unchecked GT_ADD/GT_SUB/GT_OR/GT_AND tree to optimize.
 //
 // Return Value:
 //   The unchanged tree or optimized tree with oper GT_MUL/GT_OR/GT_AND.
 //
 GenTree* Compiler::fgOptimizeDistributiveArithemtic(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB));
+    assert(tree->OperIs(GT_ADD, GT_SUB, GT_OR, GT_AND));
     assert(!tree->gtOverflowEx());
 
     if (opts.OptimizationDisabled())
@@ -10427,7 +10427,7 @@ GenTree* Compiler::fgOptimizeDistributiveArithemtic(GenTreeOp* tree)
         return tree;
     }
 
-    if ((tree->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
+    if (((tree->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) || ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0))
     {
         return tree;
     }
@@ -10435,32 +10435,32 @@ GenTree* Compiler::fgOptimizeDistributiveArithemtic(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    auto isLeftDistributive = [](genTreeOps op1, genTreeOps op2) {
-        // op1 is left distributive over op2 iff:
-        // "A op1 (B op2 C)" <==> "(A op1 B) op2 (A op1 C)"
+    auto isDistributiveOver = [](genTreeOps op1, genTreeOps op2) {
+        // op1 is distributive over op2 iff:
+        // ((A op1 B) op2 (A op1 C)) <==> (A op1 (B op2 C))
+
         switch (op1)
         {
+            case GT_MUL:
+                return op2 == GT_ADD || op2 == GT_SUB;
+
             case GT_AND:
-                return op2 == GT_OR || op2 == GT_XOR || op2 == GT_AND;
+                return op2 == GT_OR || op2 == GT_AND;
 
             case GT_OR:
                 return op2 == GT_AND || op2 == GT_OR;
-
-            case GT_MUL:
-                return op2 == GT_ADD || op2 == GT_SUB;
 
             default:
                 return false;
         }
     };
 
-    if ((op1->OperGet() == op2->OperGet()) && isLeftDistributive(op1->OperGet(), tree->OperGet()))
+    if ((op1->OperGet() == op2->OperGet()) && isDistributiveOver(op1->OperGet(), tree->OperGet()))
     {
         if (GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
         {
             tree->AsOp()->gtOp1 = op1->gtGetOp1();
-            tree->AsOp()->gtOp2 =
-                gtFoldExpr(gtNewOperNode(tree->OperGet(), tree->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2()));
+            tree->AsOp()->gtOp2 = gtNewOperNode(tree->OperGet(), tree->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2());
             tree->SetOper(op1->OperGet(), GenTree::PRESERVE_VN);
             fgMorphTreeDone(tree->gtGetOp2());
         }
@@ -10470,6 +10470,7 @@ GenTree* Compiler::fgOptimizeDistributiveArithemtic(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+<<<<<<< HEAD
 // fgPushConstantsRight: Pushes constants to the right to help canonicalize the shape
 //
 // Arguments:

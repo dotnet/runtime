@@ -7119,7 +7119,7 @@ public:
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphCopyBlock(GenTree* tree);
 
-    GenTree* fgOptimizeDistributiveArithemtic(GenTreeOp* tree);
+    GenTree* fgOptimizeDistributiveArithmetic(GenTreeOp* tree);
 private:
     GenTree* fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone = nullptr);
     bool fgTryReplaceStructLocalWithFields(GenTree** use);
