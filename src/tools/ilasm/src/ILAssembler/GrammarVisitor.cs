@@ -1331,6 +1331,12 @@ namespace ILAssembler
 
                     _currentTypeDefinition.Pop();
 
+                    // Interfaces should not have an implicit base type
+                    if (newTypeDef.Attributes.HasFlag(TypeAttributes.Interface))
+                    {
+                        fallbackBase = null;
+                    }
+
                     newTypeDef.BaseType ??= _entityRegistry.ResolveImplicitBaseType(fallbackBase);
 
                     // When the user has provided a type definition for a type that directly inherits
@@ -2623,7 +2629,7 @@ namespace ILAssembler
                 "private" => new(FieldAttributes.Private, FieldAttributes.FieldAccessMask),
                 "family" => new(FieldAttributes.Family, FieldAttributes.FieldAccessMask),
                 "initonly" => new(FieldAttributes.InitOnly),
-                "rtspecialname" => new(0), // COMPAT: Don't emit rtspecialname
+                "rtspecialname" => new(FieldAttributes.RTSpecialName),
                 "specialname" => new(FieldAttributes.SpecialName),
                 "assembly" => new(FieldAttributes.Assembly, FieldAttributes.FieldAccessMask),
                 "famandassem" => new(FieldAttributes.FamANDAssem, FieldAttributes.FieldAccessMask),
@@ -3854,7 +3860,7 @@ namespace ILAssembler
                 "privatescope" => new(MethodAttributes.PrivateScope, MethodAttributes.MemberAccessMask),
                 "hidebysig" => new(MethodAttributes.HideBySig),
                 "newslot" => new(MethodAttributes.NewSlot),
-                "rtspecialname" => new(0), // COMPAT: Rtspecialname is ignored
+                "rtspecialname" => new(MethodAttributes.RTSpecialName),
                 "unmanagedexp" => new(MethodAttributes.UnmanagedExport),
                 "reqsecobj" => new(MethodAttributes.RequireSecObject),
                 _ => throw new UnreachableException(),
