@@ -1,6 +1,6 @@
-// Test: Cross-module async method inlining
-// Validates that cross-module async compilation produces manifest refs
-// and [ASYNC] variants for methods calling into a dependency library.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

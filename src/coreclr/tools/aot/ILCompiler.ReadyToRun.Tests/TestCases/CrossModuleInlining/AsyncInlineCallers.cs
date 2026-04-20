@@ -1,6 +1,6 @@
-// Six call sites that each invoke one of the AsyncInlineCandidatesLib methods.
-// Each caller is marked NoInlining so it stays put as the inliner; the test
-// then asserts which candidates get inlined into their respective callers.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 

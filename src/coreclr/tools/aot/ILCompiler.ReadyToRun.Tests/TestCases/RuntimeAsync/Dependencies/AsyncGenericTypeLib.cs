@@ -1,10 +1,6 @@
-// Dependency library for composite-mode generics-on-async-thunks regression tests.
-// Provides:
-//   - GenericContainer<T>: a generic type with both a non-generic and a generic
-//     async method. The generic-method-on-generic-type combination is the exact
-//     scenario called out by the parent PR's description as the case that
-//     originally broke MethodWithToken/OwningType resolution when emitting async
-//     thunks in composite mode.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

@@ -1,5 +1,6 @@
-// Test: Async method that captures GC refs across await
-// This forces the compiler to emit a ContinuationLayout fixup.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

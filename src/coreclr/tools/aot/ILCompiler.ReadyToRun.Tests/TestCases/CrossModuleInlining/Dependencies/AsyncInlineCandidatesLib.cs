@@ -1,9 +1,6 @@
-// Dependency library exposing six runtime-async inlining candidates that cross
-// the {Task, Task<int>, Task<string>} x {with-await, without-await} matrix.
-// The JIT cannot inline an async method that performs an actual await
-// (Compiler::impSetupAsyncCall reports CALLEE_AWAIT FATAL in importercalls.cpp;
-// AsyncSuspend reports CALLEE_ASYNC_SUSPEND FATAL). Methods without an await
-// are eligible for inlining like any other small method.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 

@@ -1,12 +1,6 @@
-// Test: Composite-mode async thunk emission for async methods on generic types
-// (and generic async methods on generic types).
-//
-// Regression coverage for the MethodWithToken/OwningType handling described in
-// the parent PR ("Enable compilation of async thunks in composite mode") and
-// for the follow-up "Get IL for the (possibly instantiated) method, not the
-// definition" fix in ReadyToRunCodegenCompilation.cs. Both code paths only run
-// for instantiated methods on instantiated generic types compiled inside a
-// composite image.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;

@@ -1,6 +1,6 @@
-// Test: Composite mode async with continuation layouts and resumption stubs.
-// Calls async methods from AsyncCompositeContLib that capture GC refs across
-// await points, exercising composite-mode ContinuationLayout and RESUME stub emission.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
