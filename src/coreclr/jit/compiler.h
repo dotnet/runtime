@@ -7967,7 +7967,8 @@ public:
                                    // "Checked bound" alone doesn't mean anything,
                                    // nor it implies that it's never negative.
         O2K_ZEROOBJ,
-        O2K_SUBRANGE
+        O2K_SUBRANGE,
+        O2K_CONST_VEC
     };
 
     struct AssertionDsc
@@ -8034,6 +8035,7 @@ public:
                 unsigned      m_lclNum;
                 double        m_dconVal;
                 IntegralRange m_range;
+                simd_t*       m_simdVal; // for O2K_CONST_VEC; arena-allocated (CMK_AssertionProp).
                 struct
                 {
                     ssize_t   m_iconVal;
@@ -8066,6 +8068,13 @@ public:
                 return m_dconVal;
             }
 
+            const simd_t& GetSimdConstant() const
+            {
+                assert(KindIs(O2K_CONST_VEC));
+                assert(m_simdVal != nullptr);
+                return *m_simdVal;
+            }
+
             ssize_t GetIntConstant() const
             {
                 assert(KindIs(O2K_CONST_INT));
@@ -8089,7 +8098,7 @@ public:
             ValueNum GetVN() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ));
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -8417,6 +8426,10 @@ public:
                     // exact match because of positive and negative zero.
                     return (memcmp(&GetOp2().m_dconVal, &that.GetOp2().m_dconVal, sizeof(double)) == 0);
 
+                case O2K_CONST_VEC:
+                    // memcmp the full simd_t; GenTreeVecCon zero-inits gtSimdVal before populating,
+                    return (memcmp(GetOp2().m_simdVal, that.GetOp2().m_simdVal, sizeof(simd_t)) == 0);
+
                 case O2K_ZEROOBJ:
                     return true;
 
@@ -8459,7 +8472,7 @@ public:
         static AssertionDsc CreateConstLclVarAssertion(const Compiler* comp,
                                                        unsigned        lclNum,
                                                        ValueNum        vn,
-                                                       T               cns,
+                                                       const T&        cns,
                                                        ValueNum        cnsVN,
                                                        bool            equals,
                                                        GenTreeFlags    iconFlags = GTF_EMPTY,
@@ -8507,6 +8520,14 @@ public:
                 dsc.m_op2.m_dconVal = static_cast<double>(cns);
                 assert(iconFlags == GTF_EMPTY); // no flags expected for double constants
                 assert(fldSeq == nullptr);      // no fieldSeq expected for double constants
+            }
+            else if constexpr (std::is_same_v<T, simd_t>)
+            {
+                dsc.m_op2.m_kind    = O2K_CONST_VEC;
+                dsc.m_op2.m_simdVal = new (const_cast<Compiler*>(comp), CMK_AssertionProp) simd_t();
+                memcpy(dsc.m_op2.m_simdVal, &cns, sizeof(simd_t));
+                assert(iconFlags == GTF_EMPTY); // no flags expected for vector constants
+                assert(fldSeq == nullptr);      // no fieldSeq expected for vector constants
             }
             else if constexpr (std::is_same_v<T, optOp2Kind>)
             {
