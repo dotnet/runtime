@@ -537,5 +537,89 @@ namespace Microsoft.Extensions.Options.Tests
             void IConfigureNamedOptions<FakeOptions>.Configure(string? name, FakeOptions options) => _waitHandle.WaitOne();
             void IConfigureOptions<FakeOptions>.Configure(FakeOptions options) => _waitHandle.WaitOne();
         }
+
+        [Fact]
+        public void CurrentValue_ReflectsLatestAfterCacheClear()
+        {
+            var services = new ServiceCollection().AddOptions().AddSingleton<IConfigureOptions<FakeOptions>>(new CountIncrement(this));
+            var sp = services.BuildServiceProvider();
+
+            var monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+            var cache = sp.GetRequiredService<IOptionsMonitorCache<FakeOptions>>();
+
+            Assert.Equal("1", monitor.CurrentValue.Message);
+
+            cache.Clear();
+
+            Assert.Equal("2", monitor.CurrentValue.Message);
+        }
+
+        [Fact]
+        public void CurrentValue_ReflectsLatestAfterTryRemoveDefault()
+        {
+            var services = new ServiceCollection().AddOptions().AddSingleton<IConfigureOptions<FakeOptions>>(new CountIncrement(this));
+            var sp = services.BuildServiceProvider();
+
+            var monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+            var cache = sp.GetRequiredService<IOptionsMonitorCache<FakeOptions>>();
+
+            Assert.Equal("1", monitor.CurrentValue.Message);
+
+            cache.TryRemove(Options.DefaultName);
+
+            Assert.Equal("2", monitor.CurrentValue.Message);
+        }
+
+        [Fact]
+        public void CurrentValue_FallsBackToGetForCustomIOptionsMonitorCache()
+        {
+            var customCache = new CustomOptionsMonitorCache<FakeOptions>();
+            var services = new ServiceCollection()
+                .AddOptions()
+                .AddSingleton<IConfigureOptions<FakeOptions>>(new CountIncrement(this))
+                .AddSingleton<IOptionsMonitorCache<FakeOptions>>(customCache);
+            var sp = services.BuildServiceProvider();
+
+            var monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            Assert.Equal("1", monitor.CurrentValue.Message);
+
+            customCache.Clear();
+
+            Assert.Equal("2", monitor.CurrentValue.Message);
+        }
+
+        private sealed class CustomOptionsMonitorCache<TOptions> : IOptionsMonitorCache<TOptions>
+            where TOptions : class
+        {
+            private readonly Dictionary<string, TOptions> _cache = new Dictionary<string, TOptions>(StringComparer.Ordinal);
+
+            public TOptions GetOrAdd(string? name, Func<TOptions> createOptions)
+            {
+                name ??= Options.DefaultName;
+                if (!_cache.TryGetValue(name, out TOptions? value))
+                {
+                    value = createOptions();
+                    _cache[name] = value;
+                }
+                return value;
+            }
+
+            public bool TryAdd(string? name, TOptions options)
+            {
+                name ??= Options.DefaultName;
+                if (_cache.ContainsKey(name))
+                    return false;
+                _cache[name] = options;
+                return true;
+            }
+
+            public bool TryRemove(string? name)
+            {
+                return _cache.Remove(name ?? Options.DefaultName);
+            }
+
+            public void Clear() => _cache.Clear();
+        }
     }
 }

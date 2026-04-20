@@ -20,10 +20,12 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         private readonly IOptionsMonitorCache<TOptions> _cache;
+        private readonly OptionsCache<TOptions>? _fastCache;
         private readonly IOptionsFactory<TOptions> _factory;
         private readonly List<IDisposable> _registrations = new List<IDisposable>();
         internal event Action<TOptions, string>? _onChange;
         private TOptions? _currentValue;
+        private int _currentValueGeneration;
 
         /// <summary>
         /// Initializes a new instance of <see cref="OptionsMonitor{TOptions}"/> with the specified factory, sources, and cache.
@@ -35,6 +37,7 @@ namespace Microsoft.Extensions.Options
         {
             _factory = factory;
             _cache = cache;
+            _fastCache = cache as OptionsCache<TOptions>;
 
             void RegisterSource(IOptionsChangeTokenSource<TOptions> source)
             {
@@ -69,10 +72,6 @@ namespace Microsoft.Extensions.Options
             name ??= Options.DefaultName;
             _cache.TryRemove(name);
             TOptions options = Get(name);
-            if (name == Options.DefaultName)
-            {
-                Interlocked.Exchange(ref _currentValue, options);
-            }
             _onChange?.Invoke(options, name);
         }
 
@@ -83,15 +82,38 @@ namespace Microsoft.Extensions.Options
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public TOptions CurrentValue
         {
-            get => Volatile.Read(ref _currentValue) ?? InitializeCurrentValue();
+            get
+            {
+                OptionsCache<TOptions>? fastCache = _fastCache;
+                if (fastCache is null)
+                {
+                    // User-supplied IOptionsMonitorCache: no generation tracking, always go through Get.
+                    return Get(Options.DefaultName);
+                }
+
+                // Read generation before value. If a mutation bumps the generation after we read it
+                // but before we read the cached value, we'll see a stale cached value at most once —
+                // the very next access will detect the generation mismatch and refresh.
+                int gen = fastCache.Generation;
+                TOptions? value = Volatile.Read(ref _currentValue);
+                if (value is not null && _currentValueGeneration == gen)
+                {
+                    return value;
+                }
+
+                return RefreshCurrentValue(gen);
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private TOptions InitializeCurrentValue()
+        private TOptions RefreshCurrentValue(int gen)
         {
             TOptions value = Get(Options.DefaultName);
-            Interlocked.CompareExchange(ref _currentValue, value, null);
-            return Volatile.Read(ref _currentValue)!;
+            // Write generation before value so that a reader whose Volatile.Read of _currentValue
+            // sees the new value is guaranteed (via the acquire fence) to also see the updated generation.
+            Volatile.Write(ref _currentValueGeneration, gen);
+            Volatile.Write(ref _currentValue, value);
+            return value;
         }
 
         /// <summary>

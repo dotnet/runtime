@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace Microsoft.Extensions.Options
 {
@@ -16,11 +17,22 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(concurrencyLevel: 1, capacity: 31, StringComparer.Ordinal); // 31 == default capacity
+        private int _generation;
+
+        /// <summary>
+        /// Gets a monotonically-increasing counter that is incremented on every mutation (Clear, TryAdd, TryRemove).
+        /// Consumers can use this to detect whether the cache contents may have changed since they last read an entry.
+        /// </summary>
+        internal int Generation => Volatile.Read(ref _generation);
 
         /// <summary>
         /// Clears all options instances from the cache.
         /// </summary>
-        public void Clear() => _cache.Clear();
+        public void Clear()
+        {
+            _cache.Clear();
+            Interlocked.Increment(ref _generation);
+        }
 
         /// <summary>
         /// Gets a named options instance, or adds a new instance created with <paramref name="createOptions"/>.
@@ -97,11 +109,13 @@ namespace Microsoft.Extensions.Options
         {
             ArgumentNullException.ThrowIfNull(options);
 
-            return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
+            bool added = _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
 #if !(NET || NETSTANDARD2_1)
                 () =>
 #endif
                 options));
+            Interlocked.Increment(ref _generation);
+            return added;
         }
 
         /// <summary>
@@ -109,7 +123,11 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
         /// <returns><see langword="true"/> if anything was removed; otherwise, <see langword="false"/>.</returns>
-        public virtual bool TryRemove(string? name) =>
-            _cache.TryRemove(name ?? Options.DefaultName, out _);
+        public virtual bool TryRemove(string? name)
+        {
+            bool removed = _cache.TryRemove(name ?? Options.DefaultName, out _);
+            Interlocked.Increment(ref _generation);
+            return removed;
+        }
     }
 }
