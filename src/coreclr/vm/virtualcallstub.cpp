@@ -1050,7 +1050,7 @@ PCODE VirtualCallStubManager::GetCallStub(DispatchToken token)
     _ASSERTE(stub != CALL_STUB_EMPTY_ENTRY);
     stats.site_counter++;
 
-    _ASSERTE((stub) != NULL);
+    _ASSERTE(stub != 0);
     return stub;
 }
 
