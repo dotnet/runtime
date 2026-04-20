@@ -102,5 +102,130 @@ namespace System.Security.Cryptography.Cose.Tests
             CryptographicException ex = Assert.Throws<CryptographicException>(() => CoseMessage.DecodeSign1(cborPayload));
             Assert.Null(ex.InnerException);
         }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public void DecodeSign1ThrowsIfCriticalHeaderIsMissing(bool detached, bool useIndefiniteLength)
+        {
+            const string AttachedDefiniteHex =
+                "D28447A201260281182AA054546869732069732074686520636F6E74656E742E" +
+                "5840F78745BDFA8CDF90ED6EC130BC8D97F43C8A52899920221832A1E758A1E7" +
+                "590827148F6D1A76673E7E9615F628730B19F07707B6FB1C9CD7B6D4E2B3C3F0" +
+                "DEAD";
+
+            const string AttachedIndefiniteHex =
+                "D28448A20126029F182AFFA054546869732069732074686520636F6E74656E74" +
+                "2E58408B07F60298F64453356EAF005C630A4576AF4C66E0327579BB81B5D726" +
+                "3836AA9419B1312298DD47BC10BA22D6DEEE35F1526948BF098915816149B46A" +
+                "3C9981";
+
+            const string DetachedDefiniteHex =
+                "D28447A201260281182AA0F6584089B093A038B0636940F9273EF11214B64CC1" +
+                "BB862305EDEC9C772A3D5089A54A6CBBA00323FA59A593A828F157653DEE15B0" +
+                "EBBDC070D02CDFD13E8A9F2ECA1B";
+
+            const string DetachedIndefiniteHex =
+                "D28448A20126029F182AFFA0F658409B35B9FD294BDF36EEF7494D0EC9E19F6A2" +
+                "106638FD4A2A31B816FED80493772DCEA8B64F6618119E278379F83E1A62BA382" +
+                "21B9F1AC705FAD8612DC6B0478A0";
+
+            string inputHex = (detached, useIndefiniteLength) switch
+            {
+                (false, false) => AttachedDefiniteHex,
+                (false, true) => AttachedIndefiniteHex,
+                (true, false) => DetachedDefiniteHex,
+                (true, true) => DetachedIndefiniteHex,
+            };
+
+            AssertExtensions.ThrowsContains<CryptographicException>(
+                () => CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(inputHex)),
+                "Critical Header '42' missing from protected map.");
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public void DecodeSign1ThrowsIfCriticalHeadersIsEmpty(bool detached, bool useIndefiniteLength)
+        {
+            const string AttachedDefiniteHex =
+                "D28445A201260280A054546869732069732074686520636F6E74656E742E5840" +
+                "57C7EE86AF06B1ABB002480CE148DFDA06C2CA4AFE83E9C7AE3493EA13E06E9B" +
+                "0A4C713F7FDCDD2F8731103CDA28B83313E411988B88AC7716E43307B5AF22FD";
+
+            const string AttachedIndefiniteHex =
+                "D28446A20126029FFFA054546869732069732074686520636F6E74656E742E58" +
+                "401B941A9C799270827BE5139EC5F3DE4E072913F6473C7278E691D6C58D407A" +
+                "23DB3176383E8429AA558418EE33CB7DFFD2CF251EEC93B6CFC300D0D9679CE5" +
+                "42";
+
+            const string DetachedDefiniteHex =
+                "D28445A201260280A0F658409B0EBC937A969A7D4BB2AA0B1004091EDAA00AE2" +
+                "BBCCBB994B7278C9E50C6C734B3A53CB5B87A99E75F63D16B73757CA23C99CF0" +
+                "8F8F909A1332DAC05D9DB1C0";
+
+            const string DetachedIndefiniteHex =
+                "D28446A20126029FFFA0F65840CA96F1292FEE2B787DC75D91553024E70DD62B" +
+                "EA0BFE284024385C6D9493EEF6F055825E79244B63E76F69A419C3A36B3B1F18" +
+                "34789A23983D685B7CDA231E86";
+
+            string inputHex = (detached, useIndefiniteLength) switch
+            {
+                (false, false) => AttachedDefiniteHex,
+                (false, true) => AttachedIndefiniteHex,
+                (true, false) => DetachedDefiniteHex,
+                (true, true) => DetachedIndefiniteHex,
+            };
+
+            AssertExtensions.ThrowsContains<CryptographicException>(
+                () => CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(inputHex)),
+                "Critical Headers must be a CBOR array of at least one element.");
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public void DecodeSign1ThrowsIfCriticalHeaderIsOfUnknownType(bool detached, bool useIndefiniteLength)
+        {
+            const string AttachedDefiniteHex =
+                "D28447A201260281412AA054546869732069732074686520636F6E74656E742E" +
+                "58403529AC69F69A80B4055CFFCA88F010390509E0A9D4D0083F23DF46841144" +
+                "B7E9D7CC11E90D0D51103672083449B439B71EAF6B922C011CC471D8E1D577C6" +
+                "B954";
+
+            const string AttachedIndefiniteHex =
+                "D28448A20126029F412AFFA054546869732069732074686520636F6E74656E74" +
+                "2E5840FE8A2CBBBA2A154361BEF0892D11FF621A1DBDCBD1A955020DD7D85ED8" +
+                "15C43B3AB39A32561AAEF679D08FD561339AC9A4E537B2E91DC120A32F406455" +
+                "F3353F";
+
+            const string DetachedDefiniteHex =
+                "D28447A201260281412AA0F65840AB87DA5ABA5A470C7508F5F1724744458407" +
+                "897746890428F877AD593F9D90E5503A6D1B3369AF77952223D5C474CBB8EC62" +
+                "9726F967921A4AB91DC8F86DA1CF";
+
+            const string DetachedIndefiniteHex =
+                "D28448A20126029F412AFFA0F658409613065203B619BE9CEC1CC596F59C7395" +
+                "5AEE8BD492F16B72D2C0F443AE70E5E5B1D615A06A90145078B41A1CA12D4067" +
+                "D6C6CEEB2C19B3747A0926305EBA09";
+
+            string inputHex = (detached, useIndefiniteLength) switch
+            {
+                (false, false) => AttachedDefiniteHex,
+                (false, true) => AttachedIndefiniteHex,
+                (true, false) => DetachedDefiniteHex,
+                (true, true) => DetachedIndefiniteHex,
+            };
+
+            AssertExtensions.ThrowsContains<CryptographicException>(
+               () => CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(inputHex)),
+               "Header '2' does not accept the specified value.");
+        }
     }
 }
