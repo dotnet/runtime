@@ -82,6 +82,8 @@ namespace System.Net.WebSockets
         private bool _sentCloseFrame;
         /// <summary>Whether we've ever received a close frame.</summary>
         private bool _receivedCloseFrame;
+        /// <summary>0 if <see cref="WaitForServerToCloseConnectionAsync"/> has not been invoked yet; 1 otherwise.</summary>
+        private int _waitedForServerClose;
         /// <summary>The reason for the close, as sent by the server, or null if not yet closed.</summary>
         private WebSocketCloseStatus? _closeStatus;
         /// <summary>A description of the close reason as sent by the server, or null if not yet closed.</summary>
@@ -1123,9 +1125,18 @@ namespace System.Net.WebSockets
             }
         }
 
-        /// <summary>Issues a read on the stream to wait for EOF.</summary>
+        /// <summary>Issues a read on the stream to wait for EOF. Idempotent across call sites.</summary>
         private async ValueTask WaitForServerToCloseConnectionAsync(CancellationToken cancellationToken)
         {
+            // Called from both the receive and the send path. In rare concurrent Close + Receive
+            // scenarios both paths can observe the close handshake as complete and would otherwise
+            // both issue a stream read (violating most Stream implementations' single-consumer invariant).
+            // The flag guarantees that only the first invocation performs the wait; the other is a no-op.
+            if (Interlocked.CompareExchange(ref _waitedForServerClose, 1, 0) != 0)
+            {
+                return;
+            }
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
             // Per RFC 6455 7.1.1, try to let the server close the connection.  We give it up to a second.
