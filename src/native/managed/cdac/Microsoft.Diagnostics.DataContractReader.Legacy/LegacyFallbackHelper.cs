@@ -29,14 +29,17 @@ internal static class LegacyFallbackHelper
         // IMetaDataImport QI — needed until managed MetadataReader wrapper lands (PR #127028).
         nameof(ICustomQueryInterface.GetInterface),
 
-        // IXCLRDataModule — not yet implemented in the cDAC.
-        nameof(IXCLRDataModule.GetMethodDefinitionByToken),
-
         // GC heap analysis — not yet implemented in the cDAC (PR #125895).
         nameof(ISOSDacInterface11.IsTrackedType),
 
         // Loader heap traversal — not yet implemented in the cDAC (PR #125129).
         nameof(ISOSDacInterface.TraverseLoaderHeap),
+
+        // IXCLRDataMethodDefinition — not yet implemented in the cDAC.
+        nameof(IXCLRDataMethodDefinition.StartEnumInstances),
+        nameof(IXCLRDataMethodDefinition.GetName),
+        nameof(IXCLRDataMethodDefinition.SetCodeNotification),
+        nameof(IXCLRDataMethodDefinition.HasClassOrMethodInstantiation),
     };
 
     // Files whose methods are all allowed to fall back.

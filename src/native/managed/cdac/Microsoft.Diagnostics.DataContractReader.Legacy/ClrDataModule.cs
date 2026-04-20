@@ -355,7 +355,38 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumMethodInstancesByName(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.GetMethodDefinitionByToken(/*mdMethodDef*/ uint token, DacComNullableByRef<IXCLRDataMethodDefinition> methodDefinition)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.GetMethodDefinitionByToken(token, methodDefinition) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        IXCLRDataMethodDefinition? legacyMethod = null;
+        try
+        {
+            if (_legacyModule is not null)
+            {
+                DacComNullableByRef<IXCLRDataMethodDefinition> legacyMethodOut = new(isNullRef: false);
+                hrLocal = _legacyModule.GetMethodDefinitionByToken(token, legacyMethodOut);
+                legacyMethod = legacyMethodOut.Interface;
+            }
+
+            if ((EcmaMetadataUtils.TokenType)(token & EcmaMetadataUtils.TokenTypeMask) != EcmaMetadataUtils.TokenType.mdtMethodDef)
+                throw new ArgumentException();
+
+            methodDefinition.Interface = new ClrDataMethodDefinition(_target, _address, token, legacyMethod);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataModule.StartEnumDataByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, IXCLRDataTask? tlsTask, ulong* handle)
         => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumDataByName(name, flags, appDomain, tlsTask, handle) : HResults.E_NOTIMPL;
