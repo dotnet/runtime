@@ -12,9 +12,11 @@
 #define INJECT_ACTIVATION_SIGNAL SIGUSR1
 #endif
 
+#ifndef TARGET_WASI
 typedef void (*SignalHandler)(int code, siginfo_t* siginfo, void* context);
 
 bool AddSignalHandler(int signal, SignalHandler handler, struct sigaction* previousAction);
+#endif
 void RestoreSignalHandler(int signal_id, struct sigaction* previousAction);
 
 #endif // __UNIX_SIGNALS_H__

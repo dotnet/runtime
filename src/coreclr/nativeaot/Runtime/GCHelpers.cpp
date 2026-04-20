@@ -41,6 +41,10 @@ GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 
 GPTR_IMPL(Thread, g_pFinalizerThread);
 
+#if defined(HOST_WASM) && !defined(FEATURE_WASM_MANAGED_THREADS)
+void FinalizeFinalizableObjects();
+#endif
+
 bool RhInitializeFinalization();
 #ifdef TARGET_WINDOWS
 bool RhWaitForFinalizerThreadStart();
@@ -124,6 +128,10 @@ EXTERN_C void QCALLTYPE RhCollect(uint32_t uGeneration, uint32_t uMode, UInt32_B
     GCHeapUtilities::GetGCHeap()->GarbageCollect(uGeneration, lowMemoryP, uMode);
 
     pCurThread->EnablePreemptiveMode();
+
+#if defined(HOST_WASM) && !defined(FEATURE_WASM_MANAGED_THREADS)
+    FinalizeFinalizableObjects();
+#endif
 }
 
 EXTERN_C int64_t QCALLTYPE RhGetGcTotalMemory()
@@ -674,7 +682,7 @@ EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, intptr_t numEle
         ASSERT(pThread->IsHijacked());
         pTransitionFrame->m_RIP = pThread->GetHijackedReturnAddress();
     }
-#else
+#elif !defined(HOST_WASM)
 
     // NOTE: The x64 fixup above would not be sufficient on ARM64 and similar architectures since
     //       m_RIP is used to restore LR in POP_COOP_PINVOKE_FRAME.

@@ -1,3 +1,8 @@
+# Remove this option for wasm upstream as we need different options for different exception handling.
+get_directory_property(current_opts COMPILE_OPTIONS)
+list(REMOVE_ITEM current_opts "-fwasm-exceptions")
+set_directory_properties(PROPERTIES COMPILE_OPTIONS "${current_opts}")
+
 if(WIN32)
   add_definitions(-DUNICODE=1)
   add_compile_definitions(NOMINMAX)
@@ -27,6 +32,16 @@ if(CLR_CMAKE_HOST_UNIX)
     add_compile_options(-mcx16)
   endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
 endif (CLR_CMAKE_HOST_UNIX)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL wasi)
+  add_definitions(-DTARGET_UNIX)
+endif(CLR_CMAKE_TARGET_OS STREQUAL wasi)
+
+if((CLR_CMAKE_TARGET_OS STREQUAL wasi OR CLR_CMAKE_TARGET_OS STREQUAL emscripten) 
+  AND CMAKE_USE_PTHREADS)
+  add_definitions(-DFEATURE_WASM_MANAGED_THREADS)
+endif((CLR_CMAKE_TARGET_OS STREQUAL wasi OR CLR_CMAKE_TARGET_OS STREQUAL emscripten) 
+  AND CMAKE_USE_PTHREADS)
 
 if(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DFEATURE_EMULATED_TLS)

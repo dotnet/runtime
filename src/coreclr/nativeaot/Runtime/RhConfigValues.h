@@ -13,7 +13,13 @@
 RETAIL_CONFIG_VALUE(StressLogLevel)
 RETAIL_CONFIG_VALUE(TotalStressLogSize)
 RETAIL_CONFIG_VALUE(gcServer)
+
+#if !defined(HOST_WASM)
 RETAIL_CONFIG_VALUE(gcConservative)         // Enables conservative stack reporting
+#else
+RETAIL_CONFIG_VALUE_WITH_DEFAULT(gcConservative, 1) // LLVM/Wasm must use conservative stack reporting for now
+#endif
+
 DEBUG_CONFIG_VALUE(GcStressThrottleMode)    // gcstm_TriggerAlways / gcstm_TriggerOnFirstHit / gcstm_TriggerRandom
 DEBUG_CONFIG_VALUE(GcStressFreqCallsite)    // Number of times to force GC out of GcStressFreqDenom (for GCSTM_RANDOM)
 DEBUG_CONFIG_VALUE(GcStressFreqLoop)        // Number of times to force GC out of GcStressFreqDenom (for GCSTM_RANDOM)

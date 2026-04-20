@@ -148,10 +148,6 @@ else()
 
   include(${GC_DIR}/unix/configure.cmake)
 
-  if(CLR_CMAKE_TARGET_ARCH_WASM)
-    include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
-  endif()
-
   # Disable building _Unwind_XXX style APIs of libunwind, since we don't use them.
   add_definitions(-D_LIBUNWIND_DISABLE_ZERO_COST_APIS=1)
 
@@ -170,6 +166,15 @@ else()
     ${GC_DIR}/unix/events.cpp
     ${GC_DIR}/unix/cgroup.cpp
   )
+
+  if (CLR_CMAKE_TARGET_ARCH_WASM)
+    list(REMOVE_ITEM COMMON_RUNTIME_SOURCES
+      unix/PalCreateDump.cpp
+    )
+    list(APPEND COMMON_RUNTIME_SOURCES
+      wasm/PalCreateDump.cpp
+    )
+  endif()
 
   list(APPEND FULL_RUNTIME_SOURCES
     unix/cgroupcpu.cpp
@@ -223,6 +228,26 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
     ${GC_DIR}/vxsort/dummy.cpp
   )
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+  list(REMOVE_ITEM COMMON_RUNTIME_SOURCES FinalizerHelpers.cpp)
+  list(APPEND COMMON_RUNTIME_SOURCES
+    ${ARCH_SOURCES_DIR}/FinalizerHelpers.SingleThreaded.cpp
+    ${ARCH_SOURCES_DIR}/PalWasm.cpp
+    ${ARCH_SOURCES_DIR}/AllocFast.cpp
+    ${ARCH_SOURCES_DIR}/ExceptionHandling/ExceptionHandling.cpp
+    ${ARCH_SOURCES_DIR}/GcStress.cpp
+    ${ARCH_SOURCES_DIR}/PInvoke.cpp
+    ${ARCH_SOURCES_DIR}/StubDispatch.cpp
+    ${ARCH_SOURCES_DIR}/WriteBarriers.cpp
+    ${ARCH_SOURCES_DIR}/StackTrace.cpp
+  )
+  if (CLR_CMAKE_TARGET_BROWSER)
+    add_library(StackTraceIpCanary OBJECT ${ARCH_SOURCES_DIR}/StackTraceIpCanary.cpp)
+    add_dependencies(nativeaot StackTraceIpCanary)
+    install(FILES $<TARGET_OBJECTS:StackTraceIpCanary> DESTINATION aotsdk COMPONENT nativeaot RENAME libStackTraceIpCanary.o)
+  endif()
+endif (CLR_CMAKE_TARGET_ARCH_WASM)
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
@@ -341,6 +366,7 @@ if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_subdirectory(Full)
 else()
   add_subdirectory(Portable)
+  add_subdirectory(wasm/ExceptionHandling)
 endif()
 
 if(FEATURE_PERFTRACING)

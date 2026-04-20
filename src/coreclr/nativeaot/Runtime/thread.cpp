@@ -32,7 +32,7 @@
 
 #ifndef DACCESS_COMPILE
 
-static int (*g_RuntimeInitializationCallback)();
+extern int (*g_RuntimeInitializationCallback)();
 static Thread* g_RuntimeInitializingThread;
 
 #endif //!DACCESS_COMPILE
@@ -159,9 +159,7 @@ void Thread::ResetCachedTransitionFrame()
 void Thread::EnablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
-#if !defined(HOST_WASM)
     ASSERT(m_pDeferredTransitionFrame != NULL);
-#endif
 
     // set preemptive mode
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, m_pDeferredTransitionFrame);
@@ -208,14 +206,14 @@ void Thread::SetDeferredTransitionFrameForNativeHelperThread()
 //
 // May only be used from the same thread and while in preemptive mode with an active pinvoke on the stack.
 //
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && !defined(HOST_WASM)
 void * Thread::GetCurrentThreadPInvokeReturnAddress()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(!IsCurrentThreadInCooperativeMode());
     return ((PInvokeTransitionFrame*)m_pTransitionFrame)->m_RIP;
 }
-#endif // !DACCESS_COMPILE
+#endif // !defined(DACCESS_COMPILE) && !defined(HOST_WASM)
 
 #if defined(FEATURE_GC_STRESS) & !defined(DACCESS_COMPILE)
 void Thread::SetRandomSeed(uint32_t seed)
@@ -327,6 +325,13 @@ void Thread::Construct()
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 
+#ifdef HOST_WASM
+    // TODO-LLVM: make this configurable. E. g. dependent on native stack size.
+    m_pShadowStackBottom = new (nothrow) uint8_t[1 * 1024 * 1024];
+    if (m_pShadowStackBottom == nullptr)
+        RhFailFast();
+#endif // HOST_WASM
+
 #ifdef FEATURE_SUSPEND_REDIRECTION
     ASSERT(m_redirectionContextBuffer == NULL);
 #endif //FEATURE_SUSPEND_REDIRECTION
@@ -397,6 +402,13 @@ void Thread::Destroy()
     StressLog::ThreadDetach(ptsl);
 #endif // STRESS_LOG
 
+#ifdef HOST_WASM
+    if (m_pShadowStackBottom != nullptr)
+    {
+        delete[] m_pShadowStackBottom;
+    }
+#endif // HOST_WASM
+
 #ifdef FEATURE_SUSPEND_REDIRECTION
     if (m_redirectionContextBuffer != NULL)
     {
@@ -408,13 +420,24 @@ void Thread::Destroy()
 }
 
 #ifdef HOST_WASM
-extern OBJECTREF * t_pShadowStackTop;
-extern OBJECTREF * t_pShadowStackBottom;
-
-void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
+void Thread::GcScanRootsWorker_Wasm(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData)
 {
     // Wasm does not permit iteration of stack frames so is uses a shadow stack instead
-    EnumGcRefsInRegionConservatively(t_pShadowStackBottom, t_pShadowStackTop, pfnEnumCallback, pvCallbackData);
+    PTR_OBJECTREF pShadowStackBottom = (PTR_OBJECTREF)GetShadowStackBottom();
+    PTR_OBJECTREF pShadowStackTop = (PTR_OBJECTREF)GetShadowStackTop(GetTransitionFrame());
+    EnumGcRefsInRegionConservatively(pShadowStackBottom, pShadowStackTop, pfnEnumCallback, pvCallbackData);
+
+    // TODO-LLVM-Upstream: unify this method with the general "GcScanRootsWorker" below.
+    for (GCFrameRegistration* pCurGCFrame = m_pGCFrameRegistrations; pCurGCFrame != NULL; pCurGCFrame = pCurGCFrame->m_pNext)
+    {
+        ASSERT(pCurGCFrame->m_pThread == this);
+
+        for (uint32_t i = 0; i < pCurGCFrame->m_numObjRefs; i++)
+        {
+            EnumGcRef(dac_cast<PTR_OBJECTREF>(pCurGCFrame->m_pObjRefs + i),
+                pCurGCFrame->m_MaybeInterior ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
+        }
+    }
 }
 #endif
 
@@ -423,7 +446,7 @@ void Thread::GcScanRoots(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackDat
     this->CrossThreadUnhijack();
 
 #ifdef HOST_WASM
-    GcScanWasmShadowStack(pfnEnumCallback, pvCallbackData);
+    GcScanRootsWorker_Wasm(pfnEnumCallback, pvCallbackData);
 #else
     StackFrameIterator frameIterator(this, GetTransitionFrame());
     GcScanRootsWorker(pfnEnumCallback, pvCallbackData, frameIterator);
@@ -467,6 +490,7 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
 }
 #endif //DACCESS_COMPILE
 
+#ifndef TARGET_WASM
 void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData, StackFrameIterator & frameIterator)
 {
     PTR_OBJECTREF    pHijackedReturnValue = NULL;
@@ -583,6 +607,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
         }
     }
 }
+#endif //TARGET_WASM
 
 #ifndef DACCESS_COMPILE
 
@@ -1031,7 +1056,11 @@ EXTERN_C void FASTCALL RhpUnsuppressGcStress()
 // Standard calling convention variant and actual implementation for RhpWaitForGC
 EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
-    Thread * pThread = pFrame->m_pThread;
+#ifdef HOST_WASM
+    Thread* pThread = ThreadStore::GetCurrentThread();
+#else
+    Thread* pThread = pFrame->m_pThread;
+#endif
     if (pThread->IsDoNotTriggerGcSet())
         return;
 
@@ -1041,10 +1070,12 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 // Standard calling convention variant and actual implementation for RhpGcPoll
 EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 {
+#ifndef HOST_WASM
     ASSERT(!Thread::IsHijackTarget(pFrame->m_RIP));
 
     Thread* pThread = ThreadStore::GetCurrentThread();
     pFrame->m_pThread = pThread;
+#endif // !HOST_WASM
 
     RhpWaitForGC2(pFrame);
 }
@@ -1405,6 +1436,7 @@ FCIMPL0(FC_BOOL_RET, RhCheckAndClearPendingInterrupt)
 FCIMPLEND
 #endif // TARGET_WINDOWS
 
+#ifndef HOST_WASM
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)
 {
@@ -1435,14 +1467,14 @@ FCIMPLEND
 
 #ifdef FEATURE_PORTABLE_HELPERS
 
-FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvoke, PInvokeTransitionFrame* pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pCurThread->InlinePInvoke(pFrame);
 }
 FCIMPLEND
 
-FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvokeReturn, PInvokeTransitionFrame* pFrame)
 {
     //reenter cooperative mode
     pFrame->m_pThread->InlinePInvokeReturn(pFrame);
@@ -1450,6 +1482,7 @@ FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
 FCIMPLEND
 
 #endif //FEATURE_PORTABLE_HELPERS
+#endif // !HOST_WASM
 
 #endif // !DACCESS_COMPILE
 

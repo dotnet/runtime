@@ -31,7 +31,7 @@
 
 #include "GCMemoryHelpers.inl"
 
-#if defined(FEATURE_PORTABLE_HELPERS)
+#if defined(FEATURE_PORTABLE_HELPERS) && !defined(HOST_WASM)
 EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame);
 
 static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, intptr_t numElements)
@@ -136,7 +136,6 @@ FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, intptr_t numElements)
 FCIMPLEND
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
-
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 
 FCIMPL1(Object *, RhpNewFinalizableAlign8, MethodTable* pEEType)
@@ -270,7 +269,7 @@ FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numEl
 }
 FCIMPLEND
 #endif // !HOST_64BIT
-#endif // defined(HOST_ARM) || defined(HOST_WASM)
+#endif // FEATURE_64BIT_ALIGNMENT
 
 FCIMPL0(void, RhpInitialDynamicInterfaceDispatch)
 {
@@ -324,6 +323,11 @@ FCIMPLEND
 EXTERN_C void * ReturnFromUniversalTransitionTailCall;
 void * ReturnFromUniversalTransitionTailCall;
 
+#endif // defined(FEATURE_PORTABLE_HELPERS) && !defined(HOST_WASM)
+
+#if defined(FEATURE_PORTABLE_HELPERS)
+
+#ifndef HOST_WASM
 #if !defined (HOST_ARM64)
 FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
 {
@@ -341,6 +345,7 @@ FCIMPL2(void, RhpCheckedAssignRef, Object ** dst, Object * ref)
 }
 FCIMPLEND
 #endif
+#endif // !HOST_WASM
 
 FCIMPL3(Object *, RhpCheckedLockCmpXchg, Object ** location, Object * value, Object * comparand)
 {
@@ -414,13 +419,6 @@ FCIMPL0(int, RhpGetThunkBlockSize)
 FCIMPLEND
 
 FCIMPL0(void *, RhGetCommonStubAddress)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return NULL;
-}
-FCIMPLEND
-
-FCIMPL0(void *, RhGetCurrentThunkContext)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return NULL;

@@ -13,10 +13,11 @@
 #include <unistd.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include <signal.h>
+#if !defined(HOST_WASM)
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <signal.h>
 #if HAVE_PRCTL_H
 #include <sys/prctl.h>
 #include <sys/syscall.h>
@@ -671,3 +672,8 @@ PalCreateDumpInitialize()
 
     return true;
 }
+#else
+void PalCreateCrashDumpIfEnabled()
+{
+}
+#endif // !defined(HOST_WASM)

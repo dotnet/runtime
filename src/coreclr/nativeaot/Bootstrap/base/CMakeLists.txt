@@ -9,7 +9,7 @@ set_target_properties(bootstrapper PROPERTIES OUTPUT_NAME bootstrapper)
 
 install_bootstrapper_object(bootstrapper aotsdk)
 
-if (CLR_CMAKE_HOST_UNIX)
+if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   add_library(stdc++compat STATIC ../stdcppshim.cpp)
   install_static_library(stdc++compat aotsdk nativeaot)
 endif()
