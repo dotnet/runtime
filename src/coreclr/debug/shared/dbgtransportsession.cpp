@@ -2123,7 +2123,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_THREAD_ATTACH:
     case DB_IPCE_THREAD_DETACH:
     case DB_IPCE_USER_BREAKPOINT:
-    case DB_IPCE_EXIT_APP_DOMAIN:
     case DB_IPCE_SET_DEBUG_STATE_RESULT:
     case DB_IPCE_FUNC_EVAL_ABORT_RESULT:
     case DB_IPCE_CONTROL_C_EVENT:

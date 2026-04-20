@@ -120,7 +120,7 @@ internal class TestPlaceholderTarget : Target
             return this;
         }
 
-        public Builder AddContract<TContract>(int version) where TContract : IContract
+        public Builder AddContract<TContract>(string version) where TContract : IContract
         {
             _contractSetups.Add(registry => registry.SetVersion<TContract>(version));
             return this;
@@ -527,47 +527,57 @@ internal class TestPlaceholderTarget : Target
 
     internal sealed class TestContractRegistry : ContractRegistry
     {
-        private readonly Dictionary<(Type, int), Func<Target, IContract>> _creators = new();
-        private readonly Dictionary<Type, int> _versions = new();
+        private readonly Dictionary<(Type, string), Func<Target, IContract>> _creators = new();
+        private readonly Dictionary<Type, string> _versions = new();
         private readonly Dictionary<Type, IContract> _mocks = new();
         private readonly Dictionary<Type, IContract> _resolved = new();
         private Target _target = null!;
 
         public void SetTarget(Target target) => _target = target;
 
-        public void SetVersion<TContract>(int version) where TContract : IContract
+        public void SetVersion<TContract>(string version) where TContract : IContract
             => _versions[typeof(TContract)] = version;
 
         public void SetMock<TContract>(TContract mock) where TContract : IContract
             => _mocks[typeof(TContract)] = mock;
 
-        public override void Register<TContract>(int version, Func<Target, TContract> creator)
+        public override void Register<TContract>(string version, Func<Target, TContract> creator)
             => _creators[(typeof(TContract), version)] = t => creator(t);
 
-        public override TContract GetContract<TContract>()
+        public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
         {
+            contract = default!;
+            failureReason = null;
             if (_resolved.TryGetValue(typeof(TContract), out var cached))
-                return (TContract)cached;
+            {
+                contract = (TContract)cached;
+                return true;
+            }
 
-            IContract contract;
+            IContract resolved;
             if (_mocks.TryGetValue(typeof(TContract), out var mock))
             {
-                contract = mock;
+                resolved = mock;
             }
-            else if (_versions.TryGetValue(typeof(TContract), out int version))
+            else if (_versions.TryGetValue(typeof(TContract), out string? version))
             {
                 if (!_creators.TryGetValue((typeof(TContract), version), out var creator))
-                    throw new NotImplementedException($"No implementation registered for contract '{typeof(TContract).Name}' version {version}.");
+                {
+                    failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
+                    return false;
+                }
 
-                contract = creator(_target);
+                resolved = creator(_target);
             }
             else
             {
-                throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered. Use SetVersion<T>(version) or SetMock<T>(mock) to configure contracts.");
+                failureReason = $"Contract '{typeof(TContract).Name}' is not supported by the target.";
+                return false;
             }
 
-            _resolved[typeof(TContract)] = contract;
-            return (TContract)contract;
+            _resolved[typeof(TContract)] = resolved;
+            contract = (TContract)resolved;
+            return true;
         }
 
         public override void Flush() { }

@@ -1626,6 +1626,7 @@ public:
     PCODE GetPortableEntryPointIfExists();
 
     void ResetPortableEntryPoint();
+    void SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *portableEntry);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     //*******************************************************************************

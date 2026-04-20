@@ -902,10 +902,6 @@ protected:
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
-    DomainAssembly *GetDomainAssembly();
-
-    void SetDomainAssembly(DomainAssembly *pDomainAssembly);
-
     OBJECTREF GetExposedObject();
     OBJECTREF GetExposedObjectIfExists();
 
@@ -916,8 +912,6 @@ protected:
 
     BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return (m_dwTransientFlags & IS_REFLECTION_EMIT) != 0; }
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
-    // Returns true iff the debugger can see this module.
-    BOOL IsVisibleToDebugger();
 
     virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
 
@@ -1377,7 +1371,7 @@ private:
 public:
 
     // Debugger stuff
-    BOOL NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int level, BOOL attaching);
+    BOOL NotifyDebuggerLoad(Assembly * pAssembly, int level, BOOL attaching);
     void NotifyDebuggerUnload();
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);
@@ -1564,8 +1558,6 @@ public:
     const ReadyToRun_TypeGenericInfoMap *m_pTypeGenericInfoMap = &ReadyToRun_TypeGenericInfoMap::EmptyInstance;
 
 protected:
-
-    PTR_DomainAssembly      m_pDomainAssembly;
 
 public:
     //-----------------------------------------------------------------------------------------
