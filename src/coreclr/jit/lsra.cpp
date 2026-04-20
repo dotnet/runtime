@@ -985,8 +985,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // TARGET_AMD64 || TARGET_ARM64
 
 #ifdef TARGET_AMD64
-    // On xarch the OSR method does not restore float registers from tier0
-    // frame, so disallow using float callee saves in the tier0 method.
+    // On x64 the OSR method does not restore float registers from tier0 frame,
+    // so disallow using float callee saves in the tier0 method.
     if (m_compiler->doesMethodHavePatchpoints() || m_compiler->doesMethodHavePartialCompilationPatchpoints())
     {
 #if defined(UNIX_AMD64_ABI)
