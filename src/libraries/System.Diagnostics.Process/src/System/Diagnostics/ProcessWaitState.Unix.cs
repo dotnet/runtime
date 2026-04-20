@@ -178,7 +178,7 @@ namespace System.Diagnostics
             Dictionary<int, ProcessWaitState> waitStates = _isChild ? s_childProcessWaitStates : s_processWaitStates;
             lock (waitStates)
             {
-                bool foundState = waitStates.TryGetValue(_processId, out pws);
+                bool foundState = waitStates.TryGetValue(ProcessId, out pws);
                 if (foundState)
                 {
                     --_outstandingRefCount;
@@ -187,7 +187,7 @@ namespace System.Diagnostics
                         // The dictionary may contain a different ProcessWaitState if the pid was recycled.
                         if (pws == this)
                         {
-                            waitStates.Remove(_processId);
+                            waitStates.Remove(ProcessId);
                         }
                         pws = this;
                     }
@@ -207,7 +207,7 @@ namespace System.Diagnostics
         /// </summary>
         private readonly object _gate = new object();
         /// <summary>ID of the associated process.</summary>
-        private readonly int _processId;
+        internal readonly int ProcessId;
         /// <summary>Associated process is a child process.</summary>
         private readonly bool _isChild;
         /// <summary>Associated process is a child that can use the terminal.</summary>
@@ -239,7 +239,7 @@ namespace System.Diagnostics
         private ProcessWaitState(int processId, bool isChild, bool usesTerminal, DateTime exitTime = default)
         {
             Debug.Assert(processId >= 0);
-            _processId = processId;
+            ProcessId = processId;
             _isChild = isChild;
             _usesTerminal = usesTerminal;
             _exitTime = exitTime;
@@ -364,7 +364,7 @@ namespace System.Diagnostics
                 bool exited;
                 // We won't be able to get an exit code, but we'll at least be able to determine if the process is
                 // still running.
-                int killResult = Interop.Sys.Kill(_processId, 0); // 0 means don't send a signal, used to check if process is still alive
+                int killResult = Interop.Sys.Kill(ProcessId, 0); // 0 means don't send a signal, used to check if process is still alive
                 if (killResult == 0)
                 {
                     // Process is still running.  This could also be a defunct process that has completed
@@ -583,9 +583,9 @@ namespace System.Diagnostics
                 // Try to get the state of the child process
                 int exitCode;
                 int terminatingSignal;
-                int waitResult = Interop.Sys.WaitPidExitedNoHang(_processId, out exitCode, out terminatingSignal);
+                int waitResult = Interop.Sys.WaitPidExitedNoHang(ProcessId, out exitCode, out terminatingSignal);
 
-                if (waitResult == _processId)
+                if (waitResult == ProcessId)
                 {
                     ChildReaped(exitCode, terminatingSignal, configureConsole);
                     return true;

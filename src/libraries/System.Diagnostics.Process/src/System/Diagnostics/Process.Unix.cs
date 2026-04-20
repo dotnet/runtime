@@ -355,7 +355,7 @@ namespace System.Diagnostics
             // GetWaitState() ensures _waitStateHolder is initialized.
             // The SafeProcessHandle constructor creates its own Holder copy (incrementing the ref count).
             GetWaitState();
-            return new SafeProcessHandle(_processId, _waitStateHolder!.IncrementRefCount());
+            return new SafeProcessHandle(_waitStateHolder!.IncrementRefCount());
         }
 
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)

@@ -34,25 +34,6 @@ namespace Microsoft.Win32.SafeHandles
             s_startWithShellExecute ??= StartWithShellExecute;
 
         /// <summary>
-        /// Gets the process ID.
-        /// </summary>
-        public int ProcessId
-        {
-            get
-            {
-                Validate();
-
-                if (field == -1)
-                {
-                    field = GetProcessIdCore();
-                }
-
-                return field;
-            }
-            private set;
-        } = -1;
-
-        /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeHandle" />.
         /// </summary>
         public SafeProcessHandle()

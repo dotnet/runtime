@@ -32,14 +32,31 @@ namespace Microsoft.Win32.SafeHandles
         private readonly bool _releaseRef;
         private readonly ProcessWaitState.Holder? _waitStateHolder;
 
-        internal SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
+        internal SafeProcessHandle(ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
-            ProcessId = processId;
             _waitStateHolder = waitStateHolder;
-
             _handle = _waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
             _handle.DangerousAddRef(ref _releaseRef);
             SetHandle(_handle.DangerousGetHandle());
+        }
+
+        /// <summary>
+        /// Gets the process ID.
+        /// </summary>
+        public int ProcessId
+        {
+            get
+            {
+                Validate();
+
+                if (_waitStateHolder is null)
+                {
+                    // On Unix, we don't use process descriptors yet, so we can't get PID.
+                    throw new PlatformNotSupportedException();
+                }
+
+                return _waitStateHolder._state.ProcessId;
+            }
         }
 
         protected override bool ReleaseHandle()
@@ -52,9 +69,6 @@ namespace Microsoft.Win32.SafeHandles
             _waitStateHolder?.Dispose();
             return true;
         }
-
-        // On Unix, we don't use process descriptors yet, so we can't get PID.
-        private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
 
         private bool SignalCore(PosixSignal signal)
         {
@@ -332,7 +346,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
 
-            return new SafeProcessHandle(childPid, waitStateHolder!);
+            return new SafeProcessHandle(waitStateHolder!);
         }
     }
 }

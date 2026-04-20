@@ -24,6 +24,25 @@ namespace Microsoft.Win32.SafeHandles
         // by the OS, which terminates all child processes in the job.
         private static readonly Lazy<Interop.Kernel32.SafeJobHandle> s_killOnParentExitJob = new(CreateKillOnParentExitJob);
 
+        /// <summary>
+        /// Gets the process ID.
+        /// </summary>
+        public int ProcessId
+        {
+            get
+            {
+                Validate();
+
+                if (field == -1)
+                {
+                    field = Interop.Kernel32.GetProcessId(this);
+                }
+
+                return field;
+            }
+            private set;
+        } = -1;
+
         protected override bool ReleaseHandle()
         {
             return Interop.Kernel32.CloseHandle(handle);
@@ -624,8 +643,6 @@ namespace Microsoft.Win32.SafeHandles
                 throw;
             }
         }
-
-        private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
 
         private ProcessExitStatus WaitForExitCore()
         {
