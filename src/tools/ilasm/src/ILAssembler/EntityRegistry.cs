@@ -117,6 +117,7 @@ namespace ILAssembler
                         // COMPAT: Only record param entries for parameters that have names
                         // or other rows that would refer to it.
                         if (param.Name is not null
+                            || param.Attributes != ParameterAttributes.None
                             || param.MarshallingDescriptor.Count != 0
                             || param.HasCustomAttributes
                             || param.HasConstant)
