@@ -234,7 +234,7 @@ jobs:
       continueOnError: true
       condition: always()
 
-    - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
+    - ${{ if and(in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android'), not(in(parameters.hostedOs, 'linux', 'windows'))) }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
