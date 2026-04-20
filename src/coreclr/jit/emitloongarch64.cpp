@@ -5272,8 +5272,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         }
         else if (id->idInsOpt() == INS_OPTS_RELOC)
         { // pcalau12i + (addi.d or ld.d)
-            result.insLatency          = id->idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
-            result.insThroughput       = id->idIsCnsReloc() ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_4C;
+            result.insLatency    = id->idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
+            result.insThroughput = id->idIsCnsReloc() ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_4C;
             result.insMemoryAccessKind =
                 id->idIsCnsReloc() ? PerfScoreMemoryAccessKind::None : PerfScoreMemoryAccessKind::Read;
         }
