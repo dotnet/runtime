@@ -751,7 +751,7 @@ public class ExecutionManagerTests
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        StubKind kind = em.TryGetStubKind(new TargetCodePointer(methodStart));
+        StubKind kind = em.GetStubKind(new TargetCodePointer(methodStart));
         Assert.Equal(StubKind.CodeBlockManaged, kind);
     }
 
