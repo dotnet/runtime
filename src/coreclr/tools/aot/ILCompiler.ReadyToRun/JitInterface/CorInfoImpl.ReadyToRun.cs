@@ -97,7 +97,9 @@ namespace Internal.JitInterface
             if (fieldWithToken == null)
                 return false;
 
-            return Field == fieldWithToken.Field && Token.Equals(fieldWithToken.Token);
+            return Field == fieldWithToken.Field
+                && Token.Equals(fieldWithToken.Token)
+                && OwningTypeNotDerivedFromToken == fieldWithToken.OwningTypeNotDerivedFromToken;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
