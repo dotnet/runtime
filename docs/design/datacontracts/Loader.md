@@ -213,11 +213,6 @@ enum ClrModifiableAssemblies : uint
 | `LoaderHeapBlock` | `Next` | Pointer to the next `LoaderHeapBlock` in the linked list |
 | `LoaderHeapBlock` | `VirtualAddress` | Pointer to the start of the reserved virtual memory |
 | `LoaderHeapBlock` | `VirtualSize` | Size in bytes of the reserved virtual memory region |
-| `WebcilHeader` | `CoffSections` | Number of COFF sections in the Webcil image |
-| `WebcilSectionHeader` | `VirtualSize` | Virtual size of the section |
-| `WebcilSectionHeader` | `VirtualAddress` | RVA of the section |
-| `WebcilSectionHeader` | `SizeOfRawData` | Size of the section's raw data |
-| `WebcilSectionHeader` | `PointerToRawData` | File offset to the section's raw data |
 | `EEConfig` | `ModifiableAssemblies` | Controls Edit and Continue support (ClrModifiableAssemblies enum) |
 
 
