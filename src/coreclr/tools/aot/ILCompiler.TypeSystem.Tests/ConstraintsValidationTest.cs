@@ -517,6 +517,19 @@ namespace TypeSystemTests
                 instantiatedType = _complexGenericConstraint2Type.MakeInstantiatedType(arg2OfArg2OfInt, universalCanon);
                 Assert.True(instantiatedType.CheckConstraints());
             }
+
+            // Array type args with __Canon in invariant position
+            // NonVariantInterfaceConstraint<T, U> where T : INonVariantGen<U>
+            // T=NonVariantGenImpl<string[]>, U=__Canon[] → constraint is INonVariantGen<__Canon[]>
+            // NonVariantGenImpl<string[]> implements INonVariantGen<string[]>
+            // string[] is a ref type, so string[] should be compatible with __Canon[]
+            {
+                TypeDesc stringArray = stringType.MakeArrayType();
+                TypeDesc canonArray = canon.MakeArrayType();
+                TypeDesc nonVariantGenImplOfStringArray = nonVariantGenImplType.MakeInstantiatedType(stringArray);
+                instantiatedType = nonVariantInterfaceConstraintType.MakeInstantiatedType(nonVariantGenImplOfStringArray, canonArray);
+                Assert.True(instantiatedType.CheckConstraints());
+            }
         }
     }
 }

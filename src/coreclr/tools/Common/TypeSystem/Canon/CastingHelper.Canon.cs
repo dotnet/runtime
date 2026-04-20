@@ -8,6 +8,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Check if <paramref name="otherType"/> is a canonical type that <paramref name="thisType"/>
         /// can be cast to. __Canon accepts any reference type; __UniversalCanon accepts any type.
+        /// Pointers, byrefs, and function pointers are not valid instantiation arguments.
         /// </summary>
         private static bool IsCanonicalCastTarget(TypeDesc thisType, TypeDesc otherType)
         {
@@ -44,8 +45,22 @@ namespace Internal.TypeSystem
 
             // For non-leaf types (e.g., Arg2<string> vs Arg2<__Canon>), check if they are
             // canon-equivalent: same type definition with canon-compatible type arguments.
-            // This also covers arrays via CanCastTo's array covariance path + IsCanonicalCastTarget.
-            return IsCanonEquivalent(type, otherType);
+            if (IsCanonEquivalent(type, otherType))
+                return true;
+
+            // For parameterized types like arrays (string[] vs __Canon[]),
+            // recursively match the element/parameter type.
+            if (type is ParameterizedType paramType && otherType is ParameterizedType otherParamType
+                && type.Category == otherType.Category)
+            {
+                if (type is ArrayType arrayType && otherType is ArrayType otherArrayType
+                    && arrayType.Rank != otherArrayType.Rank)
+                    return false;
+
+                return IsCanonicalTypeArgMatch(paramType.ParameterType, otherParamType.ParameterType);
+            }
+
+            return false;
         }
 
         /// <summary>
