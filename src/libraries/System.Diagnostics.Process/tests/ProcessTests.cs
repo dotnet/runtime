@@ -208,7 +208,7 @@ namespace System.Diagnostics.Tests
                 remoteInvokeOptions.ExpectedExitCode = unchecked((int)0xC000013A); // STATUS_CONTROL_C_EXIT
             }
 
-            bool remoteHandleDisposed = false;
+            bool remoteHandleDisposeAttemped = false;
             ExceptionDispatchInfo testException = null;
             ExceptionDispatchInfo disposeException = null;
             RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
@@ -280,7 +280,7 @@ namespace System.Diagnostics.Tests
                     Assert.NotEqual(RemoteExecutor.SuccessExitCode, remoteHandle.Process.ExitCode);
                 }
 
-                remoteHandleDisposed = true;
+                remoteHandleDisposeAttemped = true;
                 remoteHandle.Dispose();
             }
             catch (Exception ex)
@@ -289,7 +289,7 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                if (!remoteHandleDisposed)
+                if (!remoteHandleDisposeAttemped)
                 {
                     try
                     {
