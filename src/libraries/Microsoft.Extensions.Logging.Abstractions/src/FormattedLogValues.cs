@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Logging
     /// LogValues to enable formatting options supported by <see cref="string.Format(IFormatProvider, string, object?)"/>.
     /// This also enables using {NamedFormatItem} in the format string.
     /// </summary>
-    internal struct FormattedLogValues : IReadOnlyList<KeyValuePair<string, object?>>
+    public struct FormattedLogValues : IReadOnlyList<KeyValuePair<string, object?>>
     {
         internal const int MaxCachedFormatters = 1024;
         private const string NullFormat = "[null]";
@@ -30,6 +30,11 @@ namespace Microsoft.Extensions.Logging
         // for testing purposes
         internal LogValuesFormatter? Formatter => _formatter;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FormattedLogValues"/> struct.
+        /// </summary>
+        /// <param name="format">The named format string.</param>
+        /// <param name="values">The values to substitute into the format string.</param>
         public FormattedLogValues(string? format, params object?[]? values)
         {
             if (values != null && values.Length != 0 && format != null)
@@ -60,6 +65,7 @@ namespace Microsoft.Extensions.Logging
             _cachedToString = null;
         }
 
+        /// <inheritdoc />
         public KeyValuePair<string, object?> this[int index]
         {
             get
@@ -78,6 +84,7 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
+        /// <inheritdoc />
         public int Count
         {
             get
@@ -91,6 +98,7 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
+        /// <inheritdoc />
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
         {
             for (int i = 0; i < Count; ++i)
@@ -99,6 +107,7 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             if (_formatter == null)

@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging
     /// <summary>
     /// Formatter to convert the named format items like {NamedformatItem} to <see cref="string.Format(IFormatProvider, string, object)"/> format.
     /// </summary>
-    internal sealed class LogValuesFormatter
+    public sealed class LogValuesFormatter
     {
         private const string NullValue = "(null)";
         private readonly List<string> _valueNames = new List<string>();
@@ -27,6 +27,10 @@ namespace Microsoft.Extensions.Logging
         // - Be annotated as [SkipLocalsInit] to avoid zero'ing the stackalloc'd char span
         // - Format _valueNames.Count directly into a span
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LogValuesFormatter"/> class.
+        /// </summary>
+        /// <param name="format">The named format string.</param>
         public LogValuesFormatter(string format)
         {
             ArgumentNullException.ThrowIfNull(format);
@@ -82,7 +86,10 @@ namespace Microsoft.Extensions.Logging
 #endif
         }
 
+        /// <summary>Gets the original format string.</summary>
         public string OriginalFormat { get; }
+
+        /// <summary>Gets the list of named format parameter names.</summary>
         public List<string> ValueNames => _valueNames;
 
         private static int FindBraceIndex(string format, char brace, int startIndex, int endIndex)
@@ -133,6 +140,9 @@ namespace Microsoft.Extensions.Logging
             return braceIndex;
         }
 
+        /// <summary>Formats the given values using the format string.</summary>
+        /// <param name="values">The values to format.</param>
+        /// <returns>The formatted string.</returns>
         public string Format(object?[]? values)
         {
             object?[]? formattedValues = values;
@@ -218,6 +228,10 @@ namespace Microsoft.Extensions.Logging
             string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0), FormatArgument(arg1), FormatArgument(arg2));
 #endif
 
+        /// <summary>Gets the key/value pair for the format item at the specified index.</summary>
+        /// <param name="values">The values array.</param>
+        /// <param name="index">The index of the value to retrieve.</param>
+        /// <returns>A key/value pair for the format item.</returns>
         public KeyValuePair<string, object?> GetValue(object?[] values, int index)
         {
             if (index < 0 || index > _valueNames.Count)
@@ -233,6 +247,9 @@ namespace Microsoft.Extensions.Logging
             return new KeyValuePair<string, object?>("{OriginalFormat}", OriginalFormat);
         }
 
+        /// <summary>Gets an enumerable of key/value pairs for all format items.</summary>
+        /// <param name="values">The values array.</param>
+        /// <returns>An enumerable of key/value pairs.</returns>
         public IEnumerable<KeyValuePair<string, object?>> GetValues(object[] values)
         {
             var valueArray = new KeyValuePair<string, object?>[values.Length + 1];

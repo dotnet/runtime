@@ -161,6 +161,26 @@ namespace Microsoft.Extensions.Logging
         public ProviderAliasAttribute(string alias) { }
         public string Alias { get { throw null; } }
     }
+    public partial struct FormattedLogValues : System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public FormattedLogValues(string? format, params object?[]? values) { }
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
+        public int Count { get { throw null; } }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public sealed partial class LogValuesFormatter
+    {
+        public LogValuesFormatter(string format) { }
+        public string OriginalFormat { get { throw null; } }
+        public System.Collections.Generic.List<string> ValueNames { get { throw null; } }
+        public string Format(object?[]? values) { throw null; }
+        public System.Collections.Generic.KeyValuePair<string, object?> GetValue(object?[] values, int index) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> GetValues(object[] values) { throw null; }
+    }
 }
 namespace Microsoft.Extensions.Logging.Abstractions
 {
@@ -225,15 +245,60 @@ namespace Microsoft.Extensions.Logging.Abstractions
     {
         void LogRecords(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.Abstractions.BufferedLogRecord> records);
     }
+    public sealed partial class NullScope : System.IDisposable
+    {
+        private NullScope() { }
+        public static Microsoft.Extensions.Logging.Abstractions.NullScope Instance { get { throw null; } }
+        public void Dispose() { }
+    }
+    public static partial class TypeNameHelper
+    {
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("item")]
+        public static string? GetTypeDisplayName(object? item, bool fullName = true) { throw null; }
+        public static string GetTypeDisplayName(System.Type type, bool fullName = true, bool includeGenericParameterNames = false, bool includeGenericParameters = true, char nestedTypeDelimiter = '+') { throw null; }
+    }
 }
 namespace Microsoft.Extensions.Logging.Abstractions.Internal
 {
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.", error: true)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is NullScope in the Microsoft.Extensions.Logging.Abstractions namespace.", error: true)]
     public partial class NullScope : System.IDisposable
     {
         private NullScope() { }
         public static Microsoft.Extensions.Logging.Abstractions.Internal.NullScope Instance { get { throw null; } }
         public void Dispose() { }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility. Do not use.", error: true)]
+    public static partial class TypeNameHelper
+    {
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("item")]
+        public static string? GetTypeDisplayName(object? item, bool fullName = true) { throw null; }
+        public static string GetTypeDisplayName(System.Type type, bool fullName = true, bool includeGenericParameterNames = false, bool includeGenericParameters = true, char nestedTypeDelimiter = '+') { throw null; }
+    }
+}
+namespace Microsoft.Extensions.Logging.Internal
+{
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Diagnostics.Testing.", error: true)]
+    public sealed partial class FormattedLogValues : System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>
+    {
+        public FormattedLogValues(string? format, params object?[]? values) { }
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
+        public int Count { get { throw null; } }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Diagnostics.Testing.", error: true)]
+    public sealed partial class LogValuesFormatter
+    {
+        public LogValuesFormatter(string format) { }
+        public string OriginalFormat { get { throw null; } }
+        public System.Collections.Generic.List<string> ValueNames { get { throw null; } }
+        public string Format(object?[]? values) { throw null; }
+        public System.Collections.Generic.KeyValuePair<string, object?> GetValue(object?[] values, int index) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> GetValues(object[] values) { throw null; }
     }
 }
