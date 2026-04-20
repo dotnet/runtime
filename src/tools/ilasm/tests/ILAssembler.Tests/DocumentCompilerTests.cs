@@ -3267,5 +3267,40 @@ namespace ILAssembler.Tests
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
             Assert.Empty(diagnostics);
         }
+
+        [Fact]
+        public void MultiDocument_DefinePropagatesToNextDocument()
+        {
+            var doc1 = new SourceText("""
+                #define ASSEMBLY_NAME "TestAssembly"
+                .assembly extern mscorlib { }
+                .assembly ASSEMBLY_NAME { }
+                """, "doc1.il");
+
+            var doc2 = new SourceText("""
+                .class public auto ansi beforefieldinit ASSEMBLY_NAME extends [mscorlib]System.Object
+                {
+                }
+                """, "doc2.il");
+
+            var compiler = new DocumentCompiler();
+            var (diagnostics, result) = compiler.Compile(
+                ImmutableArray.Create(doc1, doc2),
+                _ => { Assert.Fail("Expected no includes"); return default; },
+                _ => { Assert.Fail("Expected no resources"); return default; },
+                new Options());
+
+            Assert.Empty(diagnostics);
+            Assert.NotNull(result);
+
+            var blobBuilder = new BlobBuilder();
+            result!.Serialize(blobBuilder);
+            using var pe = new PEReader(blobBuilder.ToImmutableArray());
+            var reader = pe.GetMetadataReader();
+
+            // doc2 should have the type named "TestAssembly" (from the macro)
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal("TestAssembly", reader.GetString(typeDef.Name));
+        }
     }
 }

@@ -15,39 +15,64 @@ public sealed class DocumentCompiler
 {
     public (ImmutableArray<Diagnostic>, PEBuilder?) Compile(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
     {
-        var inputSource = new AntlrInputStream(document.Text)
-        {
-            name = document.Path
-        };
-        CILLexer lexer = new(inputSource);
-        Dictionary<string, SourceText> loadedDocuments = new()
-        {
-            {document.Path!, document }
-        };
-        PreprocessedTokenSource preprocessor = new(lexer, path =>
-        {
-            var includedDocument = includedDocumentLoader(path);
+        return Compile(ImmutableArray.Create(document), includedDocumentLoader, resourceLocator, options);
+    }
 
-            var includedSource = new AntlrInputStream(includedDocument.Text)
-            {
-                name = includedDocument.Path
-            };
-            loadedDocuments.Add(includedDocument.Path, includedDocument);
-            return new CILLexer(includedSource);
-        }, text => new CILLexer(new AntlrInputStream(text)));
-
+    public (ImmutableArray<Diagnostic>, PEBuilder?) Compile(ImmutableArray<SourceText> documents, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
+    {
+        Dictionary<string, SourceText> loadedDocuments = new();
         ImmutableArray<Diagnostic>.Builder diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
-        preprocessor.OnPreprocessorSyntaxError += (source, start, length, msg) =>
-        {
-            diagnostics.Add(new Diagnostic("Preprocessor", DiagnosticSeverity.Error, msg, new Location(new(start, length), loadedDocuments[source])));
-        };
 
-        // Note: Parser must use the preprocessor token stream (not the raw lexer)
-        // to properly handle #include, #define, and other preprocessor directives.
-        CILParser parser = new(new CommonTokenStream(preprocessor));
-        var result = parser.decls();
-        GrammarVisitor visitor = new GrammarVisitor(loadedDocuments, options, resourceLocator);
-        _ = result.Accept(visitor);
+        GrammarVisitor? visitor = null;
+        IReadOnlyDictionary<string, string?>? definedVariables = null;
+
+        foreach (var document in documents)
+        {
+            loadedDocuments[document.Path!] = document;
+
+            var inputSource = new AntlrInputStream(document.Text)
+            {
+                name = document.Path
+            };
+            CILLexer lexer = new(inputSource);
+            PreprocessedTokenSource preprocessor = new(lexer, path =>
+            {
+                var includedDocument = includedDocumentLoader(path);
+                var includedSource = new AntlrInputStream(includedDocument.Text)
+                {
+                    name = includedDocument.Path
+                };
+                loadedDocuments[includedDocument.Path!] = includedDocument;
+                return new CILLexer(includedSource);
+            }, text => new CILLexer(new AntlrInputStream(text)), definedVariables);
+
+            preprocessor.OnPreprocessorSyntaxError += (source, start, length, msg) =>
+            {
+                if (loadedDocuments.TryGetValue(source, out var sourceText))
+                {
+                    diagnostics.Add(new Diagnostic("Preprocessor", DiagnosticSeverity.Error, msg, new Location(new(start, length), sourceText)));
+                }
+                else
+                {
+                    diagnostics.Add(new Diagnostic("Preprocessor", DiagnosticSeverity.Error, msg, new Location(new(start, length), new SourceText("", source))));
+                }
+            };
+
+            CILParser parser = new(new CommonTokenStream(preprocessor));
+            var result = parser.decls();
+
+            visitor ??= new GrammarVisitor(loadedDocuments, options, resourceLocator);
+
+            _ = result.Accept(visitor);
+
+            // Transfer defined constants to the next document
+            definedVariables = preprocessor.DefinedVariables;
+        }
+
+        if (visitor is null)
+        {
+            return (diagnostics.ToImmutable(), null);
+        }
 
         var image = visitor.BuildImage();
 
