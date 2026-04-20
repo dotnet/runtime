@@ -5491,6 +5491,46 @@ AdjustContextForJITHelpers(
         if (IsIPInMarkedJitHelper(ip))
         {
             Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
+
+            // After unwinding from the native write barrier to the first managed frame, check
+            // whether that frame is a managed helper that itself called the write barrier and
+            // keep unwinding until we reach user code.
+            //
+            // CastHelpers.StelemRef (CORINFO_HELP_ARRADDR_ST) and its callees StelemRef_Helper
+            // and StelemRef_Helper_NoCacheLookup all call RuntimeHelpers.WriteBarrier. The call
+            // chain can be up to 3 levels deep:
+            //   user -> StelemRef -> StelemRef_Helper -> StelemRef_Helper_NoCacheLookup -> WriteBarrier
+            //
+            // Prior to the change that inlined CORINFO_HELP_ARRADDR_ST, StelemRef tail-called
+            // the write barrier so its frame was already destroyed and the unwind went directly
+            // to user code. With a regular call, the StelemRef family frames remain on the stack.
+            //
+            // We identify these helpers by their MethodTable (CastHelpers class), which is stable
+            // across tiered recompilation.
+            static MethodTable* s_pCastHelpersMT = nullptr;
+            while (true)
+            {
+                PCODE currentIP = GetIP(pContext);
+                if (!ExecutionManager::IsManagedCode(currentIP))
+                    break;
+
+                EECodeInfo codeInfo(currentIP);
+                if (!codeInfo.IsValid())
+                    break;
+
+                MethodDesc* pMD = codeInfo.GetMethodDesc();
+                if (pMD == nullptr)
+                    break;
+
+                if (s_pCastHelpersMT == nullptr)
+                    s_pCastHelpersMT = CoreLibBinder::GetExistingClass(CLASS__CASTHELPERS);
+
+                if (pMD->GetMethodTable() != s_pCastHelpersMT)
+                    break;
+
+                Thread::VirtualUnwindCallFrame(pContext);
+            }
+
             return TRUE;
         }
 #else
