@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for IsLongRunningGCTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Test will timeout on Unix -->
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
   </PropertyGroup>

@@ -79,29 +79,42 @@ execution filtering.
 The test is incompatible with Mono's AOT compiler. This affects build and execution
 filtering for Mono AOT test runs.
 
-### 14. Project sets `<CrossGenTest>false</CrossGenTest>`
+### 14. Project sets `<IsLongRunningGCTest>true</IsLongRunningGCTest>`
+
+The test is a long-running GC test that should only execute when `RunningLongGCTests`
+is set. The skip check (injected via `CLRTest.GC.targets` as a shell pre-command)
+runs per-process, so the test needs its own process.
+
+### 15. Project sets `<CLRTestExecutionArguments>` to a non-default value
+
+Execution arguments passed to the test runner are per-process configuration. Setting
+this property (even to an empty string to clear inherited arguments) changes how the
+test process is invoked, which is incompatible with a shared runner that uses its own
+fixed invocation.
+
+### 16. Project sets `<CrossGenTest>false</CrossGenTest>`
 
 The test is incompatible with CrossGen2 ahead-of-time compilation. The test needs
 its own execution script to skip the crossgen step.
 
-### 15. Source code calls `Environment.Exit()`
+### 17. Source code calls `Environment.Exit()`
 
 `Environment.Exit` terminates the entire process. If the test is merged with other
 tests, calling `Environment.Exit` would kill the shared runner and prevent remaining
 tests from executing.
 
-### 16. Source code calls `GC.WaitForPendingFinalizers()`
+### 18. Source code calls `GC.WaitForPendingFinalizers()`
 
 This is a process-wide GC operation. Running it in a shared process can interfere
 with the GC state of other tests, causing non-deterministic failures.
 
-### 17. Source code uses collectible `AssemblyLoadContext`
+### 19. Source code uses collectible `AssemblyLoadContext`
 
 Tests that create, load into, and unload collectible `AssemblyLoadContext` instances
 modify process-wide assembly state. Sharing a process could cause conflicts between
 tests that load or unload assemblies.
 
-### 18. Source code modifies process-wide state
+### 20. Source code modifies process-wide state
 
 Examples include:
 - Setting `AppContext` switches or data.
@@ -109,7 +122,7 @@ Examples include:
 - Monitoring the number of JIT-compiled methods.
 - Leaving secondary threads running after the test method returns.
 
-### 19. Test requires an explicit `Main` entry point
+### 21. Test requires an explicit `Main` entry point
 
 Some tests need a custom `Main` because they:
 - Parse command-line arguments for local testing.
@@ -119,46 +132,46 @@ Some tests need a custom `Main` because they:
 
 A custom `Main` is incompatible with the merged test runner's generated entry point.
 
-### 20. Test intentionally crashes the process
+### 22. Test intentionally crashes the process
 
 Tests that validate crash behavior (stack overflow, fatal error handling, unhandled
 exceptions) must run in their own process so the crash does not kill other tests.
 
-### 21. Test is a separate executable launched by another test
+### 23. Test is a separate executable launched by another test
 
 If the project produces a helper executable that is launched by a different test
 project (e.g., via `Process.Start`), it must build as a standalone executable with
 process isolation.
 
-### 22. Test loads native libraries from specific paths
+### 24. Test loads native libraries from specific paths
 
 Tests that probe for native libraries relative to their output directory or test
 custom native library loading behavior need a predictable directory layout, which
 merged runners do not guarantee.
 
-### 23. Project uses a custom `<AppManifest>`
+### 25. Project uses a custom `<AppManifest>`
 
 Tests that embed a custom application manifest (e.g., for COM activation) must run
 in their own process because merged runners do not include per-test manifests.
 
-### 24. Source code sets module-level attributes like `SkipLocalsInit`
+### 26. Source code sets module-level attributes like `SkipLocalsInit`
 
 Module-level attributes such as `[module: SkipLocalsInit]` affect all code in the
 assembly. This is incompatible with merging into a shared runner where other tests
 expect default behavior.
 
-### 25. Test registers process-wide event handlers it does not clean up
+### 27. Test registers process-wide event handlers it does not clean up
 
 Tests that register handlers on process-wide events (e.g.,
 `AssemblyLoadContext.Default.ResolvingUnmanagedDll`) and do not unregister them
 before returning can interfere with subsequent tests in a shared runner.
 
-### 26. Test uses `IlcMultiModule` or multimodule NativeAOT builds
+### 28. Test uses `IlcMultiModule` or multimodule NativeAOT builds
 
 Multimodule NativeAOT tests have different build and link behavior that is
 incompatible with the standard merged runner pipeline.
 
-### 27. Test requires specific framework compilation settings
+### 29. Test requires specific framework compilation settings
 
 Tests that depend on the framework itself being compiled with non-default settings
 (e.g., `UseSystemResourceKeys`) must run in a process whose runtime matches those
@@ -182,6 +195,8 @@ If the project file contains **any** of the following MSBuild properties or item
 | `SuperPMICollectIncompatible` | Per-process skip check |
 | `IlasmRoundTripIncompatible` | Per-process skip check |
 | `UnloadabilityIncompatible` | Per-process skip check |
+| `IsLongRunningGCTest` | Per-process skip pre-command |
+| `CLRTestExecutionArguments` | Per-process invocation arguments |
 | `CLRTestTargetUnsupported` | Build/execution filtering |
 | `NativeAotIncompatible` | Build/execution filtering |
 | `MonoAotIncompatible` | Build/execution filtering |
