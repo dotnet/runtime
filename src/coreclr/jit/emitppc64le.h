@@ -172,6 +172,6 @@ bool emitIns_valid_imm_for_li(ssize_t imm);
 
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 
-void emitIns_J(instruction ins, BasicBlock* dst);
+void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 
 #endif

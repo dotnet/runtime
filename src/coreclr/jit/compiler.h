@@ -8818,6 +8818,11 @@ public:
     void unwindReturn(regNumber reg);
 #endif // defined(TARGET_RISCV64)
 
+#if defined(TARGET_POWERPC64)
+    void unwindPadding(); // Generate a sequence of unwind NOP codes representing instructions between the last
+                          // instruction and the current location.
+#endif // defined(TARGET_POWERPC64)
+
     //
     // Private "helper" functions for the unwind implementation.
     //
