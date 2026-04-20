@@ -131,6 +131,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\CastingHelper.cs">
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Canon\CastingHelper.Canon.cs">
+      <Link>TypeSystem\Canon\CastingHelper.Canon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\CastingHelper.TypeEquivalence.cs">
       <Link>TypeSystem\Common\CastingHelper.TypeEquivalence.cs</Link>
     </Compile>
