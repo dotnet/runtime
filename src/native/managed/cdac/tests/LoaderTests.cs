@@ -740,15 +740,13 @@ public unsafe class SetCompilerFlagsTests
     public void SetCompilerFlags_BothFlagsSet_EncCapable(MockTarget.Architecture arch)
     {
         ulong assemblyAddr = 0;
-        int flagsOffset = 0;
 
-        var (dacDbi, target) = CreateDacDbiWithLoader(arch, (loader, builder) =>
+        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, builder) =>
         {
             var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.Debug);
             builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
             var module = loader.AddModule(flags: IsEncCapable);
             assemblyAddr = module.Assembly;
-            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
         });
 
         int hr = dacDbi.SetCompilerFlags(assemblyAddr, Interop.BOOL.TRUE, Interop.BOOL.TRUE);
