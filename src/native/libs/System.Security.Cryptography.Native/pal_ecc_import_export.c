@@ -939,3 +939,438 @@ exit:
     return 0;
 #endif
 }
+
+int32_t CryptoNative_EvpPKeyGenerateByEcKeyOid(
+    EVP_PKEY** pkey,
+    const char* oid)
+{
+    if (!pkey || !oid)
+    {
+        assert(false);
+        return 0;
+    }
+
+    *pkey = NULL;
+
+    ERR_clear_error();
+
+#ifdef NEED_OPENSSL_3_0
+    if (!API_EXISTS(EVP_PKEY_keygen))
+    {
+        return 0;
+    }
+
+    int nid = OBJ_txt2nid(oid);
+    if (!nid)
+    {
+        return -1;
+    }
+
+    const char* groupName = OBJ_nid2sn(nid);
+    if (!groupName)
+    {
+        return -1;
+    }
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_from_name(NULL, "EC", NULL);
+    if (ctx == NULL)
+    {
+        goto error;
+    }
+
+    if (EVP_PKEY_keygen_init(ctx) <= 0)
+    {
+        goto error;
+    }
+
+    if (EVP_PKEY_CTX_set_group_name(ctx, groupName) <= 0)
+    {
+        goto error;
+    }
+
+    if (EVP_PKEY_keygen(ctx, pkey) <= 0)
+    {
+        goto error;
+    }
+
+    EVP_PKEY_CTX_free(ctx);
+    return 1;
+
+error:
+    if (ctx != NULL)
+    {
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    if (*pkey != NULL)
+    {
+        EVP_PKEY_free(*pkey);
+        *pkey = NULL;
+    }
+
+    return 0;
+#else
+    (void)oid;
+    return 0;
+#endif
+}
+
+int32_t CryptoNative_EvpPKeyCreateByEcKeyParameters(
+    EVP_PKEY** pkey,
+    const char* oid,
+    const uint8_t* qx, int32_t qxLength,
+    const uint8_t* qy, int32_t qyLength,
+    const uint8_t* d, int32_t dLength)
+{
+    if (!pkey || !oid)
+    {
+        assert(false);
+        return 0;
+    }
+
+    *pkey = NULL;
+
+    ERR_clear_error();
+
+#ifdef NEED_OPENSSL_3_0
+    if (!API_EXISTS(EVP_PKEY_fromdata) || !API_EXISTS(OSSL_PARAM_BLD_new))
+    {
+        return 0;
+    }
+
+    // Verify the OID is recognized before doing any work.
+    int nid = OBJ_txt2nid(oid);
+    if (!nid)
+    {
+        return -1;
+    }
+
+    // OBJ_nid2sn returns the short name OpenSSL expects for the group name param.
+    const char* groupName = OBJ_nid2sn(nid);
+    if (!groupName)
+    {
+        return -1;
+    }
+
+    EVP_PKEY_CTX* ctx = NULL;
+    uint8_t* pubKeyBuf = NULL;
+    OSSL_PARAM_BLD* bld = NULL;
+    OSSL_PARAM* params = NULL;
+    BIGNUM* dBn = NULL;
+
+    bld = OSSL_PARAM_BLD_new();
+    if (bld == NULL)
+    {
+        goto error;
+    }
+
+    if (!OSSL_PARAM_BLD_push_utf8_string(bld, OSSL_PKEY_PARAM_GROUP_NAME, groupName, 0))
+    {
+        goto error;
+    }
+
+    if (qx && qy)
+    {
+        // Build the uncompressed public key: 0x04 || qx || qy
+        int32_t coordLen = qxLength > qyLength ? qxLength : qyLength;
+        int32_t pubKeyLen = 1 + 2 * coordLen;
+        pubKeyBuf = (uint8_t*)calloc(1, (size_t)pubKeyLen);
+
+        if (pubKeyBuf == NULL)
+        {
+            goto error;
+        }
+
+        pubKeyBuf[0] = 0x04;
+        memcpy(pubKeyBuf + 1 + (coordLen - qxLength), qx, (size_t)qxLength);
+        memcpy(pubKeyBuf + 1 + coordLen + (coordLen - qyLength), qy, (size_t)qyLength);
+
+        if (!OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_PUB_KEY, pubKeyBuf, (size_t)pubKeyLen))
+        {
+            goto error;
+        }
+    }
+
+    if (d && dLength > 0)
+    {
+        dBn = BN_bin2bn(d, dLength, NULL);
+        if (dBn == NULL)
+        {
+            goto error;
+        }
+
+        if (!OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_PRIV_KEY, dBn))
+        {
+            goto error;
+        }
+    }
+
+    params = OSSL_PARAM_BLD_to_param(bld);
+    if (params == NULL)
+    {
+        goto error;
+    }
+
+    ctx = EVP_PKEY_CTX_new_from_name(NULL, "EC", NULL);
+    if (ctx == NULL)
+    {
+        goto error;
+    }
+
+    if (EVP_PKEY_fromdata_init(ctx) != 1)
+    {
+        goto error;
+    }
+
+    {
+        int selection = (d && dLength > 0) ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY;
+        if (EVP_PKEY_fromdata(ctx, pkey, selection, params) != 1)
+        {
+            goto error;
+        }
+    }
+
+    OSSL_PARAM_free(params);
+    OSSL_PARAM_BLD_free(bld);
+    EVP_PKEY_CTX_free(ctx);
+    BN_clear_free(dBn);
+    free(pubKeyBuf);
+    return 1;
+
+error:
+    OSSL_PARAM_free(params);
+    OSSL_PARAM_BLD_free(bld);
+    EVP_PKEY_CTX_free(ctx);
+    BN_clear_free(dBn);
+    free(pubKeyBuf);
+    if (*pkey)
+    {
+        EVP_PKEY_free(*pkey);
+        *pkey = NULL;
+    }
+    return 0;
+#else
+    (void)oid;
+    (void)qx; (void)qxLength;
+    (void)qy; (void)qyLength;
+    (void)d; (void)dLength;
+    return 0;
+#endif
+}
+
+EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
+    ECCurveType curveType,
+    const uint8_t* qx, int32_t qxLength,
+    const uint8_t* qy, int32_t qyLength,
+    const uint8_t* d, int32_t dLength,
+    const uint8_t* p, int32_t pLength,
+    const uint8_t* a, int32_t aLength,
+    const uint8_t* b, int32_t bLength,
+    const uint8_t* gx, int32_t gxLength,
+    const uint8_t* gy, int32_t gyLength,
+    const uint8_t* order, int32_t orderLength,
+    const uint8_t* cofactor, int32_t cofactorLength,
+    const uint8_t* seed, int32_t seedLength)
+{
+    if (!p || !a || !b || !gx || !gy || !order || !cofactor)
+    {
+        assert(false);
+        return NULL;
+    }
+
+    ERR_clear_error();
+
+#ifdef NEED_OPENSSL_3_0
+    if (!API_EXISTS(EVP_PKEY_fromdata) || !API_EXISTS(OSSL_PARAM_BLD_new))
+    {
+        return NULL;
+    }
+
+    EVP_PKEY* pkey = NULL;
+    EVP_PKEY_CTX* ctx = NULL;
+    OSSL_PARAM_BLD* bld = NULL;
+    OSSL_PARAM* params = NULL;
+    uint8_t* generatorBuf = NULL;
+    uint8_t* pubKeyBuf = NULL;
+    BIGNUM* pBn = NULL;
+    BIGNUM* aBn = NULL;
+    BIGNUM* bBn = NULL;
+    BIGNUM* orderBn = NULL;
+    BIGNUM* cofactorBn = NULL;
+    BIGNUM* dBn = NULL;
+
+    bld = OSSL_PARAM_BLD_new();
+    if (bld == NULL)
+    {
+        goto error;
+    }
+
+    const char* fieldType = (curveType == Characteristic2)
+        ? "characteristic-two-field"
+        : "prime-field";
+
+    if (!OSSL_PARAM_BLD_push_utf8_string(bld, OSSL_PKEY_PARAM_EC_FIELD_TYPE, fieldType, 0))
+    {
+        goto error;
+    }
+
+    if (!OSSL_PARAM_BLD_push_utf8_string(bld, OSSL_PKEY_PARAM_EC_ENCODING, "explicit", 0))
+    {
+        goto error;
+    }
+
+    pBn = BN_bin2bn(p, pLength, NULL);
+    aBn = BN_bin2bn(a, aLength, NULL);
+    bBn = BN_bin2bn(b, bLength, NULL);
+
+    if (!pBn || !aBn || !bBn)
+    {
+        goto error;
+    }
+
+    if (!OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_EC_P, pBn) ||
+        !OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_EC_A, aBn) ||
+        !OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_EC_B, bBn))
+    {
+        goto error;
+    }
+
+    // Generator as uncompressed point: 0x04 || gx || gy
+    {
+        int32_t coordLen = gxLength > gyLength ? gxLength : gyLength;
+        int32_t genLen = 1 + 2 * coordLen;
+        generatorBuf = (uint8_t*)calloc(1, (size_t)genLen);
+        if (generatorBuf == NULL)
+        {
+            goto error;
+        }
+
+        generatorBuf[0] = 0x04;
+        memcpy(generatorBuf + 1 + (coordLen - gxLength), gx, (size_t)gxLength);
+        memcpy(generatorBuf + 1 + coordLen + (coordLen - gyLength), gy, (size_t)gyLength);
+
+        if (!OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_EC_GENERATOR, generatorBuf, (size_t)genLen))
+        {
+            goto error;
+        }
+    }
+
+    orderBn = BN_bin2bn(order, orderLength, NULL);
+    cofactorBn = BN_bin2bn(cofactor, cofactorLength, NULL);
+
+    if (!orderBn || !cofactorBn)
+    {
+        goto error;
+    }
+
+    if (!OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_EC_ORDER, orderBn) ||
+        !OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_EC_COFACTOR, cofactorBn))
+    {
+        goto error;
+    }
+
+    if (seed && seedLength > 0)
+    {
+        if (!OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_EC_SEED, seed, (size_t)seedLength))
+        {
+            goto error;
+        }
+    }
+
+    if (qx && qy)
+    {
+        int32_t coordLen = qxLength > qyLength ? qxLength : qyLength;
+        int32_t pubKeyLen = 1 + 2 * coordLen;
+        pubKeyBuf = (uint8_t*)calloc(1, (size_t)pubKeyLen);
+        if (pubKeyBuf == NULL)
+        {
+            goto error;
+        }
+
+        pubKeyBuf[0] = 0x04;
+        memcpy(pubKeyBuf + 1 + (coordLen - qxLength), qx, (size_t)qxLength);
+        memcpy(pubKeyBuf + 1 + coordLen + (coordLen - qyLength), qy, (size_t)qyLength);
+
+        if (!OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_PUB_KEY, pubKeyBuf, (size_t)pubKeyLen))
+        {
+            goto error;
+        }
+    }
+
+    if (d && dLength > 0)
+    {
+        dBn = BN_bin2bn(d, dLength, NULL);
+        if (dBn == NULL)
+        {
+            goto error;
+        }
+
+        if (!OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_PRIV_KEY, dBn))
+        {
+            goto error;
+        }
+    }
+
+    params = OSSL_PARAM_BLD_to_param(bld);
+    if (params == NULL)
+    {
+        goto error;
+    }
+
+    ctx = EVP_PKEY_CTX_new_from_name(NULL, "EC", NULL);
+    if (ctx == NULL)
+    {
+        goto error;
+    }
+
+    if (EVP_PKEY_fromdata_init(ctx) != 1)
+    {
+        goto error;
+    }
+
+    {
+        int selection = (d && dLength > 0) ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY;
+        if (EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1)
+        {
+            goto error;
+        }
+    }
+
+    OSSL_PARAM_free(params);
+    OSSL_PARAM_BLD_free(bld);
+    EVP_PKEY_CTX_free(ctx);
+    free(generatorBuf);
+    free(pubKeyBuf);
+    BN_free(pBn);
+    BN_free(aBn);
+    BN_free(bBn);
+    BN_free(orderBn);
+    BN_free(cofactorBn);
+    BN_clear_free(dBn);
+    return pkey;
+
+error:
+    OSSL_PARAM_free(params);
+    OSSL_PARAM_BLD_free(bld);
+    EVP_PKEY_CTX_free(ctx);
+    free(generatorBuf);
+    free(pubKeyBuf);
+    BN_free(pBn);
+    BN_free(aBn);
+    BN_free(bBn);
+    BN_free(orderBn);
+    BN_free(cofactorBn);
+    BN_clear_free(dBn);
+    if (pkey) EVP_PKEY_free(pkey);
+    return NULL;
+#else
+    (void)curveType;
+    (void)qx; (void)qxLength; (void)qy; (void)qyLength;
+    (void)d; (void)dLength;
+    (void)p; (void)pLength; (void)a; (void)aLength; (void)b; (void)bLength;
+    (void)gx; (void)gxLength; (void)gy; (void)gyLength;
+    (void)order; (void)orderLength; (void)cofactor; (void)cofactorLength;
+    (void)seed; (void)seedLength;
+    return NULL;
+#endif
+}

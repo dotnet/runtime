@@ -90,6 +90,44 @@ PALEXPORT EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     uint8_t* seed, int32_t sLength);
 
 /*
+Generates a new EC key pair for a named curve using EVP_PKEY APIs.
+Returns 1 upon success, -1 if oid was not found, otherwise 0.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyGenerateByEcKeyOid(
+    EVP_PKEY** pkey,
+    const char* oid);
+
+/*
+Creates a new EVP_PKEY for a named EC curve using the provided key parameters.
+qx/qy are the public key coordinates, d is the optional private key.
+Returns 1 upon success, -1 if oid was not found, otherwise 0.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyCreateByEcKeyParameters(
+    EVP_PKEY** pkey,
+    const char* oid,
+    const uint8_t* qx, int32_t qxLength,
+    const uint8_t* qy, int32_t qyLength,
+    const uint8_t* d, int32_t dLength);
+
+/*
+Creates a new EVP_PKEY for an EC key with explicit curve parameters.
+Returns the new EVP_PKEY instance, or NULL on failure.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
+    ECCurveType curveType,
+    const uint8_t* qx, int32_t qxLength,
+    const uint8_t* qy, int32_t qyLength,
+    const uint8_t* d, int32_t dLength,
+    const uint8_t* p, int32_t pLength,
+    const uint8_t* a, int32_t aLength,
+    const uint8_t* b, int32_t bLength,
+    const uint8_t* gx, int32_t gxLength,
+    const uint8_t* gy, int32_t gyLength,
+    const uint8_t* order, int32_t orderLength,
+    const uint8_t* cofactor, int32_t cofactorLength,
+    const uint8_t* seed, int32_t seedLength);
+
+/*
 Returns the ECC curve parameters of the given EVP_PKEY.
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyGetEcCurveParameters(

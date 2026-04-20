@@ -117,6 +117,22 @@ namespace System.Security.Cryptography
 
         internal static SafeEvpPKeyHandle GenerateECKey(int keySize)
         {
+            string oid = keySize switch
+            {
+                256 => ECOpenSsl.ECDSA_P256_OID_VALUE,
+                384 => ECOpenSsl.ECDSA_P384_OID_VALUE,
+                521 => ECOpenSsl.ECDSA_P521_OID_VALUE,
+                _ => throw new InvalidOperationException(SR.Cryptography_InvalidKeySize),
+            };
+
+            SafeEvpPKeyHandle? pkey = Interop.Crypto.EvpPKeyGenerateByEcKeyOid(oid);
+
+            if (pkey is not null)
+            {
+                return pkey;
+            }
+
+            // Fallback to legacy EC_KEY path
             SafeEvpPKeyHandle ret = ImportECKeyCore(new ECOpenSsl(keySize), out int createdKeySize);
             Debug.Assert(keySize == createdKeySize);
             return ret;
@@ -124,11 +140,70 @@ namespace System.Security.Cryptography
 
         internal static SafeEvpPKeyHandle GenerateECKey(ECCurve curve, out int keySize)
         {
-            return  ImportECKeyCore(new ECOpenSsl(curve), out keySize);
+            if (curve.IsNamed)
+            {
+                string oid = !string.IsNullOrEmpty(curve.Oid.Value) ? curve.Oid.Value : curve.Oid.FriendlyName!;
+
+                SafeEvpPKeyHandle? pkey = Interop.Crypto.EvpPKeyGenerateByEcKeyOid(oid);
+
+                if (pkey is not null)
+                {
+                    keySize = Interop.Crypto.EvpPKeyBits(pkey);
+                    return pkey;
+                }
+            }
+
+            // Fallback to legacy EC_KEY path (explicit curves or OpenSSL < 3.0)
+            return ImportECKeyCore(new ECOpenSsl(curve), out keySize);
         }
 
         internal static SafeEvpPKeyHandle ImportECKey(ECParameters parameters, out int keySize)
         {
+            parameters.Validate();
+
+            if (parameters.Curve.IsNamed)
+            {
+                string oid = !string.IsNullOrEmpty(parameters.Curve.Oid.Value) ?
+                    parameters.Curve.Oid.Value : parameters.Curve.Oid.FriendlyName!;
+
+                SafeEvpPKeyHandle? pkey = Interop.Crypto.EvpPKeyCreateByEcKeyParameters(
+                    oid,
+                    parameters.Q.X, parameters.Q.X?.Length ?? 0,
+                    parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
+                    parameters.D, parameters.D is null ? 0 : parameters.D.Length);
+
+                if (pkey is not null)
+                {
+                    keySize = Interop.Crypto.EvpPKeyBits(pkey);
+                    return pkey;
+                }
+            }
+            else if (parameters.Curve.IsPrime || parameters.Curve.IsCharacteristic2)
+            {
+                byte[] pField = parameters.Curve.IsPrime ? parameters.Curve.Prime! : parameters.Curve.Polynomial!;
+
+                SafeEvpPKeyHandle? pkey = Interop.Crypto.EvpPKeyCreateByEcExplicitParameters(
+                    parameters.Curve.CurveType,
+                    parameters.Q.X, parameters.Q.X?.Length ?? 0,
+                    parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
+                    parameters.D, parameters.D is null ? 0 : parameters.D.Length,
+                    pField, pField.Length,
+                    parameters.Curve.A!, parameters.Curve.A!.Length,
+                    parameters.Curve.B!, parameters.Curve.B!.Length,
+                    parameters.Curve.G.X!, parameters.Curve.G.X!.Length,
+                    parameters.Curve.G.Y!, parameters.Curve.G.Y!.Length,
+                    parameters.Curve.Order!, parameters.Curve.Order!.Length,
+                    parameters.Curve.Cofactor!, parameters.Curve.Cofactor!.Length,
+                    parameters.Curve.Seed, parameters.Curve.Seed is null ? 0 : parameters.Curve.Seed.Length);
+
+                if (pkey is not null)
+                {
+                    keySize = Interop.Crypto.EvpPKeyBits(pkey);
+                    return pkey;
+                }
+            }
+
+            // Fallback to legacy EC_KEY path
             return ImportECKeyCore(new ECOpenSsl(parameters), out keySize);
         }
 

@@ -54,6 +54,7 @@
 #include <openssl/provider.h>
 #include <openssl/store.h>
 #include <openssl/params.h>
+#include <openssl/param_build.h>
 #include <openssl/core_names.h>
 #include <openssl/kdf.h>
 #endif
@@ -535,6 +536,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new_id) \
     LIGHTUP_FUNCTION(EVP_PKEY_CTX_new_from_name) \
     LIGHTUP_FUNCTION(EVP_PKEY_CTX_new_from_pkey) \
+    LIGHTUP_FUNCTION(EVP_PKEY_CTX_set_group_name) \
     LIGHTUP_FUNCTION(EVP_PKEY_CTX_set_params) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_keygen_bits) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_oaep_md) \
@@ -660,6 +662,13 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_int) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_int32) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_end) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_BLD_new) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_BLD_free) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_BLD_push_utf8_string) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_BLD_push_octet_string) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_BLD_push_BN) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_BLD_to_param) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_free) \
     REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
     REQUIRED_FUNCTION(PEM_read_bio_PKCS7) \
     REQUIRED_FUNCTION(PEM_read_bio_X509) \
@@ -1092,6 +1101,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_CTX_get0_pkey EVP_PKEY_CTX_get0_pkey_ptr
 #define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
 #define EVP_PKEY_CTX_new_id EVP_PKEY_CTX_new_id_ptr
+#define EVP_PKEY_CTX_set_group_name EVP_PKEY_CTX_set_group_name_ptr
 #define EVP_PKEY_CTX_set_params EVP_PKEY_CTX_set_params_ptr
 #define EVP_PKEY_CTX_set_rsa_keygen_bits EVP_PKEY_CTX_set_rsa_keygen_bits_ptr
 #define EVP_PKEY_CTX_set_rsa_oaep_md EVP_PKEY_CTX_set_rsa_oaep_md_ptr
@@ -1222,6 +1232,13 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define OSSL_PARAM_construct_int OSSL_PARAM_construct_int_ptr
 #define OSSL_PARAM_construct_int32 OSSL_PARAM_construct_int32_ptr
 #define OSSL_PARAM_construct_end OSSL_PARAM_construct_end_ptr
+#define OSSL_PARAM_BLD_new OSSL_PARAM_BLD_new_ptr
+#define OSSL_PARAM_BLD_free OSSL_PARAM_BLD_free_ptr
+#define OSSL_PARAM_BLD_push_utf8_string OSSL_PARAM_BLD_push_utf8_string_ptr
+#define OSSL_PARAM_BLD_push_octet_string OSSL_PARAM_BLD_push_octet_string_ptr
+#define OSSL_PARAM_BLD_push_BN OSSL_PARAM_BLD_push_BN_ptr
+#define OSSL_PARAM_BLD_to_param OSSL_PARAM_BLD_to_param_ptr
+#define OSSL_PARAM_free OSSL_PARAM_free_ptr
 #define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr
 #define PEM_read_bio_PKCS7 PEM_read_bio_PKCS7_ptr
 #define PEM_read_bio_X509 PEM_read_bio_X509_ptr
