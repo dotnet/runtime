@@ -465,9 +465,7 @@ public class R2RTestSuites
     /// Positive complement to <see cref="CompositeDoesNotProduceCrossModuleInliningInfo"/>:
     /// composite mode produces a CrossModuleInlineInfo section when an inlineable method
     /// comes from an assembly outside the version bubble (passed as a Reference with
-    /// --opt-cross-module). Crossgen2 only treats modules not in the version bubble as
-    /// "cross-module inlined" (everything is intra-module in composite), so an external
-    /// Reference is required to exercise this.
+    /// --opt-cross-module).
     /// </summary>
     [Fact]
     public void CompositeProducesCrossModuleInliningInfoForExternalReference()
