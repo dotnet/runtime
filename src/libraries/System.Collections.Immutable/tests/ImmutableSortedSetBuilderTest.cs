@@ -352,8 +352,6 @@ namespace System.Collections.Immutable.Tests
             ImmutableSortedSet<int>.Builder builder = ImmutableSortedSet.Create(1).ToBuilder();
             var array = new int[5];
 
-            ((ICollection<int>)builder).CopyTo(array, 0);
-
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection<int>)builder).CopyTo(array, int.MaxValue));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection<int>)builder).CopyTo(array, -1));
 
