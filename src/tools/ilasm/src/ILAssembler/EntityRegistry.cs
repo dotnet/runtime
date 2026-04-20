@@ -345,6 +345,11 @@ namespace ILAssembler
 
             foreach (MemberReferenceEntity memberRef in _memberReferences)
             {
+                // Skip member references that were resolved to local MethodDef or FieldDef tokens.
+                if (memberRef.Handle.Kind is HandleKind.MethodDefinition or HandleKind.FieldDefinition)
+                {
+                    continue;
+                }
                 builder.AddMemberReference(
                     memberRef.Parent.Handle,
                     builder.GetOrAddString(memberRef.Name),
@@ -1013,8 +1018,9 @@ namespace ILAssembler
             // We need to resolve a MemberReference in a few scenarios:
             // 1. The MemberReference references a local MethodDefinition
             //   - This case may occur when a method is referenced by a property or event, which can only reference MethodDefinition entities
-            // TODO-COMPAT: The following scenarios are required for compat with the existing ILASM, but are not required to produce valid metadata:
+            //   - This also produces compat with the existing ILASM, which always resolves local method references to MethodDef tokens
             // 2. The MemberReference refers to a local FieldDefinition
+            //   - This produces compat with the existing ILASM, which always resolves local field references to FieldDef tokens
 
             var signature = memberRef.Signature.ToArray();
             SignatureHeader header = new(signature[0]);
@@ -1024,28 +1030,65 @@ namespace ILAssembler
                 {
                     UpdateMemberRefForVarargSignatures(memberRef, signature);
                 }
-                switch (memberRef.Parent)
+                if (TryResolveMethodReference(memberRef))
                 {
-                    // Use this weird construction to look up TypeDefs as we may change TypeRef resolution to use a similar model to MemberReference
-                    // where we always return a TypeReference type, but it might just point to a TypeDef handle.
-                    case TypeEntity { Handle.Kind: HandleKind.TypeDefinition } type:
-                        {
-                            var typeDef = (TypeDefinitionEntity)GetSeenEntities(TableIndex.TypeDef)[MetadataTokens.GetRowNumber(type.Handle) - 1];
-                            // Look on this type for methods with the same name and signature
-                            foreach (var method in typeDef.Methods)
-                            {
-                                if (method.Name == memberRef.Name
-                                    && method.MethodSignature!.ContentEquals(memberRef.Signature))
-                                {
-                                    ((IHasHandle)memberRef).SetHandle(method.Handle);
-                                    return;
-                                }
-                            }
-                        }
-                        break;
+                    return;
+                }
+            }
+            else if (header.Kind == SignatureKind.Field)
+            {
+                if (TryResolveFieldReference(memberRef))
+                {
+                    return;
                 }
             }
             RecordEntityInTable(TableIndex.MemberRef, memberRef);
+        }
+
+        private bool TryResolveMethodReference(MemberReferenceEntity memberRef)
+        {
+            switch (memberRef.Parent)
+            {
+                // Use this weird construction to look up TypeDefs as we may change TypeRef resolution to use a similar model to MemberReference
+                // where we always return a TypeReference type, but it might just point to a TypeDef handle.
+                case TypeEntity { Handle.Kind: HandleKind.TypeDefinition } type:
+                    {
+                        var typeDef = (TypeDefinitionEntity)GetSeenEntities(TableIndex.TypeDef)[MetadataTokens.GetRowNumber(type.Handle) - 1];
+                        foreach (var method in typeDef.Methods)
+                        {
+                            if (method.Name == memberRef.Name
+                                && method.MethodSignature!.ContentEquals(memberRef.Signature))
+                            {
+                                ((IHasHandle)memberRef).SetHandle(method.Handle);
+                                return true;
+                            }
+                        }
+                    }
+                    break;
+            }
+            return false;
+        }
+
+        private bool TryResolveFieldReference(MemberReferenceEntity memberRef)
+        {
+            switch (memberRef.Parent)
+            {
+                case TypeEntity { Handle.Kind: HandleKind.TypeDefinition } type:
+                    {
+                        var typeDef = (TypeDefinitionEntity)GetSeenEntities(TableIndex.TypeDef)[MetadataTokens.GetRowNumber(type.Handle) - 1];
+                        foreach (var field in typeDef.Fields)
+                        {
+                            if (field.Name == memberRef.Name
+                                && field.Signature.ContentEquals(memberRef.Signature))
+                            {
+                                ((IHasHandle)memberRef).SetHandle(field.Handle);
+                                return true;
+                            }
+                        }
+                    }
+                    break;
+            }
+            return false;
         }
 
         private void UpdateMemberRefForVarargSignatures(MemberReferenceEntity memberRef, byte[] signature)
