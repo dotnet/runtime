@@ -6101,6 +6101,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             FALLTHROUGH;
 
         case INS_sadalp:
+        case INS_sm4e:
         case INS_suqadd:
         case INS_uadalp:
         case INS_usqadd:

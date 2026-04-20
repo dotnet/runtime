@@ -1230,7 +1230,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     if (HWIntrinsicInfo::SupportsContainment(intrin.id) && intrin.op2->isContained() &&
                         intrin.op2->IsVectorZero())
                     {
+                        assert(!isRMW);
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
+                    else if (isRMW)
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
                     }
                     else
                     {
