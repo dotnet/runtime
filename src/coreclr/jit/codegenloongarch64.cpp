@@ -4375,14 +4375,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CATCH_ARG:
-
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
-
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
-
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
+            genCodeForCatchArg(treeNode);
             break;
 
         case GT_LABEL:
@@ -5557,7 +5550,6 @@ void CodeGen::genCall(GenTreeCall* call)
 
         if (target != nullptr)
         {
-            // Indirect fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
             genConsumeReg(target);
         }
 #ifdef FEATURE_READYTORUN
@@ -5602,7 +5594,7 @@ void CodeGen::genCall(GenTreeCall* call)
     regMaskTP killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
-        CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+        CorInfoHelpFunc helpFunc = call->GetHelperNum();
         killMask                 = m_compiler->compHelperCallKillSet(helpFunc);
     }
 
@@ -5792,7 +5784,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
         // indirection cell but we should not try to optimize.
         regNumber callThroughIndirReg = REG_NA;
-        if (!call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
         {
             callThroughIndirReg = getCallIndirectionCellReg(call);
         }

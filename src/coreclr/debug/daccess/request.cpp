@@ -443,14 +443,19 @@ ClrDataAccess::GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum *
     else
     {
         DacMethodTableSlotEnumerator *methodTableSlotEnumerator = new (nothrow) DacMethodTableSlotEnumerator();
-        *enumerator = methodTableSlotEnumerator;
-        if (*enumerator == NULL)
+        if (methodTableSlotEnumerator == NULL)
         {
             hr = E_OUTOFMEMORY;
         }
         else
         {
             hr = methodTableSlotEnumerator->Init(mTable);
+
+            if (SUCCEEDED(hr))
+                hr = methodTableSlotEnumerator->QueryInterface(__uuidof(ISOSMethodEnum), (void**)enumerator);
+
+            if (FAILED(hr))
+                delete methodTableSlotEnumerator;
         }
     }
 
@@ -865,7 +870,6 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     ZeroMemory (threadData, sizeof(DacpThreadData));
     threadData->corThreadId = thread->m_ThreadId;
     threadData->osThreadId = (DWORD)thread->m_OSThreadId;
-    threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
 
     gc_alloc_context* allocContext = thread->GetAllocContext();
@@ -886,11 +890,9 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     threadData->context = PTR_CDADDR(AppDomain::GetCurrentDomain());
     threadData->domain = PTR_CDADDR(AppDomain::GetCurrentDomain());
     threadData->lockCount = (DWORD)-1;
-#ifndef TARGET_UNIX
-    threadData->teb = TO_CDADDR(thread->m_pTEB);
-#else
+    // TEB is no longer provided by the runtime. Consumers should look up the TEB
+    // from the OS thread ID via the debugger's native API (e.g., IDebuggerServices::GetThreadTeb).
     threadData->teb = (CLRDATA_ADDRESS)NULL;
-#endif
     threadData->lastThrownObjectHandle =
         TO_CDADDR(thread->m_LastThrownObjectHandle);
     threadData->nextThread =
@@ -3966,7 +3968,10 @@ ClrDataAccess::Request(IN ULONG32 reqCode,
             }
             else
             {
-                *(ULONG32*)outBuffer = 9;
+                // Revision 10: Fixed DefaultCOMImpl::Release() to use pre-decrement (--mRef).
+                // Consumers that previously compensated for the broken ref counting (e.g., ClrMD)
+                // should check this revision to avoid double-freeing.
+                *(ULONG32*)outBuffer = 10;
                 status = S_OK;
             }
             break;
