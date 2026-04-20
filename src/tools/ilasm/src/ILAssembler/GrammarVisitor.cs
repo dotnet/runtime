@@ -4355,7 +4355,7 @@ namespace ILAssembler
                 methodRefSignature.WriteCompressedInteger(numGenericParameters);
             }
             var args = VisitSigArgs(context.sigArgs()).Value;
-            methodRefSignature.WriteCompressedInteger(args.Length);
+            methodRefSignature.WriteCompressedInteger(args.Count(arg => !arg.IsSentinel));
             // Write return type
             VisitType(context.type()).Value.WriteContentTo(methodRefSignature);
             // Write arg signatures

@@ -1136,7 +1136,13 @@ namespace ILAssembler
             {
                 var methodRef = new MemberReferenceEntity(memberRef.Parent, memberRef.Name, methodDefSig.Builder);
                 ResolveAndRecordMemberReference(methodRef);
-                memberRef.SetMemberRefParent(methodRef);
+                // Only reparent the call-site MemberRef if the base method resolved to a MethodDef.
+                // MemberRef is not a valid MemberRefParent in the coded index, so we can only
+                // reparent when the inner ref resolved to MethodDef.
+                if (methodRef.Handle.Kind == HandleKind.MethodDefinition)
+                {
+                    memberRef.SetMemberRefParent(methodRef);
+                }
             }
         }
 

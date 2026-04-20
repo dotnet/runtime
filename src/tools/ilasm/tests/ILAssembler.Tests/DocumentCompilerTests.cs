@@ -3703,7 +3703,7 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void LocalVarargMethodCall_EmitsCallSiteMemberRef()
+        public void LocalVarargMethodCall_ResolvesBaseToMethodDef()
         {
             string source = """
                 .assembly extern mscorlib { }
@@ -3726,24 +3726,104 @@ namespace ILAssembler.Tests
             using var pe = CompileAndGetReader(source, new Options());
             var reader = pe.GetMetadataReader();
 
-            int memberRefCount = reader.GetTableRowCount(TableIndex.MemberRef);
+            // Only 1 MemberRef: the vararg call-site. The base method resolved to MethodDef.
+            Assert.Equal(1, reader.GetTableRowCount(TableIndex.MemberRef));
 
-            // There should be MemberRef(s) for the vararg call-site.
-            // The call-site MemberRef has a sentinel in its signature.
-            Assert.True(memberRefCount >= 1, "Should have at least one MemberRef for the vararg call-site");
+            var memberRef = reader.GetMemberReference(MetadataTokens.MemberReferenceHandle(1));
+            Assert.Equal("VarFunc", reader.GetString(memberRef.Name));
+            // The call-site MemberRef's parent should be the resolved MethodDef
+            Assert.Equal(HandleKind.MethodDefinition, memberRef.Parent.Kind);
+
+            // Verify the signature has the sentinel marker (it's a vararg call-site)
+            var sigBytes = reader.GetBlobBytes(memberRef.Signature);
+            Assert.Contains((byte)SignatureTypeCode.Sentinel, sigBytes);
+        }
+
+        [Fact]
+        public void LocalVarargWithRequiredParams_ResolvesBaseToMethodDef()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static vararg void Printf(string fmt) cil managed
+                    {
+                        ret
+                    }
+                    .method public static void Caller() cil managed
+                    {
+                        ldstr "hello %d %s"
+                        ldc.i4.1
+                        ldstr "world"
+                        call vararg void MyClass::Printf(string, ..., int32, string)
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // Only 1 MemberRef: the vararg call-site
+            Assert.Equal(1, reader.GetTableRowCount(TableIndex.MemberRef));
+
+            var memberRef = reader.GetMemberReference(MetadataTokens.MemberReferenceHandle(1));
+            Assert.Equal("Printf", reader.GetString(memberRef.Name));
+            Assert.Equal(HandleKind.MethodDefinition, memberRef.Parent.Kind);
+
+            // Verify param count in signature: should be 3 (1 required + 2 optional)
+            var sigBytes = reader.GetBlobBytes(memberRef.Signature);
+            Assert.Equal(0x05, sigBytes[0]); // vararg
+            Assert.Equal(3, sigBytes[1]);    // param count = 3
+        }
+
+        [Fact]
+        public void ExternalVarargMethodCall_KeepsTypeRefParent()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static void Caller() cil managed
+                    {
+                        ldstr "format"
+                        ldc.i4.1
+                        box [mscorlib]System.Int32
+                        call vararg int32 [mscorlib]System.String::Format(string, ..., object)
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // Find the vararg call-site MemberRef
+            int memberRefCount = reader.GetTableRowCount(TableIndex.MemberRef);
+            Assert.True(memberRefCount >= 1);
 
             bool foundCallSite = false;
             for (int i = 1; i <= memberRefCount; i++)
             {
                 var memberRef = reader.GetMemberReference(MetadataTokens.MemberReferenceHandle(i));
-                Assert.Equal("VarFunc", reader.GetString(memberRef.Name));
-                var sigBytes = reader.GetBlobBytes(memberRef.Signature);
-                if (sigBytes.Any(b => b == (byte)SignatureTypeCode.Sentinel))
+                if (reader.GetString(memberRef.Name) == "Format")
                 {
-                    foundCallSite = true;
+                    var sigBytes = reader.GetBlobBytes(memberRef.Signature);
+                    if (sigBytes.Any(b => b == (byte)SignatureTypeCode.Sentinel))
+                    {
+                        foundCallSite = true;
+                        // For external vararg call-sites, the parent should be TypeRef or MemberRef
+                        // (not TypeDef, since String.Format is external)
+                        Assert.True(
+                            memberRef.Parent.Kind is HandleKind.TypeReference or HandleKind.MemberReference,
+                            $"External vararg call-site parent should be TypeRef or MemberRef, got {memberRef.Parent.Kind}");
+                    }
                 }
             }
-            Assert.True(foundCallSite, "Should have found the vararg call-site MemberRef with sentinel");
+            Assert.True(foundCallSite, "Should have found the external vararg call-site MemberRef with sentinel");
         }
 
         [Fact]
