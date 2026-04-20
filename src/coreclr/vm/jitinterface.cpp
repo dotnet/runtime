@@ -11386,17 +11386,6 @@ void CEECodeGenInfo::reportMetadata(
     EE_TO_JIT_TRANSITION_LEAF();
 }
 
-#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
-struct AltJitPatchpointInfo
-{
-    AltJitPatchpointInfo* Next;
-    MethodDesc* Method;
-    PatchpointInfo* Info;
-};
-
-static AltJitPatchpointInfo* s_altJitPatchpointInfoList;
-#endif
-
 void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     CONTRACTL {
@@ -11416,15 +11405,18 @@ void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
     if (m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT))
     {
         uint32_t ppiSize = patchpointInfo->PatchpointInfoSize();
-        PatchpointInfo *newPpi = new (new uint8_t[ppiSize]) PatchpointInfo;
+
+        AllocMemTracker am;
+        void* mem = am.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(ppiSize)));
+        PatchpointInfo *newPpi = new (mem) PatchpointInfo;
         newPpi->Initialize(patchpointInfo->NumberOfLocals(), patchpointInfo->TotalFrameSize());
         newPpi->Copy(patchpointInfo);
 
-        AltJitPatchpointInfo* newInfo = new AltJitPatchpointInfo;
-        newInfo->Next = s_altJitPatchpointInfoList;
-        newInfo->Method = m_pMethodBeingCompiled;
-        newInfo->Info = newPpi;
-        s_altJitPatchpointInfoList = newInfo;
+        HRESULT hr = m_pMethodBeingCompiled->SetMethodDescAltJitPatchpointInfo(newPpi);
+        if (SUCCEEDED(hr))
+        {
+            am.SuppressRelease();
+        }
     }
 #endif
 
@@ -11455,13 +11447,10 @@ PatchpointInfo* CEEJitInfo::getOSRInfo(unsigned* ilOffset)
 #if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
     if (m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT))
     {
-        for (AltJitPatchpointInfo* altJitPpi = s_altJitPatchpointInfoList; altJitPpi != NULL; altJitPpi = altJitPpi->Next)
+        PatchpointInfo* ppi = m_pMethodBeingCompiled->GetMethodDescAltJitPatchpointInfo();
+        if (ppi != NULL)
         {
-            if (altJitPpi->Method == m_pMethodBeingCompiled)
-            {
-                result = altJitPpi->Info;
-                break;
-            }
+            result = ppi;
         }
     }
 #endif
