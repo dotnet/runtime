@@ -1902,7 +1902,8 @@ namespace ILAssembler
             if (context.nameSpaceHead() is CILParser.NameSpaceHeadContext ns)
             {
                 string namespaceName = VisitNameSpaceHead(ns).Value;
-                _currentNamespace.Push($"{_currentNamespace.PeekOrDefault()}.{namespaceName}");
+                string? outer = _currentNamespace.PeekOrDefault();
+                _currentNamespace.Push(string.IsNullOrEmpty(outer) ? namespaceName : $"{outer}.{namespaceName}");
                 VisitDecls(context.decls());
                 _currentNamespace.Pop();
                 return GrammarResult.SentinelValue.Result;
