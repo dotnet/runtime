@@ -24,6 +24,11 @@ check_function_exists(
     HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
 )
 
+check_function_exists(
+    RSA_new
+    HAVE_OPENSSL_RSA_PRIMITIVE
+)
+
 check_source_compiles(C "
 #include <openssl/evp.h>
 // CodeQL [SM01923] This is a CMake function detection script for the OpenSSL API used to implement the .NET API System.Security.Cryptography.ChaCha20Poly1305, it is not actually using the algorithm here
@@ -34,11 +39,6 @@ check_source_compiles(C "
 #include <openssl/engine.h>
 int main(void) { ENGINE_init(NULL); return 1; }"
 HAVE_OPENSSL_ENGINE)
-
-check_source_compiles(C "
-#include <openssl/rsa.h>
-int main(void) { RSA *r = RSA_new(); RSA_free(r); return 0; }"
-HAVE_OPENSSL_RSA_PRIMITIVE)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/pal_crypto_config.h.in
