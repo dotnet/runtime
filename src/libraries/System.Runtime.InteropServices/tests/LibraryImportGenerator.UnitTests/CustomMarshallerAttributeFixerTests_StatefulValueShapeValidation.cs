@@ -382,6 +382,7 @@ namespace LibraryImportGenerator.UnitTests
                     public int ToUnmanaged() => default;
 
                     public void Free() {}
+
                     public static int BufferSize
                     {
                         get
