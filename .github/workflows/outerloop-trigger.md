@@ -28,7 +28,6 @@ safe-outputs:
     discussions: false
     issues: false
     hide-older-comments: true
-    allowed-reasons: [outdated]
 
 on:
   pull_request_target:
@@ -48,6 +47,7 @@ on:
   steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       name: Checkout the select-copilot-pat action folder
+      if: contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
       with:
         persist-credentials: false
         sparse-checkout: .github/actions/select-copilot-pat
@@ -56,6 +56,7 @@ on:
 
     - id: select-copilot-pat
       name: Select Copilot token from pool
+      if: contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
       uses: ./.github/actions/select-copilot-pat
       env:
         SECRET_0: ${{ secrets.COPILOT_PAT_0 }}
@@ -97,12 +98,31 @@ operations to inspect PR changes.** All file listings, diffs, patches, and file
 contents must be obtained exclusively through the GitHub API (REST or GraphQL),
 the GitHub MCP tools, or the `gh` CLI.
 
+**CRITICAL SECURITY REQUIREMENT**: This workflow must NOT check out the PR branch.
+If the compiled workflow (lock.yml) attempts to checkout the PR branch, this is a
+compilation error that must be reported immediately. Approved data sources for
+analyzing PR changes are:
+- `GET /repos/{owner}/{repo}/pulls/{pull_number}/files` — Changed files with patches
+- `GET /repos/{owner}/{repo}/pulls/{pull_number}` — PR metadata
+- `GET /repos/{owner}/{repo}/contents/{path}` — File contents at specific SHAs
+- GitHub GraphQL API — PRs, issues, commit history
+- `gh` CLI with authenticated calls (no checkout needed)
+
 ## Step 1: Get Changed Files
 
 Use the GitHub API (e.g. `GET /repos/{owner}/{repo}/pulls/{pull_number}/files`)
 to list all files changed in PR #${{ github.event.pull_request.number }}.
-This returns file paths, status, and patch diffs. Collect the full list of file
-paths and their patches before evaluating any rules.
+
+**IMPORTANT - Pagination**: This endpoint is paginated (max 100 items per page).
+You MUST follow pagination completely:
+- Request `per_page=100` for each page
+- Check the response for a `Link` header containing `rel="next"`
+- Continue fetching subsequent pages until no `Link: rel="next"` header is present
+- If using the GitHub MCP tools or `gh` CLI, verify pagination is handled automatically
+- Aggregate the complete file list from all pages before evaluating any rules
+
+This returns file paths, status, and patch diffs. Collect the **full list** of file
+paths and their patches from **all pages** before evaluating any rules.
 
 ## Step 2: Evaluate Trigger Rules
 
@@ -226,14 +246,21 @@ Trigger `/azp run runtime-libraries-coreclr outerloop` if **any** changed file
 is a test file under `src/libraries/` that uses the `[OuterLoop]` attribute, or
 if the change **introduces** the `[OuterLoop]` attribute to a test.
 
-To evaluate this rule, look at the **patch/diff** of each changed file under
+To evaluate this rule, inspect the **patch/diff** of each changed file under
 `src/libraries/` (use the GitHub API to get file patches). A file matches if:
 
-1. It already contains the `[OuterLoop]` attribute (in any form:
-   `[OuterLoop]`, `[OuterLoop("reason")]`, `[OuterLoop("reason", ...)]`) and
-   the change modifies that file, **OR**
-2. The diff's added lines (`+` lines) introduce an `[OuterLoop` attribute that
-   was not previously present in the file.
+1. For each file, attempt to read its `patch` field from the PR files API
+2. **If `patch` is present**: Search for `[OuterLoop` (in any form: `[OuterLoop]`,
+   `[OuterLoop("reason")]`, etc.)
+   - Match if the file already contains `[OuterLoop]` and was modified, **OR**
+   - Match if the diff's added lines (`+` lines) introduce `[OuterLoop`
+3. **If `patch` is missing or truncated** (which can happen for large diffs):
+   - Fetch the file contents at the PR head SHA using
+     `GET /repos/{owner}/{repo}/contents/{path}?ref={head_sha}`
+   - Search the full file content for the `[OuterLoop` attribute
+   - To determine if `[OuterLoop` was **introduced** by the change, also fetch
+     the file at the PR base SHA and compare — if it has `[OuterLoop`, then
+     it wasn't introduced; if it doesn't, then it was
 
 Only consider files that are plausibly test files (e.g. under a `tests/`
 subdirectory within the library, or with `Test` / `Tests` in the path or
@@ -244,10 +271,15 @@ filename).
 Trigger `/azp run runtime-coreclr outerloop` if **any** changed file under
 `src/tests/` matches either of these conditions:
 
-1. **OuterLoop attribute** — The changed file uses the `[OuterLoop]` attribute
-   (in any form: `[OuterLoop]`, `[OuterLoop("reason")]`,
-   `[OuterLoop("reason", ...)]`) and the change modifies it, **OR** the diff's
-   added lines introduce an `[OuterLoop` attribute.
+1. **OuterLoop attribute** — The changed file uses the `[OuterLoop]` attribute.
+   To detect this:
+   - Attempt to read the file's `patch` field from the PR files API
+   - **If `patch` is present**: Search for `[OuterLoop` and match if found in
+     the file or introduced in added lines
+   - **If `patch` is missing or truncated**: Fetch the file contents at the PR
+     head SHA using `GET /repos/{owner}/{repo}/contents/{path}?ref={head_sha}`
+     and search for `[OuterLoop`. To determine if it was introduced, also fetch
+     the file at the base SHA and compare.
 
 2. **CLRTestPriority 1** — The changed file is a `.csproj` that sets
    `<CLRTestPriority>1</CLRTestPriority>`, or the diff introduces that
@@ -325,8 +357,12 @@ Use the `add-comment` safe output to post each batch comment.
 
 ## Step 4: Report
 
-If no pipelines need triggering, call the `noop` tool with a short message
-explaining that no outerloop pipelines are needed for this change set.
-
-If pipelines were triggered (or skipped as duplicates), call the `noop` tool
-with a summary of what was triggered and what was skipped.
+- **If any pipelines were posted as comments**: Do NOT call the `noop` tool.
+  The `/azp run` comments already serve as the report.
+- **If all candidate pipelines were skipped as duplicates** (because they are
+  already running on this PR): Do NOT call the `noop` tool. The duplicate
+  detection itself is sufficient.
+- **Only if NO pipelines are triggered AND no duplicates were found**: Call the
+  `noop` tool with a short message explaining why no outerloop pipelines are
+  needed for this change set (e.g., "No outerloop pipelines triggered: changes
+  are isolated to non-test code and do not affect CI-relevant directories").
