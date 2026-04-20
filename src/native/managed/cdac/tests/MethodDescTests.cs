@@ -449,7 +449,7 @@ public class MethodDescTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsDiagnosticsHidden_ReturnsCorrectValues(MockTarget.Architecture arch)
+    public void MethodDescClassificationFlags(MockTarget.Architecture arch)
     {
         TargetPointer normalMethod = TargetPointer.Null;
         TargetPointer ilStubMethod = TargetPointer.Null;
