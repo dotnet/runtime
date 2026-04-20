@@ -1,61 +1,91 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using static Interop;
 using static Interop.Sys;
 
-namespace System.Net.Sockets
+namespace System.Threading
 {
-    internal sealed unsafe class SocketAsyncEngine
+    public sealed partial class PollableHandle
     {
-        internal const bool InlineSocketCompletionsEnabled = true;
-        private static readonly SocketAsyncEngine s_engine = new SocketAsyncEngine();
-
-        public static bool TryRegisterSocket(IntPtr socketHandle, SocketAsyncContext context, out SocketAsyncEngine? engine, out Interop.Error error)
+        internal bool IsRegistered
         {
-            engine = s_engine;
-
-            nint entryPtr = default;
-            error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr);
-            if (error != Interop.Error.SUCCESS)
-            {
-                return false;
-            }
-
-            RegisterWasiPollHook(context, BeforePollHook, HandleSocketEvent, context.unregisterPollHook.Token);
-
-            return true;
+            get;
+            private set;
         }
 
-        public static void UnregisterSocket(SocketAsyncContext context)
+        private CancellationTokenSource? _unregisterPollHook;
+
+        private bool TryRegisterWithPollThread(out Interop.Error error)
         {
-            context.unregisterPollHook.Cancel();
+            // Multiple callers may try to register concurrently.
+            using (_writeQueue.Lock()) // Lock is used for IsDisposed.
+            {
+                if (IsDisposed || IsRegistered)
+                {
+                    // Already registered/disposed.
+                    error = Interop.Error.SUCCESS;
+                    return true;
+                }
+
+                nint entryPtr = default;
+                IntPtr socketHandle = Handle.DangerousGetHandle();
+                unsafe { error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr); }
+                if (error != Interop.Error.SUCCESS)
+                {
+                    return false; // Registration failed.
+                }
+
+                _unregisterPollHook = new CancellationTokenSource();
+                Thread.RegisterWasiPollHook(this, BeforePollHook, HandlePollEvent, _unregisterPollHook.Token);
+
+                IsRegistered = true;
+                return true; // Succesfully registered.
+            }
+        }
+
+        private bool Register(PollTriggeredOperation node)
+        {
+            if (TryRegisterWithPollThread(out Interop.Error error))
+            {
+                // Registration was a success. Operation will be triggered by poll thread.
+                return true;
+            }
+
+            if (error == Interop.Error.ENOMEM || error == Interop.Error.ENOSPC)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            throw new InvalidOperationException($"Unexpected error: {error}");
+        }
+
+        private void Unregister()
+        {
+            Debug.Assert(IsDisposed);
+            if (IsRegistered)
+            {
+                _unregisterPollHook?.Cancel();
+            }
         }
 
         // this method is invading private implementation details of wasi-libc
         // we could get rid of it when https://github.com/WebAssembly/wasi-libc/issues/542 is resolved
         // or after WASIp3 promises are implemented, whatever comes first
-        public static IList<int> BeforePollHook(object? state)
+        private static unsafe IList<int> BeforePollHook(object? state)
         {
-            var context = (SocketAsyncContext)state!;
-            if (context._socket.IsClosed)
+            var pollHandle = (PollableHandle)state!;
+            if (pollHandle.Handle.IsClosed)
             {
                 return [];
             }
 
             List<int> pollableHandles = new();
-            // fail fast if the handle is not found in the descriptor table
-            // probably because the socket was closed and the entry was removed, without unregistering the poll hook
             nint entryPtr = default;
-            IntPtr socketHandle = context._socket.DangerousGetHandle();
+            IntPtr socketHandle = pollHandle.Handle.DangerousGetHandle();
             var error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr);
             if (error != Interop.Error.SUCCESS)
             {
@@ -79,7 +109,7 @@ namespace System.Net.Sockets
                             pollableHandles.Add(socket->state.state.connected.output_pollable.handle);
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECT_FAILED:
-                            context.HandleEventsInline(Sys.SocketEvents.Error);
+                            pollHandle.HandleEventsInline(Sys.HandleEvents.Error);
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_UNBOUND:
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_BOUND:
@@ -96,8 +126,7 @@ namespace System.Net.Sockets
                     {
                         case udp_socket_state_tag.UDP_SOCKET_STATE_UNBOUND:
                         case udp_socket_state_tag.UDP_SOCKET_STATE_BOUND_NOSTREAMS:
-                            // TODO ? pollableHandles.Add(socket->socket_pollable.handle);
-                            context.HandleEventsInline(Sys.SocketEvents.Read | Sys.SocketEvents.Write);
+                            pollHandle.HandleEventsInline(Sys.HandleEvents.Read | Sys.HandleEvents.Write);
                             break;
                         case udp_socket_state_tag.UDP_SOCKET_STATE_BOUND_STREAMING:
                         case udp_socket_state_tag.UDP_SOCKET_STATE_CONNECTED:
@@ -127,28 +156,21 @@ namespace System.Net.Sockets
             return pollableHandles;
         }
 
-        public static void HandleSocketEvent(object? state)
+        private static void HandlePollEvent(object? state)
         {
-            SocketAsyncContext ctx = (SocketAsyncContext)state!;
+            PollableHandle pollHandle = (PollableHandle)state!;
             try
             {
                 using (ExecutionContext.SuppressFlow())
                 {
-                    ctx.HandleEventsInline(Sys.SocketEvents.Write | Sys.SocketEvents.Read);
+                    pollHandle.HandleEventsInline(Sys.HandleEvents.Write | Sys.HandleEvents.Read);
                 }
             }
             catch (Exception e)
             {
-                Environment.FailFast("Exception thrown from SocketAsyncEngine event loop: " + e.ToString(), e);
+                Environment.FailFast("Exception thrown from PollableHandle event handler: " + e.ToString(), e);
             }
         }
 
-        private static void RegisterWasiPollHook(object? state, Func<object?, IList<int>> beforePollHook, Action<object?> onResolveCallback, CancellationToken cancellationToken)
-        {
-            CallRegisterWasiPollHook((Thread)null!, state, beforePollHook, onResolveCallback, cancellationToken);
-
-            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "RegisterWasiPollHook")]
-            static extern void CallRegisterWasiPollHook(Thread t, object? state, Func<object?, IList<int>> beforePollHook, Action<object?> onResolveCallback, CancellationToken cancellationToken);
-        }
     }
 }

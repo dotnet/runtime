@@ -2898,10 +2898,32 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolCallbackWrapper.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Backoff.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollOperationResults.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsWasi)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollableHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollTriggeredOperation.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' != 'true' and '$(TargetsWasi)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollableHandle.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollTriggeredOperation.PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollableHandle.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollThread.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.HandleEvents.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.HandleEvents.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollableHandle.Wasi.cs" />
+    <Compile Include="$(CommonPath)Interop\Wasi\System.Native\Interop.HandleEvents.cs">
+      <Link>Common\Interop\Wasi\System.Native\Interop.HandleEvents.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureMultithreading)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Browser.cs" />

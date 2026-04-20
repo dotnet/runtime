@@ -192,18 +192,11 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Wasi.cs" />
-    <Compile Include="System\Net\Sockets\SocketAsyncContext.Wasi.cs" />
-    <Compile Include="System\Net\Sockets\SocketAsyncEngine.Wasi.cs"/>
     <Compile Include="System\Net\Sockets\SocketPal.Wasi.cs" />
-    <Compile Include="$(CommonPath)Interop\Wasi\System.Native\Interop.SocketEvent.cs"
-             Link="Common\Interop\Wasi\System.Native\Interop.SocketEvent.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Unix.cs"/>
-    <Compile Include="System\Net\Sockets\SocketAsyncEngine.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketEvent.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.SocketEvent.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'wasi' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">

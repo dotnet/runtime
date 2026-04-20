@@ -907,3 +907,38 @@ PALEXPORT int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vec
  * Returns the number of bytes written on success; otherwise, -1 is returned and errno is set.
  */
 PALEXPORT int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount);
+
+/*
+ * Handle async events.
+ */
+typedef enum
+{
+    HandleEvents_NONE = 0x00,
+    HandleEvents_READ = 0x01,
+    HandleEvents_WRITE = 0x02,
+    HandleEvents_READCLOSE = 0x04,
+    HandleEvents_CLOSE = 0x08,
+    HandleEvents_ERROR = 0x10,
+    // Force the enum to use int32_t instead of uint32_t
+    HandleEvents__IGNORE_SIGNED = -1,
+} HandleEvents;
+
+typedef struct
+{
+    uintptr_t Data;      // User data for this event
+    int32_t Events;      // Event flags
+    uint32_t Padding;    // Pad out to 8-byte alignment
+} HandleEvent;
+
+PALEXPORT int32_t SystemNative_CreateHandleEventPort(intptr_t* port);
+
+PALEXPORT int32_t SystemNative_CloseHandleEventPort(intptr_t port);
+
+PALEXPORT int32_t SystemNative_CreateHandleEventBuffer(int32_t count, HandleEvent** buffer);
+
+PALEXPORT int32_t SystemNative_FreeHandleEventBuffer(HandleEvent* buffer);
+
+PALEXPORT int32_t SystemNative_TryChangeHandleEventRegistration(
+    intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
+
+PALEXPORT int32_t SystemNative_WaitForHandleEvents(intptr_t port, HandleEvent* buffer, int32_t* count);
