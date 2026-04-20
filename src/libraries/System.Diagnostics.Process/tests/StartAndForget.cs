@@ -113,6 +113,8 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => Process.StartAndForget(startInfo));
         }
 
+        // RemoteExecutor populates ProcessStartInfo.Arguments, but StartAndForget(fileName, arguments)
+        // takes an argument list, so this helper maps the serialized argument string for this test.
         private static List<string>? MapToArgumentList(ProcessStartInfo startInfo)
         {
             string arguments = startInfo.Arguments;
