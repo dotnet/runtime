@@ -381,6 +381,12 @@ fragment IDCONT: [A-Za-z0-9_#?$@`];
 DOTTEDNAME: (ID DOT)+ ID;
 ID: IDSTART IDCONT*;
 
+// HEXBYTE: matches exactly two hex digits. Defined AFTER INT32 and ID so that:
+// - Pure digit pairs (11, 00) match INT32 first (same length, INT32 defined earlier)
+// - Letter-starting pairs (B0, FF) match ID first (same length, ID defined earlier)
+// - Digit-letter pairs (3F, 0A) match HEXBYTE (2 chars beats INT32's 1-char match)
+HEXBYTE: [0-9A-Fa-f][0-9A-Fa-f];
+
 id:
 	ID
 	| 'native'
@@ -1306,7 +1312,7 @@ fieldSerInit:
 
 bytes: hexbyte*;
 
-hexbyte: INT32 | ID;
+hexbyte: INT32 | ID | HEXBYTE;
 /*  Field/parameter initialization  */
 fieldInit: fieldSerInit | compQstring | NULLREF;
 
