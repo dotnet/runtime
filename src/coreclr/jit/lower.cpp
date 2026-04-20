@@ -10616,9 +10616,9 @@ bool Lowering::GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* d
     data->lclNum           = lclStore->GetLclNum();
     data->isLocalStoreNode = true;
     data->isAddressExposed = varDsc->IsAddressExposed();
-    data->storeFlags = GTF_EMPTY;
-    data->rangeStart = range.FirstNode();
-    data->rangeEnd   = range.LastNode();
+    data->storeFlags       = GTF_EMPTY;
+    data->rangeStart       = range.FirstNode();
+    data->rangeEnd         = range.LastNode();
 
     return true;
 }
