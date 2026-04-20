@@ -21,6 +21,7 @@
 #endif
 
 #include "cdacdata.h"
+#include <utility> // std::forward (used by SListElem)
 
 // ---------------------------------------------------------------------------
 // DoNothingFailFastPolicy — default no-op FailFast for Iterator validation.
@@ -422,9 +423,8 @@ template <typename T> using SListTail = SList<T, SListTraits<T, SListMode::Tail>
 template <typename T> using SListInterlocked = SList<T, SListTraits<T, SListMode::Interlocked>>;
 
 // ---------------------------------------------------------------------------
-// SListElem — non-intrusive list element wrapper (CoreCLR only).
+// SListElem — non-intrusive list element wrapper.
 // ---------------------------------------------------------------------------
-#ifndef FEATURE_NATIVEAOT
 template <typename ElemT>
 struct SListElem
 {
@@ -479,6 +479,5 @@ struct SListElem
         , m_Value(std::forward<T1>(val1), std::forward<T2>(val2), std::forward<T3>(val3), std::forward<T4>(val4))
     { }
 };
-#endif // !FEATURE_NATIVEAOT
 
 #endif // _H_SLIST_
