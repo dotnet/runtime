@@ -43,4 +43,9 @@ public static class InlineCandidateMatrix
         await Task.Yield();
         return "with_await";
     }
+
+    // --- Sync helper used by cross-module inlining tests ---
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int GetValueSync() => 99;
 }

@@ -29,7 +29,7 @@ public class R2RTestSuites
         var syncInlinableMethods = new CompiledAssembly
         {
             AssemblyName = "SyncInlinableMethods",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/BasicInlining.SyncInlinableMethods.cs"],
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/SyncInlinableMethods.cs"],
         };
         var basicCrossModuleInlining = new CompiledAssembly
         {
@@ -67,7 +67,7 @@ public class R2RTestSuites
         var inlinableLeafCallers = new CompiledAssembly()
         {
             AssemblyName = "InlinableLeafCallers",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/TransitiveReferences.InlinableLeafCallers.cs"],
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlinableLeafCallers.cs"],
             References = [syncLeafMethods]
         };
         var transitiveReferences = new CompiledAssembly()
@@ -104,8 +104,8 @@ public class R2RTestSuites
     {
         var inlinableAsyncMethods = new CompiledAssembly
         {
-            AssemblyName = "InlinableAsyncMethods",
-            SourceResourceNames = ["RuntimeAsync/Dependencies/AwaitsInlinableAsync.InlinableAsyncMethods.cs"],
+            AssemblyName = "InlineCandidateMatrix",
+            SourceResourceNames = ["RuntimeAsync/Dependencies/InlineCandidateMatrix.cs"],
         };
         var awaitsInlinableAsync = new CompiledAssembly
         {
@@ -134,8 +134,8 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "InlinableAsyncMethods", out diag), diag);
-            Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "CallGetValueAsync", "GetValueAsync", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "InlineCandidateMatrix", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "CallGetValueAsync", "ReturnTaskPrimitiveWithAwait", out diag), diag);
         }
     }
 
@@ -145,7 +145,7 @@ public class R2RTestSuites
         var compositeLib = new CompiledAssembly
         {
             AssemblyName = "SyncTypeAndMethod",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeBasic.SyncTypeAndMethod.cs"],
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/SyncTypeAndMethod.cs"],
         };
         var compositeBasic = new CompiledAssembly
         {
@@ -220,7 +220,7 @@ public class R2RTestSuites
             AssemblyName = nameof(RuntimeAsyncContinuationLayout),
             SourceResourceNames =
             [
-                "RuntimeAsync/Dependencies/AwaitsLocalsCapturedAcrossAwait.LocalsCapturedAcrossAwait.cs",
+                "RuntimeAsync/Dependencies/LocalsCapturedAcrossAwait.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -259,7 +259,7 @@ public class R2RTestSuites
             SourceResourceNames =
             [
                 "RuntimeAsync/AwaitsThroughInterface.cs",
-                "RuntimeAsync/Dependencies/AwaitsThroughInterface.InterfaceAndImpls.cs",
+                "RuntimeAsync/Dependencies/AsyncInterfaceAndImpls.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -325,10 +325,10 @@ public class R2RTestSuites
     {
         var inlinableAsyncMethods = new CompiledAssembly
         {
-            AssemblyName = "InlinableAsyncMethods",
+            AssemblyName = "InlineCandidateMatrix",
             SourceResourceNames =
             [
-                "RuntimeAsync/Dependencies/AwaitsInlinableAsync.InlinableAsyncMethods.cs",
+                "RuntimeAsync/Dependencies/InlineCandidateMatrix.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -365,7 +365,7 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "InlinableAsyncMethods", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "InlineCandidateMatrix", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "CallGetValueAsync", out diag), diag);
         }
     }
@@ -385,7 +385,7 @@ public class R2RTestSuites
         var syncInlinableMethods = new CompiledAssembly
         {
             AssemblyName = "SyncInlinableMethods",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/BasicInlining.SyncInlinableMethods.cs"],
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/SyncInlinableMethods.cs"],
         };
         var compositeMain = new CompiledAssembly
         {
@@ -435,7 +435,7 @@ public class R2RTestSuites
         var syncInlinableMethods = new CompiledAssembly
         {
             AssemblyName = "SyncInlinableMethods",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/BasicInlining.SyncInlinableMethods.cs"],
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/SyncInlinableMethods.cs"],
         };
         var compositeMain = new CompiledAssembly
         {
@@ -479,8 +479,8 @@ public class R2RTestSuites
     {
         var inlinableAsyncMethods = new CompiledAssembly
         {
-            AssemblyName = "InlinableAsyncMethods",
-            SourceResourceNames = ["RuntimeAsync/Dependencies/AwaitsInlinableAsync.InlinableAsyncMethods.cs"],
+            AssemblyName = "InlineCandidateMatrix",
+            SourceResourceNames = ["RuntimeAsync/Dependencies/InlineCandidateMatrix.cs"],
             Features = { RuntimeAsyncFeature },
         };
         var awaitsInlinableAsync = new CompiledAssembly
@@ -508,15 +508,15 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             string diag;
-            Assert.True(R2RAssert.HasManifestRef(reader, "InlinableAsyncMethods", out diag), diag);
+            Assert.True(R2RAssert.HasManifestRef(reader, "InlineCandidateMatrix", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "CallGetValueAsync", out diag), diag);
-            Assert.True(R2RAssert.HasAsyncVariant(reader, "GetValueAsync", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "ReturnTaskPrimitiveWithAwait", out diag), diag);
         }
     }
 
     /// <summary>
     /// The full intersection: composite + runtime-async + cross-module inlining.
-    /// Async methods from InlinableAsyncMethods are inlined into AwaitsInlinableAsync
+    /// Async methods from InlineCandidateMatrix are inlined into AwaitsInlinableAsync
     /// within a composite image, exercising MutableModule token encoding for
     /// cross-module async continuation layouts.
     /// </summary>
@@ -537,7 +537,7 @@ public class R2RTestSuites
         var asyncInlineCandidatesLib = new CompiledAssembly
         {
             AssemblyName = "InlineCandidateMatrix",
-            SourceResourceNames = ["RuntimeAsync/Dependencies/AwaitsInlineCandidateMatrix.InlineCandidateMatrix.cs"],
+            SourceResourceNames = ["RuntimeAsync/Dependencies/InlineCandidateMatrix.cs"],
             Features = { RuntimeAsyncFeature },
         };
         var asyncInlineCallers = new CompiledAssembly
@@ -593,7 +593,7 @@ public class R2RTestSuites
             AssemblyName = "LocalsCapturedAcrossAwait",
             SourceResourceNames =
             [
-                "RuntimeAsync/Dependencies/AwaitsLocalsCapturedAcrossAwait.LocalsCapturedAcrossAwait.cs",
+                "RuntimeAsync/Dependencies/LocalsCapturedAcrossAwait.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -666,7 +666,7 @@ public class R2RTestSuites
             AssemblyName = "AwaitsAsyncMethodsOnGenericType.GenericContainer",
             SourceResourceNames =
             [
-                "RuntimeAsync/Dependencies/AwaitsAsyncMethodsOnGenericType.GenericContainer.cs",
+                "RuntimeAsync/Dependencies/GenericContainer.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -731,7 +731,7 @@ public class R2RTestSuites
             AssemblyName = "LocalsCapturedAcrossAwait",
             SourceResourceNames =
             [
-                "RuntimeAsync/Dependencies/AwaitsLocalsCapturedAcrossAwait.LocalsCapturedAcrossAwait.cs",
+                "RuntimeAsync/Dependencies/LocalsCapturedAcrossAwait.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -784,12 +784,12 @@ public class R2RTestSuites
         var libA = new CompiledAssembly
         {
             AssemblyName = "MultiStepLeaf",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/MultiStepConsumer.Leaf.cs"],
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/MultiStepLeaf.cs"],
         };
         var libB = new CompiledAssembly
         {
             AssemblyName = "MultiStepMid",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/MultiStepConsumer.Mid.cs"],
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/MultiStepMid.cs"],
             References = [libA]
         };
         var consumer = new CompiledAssembly
@@ -849,7 +849,7 @@ public class R2RTestSuites
         var interfaceAndImpls = new CompiledAssembly
         {
             AssemblyName = "InterfaceAndImpls",
-            SourceResourceNames = ["RuntimeAsync/Dependencies/AwaitsThroughInterface.InterfaceAndImpls.cs"],
+            SourceResourceNames = ["RuntimeAsync/Dependencies/AsyncInterfaceAndImpls.cs"],
             Features = { RuntimeAsyncFeature },
         };
         var awaitsThroughInterface = new CompiledAssembly
@@ -901,7 +901,7 @@ public class R2RTestSuites
         var inlinableLeafCallers = new CompiledAssembly
         {
             AssemblyName = "InlinableLeafCallers",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/TransitiveReferences.InlinableLeafCallers.cs"],
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlinableLeafCallers.cs"],
             References = [syncLeafMethods]
         };
         var compositeTransitiveMain = new CompiledAssembly
@@ -951,7 +951,7 @@ public class R2RTestSuites
             AssemblyName = "InlinableAsyncLeafCallers",
             SourceResourceNames =
             [
-                "RuntimeAsync/Dependencies/AwaitsTransitiveAsync.InlinableAsyncLeafCallers.cs",
+                "RuntimeAsync/Dependencies/InlinableAsyncLeafCallers.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -1012,7 +1012,7 @@ public class R2RTestSuites
             AssemblyName = "InlinableAsyncLeafCallers",
             SourceResourceNames =
             [
-                "RuntimeAsync/Dependencies/AwaitsTransitiveAsync.InlinableAsyncLeafCallers.cs",
+                "RuntimeAsync/Dependencies/InlinableAsyncLeafCallers.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -1064,13 +1064,13 @@ public class R2RTestSuites
         var locals = new CompiledAssembly
         {
             AssemblyName = "LocalsCapturedAcrossAwait",
-            SourceResourceNames = ["RuntimeAsync/Dependencies/AwaitsLocalsCapturedAcrossAwait.LocalsCapturedAcrossAwait.cs"],
+            SourceResourceNames = ["RuntimeAsync/Dependencies/LocalsCapturedAcrossAwait.cs"],
             Features = { RuntimeAsyncFeature },
         };
         var inlinableAsyncMethods = new CompiledAssembly
         {
-            AssemblyName = "InlinableAsyncMethods",
-            SourceResourceNames = ["RuntimeAsync/Dependencies/AwaitsInlinableAsync.InlinableAsyncMethods.cs"],
+            AssemblyName = "InlineCandidateMatrix",
+            SourceResourceNames = ["RuntimeAsync/Dependencies/InlineCandidateMatrix.cs"],
             Features = { RuntimeAsyncFeature },
         };
         var asyncConsumer = new CompiledAssembly
@@ -1135,7 +1135,7 @@ public class R2RTestSuites
         var crossModuleGenericLib = new CompiledAssembly
         {
             AssemblyName = "MultiInlinerConsumer.GenericWrappers",
-            SourceResourceNames = ["CrossModuleInlining/Dependencies/MultiInlinerConsumer.GenericWrappers.cs"],
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/GenericWrappers.cs"],
         };
         var consumer = new CompiledAssembly
         {

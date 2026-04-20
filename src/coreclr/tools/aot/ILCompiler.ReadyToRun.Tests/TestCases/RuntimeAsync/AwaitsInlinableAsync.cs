@@ -1,7 +1,6 @@
-// Awaits each method in InlinableAsyncMethods so that callers see both
-// cross-module inlining opportunities and composite-mode async variant
-// emission, depending on how the tests wire the compilation.
-using System;
+// Awaits a small subset of InlineCandidateMatrix methods (one Task<int>, one
+// Task<string>, one sync) so that cross-module and composite tests can observe
+// async-variant emission and cross-module inlining of inlinable async methods.
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -10,18 +9,18 @@ public static class AwaitsInlinableAsync
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static async Task<int> CallGetValueAsync()
     {
-        return await InlinableAsyncMethods.GetValueAsync();
+        return await InlineCandidateMatrix.ReturnTaskPrimitiveWithAwait();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static async Task<string> CallGetStringAsync()
     {
-        return await InlinableAsyncMethods.GetStringAsync();
+        return await InlineCandidateMatrix.ReturnTaskClassWithAwait();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int CallGetValueSync()
     {
-        return InlinableAsyncMethods.GetValueSync();
+        return InlineCandidateMatrix.GetValueSync();
     }
 }
