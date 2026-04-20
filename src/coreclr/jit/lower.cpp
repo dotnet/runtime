@@ -10574,7 +10574,7 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
 
 //------------------------------------------------------------------------
 // GetStoreCoalescingData: get the data needed to perform store coalescing for either
-//    STOREIND/STORE_BLK or STORE_LCL_FLD.
+//    STOREIND/STORE_BLK or local stores.
 //
 // Arguments:
 //    store - the store node
@@ -10590,12 +10590,12 @@ bool Lowering::GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* d
         return GetLoadStoreCoalescingData(store->AsIndir(), data);
     }
 
-    if (!store->OperIs(GT_STORE_LCL_FLD))
+    if (!store->OperIsLocalStore())
     {
         return false;
     }
 
-    auto* lclStore = store->AsLclFld();
+    auto* lclStore = store->AsLclVarCommon();
     if (!IsStoreCoalescingInvariantNode(m_compiler, lclStore->Data()))
     {
         return false;
@@ -10610,13 +10610,16 @@ bool Lowering::GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* d
 
     LclVarDsc* varDsc      = m_compiler->lvaGetDesc(lclStore);
     data->targetType       = store->TypeGet();
-    data->accessSize       = lclStore->GetSize();
+    data->accessSize       = store->OperIs(GT_STORE_LCL_FLD) ? lclStore->AsLclFld()->GetSize() : varDsc->lvExactSize();
     data->value            = lclStore->Data();
     data->offset           = lclStore->GetLclOffs();
     data->lclNum           = lclStore->GetLclNum();
     data->isLocalStoreNode = true;
     data->isAddressExposed = varDsc->IsAddressExposed();
-    data->storeFlags       = store->gtFlags;
+    // Local stores don't use the GTF_IND_* flag space semantically. In particular, GT_STORE_LCL_FLD
+    // may carry GTF_VAR_USEASG, which shares the same bit as GTF_IND_VOLATILE. Keep only the flags
+    // that are actually meaningful for indir coalescing decisions.
+    data->storeFlags       = GTF_EMPTY;
     data->rangeStart       = range.FirstNode();
     data->rangeEnd         = range.LastNode();
 
@@ -10728,7 +10731,8 @@ bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       
 
 //------------------------------------------------------------------------
 // LowerStoreCoalescing: if the given store is followed by a similar adjacent constant store,
-//    try to merge them into a single wider store. Supports STOREIND/STORE_BLK and STORE_LCL_FLD.
+//    try to merge them into a single wider store. Supports STOREIND/STORE_BLK and STORE_LCL_FLD,
+//    where the previous local store may be either STORE_LCL_VAR or STORE_LCL_FLD.
 //
 // Arguments:
 //    node - current store node
@@ -10772,7 +10776,7 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
 
         if (node->OperIs(GT_STORE_LCL_FLD))
         {
-            if (!prevTree->OperIs(GT_STORE_LCL_FLD))
+            if (!prevTree->OperIsLocalStore())
             {
                 return;
             }
@@ -10787,9 +10791,11 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             return;
         }
 
-        if (((currData.storeFlags | prevData.storeFlags) & (GTF_IND_VOLATILE | GTF_ORDER_SIDEEFF)) != 0)
+        if (((currData.storeFlags | prevData.storeFlags) & GTF_IND_VOLATILE) != 0)
         {
-            // Keep volatile and other ordering-sensitive stores in their original form.
+            // Keep volatile stores in their original form.
+            // Regular STOREIND nodes may carry GTF_ORDER_SIDEEFF, and the pre-existing
+            // STOREIND coalescing logic intentionally allowed those cases.
             return;
         }
 
@@ -11032,13 +11038,16 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         }
         else
         {
-            auto* lclStore = node->AsLclFld();
+            auto* lclStore = node->AsLclVarCommon();
             BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
 
             lclStore->Data()->ClearContained();
             lclStore->gtType         = newType;
             lclStore->Data()->gtType = newType;
-            lclStore->SetLclOffs(min(prevData.offset, currData.offset));
+            if (lclStore->OperIs(GT_STORE_LCL_FLD))
+            {
+                lclStore->AsLclFld()->SetLclOffs(min(prevData.offset, currData.offset));
+            }
         }
 
 #if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
