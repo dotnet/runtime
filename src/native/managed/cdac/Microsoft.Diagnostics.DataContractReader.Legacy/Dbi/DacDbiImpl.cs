@@ -220,7 +220,34 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetModuleData(vmModule, pData) : HResults.E_NOTIMPL;
 
     public int GetAssemblyInfo(ulong vmAssembly, DacDbiAssemblyInfo* pData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAssemblyInfo(vmAssembly, pData) : HResults.E_NOTIMPL;
+    {
+        *pData = default;
+        int hr = HResults.S_OK;
+        try
+        {
+            pData->vmAssembly = vmAssembly;
+            TargetPointer appDomainPtr = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            pData->vmAppDomain = _target.ReadPointer(appDomainPtr);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiAssemblyInfo dataLocal;
+            int hrLocal = _legacy.GetAssemblyInfo(vmAssembly, &dataLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pData->vmAssembly == dataLocal.vmAssembly, $"vmAssembly cDAC: {pData->vmAssembly:x}, DAC: {dataLocal.vmAssembly:x}");
+                Debug.Assert(pData->vmAppDomain == dataLocal.vmAppDomain, $"vmAppDomain cDAC: {pData->vmAppDomain:x}, DAC: {dataLocal.vmAppDomain:x}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetModuleForAssembly(ulong vmAssembly, ulong* pModule)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetModuleForAssembly(vmAssembly, pModule) : HResults.E_NOTIMPL;

@@ -154,6 +154,40 @@ public unsafe class LoaderTests
         Assert.Throws<DecoderFallbackException>(() => contract.TryGetSimpleName(handle, out _));
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetAssemblyInfo_SetsFieldsCorrectly(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+
+        ulong globalPtrAddr = 0x1000;
+        ulong expectedAppDomain = 0x2000;
+
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        byte[] ptrData = new byte[helpers.PointerSize];
+        helpers.WritePointer(ptrData, expectedAppDomain);
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = globalPtrAddr,
+            Data = ptrData,
+            Name = "AppDomainGlobalPointer"
+        });
+
+        var target = targetBuilder
+            .AddGlobals((Constants.Globals.AppDomain, globalPtrAddr))
+            .Build();
+
+        DacDbiImpl dbi = new DacDbiImpl(target, legacyObj: null);
+
+        ulong vmAssembly = 0x3000;
+        DacDbiAssemblyInfo info;
+        int hr = dbi.GetAssemblyInfo(vmAssembly, &info);
+
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(vmAssembly, info.vmAssembly);
+        Assert.Equal(expectedAppDomain, info.vmAppDomain);
+    }
+
     private static readonly Dictionary<string, TargetPointer> MockHeapDictionary = new()
     {
         ["LowFrequencyHeap"] = new(0x1000),
