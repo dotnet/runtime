@@ -604,18 +604,23 @@ public unsafe class LoaderTests
 
         module.PEAssembly = peAssemblyFrag.Address;
 
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch)
+        {
+            MemoryBuilder = { builder }
+        };
         var types = CreateContractTypes(loader);
         types[DataType.PEAssembly] = new() { Fields = peAssemblyLayout.Fields, Size = peAssemblyLayout.Stride };
         types[DataType.PEImage] = new() { Fields = peImageLayout.Fields, Size = peImageLayout.Stride };
         types[DataType.PEImageLayout] = new() { Fields = imageLayoutLayout.Fields, Size = imageLayoutLayout.Stride };
         types[DataType.ProbeExtensionResult] = new() { Fields = probeExtLayout.Fields, Size = probeExtLayout.Stride };
 
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, types);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+        var target = targetBuilder
+            .AddTypes(types)
+            .AddContract<ILoader>(version: "c1")
+            .Build();
 
         ILoader contract = target.Contracts.Loader;
-        ModuleHandle handle = contract.GetModuleHandleFromModulePtr(new TargetPointer(module.Address));
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(new TargetPointer(module.Address));
         Assert.Equal(expected, contract.IsModuleMapped(handle));
     }
 
@@ -630,7 +635,7 @@ public unsafe class LoaderTests
             moduleAddr = loader.AddModule().Address;
         });
 
-        ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
         Assert.False(contract.IsModuleMapped(handle));
     }
 
