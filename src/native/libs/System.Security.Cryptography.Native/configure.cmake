@@ -25,7 +25,7 @@ check_function_exists(
 )
 
 check_function_exists(
-    RSA_new
+    EVP_PKEY_get0_RSA
     HAVE_OPENSSL_RSA_PRIMITIVE
 )
 
