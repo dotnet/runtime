@@ -308,7 +308,6 @@ namespace System.IO.Compression
                     switch (_mode)
                     {
                         case ZipArchiveMode.Read:
-                            break;
                         case ZipArchiveMode.ForwardRead:
                             DrainPreviousEntry();
                             break;
@@ -551,13 +550,12 @@ namespace System.IO.Compression
                 return new SubReadStream(_archiveStream, _archiveStream.Position, data.CompressedSize);
             }
 
-            Stream bounded = new SubReadStream(_archiveStream, _archiveStream.Position, data.CompressedSize);
-            Stream decompressor2 = CreateForwardReadDecompressor(bounded, data.CompressionMethod, data.UncompressedSize, leaveOpen: false);
-
-            return new CrcValidatingReadStream(decompressor2, data.Crc32, data.UncompressedSize);
+            // Known size, not encrypted — store lightweight SubReadStream as a bookmark;
+            // decompressor + CRC wrapper are created lazily in OpenInForwardReadMode.
+            return new SubReadStream(_archiveStream, _archiveStream.Position, data.CompressedSize);
         }
 
-        private static Stream CreateForwardReadDecompressor(Stream source, ZipCompressionMethod compressionMethod, long uncompressedSize, bool leaveOpen)
+        internal static Stream CreateForwardReadDecompressor(Stream source, ZipCompressionMethod compressionMethod, long uncompressedSize, bool leaveOpen)
         {
             return compressionMethod switch
             {
