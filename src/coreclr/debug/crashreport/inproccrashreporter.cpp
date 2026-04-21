@@ -667,7 +667,11 @@ CrashReportHelpers::GetInstructionPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if defined(__x86_64__)
+#if defined(__APPLE__) && defined(__x86_64__)
+    return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rip);
+#elif defined(__APPLE__) && defined(__aarch64__)
+    return static_cast<uint64_t>(arm_thread_state64_get_pc(ucontext->uc_mcontext->__ss));
+#elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RIP]);
 #elif defined(__aarch64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.pc);
@@ -688,7 +692,11 @@ CrashReportHelpers::GetStackPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if defined(__x86_64__)
+#if defined(__APPLE__) && defined(__x86_64__)
+    return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rsp);
+#elif defined(__APPLE__) && defined(__aarch64__)
+    return static_cast<uint64_t>(arm_thread_state64_get_sp(ucontext->uc_mcontext->__ss));
+#elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RSP]);
 #elif defined(__aarch64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.sp);
@@ -709,7 +717,11 @@ CrashReportHelpers::GetFramePointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if defined(__x86_64__)
+#if defined(__APPLE__) && defined(__x86_64__)
+    return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rbp);
+#elif defined(__APPLE__) && defined(__aarch64__)
+    return static_cast<uint64_t>(arm_thread_state64_get_fp(ucontext->uc_mcontext->__ss));
+#elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RBP]);
 #elif defined(__aarch64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.regs[29]);
