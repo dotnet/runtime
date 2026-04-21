@@ -303,7 +303,7 @@ PAL_ERROR SEHEnable(CPalThread *pthrCurrent)
 {
 #if HAVE_MACH_EXCEPTIONS
     return pthrCurrent->EnableMachExceptions();
-#else
+#else // HAVE_MACH_EXCEPTIONS
     return NO_ERROR;
 #endif // HAVE_MACH_EXCEPTIONS
 }
@@ -326,7 +326,7 @@ PAL_ERROR SEHDisable(CPalThread *pthrCurrent)
 {
 #if HAVE_MACH_EXCEPTIONS
     return pthrCurrent->DisableMachExceptions();
-#else
+#else // HAVE_MACH_EXCEPTIONS
     return NO_ERROR;
 #endif // HAVE_MACH_EXCEPTIONS
 }
