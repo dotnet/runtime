@@ -4239,6 +4239,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genReturnSuspend(treeNode->AsUnOp());
             break;
 
+        case GT_PATCHPOINT:
+            genPatchpoint(treeNode->AsUnOp());
+            break;
+
         case GT_SH1ADD:
         case GT_SH1ADD_UW:
         case GT_SH2ADD:

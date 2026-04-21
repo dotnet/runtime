@@ -7293,6 +7293,40 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genPatchpoint:
+//   Generate code for a GT_PATCHPOINT node.
+//   This transfers control to the OSR method variant.
+//   The operand contains the PCODE (entry address) of the OSR method.
+//
+// Arguments:
+//   treeNode - The GT_PATCHPOINT node
+//
+void CodeGen::genPatchpoint(GenTreeUnOp* treeNode)
+{
+    GenTree* op = treeNode->gtGetOp1();
+    assert(op->TypeIs(TYP_I_IMPL));
+
+    regNumber addrReg = genConsumeReg(op);
+
+    // Jump to the OSR method. This is a non-returning jump.
+    // The OSR method inherits the current frame (SP/FP) and will set up
+    // its own frame from there.
+#ifdef TARGET_XARCH
+    GetEmitter()->emitIns_R(INS_tail_i_jmp, EA_PTRSIZE, addrReg);
+#elif defined(TARGET_ARM64)
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, addrReg);
+#elif defined(TARGET_ARM)
+    GetEmitter()->emitIns_R(INS_bx, EA_PTRSIZE, addrReg);
+#elif defined(TARGET_LOONGARCH64)
+    GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, addrReg, 0);
+#elif defined(TARGET_RISCV64)
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, addrReg, 0);
+#else
+#error "Unsupported target architecture for GT_PATCHPOINT"
+#endif
+}
+
+//------------------------------------------------------------------------
 // genMarkReturnGCInfo:
 //   Mark GC and non-GC pointers of return registers going into the epilog..
 //

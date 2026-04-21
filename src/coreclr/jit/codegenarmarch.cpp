@@ -299,6 +299,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genReturnSuspend(treeNode->AsUnOp());
             break;
 
+        case GT_PATCHPOINT:
+            genPatchpoint(treeNode->AsUnOp());
+            break;
+
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());

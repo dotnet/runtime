@@ -8343,6 +8343,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_KEEPALIVE:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_PATCHPOINT:
             return true;
 
         case GT_SWIFT_ERROR:
