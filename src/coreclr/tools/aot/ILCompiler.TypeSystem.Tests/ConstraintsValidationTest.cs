@@ -363,7 +363,6 @@ namespace TypeSystemTests
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
             TypeDesc stringType = _context.GetWellKnownType(WellKnownType.String);
             TypeDesc intType = _context.GetWellKnownType(WellKnownType.Int32);
-            TypeDesc uintType = _context.GetWellKnownType(WellKnownType.UInt32);
 
             MetadataType nonVariantInterfaceConstraintType = _testModule.GetType("GenericConstraints"u8, "NonVariantInterfaceConstraint`2"u8);
             MetadataType nonVariantGenImplType = _testModule.GetType("GenericConstraints"u8, "NonVariantGenImpl`1"u8);
