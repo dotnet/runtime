@@ -623,7 +623,6 @@ internal sealed class FrameIterator
         MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
         bool hasThis = methodSig.Header.IsInstance;
-        bool hasRetBuf = methodSig.ReturnType is GcTypeKind.Other;
         bool requiresInstArg = false;
         bool isAsync = false;
         bool isValueTypeThis = false;
@@ -640,54 +639,73 @@ internal sealed class FrameIterator
         {
         }
 
-        PromoteCallerStackHelper(transitionBlock, methodSig, hasThis, hasRetBuf,
+        PromoteCallerStackHelper(transitionBlock, methodSig, hasThis,
             requiresInstArg, isAsync, isValueTypeThis, scanContext);
     }
 
     /// <summary>
     /// Core logic for promoting caller stack GC references.
-    /// Matches native TransitionFrame::PromoteCallerStackHelper (frames.cpp:1560).
+    /// Uses <see cref="ArgIterator"/> to correctly map arguments to their
+    /// register/stack locations per the target's calling convention.
+    /// Matches native TransitionFrame::PromoteCallerStackHelper (frames.cpp:1546).
     /// </summary>
     private void PromoteCallerStackHelper(
         TargetPointer transitionBlock,
         MethodSignature<GcTypeKind> methodSig,
         bool hasThis,
-        bool hasRetBuf,
         bool requiresInstArg,
         bool isAsync,
         bool isValueTypeThis,
         GcScanContext scanContext)
     {
-        int numRegistersUsed = 0;
-        if (hasThis)
-            numRegistersUsed++;
-        if (hasRetBuf)
-            numRegistersUsed++;
-        if (requiresInstArg)
-            numRegistersUsed++;
-        if (isAsync)
-            numRegistersUsed++;
-
-        bool isArm64 = IsTargetArm64();
-        if (isArm64)
-            numRegistersUsed++;
-
-        if (hasThis)
+        CallingConventionInfo ccInfo;
+        try
         {
-            int thisPos = isArm64 ? 1 : 0;
-            uint thisOffset = OffsetFromGCRefMapPos(thisPos);
-            TargetPointer thisAddr = new(transitionBlock.Value + thisOffset);
+            ccInfo = new CallingConventionInfo(target);
+        }
+        catch
+        {
+            return;
+        }
+
+        // Build ArgTypeInfo array from decoded signature
+        ArgTypeInfo[] paramTypes = new ArgTypeInfo[methodSig.ParameterTypes.Length];
+        for (int i = 0; i < paramTypes.Length; i++)
+        {
+            paramTypes[i] = GcTypeKindToArgTypeInfo(methodSig.ParameterTypes[i], ccInfo.PointerSize);
+        }
+        ArgTypeInfo returnTypeInfo = GcTypeKindToArgTypeInfo(methodSig.ReturnType, ccInfo.PointerSize);
+
+        ArgIteratorData argData = new(hasThis, methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs, paramTypes, returnTypeInfo);
+        ArgIterator argit = new(ccInfo, argData, hasParamType: requiresInstArg, hasAsyncContinuation: isAsync, forcedByRefParams: System.Array.Empty<bool>());
+
+        // Promote 'this' for non-static methods
+        if (argit.HasThis)
+        {
+            int thisOffset = argit.GetThisOffset();
+            TargetPointer thisAddr = new(transitionBlock.Value + (ulong)thisOffset);
             GcScanFlags thisFlags = isValueTypeThis ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None;
             scanContext.GCReportCallback(thisAddr, thisFlags);
         }
 
-        // TODO(stackref): Promote async continuation pointer at its specific offset
-
-        int pos = numRegistersUsed;
-        foreach (GcTypeKind kind in methodSig.ParameterTypes)
+        // Promote async continuation
+        if (argit.HasAsyncContinuation)
         {
-            uint offset = OffsetFromGCRefMapPos(pos);
-            TargetPointer slotAddress = new(transitionBlock.Value + offset);
+            int asyncOffset = argit.GetAsyncContinuationArgOffset();
+            TargetPointer asyncAddr = new(transitionBlock.Value + (ulong)asyncOffset);
+            scanContext.GCReportCallback(asyncAddr, GcScanFlags.None);
+        }
+
+        // Walk each argument using ArgIterator for correct offsets
+        int argIndex = 0;
+        int argOffset;
+        while ((argOffset = argit.GetNextOffset()) != CallingConventionInfo.InvalidOffset)
+        {
+            if (argIndex >= methodSig.ParameterTypes.Length)
+                break;
+
+            GcTypeKind kind = methodSig.ParameterTypes[argIndex];
+            TargetPointer slotAddress = new(transitionBlock.Value + (ulong)argOffset);
 
             switch (kind)
             {
@@ -698,13 +716,39 @@ internal sealed class FrameIterator
                     scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
                     break;
                 case GcTypeKind.Other:
-                    // TODO(stackref): Value type GCDesc scanning
+                    // Value type: if passed by ref, report as interior pointer
+                    if (argit.IsArgPassedByRef())
+                    {
+                        scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
+                    }
+                    // TODO: For value types passed by value, enumerate fields for embedded GC refs
                     break;
                 case GcTypeKind.None:
                     break;
             }
-            pos++;
+            argIndex++;
         }
+    }
+
+    /// <summary>
+    /// Converts a <see cref="GcTypeKind"/> to a minimal <see cref="ArgTypeInfo"/> for
+    /// ArgIterator consumption. This is a bridge until we have a full type-aware provider.
+    /// </summary>
+    private static ArgTypeInfo GcTypeKindToArgTypeInfo(GcTypeKind kind, int pointerSize)
+    {
+        return kind switch
+        {
+            GcTypeKind.None => ArgTypeInfo.ForPrimitive(CorElementType.I, pointerSize),
+            GcTypeKind.Ref => ArgTypeInfo.ForPrimitive(CorElementType.Class, pointerSize),
+            GcTypeKind.Interior => ArgTypeInfo.ForPrimitive(CorElementType.Byref, pointerSize),
+            GcTypeKind.Other => new ArgTypeInfo
+            {
+                CorElementType = CorElementType.ValueType,
+                Size = pointerSize, // Conservative: assume pointer-sized for now
+                IsValueType = true,
+            },
+            _ => ArgTypeInfo.ForPrimitive(CorElementType.I, pointerSize),
+        };
     }
 
     private ReadOnlySpan<byte> GetMethodSignatureBytes(TargetPointer methodDescPtr)

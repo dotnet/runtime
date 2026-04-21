@@ -986,6 +986,18 @@ CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, FirstGCRefMapSlot, offsetof(Transitio
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegistersOffset, offsetof(TransitionBlock, m_argumentRegisters))
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, FirstGCRefMapSlot, offsetof(TransitionBlock, m_argumentRegisters))
 #endif
+// Negative offset to where float argument registers are saved (relative to TransitionBlock pointer).
+// This is -sizeof(FloatArgumentRegisters) (-padding) on platforms that have them, 0 otherwise.
+#ifdef CALLDESCR_FPARGREGS
+#ifdef TARGET_ARM
+// ARM has 8-byte alignment padding after FloatArgumentRegisters
+CDAC_TYPE_FIELD(TransitionBlock, T_INT32, OffsetOfFloatArgumentRegisters, -(int)(sizeof(FloatArgumentRegisters) + TARGET_POINTER_SIZE))
+#else
+CDAC_TYPE_FIELD(TransitionBlock, T_INT32, OffsetOfFloatArgumentRegisters, -(int)sizeof(FloatArgumentRegisters))
+#endif
+#else
+CDAC_TYPE_FIELD(TransitionBlock, T_INT32, OffsetOfFloatArgumentRegisters, 0)
+#endif
 CDAC_TYPE_END(TransitionBlock)
 
 #ifdef DEBUGGING_SUPPORTED
