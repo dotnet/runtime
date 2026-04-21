@@ -310,11 +310,11 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void GetHashCodeTest()
+        [Theory]
+        [MemberData(nameof(GetHashCode_TestData))]
+        public static void GetHashCodeTest(Decimal32 d1, Decimal32 d2)
         {
-            var d = new Decimal32(10, 20);
-            Assert.Equal(d.GetHashCode(), d.GetHashCode());
+            Assert.Equal(d1.GetHashCode(), d2.GetHashCode());
         }
 
         [Fact]
@@ -326,6 +326,18 @@ namespace System.Tests
             Assert.Equal(zero, new Decimal32(234, -1000));
             Assert.Equal(zero, new Decimal32(-1, -102));
             Assert.Equal(zero, new Decimal32(-234, -1000));
+        }
+
+        public static IEnumerable<object[]> GetHashCode_TestData()
+        {
+            yield return new object[] { Decimal32.Zero, Decimal32.NegativeZero };
+            yield return new object[] { Decimal32.Zero, Decimal32.Zero };
+            yield return new object[] { Decimal32.NaN, Decimal32.NaN };
+            yield return new object[] { new Decimal32(0, 20), new Decimal32(0, 18) };
+            yield return new object[] { new Decimal32(1, 7), new Decimal32(1, 7) };
+            yield return new object[] { new Decimal32(1, 7), new Decimal32(10, 6) };
+            yield return new object[] { Decimal32.PositiveInfinity, Decimal32.PositiveInfinity };
+            yield return new object[] { Decimal32.NegativeInfinity, Decimal32.NegativeInfinity };
         }
 
         public static IEnumerable<object[]> ToString_TestData()

@@ -142,6 +142,32 @@ namespace System
             }
         }
 
+        internal static int GetDecimalIeee754HashCode<TDecimal, TValue>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsNaN(decimalBits) || TDecimal.IsInfinity(decimalBits))
+            {
+                return decimalBits.GetHashCode();
+            }
+
+            DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(decimalBits);
+            if (decoded.Significand == TValue.Zero)
+            {
+                return TDecimal.Zero.GetHashCode();
+            }
+
+            int digits = TDecimal.CountDigits(decoded.Significand);
+            if (digits < TDecimal.Precision)
+            {
+                int numberZeroDigits = TDecimal.Precision - digits;
+                TValue significand = decoded.Significand * TDecimal.Power10(numberZeroDigits);
+                int exponent = decoded.UnbiasedExponent - numberZeroDigits;
+                return HashCode.Combine(decoded.Signed, significand, exponent);
+            }
+            return HashCode.Combine(decoded.Signed, decoded.Significand, decoded.UnbiasedExponent);
+        }
+
         internal struct DecodedDecimalIeee754<TSignificand>
             where TSignificand : IBinaryInteger<TSignificand>
         {
@@ -187,17 +213,22 @@ namespace System
         }
 
         /// <summary>
-        /// Compares two decimal IEEE 754 encoded values using .NET comparison semantics.
-        /// This method intentionally deviates from strict IEEE 754 rules to align with
-        /// .NET requirements for value comparison:
-        /// - NaN values are considered equal to each other (NaN.Equals(NaN) == true).
-        /// - NaN values are ordered consistently relative to non-NaN values to ensure
-        ///   deterministic sorting behavior.
-        /// - The comparison is consistent with Equals and GetHashCode, fulfilling the
-        ///   contract required for use in collections (e.g., Dictionary, SortedSet).
-        /// For finite values, the comparison is based on numeric value, normalizing
-        /// different exponent/significand representations when necessary (e.g., 10e2 == 1e3).
+        /// Compares two IEEE 754 decimal values represented by their raw bit patterns.
         /// </summary>
+        /// <remarks>
+        /// The implementation first handles special cases so the result stays consistent
+        /// with the .NET equality and ordering contract required by <c>Equals</c>,
+        /// <c>GetHashCode</c>, and <c>CompareTo</c>:
+        /// - identical bit patterns compare equal;
+        /// - NaN compares equal to NaN;
+        /// - infinities are handled explicitly;
+        /// - positive and negative zero compare equal.
+        /// After special-case handling, finite non-zero values are unpacked and compared
+        /// by sign first, then by unsigned magnitude.
+        /// Treating NaN as equal to NaN here is intentional so values that are considered
+        /// equal for comparison also behave consistently in hashing, collections, and
+        /// sorting scenarios.
+        /// </remarks>
         internal static int CompareDecimalIeee754<TDecimal, TValue>(TValue currentDecimalBits, TValue otherDecimalBits)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>

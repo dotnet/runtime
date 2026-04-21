@@ -216,7 +216,7 @@ namespace System.Numerics
         /// </summary>
         public override int GetHashCode()
         {
-            return new UInt128(_upper, _lower).GetHashCode();
+            return Number.GetDecimalIeee754HashCode<Decimal128, UInt128>(new UInt128(_upper, _lower));
         }
 
         /// <summary>

@@ -326,11 +326,23 @@ namespace System.Tests
             Assert.Equal(-1, d2.CompareTo(d1));
         }
 
-        [Fact]
-        public static void GetHashCodeTest()
+        [Theory]
+        [MemberData(nameof(GetHashCode_TestData))]
+        public static void GetHashCodeTest(Decimal128 d1, Decimal128 d2)
         {
-            var d = new Decimal128(10, 20);
-            Assert.Equal(d.GetHashCode(), d.GetHashCode());
+            Assert.Equal(d1.GetHashCode(), d2.GetHashCode());
+        }
+
+        public static IEnumerable<object[]> GetHashCode_TestData()
+        {
+            yield return new object[] { Decimal128.Zero, Decimal128.NegativeZero };
+            yield return new object[] { Decimal128.Zero, Decimal128.Zero };
+            yield return new object[] { Decimal128.NaN, Decimal128.NaN };
+            yield return new object[] { new Decimal128(0, 20), new Decimal128(0, 18) };
+            yield return new object[] { new Decimal128(1, 7), new Decimal128(1, 7) };
+            yield return new object[] { new Decimal128(1, 7), new Decimal128(10, 6) };
+            yield return new object[] { Decimal128.PositiveInfinity, Decimal128.PositiveInfinity };
+            yield return new object[] { Decimal128.NegativeInfinity, Decimal128.NegativeInfinity };
         }
 
         [Fact]

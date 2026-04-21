@@ -224,7 +224,7 @@ namespace System.Numerics
         /// </summary>
         public override int GetHashCode()
         {
-            return _value.GetHashCode();
+            return Number.GetDecimalIeee754HashCode<Decimal32, uint>(_value);
         }
 
         /// <summary>

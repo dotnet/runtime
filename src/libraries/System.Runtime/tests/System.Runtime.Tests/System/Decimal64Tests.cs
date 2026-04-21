@@ -312,11 +312,23 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void GetHashCodeTest()
+        [Theory]
+        [MemberData(nameof(GetHashCode_TestData))]
+        public static void GetHashCodeTest(Decimal64 d1, Decimal64 d2)
         {
-            var d = new Decimal64(10, 20);
-            Assert.Equal(d.GetHashCode(), d.GetHashCode());
+            Assert.Equal(d1.GetHashCode(), d2.GetHashCode());
+        }
+
+        public static IEnumerable<object[]> GetHashCode_TestData()
+        {
+            yield return new object[] { Decimal64.Zero, Decimal64.NegativeZero };
+            yield return new object[] { Decimal64.Zero, Decimal64.Zero };
+            yield return new object[] { Decimal64.NaN, Decimal64.NaN };
+            yield return new object[] { new Decimal64(0, 20), new Decimal64(0, 18) };
+            yield return new object[] { new Decimal64(1, 7), new Decimal64(1, 7) };
+            yield return new object[] { new Decimal64(1, 7), new Decimal64(10, 6) };
+            yield return new object[] { Decimal64.PositiveInfinity, Decimal64.PositiveInfinity };
+            yield return new object[] { Decimal64.NegativeInfinity, Decimal64.NegativeInfinity };
         }
 
         [Fact]
