@@ -223,7 +223,7 @@ public unsafe partial interface IDacDbiInterface
     int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr);
 
     [PreserveSig]
-    int EnumerateThreads(nint fpCallback, nint pUserData);
+    int EnumerateThreads(delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int IsThreadMarkedDead(ulong vmThread, Interop.BOOL* pResult);
@@ -544,7 +544,7 @@ public unsafe partial interface IDacDbiInterface
     int GetLoaderHeapMemoryRanges(nint pRanges);
 
     [PreserveSig]
-    int IsModuleMapped(ulong pModule, int* isModuleMapped);
+    int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);
 
     [PreserveSig]
     int MetadataUpdatesApplied(Interop.BOOL* pResult);

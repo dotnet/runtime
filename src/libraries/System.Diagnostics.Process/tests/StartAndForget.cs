@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -18,7 +20,7 @@ namespace System.Diagnostics.Tests
             using Process template = CreateSleepProcess((int)TimeSpan.FromHours(1).TotalMilliseconds);
             int pid = useProcessStartInfo
                 ? Process.StartAndForget(template.StartInfo)
-                : Process.StartAndForget(template.StartInfo.FileName, template.StartInfo.ArgumentList);
+                : Process.StartAndForget(template.StartInfo.FileName, MapToArgumentList(template.StartInfo));
 
             Assert.True(pid > 0);
 
@@ -109,6 +111,50 @@ namespace System.Diagnostics.Tests
             };
 
             Assert.Throws<InvalidOperationException>(() => Process.StartAndForget(startInfo));
+        }
+
+        // RemoteExecutor populates ProcessStartInfo.Arguments, but StartAndForget(fileName, arguments)
+        // takes an argument list, so this helper maps the serialized argument string for this test.
+        private static List<string>? MapToArgumentList(ProcessStartInfo startInfo)
+        {
+            string arguments = startInfo.Arguments;
+            if (string.IsNullOrEmpty(arguments))
+            {
+                return null;
+            }
+
+            List<string> list = new();
+            StringBuilder builder = new();
+            bool isQuoted = false;
+
+            foreach (char c in arguments)
+            {
+                switch (c)
+                {
+                    case '"' when !isQuoted:
+                        isQuoted = true;
+                        break;
+                    case ' ' when !isQuoted:
+                    case '"' when isQuoted:
+                        if (builder.Length > 0)
+                        {
+                            list.Add(builder.ToString());
+                            builder.Clear();
+                        }
+                        isQuoted = false;
+                        break;
+                    default:
+                        builder.Append(c);
+                        break;
+                }
+            }
+
+            if (builder.Length > 0)
+            {
+                list.Add(builder.ToString());
+            }
+
+            return list;
         }
     }
 }
