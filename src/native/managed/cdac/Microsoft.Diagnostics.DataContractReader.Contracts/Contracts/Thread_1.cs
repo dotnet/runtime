@@ -98,7 +98,7 @@ internal readonly struct Thread_1 : IThread
             Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(address);
             firstNestedException = exceptionInfo.PreviousNestedInfo;
 
-            if (exceptionInfo.ThrownObjectHandle != TargetPointer.Null)
+            if (exceptionInfo.ThrownObjectHandle.Handle != TargetPointer.Null)
             {
                 uint exceptionFlags = exceptionInfo.ExceptionFlags;
                 hasUnhandledException = (exceptionFlags & (uint)ExceptionFlags.IsUnhandled) != 0
@@ -119,9 +119,9 @@ internal readonly struct Thread_1 : IThread
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Limit ?? TargetPointer.Null,
             thread.Frame,
             firstNestedException,
-            thread.ExposedObject,
+            thread.ExposedObject.Handle,
             thread.LastThrownObject.Handle,
-            thread.CurrentCustomDebuggerNotification,
+            thread.CurrentCustomDebuggerNotification.Handle,
             thread.LastThrownObjectIsUnhandled != 0,
             hasUnhandledException,
             GetThreadFromLink(thread.LinkNext));
@@ -239,10 +239,10 @@ internal readonly struct Thread_1 : IThread
         if (exceptionInfo == null)
             return TargetPointer.Null;
 
-        if (exceptionInfo.ThrownObjectHandle == TargetPointer.Null || _target.ReadPointer(exceptionInfo.ThrownObjectHandle) == TargetPointer.Null)
+        if (exceptionInfo.ThrownObjectHandle.Handle == TargetPointer.Null || exceptionInfo.ThrownObjectHandle.Object == TargetPointer.Null)
             return TargetPointer.Null;
 
-        return exceptionInfo.ThrownObjectHandle;
+        return exceptionInfo.ThrownObjectHandle.Handle;
     }
 
     byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
@@ -251,7 +251,7 @@ internal readonly struct Thread_1 : IThread
         var (thread, exceptionInfo) = GetThreadExceptionInfo(threadPointer);
         if (exceptionInfo == null)
             return Array.Empty<byte>();
-        Data.ObjectHandle throwableObject = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(exceptionInfo.ThrownObjectHandle);
+        Data.ObjectHandle throwableObject = exceptionInfo.ThrownObjectHandle;
         if (throwableObject.Object != TargetPointer.Null)
         {
             Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(throwableObject.Object);

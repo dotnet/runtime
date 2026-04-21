@@ -277,8 +277,7 @@ namespace System.Runtime.Loader.Tests
             Assert.IsType<InvalidOperationException>(error.InnerException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/125495", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public static void InvalidCastException_DifferentALC_ShowsAssemblyInfo()
         {
             var alc = new AssemblyLoadContext("TestALC");
@@ -299,8 +298,7 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains("TestALC", ice.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/125495", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public static void InvalidCastException_GenericTypeArg_DifferentALC_ShowsAssemblyInfo()
         {
             var alc = new AssemblyLoadContext("TestALC");
