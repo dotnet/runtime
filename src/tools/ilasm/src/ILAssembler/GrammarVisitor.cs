@@ -5623,28 +5623,29 @@ namespace ILAssembler
                     case CILParser.ArrayModifierContext arr:
                         var bounds = VisitBounds(arr.bounds()).Value;
                         suffix.WriteCompressedInteger(bounds.Length);
-                        int lowerBoundsDefined = 0;
-                        int upperBoundsDefined = 0;
-                        foreach (var bound in bounds)
+                        // Count contiguous sizes from the start
+                        int numSizes = 0;
+                        for (int bIdx = 0; bIdx < bounds.Length; bIdx++)
                         {
-                            if (bound.Lower is not null)
-                            {
-                                lowerBoundsDefined++;
-                            }
-                            if (bound.Upper is not null)
-                            {
-                                upperBoundsDefined++;
-                            }
+                            if (bounds[bIdx].Upper is not null)
+                                numSizes = bIdx + 1;
                         }
-                        suffix.WriteCompressedInteger(upperBoundsDefined);
-                        foreach (var bound in bounds)
+                        // Count contiguous lower bounds from the start
+                        int numLoBounds = 0;
+                        for (int bIdx = 0; bIdx < bounds.Length; bIdx++)
                         {
-                            suffix.WriteCompressedInteger(bound.Upper.GetValueOrDefault());
+                            if (bounds[bIdx].Lower is not null)
+                                numLoBounds = bIdx + 1;
                         }
-                        suffix.WriteCompressedInteger(lowerBoundsDefined);
-                        foreach (var bound in bounds)
+                        suffix.WriteCompressedInteger(numSizes);
+                        for (int bIdx = 0; bIdx < numSizes; bIdx++)
                         {
-                            suffix.WriteCompressedSignedInteger(bound.Lower.GetValueOrDefault());
+                            suffix.WriteCompressedInteger(bounds[bIdx].Upper.GetValueOrDefault());
+                        }
+                        suffix.WriteCompressedInteger(numLoBounds);
+                        for (int bIdx = 0; bIdx < numLoBounds; bIdx++)
+                        {
+                            suffix.WriteCompressedSignedInteger(bounds[bIdx].Lower.GetValueOrDefault());
                         }
                         break;
                     case CILParser.GenericArgumentsModifierContext genericArgs:
