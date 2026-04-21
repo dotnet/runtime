@@ -531,6 +531,22 @@ public unsafe class LoaderTests
         Assert.Equal((TargetPointer)(imageBase + 0x2700u), contract.GetILAddr(peAssemblyAddr, 0x4500));
     }
 
+    public static IEnumerable<object[]> IsModuleMappedData()
+    {
+        foreach (object[] archData in new MockTarget.StdArch())
+        {
+            var arch = (MockTarget.Architecture)archData[0];
+            // PE format (0), FLAG_MAPPED (1) → true
+            yield return [arch, 0u, 1u, true];
+            // PE format (0), no flags → false
+            yield return [arch, 0u, 0u, false];
+            // Webcil format (1), FLAG_MAPPED set → still false
+            yield return [arch, 1u, 1u, false];
+            // Webcil format (1), no flags → false
+            yield return [arch, 1u, 0u, false];
+        }
+    }
+
     public static IEnumerable<object[]> GetDebuggerInfoBitsData()
     {
         foreach (var arch in new MockTarget.StdArch())
@@ -539,6 +555,85 @@ public unsafe class LoaderTests
             yield return [DebuggerAllowJitOptsPriv, DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS, arch[0]];
             yield return [DebuggerEncEnabledPriv, DebuggerAssemblyControlFlags.DACF_ENC_ENABLED, arch[0]];
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(IsModuleMappedData))]
+    public void IsModuleMapped_ReturnsExpected(MockTarget.Architecture arch, uint format, uint flags, bool expected)
+    {
+        TargetTestHelpers helpers = new(arch);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.Builder builder = targetBuilder.MemoryBuilder;
+        MockLoaderBuilder loader = new(builder);
+        var allocator = builder.CreateAllocator(0x0010_0000, 0x0020_0000);
+
+        MockLoaderModule module = loader.AddModule();
+
+        var probeExtLayout = helpers.LayoutFields([
+            new(nameof(Data.ProbeExtensionResult.Type), DataType.int32),
+        ]);
+        var peAssemblyLayout = helpers.LayoutFields([
+            new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
+            new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+        ]);
+        var peImageLayout = helpers.LayoutFields([
+            new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
+            new(nameof(Data.PEImage.ProbeExtensionResult), DataType.ProbeExtensionResult, probeExtLayout.Stride),
+        ]);
+        var imageLayoutLayout = helpers.LayoutFields([
+            new(nameof(Data.PEImageLayout.Base), DataType.pointer),
+            new(nameof(Data.PEImageLayout.Size), DataType.uint32),
+            new(nameof(Data.PEImageLayout.Flags), DataType.uint32),
+            new(nameof(Data.PEImageLayout.Format), DataType.uint32),
+        ]);
+
+        MockMemorySpace.HeapFragment Allocate(uint size, string name)
+        {
+            MockMemorySpace.HeapFragment frag = allocator.Allocate(size, name);
+            return frag;
+        }
+
+        var layoutFrag = Allocate(imageLayoutLayout.Stride, "PEImageLayout");
+        helpers.Write(layoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Flags)].Offset, sizeof(uint)), flags);
+        helpers.Write(layoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Format)].Offset, sizeof(uint)), format);
+
+        var peImageFrag = Allocate(peImageLayout.Stride, "PEImage");
+        helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.LoadedImageLayout)].Offset, helpers.PointerSize), layoutFrag.Address);
+
+        var peAssemblyFrag = Allocate(peAssemblyLayout.Stride, "PEAssembly");
+        helpers.WritePointer(peAssemblyFrag.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.PEImage)].Offset, helpers.PointerSize), peImageFrag.Address);
+
+        module.PEAssembly = peAssemblyFrag.Address;
+
+        var types = CreateContractTypes(loader);
+        types[DataType.PEAssembly] = new() { Fields = peAssemblyLayout.Fields, Size = peAssemblyLayout.Stride };
+        types[DataType.PEImage] = new() { Fields = peImageLayout.Fields, Size = peImageLayout.Stride };
+        types[DataType.PEImageLayout] = new() { Fields = imageLayoutLayout.Fields, Size = imageLayoutLayout.Stride };
+        types[DataType.ProbeExtensionResult] = new() { Fields = probeExtLayout.Fields, Size = probeExtLayout.Stride };
+
+        var target = targetBuilder
+            .AddTypes(types)
+            .AddContract<ILoader>(version: "c1")
+            .Build();
+
+        ILoader contract = target.Contracts.Loader;
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(new TargetPointer(module.Address));
+        Assert.Equal(expected, contract.IsModuleMapped(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsModuleMapped_NoPEAssembly_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            moduleAddr = loader.AddModule().Address;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        Assert.False(contract.IsModuleMapped(handle));
     }
 
     [Theory]
@@ -710,5 +805,43 @@ public unsafe class LoaderTests
 
         uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
         Assert.True((rawFlags & IsEditAndContinue) != 0, "IS_EDIT_AND_CONTINUE should be set when DACF_ENC_ENABLED is explicitly requested");
+    }
+
+    public static IEnumerable<object[]> GetCompilerFlagsData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [IsJitOptimizationDisabled | IsEditAndContinue, Interop.BOOL.FALSE, Interop.BOOL.TRUE, arch[0]];
+            yield return [0u, Interop.BOOL.TRUE, Interop.BOOL.FALSE, arch[0]];
+            yield return [IsJitOptimizationDisabled, Interop.BOOL.FALSE, Interop.BOOL.FALSE, arch[0]];
+            yield return [IsEditAndContinue, Interop.BOOL.TRUE, Interop.BOOL.TRUE, arch[0]];
+            // Debugger allows JIT opts but profiler disables them (IS_JIT_OPTIMIZATION_DISABLED wins)
+            yield return [DebuggerAllowJitOptsPriv | IsJitOptimizationDisabled, Interop.BOOL.FALSE, Interop.BOOL.FALSE, arch[0]];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCompilerFlagsData))]
+    public void GetCompilerFlags(uint rawFlags, Interop.BOOL expectedAllowJITOpts, Interop.BOOL expectedEnableEnC, MockTarget.Architecture arch)
+    {
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockLoaderBuilder loader = new(targetBuilder.MemoryBuilder);
+
+        MockLoaderModule module = loader.AddModule(flags: rawFlags);
+        ulong assemblyAddr = module.Assembly;
+
+        var target = targetBuilder
+            .AddTypes(CreateContractTypes(loader))
+            .AddContract<ILoader>(version: "c1")
+            .Build();
+
+        DacDbiImpl dbi = new(target, legacyObj: null);
+
+        Interop.BOOL allowJITOpts;
+        Interop.BOOL enableEnC;
+        int hr = dbi.GetCompilerFlags(assemblyAddr, &allowJITOpts, &enableEnC);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(expectedAllowJITOpts, allowJITOpts);
+        Assert.Equal(expectedEnableEnC, enableEnC);
     }
 }

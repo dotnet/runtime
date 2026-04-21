@@ -348,11 +348,7 @@ protected:
              unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& seg, class RegGraph* graph);
     void genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
     void genEnregisterIncomingStackArgs();
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
-#else
-    void genEnregisterOSRArgsAndLocals();
-#endif
 
     void genHomeStackSegment(unsigned lclNum, const ABIPassingSegment& seg, regNumber initReg, bool* pInitRegZeroed);
     void genHomeSwiftStructStackParameters();
@@ -363,6 +359,7 @@ protected:
     void genClearStackVec3ArgUpperBits();
 #endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
+    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 #if defined(TARGET_ARM64)
     bool genInstrWithConstant(instruction ins,
                               emitAttr    attr,
@@ -384,15 +381,23 @@ protected:
 
     void genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
 
-    void genEpilogRestoreRegPair(regNumber reg1,
-                                 regNumber reg2,
-                                 int       spOffset,
-                                 int       spDelta,
-                                 bool      useSaveNextPair,
-                                 regNumber tmpReg,
-                                 bool*     pTmpRegIsZero);
+    void genRestoreRegPair(regNumber reg1,
+                           regNumber reg2,
+                           regNumber baseReg,
+                           int       spOffset,
+                           int       spDelta,
+                           bool      useSaveNextPair,
+                           regNumber tmpReg,
+                           bool*     pTmpRegIsZero,
+                           bool      reportUnwindData);
 
-    void genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
+    void genRestoreReg(regNumber reg1,
+                       regNumber baseReg,
+                       int       spOffset,
+                       int       spDelta,
+                       regNumber tmpReg,
+                       bool*     pTmpRegIsZero,
+                       bool      reportUnwindData);
 
     // A simple struct to keep register pairs for prolog and epilog.
     struct RegPair
@@ -423,12 +428,11 @@ protected:
     static int genGetSlotSizeForRegsInMask(regMaskTP regsMask);
 
     void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
-    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
+    void genRestoreCalleeSavedRegisterGroup(
+        regMaskTP regsMask, regNumber baseReg, int spDelta, int spOffset, bool reportUnwindData);
 
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
-
-    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool genInstrWithConstant(instruction ins,
@@ -442,17 +446,14 @@ protected:
     void genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData);
 
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset);
-    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset);
-    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
-
-#else
-    void genPushCalleeSavedRegisters();
+    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
+                                            regNumber baseReg,
+                                            int       lowestCalleeSavedOffset,
+                                            bool      reportUnwindData);
 #endif
 
-#if defined(TARGET_AMD64)
-    void genOSRRecordTier0CalleeSavedRegistersAndFrame();
+    void genOSRHandleTier0CalleeSavedRegistersAndFrame();
     void genOSRSaveRemainingCalleeSavedRegisters();
-#endif // TARGET_AMD64
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
