@@ -4829,7 +4829,11 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
     thread->ResetThreadState(Thread::TS_Hijacked);
 
     // Fix up our caller's stack, so it can resume from the hijack correctly
+#if defined(TARGET_ARM64)
     pArgs->ReturnAddress = (size_t)PacStripPtr(thread->m_pvHJRetAddr);
+#else
+    pArgs->ReturnAddress = (size_t)thread->m_pvHJRetAddr;
+#endif //TARGET_ARM64
 
     // Build a frame so that stack crawling can proceed from here back to where
     // we will resume execution.
