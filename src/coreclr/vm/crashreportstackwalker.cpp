@@ -431,13 +431,14 @@ CrashReportRegisterStackWalker()
 
     InProcCrashReportInitialize(dumpName);
 
-    // Set the PAL flag so PROCCreateCrashDumpIfEnabled knows to call the reporter.
-    PROCEnableInProcCrashReport();
-
     InProcCrashReportSetCurrentThreadManagedResolver(CrashReportIsCurrentThreadManaged);
     InProcCrashReportSetStackWalker(CrashReportWalkStack);
     InProcCrashReportSetExceptionResolver(CrashReportGetException);
     InProcCrashReportSetThreadEnumerator(CrashReportEnumerateThreads);
+
+    // Enable the PAL flag last so PROCCreateCrashDumpIfEnabled only observes
+    // the reporter as enabled after all VM callbacks are registered.
+    PROCEnableInProcCrashReport();
 }
 
 #endif // HOST_ANDROID
