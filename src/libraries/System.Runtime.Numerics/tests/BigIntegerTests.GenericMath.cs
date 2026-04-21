@@ -270,28 +270,28 @@ namespace System.Numerics.Tests
 
             // Large positive values: LZC is the leading zero count of the most significant 32-bit word.
             // 2^31 (= int.MaxValue+1): MSW = 0x80000000, LZC = 0
-            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("080000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("080000000", NumberStyles.HexNumber)));
             // uint.MaxValue (0xFFFFFFFF): MSW = 0xFFFFFFFF, LZC = 0
-            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("0FFFFFFFF", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("0FFFFFFFF", NumberStyles.HexNumber)));
             // 2^32 (= uint.MaxValue+1): MSW = 0x00000001, LZC = 31
-            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("0100000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
             // long.MaxValue (0x7FFFFFFFFFFFFFFF): MSW = 0x7FFFFFFF, LZC = 1
-            Assert.Equal((BigInteger)1, BigInteger.LeadingZeroCount(BigInteger.Parse("07FFFFFFFFFFFFFFF", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)1, BigInteger.LeadingZeroCount(BigInteger.Parse("07FFFFFFFFFFFFFFF", NumberStyles.HexNumber)));
             // 2^63 (= long.MaxValue+1): MSW = 0x80000000, LZC = 0
-            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("08000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("08000000000000000", NumberStyles.HexNumber)));
             // ulong.MaxValue (0xFFFFFFFFFFFFFFFF): MSW = 0xFFFFFFFF, LZC = 0
-            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("0FFFFFFFFFFFFFFFF", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("0FFFFFFFFFFFFFFFF", NumberStyles.HexNumber)));
             // 2^64 (= ulong.MaxValue+1): MSW = 0x00000001, LZC = 31
-            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("010000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("010000000000000000", NumberStyles.HexNumber)));
             // 2^127: MSW = 0x80000000, LZC = 0
-            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("080000000000000000000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("080000000000000000000000000000000", NumberStyles.HexNumber)));
             // 2^128: MSW = 0x00000001, LZC = 31
-            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("0100000000000000000000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("0100000000000000000000000000000000", NumberStyles.HexNumber)));
 
             // Large negative values always return 0.
-            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("080000000", Globalization.NumberStyles.HexNumber)));
-            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("0100000000", Globalization.NumberStyles.HexNumber)));
-            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("08000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("080000000", NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("08000000000000000", NumberStyles.HexNumber)));
 
             // Results must be the same on 32-bit and 64-bit platforms.
             Assert.Equal((BigInteger)32, BigInteger.LeadingZeroCount(BigInteger.Zero));
@@ -326,27 +326,27 @@ namespace System.Numerics.Tests
 
             // Large positive values via _bits path.
             // 2^31 (0x80000000): one bit set
-            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("080000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("080000000", NumberStyles.HexNumber)));
             // uint.MaxValue (0xFFFFFFFF): 32 bits set
-            Assert.Equal((BigInteger)32, BigInteger.PopCount(BigInteger.Parse("0FFFFFFFF", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)32, BigInteger.PopCount(BigInteger.Parse("0FFFFFFFF", NumberStyles.HexNumber)));
             // 2^32 (0x100000000): one bit set
-            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("0100000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
             // long.MaxValue (0x7FFFFFFFFFFFFFFF): 63 bits set
-            Assert.Equal((BigInteger)63, BigInteger.PopCount(BigInteger.Parse("07FFFFFFFFFFFFFFF", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)63, BigInteger.PopCount(BigInteger.Parse("07FFFFFFFFFFFFFFF", NumberStyles.HexNumber)));
             // ulong.MaxValue (0xFFFFFFFFFFFFFFFF): 64 bits set
-            Assert.Equal((BigInteger)64, BigInteger.PopCount(BigInteger.Parse("0FFFFFFFFFFFFFFFF", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)64, BigInteger.PopCount(BigInteger.Parse("0FFFFFFFFFFFFFFFF", NumberStyles.HexNumber)));
             // 2^64 (0x10000000000000000): one bit set
-            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("010000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("010000000000000000", NumberStyles.HexNumber)));
             // 2^128: one bit set
-            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("0100000000000000000000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("0100000000000000000000000000000000", NumberStyles.HexNumber)));
 
             // Large negative values via _bits path (two's complement).
             // -(2^31): two's complement of 0x80000000 within 32 bits = 0x80000000 → PopCount = 1
-            Assert.Equal((BigInteger)1, BigInteger.PopCount(-BigInteger.Parse("080000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(-BigInteger.Parse("080000000", NumberStyles.HexNumber)));
             // -(2^32): two's complement of [0x00000000, 0x00000001] = [0x00000000, 0xFFFFFFFF] → PopCount = 32
-            Assert.Equal((BigInteger)32, BigInteger.PopCount(-BigInteger.Parse("0100000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)32, BigInteger.PopCount(-BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
             // -(2^64): one's complement of upper limbs = all 1s, lowest limb = 0 → PopCount depends on limb count
-            Assert.Equal((BigInteger)32, BigInteger.PopCount(-BigInteger.Parse("010000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)32, BigInteger.PopCount(-BigInteger.Parse("010000000000000000", NumberStyles.HexNumber)));
 
             // Mixed-bit negative multiword cases: exercises the PopCount formula
             // PopCount(2^W - m) = W - PopCount(m) - TZC(m) + 1 with non-trivial magnitudePopCount and magnitudeTZC.
@@ -547,23 +547,23 @@ namespace System.Numerics.Tests
 
             // Large positive values via _bits path.
             // 2^31 (0x80000000): 31 trailing zeros
-            Assert.Equal((BigInteger)31, BigInteger.TrailingZeroCount(BigInteger.Parse("080000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)31, BigInteger.TrailingZeroCount(BigInteger.Parse("080000000", NumberStyles.HexNumber)));
             // uint.MaxValue (0xFFFFFFFF): 0 trailing zeros
-            Assert.Equal((BigInteger)0, BigInteger.TrailingZeroCount(BigInteger.Parse("0FFFFFFFF", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.TrailingZeroCount(BigInteger.Parse("0FFFFFFFF", NumberStyles.HexNumber)));
             // 2^32 (0x100000000): 32 trailing zeros
-            Assert.Equal((BigInteger)32, BigInteger.TrailingZeroCount(BigInteger.Parse("0100000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)32, BigInteger.TrailingZeroCount(BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
             // 2^63 (0x8000000000000000): 63 trailing zeros
-            Assert.Equal((BigInteger)63, BigInteger.TrailingZeroCount(BigInteger.Parse("08000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)63, BigInteger.TrailingZeroCount(BigInteger.Parse("08000000000000000", NumberStyles.HexNumber)));
             // 2^64 (0x10000000000000000): 64 trailing zeros
-            Assert.Equal((BigInteger)64, BigInteger.TrailingZeroCount(BigInteger.Parse("010000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)64, BigInteger.TrailingZeroCount(BigInteger.Parse("010000000000000000", NumberStyles.HexNumber)));
             // 2^128: 128 trailing zeros
-            Assert.Equal((BigInteger)128, BigInteger.TrailingZeroCount(BigInteger.Parse("0100000000000000000000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)128, BigInteger.TrailingZeroCount(BigInteger.Parse("0100000000000000000000000000000000", NumberStyles.HexNumber)));
 
             // Large negative values via _bits path (two's complement shares trailing zeros with magnitude).
-            Assert.Equal((BigInteger)31, BigInteger.TrailingZeroCount(-BigInteger.Parse("080000000", Globalization.NumberStyles.HexNumber)));
-            Assert.Equal((BigInteger)32, BigInteger.TrailingZeroCount(-BigInteger.Parse("0100000000", Globalization.NumberStyles.HexNumber)));
-            Assert.Equal((BigInteger)63, BigInteger.TrailingZeroCount(-BigInteger.Parse("08000000000000000", Globalization.NumberStyles.HexNumber)));
-            Assert.Equal((BigInteger)64, BigInteger.TrailingZeroCount(-BigInteger.Parse("010000000000000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)31, BigInteger.TrailingZeroCount(-BigInteger.Parse("080000000", NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)32, BigInteger.TrailingZeroCount(-BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)63, BigInteger.TrailingZeroCount(-BigInteger.Parse("08000000000000000", NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)64, BigInteger.TrailingZeroCount(-BigInteger.Parse("010000000000000000", NumberStyles.HexNumber)));
 
             // Results must be the same on 32-bit and 64-bit platforms.
             Assert.Equal((BigInteger)32, BigInteger.TrailingZeroCount(BigInteger.Zero));
