@@ -1717,7 +1717,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         case GT_BOX:
         case GT_ARR_ADDR:
         case GT_ASSERTION:
-            // BOX/ARR_ADDR are "passthrough" nodes,
+            // BOX/ARR_ADDR/ASSERTION are "passthrough" nodes,
             // and at this point we no longer need them.
             if (node->gtGetOp1() != nullptr)
             {
