@@ -117,7 +117,7 @@ namespace Internal.JitInterface
         }
 
         [DllImport(JitLibrary)]
-        private static extern uint getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte* pInstrumentationData, int ilOffset);
+        private static extern uint getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitLibrary)]
         private static extern uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte* pInstrumentationData, int ilOffset);
@@ -141,7 +141,7 @@ namespace Internal.JitInterface
             ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
         [DllImport(JitSupportLibrary)]
-        private static extern IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)] string message, int messageLength);
+        private static extern IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
 
         [DllImport(JitSupportLibrary)]
         private static extern void JitSetOs(IntPtr jit, CORINFO_OS os);
@@ -489,6 +489,7 @@ namespace Internal.JitInterface
                 _methodCodeNode.ColdCodeNode = _methodColdCodeNode;
             }
 #endif
+
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
 #if READYTORUN
             _methodCodeNode.InitializeColdFrameInfos(_coldFrameInfos);
@@ -843,12 +844,12 @@ namespace Internal.JitInterface
         private Dictionary<Instantiation, IntPtr[]> _instantiationToJitVisibleInstantiation;
         private CORINFO_CLASS_STRUCT_** GetJitInstantiation(Instantiation inst)
         {
-            IntPtr[] jitVisibleInstantiation;
+            IntPtr [] jitVisibleInstantiation;
             _instantiationToJitVisibleInstantiation ??= new Dictionary<Instantiation, IntPtr[]>();
 
             if (!_instantiationToJitVisibleInstantiation.TryGetValue(inst, out jitVisibleInstantiation))
             {
-                jitVisibleInstantiation = new IntPtr[inst.Length];
+                jitVisibleInstantiation =  new IntPtr[inst.Length];
                 for (int i = 0; i < inst.Length; i++)
                     jitVisibleInstantiation[i] = (IntPtr)ObjectToHandle(inst[i]);
                 _instantiationToJitVisibleInstantiation.Add(inst, jitVisibleInstantiation);
@@ -1071,7 +1072,7 @@ namespace Internal.JitInterface
         {
             if (contextStruct == contextFromMethodBeingCompiled())
             {
-                return MethodBeingCompiled.HasInstantiation ? (TypeSystemEntity)MethodBeingCompiled : (TypeSystemEntity)MethodBeingCompiled.OwningType;
+                return MethodBeingCompiled.HasInstantiation ? (TypeSystemEntity)MethodBeingCompiled: (TypeSystemEntity)MethodBeingCompiled.OwningType;
             }
 
             return (TypeSystemEntity)HandleToObject((void*)((nuint)contextStruct & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
@@ -1919,33 +1920,33 @@ namespace Internal.JitInterface
                 }
             }
             else
-                if (result is FieldDesc)
-                {
-                    FieldDesc field = result as FieldDesc;
+            if (result is FieldDesc)
+            {
+                FieldDesc field = result as FieldDesc;
 
-                    // References to literal fields from IL body should never resolve.
-                    // The CLR would throw a MissingFieldException while jitting and so should we.
-                    if (field.IsLiteral)
-                        ThrowHelper.ThrowMissingFieldException(field.OwningType, field.GetName());
+                // References to literal fields from IL body should never resolve.
+                // The CLR would throw a MissingFieldException while jitting and so should we.
+                if (field.IsLiteral)
+                    ThrowHelper.ThrowMissingFieldException(field.OwningType, field.GetName());
 
-                    pResolvedToken.hField = ObjectToHandle(field);
+                pResolvedToken.hField = ObjectToHandle(field);
 
-                    TypeDesc owningClass = field.OwningType;
-                    pResolvedToken.hClass = ObjectToHandle(owningClass);
+                TypeDesc owningClass = field.OwningType;
+                pResolvedToken.hClass = ObjectToHandle(owningClass);
 
 #if !SUPPORT_JIT
-                    _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
+                _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
 #endif
 
 #if !READYTORUN
-                    _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
 #else
                 ValidateSafetyOfUsingTypeEquivalenceOfType(field.FieldType);
 #endif
-                }
-                else
-                {
-                    TypeDesc type = (TypeDesc)result;
+            }
+            else
+            {
+                TypeDesc type = (TypeDesc)result;
 
 #if READYTORUN
                 if (recordToken)
@@ -1954,19 +1955,19 @@ namespace Internal.JitInterface
                 }
 #endif
 
-                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
-                    {
-                        if (type.IsVoid)
-                            ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, methodIL.OwningMethod);
+                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
+                {
+                    if (type.IsVoid)
+                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, methodIL.OwningMethod);
 
-                        type = type.MakeArrayType();
-                    }
-                    pResolvedToken.hClass = ObjectToHandle(type);
+                    type = type.MakeArrayType();
+                }
+                pResolvedToken.hClass = ObjectToHandle(type);
 
 #if !SUPPORT_JIT
-                    _compilation.TypeSystemContext.EnsureLoadableType(type);
+                _compilation.TypeSystemContext.EnsureLoadableType(type);
 #endif
-                }
+            }
 
             pResolvedToken.pTypeSpec = null;
             pResolvedToken.cbTypeSpec = 0;
@@ -2007,10 +2008,10 @@ namespace Internal.JitInterface
                 result = WellKnownType.RuntimeMethodHandle;
             }
             else
-                if (pResolvedToken.hField != null)
-                {
-                    result = WellKnownType.RuntimeFieldHandle;
-                }
+            if (pResolvedToken.hField != null)
+            {
+                result = WellKnownType.RuntimeFieldHandle;
+            }
 
             return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(result));
         }
@@ -2336,7 +2337,7 @@ namespace Internal.JitInterface
         //
         private static bool ShouldAlign8(int dwR8Fields, int dwTotalFields)
         {
-            return dwR8Fields * 2 > dwTotalFields && dwR8Fields >= 2;
+            return dwR8Fields*2>dwTotalFields && dwR8Fields>=2;
         }
 
         private static bool ShouldAlign8(DefType type)
@@ -3733,7 +3734,7 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getThreadTLSIndex"); }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
-        private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
+        private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
         {
             // We never return a method handle from the managed implementation of this method today
             if (pMethod != null)

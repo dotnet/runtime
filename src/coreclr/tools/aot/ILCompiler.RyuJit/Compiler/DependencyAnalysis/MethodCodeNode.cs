@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
             _methodCode = data;
         }
 
-        public MethodDesc Method => _method;
+        public MethodDesc Method =>  _method;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
