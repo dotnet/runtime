@@ -1655,6 +1655,25 @@ extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransit
     if (osrMethodCode == (PCODE)NULL)
     {
         _ASSERTE(!patchpointMustFindOptimizedCode);
+
+        // No transition. Return the address past the jump instruction
+        // at the call site so the JIT's unconditional jump skips over itself
+        // and resumes Tier0 execution.
+#if defined(TARGET_AMD64)
+        // jmp rax = FF E0 (2 bytes)
+        osrMethodCode = ip + 2;
+#elif defined(TARGET_ARM64)
+        // br xN = 4 bytes
+        osrMethodCode = ip + 4;
+#elif defined(TARGET_LOONGARCH64)
+        // jirl r0, rN, 0 = 4 bytes
+        osrMethodCode = ip + 4;
+#elif defined(TARGET_RISCV64)
+        // jalr x0, xN, 0 = 4 bytes
+        osrMethodCode = ip + 4;
+#else
+#error "Unsupported platform for patchpoint skip address"
+#endif
         goto DONE;
     }
 
