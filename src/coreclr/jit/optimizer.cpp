@@ -2150,6 +2150,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
                 relopClone = gtReverseCond(relopClone);
             }
             relopClone->gtFlags &= ~GTF_RELOP_JMP_USED;
+            relopClone->gtFlags |= GTF_DONT_CSE;
+
             GenTree*   assertion = gtNewOperNode(GT_ASSERTION, TYP_VOID, relopClone);
             Statement* stmt      = fgNewStmtFromTree(assertion, condBlock->lastStmt()->GetDebugInfo());
             fgInsertStmtAtBeg(stayInLoopSucc, stmt);
