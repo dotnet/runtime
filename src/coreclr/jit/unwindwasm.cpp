@@ -77,6 +77,8 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
     assert(!compGeneratingProlog);
     assert(!compGeneratingEpilog);
 
+    GetEmitter()->emitUpdateFuncletLocations();
+
     for (FuncInfoDsc* const func : Funcs())
     {
         unwindEmitFunc(func, pHotCode, pColdCode);
@@ -88,38 +90,17 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 //    the main function or funclet.
 //
 // Arguments:
-//    func      - The main function or funclet to reserve unwind info for.
+//    func      - The main function or funclet to report unwind info for.
 //    pHotCode  - Pointer to the beginning of the memory with the function and funclet hot  code.
 //    pColdCode - Pointer to the beginning of the memory with the function and funclet cold code.
 //
+// Notes:
+//   For Wasm the unwind extent describes the entire span of Wasm code for the method or funclet.
+//
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
-    UNATIVE_OFFSET startOffset;
-    UNATIVE_OFFSET endOffset;
-
-    BasicBlock* const firstBlock = func->GetStartBlock(this);
-    emitLocation      startLoc(ehEmitCookie(firstBlock));
-
-    if (startLoc.GetIG() == nullptr)
-    {
-        startOffset = 0;
-    }
-    else
-    {
-        startOffset = startLoc.CodeOffset(GetEmitter());
-    }
-
-    BasicBlock* const blockAfterLast = func->GetLastBlock(this)->Next();
-
-    if (blockAfterLast == nullptr)
-    {
-        endOffset = info.compNativeCodeSize;
-    }
-    else
-    {
-        emitLocation endLoc(ehEmitCookie(blockAfterLast));
-        endOffset = endLoc.CodeOffset(GetEmitter());
-    }
+    UNATIVE_OFFSET startOffset = func->startLoc->CodeOffset(GetEmitter());
+    UNATIVE_OFFSET endOffset   = func->endLoc->CodeOffset(GetEmitter());
 
     // Wasm does not have cold code.
     //

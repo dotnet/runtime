@@ -1714,6 +1714,15 @@ struct FuncInfoDsc
     regNumber funFramePointerReg;
 #endif
 
+    EHblkDsc*            GetEHDesc(Compiler* comp) const;
+    BasicBlock*          GetStartBlock(Compiler* comp) const;
+    BasicBlock*          GetLastBlock(Compiler* comp) const;
+    BasicBlockRangeList  Blocks(Compiler* comp) const;
+    unsigned             GetFuncletIdx(Compiler* comp) const;
+    bool                 IsFunclet() const { return funKind != FUNC_ROOT; }
+    bool                 IsMethod() const { return funKind == FUNC_ROOT; }
+
+
 #if defined(TARGET_WASM)
     struct WasmLocalsDecl
     {
@@ -1724,16 +1733,11 @@ struct FuncInfoDsc
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
     unsigned funWasmFrameSize;
     bool needsUnwindableFrame;
-    void ensureUnwindableFrame(Compiler* comp);
-#endif // defined(TARGET_WASM)  
+    emitLocation* startLoc;
+    emitLocation* endLoc;
 
-    EHblkDsc*            GetEHDesc(Compiler* comp) const;
-    BasicBlock*          GetStartBlock(Compiler* comp) const;
-    BasicBlock*          GetLastBlock(Compiler* comp) const;
-    BasicBlockRangeList  Blocks(Compiler* comp) const;
-    unsigned             GetFuncletIdx(Compiler* comp) const;
-    bool                 IsFunclet() const { return funKind != FUNC_ROOT; }
-    bool                 IsMethod() const { return funKind == FUNC_ROOT; }
+    void ensureUnwindableFrame(Compiler* comp);
+#endif // defined(TARGET_WASM)
 
 #if defined(TARGET_AMD64)
 
