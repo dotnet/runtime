@@ -7307,9 +7307,7 @@ void CodeGen::genPatchpoint(GenTreeOp* treeNode)
 
     genConsumeOperands(treeNode);
 
-    CorInfoHelpFunc helper = treeNode->OperIs(GT_PATCHPOINT)
-        ? CORINFO_HELP_PATCHPOINT
-        : CORINFO_HELP_PATCHPOINT_FORCED;
+    CorInfoHelpFunc helper = treeNode->OperIs(GT_PATCHPOINT) ? CORINFO_HELP_PATCHPOINT : CORINFO_HELP_PATCHPOINT_FORCED;
 
     genEmitHelperCall(helper, 0, EA_UNKNOWN);
 
