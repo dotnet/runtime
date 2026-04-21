@@ -10,10 +10,10 @@
 
 #include <stddef.h>
 
-typedef bool (*CrashJsonOutputCallback)(const char* buffer, size_t len, void* ctx);
+using CrashJsonOutputCallback = bool (*)(const char* buffer, size_t len, void* ctx);
 
 // Small streaming buffer used when serializing the crash report JSON.
-#define CRASH_JSON_BUFFER_SIZE (4 * 1024)
+static constexpr size_t CRASH_JSON_BUFFER_SIZE = 4 * 1024;
 
 class CrashJsonWriter
 {

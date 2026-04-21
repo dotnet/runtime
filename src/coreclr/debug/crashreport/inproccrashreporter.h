@@ -17,11 +17,11 @@ void InProcCrashReportInitialize(const char* dumpPath);
 // All arguments come from the signal handler and are signal-safe to read.
 void InProcCrashReportGenerate(int signal, siginfo_t* siginfo, void* context);
 
-typedef bool (*InProcCrashReportIsManagedThreadCallback)();
+using InProcCrashReportIsManagedThreadCallback = bool (*)();
 
 void InProcCrashReportSetCurrentThreadManagedResolver(InProcCrashReportIsManagedThreadCallback callback);
 
-typedef void (*InProcCrashReportFrameCallback)(
+using InProcCrashReportFrameCallback = void (*)(
     uint64_t ip,
     uint64_t stackPointer,
     const char* methodName,
@@ -35,27 +35,27 @@ typedef void (*InProcCrashReportFrameCallback)(
     const char* moduleGuid,
     void* ctx);
 
-typedef void (*InProcCrashReportWalkStackCallback)(
+using InProcCrashReportWalkStackCallback = void (*)(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx);
 
 void InProcCrashReportSetStackWalker(InProcCrashReportWalkStackCallback callback);
 
-typedef bool (*InProcCrashReportGetExceptionCallback)(
+using InProcCrashReportGetExceptionCallback = bool (*)(
     char* exceptionTypeBuf,
     size_t exceptionTypeBufSize,
     uint32_t* hresult);
 
 void InProcCrashReportSetExceptionResolver(InProcCrashReportGetExceptionCallback callback);
 
-typedef void (*InProcCrashReportThreadCallback)(
+using InProcCrashReportThreadCallback = void (*)(
     uint64_t osThreadId,
     bool isCrashThread,
     const char* exceptionType,
     uint32_t exceptionHResult,
     void* ctx);
 
-typedef void (*InProcCrashReportEnumerateThreadsCallback)(
+using InProcCrashReportEnumerateThreadsCallback = void (*)(
     uint64_t crashingTid,
     InProcCrashReportThreadCallback threadCallback,
     InProcCrashReportFrameCallback frameCallback,
