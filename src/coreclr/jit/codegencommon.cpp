@@ -7313,11 +7313,14 @@ void CodeGen::genPatchpoint(GenTreeOp* treeNode)
 
     genEmitHelperCall(helper, 0, EA_UNKNOWN);
 
-    // The instructions below (RSP adjustment + indirect jump) must not be
-    // interrupted by return-address hijacking or a GC suspension.  Wrap them
-    // in a no-GC instruction group so the runtime will not stop the thread
-    // in the middle of the sequence.
-    GetEmitter()->emitDisableGC();
+    // On non-x64 targets, mark the method as having tail calls so that
+    // return-address hijacking is disabled — the hijacker cannot know
+    // whether the return address has been modified by the patchpoint helper.
+    // On x64 this is unnecessary because the return address is always at
+    // the same stack slot regardless of tail calls.
+#ifndef TARGET_XARCH
+    SetHasTailCalls(true);
+#endif
 
     // Jump to the address returned by the patchpoint helper.
     // Must not use INS_tail_i_jmp: it is a REX-prefixed jump that the
@@ -7347,8 +7350,6 @@ void CodeGen::genPatchpoint(GenTreeOp* treeNode)
 #else
 #error "Unsupported target architecture for GT_PATCHPOINT"
 #endif
-
-    GetEmitter()->emitEnableGC();
 }
 
 //------------------------------------------------------------------------
