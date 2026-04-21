@@ -8025,13 +8025,13 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class SecAttrBlobContext : ParserRuleContext {
-		[System.Diagnostics.DebuggerNonUserCode] public TypeSpecContext typeSpec() {
-			return GetRuleContext<TypeSpecContext>(0);
-		}
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode SQSTRING() { return GetToken(CILParser.SQSTRING, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public CustomBlobNVPairsContext customBlobNVPairs() {
 			return GetRuleContext<CustomBlobNVPairsContext>(0);
 		}
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode SQSTRING() { return GetToken(CILParser.SQSTRING, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public TypeSpecContext typeSpec() {
+			return GetRuleContext<TypeSpecContext>(0);
+		}
 		public SecAttrBlobContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
 		{
@@ -8057,24 +8057,24 @@ public partial class CILParser : Parser {
 				EnterOuterAlt(_localctx, 1);
 				{
 				State = 1484;
-				typeSpec();
+				Match(T__37);
 				State = 1485;
-				Match(T__34);
+				Match(SQSTRING);
 				State = 1486;
-				Match(T__15);
+				Match(T__34);
 				State = 1487;
-				customBlobNVPairs();
+				Match(T__15);
 				State = 1488;
+				customBlobNVPairs();
+				State = 1489;
 				Match(T__16);
 				}
 				break;
 			case 2:
 				EnterOuterAlt(_localctx, 2);
 				{
-				State = 1490;
-				Match(T__37);
 				State = 1491;
-				Match(SQSTRING);
+				typeSpec();
 				State = 1492;
 				Match(T__34);
 				State = 1493;
@@ -17669,11 +17669,11 @@ public partial class CILParser : Parser {
 		175,1,0,0,0,1472,1483,1,0,0,0,1473,1474,3,178,89,0,1474,1475,5,27,0,0,
 		1475,1477,1,0,0,0,1476,1473,1,0,0,0,1477,1480,1,0,0,0,1478,1476,1,0,0,
 		0,1478,1479,1,0,0,0,1479,1481,1,0,0,0,1480,1478,1,0,0,0,1481,1483,3,178,
-		89,0,1482,1472,1,0,0,0,1482,1478,1,0,0,0,1483,177,1,0,0,0,1484,1485,3,
-		146,73,0,1485,1486,5,35,0,0,1486,1487,5,16,0,0,1487,1488,3,56,28,0,1488,
-		1489,5,17,0,0,1489,1498,1,0,0,0,1490,1491,5,38,0,0,1491,1492,5,263,0,0,
-		1492,1493,5,35,0,0,1493,1494,5,16,0,0,1494,1495,3,56,28,0,1495,1496,5,
-		17,0,0,1496,1498,1,0,0,0,1497,1484,1,0,0,0,1497,1490,1,0,0,0,1498,179,
+		89,0,1482,1472,1,0,0,0,1482,1478,1,0,0,0,1483,177,1,0,0,0,1484,1485,5,
+		38,0,0,1485,1486,5,263,0,0,1486,1487,5,35,0,0,1487,1488,5,16,0,0,1488,
+		1489,3,56,28,0,1489,1490,5,17,0,0,1490,1498,1,0,0,0,1491,1492,3,146,73,
+		0,1492,1493,5,35,0,0,1493,1494,5,16,0,0,1494,1495,3,56,28,0,1495,1496,
+		5,17,0,0,1496,1498,1,0,0,0,1497,1484,1,0,0,0,1497,1491,1,0,0,0,1498,179,
 		1,0,0,0,1499,1500,3,182,91,0,1500,1501,5,27,0,0,1501,1503,1,0,0,0,1502,
 		1499,1,0,0,0,1503,1506,1,0,0,0,1504,1502,1,0,0,0,1504,1505,1,0,0,0,1505,
 		1507,1,0,0,0,1506,1504,1,0,0,0,1507,1508,3,182,91,0,1508,181,1,0,0,0,1509,
