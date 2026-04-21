@@ -140,7 +140,7 @@ private:
 
         if (ppOsrMethodLclNum == BAD_VAR_NUM)
         {
-            ppOsrMethodLclNum                            = compiler->lvaGrabTemp(true DEBUGARG("patchpoint osr method"));
+            ppOsrMethodLclNum = compiler->lvaGrabTemp(true DEBUGARG("patchpoint osr method"));
             compiler->lvaTable[ppOsrMethodLclNum].lvType = TYP_I_IMPL;
         }
 
@@ -165,7 +165,7 @@ private:
         block->SetCond(trueEdge, falseEdge);
 
         // helperBlock: if OSR code is NULL, goto remainder; else fall to transitionBlock
-        FlowEdge* const helperToRemainder = compiler->fgAddRefPred(remainderBlock, helperBlock);
+        FlowEdge* const helperToRemainder  = compiler->fgAddRefPred(remainderBlock, helperBlock);
         FlowEdge* const helperToTransition = compiler->fgAddRefPred(transitionBlock, helperBlock);
         helperToRemainder->setLikelihood(HIGH_PROBABILITY / 100.0);
         helperToTransition->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
@@ -270,7 +270,7 @@ private:
 
         if (ppOsrMethodLclNum == BAD_VAR_NUM)
         {
-            ppOsrMethodLclNum                            = compiler->lvaGrabTemp(true DEBUGARG("patchpoint osr method"));
+            ppOsrMethodLclNum = compiler->lvaGrabTemp(true DEBUGARG("patchpoint osr method"));
             compiler->lvaTable[ppOsrMethodLclNum].lvType = TYP_I_IMPL;
         }
 
@@ -279,7 +279,8 @@ private:
         // PCODE target = PartialCompilationPatchpointHelper(ilOffset);
         //
         GenTree*     ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTreeCall* helperCall = compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_I_IMPL, ilOffsetNode);
+        GenTreeCall* helperCall =
+            compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_I_IMPL, ilOffsetNode);
 
         GenTree* osrMethodStore = compiler->gtNewStoreLclVarNode(ppOsrMethodLclNum, helperCall);
         compiler->fgNewStmtAtEnd(block, osrMethodStore);
