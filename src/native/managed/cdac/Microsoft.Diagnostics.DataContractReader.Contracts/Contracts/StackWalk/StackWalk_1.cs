@@ -697,9 +697,16 @@ internal partial class StackWalk_1 : IStackWalk
         ctx1.FillFromBuffer(context1);
         ctx2.FillFromBuffer(context2);
 
-        return ctx1.StackPointer == ctx2.StackPointer
-            && ctx1.FramePointer == ctx2.FramePointer
-            && ctx1.InstructionPointer == ctx2.InstructionPointer;
+        return _target.Architecture switch
+        {
+            RuntimeInfoArchitecture.Arm =>
+                ctx1.StackPointer == ctx2.StackPointer
+                && ctx1.InstructionPointer == ctx2.InstructionPointer,
+            _ =>
+                ctx1.StackPointer == ctx2.StackPointer
+                && ctx1.FramePointer == ctx2.FramePointer
+                && ctx1.InstructionPointer == ctx2.InstructionPointer,
+        };
     }
 
     string IStackWalk.GetFrameName(TargetPointer frameIdentifier)

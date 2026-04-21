@@ -29,8 +29,9 @@ TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle);
 // Gets the instruction pointer from the current frame's context.
 TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle);
 
-// Compares two raw thread contexts for equality of the control registers (stack pointer, frame pointer, instruction pointer).
-// Returns true if SP, FP, and IP are equal. Does not compare any other registers.
+// Compares two raw thread contexts for equality of the architecture's control registers.
+// Typically this means stack pointer, frame pointer, and instruction pointer; however, on ARM32
+// the native DAC compares only SP and IP/PC and does not require frame pointer equality.
 bool AreContextsEqual(byte[] context1, byte[] context2);
 ```
 
