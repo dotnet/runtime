@@ -295,14 +295,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // SWIFT_SUPPORT
 
-        case GT_RETURN_SUSPEND:
-            genReturnSuspend(treeNode->AsUnOp());
-            break;
-
-        case GT_NONLOCAL_JMP:
-            genNonLocalJmp(treeNode->AsUnOp());
-            break;
-
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());
@@ -506,6 +498,18 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_CATCH_ARG:
             genCodeForCatchArg(treeNode);
             break;
+        case GT_LABEL:
+            genPendingCallLabel = genCreateTempLabel();
+#if defined(TARGET_ARM)
+            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
+#else
+            emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
+#endif
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
 
         case GT_ASYNC_CONTINUATION:
             genCodeForAsyncContinuation(treeNode);
@@ -515,17 +519,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genAsyncResumeInfo(treeNode->AsVal());
             break;
 
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
+            break;
+
         case GT_FTN_ENTRY:
             genFtnEntry(treeNode);
             break;
 
-        case GT_LABEL:
-            genPendingCallLabel = genCreateTempLabel();
-#if defined(TARGET_ARM)
-            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
-#else
-            emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
-#endif
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
             break;
 
         case GT_STORE_BLK:
@@ -549,10 +552,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_IL_OFFSET:
             // Do nothing; this node is a marker for debug info.
-            break;
-
-        case GT_RECORD_ASYNC_RESUME:
-            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         default:

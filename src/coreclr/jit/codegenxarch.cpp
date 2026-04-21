@@ -1925,14 +1925,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // SWIFT_SUPPORT
 
-        case GT_RETURN_SUSPEND:
-            genReturnSuspend(treeNode->AsUnOp());
-            break;
-
-        case GT_NONLOCAL_JMP:
-            genNonLocalJmp(treeNode->AsUnOp());
-            break;
-
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());
@@ -2110,21 +2102,33 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForCatchArg(treeNode);
             break;
 
-        case GT_ASYNC_CONTINUATION:
-            genCodeForAsyncContinuation(treeNode);
-            break;
-
         case GT_LABEL:
             genPendingCallLabel = genCreateTempLabel();
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
             break;
 
         case GT_ASYNC_RESUME_INFO:
             genAsyncResumeInfo(treeNode->AsVal());
             break;
 
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
+            break;
+
         case GT_FTN_ENTRY:
             genFtnEntry(treeNode);
+            break;
+
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
             break;
 
         case GT_STORE_BLK:
@@ -2148,10 +2152,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_IL_OFFSET:
             // Do nothing; this node is a marker for debug info.
-            break;
-
-        case GT_RECORD_ASYNC_RESUME:
-            genRecordAsyncResume(treeNode->AsVal());
             break;
 
 #if defined(TARGET_AMD64)
