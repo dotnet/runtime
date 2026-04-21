@@ -59,7 +59,13 @@ public sealed class DocumentCompiler
             };
 
             CILParser parser = new(new CommonTokenStream(preprocessor));
+            parser.RemoveErrorListeners();
+            var parserDiagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+            parser.AddErrorListener(new ParserErrorListener(parserDiagnostics, loadedDocuments));
             var result = parser.decls();
+
+            // Add parser diagnostics to the main list
+            diagnostics.AddRange(parserDiagnostics);
 
             visitor ??= new GrammarVisitor(loadedDocuments, options, resourceLocator);
 
@@ -84,5 +90,31 @@ public sealed class DocumentCompiler
         // In error-tolerant mode, return image even with errors
         bool returnImage = !anyErrors || options.ErrorTolerant;
         return (diagnostics.ToImmutable(), returnImage ? image.Image : null);
+    }
+}
+
+internal sealed class ParserErrorListener : Antlr4.Runtime.IAntlrErrorListener<IToken>
+{
+    private readonly ImmutableArray<Diagnostic>.Builder _diagnostics;
+    private readonly Dictionary<string, SourceText> _loadedDocuments;
+
+    public ParserErrorListener(ImmutableArray<Diagnostic>.Builder diagnostics, Dictionary<string, SourceText> loadedDocuments)
+    {
+        _diagnostics = diagnostics;
+        _loadedDocuments = loadedDocuments;
+    }
+
+    public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+    {
+        var sourceName = offendingSymbol?.TokenSource?.SourceName ?? "";
+        var span = new SourceSpan(offendingSymbol?.StartIndex ?? 0, offendingSymbol is null ? 0 : offendingSymbol.StopIndex - offendingSymbol.StartIndex);
+        if (_loadedDocuments.TryGetValue(sourceName, out var sourceText))
+        {
+            _diagnostics.Add(new Diagnostic("Parser", DiagnosticSeverity.Warning, $"line {line}:{charPositionInLine} {msg}", new Location(span, sourceText)));
+        }
+        else
+        {
+            _diagnostics.Add(new Diagnostic("Parser", DiagnosticSeverity.Warning, $"line {line}:{charPositionInLine} {msg}", new Location(span, new SourceText("", sourceName))));
+        }
     }
 }
