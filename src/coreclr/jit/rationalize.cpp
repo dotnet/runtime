@@ -1726,6 +1726,27 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
             break;
 
+        case GT_ASSERTION:
+        {
+            bool               isClosed    = false;
+            unsigned           sideEffects = 0;
+            LIR::ReadOnlyRange range       = BlockRange().GetTreeRange(node->gtGetOp1(), &isClosed, &sideEffects);
+            if (isClosed && ((sideEffects & GTF_SIDE_EFFECT) == 0))
+            {
+                BlockRange().Delete(m_compiler, m_block, std::move(range));
+                BlockRange().Remove(node);
+                return Compiler::WALK_CONTINUE;
+            }
+
+            BlockRange().Remove(node);
+            node = node->gtGetOp1();
+            if (node->IsValue())
+            {
+                node->SetUnusedValue();
+            }
+            break;
+        }
+
         case GT_GCPOLL:
         {
             // GCPOLL is essentially a no-op, we used it as a hint for fgCreateGCPoll
@@ -1923,14 +1944,6 @@ PhaseStatus Rationalizer::DoPhase()
             assert(statement->GetTreeList()->gtPrev == nullptr);
             assert(statement->GetRootNode() != nullptr);
             assert(statement->GetRootNode()->gtNext == nullptr);
-
-            // Drop GT_ASSERTION statements; they are HIR-only seeds for assertion prop and
-            // should not reach LIR. Normally assertion prop removes them; this is a backstop
-            // for the case where assertion prop is disabled.
-            if (statement->GetRootNode()->OperIs(GT_ASSERTION))
-            {
-                continue;
-            }
 
             if (!statement->IsPhiDefnStmt()) // Note that we get rid of PHI nodes here.
             {

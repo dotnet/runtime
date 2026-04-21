@@ -2132,54 +2132,25 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     // for the cyclic value numbers that loop inversion creates on phi merges, which can
     // otherwise prevent later phases (assertion prop, range check) from proving that
     // the guard still holds inside the loop body.
+    //
+    auto isSuitableRelopOp = [this](GenTree* node) -> bool {
+        return node->IsInvariant() || (node->OperIs(GT_LCL_VAR) && !lvaVarAddrExposed(node->AsLclVar()->GetLclNum()));
+    };
+
+    GenTree* origRelop = condBlock->lastStmt()->GetRootNode()->gtGetOp1();
+    if (origRelop->OperIsCmpCompare() && isSuitableRelopOp(origRelop->gtGetOp1()) &&
+        isSuitableRelopOp(origRelop->gtGetOp2()))
     {
-        GenTree* condRoot = condBlock->lastStmt()->GetRootNode();
-        assert(condRoot->OperIs(GT_JTRUE));
-        GenTree* origRelop = condRoot->gtGetOp1();
-
-        auto isInvariant = [](Compiler* comp, GenTree* node) -> bool {
-            if (!node->TypeIs(TYP_INT))
-                return false;
-            if (node->OperIs(GT_LCL_VAR))
-            {
-                unsigned lclNum = node->AsLclVar()->GetLclNum();
-                return !comp->lvaTable[lclNum].IsAddressExposed();
-            }
-            return node->IsInvariant();
-        };
-
-        // Only seed the assertion for ordering relops on simple operands. EQ/NE
-        // (especially against masks) are not useful as loop-guard assertions and
-        // can interact poorly with later phases.
-        bool isSupportedRelop = origRelop->OperIs(GT_LT, GT_LE, GT_GT, GT_GE) &&
-                                isInvariant(this, origRelop->gtGetOp1()) && isInvariant(this, origRelop->gtGetOp2());
-
-        if (isSupportedRelop)
+        GenTree* relopClone = gtCloneExpr(origRelop);
+        if (trueExits)
         {
-            GenTree* relopClone = gtCloneExpr(origRelop);
-            if (trueExits)
-            {
-                relopClone = gtReverseCond(relopClone);
-            }
-            relopClone->gtFlags &= ~GTF_RELOP_JMP_USED;
-            // GT_ASSERTION is a pure marker: the relop is known true. Strip any
-            // effect flags carried over from the JTRUE clone so downstream phases
-            // (CSE, range check, block compaction, copy prop) don't treat it as
-            // having observable effects.
-            relopClone->gtFlags &= ~GTF_ALL_EFFECT;
-            GenTree*   assertion = gtNewOperNode(GT_ASSERTION, TYP_VOID, relopClone);
-            Statement* stmt      = fgNewStmtAtBeg(stayInLoopSucc, assertion, condBlock->lastStmt()->GetDebugInfo());
-            if (fgNodeThreading == NodeThreading::AllTrees)
-            {
-                gtSetStmtInfo(stmt);
-                fgSetStmtSeq(stmt);
-            }
-            else if (fgNodeThreading == NodeThreading::AllLocals)
-            {
-                fgSequenceLocals(stmt);
-            }
-            JITDUMP("Inserted GT_ASSERTION at start of " FMT_BB " to record loop guard\n", stayInLoopSucc->bbNum);
+            relopClone = gtReverseCond(relopClone);
         }
+        relopClone->gtFlags &= ~GTF_RELOP_JMP_USED;
+        GenTree*   assertion = gtNewOperNode(GT_ASSERTION, TYP_VOID, relopClone);
+        Statement* stmt      = fgNewStmtFromTree(assertion, condBlock->lastStmt()->GetDebugInfo());
+        fgInsertStmtAtBeg(stayInLoopSucc, stmt);
+        JITDUMP("Inserted GT_ASSERTION at start of " FMT_BB " to record loop guard\n", stayInLoopSucc->bbNum);
     }
 
     return true;
