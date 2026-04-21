@@ -148,7 +148,7 @@ namespace System.Security.Cryptography
 
                 if (pkey is not null)
                 {
-                    keySize = Interop.Crypto.EvpPKeyBits(pkey);
+                    keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(pkey);
                     return pkey;
                 }
             }
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography
 
                 if (pkey is not null)
                 {
-                    keySize = Interop.Crypto.EvpPKeyBits(pkey);
+                    keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(pkey);
                     return pkey;
                 }
             }
@@ -198,7 +198,7 @@ namespace System.Security.Cryptography
 
                 if (pkey is not null)
                 {
-                    keySize = Interop.Crypto.EvpPKeyBits(pkey);
+                    keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(pkey);
                     return pkey;
                 }
             }

@@ -413,6 +413,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EC_GROUP_method_of) \
     REQUIRED_FUNCTION(EC_GROUP_new) \
     LIGHTUP_FUNCTION(EC_GROUP_new_by_curve_name) \
+    REQUIRED_FUNCTION(EC_GROUP_new_curve_GFp) \
     REQUIRED_FUNCTION(EC_GROUP_set_curve_GFp) \
     REQUIRED_FUNCTION(EC_GROUP_set_generator) \
     REQUIRED_FUNCTION(EC_GROUP_set_seed) \
@@ -434,6 +435,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EC_POINT_get_affine_coordinates_GFp) \
     REQUIRED_FUNCTION(EC_POINT_mul) \
     REQUIRED_FUNCTION(EC_POINT_new) \
+    REQUIRED_FUNCTION(EC_POINT_point2oct) \
     REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates_GFp) \
     LIGHTUP_FUNCTION(EC_POINT_oct2point) \
     LIGHTUP_FUNCTION(ENGINE_by_id) \
@@ -862,6 +864,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(X509_VERIFY_PARAM_set_time) \
     LIGHTUP_FUNCTION(EC_GF2m_simple_method) \
     LIGHTUP_FUNCTION(EC_GROUP_get_curve_GF2m) \
+    LIGHTUP_FUNCTION(EC_GROUP_new_curve_GF2m) \
     LIGHTUP_FUNCTION(EC_GROUP_set_curve_GF2m) \
     LIGHTUP_FUNCTION(EC_POINT_get_affine_coordinates_GF2m) \
     LIGHTUP_FUNCTION(EC_POINT_set_affine_coordinates_GF2m) \
@@ -980,6 +983,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EC_GROUP_method_of EC_GROUP_method_of_ptr
 #define EC_GROUP_new EC_GROUP_new_ptr
 #define EC_GROUP_new_by_curve_name EC_GROUP_new_by_curve_name_ptr
+#define EC_GROUP_new_curve_GFp EC_GROUP_new_curve_GFp_ptr
 #define EC_GROUP_set_curve_GFp EC_GROUP_set_curve_GFp_ptr
 #define EC_GROUP_set_generator EC_GROUP_set_generator_ptr
 #define EC_GROUP_set_seed EC_GROUP_set_seed_ptr
@@ -1001,6 +1005,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EC_POINT_get_affine_coordinates_GFp EC_POINT_get_affine_coordinates_GFp_ptr
 #define EC_POINT_mul EC_POINT_mul_ptr
 #define EC_POINT_new EC_POINT_new_ptr
+#define EC_POINT_point2oct EC_POINT_point2oct_ptr
 #define EC_POINT_set_affine_coordinates_GFp EC_POINT_set_affine_coordinates_GFp_ptr
 #define EC_POINT_oct2point EC_POINT_oct2point_ptr
 #define ENGINE_by_id ENGINE_by_id_ptr
@@ -1434,6 +1439,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define X509_VERIFY_PARAM_set_time X509_VERIFY_PARAM_set_time_ptr
 #define EC_GF2m_simple_method EC_GF2m_simple_method_ptr
 #define EC_GROUP_get_curve_GF2m EC_GROUP_get_curve_GF2m_ptr
+#define EC_GROUP_new_curve_GF2m EC_GROUP_new_curve_GF2m_ptr
 #define EC_GROUP_set_curve_GF2m EC_GROUP_set_curve_GF2m_ptr
 #define EC_POINT_get_affine_coordinates_GF2m EC_POINT_get_affine_coordinates_GF2m_ptr
 #define EC_POINT_set_affine_coordinates_GF2m EC_POINT_set_affine_coordinates_GF2m_ptr

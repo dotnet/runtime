@@ -98,6 +98,18 @@ PALEXPORT int32_t CryptoNative_EvpPKeyGenerateByEcKeyOid(
     const char* oid);
 
 /*
+Returns 1 if the EVP_PKEY EC key uses explicit encoding, 0 otherwise.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(const EVP_PKEY* pkey);
+
+/*
+Returns the field degree (number of bits) of the EC group for the given EVP_PKEY.
+For prime fields this is BN_num_bits(p), for binary fields it is BN_num_bits(polynomial) - 1.
+Returns 0 on failure.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyGetEcFieldDegree(const EVP_PKEY* pkey);
+
+/*
 Creates a new EVP_PKEY for a named EC curve using the provided key parameters.
 qx/qy are the public key coordinates, d is the optional private key.
 Returns 1 upon success, -1 if oid was not found, otherwise 0.

@@ -217,11 +217,12 @@ internal static partial class Interop
             int rc = CryptoNative_EvpPKeyGetEcGroupNid(pkey, out int nidCurveName);
             if (rc == 1)
             {
-                // Key is invalid or doesn't have a curve
-                return (nidCurveName != Interop.Crypto.NID_undef);
+                return nidCurveName != Interop.Crypto.NID_undef;
             }
 
-            throw Interop.Crypto.CreateOpenSslCryptographicException();
+            // rc == 0 means the group name could not be retrieved
+            // (e.g., explicit curve or OpenSSL < 3.0). Treat as no curve name.
+            return false;
         }
 
         /// <summary>
@@ -235,7 +236,25 @@ internal static partial class Interop
                 return nidCurveName != Interop.Crypto.NID_undef ? CurveNidToOidValue(nidCurveName) : null;
             }
 
-            throw Interop.Crypto.CreateOpenSslCryptographicException();
+            // rc == 0 means the group name could not be retrieved
+            // (e.g., explicit curve or OpenSSL < 3.0).
+            return null;
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_EvpPKeyEcHasExplicitEncoding(SafeEvpPKeyHandle pkey);
+
+        internal static bool EvpPKeyEcHasExplicitEncoding(SafeEvpPKeyHandle pkey)
+        {
+            return CryptoNative_EvpPKeyEcHasExplicitEncoding(pkey) == 1;
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_EvpPKeyGetEcFieldDegree(SafeEvpPKeyHandle pkey);
+
+        internal static int EvpPKeyGetEcFieldDegree(SafeEvpPKeyHandle pkey)
+        {
+            return CryptoNative_EvpPKeyGetEcFieldDegree(pkey);
         }
 
         [LibraryImport(Libraries.CryptoNative)]
@@ -282,6 +301,7 @@ internal static partial class Interop
                     }
                     else if (rc != 1)
                     {
+                        System.Console.WriteLine($"error getting params: {rc}");
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
@@ -329,6 +349,7 @@ internal static partial class Interop
                 }
                 else if (rc != 1)
                 {
+                    Console.WriteLine($"error getting params: {rc}");
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
