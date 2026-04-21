@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Test.Common;
-using System.Security.Principal;
 using System.Threading.Tasks;
 
 using Microsoft.DotNet.XUnitExtensions;
@@ -91,7 +90,7 @@ namespace System.Net.Security.Enterprise.Tests
                 Package = "Negotiate",
             });
 
-            NegotiateAuthenticationStatusCode clientStatus, serverStatus;
+            NegotiateAuthenticationStatusCode clientStatus;
             byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out clientStatus);
 
             if (clientToken is null)
@@ -101,32 +100,7 @@ namespace System.Net.Security.Enterprise.Tests
 
             Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
 
-            const int MaxIterations = 20;
-            for (int i = 0; i < MaxIterations; i++)
-            {
-                byte[]? serverToken = server.GetOutgoingBlob(clientToken, out serverStatus);
-                if (serverStatus == NegotiateAuthenticationStatusCode.Completed)
-                {
-                    if (serverToken is not null)
-                    {
-                        client.GetOutgoingBlob(serverToken, out clientStatus);
-                    }
-                    break;
-                }
-                Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, serverStatus);
-                Assert.NotNull(serverToken);
-
-                clientToken = client.GetOutgoingBlob(serverToken, out clientStatus);
-                if (clientStatus == NegotiateAuthenticationStatusCode.Completed)
-                {
-                    break;
-                }
-                Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
-                Assert.NotNull(clientToken);
-            }
-
-            Assert.True(client.IsAuthenticated);
-            Assert.True(server.IsAuthenticated);
+            AssertMutualAuthenticationCompleted(client, server, clientToken);
         }
 
         [Theory]
@@ -145,37 +119,7 @@ namespace System.Net.Security.Enterprise.Tests
                 Package = "Negotiate",
             });
 
-            NegotiateAuthenticationStatusCode clientStatus, serverStatus;
-
-            byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out clientStatus);
-            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
-
-            const int MaxIterations = 20;
-            for (int i = 0; i < MaxIterations; i++)
-            {
-                byte[]? serverToken = server.GetOutgoingBlob(clientToken, out serverStatus);
-                if (serverStatus == NegotiateAuthenticationStatusCode.Completed)
-                {
-                    if (serverToken is not null)
-                    {
-                        client.GetOutgoingBlob(serverToken, out clientStatus);
-                    }
-                    break;
-                }
-                Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, serverStatus);
-                Assert.NotNull(serverToken);
-
-                clientToken = client.GetOutgoingBlob(serverToken, out clientStatus);
-                if (clientStatus == NegotiateAuthenticationStatusCode.Completed)
-                {
-                    break;
-                }
-                Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
-                Assert.NotNull(clientToken);
-            }
-
-            Assert.True(client.IsAuthenticated);
-            Assert.True(server.IsAuthenticated);
+            AssertMutualAuthenticationCompleted(client, server);
         }
 
         [Theory]
@@ -196,31 +140,7 @@ namespace System.Net.Security.Enterprise.Tests
                 RequiredProtectionLevel = ProtectionLevel.EncryptAndSign,
             });
 
-            NegotiateAuthenticationStatusCode clientStatus, serverStatus;
-            byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out clientStatus);
-
-            const int MaxIterations = 20;
-            for (int i = 0; i < MaxIterations; i++)
-            {
-                byte[]? serverToken = server.GetOutgoingBlob(clientToken, out serverStatus);
-                if (serverStatus == NegotiateAuthenticationStatusCode.Completed)
-                {
-                    if (serverToken is not null)
-                    {
-                        client.GetOutgoingBlob(serverToken, out clientStatus);
-                    }
-                    break;
-                }
-
-                clientToken = client.GetOutgoingBlob(serverToken, out clientStatus);
-                if (clientStatus == NegotiateAuthenticationStatusCode.Completed)
-                {
-                    break;
-                }
-            }
-
-            Assert.True(client.IsAuthenticated);
-            Assert.True(server.IsAuthenticated);
+            AssertMutualAuthenticationCompleted(client, server, assertContinueNeeded: false);
 
             byte[] message = "Hello from client"u8.ToArray();
             ArrayBufferWriter<byte> wrappedWriter = new ArrayBufferWriter<byte>();
@@ -309,30 +229,8 @@ namespace System.Net.Security.Enterprise.Tests
                 Package = "Negotiate",
             });
 
-            NegotiateAuthenticationStatusCode clientStatus, serverStatus;
-            byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out clientStatus);
+            AssertMutualAuthenticationCompleted(client, server, assertContinueNeeded: false);
 
-            const int MaxIterations = 20;
-            for (int i = 0; i < MaxIterations; i++)
-            {
-                byte[]? serverToken = server.GetOutgoingBlob(clientToken, out serverStatus);
-                if (serverStatus == NegotiateAuthenticationStatusCode.Completed)
-                {
-                    if (serverToken is not null)
-                    {
-                        client.GetOutgoingBlob(serverToken, out clientStatus);
-                    }
-                    break;
-                }
-
-                clientToken = client.GetOutgoingBlob(serverToken, out clientStatus);
-                if (clientStatus == NegotiateAuthenticationStatusCode.Completed)
-                {
-                    break;
-                }
-            }
-
-            Assert.True(client.IsAuthenticated);
             Assert.True(client.IsSigned);
             if (protectionLevel == ProtectionLevel.EncryptAndSign)
             {
@@ -368,11 +266,11 @@ namespace System.Net.Security.Enterprise.Tests
 
             byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out NegotiateAuthenticationStatusCode clientStatus);
             Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
-            Assert.NotNull(clientToken);
+            byte[] nonNullClientToken = Assert.IsType<byte[]>(clientToken);
 
             using var httpClient = new HttpClient();
             using var request = new HttpRequestMessage(HttpMethod.Get, EnterpriseTestConfiguration.NegotiateAuthWebServer);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Negotiate", Convert.ToBase64String(clientToken));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Negotiate", Convert.ToBase64String(nonNullClientToken));
 
             using HttpResponseMessage response = await httpClient.SendAsync(request);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -400,11 +298,11 @@ namespace System.Net.Security.Enterprise.Tests
 
             byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out NegotiateAuthenticationStatusCode clientStatus);
             Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
-            Assert.NotNull(clientToken);
+            byte[] nonNullClientToken = Assert.IsType<byte[]>(clientToken);
 
             using var httpClient = new HttpClient();
             using var request = new HttpRequestMessage(HttpMethod.Get, EnterpriseTestConfiguration.NegotiateAuthWebServer);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Negotiate", Convert.ToBase64String(clientToken));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Negotiate", Convert.ToBase64String(nonNullClientToken));
 
             using HttpResponseMessage response = await httpClient.SendAsync(request);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -417,6 +315,63 @@ namespace System.Net.Security.Enterprise.Tests
             }
 
             Assert.True(client.IsAuthenticated);
+        }
+
+        private static void AssertMutualAuthenticationCompleted(
+            NegotiateAuthentication client,
+            NegotiateAuthentication server,
+            byte[]? initialClientToken = null,
+            bool assertContinueNeeded = true)
+        {
+            NegotiateAuthenticationStatusCode clientStatus;
+            byte[]? clientToken = initialClientToken;
+
+            if (clientToken is null)
+            {
+                clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out clientStatus);
+                if (assertContinueNeeded)
+                {
+                    Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
+                    Assert.NotNull(clientToken);
+                }
+            }
+
+            NegotiateAuthenticationStatusCode serverStatus;
+            const int MaxIterations = 20;
+
+            for (int i = 0; i < MaxIterations; i++)
+            {
+                byte[]? serverToken = server.GetOutgoingBlob(clientToken!, out serverStatus);
+                if (serverStatus == NegotiateAuthenticationStatusCode.Completed)
+                {
+                    if (serverToken is not null)
+                    {
+                        client.GetOutgoingBlob(serverToken, out clientStatus);
+                    }
+                    break;
+                }
+
+                if (assertContinueNeeded)
+                {
+                    Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, serverStatus);
+                    Assert.NotNull(serverToken);
+                }
+
+                clientToken = client.GetOutgoingBlob(serverToken!, out clientStatus);
+                if (clientStatus == NegotiateAuthenticationStatusCode.Completed)
+                {
+                    break;
+                }
+
+                if (assertContinueNeeded)
+                {
+                    Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
+                    Assert.NotNull(clientToken);
+                }
+            }
+
+            Assert.True(client.IsAuthenticated);
+            Assert.True(server.IsAuthenticated);
         }
     }
 }
