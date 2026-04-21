@@ -7,7 +7,7 @@
 
 #include <clrtypes.h>
 
-#include "../vm/cdacdata.h"
+#include "cdacdata.h"
 
 #ifndef _PATCHPOINTINFO_H_
 #define _PATCHPOINTINFO_H_

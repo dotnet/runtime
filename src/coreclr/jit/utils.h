@@ -21,7 +21,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "hostallocator.h"
 #include "cycletimer.h"
 #include "vartypesdef.h"
-#include "float16.h"
 
 // Needed for unreached()
 #include "error.h"
@@ -843,8 +842,6 @@ public:
 
     static uint64_t convertDoubleToUInt64(double d);
 
-    static float16_t convertDoubleToFloat16(double d);
-
     static double convertToDouble(float f);
 
     static float convertToSingle(double d);
@@ -993,8 +990,6 @@ public:
 
     static uint64_t DoubleToUInt64Bits(double value);
 
-    static uint16_t HalfToUInt16Bits(float16_t value);
-
     static uint32_t LeadingZeroCount(uint32_t value);
 
     static uint32_t LeadingZeroCount(uint64_t value);
@@ -1024,8 +1019,6 @@ public:
     static uint32_t TrailingZeroCount(uint32_t value);
 
     static uint32_t TrailingZeroCount(uint64_t value);
-
-    static float16_t UInt16BitsToHalf(uint16_t value);
 
     static float UInt32BitsToSingle(uint32_t value);
 

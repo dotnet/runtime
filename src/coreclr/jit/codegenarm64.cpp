@@ -5652,7 +5652,7 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
             topOfCalleeSaves -= MAX_REG_ARG * REGSIZE_BYTES;
         }
 
-        if (topOfCalleeSaves > 504)
+        if ((topOfCalleeSaves > 504) && ((restoreRegsInt != RBM_NONE) || (restoreRegsFloat != RBM_NONE)))
         {
             // Too far to encode ldp with sp directly. Compute top into another register.
             // Note: not reporting unwind nops for this as we will pad below anyway.

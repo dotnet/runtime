@@ -17,7 +17,7 @@ public unsafe class GetRegisterNameTests
     {
         var target = new TestPlaceholderTarget.Builder(arch)
             .AddGlobalStrings((Constants.Globals.Architecture, targetArch.ToString().ToLowerInvariant()))
-            .AddContract<IRuntimeInfo>(version: 1)
+            .AddContract<IRuntimeInfo>(version: "c1")
             .Build();
 
         return new SOSDacImpl(target, legacyObj: null);

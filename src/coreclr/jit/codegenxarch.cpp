@@ -747,7 +747,6 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
         // Move the result to the desired register, if necessary
         if (treeNode->OperIs(GT_MULHI))
         {
-            assert(targetReg == REG_RDX);
             inst_Mov(targetType, targetReg, REG_RDX, /* canSkip */ true);
         }
     }
@@ -2108,14 +2107,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CATCH_ARG:
-
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
-
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
-
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
+            genCodeForCatchArg(treeNode);
             break;
 
         case GT_ASYNC_CONTINUATION:
@@ -4409,9 +4401,6 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
             // When value is used (it's the original value of the memory location)
             // we fallback to cmpxchg-loop idiom.
 
-            // for cmpxchg we need to keep the original value in RAX
-            assert(node->GetRegNum() == REG_RAX);
-
             //    mov     RAX, dword ptr [addrReg]
             //.LOOP:
             //    mov     tmp, RAX
@@ -4435,6 +4424,8 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
             inst_JMP(EJ_jne, loop);
 
             gcInfo.gcMarkRegSetNpt(genRegMask(addr->GetRegNum()));
+            inst_Mov(node->TypeGet(), node->GetRegNum(), REG_RAX, /* canSkip */ true);
+
             genProduceReg(node);
         }
         return;
@@ -5630,6 +5621,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_X86Base_Extract:
                         case NI_X86Base_X64_Extract:
                         case NI_AVX_ExtractVector128:
+                        case NI_AVX2_ConvertToVector128Half:
+                        case NI_AVX2_ConvertToVector256Half:
                         case NI_AVX2_ExtractVector128:
                         case NI_AVX512_ExtractVector128:
                         case NI_AVX512_ExtractVector256:
@@ -6070,7 +6063,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 }
                 else
 #endif // TARGET_X86
-                    if (varTypeIsFloating(returnType) || returnType == TYP_HALF)
+                    if (varTypeIsFloating(returnType))
                     {
                         returnReg = REG_FLOATRET;
                     }
@@ -6165,7 +6158,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
         else
         {
-            assert(!varTypeIsStruct(call) || call->TypeIs(TYP_HALF));
+            assert(!varTypeIsStruct(call));
 
             if (call->TypeIs(TYP_REF))
             {
@@ -8324,7 +8317,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
     }
 #endif // defined(TARGET_X86) && defined(FEATURE_SIMD)
 
-    if (varTypeIsSIMD(targetType) || targetType == TYP_HALF)
+    if (varTypeIsSIMD(targetType))
     {
         regNumber srcReg = genConsumeReg(source);
         assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));

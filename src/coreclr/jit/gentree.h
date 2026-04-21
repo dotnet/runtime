@@ -890,8 +890,18 @@ public:
     bool gtCostsInitialized;
 #endif // DEBUG
 
-#define MAX_COST    UCHAR_MAX
-#define IND_COST_EX 3 // execution cost for an indirection
+#define MAX_COST UCHAR_MAX
+
+// execution cost for an indirection
+#define IND_COST_EX 3
+
+#if defined(TARGET_XARCH)
+// floating-point indirections are slightly more expensive
+#define FLT_IND_COST_EX 5
+#else
+// TODO-CQ: Determine the appropriate cost of a floating-point indirection on other targets
+#define FLT_IND_COST_EX IND_COST_EX
+#endif
 
     unsigned char GetCostEx() const
     {
@@ -3608,7 +3618,7 @@ public:
     GenTreeDblCon(double val, var_types type = TYP_DOUBLE)
         : GenTree(GT_CNS_DBL, type)
     {
-        assert(varTypeIsFloating(type) || type == TYP_HALF);
+        assert(varTypeIsFloating(type));
         SetDconValue(val);
     }
 #if DEBUGGABLE_GENTREE
@@ -5870,6 +5880,8 @@ struct GenTreeCall final : public GenTree
 
     bool IsHelperCall(unsigned helper) const;
 
+    bool IsHelperCallOrUserEquivalent(Compiler* compiler, unsigned helper) const;
+
     bool IsRuntimeLookupHelperCall(Compiler* compiler) const;
 
     bool IsSpecialIntrinsic(Compiler* compiler, NamedIntrinsic ni) const;
@@ -6436,13 +6448,13 @@ public:
     //
     regNumber GetRegNumByIdx(unsigned idx) const
     {
-#ifdef TARGET_ARM64
-        assert(idx < MAX_MULTIREG_COUNT);
-
         if (idx == 0)
         {
             return GetRegNum();
         }
+
+#ifdef TARGET_ARM64
+        assert(idx < MAX_MULTIREG_COUNT);
 
         if (NeedsConsecutiveRegisters())
         {
@@ -7010,22 +7022,6 @@ struct GenTreeVecCon : public GenTree
                 {
                     // We expect the constant to have been already zeroed
                     assert(simdVal.i64[argIdx] == 0);
-                }
-                break;
-            }
-
-            case TYP_HALF:
-            {
-                if (arg->IsCnsFltOrDbl())
-                {
-                    simdVal.f16[argIdx] = FloatingPointUtils::convertDoubleToFloat16(arg->AsDblCon()->DconValue());
-                    return true;
-                }
-                else
-                {
-                    // We expect the constant to have been already zeroed
-                    // We check against the i16, rather than f16, to account for -0.0
-                    assert(simdVal.i16[argIdx] == 0);
                 }
                 break;
             }

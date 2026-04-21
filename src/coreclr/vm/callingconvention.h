@@ -211,7 +211,10 @@ struct TransitionBlock
             TADDR m_ReturnAddress;
         };
     };
-    ArgumentRegisters       m_argumentRegisters;
+    union {
+        ArgumentRegisters       m_argumentRegisters;
+        TADDR m_StackPointer;
+    };
 #else
     PORTABILITY_ASSERT("TransitionBlock");
 #endif
@@ -878,12 +881,7 @@ public:
         {
 #if !defined(UNIX_AMD64_ABI)
             // On Windows x64, we re-use the location in the transition block for both the integer and floating point registers
-            if ((m_argType == ELEMENT_TYPE_R4) || (m_argType == ELEMENT_TYPE_R8)
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-                // System.Half is passed in floating point registers like a float
-                || (m_argType == ELEMENT_TYPE_VALUETYPE && m_argTypeHandle.IsNativeHalfType())
-#endif // TARGET_XARCH
-            )
+            if ((m_argType == ELEMENT_TYPE_R4) || (m_argType == ELEMENT_TYPE_R8))
             {
                 pLoc->m_idxFloatReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
                 pLoc->m_cFloatReg = 1;
@@ -2039,15 +2037,6 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                 break;
             }
 #endif
-
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-            // System.Half is returned in xmm0 like a float
-            if (thValueType.IsNativeHalfType())
-            {
-                flags |= sizeof(float) << RETURN_FP_SIZE_SHIFT;
-                break;
-            }
-#endif // TARGET_XARCH
 
             size_t size = thValueType.GetSize();
 

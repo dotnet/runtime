@@ -1427,6 +1427,26 @@ inline static bool insScalableOptsWithVectorLength(insScalableOpts sopt)
     return ((sopt == INS_SCALABLE_OPTS_VL_2X) || (sopt == INS_SCALABLE_OPTS_VL_4X));
 }
 
+inline static bool insSveMovOptsUnpredicated(insSveMovOpts mopt)
+{
+    return mopt == INS_SVE_MOV_OPTS_UNPRED;
+}
+
+inline static bool isValidMovprfxReg(insSveMovOpts mopt,
+                                     regNumber     dstReg,
+                                     regNumber     srcReg,
+                                     regNumber     op2Reg = REG_NA,
+                                     regNumber     op3Reg = REG_NA,
+                                     regNumber     op4Reg = REG_NA)
+{
+    if (insSveMovOptsUnpredicated(mopt) && (dstReg == srcReg))
+    {
+        // movprfx is skipped, so assume valid.
+        return true;
+    }
+    return (dstReg != op2Reg) && (dstReg != op3Reg) && (dstReg != op4Reg);
+}
+
 static bool isValidImmCond(ssize_t imm);
 static bool isValidImmCondFlags(ssize_t imm);
 static bool isValidImmCondFlagsImm5(ssize_t imm);
@@ -1484,8 +1504,14 @@ void emitInsSve_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl
 void emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
 
-void emitInsSve_Mov(
-    instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
+void emitInsSve_Mov(instruction   ins,
+                    emitAttr      attr,
+                    regNumber     dstReg,
+                    regNumber     srcReg,
+                    bool          canSkip,
+                    insOpts       opt    = INS_OPTS_NONE,
+                    insSveMovOpts mopt   = INS_SVE_MOV_OPTS_UNPRED,
+                    regNumber     mskReg = REG_NA);
 
 void emitIns_R_R(instruction     ins,
                  emitAttr        attr,
@@ -1556,7 +1582,8 @@ void emitInsSve_R_R_R(instruction     ins,
                       regNumber       reg2,
                       regNumber       reg3,
                       insOpts         opt  = INS_OPTS_NONE,
-                      insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+                      insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
+                      insSveMovOpts   mopt = INS_SVE_MOV_OPTS_UNPRED);
 
 void emitIns_R_R_R_I(instruction     ins,
                      emitAttr        attr,
@@ -1575,7 +1602,8 @@ void emitInsSve_R_R_R_I(instruction     ins,
                         regNumber       reg3,
                         ssize_t         imm,
                         insOpts         opt  = INS_OPTS_NONE,
-                        insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+                        insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
+                        insSveMovOpts   mopt = INS_SVE_MOV_OPTS_UNPRED);
 
 void emitIns_R_R_R_I_I(instruction ins,
                        emitAttr    attr,
@@ -1627,7 +1655,8 @@ void emitInsSve_R_R_R_R(instruction     ins,
                         regNumber       reg3,
                         regNumber       reg4,
                         insOpts         opt  = INS_OPTS_NONE,
-                        insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+                        insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
+                        insSveMovOpts   mopt = INS_SVE_MOV_OPTS_UNPRED);
 
 void emitIns_R_R_R_R_I(instruction ins,
                        emitAttr    attr,
@@ -1638,24 +1667,51 @@ void emitIns_R_R_R_R_I(instruction ins,
                        ssize_t     imm,
                        insOpts     opt = INS_OPTS_NONE);
 
-void emitInsSve_R_R_R_R_I(instruction ins,
-                          emitAttr    attr,
-                          regNumber   reg1,
-                          regNumber   reg2,
-                          regNumber   reg3,
-                          regNumber   reg4,
-                          ssize_t     imm,
-                          insOpts     opt = INS_OPTS_NONE);
+void emitInsSve_R_R_R_R_I(instruction     ins,
+                          emitAttr        attr,
+                          regNumber       reg1,
+                          regNumber       reg2,
+                          regNumber       reg3,
+                          regNumber       reg4,
+                          ssize_t         imm,
+                          insOpts         opt  = INS_OPTS_NONE,
+                          insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
+                          insSveMovOpts   mopt = INS_SVE_MOV_OPTS_UNPRED);
 
-void emitInsSve_R_R_R_R_I_I(instruction ins,
-                            emitAttr    attr,
-                            regNumber   reg1,
-                            regNumber   reg2,
-                            regNumber   reg3,
-                            regNumber   reg4,
-                            ssize_t     imm1,
-                            ssize_t     imm2,
-                            insOpts     opt = INS_OPTS_NONE);
+void emitInsSve_R_R_R_R_I_I(instruction     ins,
+                            emitAttr        attr,
+                            regNumber       reg1,
+                            regNumber       reg2,
+                            regNumber       reg3,
+                            regNumber       reg4,
+                            ssize_t         imm1,
+                            ssize_t         imm2,
+                            insOpts         opt  = INS_OPTS_NONE,
+                            insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
+                            insSveMovOpts   mopt = INS_SVE_MOV_OPTS_UNPRED);
+
+void emitInsSve_R_R_R_R_R(instruction     ins,
+                          emitAttr        attr,
+                          regNumber       reg1,
+                          regNumber       reg2,
+                          regNumber       reg3,
+                          regNumber       reg4,
+                          regNumber       reg5,
+                          insOpts         opt  = INS_OPTS_NONE,
+                          insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
+                          insSveMovOpts   mopt = INS_SVE_MOV_OPTS_UNPRED);
+
+void emitInsSve_R_R_R_R_R_I(instruction     ins,
+                            emitAttr        attr,
+                            regNumber       reg1,
+                            regNumber       reg2,
+                            regNumber       reg3,
+                            regNumber       reg4,
+                            regNumber       reg5,
+                            ssize_t         imm,
+                            insOpts         opt  = INS_OPTS_NONE,
+                            insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
+                            insSveMovOpts   mopt = INS_SVE_MOV_OPTS_UNPRED);
 
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 
@@ -1674,13 +1730,15 @@ void emitIns_R_PATTERN(
 void emitIns_R_PATTERN_I(
     instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, ssize_t imm, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_R_PATTERN_I(instruction   ins,
-                           emitAttr      attr,
-                           regNumber     reg1,
-                           regNumber     reg2,
-                           insSvePattern pattern,
-                           ssize_t       imm,
-                           insOpts       opt = INS_OPTS_NONE);
+void emitIns_R_R_PATTERN_I(instruction     ins,
+                           emitAttr        attr,
+                           regNumber       reg1,
+                           regNumber       reg2,
+                           insSvePattern   pattern,
+                           ssize_t         imm,
+                           insOpts         opt  = INS_OPTS_NONE,
+                           insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
+                           insSveMovOpts   mopt = INS_SVE_MOV_OPTS_UNPRED);
 
 void emitIns_PRFOP_R_R_R(instruction     ins,
                          emitAttr        attr,
