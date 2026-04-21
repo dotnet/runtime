@@ -1136,6 +1136,14 @@ namespace ILAssembler
                     }
                 }
             }
+            else if (context.customAttrDecl().Length == 1 && context.PARAM() is null)
+            {
+                // Custom attribute directly on the type
+                if (VisitCustomAttrDecl(context.customAttrDecl()[0]).Value is { } customAttr)
+                {
+                    customAttr.Owner = _currentTypeDefinition.PeekOrDefault();
+                }
+            }
             else if (context.PARAM() is not null)
             {
                 var customAttrDeclarations = context.customAttrDecl();
@@ -1704,13 +1712,14 @@ namespace ILAssembler
             return new(blob);
         }
 
-        private const int CustomAttributeBlobFormatVersion = 1;
+        private const ushort CustomAttributeBlobFormatVersion = 1;
 
         GrammarResult ICILVisitor<GrammarResult>.VisitCustomBlobDescr(CILParser.CustomBlobDescrContext context) => VisitCustomBlobDescr(context);
         public GrammarResult.FormattedBlob VisitCustomBlobDescr(CILParser.CustomBlobDescrContext context)
         {
             var blob = new BlobBuilder();
-            blob.WriteInt32(CustomAttributeBlobFormatVersion);
+            // Custom attribute blob prolog is a 2-byte unsigned integer (ECMA-335 II.23.3)
+            blob.WriteUInt16(CustomAttributeBlobFormatVersion);
             VisitCustomBlobArgs(context.customBlobArgs()).Value.WriteContentTo(blob);
             VisitCustomBlobNVPairs(context.customBlobNVPairs()).Value.WriteContentTo(blob);
             return new(blob);
