@@ -430,9 +430,14 @@ namespace System.Runtime.CompilerServices
                     return false;
                 }
 
+                byte maxAsyncCallstackLength = (byte)Math.Min(byte.MaxValue, (buffer.Length - index) / ASYNC_METHOD_INFO_SIZE);
+                if (maxAsyncCallstackLength == 0)
+                {
+                    return false;
+                }
+
                 ulong currentNativeIP = 0;
                 ulong previousNativeIP = state.LastNativeIP;
-                byte maxAsyncCallstackLength = (byte)Math.Min(byte.MaxValue, (buffer.Length - index) / ASYNC_METHOD_INFO_SIZE);
 
                 unsafe
                 {
@@ -511,8 +516,8 @@ namespace System.Runtime.CompilerServices
                     // Callstack envelope: id (max 10 bytes compressed) + type (1) + callstackId (1) + frameCount (1)
                     const int maxEnvelopeSize = EventBuffer.Serializer.MaxCompressedUInt64Size + sizeof(byte) + sizeof(byte) + sizeof(byte);
 
-                    int savedAsyncEventHeaderIndex = eventBuffer.Index;
-                    if (EventBuffer.Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, maxEnvelopeSize))
+                    int savedAsyncEventHeaderIndex = EventBuffer.Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, maxEnvelopeSize);
+                    if (savedAsyncEventHeaderIndex >= 0)
                     {
                         EventBuffer.Serializer.CallstackHeader(ref eventBuffer, id, type, 0);
 
@@ -532,7 +537,8 @@ namespace System.Runtime.CompilerServices
                                 context.Flush();
 
                                 // Write the callstack again.
-                                if (EventBuffer.Serializer.AsyncEventHeader(context, ref eventBuffer, context.LastEventTimestamp, 0, eventID, maxEnvelopeSize + index))
+                                savedAsyncEventHeaderIndex = EventBuffer.Serializer.AsyncEventHeader(context, ref eventBuffer, context.LastEventTimestamp, 0, eventID, maxEnvelopeSize + index);
+                                if (savedAsyncEventHeaderIndex >= 0)
                                 {
                                     EventBuffer.Serializer.CallstackHeader(ref eventBuffer, id, type, state.Count);
                                     EventBuffer.Serializer.CallstackData(ref eventBuffer, rentedArray, index);

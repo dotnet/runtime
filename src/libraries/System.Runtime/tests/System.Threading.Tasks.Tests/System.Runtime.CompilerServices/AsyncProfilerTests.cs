@@ -356,13 +356,15 @@ namespace System.Threading.Tasks.Tests
 
         private static void SkipMetadataPayload(ReadOnlySpan<byte> buffer, ref int index)
         {
-            ReadMetadataPayload(buffer, ref index, out _, out _, out _);
+            ReadMetadataPayload(buffer, ref index, out _, out _, out _, out _, out _);
         }
 
         private static void ReadMetadataPayload(ReadOnlySpan<byte> buffer, ref int index,
-            out ulong qpcFrequency, out uint eventBufferSize, out long[] wrapperIPs)
+            out ulong qpcFrequency, out ulong qpcSync, out ulong utcSync, out uint eventBufferSize, out long[] wrapperIPs)
         {
             EventBuffer.Deserializer.ReadUInt64(buffer, ref index, out qpcFrequency);
+            EventBuffer.Deserializer.ReadUInt64(buffer, ref index, out qpcSync);
+            EventBuffer.Deserializer.ReadUInt64(buffer, ref index, out utcSync);
             EventBuffer.Deserializer.ReadUInt32(buffer, ref index, out eventBufferSize);
             byte wrapperCount = buffer[index++];
             wrapperIPs = new long[wrapperCount];
@@ -372,7 +374,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        private record struct MetadataFromBuffer(ulong QpcFrequency, uint EventBufferSize, long[] WrapperIPs);
+        private record struct MetadataFromBuffer(ulong QpcFrequency, ulong QpcSync, ulong UtcSync, uint EventBufferSize, long[] WrapperIPs);
 
         private static List<MetadataFromBuffer> CollectMetadataFromBuffer(ConcurrentQueue<EventWrittenEventArgs> events)
         {
@@ -383,8 +385,8 @@ namespace System.Threading.Tasks.Tests
                 {
                     if (eventId == AsyncEventID.AsyncProfilerMetadata)
                     {
-                        ReadMetadataPayload(buf, ref idx, out ulong freq, out uint bufSize, out long[] ips);
-                        metadataList.Add(new MetadataFromBuffer(freq, bufSize, ips));
+                        ReadMetadataPayload(buf, ref idx, out ulong freq, out ulong qpcSync, out ulong utcSync, out uint bufSize, out long[] ips);
+                        metadataList.Add(new MetadataFromBuffer(freq, qpcSync, utcSync, bufSize, ips));
                         return true;
                     }
                     return SkipEventPayload(eventId, buf, ref idx);
@@ -1454,6 +1456,7 @@ namespace System.Threading.Tasks.Tests
             yield return new object[] { (long)UnwindAsyncExceptionKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.UnwindAsyncException, AsyncEventID.AsyncProfilerMetadata } };
             yield return new object[] { (long)CreateAsyncCallstackKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.CreateAsyncCallstack, AsyncEventID.AsyncProfilerMetadata } };
             yield return new object[] { (long)ResumeAsyncCallstackKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.ResumeAsyncCallstack, AsyncEventID.AsyncProfilerMetadata } };
+            yield return new object[] { (long)SuspendAsyncCallstackKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.SuspendAsyncCallstack, AsyncEventID.AsyncProfilerMetadata } };
             yield return new object[] { (long)ResumeAsyncMethodKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.ResumeAsyncMethod, AsyncEventID.AsyncProfilerMetadata } };
             yield return new object[] { (long)CompleteAsyncMethodKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.CompleteAsyncMethod, AsyncEventID.AsyncProfilerMetadata } };
         }
@@ -1526,6 +1529,8 @@ namespace System.Threading.Tasks.Tests
 
             MetadataFromBuffer meta = metadataList[0];
             Assert.True(meta.QpcFrequency > 0, $"QPC frequency should be positive, got {meta.QpcFrequency}");
+            Assert.True(meta.QpcSync > 0, $"QPC sync timestamp should be positive, got {meta.QpcSync}");
+            Assert.True(meta.UtcSync > 0, $"UTC sync timestamp should be positive, got {meta.UtcSync}");
             Assert.True(meta.EventBufferSize > 0, $"Event buffer size should be positive, got {meta.EventBufferSize}");
             Assert.True(meta.WrapperIPs.Length > 0, "Wrapper IPs array should not be empty");
             Assert.All(meta.WrapperIPs, ip => Assert.True(ip != 0, "Each wrapper IP should be non-zero"));
@@ -1972,6 +1977,12 @@ namespace System.Threading.Tasks.Tests
 
             Deserializer.ReadUInt64(buffer, ref index, out ulong qpcFrequency);
             Console.WriteLine($"  QPCFrequency: {qpcFrequency}");
+
+            Deserializer.ReadUInt64(buffer, ref index, out ulong qpcSync);
+            Console.WriteLine($"  QPCSync: {qpcSync}");
+
+            Deserializer.ReadUInt64(buffer, ref index, out ulong utcSync);
+            Console.WriteLine($"  UTCSync: {utcSync}");
 
             Deserializer.ReadUInt32(buffer, ref index, out uint eventBufferSize);
             Console.WriteLine($"  EventBufferSize: {eventBufferSize}");
