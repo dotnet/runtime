@@ -3326,22 +3326,17 @@ void Thread::SafeUpdateLastThrownObject(void)
     }
     CONTRACTL_END;
 
-    OBJECTHANDLE hThrowable = GetThrowableAsHandle();
+    OBJECTREF throwable = GetExceptionState()->GetThrowable();
 
-    if (hThrowable != NULL)
+    if (throwable != NULL)
     {
         EX_TRY
         {
-            IGCHandleManager *pHandleTable = GCHandleUtilities::GetGCHandleManager();
-
-            // Creating a duplicate handle here ensures that the AD of the last thrown object
-            // matches the domain of the current throwable.
-            OBJECTHANDLE duplicateHandle = pHandleTable->CreateDuplicateHandle(hThrowable);
-            SetLastThrownObjectHandle(duplicateHandle);
+            SetLastThrownObject(throwable);
         }
         EX_CATCH
         {
-            // If we can't create a duplicate handle, we set both throwables to the preallocated OOM exception.
+            // If we can't create a handle, we set both throwables to the preallocated OOM exception.
             SafeSetThrowables(CLRException::GetPreallocatedOutOfMemoryException());
         }
         EX_END_CATCH

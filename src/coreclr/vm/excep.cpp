@@ -1849,7 +1849,7 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread, IJitManager *pJitManager, const ME
     CONTRACTL_END;
 
     // if don't have a throwable the aren't processing an exception
-    if (IsHandleNullUnchecked(pThread->GetThrowableAsHandle()))
+    if (pThread->IsThrowableNull())
         return FALSE;
 
     EH_CLAUSE_ENUMERATOR pEnumState;

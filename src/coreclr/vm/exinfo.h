@@ -92,8 +92,6 @@ struct ExInfo
 
     // Previous ExInfo in the chain of exceptions rethrown from their catch / finally handlers
     PTR_ExInfo     m_pPrevNestedInfo;
-    // thrown exception object handle
-    OBJECTHANDLE   m_hThrowable;
     // EXCEPTION_RECORD and CONTEXT_RECORD describing the exception and its location
     DAC_EXCEPTION_POINTERS m_ptrs;
     // Information for the funclet we are calling
@@ -218,12 +216,7 @@ public:
         }
         CONTRACTL_END;
 
-        if (0 != m_hThrowable)
-        {
-            return ObjectFromHandle(m_hThrowable);
-        }
-
-        return NULL;
+        return m_exception;
     }
 
    inline BOOL DeliveredFirstChanceNotification()
@@ -256,19 +249,6 @@ public:
     {
         return !m_ExceptionFlags.UnwindHasStarted();
     }
-
-#ifndef DACCESS_COMPILE
-    void DestroyExceptionHandle()
-    {
-        // Never, ever destroy a preallocated exception handle.
-        if ((m_hThrowable != NULL) && !CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
-        {
-            DestroyHandle(m_hThrowable);
-        }
-
-        m_hThrowable = NULL;
-    }
-#endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

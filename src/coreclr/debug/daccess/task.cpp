@@ -4556,13 +4556,17 @@ ClrDataExceptionState::GetPrevious(
     {
         if (m_prevExInfo)
         {
+            // Pass the address of the ExInfo's m_exception field as the "handle".
+            // This is not a real GC handle — it is a target address of an OBJECTREF
+            // slot on the stack. It has the same lifetime as the ExInfo (both are
+            // invalidated by PopExInfos/ReleaseResources). See dacimpl.h comment.
             *exState = new (nothrow)
                 ClrDataExceptionState(m_dac,
                                       m_appDomain,
                                       m_thread,
                                       CLRDATA_EXCEPTION_DEFAULT,
                                       m_prevExInfo,
-                                      m_prevExInfo->m_hThrowable,
+                                      (OBJECTHANDLE)dac_cast<TADDR>(&m_prevExInfo->m_exception),
                                       m_prevExInfo->m_pPrevNestedInfo);
             status = *exState ? S_OK : E_OUTOFMEMORY;
         }
@@ -4920,13 +4924,15 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
 
     exState = thread->GetExceptionState()->m_pCurrentTracker;
 
+    // Pass the address of the ExInfo's m_exception field as the "handle".
+    // See dacimpl.h comment on the throwable parameter.
     exIf = new (nothrow)
         ClrDataExceptionState(dac,
                               AppDomain::GetCurrentDomain(),
                               thread,
                               CLRDATA_EXCEPTION_DEFAULT,
                               exState,
-                              exState->m_hThrowable,
+                              (OBJECTHANDLE)dac_cast<TADDR>(&exState->m_exception),
                               exState->m_pPrevNestedInfo);
     if (!exIf)
     {

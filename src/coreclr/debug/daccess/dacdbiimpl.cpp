@@ -4817,9 +4817,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::HasUnhandledException(VMPTR_Threa
         else
         {
             // most managed exceptions are just a throwable bound to a
-            // native exception. In that case this handle will be non-null
-            OBJECTHANDLE ohException = pThread->GetThrowableAsHandle();
-            if (ohException != (OBJECTHANDLE)NULL)
+            // native exception. In that case the exception will be non-null
+            OBJECTREF exception = pThread->GetExceptionState()->GetThrowable();
+            if (exception != NULL)
             {
                 // during the UEF we set the unhandled bit, if it is set the exception
                 // was unhandled
@@ -4955,8 +4955,10 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCurrentException(VMPTR_Thread 
 
         Thread * pThread = vmThread.GetDacPtr();
 
-        // OBJECTHANDLEs are really just TADDRs.
-        OBJECTHANDLE ohException = pThread->GetThrowableAsHandle();        // ohException can be NULL
+        // Get the exception handle. The exception object is stored directly in ExInfo::m_exception,
+        // but debugger APIs require a handle. Use m_LastThrownObjectHandle which is kept in sync
+        // via SafeSetThrowables.
+        OBJECTHANDLE ohException = pThread->m_LastThrownObjectHandle;
 
         if (ohException == (OBJECTHANDLE)NULL)
         {

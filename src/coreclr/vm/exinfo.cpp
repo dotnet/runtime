@@ -13,7 +13,6 @@
 
 ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pExceptionContext, ExKind exceptionKind) :
     m_pPrevNestedInfo(pThread->GetExceptionState()->GetCurrentExceptionTracker()),
-    m_hThrowable{},
     m_ptrs({pExceptionRecord, pExceptionContext}),
     m_fDeliveredFirstChanceNotification(FALSE),
     m_ExceptionCode((pExceptionRecord != PTR_NULL) ? pExceptionRecord->ExceptionCode : 0),
@@ -72,14 +71,7 @@ void ExInfo::TakeExceptionPointersOwnership(PAL_SEHException* ex)
 
 void ExInfo::ReleaseResources()
 {
-    if (m_hThrowable)
-    {
-        if (!CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
-        {
-            DestroyHandle(m_hThrowable);
-        }
-        m_hThrowable = NULL;
-    }
+    m_exception = NULL;
 
 #ifndef TARGET_UNIX
     // Clear any held Watson Bucketing details

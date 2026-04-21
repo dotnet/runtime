@@ -13,18 +13,6 @@
 #include "comutilnative.h"      // for assertions only
 #endif
 
-OBJECTHANDLE ThreadExceptionState::GetThrowableAsHandle()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (m_pCurrentTracker)
-    {
-        return m_pCurrentTracker->m_hThrowable;
-    }
-
-    return (OBJECTHANDLE)NULL;
-}
-
 
 ThreadExceptionState::ThreadExceptionState()
 {
@@ -46,14 +34,6 @@ ThreadExceptionState::~ThreadExceptionState()
 #endif // !TARGET_UNIX
 }
 
-#ifndef DACCESS_COMPILE
-
-Thread* ThreadExceptionState::GetMyThread()
-{
-    return (Thread*)(((BYTE*)this) - offsetof(Thread, m_ExceptionState));
-}
-
-
 OBJECTREF ThreadExceptionState::GetThrowable()
 {
     CONTRACTL
@@ -64,70 +44,58 @@ OBJECTREF ThreadExceptionState::GetThrowable()
     }
     CONTRACTL_END;
 
-    if (m_pCurrentTracker && m_pCurrentTracker->m_hThrowable)
+    if (m_pCurrentTracker)
     {
-        return ObjectFromHandle(m_pCurrentTracker->m_hThrowable);
+        return m_pCurrentTracker->m_exception;
     }
 
     return NULL;
 }
 
+BOOL ThreadExceptionState::IsThrowableNull()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (m_pCurrentTracker == NULL)
+        return TRUE;
+
+    return m_pCurrentTracker->m_exception == NULL;
+}
+
+#ifndef DACCESS_COMPILE
+
+Thread* ThreadExceptionState::GetMyThread()
+{
+    return (Thread*)(((BYTE*)this) - offsetof(Thread, m_ExceptionState));
+}
+
+
 void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowableErrorChecking stecFlags))
 {
     CONTRACTL
     {
-        if ((throwable == NULL) || CLRException::IsPreallocatedExceptionObject(throwable)) NOTHROW; else THROWS; // From CreateHandle
+        NOTHROW;
         GC_NOTRIGGER;
         if (throwable == NULL) MODE_ANY; else MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    if (m_pCurrentTracker)
-    {
-        m_pCurrentTracker->DestroyExceptionHandle();
-    }
-
     if (throwable != NULL)
     {
-        // Non-compliant exceptions are always wrapped.
-        // The use of the ExceptionNative:: helper here (rather than the global ::IsException helper)
-        // is hokey, but we need a GC_NOTRIGGER version and it's only for an ASSERT.
         _ASSERTE(IsException(throwable->GetMethodTable()));
 
-        OBJECTHANDLE hNewThrowable;
-
-        // If we're tracking one of the preallocated exception objects, then just use the global handle that
-        // matches it rather than creating a new one.
-        if (CLRException::IsPreallocatedExceptionObject(throwable))
-        {
-            hNewThrowable = CLRException::GetPreallocatedHandleForObject(throwable);
-        }
-        else
-        {
-            AppDomain* pDomain = AppDomain::GetCurrentDomain();
-            _ASSERTE(pDomain != NULL);
-            hNewThrowable = pDomain->CreateHandle(throwable);
-        }
-
 #ifdef _DEBUG
-        //
-        // Fatal stack overflow policy ends up short-circuiting the normal exception handling
-        // flow such that there could be no Tracker for this SO that is in flight.  In this
-        // situation there is no place to store the throwable in the exception state, and instead
-        // it is presumed that the handle to the SO exception is elsewhere.  (Current knowledge
-        // as of 7/15/05 is that it is stored in Thread::m_LastThrownObjectHandle;
-        //
         if (stecFlags != STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow)
         {
             CONSISTENCY_CHECK(CheckPointer(m_pCurrentTracker));
         }
 #endif
-
-        if (m_pCurrentTracker != NULL)
-        {
-            m_pCurrentTracker->m_hThrowable = hNewThrowable;
-        }
     }
+
+    // The exception object is stored directly in ExInfo::m_exception by managed EH code.
+    // SetThrowable is now a no-op for the ExInfo field — the m_exception is already set.
+    // We keep this method so that SafeSetThrowables can still call it for the assertion
+    // and debug checks above.
 }
 
 DWORD ThreadExceptionState::GetExceptionCode()

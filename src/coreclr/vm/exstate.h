@@ -60,7 +60,7 @@ public:
 
     void                SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowableErrorChecking stecFlags = STEC_All));
     OBJECTREF           GetThrowable();
-    OBJECTHANDLE        GetThrowableAsHandle();
+    BOOL                IsThrowableNull();
     DWORD               GetExceptionCode();
     BOOL                IsComPlusException();
     EXCEPTION_POINTERS* GetExceptionPointers();
