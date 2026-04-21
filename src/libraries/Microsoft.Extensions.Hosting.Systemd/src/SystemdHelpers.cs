@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
             }
 
             // Legacy detection for systemd < 248 (e.g. Ubuntu 20.04, Debian 11).
-            // Note: silently returns false when ProtectProc=invisible is set.
+            // Note: silently returns false if /proc cannot be read, such as when ProtectProc=invisible is set.
             try
             {
                 // Check whether our direct parent is 'systemd'.
