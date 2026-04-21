@@ -515,6 +515,25 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public void LinkSuffix_EmptyDestination_SuffixAlreadyLinked()
+        {
+            var emptyPrefix = new BlobBuilder(16);
+            var element = new BlobBuilder(16);
+            var tail = new BlobBuilder(16);
+
+            element.WriteByte(0x11);
+            tail.WriteByte(0x22);
+
+            element.LinkSuffix(tail);
+            emptyPrefix.LinkSuffix(element);
+
+            AssertEx.Equal(new byte[] { 0x11, 0x22 }, emptyPrefix.ToArray());
+            Assert.Equal(2, emptyPrefix.Count);
+            Assert.Equal(2, element.Count);
+            Assert.Equal(1, tail.Count);
+        }
+
+        [Fact]
         public void LinkPrefix1()
         {
             var builder1 = new BlobBuilder(16);
