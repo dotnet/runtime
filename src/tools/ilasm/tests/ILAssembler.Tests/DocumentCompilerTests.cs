@@ -4773,5 +4773,127 @@ namespace ILAssembler.Tests
             Assert.Contains((byte)0x1B, sigBytes.Skip(1).ToArray()); // Must have ELEMENT_TYPE_FNPTR
             Assert.Contains((byte)0x0F, sigBytes.Skip(1).ToArray()); // Must have ELEMENT_TYPE_PTR
         }
+
+        [Fact]
+        public void GenericConstraint_WithGenericTypeArg_ResolvesToCorrectType()
+        {
+            // A generic constraint like (class IFoo<!T>) should produce a GenericParamConstraint
+            // pointing to a TypeSpec for the generic instantiation IFoo<!T>, NOT System.Object.
+            // This is the "generic constraint references" bug: complex generic type arguments
+            // in constraints resolve to System.Object instead of the actual constraint type.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+
+                .class interface public abstract auto ansi IMinusT`1<-PlusT>
+                {
+                    .method public hidebysig newslot abstract virtual instance void Do() cil managed { }
+                }
+
+                .class public auto ansi beforefieldinit Container`2<(class IMinusT`1<!U>) T, U>
+                    extends [mscorlib]System.Object
+                {
+                    .method public hidebysig instance void M() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // Find the Container`2 type
+            var containerType = reader.TypeDefinitions
+                .Select(h => reader.GetTypeDefinition(h))
+                .First(t => reader.GetString(t.Name) == "Container`2");
+
+            var genericParams = containerType.GetGenericParameters();
+            Assert.Equal(2, genericParams.Count);
+
+            // T is the first generic parameter and has a constraint: (class IMinusT`1<!U>)
+            var paramT = reader.GetGenericParameter(genericParams.ElementAt(0));
+            Assert.Equal("T", reader.GetString(paramT.Name));
+
+            var constraints = paramT.GetConstraints();
+            Assert.Single(constraints);
+
+            var constraint = reader.GetGenericParameterConstraint(constraints.Single());
+            var constraintType = constraint.Type;
+
+            // The constraint should be a TypeSpec (generic instantiation IMinusT`1<!U>),
+            // NOT a TypeRef to System.Object.
+            Assert.Equal(HandleKind.TypeSpecification, constraintType.Kind);
+
+            // Decode the TypeSpec blob to verify it's a generic instantiation of IMinusT`1
+            var typeSpec = reader.GetTypeSpecification((TypeSpecificationHandle)constraintType);
+            var sigBytes = reader.GetBlobBytes(typeSpec.Signature);
+
+            // Expected: GENERICINST (0x15), CLASS (0x12), <TypeDef/Ref token for IMinusT`1>,
+            //           1 (generic arg count), VAR 1 (type parameter !U which is index 1)
+            Assert.Equal(0x15, sigBytes[0]); // ELEMENT_TYPE_GENERICINST
+        }
+
+        [Fact]
+        public void GenericConstraint_MethodGenParamConstrainedByTypeGenParam_ResolvesToCorrectType()
+        {
+            // Reproduces the exact pattern from the Variance test IL files:
+            // A method generic parameter M constrained by (class IMinusT<!PlusT>),
+            // where !PlusT is a type-level generic parameter referenced in the method constraint.
+            // This is the specific case that produces an incorrect constraint type.
+            // Method generic param M constrained by (class IMinusT`1<!PlusT>)
+            // where !PlusT is a type-level generic parameter.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+
+                .class interface public abstract auto ansi IMinusT`1<-([mscorlib]System.Object) MinusT>
+                {
+                }
+
+                .class interface public auto ansi beforefieldinit Test001PlusT`1<+([mscorlib]System.Object) PlusT>
+                {
+                    .method public hidebysig newslot abstract virtual instance void
+                        method1<(class IMinusT`1<!PlusT>) M>(class IMinusT`1<!PlusT> t) cil managed
+                    {
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var testType = reader.TypeDefinitions
+                .Select(h => reader.GetTypeDefinition(h))
+                .First(t => reader.GetString(t.Name) == "Test001PlusT`1");
+
+            var method = testType.GetMethods()
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "method1");
+
+            var methodGenericParams = method.GetGenericParameters();
+            Assert.Equal(1, methodGenericParams.Count);
+
+            var paramM = reader.GetGenericParameter(methodGenericParams.Single());
+            Assert.Equal("M", reader.GetString(paramM.Name));
+
+            // M has a constraint: (class IMinusT`1<!PlusT>)
+            var constraints = paramM.GetConstraints();
+            Assert.Single(constraints);
+
+            var constraint = reader.GetGenericParameterConstraint(constraints.Single());
+            var constraintType = constraint.Type;
+
+            // The constraint should be a TypeSpec for IMinusT`1<!PlusT>,
+            // NOT a TypeRef/TypeDef for System.Object
+            Assert.Equal(HandleKind.TypeSpecification, constraintType.Kind);
+
+            var typeSpec = reader.GetTypeSpecification((TypeSpecificationHandle)constraintType);
+            var sigBytes = reader.GetBlobBytes(typeSpec.Signature);
+
+            // Expected: GENERICINST (0x15), CLASS (0x12), <token for IMinusT`1>,
+            //           1 (generic arg count), VAR 0 (type parameter !PlusT at index 0)
+            Assert.Equal(0x15, sigBytes[0]); // ELEMENT_TYPE_GENERICINST
+        }
     }
 }
