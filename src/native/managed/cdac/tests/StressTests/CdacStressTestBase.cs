@@ -41,7 +41,7 @@ public abstract class CdacStressTestBase
         var psi = new ProcessStartInfo
         {
             FileName = corerun,
-            Arguments = debuggeeDll,
+            Arguments = $"\"{debuggeeDll}\"",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -58,16 +58,22 @@ public abstract class CdacStressTestBase
 
         using var process = Process.Start(psi)!;
 
-        // Read stderr asynchronously to avoid deadlock when both pipe buffers fill.
+        // Read both stdout and stderr asynchronously to avoid deadlock
+        // when pipe buffers fill, and to allow WaitForExit timeout to work.
         string stderr = "";
+        string stdout = "";
         process.ErrorDataReceived += (_, e) =>
         {
             if (e.Data is not null)
                 stderr += e.Data + Environment.NewLine;
         };
+        process.OutputDataReceived += (_, e) =>
+        {
+            if (e.Data is not null)
+                stdout += e.Data + Environment.NewLine;
+        };
         process.BeginErrorReadLine();
-
-        string stdout = process.StandardOutput.ReadToEnd();
+        process.BeginOutputReadLine();
 
         bool exited = process.WaitForExit(timeoutSeconds * 1000);
         if (!exited)
@@ -126,7 +132,7 @@ public abstract class CdacStressTestBase
     /// <summary>
     /// Asserts that GC stress verification produced a pass rate at or above the given threshold.
     /// Useful for instruction-level stress where a small number of failures may occur
-    /// due to known limitations (e.g., ELEMENT_TYPE_INTERNAL in PromoteCallerStack).
+    /// due to known limitations.
     /// </summary>
     internal static void AssertHighPassRate(CdacStressResults results, string debuggeeName, double minPassRate)
     {

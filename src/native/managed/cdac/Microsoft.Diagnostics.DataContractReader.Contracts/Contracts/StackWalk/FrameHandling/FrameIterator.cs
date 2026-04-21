@@ -4,6 +4,7 @@
 using System;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.CallingConvention;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
@@ -677,7 +678,7 @@ internal sealed class FrameIterator
         ArgTypeInfo returnTypeInfo = GcTypeKindToArgTypeInfo(methodSig.ReturnType, ccInfo.PointerSize);
 
         ArgIteratorData argData = new(hasThis, methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs, paramTypes, returnTypeInfo);
-        ArgIterator argit = new(ccInfo, argData, hasParamType: requiresInstArg, hasAsyncContinuation: isAsync, forcedByRefParams: System.Array.Empty<bool>());
+        CallingConvention.ArgIterator argit = new(ccInfo, argData, hasParamType: requiresInstArg, hasAsyncContinuation: isAsync, forcedByRefParams: System.Array.Empty<bool>());
 
         // Promote 'this' for non-static methods
         if (argit.HasThis)

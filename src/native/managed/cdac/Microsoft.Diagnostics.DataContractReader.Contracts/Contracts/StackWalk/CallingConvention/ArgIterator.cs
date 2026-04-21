@@ -7,7 +7,7 @@
 using System;
 using System.Diagnostics;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.CallingConvention;
 
 /// <summary>
 /// Enumerates method arguments and maps each to a register or stack offset
@@ -527,34 +527,16 @@ internal struct ArgIterator
 
     private int GetNextOffsetX86(CorElementType argType, int argSize)
     {
-        // x86 simplified: check if arg goes in register, otherwise stack
-        // Full implementation would need IsTrivialPointerSizedStruct for value types
-        if (_x86NumRegistersUsed < _ccInfo.NumArgumentRegisters)
+        if (_x86NumRegistersUsed < _ccInfo.NumArgumentRegisters
+            && argType is not CorElementType.ValueType
+                and not CorElementType.R4
+                and not CorElementType.R8
+                and not CorElementType.I8
+                and not CorElementType.U8)
         {
-            switch (argType)
-            {
-                case CorElementType.Boolean:
-                case CorElementType.Char:
-                case CorElementType.I1:
-                case CorElementType.U1:
-                case CorElementType.I2:
-                case CorElementType.U2:
-                case CorElementType.I4:
-                case CorElementType.U4:
-                case CorElementType.String:
-                case CorElementType.Ptr:
-                case CorElementType.Byref:
-                case CorElementType.Class:
-                case CorElementType.Array:
-                case CorElementType.I:
-                case CorElementType.U:
-                case CorElementType.FnPtr:
-                case CorElementType.Object:
-                case CorElementType.SzArray:
-                    _x86NumRegistersUsed++;
-                    return (int)_ccInfo.ArgumentRegistersOffset +
-                        (_ccInfo.NumArgumentRegisters - _x86NumRegistersUsed) * _ccInfo.PointerSize;
-            }
+            _x86NumRegistersUsed++;
+            return (int)_ccInfo.ArgumentRegistersOffset +
+                (_ccInfo.NumArgumentRegisters - _x86NumRegistersUsed) * _ccInfo.PointerSize;
         }
 
         int cbArg = _ccInfo.StackElemSize(argSize);

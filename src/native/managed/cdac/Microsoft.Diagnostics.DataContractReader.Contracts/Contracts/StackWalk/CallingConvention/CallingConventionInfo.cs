@@ -7,7 +7,7 @@
 
 using System;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.CallingConvention;
 
 /// <summary>
 /// Architecture-specific calling convention constants and methods for

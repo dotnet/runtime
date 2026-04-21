@@ -3,7 +3,7 @@
 
 // Ported from crossgen2's ArgIterator.cs — data holder types.
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.CallingConvention;
 
 /// <summary>
 /// Describes how a single argument is laid out in registers and/or stack locations.

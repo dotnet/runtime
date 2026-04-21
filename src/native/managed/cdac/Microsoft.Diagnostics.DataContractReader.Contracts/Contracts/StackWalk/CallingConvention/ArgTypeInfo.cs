@@ -4,7 +4,7 @@
 // Type information needed by ArgIterator for calling convention analysis.
 // Ported from crossgen2's TypeHandle struct in ArgIterator.cs.
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.CallingConvention;
 
 /// <summary>
 /// Pre-computed type information needed by <see cref="ArgIterator"/> for
