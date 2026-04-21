@@ -376,6 +376,7 @@ namespace Microsoft.Interop
         public override StatementSyntax GenerateElementCleanupStatement(StubIdentifierContext context)
         {
             string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(CollectionSource.TypeInfo, context);
+            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context);
             ExpressionSyntax indexConstraintName;
             if (!UsesLastIndexMarshalled(CollectionSource.TypeInfo, CollectionSource.CodeContext))
             {
@@ -404,13 +405,32 @@ namespace Microsoft.Interop
                 return EmptyStatement();
             }
 
+            // Declare the managed span so that nested element cleanup can access it via <managedSpan>[<index>]
+            // (e.g., when an inner stateless collection with NoCountInfo needs to compute its length from the
+            // managed source during ManagedToUnmanaged cleanup).
+            bool isManagedToUnmanaged = MarshallerHelpers.GetMarshalDirection(CollectionSource.TypeInfo, CollectionSource.CodeContext) == MarshalDirection.ManagedToUnmanaged;
+            LocalDeclarationStatementSyntax nativeSpanDeclaration = Declare(
+                ReadOnlySpanOf(unmanagedElementType),
+                nativeSpanIdentifier,
+                isManagedToUnmanaged
+                    ? CollectionSource.GetUnmanagedValuesDestination(context)
+                    : CollectionSource.GetUnmanagedValuesSource(context));
+
+            if (isManagedToUnmanaged)
+            {
+                LocalDeclarationStatementSyntax managedSpanDeclaration = Declare(
+                    ReadOnlySpanOf(elementMarshaller.TypeInfo.ManagedType.Syntax),
+                    managedSpanIdentifier,
+                    CollectionSource.GetManagedValuesSource(context));
+
+                return Block(
+                    nativeSpanDeclaration,
+                    managedSpanDeclaration,
+                    contentsCleanupStatements);
+            }
+
             return Block(
-                Declare(
-                    ReadOnlySpanOf(unmanagedElementType),
-                    nativeSpanIdentifier,
-                    MarshallerHelpers.GetMarshalDirection(CollectionSource.TypeInfo, CollectionSource.CodeContext) == MarshalDirection.ManagedToUnmanaged
-                        ? CollectionSource.GetUnmanagedValuesDestination(context)
-                        : CollectionSource.GetUnmanagedValuesSource(context)),
+                nativeSpanDeclaration,
                 contentsCleanupStatements);
         }
 
