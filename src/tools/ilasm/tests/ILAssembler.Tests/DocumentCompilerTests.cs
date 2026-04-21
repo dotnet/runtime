@@ -4375,5 +4375,76 @@ namespace ILAssembler.Tests
                 .Any(t => reader.GetString(t.Name) == "String" && reader.GetString(t.Namespace) == "System");
             Assert.True(foundStringTypeRef, "System.String should be a TypeRef, not a TypeDef");
         }
+
+        [Fact]
+        public void CustomAttributeOnType_EmittedCorrectly()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.ComVisibleAttribute::.ctor(bool) = ( 01 00 01 00 00 )
+                    .method public instance void .ctor() cil managed
+                    {
+                        ldarg.0
+                        call instance void [mscorlib]System.Object::.ctor()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // The custom attribute should be in the CustomAttribute table
+            Assert.True(reader.GetTableRowCount(TableIndex.CustomAttribute) >= 1,
+                "Should have at least one custom attribute");
+
+            // Find the ComVisibleAttribute on the type
+            var typeHandle = MetadataTokens.TypeDefinitionHandle(2); // Test type
+            var attrs = reader.GetCustomAttributes(typeHandle);
+            Assert.True(attrs.Count >= 1, "Test type should have at least one custom attribute");
+        }
+
+        [Fact]
+        public void CustomAttributeBlobDescr_EmptyBraces_CorrectProlog()
+        {
+            // '= {}' should produce a 4-byte blob: 01 00 (prolog) 00 00 (0 named args)
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly extern xunit.core { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = {}
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "TestMethod");
+
+            var attrs = reader.GetCustomAttributes(MetadataTokens.MethodDefinitionHandle(
+                MetadataTokens.GetRowNumber(reader.MethodDefinitions
+                    .First(h => reader.GetString(reader.GetMethodDefinition(h).Name) == "TestMethod"))));
+            Assert.True(attrs.Count >= 1);
+
+            var attr = reader.GetCustomAttribute(attrs.First());
+            var blobBytes = reader.GetBlobBytes(attr.Value);
+            // Should be exactly 4 bytes: 01 00 (prolog) 00 00 (0 named args)
+            Assert.Equal(4, blobBytes.Length);
+            Assert.Equal(0x01, blobBytes[0]); // prolog low byte
+            Assert.Equal(0x00, blobBytes[1]); // prolog high byte
+            Assert.Equal(0x00, blobBytes[2]); // named arg count low
+            Assert.Equal(0x00, blobBytes[3]); // named arg count high
+        }
     }
 }
