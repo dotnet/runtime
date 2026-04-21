@@ -60,7 +60,7 @@ internal static partial class Interop
 
             if (ret != Success)
             {
-                Debug.Fail($"Unexpected result from {nameof(AppleCryptoNative_X25519ExportPrivateKey)}: {ret}.");
+                Debug.Fail($"Unexpected result from {nameof(AppleCryptoNative_X25519DeriveRawSecretAgreement)}: {ret}.");
                 throw new CryptographicException();
             }
         }
