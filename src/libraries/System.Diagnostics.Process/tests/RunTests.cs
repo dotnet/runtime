@@ -71,9 +71,16 @@ namespace System.Diagnostics.Tests
         {
             using Process template = CreateSleepProcess((int)TimeSpan.FromHours(1).TotalMilliseconds);
 
-            ProcessExitStatus exitStatus = useAsync
-                ? await Process.RunAsync(template.StartInfo, new CancellationTokenSource(TimeSpan.FromMilliseconds(100)).Token)
-                : Process.Run(template.StartInfo, TimeSpan.FromMilliseconds(100));
+            ProcessExitStatus exitStatus;
+            if (useAsync)
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+                exitStatus = await Process.RunAsync(template.StartInfo, cts.Token);
+            }
+            else
+            {
+                exitStatus = Process.Run(template.StartInfo, TimeSpan.FromMilliseconds(100));
+            }
 
             Assert.True(exitStatus.Canceled);
         }
@@ -190,8 +197,9 @@ namespace System.Diagnostics.Tests
 
             if (useAsync)
             {
+                using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
-                    await Process.RunAndCaptureTextAsync(template.StartInfo, new CancellationTokenSource(TimeSpan.FromMilliseconds(100)).Token));
+                    await Process.RunAndCaptureTextAsync(template.StartInfo, cts.Token));
             }
             else
             {
