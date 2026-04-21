@@ -5,10 +5,8 @@
 // Zip Spec here: http://www.pkware.com/documents/casestudies/APPNOTE.TXT
 
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
