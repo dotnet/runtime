@@ -106,6 +106,7 @@ public interface ILoader : IContract
     IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
     bool IsDynamic(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsModuleMapped(ModuleHandle handle) => throw new NotImplementedException();
     bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
 
     TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();
