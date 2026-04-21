@@ -239,34 +239,26 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
 
-            // Read the current bits, clear the flags we're about to set, and mask with CONTROL_FLAGS_MASK.
-            Contracts.DebuggerAssemblyControlFlags dwBits = loader.GetDebuggerInfoBits(handle);
-            dwBits &= ~(Contracts.DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS | Contracts.DebuggerAssemblyControlFlags.DACF_ENC_ENABLED);
-            dwBits &= Contracts.DebuggerAssemblyControlFlags.DACF_CONTROL_FLAGS_MASK;
+            Contracts.DebuggerAssemblyControlFlags controlFlags = loader.GetDebuggerInfoBits(handle);
+            controlFlags &= ~(Contracts.DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS | Contracts.DebuggerAssemblyControlFlags.DACF_ENC_ENABLED);
+            controlFlags &= Contracts.DebuggerAssemblyControlFlags.DACF_CONTROL_FLAGS_MASK;
 
-            if (fAllowJitOpts != Interop.BOOL.FALSE)
+            if (fAllowJitOpts == Interop.BOOL.TRUE)
             {
-                dwBits |= Contracts.DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS;
+                controlFlags |= Contracts.DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS;
             }
 
-            if (fEnableEnC != Interop.BOOL.FALSE)
+            if (fEnableEnC == Interop.BOOL.TRUE)
             {
-                dwBits |= Contracts.DebuggerAssemblyControlFlags.DACF_ENC_ENABLED;
+                controlFlags |= Contracts.DebuggerAssemblyControlFlags.DACF_ENC_ENABLED;
             }
 
-            // SetDebuggerInfoBits handles the EncCapable check, JIT optimization disabled state update,
-            // and EditAndContinue flag logic internally.
-            loader.SetDebuggerInfoBits(handle, dwBits);
+            loader.SetDebuggerInfoBits(handle, controlFlags);
 
-            // If EnC was requested, check whether the module actually has EditAndContinue set.
-            // If not, it means the module was not capable of EnC.
-            if (fEnableEnC != Interop.BOOL.FALSE)
+            // Check if EnC was requested but the module was not capable.
+            if (fEnableEnC == Interop.BOOL.TRUE && (loader.GetFlags(handle) & Contracts.ModuleFlags.EditAndContinue) == 0)
             {
-                Contracts.ModuleFlags flags = loader.GetFlags(handle);
-                if ((flags & Contracts.ModuleFlags.EditAndContinue) == 0)
-                {
-                    hr = CorDbgHResults.CORDBG_S_NOT_ALL_BITS_SET;
-                }
+                hr = CorDbgHResults.CORDBG_S_NOT_ALL_BITS_SET;
             }
         }
         catch (System.Exception ex)

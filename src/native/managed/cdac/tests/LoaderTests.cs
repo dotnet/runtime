@@ -43,7 +43,7 @@ public unsafe class LoaderTests
         return target.Contracts.Loader;
     }
 
-    private static (ILoader Contract, TestPlaceholderTarget Target) CreateLoaderContractWithTarget(
+    internal static (ILoader Contract, TestPlaceholderTarget Target) CreateLoaderContractWithTarget(
         MockTarget.Architecture arch,
         Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
     {
@@ -723,14 +723,7 @@ public unsafe class SetCompilerFlagsTests
         MockTarget.Architecture arch,
         Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
     {
-        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
-        MockLoaderBuilder loader = new(targetBuilder.MemoryBuilder);
-
-        configure(loader, targetBuilder);
-
-        targetBuilder.AddTypes(LoaderTests.CreateContractTypes(loader));
-        targetBuilder.AddContract<ILoader>(version: "c1");
-        var target = targetBuilder.Build();
+        var (_, target) = LoaderTests.CreateLoaderContractWithTarget(arch, configure);
         var dacDbi = new DacDbiImpl(target, legacyObj: null);
         return (dacDbi, target);
     }
@@ -740,18 +733,25 @@ public unsafe class SetCompilerFlagsTests
     public void SetCompilerFlags_BothFlagsSet_EncCapable(MockTarget.Architecture arch)
     {
         ulong assemblyAddr = 0;
+        TargetPointer moduleAddr = TargetPointer.Null;
+        int flagsOffset = 0;
 
-        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, builder) =>
+        var (dacDbi, target) = CreateDacDbiWithLoader(arch, (loader, builder) =>
         {
             var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.Debug);
             builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
             var module = loader.AddModule(flags: IsEncCapable);
             assemblyAddr = module.Assembly;
+            moduleAddr = new TargetPointer(module.Address);
+            flagsOffset = loader.ModuleLayout.GetField(nameof(Data.Module.Flags)).Offset;
         });
 
         int hr = dacDbi.SetCompilerFlags(assemblyAddr, Interop.BOOL.TRUE, Interop.BOOL.TRUE);
 
         Assert.Equal(System.HResults.S_OK, hr);
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
+        Assert.NotEqual(0u, rawFlags & DebuggerAllowJitOptsPriv);
+        Assert.NotEqual(0u, rawFlags & IsEditAndContinue);
     }
 
     [Theory]
@@ -782,7 +782,7 @@ public unsafe class SetCompilerFlagsTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void SetCompilerFlags_EnCRequested_NotCapable_ReturnsNotAllBitsSet(MockTarget.Architecture arch)
+    public void SetCompilerFlags_EnCRequested_NotCapable(MockTarget.Architecture arch)
     {
         ulong assemblyAddr = 0;
 
@@ -790,7 +790,7 @@ public unsafe class SetCompilerFlagsTests
         {
             var config = loader.AddEEConfig((uint)ClrModifiableAssemblies.None);
             builder.AddGlobals((Constants.Globals.EEConfig, config.Address));
-            var module = loader.AddModule(); // Not EnC-capable
+            var module = loader.AddModule();
             assemblyAddr = module.Assembly;
         });
 
