@@ -148,7 +148,10 @@ namespace System.IO.Compression
             // the exact upper bound for the zlib implementation linked into the current process
             // (either classic zlib or zlib-ng, depending on platform and build flags). The 2^31
             // threshold keeps the value within the uint P/Invoke signature on all platforms.
-            if (inputLength <= (1L << 31))
+
+            // Browser/WASI builds do not link the native compression library,
+            // so fall through to the managed formula on those platforms.
+            if (inputLength <= (1L << 31) && !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi())
             {
                 return Interop.ZLib.compressBound((uint)inputLength);
             }
