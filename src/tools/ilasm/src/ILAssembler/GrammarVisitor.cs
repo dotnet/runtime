@@ -5654,9 +5654,13 @@ namespace ILAssembler
                 }
             }
 
-            elementType.LinkSuffix(suffix);
-            prefix.LinkSuffix(elementType);
-            return new(prefix);
+            // Work around https://github.com/dotnet/runtime/issues/127243
+            // by writing to a separate blob.
+            BlobBuilder fullBlob = new(elementType.Count + prefix.Count + suffix.Count);
+            prefix.WriteContentTo(fullBlob);
+            elementType.WriteContentTo(fullBlob);
+            suffix.WriteContentTo(fullBlob);
+            return new(fullBlob);
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitTypeArgs(CILParser.TypeArgsContext context) => VisitTypeArgs(context);
