@@ -50,7 +50,7 @@ namespace System.Diagnostics.Tests
             using Process template = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
 
             ProcessExitStatus exitStatus = useAsync
-                ? await Process.RunAsync(template.StartInfo)
+                ? await Process.RunAsync(template.StartInfo, new CancellationTokenSource(TimeSpan.FromMinutes(1)).Token)
                 : Process.Run(template.StartInfo, TimeSpan.FromMinutes(1));
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);

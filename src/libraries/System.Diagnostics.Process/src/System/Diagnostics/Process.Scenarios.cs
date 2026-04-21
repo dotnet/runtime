@@ -222,7 +222,7 @@ namespace System.Diagnostics
             }
             catch
             {
-                process.Kill();
+                try { process.Kill(); } catch { }
                 throw;
             }
 
@@ -231,10 +231,8 @@ namespace System.Diagnostics
             {
                 TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
                 TimeSpan remaining = timeout.Value - elapsed;
-
-                exitStatus = remaining > TimeSpan.Zero
-                    ? process.SafeHandle.WaitForExitOrKillOnTimeout(remaining)
-                    : process.SafeHandle.WaitForExitOrKillOnTimeout(TimeSpan.Zero);
+                remaining = remaining >= TimeSpan.Zero ? remaining : TimeSpan.Zero;
+                exitStatus = process.SafeHandle.WaitForExitOrKillOnTimeout(remaining);
             }
             else
             {
@@ -302,7 +300,7 @@ namespace System.Diagnostics
             }
             catch
             {
-                process.Kill();
+                try { process.Kill(); } catch { }
                 throw;
             }
 

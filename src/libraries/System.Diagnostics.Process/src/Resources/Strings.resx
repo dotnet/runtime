@@ -364,7 +364,7 @@
     <value>InheritedHandles must not contain duplicates.</value>
   </data>
   <data name="UseShellExecuteNotSupportedForScenario" xml:space="preserve">
-    <value>UseShellExecute is not supported by {0}. On Windows, shell execution may not create a new process, which would make it impossible to return a valid process ID.</value>
+    <value>UseShellExecute is not supported by Process.{0}. On Windows, shell execution may not create a new process, which would make it impossible to return a valid process ID.</value>
   </data>
   <data name="NotSupportedForNonChildProcess" xml:space="preserve">
     <value>On Unix, it's impossible to obtain the exit status of a non-child process.</value>
