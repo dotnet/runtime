@@ -51,8 +51,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (_waitStateHolder is null)
                 {
-                    // On Unix, we don't use process descriptors yet, so we can't get PID.
-                    throw new PlatformNotSupportedException();
+                    throw new InvalidOperationException(SR.InvalidProcessHandle);
                 }
 
                 return _waitStateHolder._state._processId;
