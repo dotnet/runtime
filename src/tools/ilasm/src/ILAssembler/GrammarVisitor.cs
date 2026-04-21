@@ -1804,7 +1804,10 @@ namespace ILAssembler
             }
             else
             {
-                _ = VisitDdItem(context.ddItem());
+                foreach (var item in context.ddItem())
+                {
+                    _ = VisitDdItem(item);
+                }
             }
             return GrammarResult.SentinelValue.Result;
         }
@@ -2112,6 +2115,8 @@ namespace ILAssembler
             }
             return new(text);
         }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitDottedNamePart(CILParser.DottedNamePartContext context) => throw new UnreachableException();
         GrammarResult ICILVisitor<GrammarResult>.VisitElementType(CILParser.ElementTypeContext context) => VisitElementType(context);
         public GrammarResult.FormattedBlob VisitElementType(CILParser.ElementTypeContext context)
         {
@@ -3724,24 +3729,49 @@ namespace ILAssembler
 
         public GrammarResult VisitLanguageDecl(CILParser.LanguageDeclContext context)
         {
-            // .language SQSTRING (',' SQSTRING (',' SQSTRING)?)?
+            // .language languageString (',' languageString (',' languageString)?)?
+            // or .language QSTRING QSTRING QSTRING (space-separated)
             // First GUID: language (e.g., C#, VB, IL)
             // Second GUID: vendor (optional)
             // Third GUID: document type (optional)
-            var strings = context.SQSTRING();
-            if (strings.Length >= 1 && Guid.TryParse(StringHelpers.ParseQuotedString(strings[0].GetText()), out var languageGuid))
+            var strings = context.languageString();
+            // Fall back to QSTRING tokens for space-separated form
+            var qstrings = context.QSTRING();
+            if (strings.Length >= 1 && Guid.TryParse(VisitLanguageString(strings[0]).Value, out var languageGuid))
             {
                 _currentLanguageGuid = languageGuid;
             }
-            if (strings.Length >= 2 && Guid.TryParse(StringHelpers.ParseQuotedString(strings[1].GetText()), out var vendorGuid))
+            else if (qstrings.Length >= 1 && Guid.TryParse(StringHelpers.ParseQuotedString(qstrings[0].GetText()), out languageGuid))
+            {
+                _currentLanguageGuid = languageGuid;
+            }
+            if (strings.Length >= 2 && Guid.TryParse(VisitLanguageString(strings[1]).Value, out var vendorGuid))
             {
                 _currentLanguageVendorGuid = vendorGuid;
             }
-            if (strings.Length >= 3 && Guid.TryParse(StringHelpers.ParseQuotedString(strings[2].GetText()), out var docTypeGuid))
+            else if (qstrings.Length >= 2 && Guid.TryParse(StringHelpers.ParseQuotedString(qstrings[1].GetText()), out vendorGuid))
+            {
+                _currentLanguageVendorGuid = vendorGuid;
+            }
+            if (strings.Length >= 3 && Guid.TryParse(VisitLanguageString(strings[2]).Value, out var docTypeGuid))
+            {
+                _currentDocumentTypeGuid = docTypeGuid;
+            }
+            else if (qstrings.Length >= 3 && Guid.TryParse(StringHelpers.ParseQuotedString(qstrings[2].GetText()), out docTypeGuid))
             {
                 _currentDocumentTypeGuid = docTypeGuid;
             }
             return GrammarResult.SentinelValue.Result;
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitLanguageString(CILParser.LanguageStringContext context) => VisitLanguageString(context);
+        public GrammarResult.String VisitLanguageString(CILParser.LanguageStringContext context)
+        {
+            if (context.SQSTRING() is not null)
+            {
+                return new(StringHelpers.ParseQuotedString(context.SQSTRING().GetText()));
+            }
+            return new(StringHelpers.ParseQuotedString(context.QSTRING().GetText()));
         }
 
         public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
