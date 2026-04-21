@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
-using System.Collections.Specialized;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -18,15 +16,15 @@ namespace System.Diagnostics.Tests
             PerformanceCounter counterSample = CreateCounter(categoryName, PerformanceCounterType.ElapsedTime);
 
             counterSample.RawValue = Stopwatch.GetTimestamp();
-            DateTime Start = DateTime.Now;
+            long startTicks = Stopwatch.GetTimestamp();
             Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
 
             System.Threading.Thread.Sleep(500);
 
             var counterVal = Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
-            var dateTimeVal = DateTime.Now.Subtract(Start).TotalSeconds;
+            var elapsed = (double)(Stopwatch.GetTimestamp() - startTicks) / Stopwatch.Frequency;
             Helpers.DeleteCategory(categoryName);
-            Assert.True(Math.Abs(dateTimeVal - counterVal) < .3);
+            Assert.True(Math.Abs(elapsed - counterVal) < .3);
         }
 
         public static PerformanceCounter CreateCounter(string categoryName, PerformanceCounterType counterType)
