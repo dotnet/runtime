@@ -3590,8 +3590,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //   ori     reg, r21, addr_bits[11:0]
             //   lu32i_d reg, addr_bits[50:32]
 
-            insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
-            id->idAddr()->iiaIGlabel = tgtIG;
+            if (!id->idIsBound())
+            {
+                insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
+                id->idAddr()->iiaIGlabel = tgtIG;
+                id->idSetIsBound();
+            }
+
+            insGroup* tgtIG = id->idAddr()->iiaIGlabel;
 
             regNumber reg1 = id->idReg1();
             assert(isGeneralRegister(reg1));

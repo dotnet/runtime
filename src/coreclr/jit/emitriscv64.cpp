@@ -3334,8 +3334,14 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
 
 BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins)
 {
-    insGroup* targetInsGroup = static_cast<insGroup*>(emitCodeGetCookie(id->idAddr()->iiaBBlabel));
-    id->idAddr()->iiaIGlabel = targetInsGroup;
+    if (!id->idIsBound())
+    {
+        insGroup* targetInsGroup = static_cast<insGroup*>(emitCodeGetCookie(id->idAddr()->iiaBBlabel));
+        id->idAddr()->iiaIGlabel = targetInsGroup;
+        id->idSetIsBound();
+    }
+
+    insGroup* targetInsGroup = id->idAddr()->iiaIGlabel;
 
     const regNumber reg1   = id->idReg1();
     const ssize_t   igOffs = targetInsGroup->igOffs;
