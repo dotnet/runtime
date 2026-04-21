@@ -24,6 +24,7 @@
 
 #if defined(TARGET_ARM64)
 extern "C" void* PacSignPtr(void* ptr, void* sp);
+extern "C" void* PacStripPtr(void* ptr);
 #endif // TARGET_ARM64
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -4828,7 +4829,7 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
     thread->ResetThreadState(Thread::TS_Hijacked);
 
     // Fix up our caller's stack, so it can resume from the hijack correctly
-    pArgs->ReturnAddress = (size_t)thread->m_pvHJRetAddr;
+    pArgs->ReturnAddress = (size_t)PacStripPtr(thread->m_pvHJRetAddr);
 
     // Build a frame so that stack crawling can proceed from here back to where
     // we will resume execution.
