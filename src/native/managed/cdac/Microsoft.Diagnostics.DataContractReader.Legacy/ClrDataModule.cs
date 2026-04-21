@@ -34,6 +34,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     // This is an IUnknown pointer for the legacy implementation
     private readonly nint _legacyModulePointer;
 
+    private MetaDataImportImpl? _metaDataImportImpl;
+
     public ClrDataModule(TargetPointer address, Target target, IXCLRDataModule? legacyImpl)
     {
         _address = address;
@@ -49,7 +51,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
     private const uint CORDEBUG_JIT_DEFAULT = 0x1;
     private const uint CORDEBUG_JIT_DISABLE_OPTIMIZATION = 0x3;
-    private MetaDataImportImpl? _metaDataImportImpl;
 
     CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
     {
