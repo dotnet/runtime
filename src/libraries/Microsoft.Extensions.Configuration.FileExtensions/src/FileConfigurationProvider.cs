@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.Configuration
             }
             catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
             {
-                // assuming file was deleted in meantime, we already checked existence at the begining once
+                // assuming file was deleted in meantime, we already checked existence at the beginning once
                 HandleLoadingNonExisting(reload, file);
                 return;
             }
