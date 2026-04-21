@@ -90,6 +90,9 @@ namespace System.Diagnostics.Tests
                 return RemoteExecutor.SuccessExitCode;
             });
 
+            template.StartInfo.RedirectStandardOutput = true;
+            template.StartInfo.RedirectStandardError = true;
+
             ProcessTextOutput result = useAsync
                 ? await Process.RunAndCaptureTextAsync(template.StartInfo)
                 : Process.RunAndCaptureText(template.StartInfo);
@@ -130,6 +133,9 @@ namespace System.Diagnostics.Tests
         public async Task RunAndCaptureText_EmptyOutput(bool useAsync)
         {
             using Process template = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+
+            template.StartInfo.RedirectStandardOutput = true;
+            template.StartInfo.RedirectStandardError = true;
 
             ProcessTextOutput result = useAsync
                 ? await Process.RunAndCaptureTextAsync(template.StartInfo)

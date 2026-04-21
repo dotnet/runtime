@@ -197,7 +197,9 @@ namespace System.Diagnostics
         /// <returns>The captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException">
-        /// <see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.
+        /// <para><see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.</para>
+        /// <para>-or-</para>
+        /// <para><see cref="ProcessStartInfo.RedirectStandardOutput"/> or <see cref="ProcessStartInfo.RedirectStandardError"/> is not set to <see langword="true"/>.</para>
         /// </exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -207,9 +209,7 @@ namespace System.Diagnostics
             ArgumentNullException.ThrowIfNull(startInfo);
 
             ThrowIfUseShellExecute(startInfo, nameof(RunAndCaptureText));
-
-            startInfo.RedirectStandardOutput = true;
-            startInfo.RedirectStandardError = true;
+            ThrowIfNotRedirected(startInfo, nameof(RunAndCaptureText));
 
             long startTimestamp = Stopwatch.GetTimestamp();
 
@@ -263,7 +263,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public static ProcessTextOutput RunAndCaptureText(string fileName, IList<string>? arguments = null, TimeSpan? timeout = default)
-            => RunAndCaptureText(CreateStartInfo(fileName, arguments), timeout);
+            => RunAndCaptureText(CreateStartInfoForCapture(fileName, arguments), timeout);
 
         /// <summary>
         /// Asynchronously starts the process described by <paramref name="startInfo"/>, captures its standard output and error,
@@ -277,7 +277,9 @@ namespace System.Diagnostics
         /// <returns>A task that represents the asynchronous operation. The value of the task contains the captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException">
-        /// <see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.
+        /// <para><see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.</para>
+        /// <para>-or-</para>
+        /// <para><see cref="ProcessStartInfo.RedirectStandardOutput"/> or <see cref="ProcessStartInfo.RedirectStandardError"/> is not set to <see langword="true"/>.</para>
         /// </exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -287,9 +289,7 @@ namespace System.Diagnostics
             ArgumentNullException.ThrowIfNull(startInfo);
 
             ThrowIfUseShellExecute(startInfo, nameof(RunAndCaptureTextAsync));
-
-            startInfo.RedirectStandardOutput = true;
-            startInfo.RedirectStandardError = true;
+            ThrowIfNotRedirected(startInfo, nameof(RunAndCaptureTextAsync));
 
             using Process process = Start(startInfo)!;
 
@@ -331,7 +331,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public static Task<ProcessTextOutput> RunAndCaptureTextAsync(string fileName, IList<string>? arguments = null, CancellationToken cancellationToken = default)
-            => RunAndCaptureTextAsync(CreateStartInfo(fileName, arguments), cancellationToken);
+            => RunAndCaptureTextAsync(CreateStartInfoForCapture(fileName, arguments), cancellationToken);
 
         private static ProcessStartInfo CreateStartInfo(string fileName, IList<string>? arguments)
         {
@@ -349,11 +349,28 @@ namespace System.Diagnostics
             return startInfo;
         }
 
+        private static ProcessStartInfo CreateStartInfoForCapture(string fileName, IList<string>? arguments)
+        {
+            ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
+
+            return startInfo;
+        }
+
         private static void ThrowIfUseShellExecute(ProcessStartInfo startInfo, string methodName)
         {
             if (startInfo.UseShellExecute)
             {
                 throw new InvalidOperationException(SR.Format(SR.UseShellExecuteNotSupportedForScenario, methodName));
+            }
+        }
+
+        private static void ThrowIfNotRedirected(ProcessStartInfo startInfo, string methodName)
+        {
+            if (!startInfo.RedirectStandardOutput || !startInfo.RedirectStandardError)
+            {
+                throw new InvalidOperationException(SR.Format(SR.RedirectStandardOutputAndErrorRequired, methodName));
             }
         }
     }
