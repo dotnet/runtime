@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.NET.Sdk.WebAssembly;
+using Microsoft.Playwright;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -107,7 +108,7 @@ public class MiscTests : BlazorWasmTestBase
     [InlineData(Configuration.Release, false)]
     [InlineData(Configuration.Debug, true)]
     [InlineData(Configuration.Release, true)]
-    public void MultiClientHostedBuildAndPublish(Configuration config, bool publish)
+    public async Task MultiClientHostedBuildAndPublish(Configuration config, bool publish)
     {
         // Test that two Blazor WASM client projects can be built/published by a single server
         // project without duplicate static web asset Identity collisions. This validates the
@@ -165,6 +166,35 @@ public class MiscTests : BlazorWasmTestBase
             Assert.Contains(client2Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
             Assert.Contains(client1Files, f => Path.GetFileName(f).Contains("dotnet.native") && f.EndsWith(".wasm"));
             Assert.Contains(client2Files, f => Path.GetFileName(f).Contains("dotnet.native") && f.EndsWith(".wasm"));
+
+            // Start the server via `dotnet run --no-build` and verify that the static web assets
+            // middleware serves each referenced client's framework files from its obj/ materialized
+            // directory. This guards the hosted scenario the inline comment in
+            // Microsoft.NET.Sdk.WebAssembly.Browser.targets calls out: a server project consuming
+            // client framework files after `dotnet build` only (no publish). The Development
+            // environment is required so the Web SDK auto-invokes UseStaticWebAssets() and loads
+            // the client projects' static web assets manifests.
+            using RunCommand runCmd = new RunCommand(s_buildEnv, _testOutput);
+            runCmd.WithEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+            ToolCommand serverCmd = runCmd.WithWorkingDirectory(serverDir);
+            await using BrowserRunner runner = new BrowserRunner(_testOutput);
+            string serverUrl = await runner.StartServerAndGetUrlAsync(
+                serverCmd, $"run -c {config} --no-build");
+            // Kestrel logs the listening URL as http://[::]:<port> (wildcard) which is not a valid
+            // Host header — replace the host with localhost for client requests.
+            string clientBaseUrl = serverUrl.Replace("[::]", "localhost");
+
+            IBrowser browser = await runner.SpawnBrowserAsync(serverUrl);
+            IBrowserContext context = await browser.NewContextAsync(
+                new() { BaseURL = clientBaseUrl, IgnoreHTTPSErrors = true });
+            foreach (string clientBase in new[] { "client1", "client2" })
+            {
+                string assetUrl = $"/{clientBase}/_framework/dotnet.js";
+                _testOutput.WriteLine($"Fetching {clientBaseUrl}{assetUrl} via Playwright");
+                var response = await context.APIRequest.GetAsync(assetUrl);
+                Assert.True(response.Ok,
+                    $"Expected 2xx for {clientBaseUrl}{assetUrl} but got {response.Status} {response.StatusText}");
+            }
         }
     }
 }
