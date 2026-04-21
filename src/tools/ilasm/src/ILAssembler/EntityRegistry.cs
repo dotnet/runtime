@@ -25,6 +25,7 @@ namespace ILAssembler
         private readonly Dictionary<string, FileEntity> _seenFiles = new();
         private readonly List<ManifestResourceEntity> _manifestResourceEntities = new();
         private readonly Dictionary<(ExportedTypeEntity? ContainingType, string Namespace, string Name), ExportedTypeEntity> _seenExportedTypes = new();
+        private readonly List<TypeReferenceEntity> _typeReferences = new();
         private readonly List<MemberReferenceEntity> _memberReferences = new();
         private readonly Dictionary<(EntityBase, BlobBuilder), MethodSpecificationEntity> _seenMethodSpecs = new(new MethodSpecEqualityComparer());
 
@@ -212,6 +213,15 @@ namespace ILAssembler
                 RecordEntityInTable(TableIndex.GenericParamConstraint, constraint);
             }
 
+            // Resolve TypeRef entities to local TypeDef entities when possible.
+            // This must happen before MemberRef resolution so that MemberRef parents
+            // that point to local types already have TypeDef handles.
+            ResolveTypeReferences();
+
+            // Create a signature rewriter that remaps PseudoHandle-based TypeRef coded indices
+            // in blobs to the resolved real handles via list index lookup.
+            SignatureRewriter signatureRewriter = new(_typeReferences);
+
             foreach (MemberReferenceEntity memberReferenceEntity in _memberReferences)
             {
                 ResolveAndRecordMemberReference(memberReferenceEntity);
@@ -224,8 +234,16 @@ namespace ILAssembler
             foreach (TypeReferenceEntity type in GetSeenEntities(TableIndex.TypeRef))
             {
                 EntityBase resolutionScope = type.ResolutionScope;
+                // For nested TypeRefs whose outer type was resolved to a TypeDef,
+                // use the resolved handle's TypeDef handle for the resolution scope.
+                EntityHandle scopeHandle = resolutionScope switch
+                {
+                    FakeTypeEntity fakeScope => fakeScope.ResolutionScopeColumnHandle,
+                    TypeReferenceEntity { Handle.Kind: HandleKind.TypeDefinition } resolvedOuter => resolvedOuter.Handle,
+                    _ => resolutionScope.Handle
+                };
                 builder.AddTypeReference(
-                    resolutionScope is FakeTypeEntity fakeScope ? fakeScope.ResolutionScopeColumnHandle : resolutionScope.Handle,
+                    scopeHandle,
                     builder.GetOrAddString(type.Namespace),
                     builder.GetOrAddString(type.Name));
             }
@@ -286,7 +304,7 @@ namespace ILAssembler
                 builder.AddFieldDefinition(
                     fieldAttributes,
                     builder.GetOrAddString(fieldDef.Name),
-                    fieldDef.Signature!.Count == 0 ? default : builder.GetOrAddBlob(fieldDef.Signature));
+                    fieldDef.Signature!.Count == 0 ? default : builder.GetOrAddBlob(RewriteSignatureBlob(fieldDef.Signature, signatureRewriter)));
 
                 if (fieldDef.Offset is not null)
                 {
@@ -355,7 +373,7 @@ namespace ILAssembler
                     methodAttributes,
                     methodDef.ImplementationAttributes,
                     builder.GetOrAddString(methodDef.Name),
-                    builder.GetOrAddBlob(methodDef.MethodSignature!),
+                    builder.GetOrAddBlob(RewriteSignatureBlob(methodDef.MethodSignature!, signatureRewriter)),
                     bodyOffset,
                     GetParameterHandleForList(methodDef.Parameters, GetSeenEntities(TableIndex.MethodDef), method => ((MethodDefinitionEntity)method).Parameters, i));
 
@@ -421,7 +439,7 @@ namespace ILAssembler
                 builder.AddMemberReference(
                     memberRef.Parent.Handle,
                     builder.GetOrAddString(memberRef.Name),
-                    builder.GetOrAddBlob(memberRef.Signature));
+                    builder.GetOrAddBlob(RewriteSignatureBlob(memberRef.Signature, signatureRewriter)));
             }
 
             foreach (DeclarativeSecurityAttributeEntity declSecurity in GetSeenEntities(TableIndex.DeclSecurity))
@@ -450,7 +468,7 @@ namespace ILAssembler
             foreach (StandaloneSignatureEntity standaloneSig in GetSeenEntities(TableIndex.StandAloneSig))
             {
                 builder.AddStandaloneSignature(
-                    builder.GetOrAddBlob(standaloneSig.Signature));
+                    builder.GetOrAddBlob(RewriteSignatureBlob(standaloneSig.Signature, signatureRewriter)));
             }
 
             foreach (EventEntity evt in GetSeenEntities(TableIndex.Event))
@@ -474,7 +492,7 @@ namespace ILAssembler
                 builder.AddProperty(
                     prop.Attributes,
                     builder.GetOrAddString(prop.Name),
-                    builder.GetOrAddBlob(prop.Type));
+                    builder.GetOrAddBlob(RewriteSignatureBlob(prop.Type, signatureRewriter)));
 
                 foreach (var accessor in prop.Accessors)
                 {
@@ -508,7 +526,7 @@ namespace ILAssembler
 
             foreach (TypeSpecificationEntity typeSpec in GetSeenEntities(TableIndex.TypeSpec))
             {
-                builder.AddTypeSpecification(builder.GetOrAddBlob(typeSpec.Signature));
+                builder.AddTypeSpecification(builder.GetOrAddBlob(RewriteTypeSpecBlob(typeSpec.Signature, signatureRewriter)));
             }
 
             if (Assembly is not null)
@@ -559,7 +577,7 @@ namespace ILAssembler
 
             foreach (MethodSpecificationEntity methodSpec in GetSeenEntities(TableIndex.MethodSpec))
             {
-                builder.AddMethodSpecification(methodSpec.Parent.Handle, builder.GetOrAddBlob(methodSpec.Signature));
+                builder.AddMethodSpecification(methodSpec.Parent.Handle, builder.GetOrAddBlob(RewriteMethodSpecBlob(methodSpec.Signature, signatureRewriter)));
             }
 
             foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam))
@@ -839,8 +857,14 @@ namespace ILAssembler
             while (allTypeNames.Count > 0)
             {
                 var typeName = allTypeNames.Pop();
-                scope = GetOrCreateEntity((scope, typeName.Namespace, typeName.Name), TableIndex.TypeRef, _seenTypeRefs, value => new TypeReferenceEntity(scope, value.Namespace, value.Name), typeRef =>
+                var key = (scope, typeName.Namespace, typeName.Name);
+                if (!_seenTypeRefs.TryGetValue(key, out TypeReferenceEntity? typeRef))
                 {
+                    typeRef = new TypeReferenceEntity(scope, typeName.Namespace, typeName.Name);
+                    _seenTypeRefs.Add(key, typeRef);
+                    _typeReferences.Add(typeRef);
+                    typeRef.PseudoHandle = MetadataTokens.TypeReferenceHandle(_typeReferences.Count);
+
                     StringBuilder builder = new(typeRef.Namespace.Length + typeRef.Name.Length + 1);
                     builder.AppendFormat("{0}.{1}", typeRef.Namespace, typeRef.Name);
                     if (resolutionContext is AssemblyReferenceEntity asmRef)
@@ -855,7 +879,8 @@ namespace ILAssembler
                         builder.Append(assemblyNameInfo.FullName);
                     }
                     typeRef.ReflectionNotation = builder.ToString();
-                });
+                }
+                scope = typeRef;
             }
             return (TypeReferenceEntity)scope;
         }
@@ -927,6 +952,14 @@ namespace ILAssembler
 
         private sealed class SignatureRewriter : ISignatureTypeProvider<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>
         {
+            private readonly List<TypeReferenceEntity>? _typeReferences;
+
+            public SignatureRewriter() { }
+
+            public SignatureRewriter(List<TypeReferenceEntity> typeReferences)
+            {
+                _typeReferences = typeReferences;
+            }
             public readonly struct BlobOrHandle
             {
                 public BlobOrHandle(BlobBuilder? blob)
@@ -1076,7 +1109,16 @@ namespace ILAssembler
             }
             public BlobOrHandle GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
             {
-                return new BlobOrHandle(handle, rawTypeKind == (byte)SignatureTypeKind.ValueType);
+                bool isValueType = rawTypeKind == (byte)SignatureTypeKind.ValueType;
+                if (_typeReferences is not null)
+                {
+                    int row = MetadataTokens.GetRowNumber(handle);
+                    if (row >= 1 && row <= _typeReferences.Count)
+                    {
+                        return new BlobOrHandle(_typeReferences[row - 1].Handle, isValueType);
+                    }
+                }
+                return new BlobOrHandle(handle, isValueType);
             }
 
             public BlobOrHandle GetTypeFromSpecification(MetadataReader reader, EmptyGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
@@ -1086,6 +1128,264 @@ namespace ILAssembler
 
             public struct EmptyGenericContext { }
 
+        }
+
+        private void ResolveTypeReferences()
+        {
+            // Resolve TypeRef entities that refer to locally-defined types.
+            // For each TypeRef, if the resolution scope matches the current assembly
+            // and a matching TypeDef exists, assign the TypeDef handle to the TypeRef entity.
+            // Otherwise, record it in the TypeRef table with a real TypeRef handle.
+            // Process outermost types first so nested types can check if their parent was resolved.
+            foreach (TypeReferenceEntity typeRef in _typeReferences)
+            {
+                if (TryResolveTypeReferenceToDefinition(typeRef))
+                {
+                    continue;
+                }
+                RecordEntityInTable(TableIndex.TypeRef, typeRef);
+            }
+        }
+
+        private bool TryResolveTypeReferenceToDefinition(TypeReferenceEntity typeRef)
+        {
+            EntityBase resolutionScope = typeRef.ResolutionScope;
+
+            // Nested TypeRef: resolution scope is another TypeRef.
+            // If the outer type was resolved to a TypeDef, look up the nested type.
+            if (resolutionScope is TypeReferenceEntity outerTypeRef)
+            {
+                if (outerTypeRef.Handle.Kind == HandleKind.TypeDefinition)
+                {
+                    var outerTypeDef = (TypeDefinitionEntity)GetSeenEntities(TableIndex.TypeDef)[MetadataTokens.GetRowNumber(outerTypeRef.Handle) - 1];
+                    var nestedTypeDef = FindTypeDefinition(outerTypeDef, typeRef.Namespace, typeRef.Name);
+                    if (nestedTypeDef is not null)
+                    {
+                        ((IHasHandle)typeRef).SetHandle(nestedTypeDef.Handle);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // Top-level TypeRef: check if the resolution scope is a self-referencing assembly.
+            if (resolutionScope is AssemblyReferenceEntity asmRef)
+            {
+                if (Assembly is not null && string.Equals(asmRef.Name, Assembly.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    var typeDef = FindTypeDefinition(null, typeRef.Namespace, typeRef.Name);
+                    if (typeDef is not null)
+                    {
+                        ((IHasHandle)typeRef).SetHandle(typeDef.Handle);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // Resolution scope is module-level (ModuleEntity/ModuleReferenceEntity) — local type.
+            if (resolutionScope is ModuleEntity or ModuleReferenceEntity)
+            {
+                var typeDef = FindTypeDefinition(null, typeRef.Namespace, typeRef.Name);
+                if (typeDef is not null)
+                {
+                    ((IHasHandle)typeRef).SetHandle(typeDef.Handle);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Rewrites a signature blob, replacing PseudoHandle-based TypeRef coded indices
+        /// with resolved Handle-based coded indices. Returns the original blob if no mapping
+        /// is needed or if the signature cannot be decoded.
+        /// </summary>
+        private static BlobBuilder RewriteSignatureBlob(BlobBuilder original, SignatureRewriter rewriter)
+        {
+            var bytes = original.ToArray();
+            if (bytes.Length == 0)
+            {
+                return original;
+            }
+
+            try
+            {
+                var header = new SignatureHeader(bytes[0]);
+                return header.Kind switch
+                {
+                    SignatureKind.Method => RewriteMethodSignatureBlob(bytes, rewriter),
+                    SignatureKind.Field => RewriteFieldSignatureBlob(bytes, rewriter),
+                    SignatureKind.LocalVariables => RewriteLocalSignatureBlob(bytes, rewriter),
+                    SignatureKind.Property => RewritePropertySignatureBlob(bytes, rewriter),
+                    _ => original
+                };
+            }
+            catch
+            {
+                return original;
+            }
+        }
+
+        /// <summary>
+        /// Rewrites a TypeSpec signature blob (which is just a type, not a full signature with header).
+        /// </summary>
+        private BlobBuilder RewriteTypeSpecBlob(BlobBuilder original, SignatureRewriter rewriter)
+        {
+            var bytes = original.ToArray();
+            if (bytes.Length == 0)
+            {
+                return original;
+            }
+
+            try
+            {
+                var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(rewriter, null!, default);
+                unsafe
+                {
+                    fixed (byte* ptr = bytes)
+                    {
+                        var reader = new BlobReader(ptr, bytes.Length);
+                        var decoded = decoder.DecodeType(ref reader);
+                        BlobBuilder result = decoded;
+                        return result;
+                    }
+                }
+            }
+            catch
+            {
+                return original;
+            }
+        }
+
+        /// <summary>
+        /// Rewrites a MethodSpec instantiation blob (generic type arguments).
+        /// </summary>
+        private BlobBuilder RewriteMethodSpecBlob(BlobBuilder original, SignatureRewriter rewriter)
+        {
+            var bytes = original.ToArray();
+            if (bytes.Length == 0)
+            {
+                return original;
+            }
+
+            try
+            {
+                var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(rewriter, null!, default);
+                unsafe
+                {
+                    fixed (byte* ptr = bytes)
+                    {
+                        var reader = new BlobReader(ptr, bytes.Length);
+                        var typeArgs = decoder.DecodeMethodSpecificationSignature(ref reader);
+                        var newBlob = new BlobBuilder();
+                        newBlob.WriteByte((byte)SignatureAttributes.Generic);
+                        newBlob.WriteCompressedInteger(typeArgs.Length);
+                        foreach (var typeArg in typeArgs)
+                        {
+                            typeArg.WriteBlobTo(newBlob);
+                        }
+                        return newBlob;
+                    }
+                }
+            }
+            catch
+            {
+                return original;
+            }
+        }
+
+        private static BlobBuilder RewriteMethodSignatureBlob(byte[] bytes, SignatureRewriter rewriter)
+        {
+            var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(rewriter, null!, default);
+            unsafe
+            {
+                fixed (byte* ptr = bytes)
+                {
+                    var reader = new BlobReader(ptr, bytes.Length);
+                    var sig = decoder.DecodeMethodSignature(ref reader);
+
+                    var newBlob = new BlobBuilder();
+                    var encoder = new BlobEncoder(newBlob);
+                    encoder.MethodSignature(sig.Header.CallingConvention, sig.GenericParameterCount, sig.Header.Attributes.HasFlag(SignatureAttributes.Instance))
+                        .Parameters(sig.ParameterTypes.Length, out var retBuilder, out var paramsBuilder);
+                    sig.ReturnType.WriteBlobTo(retBuilder.Builder);
+                    for (int i = 0; i < sig.ParameterTypes.Length; i++)
+                    {
+                        if (sig.RequiredParameterCount != sig.ParameterTypes.Length && i == sig.RequiredParameterCount)
+                        {
+                            paramsBuilder.StartVarArgs();
+                        }
+                        sig.ParameterTypes[i].WriteBlobTo(paramsBuilder.AddParameter().Builder);
+                    }
+                    return newBlob;
+                }
+            }
+        }
+
+        private static BlobBuilder RewriteFieldSignatureBlob(byte[] bytes, SignatureRewriter rewriter)
+        {
+            var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(rewriter, null!, default);
+            unsafe
+            {
+                fixed (byte* ptr = bytes)
+                {
+                    var reader = new BlobReader(ptr, bytes.Length);
+                    var fieldType = decoder.DecodeFieldSignature(ref reader);
+
+                    var newBlob = new BlobBuilder();
+                    newBlob.WriteByte((byte)SignatureKind.Field); // 0x06
+                    fieldType.WriteBlobTo(newBlob);
+                    return newBlob;
+                }
+            }
+        }
+
+        private static BlobBuilder RewriteLocalSignatureBlob(byte[] bytes, SignatureRewriter rewriter)
+        {
+            var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(rewriter, null!, default);
+            unsafe
+            {
+                fixed (byte* ptr = bytes)
+                {
+                    var reader = new BlobReader(ptr, bytes.Length);
+                    var localTypes = decoder.DecodeLocalSignature(ref reader);
+
+                    var newBlob = new BlobBuilder();
+                    var encoder = new BlobEncoder(newBlob);
+                    var localsEncoder = encoder.LocalVariableSignature(localTypes.Length);
+                    foreach (var localType in localTypes)
+                    {
+                        localType.WriteBlobTo(localsEncoder.AddVariable().Builder);
+                    }
+                    return newBlob;
+                }
+            }
+        }
+
+        private static BlobBuilder RewritePropertySignatureBlob(byte[] bytes, SignatureRewriter rewriter)
+        {
+            var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(rewriter, null!, default);
+            unsafe
+            {
+                fixed (byte* ptr = bytes)
+                {
+                    var reader = new BlobReader(ptr, bytes.Length);
+                    var sig = decoder.DecodeMethodSignature(ref reader);
+
+                    var newBlob = new BlobBuilder();
+                    var encoder = new BlobEncoder(newBlob);
+                    encoder.PropertySignature(sig.Header.Attributes.HasFlag(SignatureAttributes.Instance))
+                        .Parameters(sig.ParameterTypes.Length, out var retBuilder, out var paramsBuilder);
+                    sig.ReturnType.WriteBlobTo(retBuilder.Builder);
+                    for (int i = 0; i < sig.ParameterTypes.Length; i++)
+                    {
+                        sig.ParameterTypes[i].WriteBlobTo(paramsBuilder.AddParameter().Builder);
+                    }
+                    return newBlob;
+                }
+            }
         }
 
         private void ResolveAndRecordMemberReference(MemberReferenceEntity memberRef)
@@ -1320,7 +1620,7 @@ namespace ILAssembler
 
         public abstract class EntityBase : IHasHandle
         {
-            public EntityHandle Handle { get; private set; }
+            public virtual EntityHandle Handle { get; private set; }
 
             protected virtual void SetHandle(EntityHandle token)
             {
@@ -1450,6 +1750,20 @@ namespace ILAssembler
             public string Name { get; } = name;
 
             public string ReflectionNotation { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Temporary handle assigned during parsing for signature blob encoding.
+            /// The real handle is assigned during emission after TypeRef → TypeDef resolution.
+            /// </summary>
+            public TypeReferenceHandle PseudoHandle { get; set; }
+
+            /// <summary>
+            /// Returns the real handle if set (during emission), otherwise the PseudoHandle
+            /// (during parsing). This allows code that reads Handle during parsing
+            /// (e.g., catch clauses, base type references) to get a valid TypeRef handle.
+            /// </summary>
+            public override EntityHandle Handle => base.Handle.IsNil ? PseudoHandle : base.Handle;
+
         }
 
         public sealed class TypeSpecificationEntity(BlobBuilder signature) : TypeEntity

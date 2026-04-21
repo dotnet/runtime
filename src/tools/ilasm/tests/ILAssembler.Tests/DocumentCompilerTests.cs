@@ -3936,6 +3936,135 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void TypeRefViaSelfAssembly_ResolvesToTypeDef()
+        {
+            // When IL references a local type via [self-assembly]Namespace.Type,
+            // the TypeRef should resolve to the local TypeDef.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static void DoWork() cil managed { ret }
+                }
+                .class public auto ansi beforefieldinit Caller extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        call void [test]MyClass::DoWork()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // The [test]MyClass TypeRef should have been resolved to TypeDef,
+            // so no TypeRef for MyClass should exist.
+            foreach (var trHandle in reader.TypeReferences)
+            {
+                var tr = reader.GetTypeReference(trHandle);
+                Assert.NotEqual("MyClass", reader.GetString(tr.Name));
+            }
+
+            // The method call should resolve to MethodDef, not MemberRef.
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+        }
+
+        [Fact]
+        public void TypeRefViaSelfAssembly_FieldResolves()
+        {
+            // Field access through a self-assembly TypeRef should resolve to FieldDef.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Data extends [mscorlib]System.Object
+                {
+                    .field public static int32 Value
+                }
+                .class public auto ansi beforefieldinit Reader extends [mscorlib]System.Object
+                {
+                    .method public static int32 Get() cil managed
+                    {
+                        ldsfld int32 [test]Data::Value
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+        }
+
+        [Fact]
+        public void ExternalTypeRef_StaysTypeRef()
+        {
+            // An external TypeRef (different assembly) should NOT resolve to TypeDef.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        call int32 [mscorlib]System.Environment::get_CurrentManagedThreadId()
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // External call should remain as MemberRef with TypeRef parent.
+            Assert.True(reader.GetTableRowCount(TableIndex.MemberRef) >= 1);
+            Assert.True(reader.GetTableRowCount(TableIndex.TypeRef) >= 1);
+        }
+
+        [Fact]
+        public void TypeRefViaSelfAssembly_MemberRefThroughResolved_BecomesMethodDef()
+        {
+            // A method call through [self-assembly]Type::Method should resolve
+            // BOTH the TypeRef to TypeDef AND the MemberRef to MethodDef.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly myasm { }
+                .class public auto ansi beforefieldinit Target extends [mscorlib]System.Object
+                {
+                    .method public static int32 Compute() cil managed
+                    {
+                        ldc.i4.0
+                        ret
+                    }
+                }
+                .class public auto ansi beforefieldinit Caller extends [mscorlib]System.Object
+                {
+                    .method public static int32 Main() cil managed
+                    {
+                        call int32 [myasm]Target::Compute()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+
+            // TypeRef table should not contain "Target" (resolved to TypeDef)
+            foreach (var trHandle in reader.TypeReferences)
+            {
+                var tr = reader.GetTypeReference(trHandle);
+                Assert.NotEqual("Target", reader.GetString(tr.Name));
+            }
+        }
+
+        [Fact]
         public void FieldLiteralConstant_SetsHasDefaultFlag()
         {
             string source = """
