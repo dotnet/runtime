@@ -195,7 +195,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!--
     ============================================================
-                     _PrepareTrimConfiguration
+                     PrepareTrimConfiguration
 
     Set up shared trim configuration properties and metadata on ResolvedFileToPublish.
     This target is shared between ILLink and ILC (NativeAOT). It sets default values for
@@ -203,11 +203,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     and _TrimmerFeatureSettings, and applies TrimmerSingleWarn metadata to
     ResolvedFileToPublish items for the intermediate assembly and project references.
 
+    This is a public extension point. Other targets may hook into it via
+    BeforeTargets="PrepareTrimConfiguration" to add RuntimeHostConfigurationOption items
+    that will be included in _TrimmerFeatureSettings for both ILLink and ILC.
+
     Consumers that need trim metadata on ResolvedFileToPublish should depend on this target.
     Metadata set here flows to ManagedAssemblyToLink via _ComputeManagedAssemblyToLink (which
     depends on this target), since ComputeManagedAssemblies preserves metadata from its inputs.
    -->
-   <Target Name="_PrepareTrimConfiguration"
+   <Target Name="PrepareTrimConfiguration"
            DependsOnTargets="_ComputeAssembliesToPostprocessOnPublish">
 
     <!-- Set up TrimMode. -->
@@ -335,7 +339,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     ============================================================
     -->
   <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" TaskFactory="TaskHostFactory" />
-  <Target Name="_ComputeManagedAssemblyToLink" DependsOnTargets="_PrepareTrimConfiguration">
+  <Target Name="_ComputeManagedAssemblyToLink" DependsOnTargets="PrepareTrimConfiguration">
 
     <!-- NB: There should not be non-managed assemblies in this list, but we still give the ILLink a chance to
          further refine this list. It currently drops C++/CLI assemblies in ComputeManageAssemblies. -->

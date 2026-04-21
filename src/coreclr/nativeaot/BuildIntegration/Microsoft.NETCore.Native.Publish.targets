@@ -3,7 +3,7 @@
   <Target Name="_ComputeIlcCompileInputs"
           Condition="'$(BuildingFrameworkLibrary)' != 'true'"
           BeforeTargets="ComputeIlcCompileInputs"
-          DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);_ComputeAssembliesToCompileToNative;_PrepareTrimConfiguration">
+          DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);_ComputeAssembliesToCompileToNative;PrepareTrimConfiguration">
 
     <ItemGroup>
       <_IlcManagedInputAssemblies Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true'" />
@@ -24,7 +24,7 @@
     The SDK typically sequences this target in the publish pipeline as:
       ComputeResolvedFilesToPublishList -> ILLink (when RunILLink is true) -> NativeCompile -> ...
 
-    This gives us a clean, explicit position after trim configuration (_PrepareTrimConfiguration),
+    This gives us a clean, explicit position after trim configuration (PrepareTrimConfiguration),
     regardless of whether ILLink itself runs.
     ============================================================
   -->
@@ -84,7 +84,7 @@
   <UsingTask TaskName="ComputeManagedAssembliesToCompileToNative" AssemblyFile="$(IlcBuildTasksPath)" />
   <Target Name="_ComputeAssembliesToCompileToNative"
           DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);_ComputeAssembliesToPostprocessOnPublish"
-          BeforeTargets="_PrepareTrimConfiguration">
+          BeforeTargets="PrepareTrimConfiguration">
 
     <Warning Condition="Exists($(UserRuntimeConfig))" Text="The published project has a runtimeconfig.template.json that is not supported by PublishAot. Move the configuration to the project file using RuntimeHostConfigurationOption." />
     <!-- Fail with descriptive error message for common mistake. -->
