@@ -124,12 +124,14 @@ namespace System.Net.Sockets
                 Reset();
             }
 
+#pragma warning disable CA1822
             public void Reset()
             {
 #if DEBUG
                 _callbackQueued = false;
 #endif
             }
+#pragma warning restore CA1822
 
             protected sealed override bool TryCompleteOperation(SafeHandle handle)
                 => TryCompleteOperation(AssociatedContext);
