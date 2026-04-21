@@ -146,6 +146,85 @@ namespace System.Diagnostics.Tests
             Assert.Equal(string.Empty, result.StandardError);
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task RunAndCaptureText_WithTimeoutOrCancellation_CapturesOutput(bool useAsync)
+        {
+            using Process template = CreateProcess(static () =>
+            {
+                Console.Write("captured");
+                Console.Error.Write("errors");
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            template.StartInfo.RedirectStandardOutput = true;
+            template.StartInfo.RedirectStandardError = true;
+
+            ProcessTextOutput result;
+            if (useAsync)
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+                result = await Process.RunAndCaptureTextAsync(template.StartInfo, cts.Token);
+            }
+            else
+            {
+                result = Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMinutes(1));
+            }
+
+            Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
+            Assert.False(result.ExitStatus.Canceled);
+            Assert.Equal("captured", result.StandardOutput);
+            Assert.Equal("errors", result.StandardError);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task RunAndCaptureText_WithTimeoutOrCancellation_KillsLongRunningProcess(bool useAsync)
+        {
+            using Process template = CreateSleepProcess((int)TimeSpan.FromHours(1).TotalMilliseconds);
+
+            template.StartInfo.RedirectStandardOutput = true;
+            template.StartInfo.RedirectStandardError = true;
+
+            if (useAsync)
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                    await Process.RunAndCaptureTextAsync(template.StartInfo, new CancellationTokenSource(TimeSpan.FromMilliseconds(100)).Token));
+            }
+            else
+            {
+                Assert.ThrowsAny<TimeoutException>(() =>
+                    Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMilliseconds(100)));
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, false, false)]
+        public async Task RunAndCaptureText_NotRedirected_ThrowsInvalidOperationException(bool useAsync, bool redirectOutput, bool redirectError)
+        {
+            ProcessStartInfo startInfo = new("someprocess")
+            {
+                RedirectStandardOutput = redirectOutput,
+                RedirectStandardError = redirectError
+            };
+
+            if (useAsync)
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(() => Process.RunAndCaptureTextAsync(startInfo));
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => Process.RunAndCaptureText(startInfo));
+            }
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
