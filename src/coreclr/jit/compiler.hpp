@@ -4476,6 +4476,7 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
         case GT_PUTARG_STK:
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
+        case GT_ASSERTION:
         case GT_INC_SATURATE:
         case GT_RETURN_SUSPEND:
             return visitor(&this->AsUnOp()->gtOp1);

@@ -65,6 +65,7 @@ GTNODE(NEG              , GenTreeOp          ,0,0,GTK_UNOP)
 
 GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,0,GTK_BINOP|GTK_EXOP)
 GTNODE(KEEPALIVE        , GenTree            ,0,0,GTK_UNOP|GTK_NOVALUE)   // keep operand alive, generate no code, produce no result
+GTNODE(ASSERTION        , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTLIR) // wraps a relop tree that is known to be true (used to seed assertions; removed by assertion prop)
 
 GTNODE(CAST             , GenTreeCast        ,0,0,GTK_UNOP|GTK_EXOP)      // conversion to another type
 GTNODE(BITCAST          , GenTreeOp          ,0,1,GTK_UNOP)               // reinterpretation of bits as another type

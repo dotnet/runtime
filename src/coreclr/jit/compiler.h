@@ -8726,7 +8726,7 @@ public:
     // Assertion Gen functions.
     void           optAssertionGen(GenTree* tree);
     AssertionIndex optAssertionGenCast(GenTreeCast* cast);
-    AssertionInfo  optCreateJTrueBoundsAssertion(GenTree* tree);
+    AssertionInfo  optCreateJTrueBoundsAssertion(GenTree* tree, bool createComplementary = true);
     AssertionInfo  optAssertionGenJtrue(GenTree* tree);
     AssertionIndex optCreateJtrueAssertions(GenTree* op1, GenTree* op2, bool equals);
     AssertionIndex optFindComplementary(AssertionIndex assertionIndex);
@@ -12490,6 +12490,7 @@ public:
             case GT_RUNTIMELOOKUP:
             case GT_ARR_ADDR:
             case GT_KEEPALIVE:
+            case GT_ASSERTION:
             case GT_INC_SATURATE:
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();

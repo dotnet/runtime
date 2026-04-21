@@ -6900,6 +6900,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
+        case GT_ASSERTION:
         case GT_INC_SATURATE:
             if (operand == this->AsUnOp()->gtOp1)
             {
@@ -10547,6 +10548,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
+        case GT_ASSERTION:
         case GT_INC_SATURATE:
         case GT_RETURNTRAP:
         case GT_RETURN_SUSPEND:

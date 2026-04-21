@@ -1649,7 +1649,7 @@ AssertionIndex Compiler::optCreateJtrueAssertions(GenTree* op1, GenTree* op2, bo
     return assertionIndex;
 }
 
-AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
+AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree, bool createComplementary)
 {
     // These assertions are VN based, so not relevant for local prop
     //
@@ -1705,7 +1705,10 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         relopFunc          = ValueNumStore::SwapRelop(relopFunc);
         AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, op1VN, 0);
         AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
+        if (createComplementary)
+        {
+            optCreateComplementaryAssertion(idx);
+        }
         return idx;
     }
 
@@ -1714,7 +1717,10 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, op2VN, 0);
         AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
+        if (createComplementary)
+        {
+            optCreateComplementaryAssertion(idx);
+        }
         return idx;
     }
 
@@ -1727,7 +1733,10 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         relopFunc          = ValueNumStore::SwapRelop(relopFunc);
         AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, checkedBnd, checkedBndCns);
         AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
+        if (createComplementary)
+        {
+            optCreateComplementaryAssertion(idx);
+        }
         return idx;
     }
 
@@ -1736,7 +1745,10 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, checkedBnd, checkedBndCns);
         AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
+        if (createComplementary)
+        {
+            optCreateComplementaryAssertion(idx);
+        }
         return idx;
     }
 
@@ -1745,6 +1757,14 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
     if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
     {
+        if (!createComplementary && (unsignedCompareBnd.cmpOper == VNF_GE_UN))
+        {
+            // The no-throw assertion only holds on the FALSE edge of "i >= bnd". A one-sided
+            // caller guarantees the relop is TRUE at the use site, so the assertion does not
+            // hold there - skip it.
+            return NO_ASSERTION_INDEX;
+        }
+
         ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
         ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
 
@@ -1767,7 +1787,10 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         relopFunc          = ValueNumStore::SwapRelop(relopFunc);
         AssertionDsc   dsc = AssertionDsc::CreateConstantBound(this, relopFunc, op2VN, op1VN);
         AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
+        if (createComplementary)
+        {
+            optCreateComplementaryAssertion(idx);
+        }
         return idx;
     }
 
@@ -1775,7 +1798,10 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         AssertionDsc   dsc = AssertionDsc::CreateConstantBound(this, relopFunc, op1VN, op2VN);
         AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
+        if (createComplementary)
+        {
+            optCreateComplementaryAssertion(idx);
+        }
         return idx;
     }
 
@@ -2161,6 +2187,13 @@ void Compiler::optAssertionGen(GenTree* tree)
 
         case GT_JTRUE:
             assertionInfo = optAssertionGenJtrue(tree);
+            break;
+
+        case GT_ASSERTION:
+            // The relop wrapped by GT_ASSERTION is known to be true at this point.
+            // Generate the same assertion we would for `JTRUE(relop)` taking the true edge,
+            // but skip the complementary assertion since this is a one-sided fact.
+            assertionInfo = optCreateJTrueBoundsAssertion(tree, /* createComplementary */ false);
             break;
 
         default:

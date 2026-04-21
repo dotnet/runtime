@@ -1924,6 +1924,14 @@ PhaseStatus Rationalizer::DoPhase()
             assert(statement->GetRootNode() != nullptr);
             assert(statement->GetRootNode()->gtNext == nullptr);
 
+            // Drop GT_ASSERTION statements; they are HIR-only seeds for assertion prop and
+            // should not reach LIR. Normally assertion prop removes them; this is a backstop
+            // for the case where assertion prop is disabled.
+            if (statement->GetRootNode()->OperIs(GT_ASSERTION))
+            {
+                continue;
+            }
+
             if (!statement->IsPhiDefnStmt()) // Note that we get rid of PHI nodes here.
             {
                 BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
