@@ -272,7 +272,8 @@ namespace ILAssembler
                         GetPropertyHandleForList(type.Properties, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Properties, i));
                 }
 
-                if (type.PackingSize is not null || type.ClassSize is not null)
+                if (type.PackingSize is not null || type.ClassSize is not null
+                    || (type.Attributes & TypeAttributes.LayoutMask) is TypeAttributes.ExplicitLayout)
                 {
                     builder.AddTypeLayout(
                         (TypeDefinitionHandle)type.Handle,
@@ -1065,6 +1066,8 @@ namespace ILAssembler
                 {
                     builder.WriteByte((byte)SignatureTypeCode.OptionalModifier);
                 }
+                // The modifier is a TypeDefOrRefOrSpec coded index (no CLASS/VALUETYPE prefix).
+                builder.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(modifier.Handle));
                 unmodifiedType.WriteBlobTo(builder);
                 return builder;
             }
