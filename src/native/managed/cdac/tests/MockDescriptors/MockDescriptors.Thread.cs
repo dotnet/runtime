@@ -178,8 +178,10 @@ internal sealed class MockThread : TypedView
     private const string FrameFieldName = "Frame";
     private const string CachedStackBaseFieldName = "CachedStackBase";
     private const string CachedStackLimitFieldName = "CachedStackLimit";
-    private const string TEBFieldName = "TEB";
+    private const string ExposedObjectFieldName = "ExposedObject";
     private const string LastThrownObjectFieldName = "LastThrownObject";
+    private const string LastThrownObjectIsUnhandledFieldName = "LastThrownObjectIsUnhandled";
+    private const string CurrentCustomDebuggerNotificationFieldName = "CurrentCustomDebuggerNotification";
     private const string LinkNextFieldName = "LinkNext";
     private const string ExceptionTrackerFieldName = "ExceptionTracker";
     private const string ThreadLocalDataPtrFieldName = "ThreadLocalDataPtr";
@@ -198,8 +200,10 @@ internal sealed class MockThread : TypedView
             .AddPointerField(FrameFieldName)
             .AddPointerField(CachedStackBaseFieldName)
             .AddPointerField(CachedStackLimitFieldName)
-            .AddPointerField(TEBFieldName)
+            .AddPointerField(ExposedObjectFieldName)
             .AddPointerField(LastThrownObjectFieldName)
+            .AddUInt32Field(LastThrownObjectIsUnhandledFieldName)
+            .AddPointerField(CurrentCustomDebuggerNotificationFieldName)
             .AddPointerField(LinkNextFieldName)
             .AddPointerField(ExceptionTrackerFieldName)
             .AddPointerField(ThreadLocalDataPtrFieldName)
@@ -256,6 +260,24 @@ internal sealed class MockThread : TypedView
         set => WritePointerField(ExceptionTrackerFieldName, value);
     }
 
+    public ulong ExposedObject
+    {
+        get => ReadPointerField(ExposedObjectFieldName);
+        set => WritePointerField(ExposedObjectFieldName, value);
+    }
+
+    public uint LastThrownObjectIsUnhandled
+    {
+        get => ReadUInt32Field(LastThrownObjectIsUnhandledFieldName);
+        set => WriteUInt32Field(LastThrownObjectIsUnhandledFieldName, value);
+    }
+
+    public ulong CurrentCustomDebuggerNotification
+    {
+        get => ReadPointerField(CurrentCustomDebuggerNotificationFieldName);
+        set => WritePointerField(CurrentCustomDebuggerNotificationFieldName, value);
+    }
+
     public ulong FrameAddress => GetFieldAddress(FrameFieldName);
 
     public ulong LinkAddress => GetFieldAddress(LinkNextFieldName);
@@ -308,7 +330,6 @@ internal sealed class MockThreadBuilder
         MockMemorySpace.HeapFragment threadStoreGlobal = _allocator.Allocate((ulong)helpers.PointerSize, "[global pointer] ThreadStore");
         MockMemorySpace.HeapFragment threadStore = _allocator.Allocate((ulong)ThreadStoreLayout.Size, "ThreadStore");
         helpers.WritePointer(threadStoreGlobal.Data, threadStore.Address);
-        Builder.AddHeapFragments([threadStoreGlobal, threadStore]);
         ThreadStoreGlobalAddress = threadStoreGlobal.Address;
         ThreadStoreAddress = threadStore.Address;
         _threadStore = ThreadStoreLayout.Create(threadStore);
@@ -325,14 +346,14 @@ internal sealed class MockThreadBuilder
 
     internal MockThread AddThread(uint id, ulong osId, long allocBytes, long allocBytesLoh)
     {
-        MockExceptionInfo exceptionInfo = ExceptionInfoLayout.Create(AllocateAndAdd((ulong)ExceptionInfoLayout.Size, "ExceptionInfo"));
-        MockRuntimeThreadLocals runtimeThreadLocals = RuntimeThreadLocalsLayout.Create(AllocateAndAdd((ulong)RuntimeThreadLocalsLayout.Size, "RuntimeThreadLocals"));
+        MockExceptionInfo exceptionInfo = ExceptionInfoLayout.Create(_allocator.Allocate((ulong)ExceptionInfoLayout.Size, "ExceptionInfo"));
+        MockRuntimeThreadLocals runtimeThreadLocals = RuntimeThreadLocalsLayout.Create(_allocator.Allocate((ulong)RuntimeThreadLocalsLayout.Size, "RuntimeThreadLocals"));
         runtimeThreadLocals.SetGCAllocContextLayout(GCAllocContextLayout);
         MockGCAllocContext gcAllocContext = runtimeThreadLocals.GCAllocContext;
         gcAllocContext.AllocBytes = allocBytes;
         gcAllocContext.AllocBytesLoh = allocBytesLoh;
 
-        MockThread thread = ThreadLayout.Create(AllocateAndAdd((ulong)ThreadLayout.Size, "Thread"));
+        MockThread thread = ThreadLayout.Create(_allocator.Allocate((ulong)ThreadLayout.Size, "Thread"));
         thread.Id = id;
         thread.OSId = osId;
         thread.ExceptionTracker = exceptionInfo.Address;
@@ -367,16 +388,8 @@ internal sealed class MockThreadBuilder
         MockMemorySpace.HeapFragment global = _allocator.Allocate((ulong)helpers.PointerSize, $"[global pointer] {name}");
         MockMemorySpace.HeapFragment pointee = _allocator.Allocate(pointeeSize, pointeeName);
         helpers.WritePointer(global.Data, pointee.Address);
-        Builder.AddHeapFragments([global, pointee]);
         value = pointee.Address;
         return global.Address;
-    }
-
-    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name)
-    {
-        MockMemorySpace.HeapFragment fragment = _allocator.Allocate(size, name);
-        Builder.AddHeapFragment(fragment);
-        return fragment;
     }
 
     private Memory<byte> BorrowMemory(ulong address, int length)

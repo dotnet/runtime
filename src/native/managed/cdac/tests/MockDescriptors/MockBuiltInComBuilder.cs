@@ -464,10 +464,10 @@ internal sealed class MockBuiltInComBuilder
     internal Layout<MockRCW> RCWLayout { get; }
 
     public MockSimpleComCallWrapper AddSimpleComCallWrapper()
-        => SimpleComCallWrapperLayout.Create(AllocateAndAdd((ulong)SimpleComCallWrapperLayout.Size, "SimpleComCallWrapper"));
+        => SimpleComCallWrapperLayout.Create(_allocator.Allocate((ulong)SimpleComCallWrapperLayout.Size, "SimpleComCallWrapper"));
 
     public MockComCallWrapper AddComCallWrapper()
-        => ComCallWrapperLayout.Create(AllocateAndAdd((ulong)ComCallWrapperLayout.Size, "ComCallWrapper"));
+        => ComCallWrapperLayout.Create(_allocator.Allocate((ulong)ComCallWrapperLayout.Size, "ComCallWrapper"));
 
     public MockComMethodTable AddComMethodTable(int vtableSlots = 0)
     {
@@ -475,7 +475,7 @@ internal sealed class MockBuiltInComBuilder
 
         int pointerSize = ComMethodTableLayout.Architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
         int totalSize = checked(ComMethodTableLayout.Size + (vtableSlots * pointerSize));
-        return ComMethodTableLayout.Create(AllocateAndAdd((ulong)totalSize, "ComMethodTable"));
+        return ComMethodTableLayout.Create(_allocator.Allocate((ulong)totalSize, "ComMethodTable"));
     }
 
     public MockStdInterfaceDesc AddStdInterfaceDesc(int vtableSlots = 0)
@@ -484,15 +484,15 @@ internal sealed class MockBuiltInComBuilder
 
         int pointerSize = StdInterfaceDescLayout.Architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
         int totalSize = checked(StdInterfaceDescLayout.Size + (vtableSlots * pointerSize));
-        return StdInterfaceDescLayout.Create(AllocateAndAdd((ulong)totalSize, "StdInterfaceDesc"));
+        return StdInterfaceDescLayout.Create(_allocator.Allocate((ulong)totalSize, "StdInterfaceDesc"));
     }
 
     public MockRCW AddRCW()
-        => RCWLayout.Create(AllocateAndAdd((ulong)RCWLayout.Size, "Full RCW"));
+        => RCWLayout.Create(_allocator.Allocate((ulong)RCWLayout.Size, "Full RCW"));
 
     public ulong AddCtxEntry(ulong staThread = 0, ulong ctxCookie = 0)
     {
-        MockCtxEntry entry = CtxEntryLayout.Create(AllocateAndAdd((ulong)CtxEntryLayout.Size, "CtxEntry"));
+        MockCtxEntry entry = CtxEntryLayout.Create(_allocator.Allocate((ulong)CtxEntryLayout.Size, "CtxEntry"));
         entry.STAThread = staThread;
         entry.CtxCookie = ctxCookie;
         return entry.Address;
@@ -506,14 +506,6 @@ internal sealed class MockBuiltInComBuilder
         int pointerSize = _architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
         MockMemorySpace.HeapFragment global = _allocator.Allocate((ulong)pointerSize, $"[global pointer] {name}");
         _builder.TargetTestHelpers.WritePointer(global.Data.AsSpan(), value);
-        _builder.AddHeapFragment(global);
         return global.Address;
-    }
-
-    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name)
-    {
-        MockMemorySpace.HeapFragment fragment = _allocator.Allocate(size, name);
-        _builder.AddHeapFragment(fragment);
-        return fragment;
     }
 }

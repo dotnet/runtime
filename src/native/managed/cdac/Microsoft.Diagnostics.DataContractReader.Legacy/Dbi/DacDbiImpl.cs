@@ -44,7 +44,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int CheckDbiVersion(DbiVersion* pVersion)
-        => _legacy is not null ? _legacy.CheckDbiVersion(pVersion) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CheckDbiVersion(pVersion) : HResults.E_NOTIMPL;
 
     public int FlushCache()
     {
@@ -53,7 +53,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts)
-        => _legacy is not null ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts) : HResults.E_NOTIMPL;
 
     public int IsLeftSideInitialized(Interop.BOOL* pResult)
     {
@@ -79,34 +79,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 #endif
 
-        return hr;
-    }
-
-    public int GetAppDomainFromId(uint appdomainId, ulong* pRetVal)
-    {
-        *pRetVal = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            if (appdomainId != _target.ReadGlobal<uint>(Constants.Globals.DefaultADID))
-                throw new ArgumentException(null, nameof(appdomainId));
-            TargetPointer appDomainPtr = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            *pRetVal = _target.ReadPointer(appDomainPtr);
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetAppDomainFromId(appdomainId, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -136,27 +108,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetAppDomainObject(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
-
-    public int GetAssemblyFromDomainAssembly(ulong vmDomainAssembly, ulong* vmAssembly)
-        => _legacy is not null ? _legacy.GetAssemblyFromDomainAssembly(vmDomainAssembly, vmAssembly) : HResults.E_NOTIMPL;
-
-    public int IsAssemblyFullyTrusted(ulong vmDomainAssembly, Interop.BOOL* pResult)
-    {
-        *pResult = Interop.BOOL.TRUE;
-        int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsAssemblyFullyTrusted(vmDomainAssembly, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
-        return hr;
-    }
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAppDomainObject(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetAppDomainFullName(ulong vmAppDomain, nint pStrName)
     {
@@ -181,7 +133,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetModuleSimpleName(ulong vmModule, nint pStrFilename)
-        => _legacy is not null ? _legacy.GetModuleSimpleName(vmModule, pStrFilename) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetModuleSimpleName(vmModule, pStrFilename) : HResults.E_NOTIMPL;
 
     public int GetAssemblyPath(ulong vmAssembly, nint pStrFilename, Interop.BOOL* pResult)
     {
@@ -220,7 +172,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int ResolveTypeReference(DacDbiTypeRefData* pTypeRefInfo, DacDbiTypeRefData* pTargetRefInfo)
-        => _legacy is not null ? _legacy.ResolveTypeReference(pTypeRefInfo, pTargetRefInfo) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ResolveTypeReference(pTypeRefInfo, pTargetRefInfo) : HResults.E_NOTIMPL;
 
     public int GetModulePath(ulong vmModule, nint pStrFilename, Interop.BOOL* pResult)
     {
@@ -259,71 +211,135 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetMetadata(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer)
-        => _legacy is not null ? _legacy.GetMetadata(vmModule, pTargetBuffer) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetMetadata(vmModule, pTargetBuffer) : HResults.E_NOTIMPL;
 
     public int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, int* pSymbolFormat)
-        => _legacy is not null ? _legacy.GetSymbolsBuffer(vmModule, pTargetBuffer, pSymbolFormat) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetSymbolsBuffer(vmModule, pTargetBuffer, pSymbolFormat) : HResults.E_NOTIMPL;
 
     public int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData)
-        => _legacy is not null ? _legacy.GetModuleData(vmModule, pData) : HResults.E_NOTIMPL;
-
-    public int GetDomainAssemblyData(ulong vmDomainAssembly, DacDbiDomainAssemblyInfo* pData)
-        => _legacy is not null ? _legacy.GetDomainAssemblyData(vmDomainAssembly, pData) : HResults.E_NOTIMPL;
-
-    public int GetModuleForDomainAssembly(ulong vmDomainAssembly, ulong* pModule)
-        => _legacy is not null ? _legacy.GetModuleForDomainAssembly(vmDomainAssembly, pModule) : HResults.E_NOTIMPL;
-
-    public int GetAddressType(ulong address, int* pRetVal)
-        => _legacy is not null ? _legacy.GetAddressType(address, pRetVal) : HResults.E_NOTIMPL;
-
-    public int IsTransitionStub(ulong address, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.IsTransitionStub(address, pResult) : HResults.E_NOTIMPL;
-
-    public int GetCompilerFlags(ulong vmDomainAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC)
-        => _legacy is not null ? _legacy.GetCompilerFlags(vmDomainAssembly, pfAllowJITOpts, pfEnableEnC) : HResults.E_NOTIMPL;
-
-    public int SetCompilerFlags(ulong vmDomainAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC)
-        => _legacy is not null ? _legacy.SetCompilerFlags(vmDomainAssembly, fAllowJitOpts, fEnableEnC) : HResults.E_NOTIMPL;
-
-    public int EnumerateAppDomains(nint fpCallback, nint pUserData)
     {
         int hr = HResults.S_OK;
         try
         {
-            TargetPointer appDomainPtr = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            ulong appDomain = _target.ReadPointer(appDomainPtr);
-            var callback = (delegate* unmanaged<ulong, nint, void>)fpCallback;
-            callback(appDomain, pUserData);
+            if (vmModule == 0)
+                throw new ArgumentException("Module pointer must be non-zero.", nameof(vmModule));
+
+            if (pData == null)
+                throw new ArgumentNullException(nameof(pData));
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+
+            *pData = default;
+            pData->vmAssembly = loader.GetAssembly(handle).Value;
+            pData->vmPEAssembly = loader.GetPEAssembly(handle).Value;
+            bool isDynamic = loader.IsDynamic(handle);
+            pData->fIsDynamic = isDynamic ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            string path = loader.GetPath(handle);
+            pData->fInMemory = string.IsNullOrEmpty(path) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            if (!isDynamic && loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint _))
+            {
+                pData->pPEBaseAddress = baseAddress.Value;
+                pData->nPESize = size;
+            }
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiModuleInfo dataLocal;
+            int hrLocal = _legacy.GetModuleData(vmModule, &dataLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pData->vmAssembly == dataLocal.vmAssembly, $"vmAssembly: cDAC: {pData->vmAssembly:x}, DAC: {dataLocal.vmAssembly:x}");
+                Debug.Assert(pData->vmPEAssembly == dataLocal.vmPEAssembly, $"vmPEAssembly: cDAC: {pData->vmPEAssembly:x}, DAC: {dataLocal.vmPEAssembly:x}");
+                Debug.Assert(pData->fIsDynamic == dataLocal.fIsDynamic, $"fIsDynamic: cDAC: {pData->fIsDynamic}, DAC: {dataLocal.fIsDynamic}");
+                Debug.Assert(pData->fInMemory == dataLocal.fInMemory, $"fInMemory: cDAC: {pData->fInMemory}, DAC: {dataLocal.fInMemory}");
+                Debug.Assert(pData->pPEBaseAddress == dataLocal.pPEBaseAddress, $"pPEBaseAddress: cDAC: {pData->pPEBaseAddress:x}, DAC: {dataLocal.pPEBaseAddress:x}");
+                Debug.Assert(pData->nPESize == dataLocal.nPESize, $"nPESize: cDAC: {pData->nPESize}, DAC: {dataLocal.nPESize}");
+            }
+        }
+#endif
         return hr;
     }
 
+    public int GetAssemblyInfo(ulong vmAssembly, DacDbiAssemblyInfo* pData)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAssemblyInfo(vmAssembly, pData) : HResults.E_NOTIMPL;
+
+    public int GetModuleForAssembly(ulong vmAssembly, ulong* pModule)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetModuleForAssembly(vmAssembly, pModule) : HResults.E_NOTIMPL;
+
+    public int GetAddressType(ulong address, int* pRetVal)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAddressType(address, pRetVal) : HResults.E_NOTIMPL;
+
+    public int GetCompilerFlags(ulong vmAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetCompilerFlags(vmAssembly, pfAllowJITOpts, pfEnableEnC) : HResults.E_NOTIMPL;
+
+    public int SetCompilerFlags(ulong vmAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.SetCompilerFlags(vmAssembly, fAllowJitOpts, fEnableEnC) : HResults.E_NOTIMPL;
+
     public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData)
-        => _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData)
-        => _legacy is not null ? _legacy.EnumerateModulesInAssembly(vmAssembly, fpCallback, pUserData) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateModulesInAssembly(vmAssembly, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int RequestSyncAtEvent()
-        => _legacy is not null ? _legacy.RequestSyncAtEvent() : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            _target.Contracts.Debugger.RequestSyncAtEvent();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.RequestSyncAtEvent();
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int SetSendExceptionsOutsideOfJMC(Interop.BOOL sendExceptionsOutsideOfJMC)
-        => _legacy is not null ? _legacy.SetSendExceptionsOutsideOfJMC(sendExceptionsOutsideOfJMC) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            _target.Contracts.Debugger.SetSendExceptionsOutsideOfJMC(sendExceptionsOutsideOfJMC != Interop.BOOL.FALSE);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.SetSendExceptionsOutsideOfJMC(sendExceptionsOutsideOfJMC);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int MarkDebuggerAttachPending()
-        => _legacy is not null ? _legacy.MarkDebuggerAttachPending() : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.MarkDebuggerAttachPending() : HResults.E_NOTIMPL;
 
     public int MarkDebuggerAttached(Interop.BOOL fAttached)
-        => _legacy is not null ? _legacy.MarkDebuggerAttached(fAttached) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.MarkDebuggerAttached(fAttached) : HResults.E_NOTIMPL;
 
     public int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr)
-        => _legacy is not null ? _legacy.Hijack(vmThread, dwThreadId, pRecord, pOriginalContext, cbSizeContext, reason, pUserData, pRemoteContextAddr) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.Hijack(vmThread, dwThreadId, pRecord, pOriginalContext, cbSizeContext, reason, pUserData, pRemoteContextAddr) : HResults.E_NOTIMPL;
 
-    public int EnumerateThreads(nint fpCallback, nint pUserData)
+    public int EnumerateThreads(delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
     {
         int hr = HResults.S_OK;
 #if DEBUG
@@ -331,9 +347,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #endif
         try
         {
+            if (fpCallback == null)
+                throw new ArgumentNullException(nameof(fpCallback));
             Contracts.IThread threadContract = _target.Contracts.Thread;
             Contracts.ThreadStoreData threadStore = threadContract.GetThreadStoreData();
-            var callback = (delegate* unmanaged<ulong, nint, void>)fpCallback;
             TargetPointer currentThread = threadStore.FirstThread;
             while (currentThread != TargetPointer.Null)
             {
@@ -341,7 +358,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 // Match native: skip stopped and unstarted threads
                 if ((threadData.State & (Contracts.ThreadState.Stopped | Contracts.ThreadState.Unstarted)) == 0)
                 {
-                    callback(currentThread.Value, pUserData);
+                    fpCallback(currentThread.Value, pUserData);
 #if DEBUG
                     cdacThreads?.Add(currentThread.Value);
 #endif
@@ -358,9 +375,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             List<ulong> dacThreads = new();
             GCHandle dacHandle = GCHandle.Alloc(dacThreads);
-            int hrLocal = _legacy.EnumerateThreads(
-                (nint)(delegate* unmanaged<ulong, nint, void>)&CollectThreadCallback,
-                GCHandle.ToIntPtr(dacHandle));
+            int hrLocal = _legacy.EnumerateThreads(&CollectEnumerationCallback, GCHandle.ToIntPtr(dacHandle));
             dacHandle.Free();
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
@@ -376,7 +391,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
 #if DEBUG
     [UnmanagedCallersOnly]
-    private static void CollectThreadCallback(ulong value, nint pUserData)
+    private static void CollectEnumerationCallback(ulong value, nint pUserData)
     {
         GCHandle handle = GCHandle.FromIntPtr(pUserData);
         ((List<ulong>)handle.Target!).Add(value);
@@ -410,25 +425,74 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetThreadHandle(ulong vmThread, nint pRetVal)
-        => _legacy is not null ? _legacy.GetThreadHandle(vmThread, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadHandle(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetThreadObject(ulong vmThread, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetThreadObject(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            if ((threadData.State & (Contracts.ThreadState.Stopped | Contracts.ThreadState.Unstarted | Contracts.ThreadState.Detached)) != 0)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_BAD_THREAD_STATE)!;
+
+            *pRetVal = threadData.ExposedObjectHandle.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.GetThreadObject(vmThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetThreadAllocInfo(ulong vmThread, DacDbiThreadAllocInfo* pThreadAllocInfo)
-        => _legacy is not null ? _legacy.GetThreadAllocInfo(vmThread, pThreadAllocInfo) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadAllocInfo(vmThread, pThreadAllocInfo) : HResults.E_NOTIMPL;
 
     public int SetDebugState(ulong vmThread, int debugState)
-        => _legacy is not null ? _legacy.SetDebugState(vmThread, debugState) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.SetDebugState(vmThread, debugState) : HResults.E_NOTIMPL;
 
     public int HasUnhandledException(ulong vmThread, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.HasUnhandledException(vmThread, pResult) : HResults.E_NOTIMPL;
+    {
+        *pResult = Interop.BOOL.FALSE;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            *pResult = threadData.HasUnhandledException ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal;
+            int hrLocal = _legacy.HasUnhandledException(vmThread, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetUserState(ulong vmThread, int* pRetVal)
-        => _legacy is not null ? _legacy.GetUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetPartialUserState(ulong vmThread, int* pRetVal)
-        => _legacy is not null ? _legacy.GetPartialUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetPartialUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetConnectionID(ulong vmThread, uint* pRetVal)
     {
@@ -525,8 +589,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            TargetPointer throwable = _target.Contracts.Thread.GetThrowableObject(new TargetPointer(vmThread));
-            *pRetVal = throwable.Value;
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+            TargetPointer exceptionHandle = _target.Contracts.Thread.GetCurrentExceptionHandle(threadPtr);
+            if (exceptionHandle == TargetPointer.Null)
+            {
+                ThreadData data = _target.Contracts.Thread.GetThreadData(threadPtr);
+                if (data.LastThrownObjectIsUnhandled)
+                    exceptionHandle = data.LastThrownObjectHandle;
+            }
+            *pRetVal = exceptionHandle.Value;
         }
         catch (System.Exception ex)
         {
@@ -546,10 +617,33 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetObjectForCCW(ulong ccwPtr, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetObjectForCCW(ccwPtr, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetObjectForCCW(ccwPtr, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetCurrentCustomDebuggerNotification(ulong vmThread, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetCurrentCustomDebuggerNotification(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            *pRetVal = threadData.CurrentCustomDebuggerNotificationHandle.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.GetCurrentCustomDebuggerNotification(vmThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetCurrentAppDomain(ulong* pRetVal)
     {
@@ -578,79 +672,109 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int ResolveAssembly(ulong vmScope, uint tkAssemblyRef, ulong* pRetVal)
-        => _legacy is not null ? _legacy.ResolveAssembly(vmScope, tkAssemblyRef, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ResolveAssembly(vmScope, tkAssemblyRef, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, nint pNativeVarData, nint pSequencePoints)
-        => _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(vmMethodDesc, startAddress, fCodeAvailable, pNativeVarData, pSequencePoints) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(vmMethodDesc, startAddress, fCodeAvailable, pNativeVarData, pSequencePoints) : HResults.E_NOTIMPL;
 
     public int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetManagedStoppedContext(vmThread, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetManagedStoppedContext(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
     public int CreateStackWalk(ulong vmThread, nint pInternalContextBuffer, nuint* ppSFIHandle)
-        => _legacy is not null ? _legacy.CreateStackWalk(vmThread, pInternalContextBuffer, ppSFIHandle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateStackWalk(vmThread, pInternalContextBuffer, ppSFIHandle) : HResults.E_NOTIMPL;
 
     public int DeleteStackWalk(nuint ppSFIHandle)
-        => _legacy is not null ? _legacy.DeleteStackWalk(ppSFIHandle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.DeleteStackWalk(ppSFIHandle) : HResults.E_NOTIMPL;
 
     public int GetStackWalkCurrentContext(nuint pSFIHandle, nint pContext)
-        => _legacy is not null ? _legacy.GetStackWalkCurrentContext(pSFIHandle, pContext) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackWalkCurrentContext(pSFIHandle, pContext) : HResults.E_NOTIMPL;
 
     public int SetStackWalkCurrentContext(ulong vmThread, nuint pSFIHandle, int flag, nint pContext)
-        => _legacy is not null ? _legacy.SetStackWalkCurrentContext(vmThread, pSFIHandle, flag, pContext) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.SetStackWalkCurrentContext(vmThread, pSFIHandle, flag, pContext) : HResults.E_NOTIMPL;
 
     public int UnwindStackWalkFrame(nuint pSFIHandle, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.UnwindStackWalkFrame(pSFIHandle, pResult) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.UnwindStackWalkFrame(pSFIHandle, pResult) : HResults.E_NOTIMPL;
 
     public int CheckContext(ulong vmThread, nint pContext)
-        => _legacy is not null ? _legacy.CheckContext(vmThread, pContext) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CheckContext(vmThread, pContext) : HResults.E_NOTIMPL;
 
     public int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, int* pRetVal)
-        => _legacy is not null ? _legacy.GetStackWalkCurrentFrameInfo(pSFIHandle, pFrameData, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackWalkCurrentFrameInfo(pSFIHandle, pFrameData, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetCountOfInternalFrames(ulong vmThread, uint* pRetVal)
-        => _legacy is not null ? _legacy.GetCountOfInternalFrames(vmThread, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetCountOfInternalFrames(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
     public int EnumerateInternalFrames(ulong vmThread, nint fpCallback, nint pUserData)
-        => _legacy is not null ? _legacy.EnumerateInternalFrames(vmThread, fpCallback, pUserData) : HResults.E_NOTIMPL;
-
-    public int IsMatchingParentFrame(ulong fpToCheck, ulong fpParent, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.IsMatchingParentFrame(fpToCheck, fpParent, pResult) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateInternalFrames(vmThread, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int GetStackParameterSize(ulong controlPC, uint* pRetVal)
-        => _legacy is not null ? _legacy.GetStackParameterSize(controlPC, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackParameterSize(controlPC, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetFramePointer(nuint pSFIHandle, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetFramePointer(pSFIHandle, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetFramePointer(pSFIHandle, pRetVal) : HResults.E_NOTIMPL;
 
     public int IsLeafFrame(ulong vmThread, nint pContext, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.IsLeafFrame(vmThread, pContext, pResult) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsLeafFrame(vmThread, pContext, pResult) : HResults.E_NOTIMPL;
 
     public int GetContext(ulong vmThread, nint pContextBuffer)
-        => _legacy is not null ? _legacy.GetContext(vmThread, pContextBuffer) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetContext(vmThread, pContextBuffer) : HResults.E_NOTIMPL;
 
     public int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, Interop.BOOL fActive)
-        => _legacy is not null ? _legacy.ConvertContextToDebuggerRegDisplay(pInContext, pOutDRD, fActive) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ConvertContextToDebuggerRegDisplay(pInContext, pOutDRD, fActive) : HResults.E_NOTIMPL;
 
     public int IsDiagnosticsHiddenOrLCGMethod(ulong vmMethodDesc, int* pRetVal)
-        => _legacy is not null ? _legacy.IsDiagnosticsHiddenOrLCGMethod(vmMethodDesc, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsDiagnosticsHiddenOrLCGMethod(vmMethodDesc, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetVarArgSig(ulong VASigCookieAddr, ulong* pArgBase, DacDbiTargetBuffer* pRetVal)
-        => _legacy is not null ? _legacy.GetVarArgSig(VASigCookieAddr, pArgBase, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetVarArgSig(VASigCookieAddr, pArgBase, pRetVal) : HResults.E_NOTIMPL;
 
     public int RequiresAlign8(ulong thExact, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.RequiresAlign8(thExact, pResult) : HResults.E_NOTIMPL;
+    {
+        *pResult = Interop.BOOL.FALSE;
+        int hr = HResults.S_OK;
+        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        try
+        {
+            // Some 32-bit platform ABIs require 64-bit alignment (FEATURE_64BIT_ALIGNMENT).
+            if (arch == RuntimeInfoArchitecture.Arm || arch == RuntimeInfoArchitecture.Wasm)
+            {
+                Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                Contracts.TypeHandle th = rts.GetTypeHandle(new TargetPointer(thExact));
+                *pResult = rts.RequiresAlign8(th) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal;
+            int hrLocal = _legacy.RequiresAlign8(thExact, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int ResolveExactGenericArgsToken(uint dwExactGenericArgsTokenIndex, ulong rawToken, ulong* pRetVal)
-        => _legacy is not null ? _legacy.ResolveExactGenericArgsToken(dwExactGenericArgsTokenIndex, rawToken, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ResolveExactGenericArgsToken(dwExactGenericArgsTokenIndex, rawToken, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetILCodeAndSig(ulong vmDomainAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken)
-        => _legacy is not null ? _legacy.GetILCodeAndSig(vmDomainAssembly, functionToken, pTargetBuffer, pLocalSigToken) : HResults.E_NOTIMPL;
+    public int GetILCodeAndSig(ulong vmAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetILCodeAndSig(vmAssembly, functionToken, pTargetBuffer, pLocalSigToken) : HResults.E_NOTIMPL;
 
-    public int GetNativeCodeInfo(ulong vmDomainAssembly, uint functionToken, nint pJitManagerList)
-        => _legacy is not null ? _legacy.GetNativeCodeInfo(vmDomainAssembly, functionToken, pJitManagerList) : HResults.E_NOTIMPL;
+    public int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, nint pJitManagerList)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeInfo(vmAssembly, functionToken, pJitManagerList) : HResults.E_NOTIMPL;
 
     public int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken)
-        => _legacy is not null ? _legacy.GetNativeCodeInfoForAddr(codeAddress, pCodeInfo, pVmModule, pFunctionToken) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeInfoForAddr(codeAddress, pCodeInfo, pVmModule, pFunctionToken) : HResults.E_NOTIMPL;
 
     public int IsValueType(ulong vmTypeHandle, Interop.BOOL* pResult)
     {
@@ -660,8 +784,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.TypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
-            CorElementType corType = rts.GetSignatureCorElementType(th);
-            *pResult = corType == CorElementType.ValueType ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            *pResult = rts.IsValueType(th) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
@@ -707,20 +830,20 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetClassInfo(ulong vmAppDomain, ulong thExact, nint pData)
-        => _legacy is not null ? _legacy.GetClassInfo(vmAppDomain, thExact, pData) : HResults.E_NOTIMPL;
+    public int GetClassInfo(ulong thExact, nint pData)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetClassInfo(thExact, pData) : HResults.E_NOTIMPL;
 
-    public int GetInstantiationFieldInfo(ulong vmDomainAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize)
-        => _legacy is not null ? _legacy.GetInstantiationFieldInfo(vmDomainAssembly, vmTypeHandle, vmExactMethodTable, pFieldList, pObjectSize) : HResults.E_NOTIMPL;
+    public int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetInstantiationFieldInfo(vmAssembly, vmTypeHandle, vmExactMethodTable, pFieldList, pObjectSize) : HResults.E_NOTIMPL;
 
-    public int TypeHandleToExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong vmTypeHandle, nint pData)
-        => _legacy is not null ? _legacy.TypeHandleToExpandedTypeInfo(boxed, vmAppDomain, vmTypeHandle, pData) : HResults.E_NOTIMPL;
+    public int TypeHandleToExpandedTypeInfo(int boxed, ulong vmTypeHandle, nint pData)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.TypeHandleToExpandedTypeInfo(boxed, vmTypeHandle, pData) : HResults.E_NOTIMPL;
 
-    public int GetObjectExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong addr, nint pTypeInfo)
-        => _legacy is not null ? _legacy.GetObjectExpandedTypeInfo(boxed, vmAppDomain, addr, pTypeInfo) : HResults.E_NOTIMPL;
+    public int GetObjectExpandedTypeInfo(int boxed, ulong addr, nint pTypeInfo)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetObjectExpandedTypeInfo(boxed, addr, pTypeInfo) : HResults.E_NOTIMPL;
 
-    public int GetObjectExpandedTypeInfoFromID(int boxed, ulong vmAppDomain, COR_TYPEID id, nint pTypeInfo)
-        => _legacy is not null ? _legacy.GetObjectExpandedTypeInfoFromID(boxed, vmAppDomain, id, pTypeInfo) : HResults.E_NOTIMPL;
+    public int GetObjectExpandedTypeInfoFromID(int boxed, COR_TYPEID id, nint pTypeInfo)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetObjectExpandedTypeInfoFromID(boxed, id, pTypeInfo) : HResults.E_NOTIMPL;
 
     public int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal)
     {
@@ -762,13 +885,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetApproxTypeHandle(pTypeData, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetApproxTypeHandle(pTypeData, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* pVmTypeHandle)
-        => _legacy is not null ? _legacy.GetExactTypeHandle(pTypeData, pArgInfo, pVmTypeHandle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetExactTypeHandle(pTypeData, pArgInfo, pVmTypeHandle) : HResults.E_NOTIMPL;
 
-    public int GetMethodDescParams(ulong vmAppDomain, ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams)
-        => _legacy is not null ? _legacy.GetMethodDescParams(vmAppDomain, vmMethodDesc, genericsToken, pcGenericClassTypeParams, pGenericTypeParams) : HResults.E_NOTIMPL;
+    public int GetMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetMethodDescParams(vmMethodDesc, genericsToken, pcGenericClassTypeParams, pGenericTypeParams) : HResults.E_NOTIMPL;
 
     public int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal)
     {
@@ -803,59 +926,66 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetCollectibleTypeStaticAddress(ulong vmField, ulong vmAppDomain, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetCollectibleTypeStaticAddress(vmField, vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
+    public int GetCollectibleTypeStaticAddress(ulong vmField, ulong* pRetVal)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetCollectibleTypeStaticAddress(vmField, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, Interop.BOOL* pfStatic)
-        => _legacy is not null ? _legacy.GetEnCHangingFieldInfo(pEnCFieldInfo, pFieldData, pfStatic) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetEnCHangingFieldInfo(pEnCFieldInfo, pFieldData, pfStatic) : HResults.E_NOTIMPL;
 
-    public int GetTypeHandleParams(ulong vmAppDomain, ulong vmTypeHandle, nint pParams)
-        => _legacy is not null ? _legacy.GetTypeHandleParams(vmAppDomain, vmTypeHandle, pParams) : HResults.E_NOTIMPL;
+    public int GetTypeHandleParams(ulong vmTypeHandle, nint pParams)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetTypeHandleParams(vmTypeHandle, pParams) : HResults.E_NOTIMPL;
 
-    public int GetSimpleType(ulong vmAppDomain, int simpleType, uint* pMetadataToken, ulong* pVmModule, ulong* pVmDomainAssembly)
-        => _legacy is not null ? _legacy.GetSimpleType(vmAppDomain, simpleType, pMetadataToken, pVmModule, pVmDomainAssembly) : HResults.E_NOTIMPL;
+    public int GetSimpleType(int simpleType, uint* pMetadataToken, ulong* pVmModule)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetSimpleType(simpleType, pMetadataToken, pVmModule) : HResults.E_NOTIMPL;
 
     public int IsExceptionObject(ulong vmObject, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.IsExceptionObject(vmObject, pResult) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsExceptionObject(vmObject, pResult) : HResults.E_NOTIMPL;
 
     public int GetStackFramesFromException(ulong vmObject, nint pDacStackFrames)
-        => _legacy is not null ? _legacy.GetStackFramesFromException(vmObject, pDacStackFrames) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackFramesFromException(vmObject, pDacStackFrames) : HResults.E_NOTIMPL;
 
     public int IsRcw(ulong vmObject, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.IsRcw(vmObject, pResult) : HResults.E_NOTIMPL;
-
-    public int GetRcwCachedInterfaceTypes(ulong vmObject, ulong vmAppDomain, Interop.BOOL bIInspectableOnly, nint pDacInterfaces)
-        => _legacy is not null ? _legacy.GetRcwCachedInterfaceTypes(vmObject, vmAppDomain, bIInspectableOnly, pDacInterfaces) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsRcw(vmObject, pResult) : HResults.E_NOTIMPL;
 
     public int GetRcwCachedInterfacePointers(ulong vmObject, Interop.BOOL bIInspectableOnly, nint pDacItfPtrs)
-        => _legacy is not null ? _legacy.GetRcwCachedInterfacePointers(vmObject, bIInspectableOnly, pDacItfPtrs) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetRcwCachedInterfacePointers(vmObject, bIInspectableOnly, pDacItfPtrs) : HResults.E_NOTIMPL;
 
-    public int GetCachedWinRTTypesForIIDs(ulong vmAppDomain, nint pIids, nint pTypes)
-        => _legacy is not null ? _legacy.GetCachedWinRTTypesForIIDs(vmAppDomain, pIids, pTypes) : HResults.E_NOTIMPL;
-
-    public int GetCachedWinRTTypes(ulong vmAppDomain, nint piids, nint pTypes)
-        => _legacy is not null ? _legacy.GetCachedWinRTTypes(vmAppDomain, piids, pTypes) : HResults.E_NOTIMPL;
-
-    public int GetTypedByRefInfo(ulong pTypedByRef, ulong vmAppDomain, nint pObjectData)
-        => _legacy is not null ? _legacy.GetTypedByRefInfo(pTypedByRef, vmAppDomain, pObjectData) : HResults.E_NOTIMPL;
+    public int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetTypedByRefInfo(pTypedByRef, pObjectData) : HResults.E_NOTIMPL;
 
     public int GetStringData(ulong objectAddress, nint pObjectData)
-        => _legacy is not null ? _legacy.GetStringData(objectAddress, pObjectData) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStringData(objectAddress, pObjectData) : HResults.E_NOTIMPL;
 
     public int GetArrayData(ulong objectAddress, nint pObjectData)
-        => _legacy is not null ? _legacy.GetArrayData(objectAddress, pObjectData) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetArrayData(objectAddress, pObjectData) : HResults.E_NOTIMPL;
 
-    public int GetBasicObjectInfo(ulong objectAddress, int type, ulong vmAppDomain, nint pObjectData)
-        => _legacy is not null ? _legacy.GetBasicObjectInfo(objectAddress, type, vmAppDomain, pObjectData) : HResults.E_NOTIMPL;
-
-    public int TestCrst(ulong vmCrst)
-        => _legacy is not null ? _legacy.TestCrst(vmCrst) : HResults.E_NOTIMPL;
-
-    public int TestRWLock(ulong vmRWLock)
-        => _legacy is not null ? _legacy.TestRWLock(vmRWLock) : HResults.E_NOTIMPL;
+    public int GetBasicObjectInfo(ulong objectAddress, int type, nint pObjectData)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetBasicObjectInfo(objectAddress, type, pObjectData) : HResults.E_NOTIMPL;
 
     public int GetDebuggerControlBlockAddress(ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetDebuggerControlBlockAddress(pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            *pRetVal = _target.Contracts.Debugger.GetDebuggerControlBlockAddress().Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.GetDebuggerControlBlockAddress(&retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetObjectFromRefPtr(ulong ptr, ulong* pRetVal)
     {
@@ -899,15 +1029,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #endif
         return hr;
     }
-
-    public int EnableNGENPolicy(int ePolicy)
-        => HResults.E_NOTIMPL;
-
-    public int SetNGENCompilerFlags(uint dwFlags)
-        => _legacy is not null ? _legacy.SetNGENCompilerFlags(dwFlags) : HResults.E_NOTIMPL;
-
-    public int GetNGENCompilerFlags(uint* pdwFlags)
-        => _legacy is not null ? _legacy.GetNGENCompilerFlags(pdwFlags) : HResults.E_NOTIMPL;
 
     public int GetVmObjectHandle(ulong handleAddress, ulong* pRetVal)
     {
@@ -969,33 +1090,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetAppDomainIdFromVmObjectHandle(ulong vmHandle, uint* pRetVal)
-    {
-        *pRetVal = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            // In modern .NET there is only one AppDomain (id=1).
-            // Return 0 for null handles to match native behavior.
-            *pRetVal = vmHandle != 0 ? 1u : 0u;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint retValLocal;
-            int hrLocal = _legacy.GetAppDomainIdFromVmObjectHandle(vmHandle, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
-        return hr;
-    }
-
     public int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal)
     {
         *pRetVal = vmHandle;
@@ -1014,13 +1108,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetObjectContents(ulong obj, DacDbiTargetBuffer* pRetVal)
-        => _legacy is not null ? _legacy.GetObjectContents(obj, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetObjectContents(obj, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetThreadOwningMonitorLock(ulong vmObject, DacDbiMonitorLockInfo* pRetVal)
-        => _legacy is not null ? _legacy.GetThreadOwningMonitorLock(vmObject, pRetVal) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadOwningMonitorLock(vmObject, pRetVal) : HResults.E_NOTIMPL;
 
     public int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData)
-        => _legacy is not null ? _legacy.EnumerateMonitorEventWaitList(vmObject, fpCallback, pUserData) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateMonitorEventWaitList(vmObject, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int GetAttachStateFlags(int* pRetVal)
     {
@@ -1050,10 +1144,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwTimeStamp, dwImageSize, pStrFilename, pResult) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwTimeStamp, dwImageSize, pStrFilename, pResult) : HResults.E_NOTIMPL;
 
     public int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
 
     public int AreGCStructuresValid(Interop.BOOL* pResult)
     {
@@ -1075,31 +1169,28 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int CreateHeapWalk(nuint* pHandle)
-        => _legacy is not null ? _legacy.CreateHeapWalk(pHandle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateHeapWalk(pHandle) : HResults.E_NOTIMPL;
 
     public int DeleteHeapWalk(nuint handle)
-        => _legacy is not null ? _legacy.DeleteHeapWalk(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.DeleteHeapWalk(handle) : HResults.E_NOTIMPL;
 
     public int WalkHeap(nuint handle, uint count, COR_HEAPOBJECT* objects, uint* fetched)
-        => _legacy is not null ? _legacy.WalkHeap(handle, count, objects, fetched) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.WalkHeap(handle, count, objects, fetched) : HResults.E_NOTIMPL;
 
     public int GetHeapSegments(nint pSegments)
-        => _legacy is not null ? _legacy.GetHeapSegments(pSegments) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetHeapSegments(pSegments) : HResults.E_NOTIMPL;
 
     public int IsValidObject(ulong obj, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.IsValidObject(obj, pResult) : HResults.E_NOTIMPL;
-
-    public int GetAppDomainForObject(ulong obj, ulong* pApp, ulong* pModule, ulong* pDomainAssembly, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.GetAppDomainForObject(obj, pApp, pModule, pDomainAssembly, pResult) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsValidObject(obj, pResult) : HResults.E_NOTIMPL;
 
     public int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, Interop.BOOL walkFQ, uint handleWalkMask)
-        => _legacy is not null ? _legacy.CreateRefWalk(pHandle, walkStacks, walkFQ, handleWalkMask) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateRefWalk(pHandle, walkStacks, walkFQ, handleWalkMask) : HResults.E_NOTIMPL;
 
     public int DeleteRefWalk(nuint handle)
-        => _legacy is not null ? _legacy.DeleteRefWalk(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.DeleteRefWalk(handle) : HResults.E_NOTIMPL;
 
     public int WalkRefs(nuint handle, uint count, nint refs, uint* pFetched)
-        => _legacy is not null ? _legacy.WalkRefs(handle, count, refs, pFetched) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.WalkRefs(handle, count, refs, pFetched) : HResults.E_NOTIMPL;
 
     public int GetTypeID(ulong obj, COR_TYPEID* pType)
     {
@@ -1165,13 +1256,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetObjectFields(nint id, uint celt, COR_FIELD* layout, uint* pceltFetched)
-        => _legacy is not null ? _legacy.GetObjectFields(id, celt, layout, pceltFetched) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetObjectFields(id, celt, layout, pceltFetched) : HResults.E_NOTIMPL;
 
     public int GetTypeLayout(nint id, COR_TYPE_LAYOUT* pLayout)
-        => _legacy is not null ? _legacy.GetTypeLayout(id, pLayout) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetTypeLayout(id, pLayout) : HResults.E_NOTIMPL;
 
     public int GetArrayLayout(nint id, nint pLayout)
-        => _legacy is not null ? _legacy.GetArrayLayout(id, pLayout) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetArrayLayout(id, pLayout) : HResults.E_NOTIMPL;
 
     public int GetGCHeapInformation(COR_HEAPINFO* pHeapInfo)
     {
@@ -1215,22 +1306,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW)
-        => _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
-
-    public int GetReJitInfo(ulong vmModule, uint methodTk, ulong* pReJitInfo)
-        => _legacy is not null ? _legacy.GetReJitInfo(vmModule, methodTk, pReJitInfo) : HResults.E_NOTIMPL;
-
-    public int GetReJitInfoByAddress(ulong vmMethod, ulong codeStartAddress, ulong* pReJitInfo)
-        => _legacy is not null ? _legacy.GetReJitInfoByAddress(vmMethod, codeStartAddress, pReJitInfo) : HResults.E_NOTIMPL;
-
-    public int GetSharedReJitInfo(ulong vmReJitInfo, ulong* pSharedReJitInfo)
-        => _legacy is not null ? _legacy.GetSharedReJitInfo(vmReJitInfo, pSharedReJitInfo) : HResults.E_NOTIMPL;
-
-    public int GetSharedReJitInfoData(ulong sharedReJitInfo, DacDbiSharedReJitInfo* pData)
-        => _legacy is not null ? _legacy.GetSharedReJitInfoData(sharedReJitInfo, pData) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
 
     public int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled)
-        => _legacy is not null ? _legacy.AreOptimizationsDisabled(vmModule, methodTk, pOptimizationsDisabled) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.AreOptimizationsDisabled(vmModule, methodTk, pOptimizationsDisabled) : HResults.E_NOTIMPL;
 
     public int GetDefinesBitField(uint* pDefines)
     {
@@ -1291,37 +1370,89 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetActiveRejitILCodeVersionNode(ulong vmModule, uint methodTk, ulong* pVmILCodeVersionNode)
-        => _legacy is not null ? _legacy.GetActiveRejitILCodeVersionNode(vmModule, methodTk, pVmILCodeVersionNode) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetActiveRejitILCodeVersionNode(vmModule, methodTk, pVmILCodeVersionNode) : HResults.E_NOTIMPL;
 
     public int GetNativeCodeVersionNode(ulong vmMethod, ulong codeStartAddress, ulong* pVmNativeCodeVersionNode)
-        => _legacy is not null ? _legacy.GetNativeCodeVersionNode(vmMethod, codeStartAddress, pVmNativeCodeVersionNode) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeVersionNode(vmMethod, codeStartAddress, pVmNativeCodeVersionNode) : HResults.E_NOTIMPL;
 
     public int GetILCodeVersionNode(ulong vmNativeCodeVersionNode, ulong* pVmILCodeVersionNode)
-        => _legacy is not null ? _legacy.GetILCodeVersionNode(vmNativeCodeVersionNode, pVmILCodeVersionNode) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetILCodeVersionNode(vmNativeCodeVersionNode, pVmILCodeVersionNode) : HResults.E_NOTIMPL;
 
     public int GetILCodeVersionNodeData(ulong ilCodeVersionNode, DacDbiSharedReJitInfo* pData)
-        => _legacy is not null ? _legacy.GetILCodeVersionNodeData(ilCodeVersionNode, pData) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetILCodeVersionNodeData(ilCodeVersionNode, pData) : HResults.E_NOTIMPL;
 
     public int EnableGCNotificationEvents(Interop.BOOL fEnable)
-        => _legacy is not null ? _legacy.EnableGCNotificationEvents(fEnable) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            _target.Contracts.Debugger.EnableGCNotificationEvents(fEnable != Interop.BOOL.FALSE);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.EnableGCNotificationEvents(fEnable);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int IsDelegate(ulong vmObject, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.IsDelegate(vmObject, pResult) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsDelegate(vmObject, pResult) : HResults.E_NOTIMPL;
 
     public int GetDelegateType(ulong delegateObject, int* delegateType)
-        => _legacy is not null ? _legacy.GetDelegateType(delegateObject, delegateType) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetDelegateType(delegateObject, delegateType) : HResults.E_NOTIMPL;
 
-    public int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionDomainAssembly, uint* pMethodDef)
-        => _legacy is not null ? _legacy.GetDelegateFunctionData(delegateType, delegateObject, ppFunctionDomainAssembly, pMethodDef) : HResults.E_NOTIMPL;
+    public int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetDelegateFunctionData(delegateType, delegateObject, ppFunctionAssembly, pMethodDef) : HResults.E_NOTIMPL;
 
     public int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain)
-        => _legacy is not null ? _legacy.GetDelegateTargetObject(delegateType, delegateObject, ppTargetObj, ppTargetAppDomain) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetDelegateTargetObject(delegateType, delegateObject, ppTargetObj, ppTargetAppDomain) : HResults.E_NOTIMPL;
 
     public int GetLoaderHeapMemoryRanges(nint pRanges)
-        => _legacy is not null ? _legacy.GetLoaderHeapMemoryRanges(pRanges) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetLoaderHeapMemoryRanges(pRanges) : HResults.E_NOTIMPL;
 
-    public int IsModuleMapped(ulong pModule, int* isModuleMapped)
-        => _legacy is not null ? _legacy.IsModuleMapped(pModule, isModuleMapped) : HResults.E_NOTIMPL;
+    public int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped)
+    {
+        int hr = HResults.S_FALSE;
+        try
+        {
+            if (pModule == 0)
+                throw new ArgumentException("Module pointer must not be zero.", nameof(pModule));
+
+            if (isModuleMapped == null)
+                throw new ArgumentNullException(nameof(isModuleMapped));
+
+            *isModuleMapped = Interop.BOOL.FALSE;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(pModule));
+            if (loader.TryGetLoadedImageContents(handle, out _, out _, out _))
+            {
+                *isModuleMapped = loader.IsModuleMapped(handle) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                hr = HResults.S_OK;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL isModuleMappedLocal;
+            int hrLocal = _legacy.IsModuleMapped(pModule, &isModuleMappedLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*isModuleMapped == isModuleMappedLocal, $"cDAC: {*isModuleMapped}, DAC: {isModuleMappedLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int MetadataUpdatesApplied(Interop.BOOL* pResult)
     {
@@ -1350,15 +1481,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly)
-        => _legacy is not null ? _legacy.GetDomainAssemblyFromModule(vmModule, pVmDomainAssembly) : HResults.E_NOTIMPL;
+    public int GetAssemblyFromModule(ulong vmModule, ulong* pVmAssembly)
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAssemblyFromModule(vmModule, pVmAssembly) : HResults.E_NOTIMPL;
 
     public int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState)
-        => _legacy is not null ? _legacy.ParseContinuation(continuationAddress, pDiagnosticIP, pNextContinuation, pState) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ParseContinuation(continuationAddress, pDiagnosticIP, pNextContinuation, pState) : HResults.E_NOTIMPL;
 
     public int GetAsyncLocals(ulong vmMethod, ulong codeAddr, uint state, nint pAsyncLocals)
-        => _legacy is not null ? _legacy.GetAsyncLocals(vmMethod, codeAddr, state, pAsyncLocals) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAsyncLocals(vmMethod, codeAddr, state, pAsyncLocals) : HResults.E_NOTIMPL;
 
     public int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex)
-        => _legacy is not null ? _legacy.GetGenericArgTokenIndex(vmMethod, pIndex) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetGenericArgTokenIndex(vmMethod, pIndex) : HResults.E_NOTIMPL;
 }

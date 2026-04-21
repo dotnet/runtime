@@ -21,7 +21,7 @@ public enum DataType
 
     /* VM Data Types */
 
-    GCHandle,
+    ObjectHandle,
     CodePointer,
     Thread,
     ThreadStore,
@@ -43,6 +43,7 @@ public enum DataType
     ModuleLookupMap,
     AppDomain,
     Debugger,
+    DebuggerRCThread,
     SystemDomain,
     Assembly,
     LoaderAllocator,
@@ -139,6 +140,7 @@ public enum DataType
     PatchpointInfo,
     PortableEntryPoint,
     VirtualCallStubManager,
+    EEConfig,
 
     TransitionBlock,
     DebuggerEval,
