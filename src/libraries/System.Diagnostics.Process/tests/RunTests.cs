@@ -16,13 +16,13 @@ namespace System.Diagnostics.Tests
         [InlineData(true)]
         public async Task Run_ExitCodeIsReturned(bool useAsync)
         {
-            using Process template = CreateProcess(RemotelyInvokable.Dummy);
+            using Process template = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
 
             ProcessExitStatus exitStatus = useAsync
                 ? await Process.RunAsync(template.StartInfo)
                 : Process.Run(template.StartInfo);
 
-            Assert.Equal(RemotelyInvokable.SuccessExitCode, exitStatus.ExitCode);
+            Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
             Assert.False(exitStatus.Canceled);
         }
 
@@ -31,14 +31,14 @@ namespace System.Diagnostics.Tests
         [InlineData(true)]
         public async Task Run_WithFileName_ExitCodeIsReturned(bool useAsync)
         {
-            using Process template = CreateProcess(RemotelyInvokable.Dummy);
+            using Process template = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             List<string>? arguments = Helpers.MapToArgumentList(template.StartInfo);
 
             ProcessExitStatus exitStatus = useAsync
                 ? await Process.RunAsync(template.StartInfo.FileName, arguments)
                 : Process.Run(template.StartInfo.FileName, arguments);
 
-            Assert.Equal(RemotelyInvokable.SuccessExitCode, exitStatus.ExitCode);
+            Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
             Assert.False(exitStatus.Canceled);
         }
 
@@ -47,13 +47,13 @@ namespace System.Diagnostics.Tests
         [InlineData(true)]
         public async Task Run_WithTimeout_ExitCodeIsReturned(bool useAsync)
         {
-            using Process template = CreateProcess(RemotelyInvokable.Dummy);
+            using Process template = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
 
             ProcessExitStatus exitStatus = useAsync
                 ? await Process.RunAsync(template.StartInfo)
                 : Process.Run(template.StartInfo, TimeSpan.FromMinutes(1));
 
-            Assert.Equal(RemotelyInvokable.SuccessExitCode, exitStatus.ExitCode);
+            Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
             Assert.False(exitStatus.Canceled);
         }
 
@@ -122,13 +122,13 @@ namespace System.Diagnostics.Tests
         [InlineData(true)]
         public async Task RunAndCaptureText_EmptyOutput(bool useAsync)
         {
-            using Process template = CreateProcess(RemotelyInvokable.Dummy);
+            using Process template = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
 
             ProcessTextOutput result = useAsync
                 ? await Process.RunAndCaptureTextAsync(template.StartInfo)
                 : Process.RunAndCaptureText(template.StartInfo);
 
-            Assert.Equal(RemotelyInvokable.SuccessExitCode, result.ExitStatus.ExitCode);
+            Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
             Assert.Equal(string.Empty, result.StandardOutput);
             Assert.Equal(string.Empty, result.StandardError);
         }

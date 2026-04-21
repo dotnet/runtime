@@ -215,7 +215,16 @@ namespace System.Diagnostics
 
             using Process process = Start(startInfo)!;
 
-            (string standardOutput, string standardError) = process.ReadAllText(timeout);
+            string standardOutput, standardError;
+            try
+            {
+                (standardOutput, standardError) = process.ReadAllText(timeout);
+            }
+            catch
+            {
+                process.Kill();
+                throw;
+            }
 
             ProcessExitStatus exitStatus;
             if (timeout.HasValue)
@@ -286,7 +295,16 @@ namespace System.Diagnostics
 
             using Process process = Start(startInfo)!;
 
-            (string standardOutput, string standardError) = await process.ReadAllTextAsync(cancellationToken).ConfigureAwait(false);
+            string standardOutput, standardError;
+            try
+            {
+                (standardOutput, standardError) = await process.ReadAllTextAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                process.Kill();
+                throw;
+            }
 
             ProcessExitStatus exitStatus = cancellationToken.CanBeCanceled
                 ? await process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false)
