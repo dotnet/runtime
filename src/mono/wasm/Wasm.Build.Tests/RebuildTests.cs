@@ -51,7 +51,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData(Configuration.Debug)]
         [InlineData(Configuration.Release)]
-        public void IncrementalPublish_NoChanges_SkipsWebcilAndBootJson(Configuration config)
+        public void IncrementalPublish_NoChanges_SkipsBootJson(Configuration config)
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "incremental_pub_noop");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
