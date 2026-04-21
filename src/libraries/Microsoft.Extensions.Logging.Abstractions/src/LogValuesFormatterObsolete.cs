@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Logging.Internal
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     [Obsolete("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Diagnostics.Testing.", error: true)]
-    public sealed class LogValuesFormatter
+    public class LogValuesFormatter
     {
         private readonly Microsoft.Extensions.Logging.LogValuesFormatter _inner;
 

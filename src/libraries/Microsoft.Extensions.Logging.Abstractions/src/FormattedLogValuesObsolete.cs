@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Logging.Internal
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     [Obsolete("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Diagnostics.Testing.", error: true)]
-    public sealed class FormattedLogValues : IReadOnlyList<KeyValuePair<string, object?>>
+    public class FormattedLogValues : IReadOnlyList<KeyValuePair<string, object?>>
     {
         private readonly Microsoft.Extensions.Logging.FormattedLogValues _inner;
 

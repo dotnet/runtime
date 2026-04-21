@@ -232,7 +232,7 @@ namespace Microsoft.Extensions.Logging.Abstractions.Internal
     [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Logging.NullScope.", error: true)]
     public partial class NullScope : System.IDisposable
     {
-        private NullScope() { }
+        internal NullScope() { }
         public static Microsoft.Extensions.Logging.Abstractions.Internal.NullScope Instance { get { throw null; } }
         public void Dispose() { }
     }
@@ -240,8 +240,6 @@ namespace Microsoft.Extensions.Logging.Abstractions.Internal
     [System.ObsoleteAttribute("This type is retained only for compatibility. Do not use.", error: true)]
     public static partial class TypeNameHelper
     {
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("item")]
-        public static string? GetTypeDisplayName(object? item, bool fullName = true) { throw null; }
         public static string GetTypeDisplayName(System.Type type, bool fullName = true, bool includeGenericParameterNames = false, bool includeGenericParameters = true, char nestedTypeDelimiter = '+') { throw null; }
     }
 }
@@ -249,11 +247,11 @@ namespace Microsoft.Extensions.Logging.Internal
 {
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Diagnostics.Testing.", error: true)]
-    public sealed partial class FormattedLogValues : System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>
+    public sealed partial class FormattedLogValues : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable
     {
         public FormattedLogValues(string? format, params object?[]? values) { }
-        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
         public int Count { get { throw null; } }
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public override string ToString() { throw null; }
