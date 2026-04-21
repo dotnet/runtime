@@ -103,6 +103,9 @@ namespace ILAssembler
                 ((IHasHandle)Assembly).SetHandle(MetadataTokens.EntityHandle(0x20000001));
             }
 
+            List<GenericParameterEntity> allGenericParams = [];
+            List<GenericParameterConstraintEntity> allGenericConstraints = [];
+
             // Now that we've seen all of the entities, we can write them out in the correct order.
             // Record the entities in the correct order so they are assigned handles.
             // After this, we'll write out the content of the entities in the correct order.
@@ -127,15 +130,13 @@ namespace ILAssembler
                             RecordEntityInTable(TableIndex.Param, param);
                         }
                     }
-                    // Record generic parameters for methods
-                    foreach (var genericParam in method.GenericParameters)
-                    {
-                        RecordEntityInTable(TableIndex.GenericParam, genericParam);
-                    }
-                    foreach (var constraint in method.GenericParameterConstraints)
-                    {
-                        RecordEntityInTable(TableIndex.GenericParamConstraint, constraint);
-                    }
+
+                    // Don't record generic parameters or constraints for methods.
+                    // Entries need to be sorted by the value of the TypeOrMethodDef coded index,
+                    // which can intermix TypeDef and MethodDef generic parameters based on the order of the TypeDef and MethodDef entries.
+                    // We'll record these after processing all TypeDefs and MethodDefs.
+                    allGenericParams.AddRange(method.GenericParameters);
+                    allGenericConstraints.AddRange(method.GenericParameterConstraints);
                 }
                 foreach (var field in type.Fields)
                 {
@@ -161,16 +162,54 @@ namespace ILAssembler
                     RecordEntityInTable(TableIndex.MethodImpl, impl);
                 }
 
-                foreach (var genericParam in type.GenericParameters)
-                {
-                    RecordEntityInTable(TableIndex.GenericParam, genericParam);
-                }
+                // Don't record generic parameters or constraints for methods.
+                // Entries need to be sorted by the value of the TypeOrMethodDef coded index,
+                // which can intermix TypeDef and MethodDef generic parameters based on the order of the TypeDef and MethodDef entries.
+                // We'll record these after processing all TypeDefs and MethodDefs.
+                allGenericParams.AddRange(type.GenericParameters);
+                allGenericConstraints.AddRange(type.GenericParameterConstraints);
+            }
 
-                // COMPAT: Record the generic parameter constraints based on the order saved in the TypeDef
-                foreach (var constraint in type.GenericParameterConstraints)
+            // Now that we've processed all TypeDefs and their corresponding GenericParam and GenericParamConstraint entries,
+            // we can process the GenericParam and GenericParamConstrain entries
+            // and maintain ordering requirements for TypeOrMethodDef coded index values.
+            allGenericParams.Sort((gp1, gp2) =>
+            {
+                var owner1 = gp1.Owner!.Handle;
+                var owner2 = gp2.Owner!.Handle;
+                int row1 = MetadataTokens.GetRowNumber(owner1);
+                int row2 = MetadataTokens.GetRowNumber(owner2);
+                int tag1 = owner1.Kind == HandleKind.TypeDefinition ? 0 : 1;
+                int tag2 = owner2.Kind == HandleKind.TypeDefinition ? 0 : 1;
+                int compare = (row1 << 1 | tag1).CompareTo(row2 << 1 | tag2);
+                if (compare != 0)
                 {
-                    RecordEntityInTable(TableIndex.GenericParamConstraint, constraint);
+                    return compare;
                 }
+                return gp1.Index.CompareTo(gp2.Index);
+            });
+
+            foreach (GenericParameterEntity genericParam in allGenericParams)
+            {
+                // GenericParam index is stored as a 2-byte value; skip params beyond the limit
+                if (genericParam.Index > ushort.MaxValue)
+                    continue;
+
+                RecordEntityInTable(TableIndex.GenericParam, genericParam);
+            }
+
+            allGenericConstraints.Sort((c1, c2) =>
+            {
+                var owner1 = c1.Owner!.Handle;
+                var owner2 = c2.Owner!.Handle;
+                int row1 = MetadataTokens.GetRowNumber(owner1);
+                int row2 = MetadataTokens.GetRowNumber(owner2);
+                return row1.CompareTo(row2);
+            });
+
+            foreach (GenericParameterConstraintEntity constraint in allGenericConstraints)
+            {
+                RecordEntityInTable(TableIndex.GenericParamConstraint, constraint);
             }
 
             foreach (MemberReferenceEntity memberReferenceEntity in _memberReferences)
@@ -523,17 +562,7 @@ namespace ILAssembler
                 builder.AddMethodSpecification(methodSpec.Parent.Handle, builder.GetOrAddBlob(methodSpec.Signature));
             }
 
-            // GenericParam table must be sorted by coded TypeOrMethodDef token (Owner, Index) per ECMA-335 spec
-            // TypeOrMethodDef coded index: TypeDef tag=0, MethodDef tag=1, 1-bit tag
-            foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam)
-                .OrderBy(gp =>
-                {
-                    var owner = ((GenericParameterEntity)gp).Owner!.Handle;
-                    int row = MetadataTokens.GetRowNumber(owner);
-                    int tag = owner.Kind == HandleKind.TypeDefinition ? 0 : 1;
-                    return (row << 1) | tag;
-                })
-                .ThenBy(gp => ((GenericParameterEntity)gp).Index))
+            foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam))
             {
                 // GenericParam index is stored as a 2-byte value; skip params beyond the limit
                 if (genericParam.Index > ushort.MaxValue)
@@ -545,9 +574,7 @@ namespace ILAssembler
                     genericParam.Index);
             }
 
-            foreach (GenericParameterConstraintEntity constraint in GetSeenEntities(TableIndex.GenericParamConstraint)
-                .Cast<GenericParameterConstraintEntity>()
-                .OrderBy(c => MetadataTokens.GetRowNumber(c.Owner!.Handle)))
+            foreach (GenericParameterConstraintEntity constraint in GetSeenEntities(TableIndex.GenericParamConstraint))
             {
                 builder.AddGenericParameterConstraint(
                     (GenericParameterHandle)constraint.Owner!.Handle,
