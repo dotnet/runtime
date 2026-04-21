@@ -3019,9 +3019,9 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 
 #ifdef TARGET_WASM
-    // For non-helper, managed calls, if we have portable entry points enabled, we need to lower
+    // For any type of managed call, if we have portable entry points enabled, we need to lower
     // the call according to the portable entrypoint abi
-    if (!call->IsUnmanaged() && !call->IsHelperCall() &&
+    if (!call->IsUnmanaged() &&
         m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
         LowerPEPCall(call);
@@ -3669,13 +3669,13 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
     JITDUMP("Begin lowering PEP call\n");
     DISPTREERANGE(BlockRange(), call);
 
+    assert(call->gtControlExpr != nullptr, "PEP call must always have a control expression");
     LIR::Use callTargetUse(BlockRange(), &call->gtControlExpr, call);
 
     JITDUMP("Creating new local variable for PEP");
     unsigned int callTargetLclNum = callTargetUse.ReplaceWithLclVar(m_compiler);
     GenTreeLclVar* callTargetLclForArg = m_compiler->gtNewLclvNode(callTargetLclNum, TYP_I_IMPL);
     DISPTREE(call)
-
 
     JITDUMP("Add new arg to call arg list corresponding to PEP target");
     NewCallArg pepTargetArg = NewCallArg::Primitive(callTargetLclForArg).WellKnown(WellKnownArg::WasmPortableEntryPoint);
@@ -3696,9 +3696,7 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
 
     // Lower the new PEP arg now that the call abi info is updated and lcl var is inserted
     LowerArg(call, pepArg);
-
-    JITDUMP("Call is now:\n");
-    DISPTREERANGE(BlockRange(), call);
+    DISPTREE(call);
 
     JITDUMP("Rewrite PEP call's control expression to indirect through the new local variable\n");
     // Rewrite the call's control expression to have an additional load from the PEP local
