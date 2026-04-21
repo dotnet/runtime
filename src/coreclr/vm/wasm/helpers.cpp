@@ -343,9 +343,26 @@ extern "C" void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR Pr
     PORTABILITY_ASSERT("JIT_ProfilerEnterLeaveTailcallStub is not implemented on wasm");
 }
 
-extern "C" void STDCALL DelayLoad_MethodCall()
+extern "C" PCODE STDCALL DelayLoad_MethodCallImpl(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup)
 {
-    PORTABILITY_ASSERT("DelayLoad_MethodCall is not implemented on wasm");
+    Module** ppModule = (Module**)(moduleBase + rvaOfModuleFixup);
+    return ExternalMethodFixupWorker(pTransitionBlock, (TADDR)(moduleBase + pImportThunkEntry->RelocOffset), -1, *ppModule);
+}
+
+extern "C" __attribute__((naked)) PCODE STDCALL DelayLoad_MethodCall(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup)
+{
+    asm ("local.get 0\n" /* Capture pTransitionBlock onto the stack for calling DelayLoad_MethodCallImpl function. This also happens to be the callersFramePointer */
+         "local.get 0\n" /* Capture callersFramePointer onto the stack for setting the __stack_pointer */
+         "global.get __stack_pointer\n" /* Get current value of stack global */
+         "local.set 0\n"  /* Overwrite local 0 with the previous __stack_pointer value so it can be restored after the call */
+         "global.set __stack_pointer\n" /* Set stack global to the initial value of callersFramePointer, which is the current stack pointer for the interpreter call */
+         "local.get 1\n" /* Load pImportThunkEntry argument onto the stack for calling DelayLoad_MethodCallImpl function*/
+         "local.get 2\n" /* Load moduleBase argument onto the stack for calling DelayLoad_MethodCallImpl function*/
+         "local.get 3\n" /* Load rvaOfModuleFixup argument onto the stack for calling DelayLoad_MethodCallImpl function*/
+         "call %0\n" /* Call the actual implementation function */
+         "local.get 0\n" /* Reload the saved previous __stack_pointer value for restoration into the stack global */
+         "global.set __stack_pointer\n"
+         "return" :: "i" (DelayLoad_MethodCallImpl));
 }
 
 extern "C" void STDCALL DelayLoad_Helper()
