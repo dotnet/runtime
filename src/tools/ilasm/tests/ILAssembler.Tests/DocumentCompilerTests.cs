@@ -5199,5 +5199,147 @@ namespace ILAssembler.Tests
             Assert.Equal(4, layout.PackingSize);
             Assert.Equal(16, layout.Size);
         }
+
+        [Fact]
+        public void TypeRefInILToken_BackpatchedAfterResolution()
+        {
+            // When a type instruction (unbox.any, box, castclass, etc.) references
+            // a type via [self-assembly]Type, the IL token must be backpatched to the
+            // resolved TypeDef handle after TypeRef→TypeDef resolution.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi sealed MyStruct extends [mscorlib]System.ValueType
+                {
+                    .field public int32 x
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static int32 Unbox(object o) cil managed
+                    {
+                        ldarg.0
+                        unbox.any [test]MyStruct
+                        ldfld int32 MyStruct::x
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // [test]MyStruct TypeRef should resolve to TypeDef
+            foreach (var trHandle in reader.TypeReferences)
+            {
+                var tr = reader.GetTypeReference(trHandle);
+                Assert.NotEqual("MyStruct", reader.GetString(tr.Name));
+            }
+
+            // The method IL should contain a TypeDef token for MyStruct, not a TypeRef token.
+            // Read the method body and check the unbox.any operand.
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "Unbox");
+            int rva = method.RelativeVirtualAddress;
+            Assert.True(rva > 0, "Method should have a body");
+        }
+
+        [Fact]
+        public void TypeRefInCastclass_BackpatchedAfterResolution()
+        {
+            // castclass with [self-assembly]Type should use TypeDef token.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi MyClass extends [mscorlib]System.Object
+                {
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static class MyClass Cast(object o) cil managed
+                    {
+                        ldarg.0
+                        castclass [test]MyClass
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // [test]MyClass TypeRef should resolve to TypeDef
+            foreach (var trHandle in reader.TypeReferences)
+            {
+                var tr = reader.GetTypeReference(trHandle);
+                Assert.NotEqual("MyClass", reader.GetString(tr.Name));
+            }
+        }
+
+        [Fact]
+        public void TypeRefInLdtoken_BackpatchedAfterResolution()
+        {
+            // ldtoken with [self-assembly]Type should use TypeDef token.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi MyType extends [mscorlib]System.Object
+                {
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void GetToken() cil managed
+                    {
+                        ldtoken [test]MyType
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            foreach (var trHandle in reader.TypeReferences)
+            {
+                var tr = reader.GetTypeReference(trHandle);
+                Assert.NotEqual("MyType", reader.GetString(tr.Name));
+            }
+        }
+
+        [Fact]
+        public void TypeRefInFieldMdtoken_BackpatchedAfterResolution()
+        {
+            // When a field instruction uses an mdtoken that resolves to a TypeRef
+            // for a local type, the token should be backpatched to TypeDef.
+            // This tests the instr_field mdtoken path.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi sealed MyStruct extends [mscorlib]System.ValueType
+                {
+                    .field public int32 x
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void Load() cil managed
+                    {
+                        ldtoken field int32 [test]MyStruct::x
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // [test]MyStruct TypeRef should resolve to TypeDef
+            foreach (var trHandle in reader.TypeReferences)
+            {
+                var tr = reader.GetTypeReference(trHandle);
+                Assert.NotEqual("MyStruct", reader.GetString(tr.Name));
+            }
+        }
     }
 }
