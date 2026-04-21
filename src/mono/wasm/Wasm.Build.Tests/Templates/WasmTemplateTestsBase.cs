@@ -89,6 +89,8 @@ public class WasmTemplateTestsBase : BuildTestBase
             .ExecuteWithCapturedOutput($"new {template.ToString().ToLower()} {extraArgs}")
             .EnsureSuccessful();
 
+        AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(projectName, projectFilePath, logPath, nugetDir);
@@ -124,35 +126,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             """;
         }
 
-        if (s_buildEnv.IsCoreClrRuntime)
-        {
-            // TODO-WASM: https://github.com/dotnet/sdk/issues/51213
-            string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
-
-            extraProperties +=
-            """
-                <UseMonoRuntime>false</UseMonoRuntime>
-            """;
-            extraItems +=
-            $$"""
-                <KnownFrameworkReference Update="Microsoft.NETCore.App">
-                  <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
-                  <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
-                  <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
-                  <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
-                </KnownFrameworkReference>
-            """;
-            insertAtEnd +=
-            $$"""
-                <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
-                    <ItemGroup>
-                    <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
-                        <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
-                    </KnownWebAssemblySdkPack>
-                    </ItemGroup>
-                </Target>
-            """;
-        }
+        AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
 
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
@@ -164,6 +138,39 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
+    }
+
+    private static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
+    {
+        if (!s_buildEnv.IsCoreClrRuntime)
+            return;
+
+        string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+
+        extraProperties +=
+        """
+            <UseMonoRuntime>false</UseMonoRuntime>
+            <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
+        """;
+        extraItems +=
+        $$"""
+            <KnownFrameworkReference Update="Microsoft.NETCore.App">
+              <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
+              <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
+              <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
+              <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+            </KnownFrameworkReference>
+        """;
+        insertAtEnd +=
+        $$"""
+            <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
+                <ItemGroup>
+                <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
+                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
+                </KnownWebAssemblySdkPack>
+                </ItemGroup>
+            </Target>
+        """;
     }
 
     public virtual (string projectDir, string buildOutput) PublishProject(
@@ -350,6 +357,8 @@ public class WasmTemplateTestsBase : BuildTestBase
         {
             runOptions = runOptions with { CustomBundleDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..", "public")) };
         }
+
+        EnsureXHarnessAvailable();
 
         return runOptions.Host switch
         {

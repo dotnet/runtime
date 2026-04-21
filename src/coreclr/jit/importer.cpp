@@ -1173,7 +1173,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree*      val,
 //    Normalizing the type involves examining the struct type to determine if it should
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
 //    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
-//    call structSizeMightRepresentAcceleratedType to determine if this api needs to be called.
+//    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
 //
 var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseJitType)
 {
@@ -1185,39 +1185,22 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
     const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
 
     // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
-    if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0 &&
-        (structFlags & CORINFO_FLG_INTRINSIC_TYPE) != 0)
+    if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
     {
         unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
-        if (structSizeMightRepresentAcceleratedType(originalSize))
+        if (structSizeMightRepresentSIMDType(originalSize))
         {
             unsigned int sizeBytes;
             var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
-
             if (simdBaseType != TYP_UNDEF)
             {
                 assert(sizeBytes == originalSize || sizeBytes == SIZE_UNKNOWN);
-                if (sizeBytes < getMinVectorByteLength())
+                structType = getSIMDTypeForSize(sizeBytes);
+                if (pSimdBaseJitType != nullptr)
                 {
-                    // The struct itself is accelerated, in this case, it is `Half`.
-                    // If future types are added, this assert will need to be removed.
-                    assert(sizeBytes == 2);
-                    structType = simdBaseType;
-                    if (pSimdBaseJitType != nullptr)
-                    {
-                        *pSimdBaseJitType = TYP_UNDEF;
-                    }
+                    *pSimdBaseJitType = simdBaseType;
                 }
-                else
-                {
-                    structType = getSIMDTypeForSize(sizeBytes);
-                    if (pSimdBaseJitType != nullptr)
-                    {
-                        *pSimdBaseJitType = simdBaseType;
-                    }
-                }
-
                 // Also indicate that we use floating point registers.
                 compFloatingPointUsed = true;
             }
@@ -2819,6 +2802,59 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 
     return call;
 }
+
+#if defined(FEATURE_HW_INTRINSICS)
+//----------------------------------------------------------------------------------------------
+// Compiler::impSimdCreateScalarHalf: Creates a new Vector128.CreateScalar node for a System.Half value
+//
+//  Arguments:
+//    op1 - The System.Half value
+//
+// Returns:
+//    The Vector128.CreateScalar node that contains op1
+//
+GenTree* Compiler::impSimdCreateScalarHalf(GenTree* op1)
+{
+    unsigned op1Tmp;
+
+    if (!op1->OperIs(GT_LCL_VAR))
+    {
+        op1Tmp = lvaGrabTemp(true DEBUGARG("System.Half tmp"));
+        impStoreToTemp(op1Tmp, op1, CHECK_SPILL_ALL);
+    }
+    else
+    {
+        op1Tmp = op1->AsLclVarCommon()->GetLclNum();
+    }
+
+    op1 = gtNewLclFldNode(op1Tmp, TYP_USHORT, 0);
+    return gtNewSimdCreateScalarNode(TYP_SIMD16, op1, TYP_USHORT, 16);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::impSimdToScalarHalf: Creates a new Vector128.ToScalar node for a System.Half value
+//
+//  Arguments:
+//    op1        - The Vector128 from which to extract the System.Half value
+//    halfClsHnd - The class handle for System.Half
+//
+// Returns:
+//    The System.Half value extracted from op1
+//
+GenTree* Compiler::impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd)
+{
+    assert(isSystemHalfClass(halfClsHnd));
+
+    unsigned resTmp = lvaGrabTemp(true DEBUGARG("System.Half tmp"));
+    lvaSetStruct(resTmp, halfClsHnd, false);
+
+    op1 = gtNewSimdToScalarNode(TYP_INT, op1, TYP_USHORT, 16);
+    op1 = gtNewStoreLclFldNode(resTmp, TYP_USHORT, 0, op1);
+
+    impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+    return gtNewLclvNode(resTmp, TYP_STRUCT);
+}
+#endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // impInlineUnboxNullable: Generate code for unboxing Nullable<T> from an object (obj)
@@ -7285,7 +7321,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The array helper takes a native int for array length.
                 // So if we have an int, explicitly extend it to be a native int.
                 index = impImplicitIorI4Cast(index, TYP_I_IMPL);
-                op1   = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
+
+                GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
+                INDEBUG(call->gtRawILOffset = opcodeOffs);
+                impConvertToUserCallAndMarkForInlining(call);
+                op1 = call;
+
                 goto SPILL_APPEND;
             }
 

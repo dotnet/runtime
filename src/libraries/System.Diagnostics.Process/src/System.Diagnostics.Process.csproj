@@ -21,6 +21,7 @@
     <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
     <Compile Include="System\Diagnostics\Process.cs" />
     <Compile Include="System\Diagnostics\Process.Multiplexing.cs" />
+    <Compile Include="System\Diagnostics\Process.Scenarios.cs" />
     <Compile Include="System\Diagnostics\ProcessExitStatus.cs" />
     <Compile Include="System\Diagnostics\ProcessOutputLine.cs" />
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />

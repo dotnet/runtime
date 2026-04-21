@@ -4459,6 +4459,16 @@ static bool isExactTypeHelper(TypeHandle th)
     if (pMT->HasTypeEquivalence() || pMT->HasVariance())
         return false;
 
+    // SZArrayHelper is a phantom dispatch target: the VM maps generic
+    // array interface methods (IList<T>.set_Item, etc.) to sealed
+    // SZArrayHelper methods, but no runtime object ever has
+    // SZArrayHelper as its MethodTable - `this` inside those methods
+    // is always a T[]. Reporting it as exact would allow the JIT (e.g.
+    // VN-based invariant-load folding of GetMethodTable) to embed
+    // SZArrayHelper's MT as a constant and mis-read fields off it.
+    if (pMT == g_pSZArrayHelperClass)
+        return false;
+
     return pMT->IsSealed();
 }
 
@@ -7734,6 +7744,10 @@ CEEInfo::getMethodInfo(
     else if (ftn->IsIL() || ftn->IsDynamicMethod())
     {
         // IL methods with no IL header indicate there is no implementation defined in metadata.
+        // NOTE: P/Invoke methods are also IL methods with no IL header,
+        // but it is generally not profitable to inline the marshalling IL.
+        // As a result, we skip inlining the marshalling IL.
+        // P/Invokes that don't require marshalling can still be inlined directly by the JIT.
         getMethodInfoWorker(ftn, NULL, methInfo, context);
         result = true;
     }
@@ -14150,7 +14164,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
                 _ASSERTE(pMethod->IsPInvoke());
-                result = (size_t)(LPVOID)PInvokeMethodDesc::ResolveAndSetPInvokeTarget((PInvokeMethodDesc*)pMethod);
+                PInvoke::ResolvePInvokeTarget((PInvokeMethodDesc*)pMethod);
+                result = (size_t)(LPVOID)((PInvokeMethodDesc*)pMethod)->GetPInvokeTarget();
             }
             else
             {

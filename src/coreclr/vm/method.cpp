@@ -2661,8 +2661,8 @@ BOOL MethodDesc::MayHaveNativeCode()
         break;
     case mcFCall:           // FCalls do not have real native code.
         return FALSE;
-    case mcPInvoke:         // PInvoke never have native code (note that the PInvoke method
-        return FALSE;       //  does not appear as having a native code even for stubs as IL)
+    case mcPInvoke:         // P/Invokes are generally backed by IL.
+        return TRUE;
     case mcEEImpl:          // Runtime provided implementation. No native code.
         return FALSE;
     case mcArray:           // Runtime provided implementation. No native code.
@@ -2835,6 +2835,10 @@ void MethodDesc::EnsureTemporaryEntryPoint()
     }
 }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD);
+#endif
+
 void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
 {
     CONTRACTL
@@ -2857,7 +2861,8 @@ void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)pamTrackerPrecode->Track(
             GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) }));
-        portableEntryPoint->Init(this);
+
+        SetPortableEntrypointInitialStateForMethod(portableEntryPoint);
         entryPoint = (PCODE)portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -2912,13 +2917,48 @@ PCODE MethodDesc::GetPortableEntryPointIfExists()
     return GetTemporaryEntryPointIfExists();
 }
 
+void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *portableEntry)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    // WASM-TODO! This only handling the R2R to interpreter case for well known signatures.
+    // Eventually we will need to handle arbitrary signatures by looking in the loaded list of R2R modules
+    // as well as recording when we couldn't find something, in case another R2R module might be loaded
+    // later which has an R2R to interpreter stub for that given signature.
+    void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
+
+    if (pPortableEntryPointToInterpreter != nullptr)
+    {
+        portableEntry->Init(pPortableEntryPointToInterpreter, this);
+    }
+    else
+    {
+        portableEntry->Init(this);
+    }
+    // If we find actual code, we will remove this flag, but we want to prefer the interpreter entry point
+    // until then to allow helpers to work for methods that haven't tried to get an entry point yet.
+    portableEntry->SetPrefersInterpreterEntryPoint();
+}
+
 void MethodDesc::ResetPortableEntryPoint()
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
     PCODE portableEntry = GetPortableEntryPointIfExists();
     if (portableEntry != (PCODE)NULL)
     {
         PortableEntryPoint* pep = PortableEntryPoint::ToPortableEntryPoint(portableEntry);
-        pep->Init(this);  // Re-initializes: clears _pActualCode, _pInterpreterData, _flags
+        SetPortableEntrypointInitialStateForMethod(pep);
     }
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
@@ -3086,8 +3126,11 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
         !IsJitOptimizationLevelRequested() &&
 
-        // Tiering the async thunk methods doesn't make sense
-        !IsAsyncThunkMethod()
+        // Tiering the async thunk methods is not supported currently
+        !IsAsyncThunkMethod() &&
+
+        // Tiering P/Invoke methods is not supported currently
+        !IsPInvoke()
         )
     {
         InterlockedUpdateFlags3(enum_flag3_IsEligibleForTieredCompilation, TRUE);
@@ -3458,29 +3501,6 @@ BOOL PInvokeMethodDesc::ComputeMarshalingRequired()
     return PInvoke::MarshalingRequired(this);
 }
 
-/**********************************************************************************/
-// Forward declare the PInvokeImportWorker function - See dllimport.cpp
-EXTERN_C LPVOID STDCALL PInvokeImportWorker(PInvokeMethodDesc*);
-void *PInvokeMethodDesc::ResolveAndSetPInvokeTarget(_In_ PInvokeMethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END
-
-// This build conditional is here due to dllimport.cpp
-// not being relevant during the crossgen build.
-    LPVOID targetMaybe = PInvokeImportWorker(pMD);
-    _ASSERTE(targetMaybe != nullptr);
-    pMD->SetPInvokeTarget(targetMaybe);
-    return targetMaybe;
-
-}
-
 BOOL PInvokeMethodDesc::TryGetResolvedPInvokeTarget(_In_ PInvokeMethodDesc* pMD, _Out_ void** ndirectTarget)
 {
     CONTRACTL
@@ -3500,10 +3520,15 @@ BOOL PInvokeMethodDesc::TryGetResolvedPInvokeTarget(_In_ PInvokeMethodDesc* pMD,
         return TRUE;
     }
 
+    // We only resolve P/Invoke targets early for SuppressGCTransition inlined P/Invokes.
+    // We do so because we cannot resolve the target of a SuppressGCTransition inlined P/Invoke at the time of the call
+    // as the resolution logic violates the rules of SuppressGCTransition (this behavior is documented).
     if (!pMD->ShouldSuppressGCTransition())
         return FALSE;
 
-    *ndirectTarget = ResolveAndSetPInvokeTarget(pMD);
+    PInvoke::ResolvePInvokeTarget(pMD);
+    *ndirectTarget = pMD->GetPInvokeTarget();
+
     return TRUE;
 
 }
@@ -3523,7 +3548,7 @@ void PInvokeMethodDesc::InterlockedSetPInvokeFlags(WORD wFlags)
 
     WORD *pFlags = &m_wPInvokeFlags;
 
-    // Make sure that m_flags is aligned on a 4 byte boundry
+    // Make sure that m_flags is aligned on a 4 byte boundary
     _ASSERTE( ( ((size_t) pFlags) & (sizeof(ULONG)-1) ) == 0);
 
     // Ensure we won't be reading or writing outside the bounds of the PInvokeMethodDesc.
@@ -3661,8 +3686,7 @@ void PInvokeMethodDesc::EnsureStackArgumentSize()
         // Marshalling required check sets the stack size as side-effect when marshalling is not required.
         if (MarshalingRequired())
         {
-            // Generating interop stub sets the stack size as side-effect in all cases
-            GetStubForInteropMethod(this, PINVOKESTUB_FL_FOR_NUMPARAMBYTES);
+            PInvoke::CalculateStackArgumentSize(this);
         }
     }
 }

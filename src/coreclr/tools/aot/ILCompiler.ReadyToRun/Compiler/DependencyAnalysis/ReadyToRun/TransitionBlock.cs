@@ -760,9 +760,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public override int NumCalleeSavedRegisters => 0;
 
-            public override int SizeOfTransitionBlock => 0;
+            public override int SizeOfTransitionBlock => 8;
 
-            public override int OffsetOfArgumentRegisters => 0;
+            public override int OffsetOfArgumentRegisters => 8;
 
             public override int OffsetOfFloatArgumentRegisters => 0;
 
@@ -770,7 +770,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public override int EnregisteredReturnTypeIntegerMaxSize => 0;
 
-            public override int GetRetBuffArgOffset(bool hasThis) => hasThis ? 4 : 0;
+            public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? StackElemSize(PointerSize, false, false) : 0);
 
             public override bool IsArgPassedByRef(TypeHandle th)
             {
@@ -779,7 +779,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public override int StackElemSize(int parmSize, bool isValueType, bool isFloatHfa)
             {
-                int stackSlotSize = 4;
+                int stackSlotSize = 8;
                 return ALIGN_UP(parmSize, stackSlotSize);
             }
         }
