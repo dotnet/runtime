@@ -4505,5 +4505,26 @@ namespace ILAssembler.Tests
             Assert.True((header & (byte)SignatureAttributes.Instance) == 0,
                 $"Static method should NOT have Instance flag. Header byte: 0x{header:X2}");
         }
+
+        [Fact]
+        public void FieldRVA_DataLabelEmitted()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .data D_1 = int32(42)
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field public static int32 myData at D_1
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // The FieldRVA table should have an entry
+            int fieldRvaCount = reader.GetTableRowCount(TableIndex.FieldRva);
+            Assert.True(fieldRvaCount >= 1, $"FieldRVA table should have at least 1 entry, has {fieldRvaCount}");
+        }
     }
 }

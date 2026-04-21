@@ -240,6 +240,10 @@ namespace ILAssembler
                 {
                     fieldAttributes |= FieldAttributes.HasFieldMarshal;
                 }
+                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.ContainsKey(fieldDef.DataDeclarationName))
+                {
+                    fieldAttributes |= FieldAttributes.HasFieldRVA;
+                }
                 builder.AddFieldDefinition(
                     fieldAttributes,
                     builder.GetOrAddString(fieldDef.Name),
