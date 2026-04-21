@@ -2222,9 +2222,9 @@ protected:
 
     struct insExecutionCharacteristics
     {
-        float                     insThroughput;
-        float                     insLatency;
-        PerfScoreMemoryAccessKind insMemoryAccessKind;
+        float                     insThroughput = 0;
+        float                     insLatency = 0;
+        PerfScoreMemoryAccessKind insMemoryAccessKind = PerfScoreMemoryAccessKind::None;
     };
 
     float insEvaluateExecutionCost(instrDesc* id);
