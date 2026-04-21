@@ -15,14 +15,14 @@ namespace System.Diagnostics.Tests
 
             PerformanceCounter counterSample = CreateCounter(categoryName, PerformanceCounterType.ElapsedTime);
 
-            counterSample.RawValue = Stopwatch.GetTimestamp();
-            long startTicks = Stopwatch.GetTimestamp();
+            long startTimestamp = Stopwatch.GetTimestamp();
+            counterSample.RawValue = startTimestamp;
             Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
 
             System.Threading.Thread.Sleep(500);
 
             var counterVal = Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
-            var elapsed = (double)(Stopwatch.GetTimestamp() - startTicks) / Stopwatch.Frequency;
+            var elapsed = (double)(Stopwatch.GetTimestamp() - startTimestamp) / Stopwatch.Frequency;
             Helpers.DeleteCategory(categoryName);
             Assert.True(Math.Abs(elapsed - counterVal) < .3);
         }
