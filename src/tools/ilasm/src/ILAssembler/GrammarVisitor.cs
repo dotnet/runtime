@@ -199,6 +199,9 @@ namespace ILAssembler
                 dllCharacteristics &= ~DllCharacteristics.DynamicBase;
             }
 
+            // Compute stack reserve: command-line option overrides directive, which overrides default
+            ulong sizeOfStackReserve = (ulong)(_options.StackReserve ?? (_stackReserve != 0 ? _stackReserve : 0x00100000));
+
             PEHeaderBuilder header = new(
                 machine: machine,
                 fileAlignment: fileAlignment,
@@ -206,7 +209,8 @@ namespace ILAssembler
                 subsystem: subsystem,
                 majorSubsystemVersion: majorSubsystemVersion,
                 minorSubsystemVersion: minorSubsystemVersion,
-                dllCharacteristics: dllCharacteristics);
+                dllCharacteristics: dllCharacteristics,
+                sizeOfStackReserve: sizeOfStackReserve);
 
             MethodDefinitionHandle entryPoint = default;
             if (_entityRegistry.EntryPoint is not null)
@@ -2648,6 +2652,11 @@ namespace ILAssembler
         public GrammarResult VisitFieldDecl(CILParser.FieldDeclContext context)
         {
             var fieldAttrs = context.fieldAttr().Select(VisitFieldAttr).Aggregate((FieldAttributes)0, (a, b) => a | b);
+            // COMPAT: Native ilasm implicitly adds SpecialName when RTSpecialName is set
+            if (fieldAttrs.HasFlag(FieldAttributes.RTSpecialName))
+            {
+                fieldAttrs |= FieldAttributes.SpecialName;
+            }
             var fieldType = VisitType(context.type()).Value;
             var marshalBlobs = context.marshalBlob();
             var marshalBlob = marshalBlobs.Length > 0 ? VisitMarshalBlob(marshalBlobs[marshalBlobs.Length - 1]).Value : null;
@@ -4191,6 +4200,12 @@ namespace ILAssembler
                 sigHeader |= (byte)SignatureAttributes.Generic;
             }
             methodDefinition.MethodAttributes = context.methAttr().Aggregate((MethodAttributes)0, (acc, attr) => acc | VisitMethAttr(attr));
+
+            // COMPAT: Native ilasm implicitly adds SpecialName when RTSpecialName is set
+            if (methodDefinition.MethodAttributes.HasFlag(MethodAttributes.RTSpecialName))
+            {
+                methodDefinition.MethodAttributes |= MethodAttributes.SpecialName;
+            }
 
             if (methodDefinition.MethodAttributes.HasFlag(MethodAttributes.Abstract) && !methodDefinition.ContainingType.Attributes.HasFlag(TypeAttributes.Abstract))
             {
