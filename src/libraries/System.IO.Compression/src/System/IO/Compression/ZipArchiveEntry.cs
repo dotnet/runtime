@@ -56,6 +56,7 @@ namespace System.IO.Compression
         //   determined by whether the local header had 0xFFFFFFFF size markers.
         private Stream? _forwardReadDataStream;
         private bool _forwardReadStreamOpened;
+        private bool _forwardReadNeedsWrapping;
         private bool _hasDataDescriptor;
         private bool _isZip64SizeFields;
 
@@ -209,7 +210,7 @@ namespace System.IO.Compression
             _fileComment = Array.Empty<byte>();
             _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, headerData.CompressionMethod);
             _forwardReadDataStream = dataStream;
-
+            _forwardReadNeedsWrapping = dataStream is not null && !headerData.HasDataDescriptor && !headerData.IsEncrypted;
             Changes = ZipArchive.ChangeState.Unchanged;
         }
 
@@ -942,6 +943,16 @@ namespace System.IO.Compression
                 throw new InvalidOperationException(SR.ForwardReadNoDataStream);
             if (_forwardReadStreamOpened)
                 throw new IOException(SR.ForwardReadOnly);
+
+            // For known-size entries, the data stream is a raw bounded stream —
+            // lazily wrap it with decompressor + CRC validation on first Open().
+            if (_forwardReadNeedsWrapping)
+            {
+                Stream decompressor = ZipArchive.CreateForwardReadDecompressor(
+                    _forwardReadDataStream, _storedCompressionMethod, _uncompressedSize, leaveOpen: false);
+                _forwardReadDataStream = new CrcValidatingReadStream(decompressor, _crc32, _uncompressedSize);
+                _forwardReadNeedsWrapping = false;
+            }
 
             _forwardReadStreamOpened = true;
 

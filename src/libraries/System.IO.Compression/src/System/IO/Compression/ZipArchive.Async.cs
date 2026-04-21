@@ -149,7 +149,6 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                 switch (_mode)
                 {
                     case ZipArchiveMode.Read:
-                        break;
                     case ZipArchiveMode.ForwardRead:
                         await DrainPreviousEntryAsync(default).ConfigureAwait(false);
                         break;
