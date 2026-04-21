@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging.Internal
     /// This also enables using {NamedFormatItem} in the format string.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [Obsolete("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Diagnostics.Testing.", error: true)]
+    [Obsolete("This type is retained only for compatibility. The recommended alternative is the Microsoft.Extensions.Diagnostics.Testing package.", error: true)]
     public class FormattedLogValues : IReadOnlyList<KeyValuePair<string, object?>>
     {
         private readonly Microsoft.Extensions.Logging.FormattedLogValues _inner;

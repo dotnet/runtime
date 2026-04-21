@@ -229,7 +229,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
 namespace Microsoft.Extensions.Logging.Abstractions.Internal
 {
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Logging.NullScope.", error: true)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility.", error: true)]
     public partial class NullScope : System.IDisposable
     {
         private NullScope() { }
@@ -237,7 +237,7 @@ namespace Microsoft.Extensions.Logging.Abstractions.Internal
         public void Dispose() { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("This type is retained only for compatibility. Do not use.", error: true)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility.", error: true)]
     public partial class TypeNameHelper
     {
         public static string GetTypeDisplayName(System.Type type) { throw null; }
@@ -246,7 +246,7 @@ namespace Microsoft.Extensions.Logging.Abstractions.Internal
 namespace Microsoft.Extensions.Logging.Internal
 {
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Diagnostics.Testing.", error: true)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is the Microsoft.Extensions.Diagnostics.Testing package.", error: true)]
     public partial class FormattedLogValues : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable
     {
         public FormattedLogValues(string? format, params object?[]? values) { }
@@ -257,7 +257,7 @@ namespace Microsoft.Extensions.Logging.Internal
         public override string ToString() { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Diagnostics.Testing.", error: true)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is the Microsoft.Extensions.Diagnostics.Testing package.", error: true)]
     public partial class LogValuesFormatter
     {
         public LogValuesFormatter(string format) { }

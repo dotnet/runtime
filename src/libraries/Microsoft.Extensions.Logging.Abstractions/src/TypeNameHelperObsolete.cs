@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Logging.Abstractions.Internal
     /// Helper to process type names.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [Obsolete("This type is retained only for compatibility. Do not use.", error: true)]
+    [Obsolete("This type is retained only for compatibility.", error: true)]
     public class TypeNameHelper
     {
         /// <summary>Pretty prints a type name.</summary>

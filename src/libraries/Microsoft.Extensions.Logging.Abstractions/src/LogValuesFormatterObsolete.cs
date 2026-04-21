@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Logging.Internal
     /// Formatter to convert the named format items like {NamedformatItem} to <see cref="string.Format(IFormatProvider, string, object)"/> format.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [Obsolete("This type is retained only for compatibility. The recommended alternative is Microsoft.Extensions.Diagnostics.Testing.", error: true)]
+    [Obsolete("This type is retained only for compatibility. The recommended alternative is the Microsoft.Extensions.Diagnostics.Testing package.", error: true)]
     public class LogValuesFormatter
     {
         private readonly Microsoft.Extensions.Logging.LogValuesFormatter _inner;
