@@ -7615,6 +7615,7 @@ public:
 #define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 #define OMF_HAS_BOUNDS_CHECKS                  0x00200000 // Method contains bounds checks
 #define OMF_HAS_EARLY_QMARKS                   0x00400000 // Method contains early expandable QMARKs
+#define OMF_HAS_ASSERTION_NODES                0x00800000 // Method contains GT_ASSERTION nodes
 
     // clang-format on
 
@@ -7663,6 +7664,16 @@ public:
     void setMethodHasExpandableCasts()
     {
         optMethodFlags |= OMF_HAS_EXPANDABLE_CAST;
+    }
+
+    bool doesMethodHaveAssertionNodes() const
+    {
+        return (optMethodFlags & OMF_HAS_ASSERTION_NODES) != 0;
+    }
+
+    void setMethodHasAssertionNodes()
+    {
+        optMethodFlags |= OMF_HAS_ASSERTION_NODES;
     }
 
     bool doesMethodHaveGuardedDevirtualization() const

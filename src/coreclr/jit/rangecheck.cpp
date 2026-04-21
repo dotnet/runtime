@@ -14,12 +14,32 @@
 //
 PhaseStatus Compiler::rangeCheckPhase()
 {
-    if (!doesMethodHaveBoundsChecks() || (fgSsaPassesCompleted == 0))
+    bool madeChanges = false;
+    if (doesMethodHaveBoundsChecks() && (fgSsaPassesCompleted > 0))
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        madeChanges = GetRangeCheck()->OptimizeRangeChecks();
     }
 
-    const bool madeChanges = GetRangeCheck()->OptimizeRangeChecks();
+    // GT_ASSERTION nodes are no longer needed. Remove all side-effect-free instances
+    // to avoid pessimizing subsequent phases
+    if (doesMethodHaveAssertionNodes())
+    {
+        for (BasicBlock* const block : Blocks())
+        {
+            for (Statement* stmt = block->firstStmt(); stmt != nullptr;)
+            {
+                Statement* nextStmt = stmt->GetNextStmt();
+                GenTree*   root     = stmt->GetRootNode();
+                if (root->OperIs(GT_ASSERTION) && ((root->gtGetOp1()->gtFlags & GTF_SIDE_EFFECT) == 0))
+                {
+                    fgRemoveStmt(block, stmt);
+                    madeChanges = true;
+                }
+                stmt = nextStmt;
+            }
+        }
+    }
+
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 

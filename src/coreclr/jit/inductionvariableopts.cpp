@@ -158,14 +158,6 @@ PerLoopInfo::LoopInfo* PerLoopInfo::GetOrCreateInfo(FlowGraphNaturalLoop* loop)
 
         for (Statement* stmt : block->NonPhiStatements())
         {
-            // GT_ASSERTION is a marker that is dropped before LIR. Skip its uses
-            // here so they don't pin the IV and prevent strength reduction.
-            if (stmt->GetRootNode()->OperIs(GT_ASSERTION) &&
-                ((stmt->GetRootNode()->gtGetOp1()->gtFlags & GTF_SIDE_EFFECT) == 0))
-            {
-                continue;
-            }
-
             for (GenTree* node : stmt->TreeList())
             {
                 info.HasSuspensionPoint |= node->IsCall() && node->AsCall()->IsAsync();

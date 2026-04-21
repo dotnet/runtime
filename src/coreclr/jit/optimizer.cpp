@@ -2150,6 +2150,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         GenTree*   assertion = gtNewOperNode(GT_ASSERTION, TYP_VOID, relopClone);
         Statement* stmt      = fgNewStmtFromTree(assertion, condBlock->lastStmt()->GetDebugInfo());
         fgInsertStmtAtBeg(stayInLoopSucc, stmt);
+        setMethodHasAssertionNodes();
         JITDUMP("Inserted GT_ASSERTION at start of " FMT_BB " to record loop guard\n", stayInLoopSucc->bbNum);
     }
 
