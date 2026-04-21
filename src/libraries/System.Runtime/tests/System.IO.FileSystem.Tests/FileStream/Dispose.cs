@@ -169,7 +169,7 @@ namespace System.IO.Tests
             Assert.False(disposeInvoked, "Expected finalizer to have been suppressed");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void Finalizer_CallsVirtualDispose_FalseArg()
         {
             bool disposeInvoked = false;
