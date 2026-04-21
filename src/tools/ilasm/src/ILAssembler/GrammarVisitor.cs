@@ -2125,13 +2125,29 @@ namespace ILAssembler
                 EntityRegistry.TypeEntity typeEntity = VisitClassName(className).Value;
                 if (context.VALUE() is not null || context.VALUETYPE() is not null)
                 {
-                    blob.WriteByte((byte)SignatureTypeKind.ValueType);
-                    blob.WriteTypeEntity(typeEntity);
+                    // Check for well-known value types that should use primitive type codes
+                    if (TryGetPrimitiveTypeCode(typeEntity, isValueType: true) is { } vtPrimCode)
+                    {
+                        blob.WriteByte((byte)vtPrimCode);
+                    }
+                    else
+                    {
+                        blob.WriteByte((byte)SignatureTypeKind.ValueType);
+                        blob.WriteTypeEntity(typeEntity);
+                    }
                 }
                 else
                 {
-                    blob.WriteByte((byte)SignatureTypeKind.Class);
-                    blob.WriteTypeEntity(typeEntity);
+                    // Check for well-known class types that should use primitive type codes
+                    if (TryGetPrimitiveTypeCode(typeEntity, isValueType: false) is { } clsPrimCode)
+                    {
+                        blob.WriteByte((byte)clsPrimCode);
+                    }
+                    else
+                    {
+                        blob.WriteByte((byte)SignatureTypeKind.Class);
+                        blob.WriteTypeEntity(typeEntity);
+                    }
                 }
             }
             else if (context.callConv() is CILParser.CallConvContext callConv)
@@ -5200,6 +5216,57 @@ namespace ILAssembler
                 CILParser.TYPE => SerializationTypeCode.Type,
                 CILParser.OBJECT => SerializationTypeCode.TaggedObject,
                 _ => throw new UnreachableException()
+            };
+        }
+
+        /// <summary>
+        /// Checks if a type entity is a well-known corelib type and returns its primitive type code.
+        /// Native ilasm uses primitive type codes for well-known types like System.String and System.Object
+        /// in signature blobs instead of class/valuetype TypeRef references.
+        /// </summary>
+        private static SignatureTypeCode? TryGetPrimitiveTypeCode(EntityRegistry.TypeEntity typeEntity, bool isValueType)
+        {
+            if (typeEntity is not EntityRegistry.TypeReferenceEntity typeRef)
+            {
+                return null;
+            }
+
+            string name = typeRef.Name;
+            string ns = typeRef.Namespace;
+
+            if (ns != "System")
+            {
+                return null;
+            }
+
+            if (isValueType)
+            {
+                return name switch
+                {
+                    "Boolean" => SignatureTypeCode.Boolean,
+                    "Char" => SignatureTypeCode.Char,
+                    "SByte" => SignatureTypeCode.SByte,
+                    "Byte" => SignatureTypeCode.Byte,
+                    "Int16" => SignatureTypeCode.Int16,
+                    "UInt16" => SignatureTypeCode.UInt16,
+                    "Int32" => SignatureTypeCode.Int32,
+                    "UInt32" => SignatureTypeCode.UInt32,
+                    "Int64" => SignatureTypeCode.Int64,
+                    "UInt64" => SignatureTypeCode.UInt64,
+                    "Single" => SignatureTypeCode.Single,
+                    "Double" => SignatureTypeCode.Double,
+                    "IntPtr" => SignatureTypeCode.IntPtr,
+                    "UIntPtr" => SignatureTypeCode.UIntPtr,
+                    "TypedReference" => SignatureTypeCode.TypedReference,
+                    _ => null
+                };
+            }
+
+            return name switch
+            {
+                "String" => SignatureTypeCode.String,
+                "Object" => SignatureTypeCode.Object,
+                _ => null
             };
         }
 
