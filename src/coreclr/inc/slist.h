@@ -24,21 +24,12 @@
 #include <utility> // std::forward (used by SListElem)
 
 // ---------------------------------------------------------------------------
-// DoNothingFailFastPolicy — default no-op FailFast for Iterator validation.
-// ---------------------------------------------------------------------------
-struct DoNothingFailFastPolicy
-{
-    static inline void FailFast() { }
-};
-
-// ---------------------------------------------------------------------------
 // SListMode — controls which SList operations are permitted.
 // ---------------------------------------------------------------------------
 enum class SListMode
 {
-    Thin,         // Head-only: InsertHead, RemoveHead, no tail, no interlocked.
+    Thin,         // Head-only: InsertHead, RemoveHead, no tail.
     Tail,         // Adds InsertTail/GetTail for O(1) tail insertion.
-    Interlocked,  // Add-only via InsertHeadInterlocked; non-atomic mutations disabled.
 };
 
 // ---------------------------------------------------------------------------
@@ -46,14 +37,13 @@ enum class SListMode
 //
 // T must have a pointer-sized m_pNext field.
 // ---------------------------------------------------------------------------
-template <typename T, SListMode Mode = SListMode::Thin, typename FailFastPolicy = DoNothingFailFastPolicy>
-struct SListTraits : public FailFastPolicy
+template <typename T, SListMode Mode = SListMode::Thin>
+struct SListTraits
 {
     typedef DPTR(T) PTR_T;
     typedef DPTR(PTR_T) PTR_PTR_T;
 
     static constexpr bool HasTail = (Mode == SListMode::Tail);
-    static constexpr bool IsInterlocked = (Mode == SListMode::Interlocked);
 
     static inline PTR_PTR_T GetNextPtr(PTR_T pT)
     {
@@ -86,9 +76,6 @@ struct SListTailBase<PTR_T, true>
 //
 // Intrusive singly linked list. Elements must have a pointer-sized m_pNext
 // field. Use SListTraits<T, SListMode::Tail> for O(1) tail insertion.
-//
-// InsertHeadInterlocked provides lock-free head insertion via CAS. It must not
-// be mixed with non-interlocked mutation without external synchronisation.
 // ---------------------------------------------------------------------------
 template <typename T, typename Traits = SListTraits<T>>
 struct SList : public Traits, private SListTailBase<typename Traits::PTR_T, Traits::HasTail>
@@ -99,14 +86,7 @@ struct SList : public Traits, private SListTailBase<typename Traits::PTR_T, Trai
     // as a generic data structure, friend to all specializations of cdac_data
     template<typename U> friend struct ::cdac_data;
 
-    // m_pHead is volatile in non-DAC builds to prevent the compiler from
-    // caching the head pointer when iterating concurrently with
-    // InsertHeadInterlocked.
-#ifdef DACCESS_COMPILE
     PTR_T m_pHead = NULL;
-#else
-    PTR_T volatile m_pHead = NULL;
-#endif
 
 public:
 
@@ -252,7 +232,6 @@ public:
                 (op == e_HasValue && *m_ppCur == NULL))
             {
                 _ASSERTE(!"Invalid SList::Iterator use.");
-                Traits::FailFast();
 #ifdef _DEBUG
                 m_fIsValid = false;
 #endif
@@ -285,7 +264,6 @@ public:
     Iterator Insert(Iterator & it, PTR_T pItem)
     {
         static_assert(!Traits::HasTail, "Iterator Insert cannot maintain m_pTail");
-        static_assert(!Traits::IsInterlocked, "Iterator Insert is not safe on interlocked lists");
         return it.Insert(pItem);
     }
 
@@ -293,7 +271,6 @@ public:
     Iterator Remove(Iterator & it)
     {
         static_assert(!Traits::HasTail, "Iterator Remove cannot maintain m_pTail");
-        static_assert(!Traits::IsInterlocked, "Iterator Remove is not safe on interlocked lists");
         return it.Remove();
     }
 
@@ -301,7 +278,6 @@ public:
 
     void InsertHead(PTR_T pItem)
     {
-        static_assert(!Traits::IsInterlocked, "InsertHead is not safe on interlocked lists; use InsertHeadInterlocked");
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pItem != NULL);
         if constexpr (Traits::HasTail)
@@ -313,14 +289,8 @@ public:
         m_pHead = pItem;
     }
 
-    // Lock-free head insertion via CAS. Implemented in slist.inl which must
-    // be included after platform atomics are available (e.g., after Pal.h
-    // on NativeAOT or utilcode.h on CoreCLR).
-    void InsertHeadInterlocked(PTR_T pItem);
-
     PTR_T RemoveHead()
     {
-        static_assert(!Traits::IsInterlocked, "RemoveHead is not safe on interlocked lists");
         LIMITED_METHOD_CONTRACT;
         PTR_T pRet = m_pHead;
         if (pRet != NULL)
@@ -339,7 +309,6 @@ public:
     void InsertTail(PTR_T pItem)
     {
         static_assert(Traits::HasTail, "InsertTail requires Traits::HasTail to be true");
-        static_assert(!Traits::IsInterlocked, "InsertTail is not safe on interlocked lists");
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pItem != NULL);
         *Traits::GetNextPtr(pItem) = NULL;
@@ -360,7 +329,6 @@ public:
 
     bool RemoveFirst(PTR_T pItem)
     {
-        static_assert(!Traits::IsInterlocked, "RemoveFirst is not safe on interlocked lists");
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pItem != NULL);
 
@@ -394,7 +362,6 @@ public:
     // Alias for RemoveFirst, for API compatibility.
     bool FindAndRemove(PTR_T pItem)
     {
-        static_assert(!Traits::IsInterlocked, "FindAndRemove is not safe on interlocked lists");
         WRAPPER_NO_CONTRACT;
 
         return RemoveFirst(pItem);
@@ -403,7 +370,6 @@ public:
     // Inserts pNewItem immediately after pAfter in the list.
     static void InsertAfter(PTR_T pAfter, PTR_T pNewItem)
     {
-        static_assert(!Traits::IsInterlocked, "InsertAfter is not safe on interlocked lists");
         static_assert(!Traits::HasTail, "InsertAfter cannot maintain m_pTail");
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pAfter != NULL && pNewItem != NULL);
@@ -416,11 +382,9 @@ public:
 };
 
 // ---------------------------------------------------------------------------
-// Convenience aliases for the three SList modes.
+// Convenience alias for tail-tracking SList.
 // ---------------------------------------------------------------------------
-template <typename T> using SListThin = SList<T, SListTraits<T, SListMode::Thin>>;
 template <typename T> using SListTail = SList<T, SListTraits<T, SListMode::Tail>>;
-template <typename T> using SListInterlocked = SList<T, SListTraits<T, SListMode::Interlocked>>;
 
 // ---------------------------------------------------------------------------
 // SListElem — non-intrusive list element wrapper.

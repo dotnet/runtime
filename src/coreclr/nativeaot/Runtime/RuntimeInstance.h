@@ -29,13 +29,11 @@ public:
     typedef DPTR(OsModuleEntry) PTR_OsModuleEntry;
     struct OsModuleEntry
     {
-        // os Module list is add-only, so we can use InsertHeadInterlocked and iterate without synchronization.
-        // m_pNext is volatile - to make sure there are no re-reading optimizations when iterating.
-        PTR_OsModuleEntry      volatile m_pNext;
-        HANDLE                 m_osModule;
+        PTR_OsModuleEntry          m_pNext;
+        HANDLE                     m_osModule;
     };
 
-    typedef SListInterlocked<OsModuleEntry> OsModuleList;
+    typedef SList<OsModuleEntry> OsModuleList;
 private:
     OsModuleList                m_OsModuleList;
 
@@ -48,13 +46,11 @@ private:
 public:
     struct TypeManagerEntry
     {
-        // TypeManager list is add-only, so we can use InsertHeadInterlocked and iterate without synchronization.
-        // m_pNext is volatile - to make sure there are no re-reading optimizations when iterating.
-        TypeManagerEntry*         volatile m_pNext;
-        TypeManager*              m_pTypeManager;
+        TypeManagerEntry*             m_pNext;
+        TypeManager*                  m_pTypeManager;
     };
 
-    typedef SListInterlocked<TypeManagerEntry> TypeManagerList;
+    typedef SList<TypeManagerEntry> TypeManagerList;
 
 private:
     TypeManagerList             m_TypeManagerList;
