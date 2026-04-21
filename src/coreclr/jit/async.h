@@ -128,7 +128,7 @@ public:
 struct ContinuationLayout
 {
     unsigned                      Size                      = 0;
-    unsigned                      OSRAddress                = UINT_MAX;
+    unsigned                      OSRAddressOffset          = UINT_MAX;
     unsigned                      ExceptionOffset           = UINT_MAX;
     unsigned                      ContinuationContextOffset = UINT_MAX;
     unsigned                      KeepAliveOffset           = UINT_MAX;

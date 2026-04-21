@@ -1251,9 +1251,9 @@ void AsyncTransformation::BuildContinuation(BasicBlock*                block,
 void ContinuationLayout::Dump(int indent)
 {
     printf("%*sContinuation layout (%u bytes):\n", indent, "", Size);
-    if (OSRAddress != UINT_MAX)
+    if (OSRAddressOffset != UINT_MAX)
     {
-        printf("%*s  +%03u OSR address\n", indent, "", OSRAddress);
+        printf("%*s  +%03u OSR address\n", indent, "", OSRAddressOffset);
     }
 
     if (ExceptionOffset != UINT_MAX)
@@ -1417,7 +1417,7 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
     if (m_needsOSRAddress)
     {
         // Must be pointer sized for compatibility with Continuation methods that access fields
-        layout->OSRAddress = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+        layout->OSRAddressOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
     if (m_needsException)
@@ -1905,11 +1905,11 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
 
         // OSR address needs to be at offset 0 because OSR and tier0 methods
         // need to agree on that.
-        assert(layout.OSRAddress == 0);
-        GenTree* newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
-        unsigned offset          = OFFSETOF__CORINFO_Continuation__data;
-        GenTree* storeOSRAddress = StoreAtOffset(newContinuation, offset, osrAddressToStore, TYP_I_IMPL);
-        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeOSRAddress));
+        assert(layout.OSRAddressOffset == 0);
+        GenTree* newContinuation       = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        unsigned offset                = OFFSETOF__CORINFO_Continuation__data;
+        GenTree* storeOSRAddressOffset = StoreAtOffset(newContinuation, offset, osrAddressToStore, TYP_I_IMPL);
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeOSRAddressOffset));
     }
 
     // Fill in data
@@ -3014,38 +3014,38 @@ void AsyncTransformation::CreateResumptionSwitch()
 
         JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", jmpOSR->bbNum);
 
-        BasicBlock* onContinuationBB  = newEntryBB->GetTrueTarget();
-        BasicBlock* checkOSRAddressBB = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
+        BasicBlock* onContinuationBB        = newEntryBB->GetTrueTarget();
+        BasicBlock* checkOSRAddressOffsetBB = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
 
         JITDUMP("    Created " FMT_BB " to check whether we should transition immediately to OSR\n",
-                checkOSRAddressBB->bbNum);
+                checkOSRAddressOffsetBB->bbNum);
 
-        // Redirect newEntryBB -> onContinuationBB into newEntryBB -> checkOSRAddressBB -> onContinuationBB
-        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkOSRAddressBB);
+        // Redirect newEntryBB -> onContinuationBB into newEntryBB -> checkOSRAddressOffsetBB -> onContinuationBB
+        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkOSRAddressOffsetBB);
         newEntryBB->GetTrueEdge()->setLikelihood(0);
-        checkOSRAddressBB->inheritWeightPercentage(newEntryBB, 0);
+        checkOSRAddressOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
-        FlowEdge* toOnContinuationBB = m_compiler->fgAddRefPred(onContinuationBB, checkOSRAddressBB);
-        FlowEdge* toJmpOSRBB         = m_compiler->fgAddRefPred(jmpOSR, checkOSRAddressBB);
-        checkOSRAddressBB->SetCond(toJmpOSRBB, toOnContinuationBB);
+        FlowEdge* toOnContinuationBB = m_compiler->fgAddRefPred(onContinuationBB, checkOSRAddressOffsetBB);
+        FlowEdge* toJmpOSRBB         = m_compiler->fgAddRefPred(jmpOSR, checkOSRAddressOffsetBB);
+        checkOSRAddressOffsetBB->SetCond(toJmpOSRBB, toOnContinuationBB);
         toJmpOSRBB->setLikelihood(0);
         toOnContinuationBB->setLikelihood(1);
-        jmpOSR->inheritWeightPercentage(checkOSRAddressBB, 0);
+        jmpOSR->inheritWeightPercentage(checkOSRAddressOffsetBB, 0);
 
         // We need to dispatch to the OSR version if the OSR address is non-zero.
-        continuationArg             = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
-        unsigned offsetOfOSRAddress = OFFSETOF__CORINFO_Continuation__data;
-        GenTree* osrAddress         = LoadFromOffset(continuationArg, offsetOfOSRAddress, TYP_I_IMPL);
-        unsigned osrAddressLclNum   = m_compiler->lvaGrabTemp(false DEBUGARG("OSR address for tier0 OSR method"));
+        continuationArg                   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfOSRAddressOffset = OFFSETOF__CORINFO_Continuation__data;
+        GenTree* osrAddress               = LoadFromOffset(continuationArg, offsetOfOSRAddressOffset, TYP_I_IMPL);
+        unsigned osrAddressLclNum         = m_compiler->lvaGrabTemp(false DEBUGARG("OSR address for tier0 OSR method"));
         m_compiler->lvaGetDesc(osrAddressLclNum)->lvType = TYP_I_IMPL;
         GenTree* storeOsrAddress = m_compiler->gtNewStoreLclVarNode(osrAddressLclNum, osrAddress);
-        LIR::AsRange(checkOSRAddressBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeOsrAddress));
+        LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeOsrAddress));
 
         osrAddress      = m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL);
         GenTree* zero   = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
         GenTree* neZero = m_compiler->gtNewOperNode(GT_NE, TYP_INT, osrAddress, zero);
         GenTree* jtrue  = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neZero);
-        LIR::AsRange(checkOSRAddressBB).InsertAtEnd(osrAddress, zero, neZero, jtrue);
+        LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(osrAddress, zero, neZero, jtrue);
 
         osrAddress = m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL);
 
@@ -3059,33 +3059,33 @@ void AsyncTransformation::CreateResumptionSwitch()
         // version by normal means then we will see a non-zero continuation
         // here that belongs to the tier0 method. In that case we should just
         // ignore it, so create a BB that jumps back.
-        BasicBlock* onContinuationBB   = newEntryBB->GetTrueTarget();
-        BasicBlock* onNoContinuationBB = newEntryBB->GetFalseTarget();
-        BasicBlock* checkOSRAddressBB  = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
+        BasicBlock* onContinuationBB        = newEntryBB->GetTrueTarget();
+        BasicBlock* onNoContinuationBB      = newEntryBB->GetFalseTarget();
+        BasicBlock* checkOSRAddressOffsetBB = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
 
-        // Switch newEntryBB -> onContinuationBB into newEntryBB -> checkOSRAddressBB
-        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkOSRAddressBB);
+        // Switch newEntryBB -> onContinuationBB into newEntryBB -> checkOSRAddressOffsetBB
+        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkOSRAddressOffsetBB);
         newEntryBB->GetTrueEdge()->setLikelihood(0);
-        checkOSRAddressBB->inheritWeightPercentage(newEntryBB, 0);
+        checkOSRAddressOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
-        // Make checkOSRAddressBB ->(true)  onNoContinuationBB
+        // Make checkOSRAddressOffsetBB ->(true)  onNoContinuationBB
         //                        ->(false) onContinuationBB
 
-        FlowEdge* toOnContinuationBB   = m_compiler->fgAddRefPred(onContinuationBB, checkOSRAddressBB);
-        FlowEdge* toOnNoContinuationBB = m_compiler->fgAddRefPred(onNoContinuationBB, checkOSRAddressBB);
-        checkOSRAddressBB->SetCond(toOnNoContinuationBB, toOnContinuationBB);
+        FlowEdge* toOnContinuationBB   = m_compiler->fgAddRefPred(onContinuationBB, checkOSRAddressOffsetBB);
+        FlowEdge* toOnNoContinuationBB = m_compiler->fgAddRefPred(onNoContinuationBB, checkOSRAddressOffsetBB);
+        checkOSRAddressOffsetBB->SetCond(toOnNoContinuationBB, toOnContinuationBB);
         toOnContinuationBB->setLikelihood(0);
         toOnNoContinuationBB->setLikelihood(1);
 
-        JITDUMP("    Created " FMT_BB " to check for Tier-0 continuations\n", checkOSRAddressBB->bbNum);
+        JITDUMP("    Created " FMT_BB " to check for Tier-0 continuations\n", checkOSRAddressOffsetBB->bbNum);
 
-        continuationArg             = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
-        unsigned offsetOfOSRAddress = OFFSETOF__CORINFO_Continuation__data;
-        GenTree* osrAddress         = LoadFromOffset(continuationArg, offsetOfOSRAddress, TYP_I_IMPL);
-        GenTree* zero               = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
-        GenTree* eqZero             = m_compiler->gtNewOperNode(GT_EQ, TYP_INT, osrAddress, zero);
-        GenTree* jtrue              = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, eqZero);
-        LIR::AsRange(checkOSRAddressBB).InsertAtEnd(LIR::SeqTree(m_compiler, jtrue));
+        continuationArg                   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfOSRAddressOffset = OFFSETOF__CORINFO_Continuation__data;
+        GenTree* osrAddress               = LoadFromOffset(continuationArg, offsetOfOSRAddressOffset, TYP_I_IMPL);
+        GenTree* zero                     = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+        GenTree* eqZero                   = m_compiler->gtNewOperNode(GT_EQ, TYP_INT, osrAddress, zero);
+        GenTree* jtrue                    = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, eqZero);
+        LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, jtrue));
 
         if (ReuseContinuations())
         {
