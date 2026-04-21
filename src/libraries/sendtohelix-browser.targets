@@ -246,7 +246,6 @@
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)"              Destination="build/emsdk" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
-      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
       <HelixCorrelationPayload Include="$(BrowserBuildTargetsDir)"               Destination="build/wasm" />
 
       <!-- WebAssembly SDK pack is required by the `dotnet new wasmbrowser` template regardless of runtime flavor. -->
@@ -254,8 +253,11 @@
       <HelixCorrelationPayload Include="$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\" Destination="build/WasmSdkTools" />
     </ItemGroup>
 
-    <!-- Mono-only build-tooling payloads. CoreCLR per-app relink does not use MonoAOT / Mono build tasks. -->
+    <!-- Mono-only build-tooling payloads. CoreCLR per-app relink does not use MonoAOT / Mono build tasks,
+         and acquires the runtime pack on the Helix worker via the downloaded nupkg instead of shipping
+         the raw pack layout as a correlation payload. -->
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
