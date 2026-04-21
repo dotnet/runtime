@@ -123,7 +123,6 @@ namespace Microsoft.Extensions.Configuration
 
             if (updated)
             {
-                // REVIEW: Should we raise this in the base as well / instead?
                 OnReload();
             }
         }
