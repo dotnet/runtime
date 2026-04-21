@@ -38,6 +38,15 @@ public class MethodTableTests
             (nameof(Constants.Globals.ArrayBaseSize), rtsBuilder.ArrayBaseSize),
         ];
 
+    public static IEnumerable<object[]> StdArchBool()
+    {
+        foreach (object[] arch in new MockTarget.StdArch())
+        {
+            yield return [.. arch, true];
+            yield return [.. arch, false];
+        }
+    }
+
     internal static TestPlaceholderTarget CreateTarget(MockTarget.Architecture arch, Action<MockRTS> configure)
     {
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
@@ -48,7 +57,7 @@ public class MethodTableTests
         var target = targetBuilder
             .AddTypes(CreateContractTypes(rtsBuilder))
             .AddGlobals(CreateContractGlobals(rtsBuilder))
-            .AddContract<IRuntimeTypeSystem>(version: 1)
+            .AddContract<IRuntimeTypeSystem>(version: "c1")
             .Build();
         return target;
     }
@@ -498,5 +507,146 @@ public class MethodTableTests
         Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
         Assert.Equal(continuationInstanceMethodTablePtr.Value, continuationTypeHandle.Address.Value);
         Assert.True(contract.IsContinuation(continuationTypeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsValueTypeReturnsTrueForValueTypeCategories(MockTarget.Architecture arch)
+    {
+        TargetPointer valueTypeMTPtr = default;
+        TargetPointer nullableMTPtr = default;
+        TargetPointer primitiveValueTypeMTPtr = default;
+        TargetPointer truePrimitiveMTPtr = default;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
+
+                MockEEClass vtEEClass = rtsBuilder.AddEEClass("ValueTypeEEClass");
+                MockMethodTable vtMT = rtsBuilder.AddMethodTable("ValueType");
+                vtMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_ValueType;
+                vtMT.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                vtMT.ParentMethodTable = systemObjectMethodTablePtr;
+                vtMT.NumVirtuals = 3;
+                vtEEClass.MethodTable = vtMT.Address;
+                vtMT.EEClassOrCanonMT = vtEEClass.Address;
+                valueTypeMTPtr = vtMT.Address;
+
+                MockEEClass nullableEEClass = rtsBuilder.AddEEClass("NullableEEClass");
+                MockMethodTable nullableMT = rtsBuilder.AddMethodTable("Nullable");
+                nullableMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_Nullable;
+                nullableMT.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                nullableMT.ParentMethodTable = systemObjectMethodTablePtr;
+                nullableMT.NumVirtuals = 3;
+                nullableEEClass.MethodTable = nullableMT.Address;
+                nullableMT.EEClassOrCanonMT = nullableEEClass.Address;
+                nullableMTPtr = nullableMT.Address;
+
+                MockEEClass pvtEEClass = rtsBuilder.AddEEClass("PrimitiveValueTypeEEClass");
+                MockMethodTable pvtMT = rtsBuilder.AddMethodTable("PrimitiveValueType");
+                pvtMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_PrimitiveValueType;
+                pvtMT.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                pvtMT.ParentMethodTable = systemObjectMethodTablePtr;
+                pvtMT.NumVirtuals = 3;
+                pvtEEClass.MethodTable = pvtMT.Address;
+                pvtMT.EEClassOrCanonMT = pvtEEClass.Address;
+                primitiveValueTypeMTPtr = pvtMT.Address;
+
+                MockEEClass tpEEClass = rtsBuilder.AddEEClass("TruePrimitiveEEClass");
+                MockMethodTable tpMT = rtsBuilder.AddMethodTable("TruePrimitive");
+                tpMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_TruePrimitive;
+                tpMT.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                tpMT.ParentMethodTable = systemObjectMethodTablePtr;
+                tpMT.NumVirtuals = 3;
+                tpEEClass.MethodTable = tpMT.Address;
+                tpMT.EEClassOrCanonMT = tpEEClass.Address;
+                truePrimitiveMTPtr = tpMT.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+
+        Assert.True(contract.IsValueType(contract.GetTypeHandle(valueTypeMTPtr)));
+        Assert.True(contract.IsValueType(contract.GetTypeHandle(nullableMTPtr)));
+        Assert.True(contract.IsValueType(contract.GetTypeHandle(primitiveValueTypeMTPtr)));
+        Assert.True(contract.IsValueType(contract.GetTypeHandle(truePrimitiveMTPtr)));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsValueTypeReturnsFalseForNonValueTypes(MockTarget.Architecture arch)
+    {
+        TargetPointer systemObjectMethodTablePtr = default;
+        TargetPointer interfaceMTPtr = default;
+        TargetPointer arrayMTPtr = default;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
+
+                MockEEClass ifaceEEClass = rtsBuilder.AddEEClass("InterfaceEEClass");
+                MockMethodTable ifaceMT = rtsBuilder.AddMethodTable("Interface");
+                ifaceMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_Interface;
+                ifaceMT.BaseSize = targetTestHelpers.ObjectBaseSize;
+                ifaceMT.ParentMethodTable = systemObjectMethodTablePtr;
+                ifaceMT.NumVirtuals = 3;
+                ifaceEEClass.MethodTable = ifaceMT.Address;
+                ifaceMT.EEClassOrCanonMT = ifaceEEClass.Address;
+                interfaceMTPtr = ifaceMT.Address;
+
+                MockEEClass arrayEEClass = rtsBuilder.AddEEClass("ArrayEEClass");
+                MockMethodTable arrayMT = rtsBuilder.AddMethodTable("Array");
+                arrayMT.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | MethodTableFlags_1.WFLAGS_HIGH.Category_Array) | 4;
+                arrayMT.BaseSize = targetTestHelpers.ObjectBaseSize;
+                arrayMT.ParentMethodTable = systemObjectMethodTablePtr;
+                arrayMT.NumVirtuals = 3;
+                arrayEEClass.MethodTable = arrayMT.Address;
+                arrayMT.EEClassOrCanonMT = arrayEEClass.Address;
+                arrayMTPtr = arrayMT.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+
+        Assert.False(contract.IsValueType(contract.GetTypeHandle(systemObjectMethodTablePtr)));
+        Assert.False(contract.IsValueType(contract.GetTypeHandle(interfaceMTPtr)));
+        Assert.False(contract.IsValueType(contract.GetTypeHandle(arrayMTPtr)));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchBool))]
+    public void RequiresAlign8(MockTarget.Architecture arch, bool flagSet)
+    {
+        TargetPointer methodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                if (flagSet)
+                {
+                    MockEEClass eeClass = rtsBuilder.AddEEClass("Align8Type");
+                    eeClass.CorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
+
+                    MockMethodTable methodTable = rtsBuilder.AddMethodTable("Align8Type");
+                    methodTable.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.Category_ValueType | MethodTableFlags_1.WFLAGS_HIGH.RequiresAlign8);
+                    methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                    methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                    methodTable.NumVirtuals = 3;
+                    methodTablePtr = methodTable.Address;
+                    eeClass.MethodTable = methodTable.Address;
+                    methodTable.EEClassOrCanonMT = eeClass.Address;
+                }
+                else
+                {
+                    methodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
+                }
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(methodTablePtr);
+        Assert.Equal(flagSet, contract.RequiresAlign8(typeHandle));
     }
 }

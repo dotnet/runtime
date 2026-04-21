@@ -22,17 +22,17 @@
 //
 // Arguments:
 //    pProcess - process that this module lives in
-//    vmDomainAssembly - CLR cookie for module.
+//    vmAssembly - CLR cookie for module.
 CordbModule::CordbModule(
     CordbProcess *     pProcess,
     VMPTR_Module        vmModule,
-    VMPTR_DomainAssembly    vmDomainAssembly)
+    VMPTR_Assembly    vmAssembly)
 : CordbBase(pProcess, VmPtrToCookie(vmModule), enumCordbModule),
     m_pAssembly(0),
     m_pAppDomain(0),
     m_classes(11),
     m_functions(101),
-    m_vmDomainAssembly(vmDomainAssembly),
+    m_vmAssembly(vmAssembly),
     m_vmModule(vmModule),
     m_EnCCount(0),
     m_fForceMetaDataSerialize(FALSE),
@@ -58,15 +58,15 @@ CordbModule::CordbModule(
     m_fInMemory = modInfo.fInMemory;
     m_vmPEFile = modInfo.vmPEAssembly;
 
-    if (!vmDomainAssembly.IsNull())
+    if (!vmAssembly.IsNull())
     {
-        DomainAssemblyInfo dfInfo;
+        AssemblyInfo dfInfo;
 
-        IfFailThrow(pProcess->GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &dfInfo)); // throws
+        IfFailThrow(pProcess->GetDAC()->GetAssemblyInfo(vmAssembly, &dfInfo)); // throws
 
         m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
         _ASSERTE(m_pAppDomain == pProcess->GetAppDomain());
-        m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmDomainAssembly);
+        m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmAssembly);
     }
     else
     {
@@ -89,21 +89,21 @@ CordbModule::CordbModule(
 // Callback helper for code:CordbModule::DbgAssertModuleDeleted
 //
 // Arguments
-//    vmDomainAssembly - domain file in the enumeration
+//    vmAssembly - assembly in the enumeration
 //    pUserData - pointer to the CordbModule that we just got an exit event for.
 //
-void DbgAssertModuleDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void * pUserData)
+void DbgAssertModuleDeletedCallback(VMPTR_Assembly vmAssembly, void * pUserData)
 {
     CordbModule * pThis = reinterpret_cast<CordbModule *>(pUserData);
     INTERNAL_DAC_CALLBACK(pThis->GetProcess());
 
-    if (!pThis->m_vmDomainAssembly.IsNull())
+    if (!pThis->m_vmAssembly.IsNull())
     {
-        VMPTR_DomainAssembly vmDomainAssemblyDeleted = pThis->m_vmDomainAssembly;
+        VMPTR_Assembly vmAssemblyDeleted = pThis->m_vmAssembly;
 
-        CONSISTENCY_CHECK_MSGF((vmDomainAssemblyDeleted != vmDomainAssembly),
-            ("A Module Unload event was sent for a module, but it still shows up in the enumeration.\n vmDomainAssemblyDeleted=%p\n",
-            VmPtrToCookie(vmDomainAssemblyDeleted)));
+        CONSISTENCY_CHECK_MSGF((vmAssemblyDeleted != vmAssembly),
+            ("A Module Unload event was sent for a module, but it still shows up in the enumeration.\n vmAssemblyDeleted=%p\n",
+            VmPtrToCookie(vmAssemblyDeleted)));
     }
 }
 
@@ -112,8 +112,7 @@ void DbgAssertModuleDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void 
 //
 // Notes:
 //   See code:IDacDbiInterface#Enumeration for rules that we're asserting.
-//   This is a debug only method. It's conceptually similar to
-//   code:CordbProcess::DbgAssertAppDomainDeleted.
+//   This is a debug only method.
 //
 void CordbModule::DbgAssertModuleDeleted()
 {
@@ -1360,7 +1359,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
     if (m_fDynamic && !bClassLoadCallbacks)
         return E_INVALIDARG;
 
-    if (m_vmDomainAssembly.IsNull())
+    if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
     // Send a Set Class Load Flag event to the left side. There is no need to wait for a response, and this can be
@@ -1372,7 +1371,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
                            DB_IPCE_SET_CLASS_LOAD_FLAG,
                            false,
                            (GetAppDomain()->GetADToken()));
-    event.SetClassLoad.vmDomainAssembly = this->m_vmDomainAssembly;
+    event.SetClassLoad.vmAssembly = this->m_vmAssembly;
     event.SetClassLoad.flag = (bClassLoadCallbacks == TRUE);
 
     HRESULT hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event,
@@ -1902,7 +1901,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
         return E_INVALIDARG;
     }
 
-    if (m_vmDomainAssembly.IsNull() || m_pAppDomain == NULL)
+    if (m_vmAssembly.IsNull() || m_pAppDomain == NULL)
     {
         return E_UNEXPECTED;
     }
@@ -1911,7 +1910,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
     *ppClass = NULL;
     EX_TRY
     {
-        TypeRefData inData = {m_vmDomainAssembly, token};
+        TypeRefData inData = {m_vmAssembly, token};
         TypeRefData outData;
 
         {
@@ -1919,7 +1918,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
             IfFailThrow(pProcess->GetDAC()->ResolveTypeReference(&inData, &outData));
         }
 
-        CordbModule * pModule = m_pAppDomain->LookupOrCreateModule(outData.vmDomainAssembly);
+        CordbModule * pModule = m_pAppDomain->LookupOrCreateModule(outData.vmAssembly);
         IfFailThrow(pModule->LookupClassByToken(outData.typeToken, ppClass));
     }
     EX_CATCH_HRESULT(hr);
@@ -2132,7 +2131,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
     FAIL_IF_NEUTERED(this);
     INTERNAL_SYNC_API_ENTRY(this->GetProcess()); //
 
-    if (m_vmDomainAssembly.IsNull())
+    if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
 #ifdef FEATURE_REMAP_FUNCTION
@@ -2149,7 +2148,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
         DebuggerIPCEvent event;
         GetProcess()->InitIPCEvent(&event, DB_IPCE_APPLY_CHANGES, false, VMPTR_AppDomain::NullPtr());
 
-        event.ApplyChanges.vmDomainAssembly = this->m_vmDomainAssembly;
+        event.ApplyChanges.vmAssembly = this->m_vmAssembly;
 
         // Have the left-side create a buffer for us to store the delta into
         ULONG cbSize = cbMetaData+cbIL;
@@ -2215,7 +2214,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                 CordbModule* pModule = NULL;
 
 
-                pModule = pAppDomain->LookupOrCreateModule(retEvent->EnCUpdate.vmDomainAssembly); // throws
+                pModule = pAppDomain->LookupOrCreateModule(retEvent->EnCUpdate.vmAssembly); // throws
                 _ASSERTE(pModule != NULL);
 
                 // update to the newest version
@@ -2273,7 +2272,7 @@ HRESULT CordbModule::SetJMCStatus(
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    if (m_vmDomainAssembly.IsNull())
+    if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
     // @todo -allow the other parameters. These are functions that have default status
@@ -2292,7 +2291,7 @@ HRESULT CordbModule::SetJMCStatus(
     // Tell the LS that this module is/is not user code
     DebuggerIPCEvent event;
     pProcess->InitIPCEvent(&event, DB_IPCE_SET_MODULE_JMC_STATUS, true, this->GetAppDomain()->GetADToken());
-    event.SetJMCFunctionStatus.vmDomainAssembly = m_vmDomainAssembly;
+    event.SetJMCFunctionStatus.vmAssembly = m_vmAssembly;
     event.SetJMCFunctionStatus.dwStatus = fIsUserCode;
 
 
@@ -2381,18 +2380,18 @@ CordbAssembly * CordbModule::ResolveAssemblyInternal(mdToken tkAssemblyRef)
 
     CordbAssembly *    pAssembly = NULL;
 
-    if (!m_vmDomainAssembly.IsNull())
+    if (!m_vmAssembly.IsNull())
     {
         // Get DAC to do the real work to resolve the assembly
-        VMPTR_DomainAssembly vmDomainAssembly;
-        IfFailThrow(GetProcess()->GetDAC()->ResolveAssembly(m_vmDomainAssembly, tkAssemblyRef, &vmDomainAssembly));
+        VMPTR_Assembly vmAssembly;
+        IfFailThrow(GetProcess()->GetDAC()->ResolveAssembly(m_vmAssembly, tkAssemblyRef, &vmAssembly));
 
         // now find the ICorDebugAssembly corresponding to it
-        if (!vmDomainAssembly.IsNull() && m_pAppDomain != NULL)
+        if (!vmAssembly.IsNull() && m_pAppDomain != NULL)
         {
             RSLockHolder lockHolder(GetProcess()->GetProcessLock());
             // Don't throw here because if the lookup fails, we want to throw CORDBG_E_CANNOT_RESOLVE_ASSEMBLY.
-            pAssembly = m_pAppDomain->LookupOrCreateAssembly(vmDomainAssembly);
+            pAssembly = m_pAppDomain->LookupOrCreateAssembly(vmAssembly);
         }
     }
 
@@ -2556,7 +2555,7 @@ HRESULT CordbModule::SetJITCompilerFlags(DWORD dwFlags)
             if (SUCCEEDED(hr))
             {
                 // DD interface will check if it's a valid time to change the flags.
-                hr = pProcess->GetDAC()->SetCompilerFlags(GetRuntimeDomainAssembly(), fAllowJitOpts, fEnableEnC);
+                hr = pProcess->GetDAC()->SetCompilerFlags(GetRuntimeAssembly(), fAllowJitOpts, fEnableEnC);
             }
         }
     }
@@ -2592,7 +2591,7 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
         BOOL fEnableEnC;
 
         IfFailThrow(pProcess->GetDAC()->GetCompilerFlags (
-            GetRuntimeDomainAssembly(),
+            GetRuntimeAssembly(),
             &fAllowJitOpts,
             &fEnableEnC));
 

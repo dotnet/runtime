@@ -1525,7 +1525,7 @@ void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess,
     // make sure we don't end up with old garbage values in case the reference is bad
     PreInitObjectData(pInfo, objectAddress, type);
 
-    IfFailThrow(pInterface->GetBasicObjectInfo(objTargetAddr, type, vmAppdomain, pInfo));
+    IfFailThrow(pInterface->GetBasicObjectInfo(objTargetAddr, type, pInfo));
 
     if (!pInfo->objRefBad)
     {
@@ -1568,7 +1568,7 @@ void CordbReferenceValue::GetTypedByRefData(CordbProcess *            pProcess,
     // TypedByref objects, it is actually the address of the TypedByRef struct which  contains the
     // type and the object address.
 
-    IfFailThrow(pProcess->GetDAC()->GetTypedByRefInfo(pTypedByRef, vmAppDomain, pInfo));
+    IfFailThrow(pProcess->GetDAC()->GetTypedByRefInfo(pTypedByRef, pInfo));
 } // CordbReferenceValue::GetTypedByRefData
 
 //  get the address of the object referenced
@@ -2472,7 +2472,7 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
 
             CordbAppDomain* pAppDomain = GetProcess()->LookupOrCreateAppDomain(currentDacFrame.vmAppDomain);
-            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmDomainAssembly);
+            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmAssembly);
 
             hr = pModule->QueryInterface(IID_ICorDebugModule, reinterpret_cast<void**>(&currentStackFrame.pModule));
             _ASSERTE(SUCCEEDED(hr));
@@ -2706,18 +2706,18 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
     {
         RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
-        VMPTR_DomainAssembly functionDomainAssembly;
+        VMPTR_Assembly functionAssembly;
         mdMethodDef functionMethodDef = 0;
-        hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainAssembly, &functionMethodDef);
+        hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionAssembly, &functionMethodDef);
         if (hr != S_OK)
             return hr;
 
         // TODO: How to ensure results are sanitized?
         // Also, this is expensive. Do we really care that much about this?
         NativeCodeFunctionData nativeCodeForDelFunc;
-        IfFailThrow(pDAC->GetNativeCodeInfo(functionDomainAssembly, functionMethodDef, &nativeCodeForDelFunc));
+        IfFailThrow(pDAC->GetNativeCodeInfo(functionAssembly, functionMethodDef, &nativeCodeForDelFunc));
 
-        RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainAssembly));
+        RSSmartPtr<CordbModule> funcModule(GetAppDomain()->LookupOrCreateModule(functionAssembly));
         func.Assign(funcModule->LookupOrCreateFunction(functionMethodDef, nativeCodeForDelFunc.encVersion));
     }
 

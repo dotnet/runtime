@@ -129,7 +129,6 @@ class     PInvoke;
 class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
-class     DomainAssembly;
 class     DeadlockAwareLock;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
@@ -3761,8 +3760,10 @@ struct cdac_data<Thread>
     static constexpr size_t CachedStackLimit = offsetof(Thread, m_CacheStackLimit);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
+    static constexpr size_t LastThrownObjectIsUnhandled = offsetof(Thread, m_ltoIsUnhandled);
     static constexpr size_t Link = offsetof(Thread, m_Link);
     static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
+    static constexpr size_t CurrentCustomDebuggerNotification = offsetof(Thread, m_hCurrNotification);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
         "Thread::m_ExceptionState is of type ThreadExceptionState");
@@ -4045,7 +4046,6 @@ typedef StateHolder<ThreadStore::LockThreadStore,ThreadStore::UnlockThreadStore>
 
 
 // This class dispenses small thread ids for the thin lock mechanism.
-// Recently we started using this class to dispense domain neutral module IDs as well.
 class IdDispenser
 {
 private:
