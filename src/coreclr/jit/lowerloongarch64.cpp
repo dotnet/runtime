@@ -749,6 +749,13 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
     assert(node->OperIs(GT_MOD, GT_UMOD, GT_DIV, GT_UDIV));
 }
 
+//------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   No-op for LA64.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
 void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
 {
 }

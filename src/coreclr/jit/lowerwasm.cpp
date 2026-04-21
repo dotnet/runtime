@@ -377,6 +377,13 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 {
 }
 
+//------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   No-op for wasm.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
 void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
 {
 }

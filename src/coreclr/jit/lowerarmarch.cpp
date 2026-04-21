@@ -2899,6 +2899,13 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
     // ARM doesn't have a div instruction with an immediate operand
 }
 
+//------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   No-op for arm.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
 void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
 {
 }

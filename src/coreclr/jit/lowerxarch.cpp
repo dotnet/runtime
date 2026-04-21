@@ -7405,6 +7405,13 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
     }
 }
 
+//------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   Check if we can contain the memory operand of a GT_NONLOCAL_JMP.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
 void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
 {
     GenTree* addr = node->gtGetOp1();

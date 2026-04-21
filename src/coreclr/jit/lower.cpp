@@ -686,7 +686,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_NONLOCAL_JMP:
-            ContainCheckNonLocalJmp(node->AsOp());
+            ContainCheckNonLocalJmp(node->AsUnOp());
             break;
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)

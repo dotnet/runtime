@@ -2346,12 +2346,6 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 // Parameters:
 //   treeNode - the GT_FTN_ENTRY node
 //
-// Notes:
-//   Uses emitIns_R_L directly with the prolog instruction group. This is
-//   cleaner than using a pseudo field handle because the lea instruction is
-//   inherently a PC-relative label reference, fitting naturally with the
-//   existing emitIns_R_L mechanism.
-//
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
     GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
