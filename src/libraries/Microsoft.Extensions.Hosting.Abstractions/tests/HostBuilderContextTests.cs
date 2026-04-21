@@ -124,7 +124,8 @@ namespace Microsoft.Extensions.Hosting.Tests
         public void UseServiceProviderFactory_FuncOverload_WithNullFactory_ThrowsArgumentNullException()
         {
             IHostBuilder builder = new MinimalHostBuilder();
-            Assert.Throws<ArgumentNullException>(() => builder.UseServiceProviderFactory<IServiceCollection>(null!));
+            Func<HostBuilderContext, IServiceProviderFactory<IServiceCollection>>? factory = null;
+            Assert.Throws<ArgumentNullException>(() => builder.UseServiceProviderFactory<IServiceCollection>(factory));
         }
 
         [Fact]
