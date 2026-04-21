@@ -474,10 +474,19 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             // The canonical instantiation is exempt from constraint checks. It's used as the basis
             // for all other reference instantiations so we can't not load it. The Canon type is
             // not visible to users so it can't be abused.
+            //
+            // Instantiations containing generic variables (type parameters) are also exempt.
+            // Such instantiations arise during JIT access checks when the caller is a generic
+            // method and the EE resolves method specs using the caller's formal type parameters.
+            // Constraint checking for these instantiations would unnecessarily load types
+            // instantiated over the type variables (e.g. IList<TMethod>). The actual constraint
+            // check will happen when the method is instantiated with concrete types.
 
             BOOL fExempt =
                 TypeHandle::IsCanonicalSubtypeInstantiation(methodInst) ||
-                TypeHandle::IsCanonicalSubtypeInstantiation(pNewMD->GetClassInstantiation());
+                TypeHandle::IsCanonicalSubtypeInstantiation(pNewMD->GetClassInstantiation()) ||
+                MethodTable::ComputeContainsGenericVariables(methodInst) ||
+                MethodTable::ComputeContainsGenericVariables(pNewMD->GetClassInstantiation());
 
             if (!fExempt)
             {
