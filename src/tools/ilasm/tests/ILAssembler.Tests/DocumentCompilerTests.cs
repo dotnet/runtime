@@ -3934,5 +3934,232 @@ namespace ILAssembler.Tests
 
             Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
         }
+
+        [Fact]
+        public void FieldLiteralConstant_SetsHasDefaultFlag()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi sealed ByteEnum extends [mscorlib]System.Enum
+                {
+                    .field public specialname rtspecialname uint8 value__
+                    .field public static literal valuetype ByteEnum A = uint8(0)
+                    .field public static literal valuetype ByteEnum B = uint8(1)
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.Constant));
+
+            // Fields A and B (handles 2 and 3, after value__)
+            var fieldA = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(2));
+            var fieldB = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(3));
+
+            Assert.True(fieldA.Attributes.HasFlag(FieldAttributes.HasDefault));
+            Assert.True(fieldB.Attributes.HasFlag(FieldAttributes.HasDefault));
+
+            // Verify constant values
+            var constA = reader.GetConstant(fieldA.GetDefaultValue());
+            var constB = reader.GetConstant(fieldB.GetDefaultValue());
+
+            Assert.Equal(ConstantTypeCode.Byte, constA.TypeCode);
+            Assert.Equal(ConstantTypeCode.Byte, constB.TypeCode);
+
+            Assert.Equal(0, reader.GetBlobReader(constA.Value).ReadByte());
+            Assert.Equal(1, reader.GetBlobReader(constB.Value).ReadByte());
+        }
+
+        [Theory]
+        [InlineData("int32", "int32(42)", ConstantTypeCode.Int32)]
+        [InlineData("int64", "int64(100)", ConstantTypeCode.Int64)]
+        [InlineData("float32", "float32(3.14)", ConstantTypeCode.Single)]
+        [InlineData("bool", "bool(true)", ConstantTypeCode.Boolean)]
+        public void FieldLiteralConstant_VariousTypes(string fieldType, string initExpr, ConstantTypeCode expectedTypeCode)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .field public static literal {{fieldType}} myConst = {{initExpr}}
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            Assert.True(field.Attributes.HasFlag(FieldAttributes.HasDefault));
+
+            var constant = reader.GetConstant(field.GetDefaultValue());
+            Assert.Equal(expectedTypeCode, constant.TypeCode);
+        }
+
+        [Fact]
+        public void FieldLiteralString_SetsHasDefaultFlag()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .field public static literal string myStr = "hello"
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            Assert.True(field.Attributes.HasFlag(FieldAttributes.HasDefault));
+
+            var constant = reader.GetConstant(field.GetDefaultValue());
+            Assert.Equal(ConstantTypeCode.String, constant.TypeCode);
+        }
+
+        [Fact]
+        public void StackReserve_DirectiveValueIsHonored()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .stackreserve 0x00400000
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        .entrypoint
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            Assert.Equal((ulong)0x00400000, pe.PEHeaders.PEHeader!.SizeOfStackReserve);
+        }
+
+        [Fact]
+        public void StackReserve_DefaultValueUsedWhenNotSpecified()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        .entrypoint
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            Assert.Equal((ulong)0x00100000, pe.PEHeaders.PEHeader!.SizeOfStackReserve);
+        }
+
+        [Fact]
+        public void UnnamedInstanceParam_EmitsParamRow()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public instance void .ctor(int32) cil managed
+                    {
+                        ldarg.0
+                        call instance void [mscorlib]System.Object::.ctor()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // Should have 1 Param row for the unnamed int32 parameter (sequence 1)
+            Assert.Equal(1, reader.GetTableRowCount(TableIndex.Param));
+            var param = reader.GetParameter(MetadataTokens.ParameterHandle(1));
+            Assert.Equal(1, param.SequenceNumber);
+        }
+
+        [Fact]
+        public void CctorMethod_HasSpecialNameAttribute()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public specialname rtspecialname static void .cctor() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == ".cctor");
+
+            Assert.True(method.Attributes.HasFlag(MethodAttributes.SpecialName));
+            Assert.True(method.Attributes.HasFlag(MethodAttributes.RTSpecialName));
+        }
+
+        [Fact]
+        public void RtSpecialName_ImplicitlyAddsSpecialName()
+        {
+            // When only rtspecialname is specified (without specialname),
+            // native ilasm implicitly adds specialname
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public rtspecialname static void .cctor() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == ".cctor");
+
+            // Both SpecialName and RTSpecialName should be set
+            Assert.True(method.Attributes.HasFlag(MethodAttributes.SpecialName));
+            Assert.True(method.Attributes.HasFlag(MethodAttributes.RTSpecialName));
+        }
+
+        [Fact]
+        public void FieldRtSpecialName_ImplicitlyAddsSpecialName()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi sealed ByteEnum extends [mscorlib]System.Enum
+                {
+                    .field public rtspecialname uint8 value__
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            Assert.True(field.Attributes.HasFlag(FieldAttributes.SpecialName));
+            Assert.True(field.Attributes.HasFlag(FieldAttributes.RTSpecialName));
+        }
     }
 }
