@@ -146,6 +146,8 @@
     <None Include="Resources\Misc\Signed.cmd" />
     <None Include="Resources\Misc\Signed.cs" />
     <EmbeddedResource Include="Resources\Misc\Signed.exe" />
+    <None Include="Resources\Decoding\CustomAttributeDecoder.cs" />
+    <EmbeddedResource Include="Resources\Decoding\CustomAttributeDecoder.dll" />
   </ItemGroup>
 
   <ItemGroup>

@@ -66,6 +66,11 @@ namespace System.Reflection.Metadata.Tests
         public static readonly byte[] DocumentsEmbeddedDll = ResourceHelper.GetResource("PortablePdbs.Documents.Embedded.dll");
     }
 
+    internal static class Decoding
+    {
+        public static readonly byte[] CustomAttributeDecoder = ResourceHelper.GetResource("Decoding.CustomAttributeDecoder.dll");
+    }
+
     internal static class SynthesizedPeImages
     {
         private static Lazy<ImmutableArray<byte>> _image1 = new Lazy<ImmutableArray<byte>>(GenerateImage);
