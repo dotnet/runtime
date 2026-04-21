@@ -405,8 +405,11 @@ id:
 	| 'aggressiveoptimization'
 	| 'async'
 	| 'extended'
+	| VALUE
+	| INSTANCE
 	| SQSTRING;
-dottedName: DOTTEDNAME | ((ID '.')* ID) | SQSTRING;
+dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart) | SQSTRING;
+dottedNamePart: ID | VALUE | INSTANCE;
 compQstring: (QSTRING PLUS)* QSTRING;
 
 
@@ -460,9 +463,14 @@ assemblyBlock:
 mscorlib: '.mscorlib';
 
 languageDecl:
-	'.language' SQSTRING
-	| '.language' SQSTRING ',' SQSTRING
-	| '.language' SQSTRING ',' SQSTRING ',' SQSTRING;
+	'.language' languageString
+	| '.language' languageString ',' languageString
+	| '.language' languageString ',' languageString ',' languageString
+	// COMPAT: Accept space-separated QSTRING form (used by some IL tools)
+	| '.language' QSTRING QSTRING
+	| '.language' QSTRING QSTRING QSTRING;
+
+languageString: SQSTRING | QSTRING;
 
 typelist: '.typelist' '{' (className)* '}';
 
@@ -615,7 +623,11 @@ extSourceSpec:
 	| esHead int32 ',' int32 ':' int32
 	| esHead int32 ',' int32 ':' int32 ',' int32 SQSTRING
 	| esHead int32 ',' int32 ':' int32 ',' int32
-	| esHead int32 QSTRING;
+	| esHead int32 QSTRING
+	| esHead int32 ':' int32 QSTRING
+	| esHead int32 ':' int32 ',' int32 QSTRING
+	| esHead int32 ',' int32 ':' int32 QSTRING
+	| esHead int32 ',' int32 ':' int32 ',' int32 QSTRING;
 
 /*  Manifest declarations  */
 fileDecl:
@@ -1059,7 +1071,7 @@ fieldAttr:
 	| 'volatile'
 	| 'flags' '(' int32 ')';
 
-atOpt: /* EMPTY */ | 'at' id;
+atOpt: /* EMPTY */ | 'at' id | 'at' int32;
 
 initOpt: /* EMPTY */ | '=' fieldInit;
 
@@ -1143,7 +1155,7 @@ methAttr: 'static'
 	| 'reqsecobj'
 	| 'flags' '(' int32 ')';
 
-pinvImpl: 'pinvokeimpl' '(' (compQstring ('as' compQstring)?)? pinvAttr* ')';
+pinvImpl: 'pinvokeimpl' '(' (compQstring ('as' compQstring)?)? pinvAttr* ')' | 'pinvokeimpl' '()';
 
 pinvAttr:
 	'nomangle'
@@ -1269,7 +1281,7 @@ ddHead: '.data' tls id '=' | '.data' tls;
 
 tls: /* EMPTY */ | 'tls' | 'cil';
 
-ddBody: '{' ddItemList '}' | ddItem;
+ddBody: '{' ddItemList '}' | ddItem+;
 
 ddItemList: (ddItem ',')* ddItem;
 
@@ -1278,6 +1290,7 @@ ddItemCount: /* EMPTY */ | '[' int32 ']';
 ddItem:
 	CHAR PTR '(' compQstring ')'
 	| REF '(' id ')'
+	| REF id
 	| 'bytearray' '(' bytes ')'
 	| FLOAT32 '(' float64 ')' ddItemCount
 	| FLOAT64_ '(' float64 ')' ddItemCount
