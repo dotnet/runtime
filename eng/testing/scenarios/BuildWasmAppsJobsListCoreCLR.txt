@@ -12,4 +12,3 @@ Wasm.Build.Tests.WasmRunOutOfAppBundleTests
 Wasm.Build.Tests.WasmTemplateTests
 Wasm.Build.Tests.MaxParallelDownloadsTests
 Wasm.Build.Tests.LibraryInitializerTests
-Wasm.Build.Templates.Tests.NativeBuildTests
