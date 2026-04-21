@@ -13,7 +13,7 @@ namespace CustomAttributeDecoderTests
     public enum Int16Enum : short { Value = -2 }
     public enum Int32Enum : int { Value = -3 }
     public enum Int64Enum : long { Value = -4 }
-    public enum ByteEnum : sbyte { Value = 1 } // intentionally sbyte as underlying type (matches existing test behavior)
+    public enum ByteEnum : sbyte { Value = 1 } // named ByteEnum but uses sbyte underlying type to match existing test expectations
     public enum UInt16Enum : ushort { Value = 2 }
     public enum UInt32Enum : uint { Value = 3 }
     public enum UInt64Enum : ulong { Value = 4 }
