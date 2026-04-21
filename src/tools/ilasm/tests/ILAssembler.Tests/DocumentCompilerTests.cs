@@ -4209,5 +4209,59 @@ namespace ILAssembler.Tests
             var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
             Assert.Equal(".GlobalStructStartingWithDot", reader.GetString(typeDef.Name));
         }
+
+        [Theory]
+        [InlineData("class [mscorlib]System.String", SignatureTypeCode.String)]
+        [InlineData("class [mscorlib]System.Object", SignatureTypeCode.Object)]
+        public void WellKnownClassType_UsesPrimitiveTypeCode(string ilType, SignatureTypeCode expectedCode)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .field public static {{ilType}} myField
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            var sigReader = reader.GetBlobReader(field.Signature);
+            sigReader.ReadByte(); // field signature header (0x06)
+            byte typeCode = sigReader.ReadByte();
+            Assert.Equal((byte)expectedCode, typeCode);
+        }
+
+        [Theory]
+        [InlineData("valuetype [mscorlib]System.Boolean", SignatureTypeCode.Boolean)]
+        [InlineData("valuetype [mscorlib]System.Int32", SignatureTypeCode.Int32)]
+        [InlineData("valuetype [mscorlib]System.Int64", SignatureTypeCode.Int64)]
+        [InlineData("valuetype [mscorlib]System.Single", SignatureTypeCode.Single)]
+        [InlineData("valuetype [mscorlib]System.Double", SignatureTypeCode.Double)]
+        [InlineData("valuetype [mscorlib]System.Char", SignatureTypeCode.Char)]
+        [InlineData("valuetype [mscorlib]System.Byte", SignatureTypeCode.Byte)]
+        [InlineData("valuetype [mscorlib]System.IntPtr", SignatureTypeCode.IntPtr)]
+        public void WellKnownValueType_UsesPrimitiveTypeCode(string ilType, SignatureTypeCode expectedCode)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .field public static {{ilType}} myField
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            var sigReader = reader.GetBlobReader(field.Signature);
+            sigReader.ReadByte(); // field signature header
+            byte typeCode = sigReader.ReadByte();
+            Assert.Equal((byte)expectedCode, typeCode);
+        }
     }
 }
