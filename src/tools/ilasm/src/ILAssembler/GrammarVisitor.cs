@@ -5060,7 +5060,7 @@ namespace ILAssembler
             }
             else if (context.SQSTRING() is { } sqstring)
             {
-                attributeName = sqstring.GetText();
+                attributeName = StringHelpers.ParseQuotedString(sqstring.GetText());
             }
 
             blob.WriteSerializedString(attributeName);

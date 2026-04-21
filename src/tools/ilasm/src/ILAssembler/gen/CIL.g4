@@ -925,8 +925,8 @@ secDecl:
 secAttrSetBlob: | (secAttrBlob ',')* secAttrBlob;
 
 secAttrBlob:
-	typeSpec '=' '{' customBlobNVPairs '}'
-	| 'class' SQSTRING '=' '{' customBlobNVPairs '}';
+	'class' SQSTRING '=' '{' customBlobNVPairs '}'
+	| typeSpec '=' '{' customBlobNVPairs '}';
 
 nameValPairs: (nameValPair ',')* nameValPair;
 
