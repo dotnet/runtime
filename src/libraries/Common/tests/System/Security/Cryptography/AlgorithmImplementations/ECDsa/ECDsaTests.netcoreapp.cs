@@ -187,7 +187,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [Theory, MemberData(nameof(TestNewCurves))]
+        [ConditionalTheory(typeof(ECDsaTests), nameof(ECExplicitCurvesSupported)), MemberData(nameof(TestNewCurves))]
         public void TestRegenKeyExplicit(CurveDef curveDef)
         {
             ECParameters param, param2;
