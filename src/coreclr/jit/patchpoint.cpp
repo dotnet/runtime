@@ -31,11 +31,13 @@ class PatchpointTransformer
 {
     const int HIGH_PROBABILITY = 99;
     unsigned  ppCounterLclNum;
+    unsigned  ppOsrMethodLclNum;
     Compiler* compiler;
 
 public:
     PatchpointTransformer(Compiler* compiler)
         : ppCounterLclNum(BAD_VAR_NUM)
+        , ppOsrMethodLclNum(BAD_VAR_NUM)
         , compiler(compiler)
     {
     }
@@ -116,7 +118,11 @@ private:
     //
     //  if (--ppCounter <= 0)
     //  {
-    //     ppHelper(&ppCounter, ilOffset);
+    //     PCODE target = ppHelper(&ppCounter, ilOffset);
+    //     if (target != 0)
+    //     {
+    //         GT_PATCHPOINT(target);  // non-local jump to OSR method
+    //     }
     //  }
     //  S;
     //
@@ -132,13 +138,20 @@ private:
             TransformEntry(compiler->fgFirstBB);
         }
 
+        if (ppOsrMethodLclNum == BAD_VAR_NUM)
+        {
+            ppOsrMethodLclNum                            = compiler->lvaGrabTemp(true DEBUGARG("patchpoint osr method"));
+            compiler->lvaTable[ppOsrMethodLclNum].lvType = TYP_I_IMPL;
+        }
+
         // Capture the IL offset
         IL_OFFSET ilOffset = block->bbCodeOffs;
         assert(ilOffset != BAD_IL_OFFSET);
 
         // Current block now becomes the test block
-        BasicBlock* remainderBlock = compiler->fgSplitBlockAtBeginning(block);
-        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_ALWAYS, block);
+        BasicBlock* remainderBlock  = compiler->fgSplitBlockAtBeginning(block);
+        BasicBlock* helperBlock     = CreateAndInsertBasicBlock(BBJ_COND, block);
+        BasicBlock* transitionBlock = CreateAndInsertBasicBlock(BBJ_THROW, helperBlock);
 
         // Update flow and flags
         block->SetFlags(BBF_INTERNAL);
@@ -151,12 +164,17 @@ private:
         falseEdge->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
         block->SetCond(trueEdge, falseEdge);
 
-        FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, helperBlock);
-        helperBlock->SetTargetEdge(newEdge);
+        // helperBlock: if OSR code is NULL, goto remainder; else fall to transitionBlock
+        FlowEdge* const helperToRemainder = compiler->fgAddRefPred(remainderBlock, helperBlock);
+        FlowEdge* const helperToTransition = compiler->fgAddRefPred(transitionBlock, helperBlock);
+        helperToRemainder->setLikelihood(HIGH_PROBABILITY / 100.0);
+        helperToTransition->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
+        helperBlock->SetCond(helperToRemainder, helperToTransition);
 
         // Update weights
         remainderBlock->inheritWeight(block);
         helperBlock->inheritWeightPercentage(block, 100 - HIGH_PROBABILITY);
+        transitionBlock->inheritWeightPercentage(helperBlock, 100 - HIGH_PROBABILITY);
 
         // Fill in test block
         //
@@ -178,13 +196,29 @@ private:
 
         // Fill in helper block
         //
-        // call PPHelper(&ppCounter, ilOffset)
+        // PCODE osrMethod = PPHelper(&ppCounter, ilOffset);
         GenTree*     ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
         GenTree*     ppCounterAddr = compiler->gtNewLclVarAddrNode(ppCounterLclNum);
         GenTreeCall* helperCall =
-            compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT, TYP_VOID, ppCounterAddr, ilOffsetNode);
+            compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT, TYP_I_IMPL, ppCounterAddr, ilOffsetNode);
 
-        compiler->fgNewStmtAtEnd(helperBlock, helperCall);
+        GenTree* osrMethodStore = compiler->gtNewStoreLclVarNode(ppOsrMethodLclNum, helperCall);
+        compiler->fgNewStmtAtEnd(helperBlock, osrMethodStore);
+
+        // if (osrMethod == 0), goto remainder
+        GenTree* osrMethodValue = compiler->gtNewLclvNode(ppOsrMethodLclNum, TYP_I_IMPL);
+        GenTree* nullValue      = compiler->gtNewIconNode(0, TYP_I_IMPL);
+        GenTree* osrCompare     = compiler->gtNewOperNode(GT_EQ, TYP_INT, osrMethodValue, nullValue);
+        GenTree* osrJtrue       = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, osrCompare);
+
+        compiler->fgNewStmtAtEnd(helperBlock, osrJtrue);
+
+        // Fill in transition block - non-local jump to OSR method
+        GenTree* osrTarget     = compiler->gtNewLclvNode(ppOsrMethodLclNum, TYP_I_IMPL);
+        GenTree* patchpointJmp = compiler->gtNewOperNode(GT_PATCHPOINT, TYP_VOID, osrTarget);
+        patchpointJmp->gtFlags |= GTF_CALL;
+
+        compiler->fgNewStmtAtEnd(transitionBlock, patchpointJmp);
     }
 
     //  ppCounter = <initial value>
@@ -205,18 +239,19 @@ private:
 
     //------------------------------------------------------------------------
     // TransformPartialCompilation: delete all the statements in the block and insert
-    //     a call to the partial compilation patchpoint helper
+    //     a call to the partial compilation patchpoint helper, then transition
+    //     to the OSR method.
     //
     //  S0; S1; S2; ... SN;
     //
     //  ==>
     //
     //  ~~{ S0; ... SN; }~~ (deleted)
-    //  call JIT_PARTIAL_COMPILATION_PATCHPOINT(ilOffset)
+    //  PCODE target = JIT_PARTIAL_COMPILATION_PATCHPOINT(ilOffset);
+    //  GT_PATCHPOINT(target);  // non-local jump to OSR method
     //
     // Note S0 -- SN are not forever lost -- they will appear in the OSR version
-    // of the method created when the patchpoint is hit. Also note the patchpoint
-    // helper call will not return control to this method.
+    // of the method created when the patchpoint is hit.
     //
     void TransformPartialCompilation(BasicBlock* block)
     {
@@ -233,14 +268,28 @@ private:
         // Update flow
         block->SetKindAndTargetEdge(BBJ_THROW);
 
+        if (ppOsrMethodLclNum == BAD_VAR_NUM)
+        {
+            ppOsrMethodLclNum                            = compiler->lvaGrabTemp(true DEBUGARG("patchpoint osr method"));
+            compiler->lvaTable[ppOsrMethodLclNum].lvType = TYP_I_IMPL;
+        }
+
         // Add helper call
         //
-        // call PartialCompilationPatchpointHelper(ilOffset)
+        // PCODE target = PartialCompilationPatchpointHelper(ilOffset);
         //
         GenTree*     ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTreeCall* helperCall = compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
+        GenTreeCall* helperCall = compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_I_IMPL, ilOffsetNode);
 
-        compiler->fgNewStmtAtEnd(block, helperCall);
+        GenTree* osrMethodStore = compiler->gtNewStoreLclVarNode(ppOsrMethodLclNum, helperCall);
+        compiler->fgNewStmtAtEnd(block, osrMethodStore);
+
+        // GT_PATCHPOINT(target) - non-local jump to OSR method
+        GenTree* osrTarget     = compiler->gtNewLclvNode(ppOsrMethodLclNum, TYP_I_IMPL);
+        GenTree* patchpointJmp = compiler->gtNewOperNode(GT_PATCHPOINT, TYP_VOID, osrTarget);
+        patchpointJmp->gtFlags |= GTF_CALL;
+
+        compiler->fgNewStmtAtEnd(block, patchpointJmp);
     }
 };
 

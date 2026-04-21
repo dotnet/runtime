@@ -326,6 +326,11 @@ GTNODE(NO_OP            , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE) // A NOP
 // Lowering then removes all successor nodes and leaves it as the terminator node.
 GTNODE(RETURN_SUSPEND   , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 
+// Transfer control to an OSR method variant. Operand is the PCODE of the OSR method.
+// This node never returns; codegen emits architecture-specific code to set up the stack
+// pointer and jump to the OSR method entry point.
+GTNODE(PATCHPOINT       , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
+
 GTNODE(START_NONGC      , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group that will be non-gc interruptible.
 GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group where preemptive GC is enabled.
 GTNODE(PROF_HOOK        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Profiler Enter/Leave/TailCall hook.
