@@ -225,6 +225,7 @@ namespace System.Threading.Tasks.Sources
                 _continuationState = null;
                 object? context = _capturedContext;
                 _capturedContext = null;
+                _continuation = ManualResetValueTaskSourceCoreShared.s_sentinel;
 
                 if (context is null)
                 {
