@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <pal.h>
+#include "volatile.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -9,6 +10,25 @@
 #include <limits.h>
 #include <pal_assert.h>
 #include "twowaypipe.h"
+
+// Pipe names stored for use in AbortPipeServerImpl().
+static char s_serverInPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+static char s_serverOutPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+
+// Cleans up the named pipe connection so no tmp files are left behind. Does only
+// the minimum and must be safe to call at any time. Called during PAL ExitProcess,
+// TerminateProcess and for unhandled native exceptions and asserts.
+static void AbortPipeServerImpl()
+{
+    // IMPORTANT NOTE: This function must not call any signal unsafe functions
+    // since it is called from signal handlers.
+    // That includes ASSERT and TRACE macros.
+    unlink(s_serverInPipeName);
+    unlink(s_serverOutPipeName);
+}
+
+// Defined here and extern-declared in dbgtransportsession.h for use by Debugger::CleanupTransportSocket().
+void (*g_pfnAbortTransportCallback)(void) = nullptr;
 
 // Creates a server side of the pipe.
 // Id is used to create pipes names and uniquely identify the pipe on the machine.
@@ -21,6 +41,17 @@ bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
 
     PAL_GetTransportPipeName(m_inPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "in");
     PAL_GetTransportPipeName(m_outPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "out");
+
+    // Keep a static copy so AbortPipeServerImpl() can unlink them without going through
+    // the TwoWayPipe instance, which may be concurrently updated by the worker thread.
+    // Only do this the first time CreateServer() is called; subsequent calls recreate the
+    // pipe with the same names, so the static buffers remain valid.
+    if (g_pfnAbortTransportCallback == nullptr)
+    {
+        memcpy(s_serverInPipeName, m_inPipeName, sizeof(s_serverInPipeName));
+        memcpy(s_serverOutPipeName, m_outPipeName, sizeof(s_serverOutPipeName));
+        VolatileStore(&g_pfnAbortTransportCallback, static_cast<void(*)(void)>(AbortPipeServerImpl));
+    }
 
     unlink(m_inPipeName);
 

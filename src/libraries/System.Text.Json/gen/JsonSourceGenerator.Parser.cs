@@ -23,6 +23,15 @@ namespace System.Text.Json.SourceGeneration
         private sealed class Parser
         {
             private const string SystemTextJsonNamespace = "System.Text.Json";
+
+            /// <summary>
+            /// A <see cref="SymbolDisplayFormat"/> that renders fully qualified type names with
+            /// generic type parameter constraint clauses appended
+            /// (e.g., "global::NS.MyType&lt;T&gt; where T : notnull, global::NS.MyBase").
+            /// </summary>
+            private static readonly SymbolDisplayFormat s_fullyQualifiedWithConstraints =
+                SymbolDisplayFormat.FullyQualifiedFormat.AddGenericsOptions(
+                    SymbolDisplayGenericsOptions.IncludeTypeConstraints);
             private const string JsonExtensionDataAttributeFullName = "System.Text.Json.Serialization.JsonExtensionDataAttribute";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
@@ -576,6 +585,7 @@ namespace System.Text.Json.SourceGeneration
                 List<int>? fastPathPropertyIndices = null;
                 ObjectConstructionStrategy constructionStrategy = default;
                 bool constructorSetsRequiredMembers = false;
+                bool constructorIsInaccessible = false;
                 ParameterGenerationSpec[]? ctorParamSpecs = null;
                 List<PropertyInitializerGenerationSpec>? propertyInitializerSpecs = null;
                 CollectionType collectionType = CollectionType.NotApplicable;
@@ -681,11 +691,8 @@ namespace System.Text.Json.SourceGeneration
                     {
                         ReportDiagnostic(DiagnosticDescriptors.MultipleJsonConstructorAttribute, typeToGenerate.Location, type.ToDisplayString());
                     }
-                    else if (constructor != null && !IsSymbolAccessibleWithin(constructor, within: contextType))
-                    {
-                        ReportDiagnostic(DiagnosticDescriptors.JsonConstructorInaccessible, typeToGenerate.Location, type.ToDisplayString());
-                        constructor = null;
-                    }
+
+                    constructorIsInaccessible = constructor is not null && !IsSymbolAccessibleWithin(constructor, within: contextType);
 
                     classType = ClassType.Object;
 
@@ -694,7 +701,11 @@ namespace System.Text.Json.SourceGeneration
 
                     ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
                     propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeIgnoreCondition, options, typeNamingPolicy, out hasExtensionDataProperty, out fastPathPropertyIndices);
-                    propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
+
+                    if (!constructorIsInaccessible)
+                    {
+                        propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
+                    }
                 }
 
                 var typeRef = new TypeRef(type);
@@ -733,6 +744,11 @@ namespace System.Text.Json.SourceGeneration
                     CollectionValueType = collectionValueType,
                     ConstructionStrategy = constructionStrategy,
                     ConstructorSetsRequiredParameters = constructorSetsRequiredMembers,
+                    ConstructorIsInaccessible = constructorIsInaccessible,
+                    CanUseUnsafeAccessorForConstructor = constructorIsInaccessible
+                        && _knownSymbols.UnsafeAccessorAttributeType is not null
+                        && (type is not INamedTypeSymbol { IsGenericType: true }
+                            || _knownSymbols.SupportsGenericUnsafeAccessors),
                     NullableUnderlyingType = nullableUnderlyingType,
                     RuntimeTypeRef = runtimeTypeRef,
                     IsValueTuple = type.IsTupleType,
@@ -1120,13 +1136,11 @@ namespace System.Text.Json.SourceGeneration
                     AddPropertyWithConflictResolution(propertySpec, memberInfo, propertyIndex: properties.Count, ref state);
                     properties.Add(propertySpec);
 
-                    // In case of JsonInclude fail if either:
-                    // 1. the getter is not accessible by the source generator or
-                    // 2. neither getter or setter methods are public.
-                    if (propertySpec.HasJsonInclude && (!propertySpec.CanUseGetter || !propertySpec.IsPublic))
-                    {
-                        state.HasInvalidConfigurationForFastPath = true;
-                    }
+                    // Note: ParsePropertyGenerationSpec intentionally does not mark inaccessible
+                    // [JsonInclude] members as invalid for fast-path generation. Some callers rely
+                    // on that omission to source-generate against experimental APIs without
+                    // introducing new warnings until https://github.com/dotnet/runtime/issues/124889
+                    // is completed.
                 }
 
                 bool PropertyIsOverriddenAndIgnored(IPropertySymbol property, Dictionary<string, ISymbol>? ignoredMembers)
@@ -1379,7 +1393,21 @@ namespace System.Text.Json.SourceGeneration
                     NumberHandling = numberHandling,
                     ObjectCreationHandling = objectCreationHandling,
                     Order = order,
-                    HasJsonInclude = hasJsonInclude,
+                    // TODO: remove the inaccessibility check once https://github.com/dotnet/runtime/issues/124889
+                    // is complete; some callers currently rely on this omission when source-generating
+                    // against experimental APIs (tracking: https://github.com/dotnet/runtime/issues/88519).
+                    HasJsonInclude = hasJsonInclude && !hasJsonIncludeButIsInaccessible,
+                    CanUseUnsafeAccessors = _knownSymbols.UnsafeAccessorAttributeType is not null
+                        && (memberInfo.ContainingType is not INamedTypeSymbol { IsGenericType: true }
+                            || _knownSymbols.SupportsGenericUnsafeAccessors),
+                    OpenDeclaringTypeFQN = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? memberInfo.ContainingType.OriginalDefinition.GetFullyQualifiedName() : null,
+                    OpenPropertyTypeFQN = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? memberInfo.OriginalDefinition.GetMemberType().GetFullyQualifiedName() : null,
+                    DeclaringTypeParameterNames = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? namedType.OriginalDefinition.TypeParameters.Select(tp => tp.Name).ToImmutableEquatableArray() : null,
+                    DeclaringTypeParameterConstraintClauses = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType2 && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? GetTypeParameterConstraintClauses(namedType2.OriginalDefinition) : null,
                     IsExtensionData = isExtensionData,
                     PropertyType = propertyTypeRef,
                     DeclaringType = declaringType,
@@ -1694,13 +1722,15 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                HashSet<string>? memberInitializerNames = null;
+                HashSet<string>? requiredMemberNames = null;
                 List<PropertyInitializerGenerationSpec>? propertyInitializers = null;
 
                 // Count non-out constructor parameters - out params don't have entries in the args array.
                 int paramCount = constructorParameters?.Count(p => p.RefKind != RefKind.Out) ?? 0;
 
-                // Determine potential init-only or required properties that need to be part of the constructor delegate signature.
+                // Determine required properties that need to be part of the constructor delegate signature.
+                // Init-only non-required properties are no longer included here -- they will be set
+                // via UnsafeAccessor or reflection post-construction to preserve their default values.
                 foreach (PropertyGenerationSpec property in properties)
                 {
                     if (!property.CanUseSetter)
@@ -1713,11 +1743,11 @@ namespace System.Text.Json.SourceGeneration
                         continue;
                     }
 
-                    if ((property.IsRequired && !constructorSetsRequiredMembers) || property.IsInitOnlySetter)
+                    if (property.IsRequired && !constructorSetsRequiredMembers)
                     {
-                        if (!(memberInitializerNames ??= new()).Add(property.MemberName))
+                        if (!(requiredMemberNames ??= new()).Add(property.MemberName))
                         {
-                            // We've already added another member initializer with the same name to our spec list.
+                            // We've already added another required member with the same name to our spec list.
                             // Duplicates can occur here because the provided list of properties includes shadowed members.
                             // This is because we generate metadata for *all* members, including shadowed or ignored ones,
                             // since we need to re-run the deduplication algorithm taking run-time configuration into account.
@@ -1931,6 +1961,7 @@ namespace System.Text.Json.SourceGeneration
                     JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
                     JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
                     JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
+                    JsonKnownNamingPolicy.PascalCase => JsonNamingPolicy.PascalCase,
                     _ => null,
                 };
 
@@ -2166,6 +2197,29 @@ namespace System.Text.Json.SourceGeneration
                         builtInSupportTypes.Add(type);
                     }
                 }
+            }
+
+            /// <summary>
+            /// Extracts the type parameter constraint clauses from a generic type using
+            /// Roslyn's <see cref="SymbolDisplayGenericsOptions.IncludeTypeConstraints"/>.
+            /// Returns the combined <c>where</c> clauses (e.g., "where T : notnull, global::NS.MyBase"),
+            /// or null if the type has no constraints.
+            /// </summary>
+            private static string? GetTypeParameterConstraintClauses(INamedTypeSymbol type)
+            {
+                Debug.Assert(type.IsGenericType);
+                string display = type.ToDisplayString(s_fullyQualifiedWithConstraints);
+
+                // The display string has the form "global::NS.Type<T, U> where T : C1 where U : C2".
+                // Extract the constraint clauses after the type name by finding the first " where ".
+                const string whereMarker = " where ";
+                int whereIndex = display.IndexOf(whereMarker);
+                if (whereIndex < 0)
+                {
+                    return null;
+                }
+
+                return display.Substring(whereIndex + 1);
             }
 
             private readonly struct TypeToGenerate

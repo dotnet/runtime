@@ -467,9 +467,11 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
     pRD->pCurrentContext->A0 = m_Args->A0;
     pRD->pCurrentContext->A1 = m_Args->A1;
+    pRD->pCurrentContext->A2 = m_Args->A2;
 
     pRD->volatileCurrContextPointers.A0 = &m_Args->A0;
     pRD->volatileCurrContextPointers.A1 = &m_Args->A1;
+    pRD->volatileCurrContextPointers.A2 = &m_Args->A2;
 
 
     pRD->pCurrentContext->S1 = m_Args->S1;
@@ -508,14 +510,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 #endif // FEATURE_HIJACK
-
-#ifdef FEATURE_COMINTEROP
-
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-}
-#endif // FEATURE_COMINTEROP
 
 #if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);

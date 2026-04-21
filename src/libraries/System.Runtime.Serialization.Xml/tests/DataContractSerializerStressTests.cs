@@ -49,7 +49,7 @@ public static partial class DataContractSerializerTests
             dcs.WriteObject(ms, myFamily);
             ms.Position = 0;
             var newFamily = (FamilyForStress)dcs.ReadObject(ms);
-            Assert.StrictEqual(myFamily.Members.Length, newFamily.Members.Length);
+            Assert.Equal(myFamily.Members.Length, newFamily.Members.Length);
             for (int i = 0; i < myFamily.Members.Length; ++i)
             {
                 Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);

@@ -92,18 +92,14 @@ DEFINE_DACVAR(PTR_InterpreterCodeManager, ExecutionManager__m_pInterpreterCodeMa
 
 DEFINE_DACVAR_NO_DUMP(VMHELPDEF *, dac__hlpFuncTable, ::hlpFuncTable)
 DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
+DEFINE_DACVAR(VMAUXILIARYSYMBOLDEF *, dac__hlpAuxiliarySymbolTable, ::hlpAuxiliarySymbolTable)
+DEFINE_DACVAR(DWORD, dac__g_auxiliarySymbolCount, ::g_auxiliarySymbolCount)
 
 DEFINE_DACVAR(PTR_StubManager, StubManager__g_pFirstManager, StubManager::g_pFirstManager)
 DEFINE_DACVAR(PTR_PrecodeStubManager, PrecodeStubManager__g_pManager, PrecodeStubManager::g_pManager)
 DEFINE_DACVAR(PTR_StubLinkStubManager, StubLinkStubManager__g_pManager, StubLinkStubManager::g_pManager)
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-DEFINE_DACVAR(PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, JumpStubStubManager::g_pManager)
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
 DEFINE_DACVAR(PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
 DEFINE_DACVAR(PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
-#ifdef FEATURE_TIERED_COMPILATION
-DEFINE_DACVAR(PTR_CallCountingStubManager, CallCountingStubManager__g_pManager, CallCountingStubManager::g_pManager)
-#endif // FEATURE_TIERED_COMPILATION
 
 DEFINE_DACVAR(PTR_ThreadStore, ThreadStore__s_pThreadStore, ThreadStore::s_pThreadStore)
 
@@ -128,6 +124,8 @@ DEFINE_DACVAR(DWORD, dac__g_offsetOfCurrentThreadInfo, g_offsetOfCurrentThreadIn
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pExceptionServicesInternalCallsClass, ::g_pExceptionServicesInternalCallsClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pStackFrameIteratorClass, ::g_pStackFrameIteratorClass)
+
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEnvironmentCallEntryPointMethodDesc, ::g_pEnvironmentCallEntryPointMethodDesc)
 
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
 

@@ -42,6 +42,45 @@ public struct JitManagerInfo
     public TargetPointer HeapListAddress;
 }
 
+public interface ICodeHeapInfo
+{
+}
+
+public sealed class LoaderCodeHeapInfo : ICodeHeapInfo
+{
+    public TargetPointer HeapAddress { get; }
+    public TargetPointer LoaderHeapAddress { get; }
+
+    public LoaderCodeHeapInfo(TargetPointer heapAddress, TargetPointer loaderHeapAddress)
+    {
+        HeapAddress = heapAddress;
+        LoaderHeapAddress = loaderHeapAddress;
+    }
+}
+
+public sealed class HostCodeHeapInfo : ICodeHeapInfo
+{
+    public TargetPointer HeapAddress { get; }
+    public TargetPointer BaseAddress { get; }
+    public TargetPointer CurrentAddress { get; }
+
+    public HostCodeHeapInfo(TargetPointer heapAddress, TargetPointer baseAddress, TargetPointer currentAddress)
+    {
+        HeapAddress = heapAddress;
+        BaseAddress = baseAddress;
+        CurrentAddress = currentAddress;
+    }
+}
+
+public sealed class UnknownCodeHeapInfo : ICodeHeapInfo {}
+
+public enum JitType : uint
+{
+    Unknown = 0,
+    Jit = 1,
+    R2R = 2
+}
+
 public interface IExecutionManager : IContract
 {
     static string IContract.Name { get; } = nameof(ExecutionManager);
@@ -50,8 +89,10 @@ public interface IExecutionManager : IContract
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize) => throw new NotImplementedException();
-    uint GetJITType(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    JitType GetJITType(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint) => throw new NotImplementedException();
+    bool IsFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    bool IsFilterFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte) => throw new NotImplementedException();
@@ -59,6 +100,7 @@ public interface IExecutionManager : IContract
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
+    IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager

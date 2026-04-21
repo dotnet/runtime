@@ -47,6 +47,7 @@
     <Compile Include="BigInteger\op_xor.cs" />
     <Compile Include="BigInteger\parse.cs" />
     <Compile Include="BigInteger\pow.cs" />
+    <Compile Include="BigInteger\BigIntegerPropertyTests.cs" />
     <Compile Include="BigInteger\properties.cs" />
     <Compile Include="BigInteger\remainder.cs" />
     <Compile Include="BigInteger\SampleGeneration.cs" />
