@@ -32,6 +32,8 @@ namespace ILCompiler.ReadyToRun
         /// </summary>
         public void EnsureDefTokensAreAvailable(IEnumerable<TypeSystemEntity> entities, ModuleDesc moduleForNewReferences, bool referencesAreForAsyncMethod)
         {
+            Debug.Assert(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences == null);
+            Debug.Assert(!_mutableModule.CreatingTokensForAsyncMethod);
             _mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = moduleForNewReferences;
             _mutableModule.CreatingTokensForAsyncMethod = referencesAreForAsyncMethod;
             try
@@ -55,7 +57,8 @@ namespace ILCompiler.ReadyToRun
         /// </summary>
         public void EnsureDefTokensAreAvailable(TypeSystemEntity entity, ModuleDesc moduleForNewReferences, bool referencesAreForAsyncMethod)
         {
-
+            Debug.Assert(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences == null);
+            Debug.Assert(!_mutableModule.CreatingTokensForAsyncMethod);
             _mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = moduleForNewReferences;
             _mutableModule.CreatingTokensForAsyncMethod = referencesAreForAsyncMethod;
             try
