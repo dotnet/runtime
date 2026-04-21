@@ -4283,5 +4283,97 @@ namespace ILAssembler.Tests
             // Parser should report a syntax error for the repeated int32 tokens
             Assert.Contains(diagnostics, d => d.Id == "Parser");
         }
+
+        [Fact]
+        public void CoreLibRedirect_MscorlibToSystemRuntime()
+        {
+            // When both mscorlib and System.Runtime are declared, type references
+            // through [mscorlib] should be redirected to [System.Runtime]
+            string source = """
+                .assembly extern mscorlib { auto }
+                .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A) }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public instance void .ctor() cil managed
+                    {
+                        ldarg.0
+                        call instance void [mscorlib]System.Object::.ctor()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // The TypeRef for System.Object should point to System.Runtime, not mscorlib
+            var typeRef = reader.TypeReferences
+                .Select(h => reader.GetTypeReference(h))
+                .First(t => reader.GetString(t.Name) == "Object");
+
+            var scope = reader.GetAssemblyReference((AssemblyReferenceHandle)typeRef.ResolutionScope);
+            Assert.Equal("System.Runtime", reader.GetString(scope.Name));
+        }
+
+        [Fact]
+        public void CoreLibRedirect_OnlyCorelibPresent_KeepsMscorlib()
+        {
+            // When only mscorlib is declared, type references stay as [mscorlib]
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public instance void .ctor() cil managed
+                    {
+                        ldarg.0
+                        call instance void [mscorlib]System.Object::.ctor()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeRef = reader.TypeReferences
+                .Select(h => reader.GetTypeReference(h))
+                .First(t => reader.GetString(t.Name) == "Object");
+
+            var scope = reader.GetAssemblyReference((AssemblyReferenceHandle)typeRef.ResolutionScope);
+            Assert.Equal("mscorlib", reader.GetString(scope.Name));
+        }
+
+        [Fact]
+        public void UnqualifiedSystemString_ResolvesToCoreLibTypeRef()
+        {
+            // Unqualified 'System.String' (without [assembly] prefix) should resolve
+            // to a TypeRef from the corelib, not create a local TypeDef
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void Greet(class System.String msg) cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // System.String should be a TypeRef, not a TypeDef
+            // Only 2 TypeDefs should exist: <Module> and Test
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.TypeDef));
+
+            // System.String should be in TypeRef table
+            bool foundStringTypeRef = reader.TypeReferences
+                .Select(h => reader.GetTypeReference(h))
+                .Any(t => reader.GetString(t.Name) == "String" && reader.GetString(t.Namespace) == "System");
+            Assert.True(foundStringTypeRef, "System.String should be a TypeRef, not a TypeDef");
+        }
     }
 }
