@@ -1724,6 +1724,7 @@ struct FuncInfoDsc
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
     unsigned funWasmFrameSize;
     bool needsUnwindableFrame;
+    void ensureUnwindableFrame(Compiler* comp);
 #endif // defined(TARGET_WASM)  
 
     EHblkDsc*            GetEHDesc(Compiler* comp) const;
@@ -12981,6 +12982,18 @@ inline unsigned FuncInfoDsc::GetFuncletIdx(Compiler* comp) const
     assert(this == &comp->compFuncInfos[funcletIdx]);
     return funcletIdx;
 }
+
+#if defined(TARGET_WASM)
+inline void FuncInfoDsc::ensureUnwindableFrame(Compiler* comp)
+{
+    if (!needsUnwindableFrame)
+    {
+        JITDUMP("%s (index %u) needs to be unwindable\n", IsFunclet() ? "Funclet" : "Main method", GetFuncletIdx(comp));
+
+        needsUnwindableFrame = true;
+    }
+}
+#endif // defined(TARGET_WASM)
 
 // FuncInfoRange: adapter class for forward or reverse iteration of a contiguous range of function/funclet
 // descriptors using range-based `for`, e.g.:

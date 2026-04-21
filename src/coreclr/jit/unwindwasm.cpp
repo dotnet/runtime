@@ -58,7 +58,7 @@ void Compiler::unwindReserve()
 //
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
-    bool  isFunclet   = (func->funKind != FUNC_ROOT);
+    bool  isFunclet   = func->IsFunclet();
     bool  isColdCode  = false;
     ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize);
 
@@ -94,8 +94,6 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 //
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
-    bool const isFunclet = func->funKind != FUNC_ROOT;
-
     UNATIVE_OFFSET startOffset;
     UNATIVE_OFFSET endOffset;
 

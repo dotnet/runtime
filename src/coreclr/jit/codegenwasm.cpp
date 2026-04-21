@@ -45,14 +45,7 @@ static const instruction INS_I_gt_u  = INS_i32_gt_u;
 void CodeGen::ensureCurrentFuncIsUnwindable()
 {
     FuncInfoDsc* const func = m_compiler->funCurrentFunc();
-
-    if (!func->needsUnwindableFrame)
-    {
-        JITDUMP("%s (index %u) needs to be unwindable\n", func->IsFunclet() ? "Funclet" : "Main method",
-                func->GetFuncletIdx(m_compiler));
-
-        func->needsUnwindableFrame = true;
-    }
+    func->ensureUnwindableFrame(m_compiler);
 }
 
 //------------------------------------------------------------------------

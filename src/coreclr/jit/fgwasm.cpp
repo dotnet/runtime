@@ -2542,8 +2542,10 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         GenTree* const virtualIPValue  = gtNewIconNode(virtualIP);
         GenTree*       setVirtualIP    = nullptr;
 
-        if (func->funKind != FUNC_ROOT)
+        if (func->IsFunclet())
         {
+            func->ensureUnwindableFrame(this);
+
             GenTree* const spLocal = gtNewLclVarNode(lvaWasmSpArg, TYP_I_IMPL);
             GenTree* const virtualIPslotAddr =
                 gtNewOperNode(GT_ADD, TYP_I_IMPL, spLocal, gtNewIconNode(TARGET_POINTER_SIZE));
@@ -2619,8 +2621,8 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             }
 
             // For now, just refresh the stack Virtual IP at the start of each non-empty
-            // block (later we can refine this to something lke: blocks that have calls or will inspire
-            // calls during codegen).
+            // block (later we can refine this to something like: blocks that have calls
+            // or will inspire calls during codegen).
             //
             if (!block->isEmpty())
             {
