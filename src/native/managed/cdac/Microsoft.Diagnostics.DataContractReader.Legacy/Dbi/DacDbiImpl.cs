@@ -673,16 +673,20 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            IStackWalk sw = _target.Contracts.StackWalk;
-
-            uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(_target).AllContextFlags;
+            IPlatformAgnosticContext leafCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            uint allFlags = leafCtx.AllContextFlags;
             byte[] leafContext = _target.Contracts.Thread.GetContext(new TargetPointer(vmThread), ThreadContextSource.None, allFlags);
+            leafCtx.FillFromBuffer(leafContext);
 
             // Read the given context from the native buffer.
+            IPlatformAgnosticContext givenCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
             byte[] givenContext = new byte[leafContext.Length];
             new Span<byte>(pContext, givenContext.Length).CopyTo(givenContext);
+            givenCtx.FillFromBuffer(givenContext);
 
-            *pResult = sw.AreContextsEqual(givenContext, leafContext) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            *pResult = givenCtx.StackPointer == leafCtx.StackPointer
+                && givenCtx.InstructionPointer == leafCtx.InstructionPointer
+                ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {

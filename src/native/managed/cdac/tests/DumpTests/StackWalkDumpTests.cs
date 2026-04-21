@@ -333,7 +333,7 @@ public class StackWalkDumpTests : DumpTestBase
         Assert.Fail("Expected to find a frame with a valid entry point");
     }
 
-    // ========== GetContext and AreContextsEqual API tests ==========
+    // ========== GetContext API tests ==========
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
@@ -352,39 +352,5 @@ public class StackWalkDumpTests : DumpTestBase
         var ctx = Contracts.StackWalkHelpers.IPlatformAgnosticContext.GetContextForPlatform(Target);
         ctx.FillFromBuffer(context);
         Assert.NotEqual(TargetPointer.Null, ctx.InstructionPointer);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
-    public void AreContextsEqual_TrueForSameContext(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        IStackWalk stackWalk = Target.Contracts.StackWalk;
-
-        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
-        uint allFlags = Contracts.StackWalkHelpers.IPlatformAgnosticContext.GetContextForPlatform(Target).AllContextFlags;
-        byte[] context = Target.Contracts.Thread.GetContext(crashingThread.ThreadAddress, ThreadContextSource.None, allFlags);
-
-        Assert.True(stackWalk.AreContextsEqual(context, context));
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
-    public void AreContextsEqual_FalseForDifferentFrames(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        IStackWalk stackWalk = Target.Contracts.StackWalk;
-
-        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
-
-        List<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread).ToList();
-        Assert.True(frames.Count >= 2, "Expected at least 2 frames");
-
-        byte[] context1 = stackWalk.GetRawContext(frames[0]);
-        byte[] context2 = stackWalk.GetRawContext(frames[1]);
-
-        Assert.False(stackWalk.AreContextsEqual(context1, context2));
     }
 }

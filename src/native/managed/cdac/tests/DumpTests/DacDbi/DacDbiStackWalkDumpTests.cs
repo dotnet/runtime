@@ -107,11 +107,25 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        IStackWalk sw = Target.Contracts.StackWalk;
-        var frames = sw.CreateStackWalk(crashingThread).ToList();
-        Assert.True(frames.Count >= 2, "Expected at least 2 frames to test non-leaf");
+        uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(Target).AllContextFlags;
+        byte[] leafContext = Target.Contracts.Thread.GetContext(crashingThread.ThreadAddress, ThreadContextSource.None, allFlags);
+        IPlatformAgnosticContext leafCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);
+        leafCtx.FillFromBuffer(leafContext);
 
-        byte[] nonLeafContext = sw.GetRawContext(frames[1]);
+        IStackWalk sw = Target.Contracts.StackWalk;
+
+        // Find a frame whose SP+IP differs from the leaf context
+        byte[]? nonLeafContext = sw.CreateStackWalk(crashingThread)
+            .Select(sw.GetRawContext)
+            .FirstOrDefault(ctx =>
+            {
+                IPlatformAgnosticContext frameCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);
+                frameCtx.FillFromBuffer(ctx);
+                return frameCtx.StackPointer != leafCtx.StackPointer
+                    || frameCtx.InstructionPointer != leafCtx.InstructionPointer;
+            });
+
+        Assert.NotNull(nonLeafContext);
 
         Interop.BOOL result;
         fixed (byte* pContext = nonLeafContext)

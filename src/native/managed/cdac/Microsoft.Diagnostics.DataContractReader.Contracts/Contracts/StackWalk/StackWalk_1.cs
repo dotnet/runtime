@@ -686,29 +686,6 @@ internal partial class StackWalk_1 : IStackWalk
         return handle.Context.InstructionPointer;
     }
 
-    bool IStackWalk.AreContextsEqual(byte[] context1, byte[] context2)
-    {
-        IPlatformAgnosticContext ctx1 = IPlatformAgnosticContext.GetContextForPlatform(_target);
-        IPlatformAgnosticContext ctx2 = IPlatformAgnosticContext.GetContextForPlatform(_target);
-
-        ArgumentOutOfRangeException.ThrowIfLessThan((uint)context1.Length, ctx1.Size, nameof(context1));
-        ArgumentOutOfRangeException.ThrowIfLessThan((uint)context2.Length, ctx2.Size, nameof(context2));
-
-        ctx1.FillFromBuffer(context1);
-        ctx2.FillFromBuffer(context2);
-
-        return _target.Architecture switch
-        {
-            RuntimeInfoArchitecture.Arm =>
-                ctx1.StackPointer == ctx2.StackPointer
-                && ctx1.InstructionPointer == ctx2.InstructionPointer,
-            _ =>
-                ctx1.StackPointer == ctx2.StackPointer
-                && ctx1.FramePointer == ctx2.FramePointer
-                && ctx1.InstructionPointer == ctx2.InstructionPointer,
-        };
-    }
-
     string IStackWalk.GetFrameName(TargetPointer frameIdentifier)
         => FrameIterator.GetFrameName(_target, frameIdentifier);
 

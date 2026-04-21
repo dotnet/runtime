@@ -33,7 +33,6 @@ public interface IStackWalk : IContract
     TargetPointer GetMethodDescPtr(TargetPointer framePtr) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
-    bool AreContextsEqual(byte[] context1, byte[] context2) => throw new NotImplementedException();
 }
 
 public struct StackWalk : IStackWalk
