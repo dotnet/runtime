@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using ILLink.Shared.TrimAnalysis;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker;
@@ -20,11 +21,10 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner.ILVerification;
-using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-    public class ResultChecker
+    public partial class ResultChecker
     {
         readonly BaseAssemblyResolver _originalsResolver;
         readonly BaseAssemblyResolver _linkedResolver;
@@ -317,7 +317,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
             bool checkRemainingErrors = !HasAttribute(linkResult.TestCase.FindTypeDefinition(original), nameof(SkipRemainingErrorsValidationAttribute));
             VerifyLoggedMessages(original, linkResult.Logger, checkRemainingErrors);
+#if !ILTRIM
             VerifyRecordedDependencies(original, linkResult.Customizations.DependencyRecorder);
+#endif
         }
 
         protected virtual void InitialChecking(TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
@@ -427,7 +429,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 break;
 
                             case nameof(RemovedAssemblyReferenceAttribute):
-                                Assert.False(linkedAssembly.MainModule.AssemblyReferences.Any(l => l.Name == expectedTypeName),
+                                Assert.IsFalse(linkedAssembly.MainModule.AssemblyReferences.Any(l => l.Name == expectedTypeName),
                                     $"AssemblyRef '{expectedTypeName}' should have been removed from assembly {assemblyName}");
                                 break;
 
@@ -628,7 +630,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (originalType.BaseType.Resolve() != originalBase)
                 Assert.Fail("Invalid assertion.  Original type's base does not match the expected base");
 
-            Assert.That(originalBase.FullName, Is.EqualTo(linkedType.BaseType.FullName),
+            Assert.AreEqual(originalBase.FullName, linkedType.BaseType.FullName,
                 $"Incorrect base on `{linkedType.FullName}`.  Expected `{originalBase.FullName}` but was `{linkedType.BaseType.FullName}`");
         }
 
@@ -828,7 +830,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 if (expectedReferenceNames[i].EndsWith(".dll"))
                     expectedReferenceNames[i] = expectedReferenceNames[i].Substring(0, expectedReferenceNames[i].LastIndexOf("."));
 
-            Assert.That(assembly.MainModule.AssemblyReferences.Select(asm => asm.Name), Is.EquivalentTo(expectedReferenceNames));
+            CollectionAssert.AreEquivalent(
+                assembly.MainModule.AssemblyReferences.Select(asm => asm.Name).ToArray(),
+                expectedReferenceNames);
         }
 
         void VerifyKeptResourceInAssembly(CustomAttribute inAssemblyAttribute)
@@ -836,7 +840,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             var assembly = ResolveLinkedAssembly(inAssemblyAttribute.ConstructorArguments[0].Value.ToString());
             var resourceName = inAssemblyAttribute.ConstructorArguments[1].Value.ToString();
 
-            Assert.That(assembly.MainModule.Resources.Select(r => r.Name), Has.Member(resourceName));
+            Assert.Contains(resourceName, assembly.MainModule.Resources.Select(r => r.Name));
         }
 
         void VerifyRemovedResourceInAssembly(CustomAttribute inAssemblyAttribute)
@@ -844,7 +848,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             var assembly = ResolveLinkedAssembly(inAssemblyAttribute.ConstructorArguments[0].Value.ToString());
             var resourceName = inAssemblyAttribute.ConstructorArguments[1].Value.ToString();
 
-            Assert.That(assembly.MainModule.Resources.Select(r => r.Name), Has.No.Member(resourceName));
+            Assert.DoesNotContain(resourceName, assembly.MainModule.Resources.Select(r => r.Name));
         }
 
         void VerifyKeptAllTypesAndMembersInAssembly(AssemblyDefinition linked)
@@ -859,7 +863,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             var missingInLinked = originalTypes.Keys.Except(linkedTypes.Keys);
 
-            Assert.That(missingInLinked, Is.Empty, $"Expected all types to exist in the linked assembly {linked.Name}, but one or more were missing");
+            Assert.IsEmpty(missingInLinked, $"Expected all types to exist in the linked assembly {linked.Name}, but one or more were missing");
 
             foreach (var originalKvp in originalTypes)
             {
@@ -870,7 +874,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
                 var missingMembersInLinked = originalMembers.Except(linkedMembers);
 
-                Assert.That(missingMembersInLinked, Is.Empty, $"Expected all members of `{originalKvp.Key}`to exist in the linked assembly, but one or more were missing");
+                Assert.IsEmpty(missingMembersInLinked, $"Expected all members of `{originalKvp.Key}`to exist in the linked assembly, but one or more were missing");
             }
         }
 
@@ -900,6 +904,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             yield return assembly;
         }
 
+#if !ILTRIM
         void VerifyLoggedMessages(AssemblyDefinition original, TrimmingTestLogger logger, bool checkRemainingErrors)
         {
             ImmutableArray<MessageContainer> allMessages = logger.GetLoggedMessages();
@@ -1270,6 +1275,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 return $"{dependency.Source} -> {dependency.Target} Marked: {dependency.Marked}";
             }
         }
+#endif
 
         void VerifyExpectedDependencyTrace(TestCaseMetadataProvider testCaseMetadata, NPath outputAssemblyPath)
         {
@@ -1283,8 +1289,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
             var tracePath = outputAssemblyPath.Parent.Combine("linker-dependencies.xml");
             Assert.IsTrue(tracePath.FileExists(), $"Dependency trace file '{tracePath}' does not exist.");
 
-            Assert.That(File.ReadAllLines(tracePath), Is.EquivalentTo(
-                File.ReadAllLines(expectedTracePath)));
+            CollectionAssert.AreEquivalent(
+                File.ReadAllLines(tracePath),
+                File.ReadAllLines(expectedTracePath));
         }
 
         void VerifyExpectedInstructionSequenceOnMemberInAssembly(CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
@@ -1299,9 +1306,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 var srcValues = valueCollector(originalMethod);
 
                 var expected = ((CustomAttributeArgument[])inAssemblyAttribute.ConstructorArguments[3].Value)?.Select(arg => arg.Value.ToString()).ToArray();
-                Assert.That(
+                CollectionAssert.AreEquivalent(
                     linkedValues,
-                    Is.EquivalentTo(expected),
+                    expected,
                     $"Expected method `{originalMethod} to have its {nameof(ExpectedInstructionSequenceOnMemberInAssemblyAttribute)} modified, however, the sequence does not match the expected value\n{FormattingUtils.FormatSequenceCompareFailureMessage2(linkedValues, expected, srcValues)}");
 
                 return;

@@ -13,7 +13,7 @@ internal sealed class Object : IData<Object>
         Target.TypeInfo type = target.GetTypeInfo(DataType.Object);
 
         Address = address;
-        MethodTable = target.ProcessedData.GetOrAdd<Data.MethodTable>(target.ReadPointer(address + (ulong)type.Fields["m_pMethTab"].Offset));
+        MethodTable = target.ProcessedData.GetOrAdd<Data.MethodTable>(target.ReadPointerField(address, type, "m_pMethTab"));
         Data = address + (type.Size ?? throw new InvalidOperationException("Object size must be known"));
     }
 

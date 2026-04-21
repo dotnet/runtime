@@ -122,7 +122,7 @@ static void* volatile s_gssLib = NULL;
 static int32_t ensure_gss_shim_initialized(void)
 {
     void* lib = dlopen(gss_lib_name, RTLD_LAZY);
-    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
+    if (lib == NULL) { return -1; }
 
     // check is someone else has opened and published s_gssLib already
     if (!pal_atomic_cas_ptr(&s_gssLib, lib, NULL))
@@ -130,12 +130,10 @@ static int32_t ensure_gss_shim_initialized(void)
         dlclose(lib);
     }
 
-    // initialize indirection pointers for all functions, like:
-    //   gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(s_gssLib, "gss_accept_sec_context");
-    //   if (gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gss_lib_name, dlerror()); return -1; }
+    // initialize indirection pointers for all functions
 #define PER_FUNCTION_BLOCK(fn) \
     fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); abort(); }
 
     FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK

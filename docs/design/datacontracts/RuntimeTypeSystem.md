@@ -54,6 +54,8 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool IsString(TypeHandle typeHandle);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
+    // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
+    public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
     public virtual bool IsContinuation(TypeHandle typeHandle);
     public virtual bool IsDynamicStatics(TypeHandle typeHandle);
@@ -80,6 +82,7 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
     public virtual bool IsCollectible(TypeHandle typeHandle);
+    public virtual bool ContainsGenericVariables(TypeHandle typeHandle);
     public virtual bool HasTypeParam(TypeHandle typeHandle);
 
     // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class.
@@ -87,6 +90,7 @@ partial interface IRuntimeTypeSystem : IContract
     // HasTypeParam will return true for cases where this is the interop view, and false for normal valuetypes.
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
 
+    bool IsValueType(TypeHandle typeHandle);
     // return true if the TypeHandle represents an enum type.
     bool IsEnum(TypeHandle typeHandle);
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
@@ -123,6 +127,19 @@ public enum ArrayFunctionType
     Set = 1,
     Address = 2,
     Constructor = 3
+}
+```
+
+```csharp
+public enum OptimizationTier
+{
+    OptimizationTierUnknown,
+    OptimizationTier0,
+    OptimizationTier1,
+    OptimizationTier1OSR,
+    OptimizationTierOptimized,
+    OptimizationTier0Instrumented,
+    OptimizationTier1Instrumented,
 }
 ```
 
@@ -196,6 +213,12 @@ partial interface IRuntimeTypeSystem : IContract
     // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
     public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
 
+    // Gets the optimization tier stored on the MethodDesc's code data
+    public virtual OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDesc);
+
+    // Returns true if the method is eligible for tiered compilation
+    public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
+
 }
 ```
 
@@ -207,6 +230,8 @@ bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
+TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer);
+TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread);
 ```
 
 ### Other APIs
@@ -242,6 +267,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_Mask = 0x000F0000,
         Category_ElementType_Mask = 0x000E0000,
         Category_Array_Mask = 0x000C0000,
+        Category_ValueType_Mask = 0x000C0000,
 
         Category_IfArrayThenSzArray = 0x00020000,
         Category_Array = 0x00080000,
@@ -251,7 +277,9 @@ internal partial struct RuntimeTypeSystem_1
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000,
+        RequiresAlign8 = 0x00800000,
         ContainsGCPointers = 0x01000000,
+        ContainsGenericVariables = 0x20000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                        // otherwise the lower bits are used for WFLAGS_LOW
     }
@@ -296,6 +324,7 @@ internal partial struct RuntimeTypeSystem_1
         public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
+        public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
         public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
@@ -424,6 +453,20 @@ The contract additionally depends on these data descriptors
 | `GenericsDictInfo` | `NumDicts` | Number of instantiation dictionaries, including inherited ones, in this `GenericsDictInfo` |
 | `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
 
+The value of the `NativeCodeVersionNode::OptimizationTier` field is one of:
+```csharp
+private enum OptimizationTier_1 : uint
+{
+    OptimizationTier0 = 0,
+    OptimizationTier1 = 1,
+    OptimizationTier1OSR = 2,
+    OptimizationTierOptimized = 3,
+    OptimizationTier0Instrumented = 4,
+    OptimizationTier1Instrumented = 5,
+    OptimizationTierUnknown = 0xFFFFFFFF
+}
+```
+
 Contracts used:
 | Contract Name |
 | --- |
@@ -502,6 +545,8 @@ Contracts used:
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
 
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
+
+    public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
 
     public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
 
@@ -644,6 +689,14 @@ Contracts used:
         return typeHandle.Flags.IsCollectible;
     }
 
+    public bool ContainsGenericVariables(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable())
+            return _methodTables[typeHandle.Address].Flags.ContainsGenericVariables;
+        // For TypeDescs: Var/MVar are generic variables; for parameterized types (Ptr, ByRef),
+        // recurse through GetTypeParam; for FnPtr, check each signature type argument.
+    }
+
     public bool HasTypeParam(TypeHandle typeHandle)
     {
         if (typeHandle.IsMethodTable())
@@ -694,6 +747,12 @@ Contracts used:
             return (CorElementType)(TypeAndFlags & 0xFF);
         }
         return default(CorElementType);
+    }
+
+    public bool IsValueType(TypeHandle typeHandle)
+    {
+        // if methodtable: check WFLAGS_HIGH for Category_ValueType
+        // if typedesc: check for CorElementType.ValueType
     }
 
     // Enums have Category_PrimitiveValueType in their MethodTable flags and their
@@ -1779,6 +1838,19 @@ uint GetFieldDescOffset(TargetPointer fieldDescPointer)
         return (uint)fieldDef.GetRelativeVirtualAddress();
     }
     return DWord2 & (uint)FieldDescFlags2.OffsetMask;
+}
+
+TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer)
+{
+    // Resolves the base pointer (GC or non-GC statics) for the enclosing type,
+    // then applies the field's metadata-based offset within that region.
+    // Uses GetGCStaticsBasePointer / GetNonGCStaticsBasePointer depending on the field's CorElementType.
+}
+
+TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread)
+{
+    // Like GetFieldDescStaticAddress, but resolves thread-local base pointers instead.
+    // Uses GetGCThreadStaticsBasePointer / GetNonGCThreadStaticsBasePointer.
 }
 ```
 

@@ -11,9 +11,9 @@ internal sealed class CardTableInfo : IData<CardTableInfo>
     public CardTableInfo(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.CardTableInfo);
-        Recount = target.Read<uint>(address + (ulong)type.Fields[nameof(Recount)].Offset);
-        Size = target.ReadNUInt(address + (ulong)type.Fields[nameof(Size)].Offset);
-        NextCardTable = target.ReadPointer(address + (ulong)type.Fields[nameof(NextCardTable)].Offset);
+        Recount = target.ReadField<uint>(address, type, nameof(Recount));
+        Size = target.ReadNUIntField(address, type, nameof(Size));
+        NextCardTable = target.ReadPointerField(address, type, nameof(NextCardTable));
     }
 
     public uint Recount { get; init; }

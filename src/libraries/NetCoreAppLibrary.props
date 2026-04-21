@@ -177,6 +177,15 @@
       System.Xml.XmlSerializer;
       System.Xml.XPath;
       System.Xml.XPath.XDocument;
+      Microsoft.Extensions.Caching.Abstractions;
+      Microsoft.Extensions.Configuration.Abstractions;
+      Microsoft.Extensions.DependencyInjection.Abstractions;
+      Microsoft.Extensions.Diagnostics.Abstractions;
+      Microsoft.Extensions.FileProviders.Abstractions;
+      Microsoft.Extensions.Hosting.Abstractions;
+      Microsoft.Extensions.Logging.Abstractions;
+      Microsoft.Extensions.Options;
+      Microsoft.Extensions.Primitives;
     </NetCoreAppLibrary>
     <!-- List .NETCoreApp shared framework generator project names below. -->
     <NetCoreAppLibraryGenerator>
@@ -184,14 +193,14 @@
       LibraryImportGenerator;
       JSImportGenerator;
       Microsoft.Interop.SourceGeneration;
+      Microsoft.Extensions.Logging.Generators.Roslyn4.4;
+      Microsoft.Extensions.Options.SourceGeneration;
       System.Text.Json.SourceGeneration.Roslyn4.4;
       System.Text.RegularExpressions.Generator;
     </NetCoreAppLibraryGenerator>
     <AspNetCoreAppLibrary>
-      Microsoft.Extensions.Caching.Abstractions;
       Microsoft.Extensions.Caching.Memory;
       Microsoft.Extensions.Configuration;
-      Microsoft.Extensions.Configuration.Abstractions;
       Microsoft.Extensions.Configuration.Binder;
       Microsoft.Extensions.Configuration.CommandLine;
       Microsoft.Extensions.Configuration.EnvironmentVariables;
@@ -201,28 +210,21 @@
       Microsoft.Extensions.Configuration.UserSecrets;
       Microsoft.Extensions.Configuration.Xml;
       Microsoft.Extensions.DependencyInjection;
-      Microsoft.Extensions.DependencyInjection.Abstractions;
       Microsoft.Extensions.Diagnostics;
-      Microsoft.Extensions.Diagnostics.Abstractions;
-      Microsoft.Extensions.FileProviders.Abstractions;
       Microsoft.Extensions.FileProviders.Composite;
       Microsoft.Extensions.FileProviders.Physical;
       Microsoft.Extensions.FileSystemGlobbing;
       Microsoft.Extensions.Hosting;
-      Microsoft.Extensions.Hosting.Abstractions;
       Microsoft.Extensions.Http;
       Microsoft.Extensions.Logging;
-      Microsoft.Extensions.Logging.Abstractions;
       Microsoft.Extensions.Logging.Configuration;
       Microsoft.Extensions.Logging.Console;
       Microsoft.Extensions.Logging.Debug;
       Microsoft.Extensions.Logging.EventLog;
       Microsoft.Extensions.Logging.EventSource;
       Microsoft.Extensions.Logging.TraceSource;
-      Microsoft.Extensions.Options;
       Microsoft.Extensions.Options.ConfigurationExtensions;
       Microsoft.Extensions.Options.DataAnnotations;
-      Microsoft.Extensions.Primitives;
       System.Diagnostics.EventLog;
       System.Formats.Cbor;
       System.Security.Cryptography.Pkcs;

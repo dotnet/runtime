@@ -134,6 +134,8 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
+        protected virtual bool CanFold(MethodDesc method) => false;
+
         public TypeMapManager TypeMapManager
         {
             get;
@@ -1138,7 +1140,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode FatAddressTakenFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
         {
-            if (!ObjectInterner.CanFold(method))
+            if (!CanFold(method))
                 return FatFunctionPointer(method, isUnboxingStub);
 
             return _fatAddressTakenFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
@@ -1204,7 +1206,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, AddressTakenMethodNode> _addressTakenMethods;
         public IMethodNode AddressTakenMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
-            if (unboxingStub || !ObjectInterner.CanFold(method))
+            if (unboxingStub || !CanFold(method))
                 return MethodEntrypoint(method, unboxingStub);
 
             return _addressTakenMethods.GetOrAdd(method);

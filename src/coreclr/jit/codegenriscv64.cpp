@@ -245,7 +245,9 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 //
 // Arguments:
 //    regsToRestoreMask       - The mask of callee-saved registers to restore. If empty, this function does nothing.
+//    baseReg                 - Base register to use when loading values
 //    lowestCalleeSavedOffset - The offset from SP that is the beginning of the callee-saved register area.
+//    reportUnwindData        - If true, report the change in unwind data. Otherwise, do not report it.
 //
 // Here's an example restore sequence:
 //      ld    s11, #xxx(sp)
@@ -263,7 +265,10 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
+                                                 regNumber baseReg,
+                                                 int       lowestCalleeSavedOffset,
+                                                 bool      reportUnwindData)
 {
     // The FP and RA are not in RBM_CALLEE_SAVED.
     assert(!(regsToRestoreMask & (~RBM_CALLEE_SAVED)));
@@ -284,8 +289,12 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
         if (maskSaveRegs < 0)
         {
             highestCalleeSavedOffset -= REGSIZE_BYTES;
-            emit->emitIns_R_R_I(INS_fld, EA_8BYTE, (regNumber)regNum, REG_SP, highestCalleeSavedOffset);
-            m_compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
+            emit->emitIns_R_R_I(INS_fld, EA_8BYTE, (regNumber)regNum, baseReg, highestCalleeSavedOffset);
+
+            if (reportUnwindData)
+            {
+                m_compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
+            }
         }
         maskSaveRegs <<= 1;
         regNum -= 1;
@@ -299,14 +308,43 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
         if (maskSaveRegs < 0)
         {
             highestCalleeSavedOffset -= REGSIZE_BYTES;
-            emit->emitIns_R_R_I(INS_ld, EA_8BYTE, (regNumber)regNum, REG_SP, highestCalleeSavedOffset);
-            m_compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
+            emit->emitIns_R_R_I(INS_ld, EA_8BYTE, (regNumber)regNum, baseReg, highestCalleeSavedOffset);
+
+            if (reportUnwindData)
+            {
+                m_compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
+            }
         }
         maskSaveRegs <<= 1;
         regNum -= 1;
     } while (maskSaveRegs != 0);
 
     assert(highestCalleeSavedOffset >= 16); // the callee-saved regs always above ra/fp.
+}
+
+//-----------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Handle the tier0 callee saves by restoring them from the original tier0 frame.
+//   Also report phantom unwind data for the allocated stack by the tier0 frame.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    assert(m_compiler->compGeneratingProlog);
+    assert(m_compiler->opts.IsOSR());
+    assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
+
+    PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
+    regMaskTP const       tier0CalleeSaves(patchpointInfo->CalleeSaveRegisters());
+
+    JITDUMP("--OSR--- tier0 has already saved ");
+    JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
+    JITDUMP("\nEmitting restores\n");
+
+    genRestoreCalleeSavedRegistersHelp(tier0CalleeSaves & ~(RBM_FP | RBM_RA), REG_FP, 16, /* reportUnwindData */ false);
+    GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_FP, 8);
+    GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_FP, 0);
+
+    m_compiler->unwindAllocStack(patchpointInfo->TotalFrameSize());
 }
 
 // clang-format off
@@ -463,7 +501,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *
  *  See the description of frame shapes at genFuncletProlog().
  */
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
@@ -492,7 +530,7 @@ void CodeGen::genFuncletEpilog()
         FP_offset = FP_offset & 0xf;
     }
 
-    genRestoreCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16);
+    genRestoreCalleeSavedRegistersHelp(maskSaveRegs, REG_SPBASE, FP_offset + 16, /* reportUnwindData */ true);
 
     GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
     m_compiler->unwindSaveReg(REG_RA, FP_offset + 8);
@@ -828,7 +866,13 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
     GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+//------------------------------------------------------------------------
+// genCallFinally: Generate a call to a finally.
+//
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
@@ -853,7 +897,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
             instGen(INS_ebreak); // This should never get executed
         }
 
-        return block;
+        return;
     }
     else
     {
@@ -879,8 +923,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
 
         GetEmitter()->emitEnableGC();
-
-        return nextBlock;
     }
 }
 
@@ -2200,7 +2242,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     if (cpObjNode->IsVolatile())
     {
         // issue a INS_BARRIER_RMB after a volatile CpObj operation
-        // TODO-RISCV64: there is only BARRIER_FULL for RISCV64.
         instGen_MemoryBarrier(BARRIER_FULL);
     }
 
@@ -4158,14 +4199,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CATCH_ARG:
-
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
-
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
-
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
+            genCodeForCatchArg(treeNode);
             break;
 
         case GT_LABEL:
@@ -5363,7 +5397,6 @@ void CodeGen::genCall(GenTreeCall* call)
 
         if (target != nullptr)
         {
-            // Indirect fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
             genConsumeReg(target);
         }
 #ifdef FEATURE_READYTORUN
@@ -5408,7 +5441,7 @@ void CodeGen::genCall(GenTreeCall* call)
     regMaskTP killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
-        CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+        CorInfoHelpFunc helpFunc = call->GetHelperNum();
         killMask                 = m_compiler->compHelperCallKillSet(helpFunc);
     }
 
@@ -5608,7 +5641,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
         // indirection cell but we should not try to optimize.
         regNumber callThroughIndirReg = REG_NA;
-        if (!call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
         {
             callThroughIndirReg = getCallIndirectionCellReg(call);
         }
@@ -6254,7 +6287,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
 // instGen_MemoryBarrier: Emit a MemoryBarrier instruction
 //
 // Arguments:
-//     barrierKind - kind of barrier to emit (Only supports the Full now!! This depends on the CPU).
+//     barrierKind - kind of barrier to emit
 //
 // Notes:
 //     All MemoryBarriers instructions can be removed by DOTNET_JitNoMemoryBarriers=1
@@ -6268,8 +6301,21 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 #endif // DEBUG
 
-    // TODO-RISCV64: Use the exact barrier type depending on the CPU.
-    GetEmitter()->emitIns_I(INS_fence, EA_4BYTE, INS_BARRIER_FULL);
+    insBarrier barrier;
+    switch (barrierKind)
+    {
+        case BARRIER_LOAD_ONLY:
+            barrier = INS_BARRIER_LOAD_ONLY;
+            break;
+        case BARRIER_STORE_ONLY:
+            barrier = INS_BARRIER_STORE_ONLY;
+            break;
+        default:
+            barrier = INS_BARRIER_FULL;
+            break;
+    }
+
+    GetEmitter()->emitIns_I(INS_fence, EA_4BYTE, barrier);
 }
 
 /*-----------------------------------------------------------------------------
@@ -6531,7 +6577,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     }
 
     JITDUMP("    calleeSaveSPOffset=%d\n", FP_offset + 16);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, FP_offset + 16);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, REG_SPBASE, FP_offset + 16, /* reportUnwindData */ true);
 
     emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
     m_compiler->unwindSaveReg(REG_RA, FP_offset + 8);

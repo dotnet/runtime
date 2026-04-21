@@ -13,7 +13,7 @@ internal class SoftwareExceptionFrame : IData<SoftwareExceptionFrame>
         Target.TypeInfo type = target.GetTypeInfo(DataType.SoftwareExceptionFrame);
         Address = address;
         TargetContext = address + (ulong)type.Fields[nameof(TargetContext)].Offset;
-        ReturnAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(ReturnAddress)].Offset);
+        ReturnAddress = target.ReadPointerField(address, type, nameof(ReturnAddress));
     }
 
     public TargetPointer Address { get; }

@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0004
+#define READYTORUN_MINOR_VERSION 0x0005
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
@@ -55,6 +55,7 @@
 // R2R Version 18.2 adds InitClass and InitInstClass helpers
 // R2R Version 18.3 adds the ExternalTypeMaps, ProxyTypeMaps, TypeMapAssemblyTargets sections
 // R2R Version 18.4 adds ThrowArgument, ThrowArgumentOutOfRange, ThrowPlatformNotSupported, and ThrowNotImplemented helpers
+// R2R Version 18.5 adds READYTORUN_FLAG_STRIPPED_IL_BODIES, READYTORUN_FLAG_STRIPPED_INLINING_INFO, and READYTORUN_FLAG_STRIPPED_DEBUG_INFO flags
 
 struct READYTORUN_CORE_HEADER
 {
@@ -92,6 +93,9 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE  = 0x00000040,   // This R2R module has multiple modules within its version bubble (For versions before version 6.2, all modules are assumed to possibly have this characteristic)
     READYTORUN_FLAG_UNRELATED_R2R_CODE          = 0x00000080,   // This R2R module has code in it that would not be naturally encoded into this module
     READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE       = 0x00000100,   // The owning composite executable is in the platform native format
+    READYTORUN_FLAG_STRIPPED_IL_BODIES          = 0x00000200,   // IL method bodies have been stripped from the image
+    READYTORUN_FLAG_STRIPPED_INLINING_INFO      = 0x00000400,   // Inlining info has been stripped from the image
+    READYTORUN_FLAG_STRIPPED_DEBUG_INFO         = 0x00000800,   // Debug info has been stripped from the image
 };
 
 enum class ReadyToRunSectionType : uint32_t
