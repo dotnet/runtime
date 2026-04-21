@@ -333,7 +333,7 @@ private:
         {
             doesReturnValue = stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR);
             origCall        = GetCall(stmt);
-            fptrAddress     = origCall->gtCallAddr;
+            fptrAddress     = origCall->gtControlExpr;
             pointerType     = fptrAddress->TypeGet();
         }
 
@@ -466,9 +466,9 @@ private:
         //    created call node.
         Statement* CreateFatCallStmt(GenTree* actualCallAddress, GenTree* hiddenArgument)
         {
-            Statement*   fatStmt = compiler->gtCloneStmt(stmt);
-            GenTreeCall* fatCall = GetCall(fatStmt);
-            fatCall->gtCallAddr  = actualCallAddress;
+            Statement*   fatStmt   = compiler->gtCloneStmt(stmt);
+            GenTreeCall* fatCall   = GetCall(fatStmt);
+            fatCall->gtControlExpr = actualCallAddress;
             fatCall->gtArgs.InsertInstParam(compiler, hiddenArgument);
             return fatStmt;
         }

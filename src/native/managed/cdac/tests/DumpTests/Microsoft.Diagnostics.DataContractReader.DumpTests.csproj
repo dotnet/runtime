@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <NoWarn>$(NoWarn);xUnit1004</NoWarn>
   </PropertyGroup>
 
   <Import Project="..\..\..\subproject.props" />

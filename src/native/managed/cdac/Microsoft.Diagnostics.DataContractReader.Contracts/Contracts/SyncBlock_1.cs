@@ -15,13 +15,11 @@ internal readonly struct SyncBlock_1 : ISyncBlock
     private const string LockNamespace = "System.Threading";
     private readonly Target _target;
     private readonly TargetPointer _syncTableEntries;
-    private readonly ulong _syncBlockLinkOffset;
 
-    internal SyncBlock_1(Target target, TargetPointer syncTableEntries, ulong syncBlockLinkOffset)
+    internal SyncBlock_1(Target target)
     {
         _target = target;
-        _syncTableEntries = syncTableEntries;
-        _syncBlockLinkOffset = syncBlockLinkOffset;
+        _syncTableEntries = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
     }
 
     public TargetPointer GetSyncBlock(uint index)
@@ -108,7 +106,7 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         TargetPointer cleanupBlockList = cache.CleanupBlockList;
         if (cleanupBlockList == TargetPointer.Null)
             return TargetPointer.Null;
-        return new TargetPointer(cleanupBlockList.Value - _syncBlockLinkOffset);
+        return cleanupBlockList;
     }
 
     public TargetPointer GetNextSyncBlock(TargetPointer syncBlock)
@@ -116,7 +114,7 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         Data.SyncBlock sb = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlock);
         if (sb.LinkNext == TargetPointer.Null)
             return TargetPointer.Null;
-        return new TargetPointer(sb.LinkNext.Value - _syncBlockLinkOffset);
+        return sb.LinkNext;
     }
 
     public bool GetBuiltInComData(TargetPointer syncBlock, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf)

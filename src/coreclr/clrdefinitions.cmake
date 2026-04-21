@@ -32,8 +32,12 @@ if(CLR_CMAKE_TARGET_LINUX_MUSL)
 endif(CLR_CMAKE_TARGET_LINUX_MUSL)
 
 add_definitions(-DDEBUGGING_SUPPORTED)
-add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>:PROFILING_SUPPORTED>)
-add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>:PROFILING_SUPPORTED_DATA>)
+
+if (FEATURE_CORPROFILER)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>:PROFILING_SUPPORTED>)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>:FEATURE_PROFAPI_ATTACH_DETACH>)
+  add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>:PROFILING_SUPPORTED_DATA>)
+endif()
 
 if(CLR_CMAKE_HOST_WIN32)
   add_definitions(-DWIN32)
@@ -154,8 +158,6 @@ endif()
 
 add_compile_definitions($<${FEATURE_JAVAMARSHAL}:FEATURE_JAVAMARSHAL>)
 
-add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>:FEATURE_PROFAPI_ATTACH_DETACH>)
-
 add_definitions(-DFEATURE_READYTORUN)
 
 set(FEATURE_READYTORUN 1)
@@ -182,7 +184,10 @@ if (FEATURE_TIERED_COMPILATION)
   add_compile_definitions(FEATURE_TIERED_COMPILATION)
 endif(FEATURE_TIERED_COMPILATION)
 
-add_compile_definitions(FEATURE_PGO)
+if (FEATURE_PGO)
+  add_compile_definitions(FEATURE_PGO)
+endif(FEATURE_PGO)
+
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
   # Enable the AMD64 Unix struct passing JIT-EE interface for all AMD64 platforms, to enable altjit.
   add_definitions(-DUNIX_AMD64_ABI_ITF)

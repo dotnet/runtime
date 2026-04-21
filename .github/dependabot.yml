@@ -7,6 +7,8 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - area-codeflow
+    exclude-paths:
+      - ".github/workflows/*.lock.yml"
     ignore:
       - dependency-name: "actions/checkout"
         update-types: ["version-update:semver-patch","version-update:semver-minor"]

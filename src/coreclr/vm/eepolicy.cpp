@@ -176,6 +176,15 @@ class CallStackLogger
             }
         }
 
+        MethodDesc* pMD = pCF->GetFunction();
+
+        // Skip Environment.CallEntryPoint so it doesn't appear in
+        // unhandled exception experiences.
+        if (pMD != nullptr && pMD == g_pEnvironmentCallEntryPointMethodDesc)
+        {
+            return SWA_CONTINUE;
+        }
+
         MethodDesc** itemPtr = m_frames.Append();
         if (itemPtr == nullptr)
         {
@@ -183,7 +192,7 @@ class CallStackLogger
             return SWA_ABORT;
         }
 
-        *itemPtr = pCF->GetFunction();
+        *itemPtr = pMD;
 
         return SWA_CONTINUE;
     }

@@ -46,8 +46,12 @@
     <!-- Nullability is enabled by default except for test projects, which instead default to annotations. -->
     <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' != 'true'">enable</Nullable>
     <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' == 'true'">annotations</Nullable>
+
     <!-- AOT compatibility is enabled by default for src/ref projects. -->
     <IsAotCompatible Condition="'$(IsAotCompatible)' == '' and ('$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true')">true</IsAotCompatible>
+    <!-- AOT/trim compatibility is enabled by default for test projects, but we don't mark the tests as trimmable -->
+    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' and '$(IsTestProject)' == 'true'">true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer Condition="'$(EnableAotAnalyzer)' == '' and '$(IsTestProject)' == 'true'">true</EnableAotAnalyzer>
   </PropertyGroup>
 
   <!-- Set up common paths -->
