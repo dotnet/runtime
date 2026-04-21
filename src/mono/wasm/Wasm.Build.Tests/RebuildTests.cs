@@ -101,7 +101,8 @@ namespace Wasm.Build.Tests
             (_, string secondBinlog) = BuildProjectWithoutAssert(config, info.ProjectName, new BuildOptions(UseCache: false, Label: "second"));
             _testOutput.WriteLine($"Second build binlog: {secondBinlog}");
 
-            AssertTargetSkipped(secondBinlog, "_ConvertBuildDllsToWebcil");
+            if (UseWebcil)
+                AssertTargetSkipped(secondBinlog, "_ConvertBuildDllsToWebcil");
             AssertTargetSkipped(secondBinlog, "_WriteBuildWasmBootJsonFile");
         }
 
@@ -122,15 +123,20 @@ namespace Wasm.Build.Tests
             (_, string secondBinlog) = BuildProjectWithoutAssert(config, info.ProjectName, new BuildOptions(UseCache: false, Label: "second"));
             _testOutput.WriteLine($"Second build binlog: {secondBinlog}");
 
-            // Webcil and boot JSON targets must run because the app assembly changed
-            AssertTargetRan(secondBinlog, "_ConvertBuildDllsToWebcil");
+            // Boot JSON target must run because the app assembly changed
             AssertTargetRan(secondBinlog, "_WriteBuildWasmBootJsonFile");
 
-            // Only the app assembly should have been re-converted (not framework DLLs)
-            var convertedFiles = GetConvertedWebcilFiles(secondBinlog);
-            _testOutput.WriteLine($"Webcil-converted files: {string.Join(", ", convertedFiles)}");
-            Assert.Single(convertedFiles);
-            Assert.Contains(convertedFiles, f => f.Contains(info.ProjectName, StringComparison.OrdinalIgnoreCase));
+            if (UseWebcil)
+            {
+                // Webcil conversion target must run because the app assembly changed
+                AssertTargetRan(secondBinlog, "_ConvertBuildDllsToWebcil");
+
+                // Only the app assembly should have been re-converted (not framework DLLs)
+                var convertedFiles = GetConvertedWebcilFiles(secondBinlog);
+                _testOutput.WriteLine($"Webcil-converted files: {string.Join(", ", convertedFiles)}");
+                Assert.Single(convertedFiles);
+                Assert.Contains(convertedFiles, f => f.Contains(info.ProjectName, StringComparison.OrdinalIgnoreCase));
+            }
         }
 
         private static void AssertTargetSkipped(string binlogPath, string targetName)
