@@ -55,7 +55,7 @@ namespace Microsoft.Win32.SafeHandles
                     throw new PlatformNotSupportedException();
                 }
 
-                return _waitStateHolder._state.ProcessId;
+                return _waitStateHolder._state._processId;
             }
         }
 
@@ -146,7 +146,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new InvalidOperationException(SR.InvalidProcessHandle);
             }
 
-            if (!_waitStateHolder._state.IsChild)
+            if (!_waitStateHolder._state._isChild)
             {
                 throw new PlatformNotSupportedException(SR.NotSupportedForNonChildProcess);
             }
