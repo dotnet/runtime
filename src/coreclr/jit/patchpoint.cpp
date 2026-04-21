@@ -119,12 +119,12 @@ private:
     //  if (--ppCounter <= 0)
     //  {
     //     PCODE target = ppHelper(&ppCounter, ilOffset);
-    //     if (target != 0)
-    //     {
-    //         GT_PATCHPOINT(target);  // non-local jump to OSR method
-    //     }
+    //     GT_PATCHPOINT(target);  // unconditional jump
     //  }
     //  S;
+    //
+    // The helper returns the OSR method address when a transition should occur,
+    // or return_address + jump_size to skip the jump and continue in Tier0.
     //
     void TransformBlock(BasicBlock* block)
     {
@@ -149,9 +149,8 @@ private:
         assert(ilOffset != BAD_IL_OFFSET);
 
         // Current block now becomes the test block
-        BasicBlock* remainderBlock  = compiler->fgSplitBlockAtBeginning(block);
-        BasicBlock* helperBlock     = CreateAndInsertBasicBlock(BBJ_COND, block);
-        BasicBlock* transitionBlock = CreateAndInsertBasicBlock(BBJ_THROW, helperBlock);
+        BasicBlock* remainderBlock = compiler->fgSplitBlockAtBeginning(block);
+        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_THROW, block);
 
         // Update flow and flags
         block->SetFlags(BBF_INTERNAL);
@@ -164,17 +163,9 @@ private:
         falseEdge->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
         block->SetCond(trueEdge, falseEdge);
 
-        // helperBlock: if OSR code is NULL, goto remainder; else fall to transitionBlock
-        FlowEdge* const helperToRemainder  = compiler->fgAddRefPred(remainderBlock, helperBlock);
-        FlowEdge* const helperToTransition = compiler->fgAddRefPred(transitionBlock, helperBlock);
-        helperToRemainder->setLikelihood(HIGH_PROBABILITY / 100.0);
-        helperToTransition->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
-        helperBlock->SetCond(helperToRemainder, helperToTransition);
-
         // Update weights
         remainderBlock->inheritWeight(block);
         helperBlock->inheritWeightPercentage(block, 100 - HIGH_PROBABILITY);
-        transitionBlock->inheritWeightPercentage(helperBlock, 100 - HIGH_PROBABILITY);
 
         // Fill in test block
         //
@@ -196,7 +187,8 @@ private:
 
         // Fill in helper block
         //
-        // PCODE osrMethod = PPHelper(&ppCounter, ilOffset);
+        // PCODE target = PPHelper(&ppCounter, ilOffset);
+        // GT_PATCHPOINT(target);  // unconditional jump to returned address
         GenTree*     ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
         GenTree*     ppCounterAddr = compiler->gtNewLclVarAddrNode(ppCounterLclNum);
         GenTreeCall* helperCall =
@@ -205,20 +197,12 @@ private:
         GenTree* osrMethodStore = compiler->gtNewStoreLclVarNode(ppOsrMethodLclNum, helperCall);
         compiler->fgNewStmtAtEnd(helperBlock, osrMethodStore);
 
-        // if (osrMethod == 0), goto remainder
-        GenTree* osrMethodValue = compiler->gtNewLclvNode(ppOsrMethodLclNum, TYP_I_IMPL);
-        GenTree* nullValue      = compiler->gtNewIconNode(0, TYP_I_IMPL);
-        GenTree* osrCompare     = compiler->gtNewOperNode(GT_EQ, TYP_INT, osrMethodValue, nullValue);
-        GenTree* osrJtrue       = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, osrCompare);
-
-        compiler->fgNewStmtAtEnd(helperBlock, osrJtrue);
-
-        // Fill in transition block - non-local jump to OSR method
+        // Unconditional jump to the address returned by the helper
         GenTree* osrTarget     = compiler->gtNewLclvNode(ppOsrMethodLclNum, TYP_I_IMPL);
         GenTree* patchpointJmp = compiler->gtNewOperNode(GT_PATCHPOINT, TYP_VOID, osrTarget);
         patchpointJmp->gtFlags |= GTF_CALL;
 
-        compiler->fgNewStmtAtEnd(transitionBlock, patchpointJmp);
+        compiler->fgNewStmtAtEnd(helperBlock, patchpointJmp);
     }
 
     //  ppCounter = <initial value>

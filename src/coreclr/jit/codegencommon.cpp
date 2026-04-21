@@ -7308,11 +7308,12 @@ void CodeGen::genPatchpoint(GenTreeUnOp* treeNode)
 
     regNumber addrReg = genConsumeReg(op);
 
-    // Jump to the OSR method. This is a non-returning jump.
-    // The OSR method inherits the current frame (SP/FP) and will set up
-    // its own frame from there.
+    // Jump to the address returned by the patchpoint helper.
+    // Must not use INS_tail_i_jmp: it is a REX-prefixed jump that the
+    // win-x64 unwinder detects as an epilog instruction, which would
+    // incorrectly signal that callee saves / RSP have been restored.
 #ifdef TARGET_XARCH
-    GetEmitter()->emitIns_R(INS_tail_i_jmp, EA_PTRSIZE, addrReg);
+    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, addrReg);
 #elif defined(TARGET_ARM64)
     GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, addrReg);
 #elif defined(TARGET_ARM)
