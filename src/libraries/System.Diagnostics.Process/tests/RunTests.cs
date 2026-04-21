@@ -32,7 +32,7 @@ namespace System.Diagnostics.Tests
         public async Task Run_WithFileName_ExitCodeIsReturned(bool useAsync)
         {
             using Process template = CreateProcess(RemotelyInvokable.Dummy);
-            List<string>? arguments = MapToArgumentList(template.StartInfo);
+            List<string>? arguments = StartAndForgetTests.MapToArgumentList(template.StartInfo);
 
             ProcessExitStatus exitStatus = useAsync
                 ? await Process.RunAsync(template.StartInfo.FileName, arguments)
@@ -106,7 +106,7 @@ namespace System.Diagnostics.Tests
                 return RemoteExecutor.SuccessExitCode;
             });
 
-            List<string>? arguments = MapToArgumentList(template.StartInfo);
+            List<string>? arguments = StartAndForgetTests.MapToArgumentList(template.StartInfo);
 
             ProcessTextOutput result = useAsync
                 ? await Process.RunAndCaptureTextAsync(template.StartInfo.FileName, arguments)
@@ -226,85 +226,35 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void Run_UseShellExecute_ThrowsInvalidOperationException(bool useAsync)
+        public async Task Run_UseShellExecute_ThrowsInvalidOperationException(bool useAsync)
         {
             ProcessStartInfo startInfo = new("someprocess") { UseShellExecute = true };
 
-            Assert.Throws<InvalidOperationException>(() =>
+            if (useAsync)
             {
-                if (useAsync)
-                {
-                    Process.RunAsync(startInfo);
-                }
-                else
-                {
-                    Process.Run(startInfo);
-                }
-            });
+                await Assert.ThrowsAsync<InvalidOperationException>(() => Process.RunAsync(startInfo));
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => Process.Run(startInfo));
+            }
         }
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void RunAndCaptureText_UseShellExecute_ThrowsInvalidOperationException(bool useAsync)
+        public async Task RunAndCaptureText_UseShellExecute_ThrowsInvalidOperationException(bool useAsync)
         {
             ProcessStartInfo startInfo = new("someprocess") { UseShellExecute = true };
 
-            Assert.Throws<InvalidOperationException>(() =>
+            if (useAsync)
             {
-                if (useAsync)
-                {
-                    Process.RunAndCaptureTextAsync(startInfo);
-                }
-                else
-                {
-                    Process.RunAndCaptureText(startInfo);
-                }
-            });
-        }
-
-        // RemoteExecutor populates ProcessStartInfo.Arguments, but the filename overloads
-        // take an argument list, so this helper maps the serialized argument string.
-        private static List<string>? MapToArgumentList(ProcessStartInfo startInfo)
-        {
-            string arguments = startInfo.Arguments;
-            if (string.IsNullOrEmpty(arguments))
-            {
-                return null;
+                await Assert.ThrowsAsync<InvalidOperationException>(() => Process.RunAndCaptureTextAsync(startInfo));
             }
-
-            List<string> list = new();
-            System.Text.StringBuilder builder = new();
-            bool isQuoted = false;
-
-            foreach (char c in arguments)
+            else
             {
-                switch (c)
-                {
-                    case '"' when !isQuoted:
-                        isQuoted = true;
-                        break;
-                    case ' ' when !isQuoted:
-                    case '"' when isQuoted:
-                        if (builder.Length > 0)
-                        {
-                            list.Add(builder.ToString());
-                            builder.Clear();
-                        }
-                        isQuoted = false;
-                        break;
-                    default:
-                        builder.Append(c);
-                        break;
-                }
+                Assert.Throws<InvalidOperationException>(() => Process.RunAndCaptureText(startInfo));
             }
-
-            if (builder.Length > 0)
-            {
-                list.Add(builder.ToString());
-            }
-
-            return list;
         }
     }
 }

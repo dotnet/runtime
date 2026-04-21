@@ -80,20 +80,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public static int StartAndForget(string fileName, IList<string>? arguments = null)
-        {
-            ArgumentNullException.ThrowIfNull(fileName);
-
-            ProcessStartInfo startInfo = new(fileName);
-            if (arguments is not null)
-            {
-                foreach (string argument in arguments)
-                {
-                    startInfo.ArgumentList.Add(argument);
-                }
-            }
-
-            return StartAndForget(startInfo);
-        }
+            => StartAndForget(CreateStartInfo(fileName, arguments));
 
         /// <summary>
         /// Starts the process described by <paramref name="startInfo"/>, waits for it to exit, and returns its exit status.
@@ -145,11 +132,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public static ProcessExitStatus Run(string fileName, IList<string>? arguments = null, TimeSpan? timeout = default)
-        {
-            ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
-
-            return Run(startInfo, timeout);
-        }
+            => Run(CreateStartInfo(fileName, arguments), timeout);
 
         /// <summary>
         /// Asynchronously starts the process described by <paramref name="startInfo"/>, waits for it to exit, and returns its exit status.
@@ -167,15 +150,17 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Task<ProcessExitStatus> RunAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken = default)
+        public static async Task<ProcessExitStatus> RunAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(startInfo);
 
             ThrowIfUseShellExecute(startInfo, nameof(RunAsync));
 
-            SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
 
-            return RunAsyncCore(processHandle, cancellationToken);
+            return cancellationToken.CanBeCanceled
+                ? await processHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false)
+                : await processHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -197,11 +182,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public static Task<ProcessExitStatus> RunAsync(string fileName, IList<string>? arguments = null, CancellationToken cancellationToken = default)
-        {
-            ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
-
-            return RunAsync(startInfo, cancellationToken);
-        }
+            => RunAsync(CreateStartInfo(fileName, arguments), cancellationToken);
 
         /// <summary>
         /// Starts the process described by <paramref name="startInfo"/>, captures its standard output and error,
@@ -230,13 +211,26 @@ namespace System.Diagnostics
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
 
+            long startTimestamp = Stopwatch.GetTimestamp();
+
             using Process process = Start(startInfo)!;
 
             (string standardOutput, string standardError) = process.ReadAllText(timeout);
 
-            ProcessExitStatus exitStatus = timeout.HasValue
-                ? process.SafeHandle.WaitForExitOrKillOnTimeout(timeout.Value)
-                : process.SafeHandle.WaitForExit();
+            ProcessExitStatus exitStatus;
+            if (timeout.HasValue)
+            {
+                TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
+                TimeSpan remaining = timeout.Value - elapsed;
+
+                exitStatus = remaining > TimeSpan.Zero
+                    ? process.SafeHandle.WaitForExitOrKillOnTimeout(remaining)
+                    : process.SafeHandle.WaitForExitOrKillOnTimeout(TimeSpan.Zero);
+            }
+            else
+            {
+                exitStatus = process.SafeHandle.WaitForExit();
+            }
 
             return new ProcessTextOutput(exitStatus, standardOutput, standardError, process.Id);
         }
@@ -262,11 +256,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public static ProcessTextOutput RunAndCaptureText(string fileName, IList<string>? arguments = null, TimeSpan? timeout = default)
-        {
-            ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
-
-            return RunAndCaptureText(startInfo, timeout);
-        }
+            => RunAndCaptureText(CreateStartInfo(fileName, arguments), timeout);
 
         /// <summary>
         /// Asynchronously starts the process described by <paramref name="startInfo"/>, captures its standard output and error,
@@ -285,7 +275,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Task<ProcessTextOutput> RunAndCaptureTextAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken = default)
+        public static async Task<ProcessTextOutput> RunAndCaptureTextAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(startInfo);
 
@@ -294,9 +284,15 @@ namespace System.Diagnostics
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
 
-            Process process = Start(startInfo)!;
+            using Process process = Start(startInfo)!;
 
-            return RunAndCaptureTextAsyncCore(process, cancellationToken);
+            (string standardOutput, string standardError) = await process.ReadAllTextAsync(cancellationToken).ConfigureAwait(false);
+
+            ProcessExitStatus exitStatus = cancellationToken.CanBeCanceled
+                ? await process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false)
+                : await process.SafeHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+
+            return new ProcessTextOutput(exitStatus, standardOutput, standardError, process.Id);
         }
 
         /// <summary>
@@ -319,41 +315,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public static Task<ProcessTextOutput> RunAndCaptureTextAsync(string fileName, IList<string>? arguments = null, CancellationToken cancellationToken = default)
-        {
-            ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
-
-            return RunAndCaptureTextAsync(startInfo, cancellationToken);
-        }
-
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        private static async Task<ProcessExitStatus> RunAsyncCore(SafeProcessHandle processHandle, CancellationToken cancellationToken)
-        {
-            using (processHandle)
-            {
-                return cancellationToken.CanBeCanceled
-                    ? await processHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false)
-                    : await processHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        private static async Task<ProcessTextOutput> RunAndCaptureTextAsyncCore(Process process, CancellationToken cancellationToken)
-        {
-            using (process)
-            {
-                (string standardOutput, string standardError) = await process.ReadAllTextAsync(cancellationToken).ConfigureAwait(false);
-
-                ProcessExitStatus exitStatus = cancellationToken.CanBeCanceled
-                    ? await process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false)
-                    : await process.SafeHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-
-                return new ProcessTextOutput(exitStatus, standardOutput, standardError, process.Id);
-            }
-        }
+            => RunAndCaptureTextAsync(CreateStartInfo(fileName, arguments), cancellationToken);
 
         private static ProcessStartInfo CreateStartInfo(string fileName, IList<string>? arguments)
         {

@@ -115,7 +115,7 @@ namespace System.Diagnostics.Tests
 
         // RemoteExecutor populates ProcessStartInfo.Arguments, but StartAndForget(fileName, arguments)
         // takes an argument list, so this helper maps the serialized argument string for this test.
-        private static List<string>? MapToArgumentList(ProcessStartInfo startInfo)
+        internal static List<string>? MapToArgumentList(ProcessStartInfo startInfo)
         {
             string arguments = startInfo.Arguments;
             if (string.IsNullOrEmpty(arguments))
