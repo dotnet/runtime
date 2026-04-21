@@ -58,6 +58,14 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
+        /// <summary>
+        /// Sets a value indicating whether the process has been terminated due to timeout or cancellation.
+        /// </summary>
+        private bool Canceled
+        {
+            set => GetWaitState()._canceled = value;
+        }
+
         protected override bool ReleaseHandle()
         {
             if (_releaseRef)
@@ -104,7 +112,7 @@ namespace Microsoft.Win32.SafeHandles
             ProcessWaitState waitState = GetWaitState();
             waitState.WaitForExit(Timeout.Infinite);
 
-            return CreateExitStatus(waitState, canceled: false);
+            return GetExitStatus(waitState);
         }
 
         private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
@@ -116,27 +124,24 @@ namespace Microsoft.Win32.SafeHandles
                 return false;
             }
 
-            exitStatus = CreateExitStatus(waitState, canceled: false);
+            exitStatus = GetExitStatus(waitState);
             return true;
         }
 
         private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
         {
             ProcessWaitState waitState = GetWaitState();
-            bool signalWasSent = false;
 
             if (!waitState.WaitForExit(milliseconds))
             {
-                signalWasSent = SignalCore(PosixSignal.SIGKILL);
+                waitState._canceled = SignalCore(PosixSignal.SIGKILL);
                 waitState.WaitForExit(Timeout.Infinite);
             }
 
-            return CreateExitStatus(waitState, canceled: signalWasSent);
+            return GetExitStatus(waitState);
         }
 
         private ManualResetEvent GetWaitHandle() => GetWaitState().EnsureExitedEvent();
-
-        private ProcessExitStatus GetExitStatus(bool canceled = false) => CreateExitStatus(GetWaitState(), canceled);
 
         private ProcessWaitState GetWaitState()
         {
@@ -153,15 +158,15 @@ namespace Microsoft.Win32.SafeHandles
             return _waitStateHolder._state;
         }
 
-        private static ProcessExitStatus CreateExitStatus(ProcessWaitState waitState, bool canceled)
+        private ProcessExitStatus GetExitStatus() => GetExitStatus(GetWaitState());
+
+        private static ProcessExitStatus GetExitStatus(ProcessWaitState waitState)
         {
             // GetWaitState ensures the process is a child process, so obtaining the exit status should never fail.
             bool exited = waitState.GetExited(out ProcessExitStatus? exitStatus, refresh: false);
             Debug.Assert(exited);
             Debug.Assert(exitStatus is not null);
-            PosixSignal? signal = exitStatus.Signal;
-
-            return new ProcessExitStatus(exitStatus.ExitCode, canceled && signal is not null, signal);
+            return exitStatus ?? throw new InvalidOperationException();
         }
 
         private delegate SafeProcessHandle StartWithShellExecuteDelegate(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder);

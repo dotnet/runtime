@@ -212,6 +212,8 @@ namespace System.Diagnostics
         internal readonly bool _isChild;
         /// <summary>Associated process is a child that can use the terminal.</summary>
         private readonly bool _usesTerminal;
+        /// <summary>A value indicating whether the process has been terminated due to timeout or cancellation.</summary>
+        internal bool _canceled;
 
         /// <summary>An in-progress or completed wait operation.</summary>
         /// <remarks>A completed task does not mean the process has exited.</remarks>
@@ -559,7 +561,7 @@ namespace System.Diagnostics
                 Debug.Assert(!_exited);
 
                 PosixSignal? signal = terminatingSignal != 0 ? (PosixSignal)terminatingSignal : null;
-                _exitStatus = new ProcessExitStatus(exitCode, canceled: false, signal);
+                _exitStatus = new ProcessExitStatus(exitCode, canceled: _canceled && signal is PosixSignal.SIGKILL, signal);
 
                 if (_usesTerminal)
                 {

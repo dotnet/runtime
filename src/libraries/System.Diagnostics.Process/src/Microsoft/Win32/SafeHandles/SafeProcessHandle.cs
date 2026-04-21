@@ -324,7 +324,6 @@ namespace Microsoft.Win32.SafeHandles
             TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             RegisteredWaitHandle? registeredWaitHandle = null;
             CancellationTokenRegistration ctr = default;
-            StrongBox<bool> signalWasSentBox = new(false);
 
             var exitedEvent = GetWaitHandle();
 
@@ -342,17 +341,17 @@ namespace Microsoft.Win32.SafeHandles
                     ctr = cancellationToken.UnsafeRegister(
                         static state =>
                         {
-                            var (handle, signalWasSent, tcs) = ((SafeProcessHandle, StrongBox<bool>, TaskCompletionSource<bool>))state!;
+                            var (handle, tcs) = ((SafeProcessHandle, TaskCompletionSource<bool>))state!;
                             try
                             {
-                                signalWasSent.Value = handle.SignalCore(PosixSignal.SIGKILL);
+                                handle.Canceled = handle.SignalCore(PosixSignal.SIGKILL);
                             }
                             catch (Exception ex)
                             {
                                 tcs.TrySetException(ex);
                             }
                         },
-                        (this, signalWasSentBox, tcs));
+                        (this, tcs));
                 }
 
                 await tcs.Task.ConfigureAwait(false);
@@ -369,7 +368,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            return GetExitStatus(canceled: signalWasSentBox.Value);
+            return GetExitStatus();
         }
 
         private void Validate()

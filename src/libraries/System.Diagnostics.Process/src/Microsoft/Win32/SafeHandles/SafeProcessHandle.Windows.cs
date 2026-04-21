@@ -43,6 +43,11 @@ namespace Microsoft.Win32.SafeHandles
             private set;
         } = -1;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the process has been terminated due to timeout or cancellation.
+        /// </summary>
+        private bool Canceled { get; set; }
+
         protected override bool ReleaseHandle()
         {
             return Interop.Kernel32.CloseHandle(handle);
@@ -649,7 +654,7 @@ namespace Microsoft.Win32.SafeHandles
             using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
             processWaitHandle.WaitOne(Timeout.Infinite);
 
-            return new ProcessExitStatus(GetExitCode(), false);
+            return GetExitStatus();
         }
 
         private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
@@ -661,37 +666,34 @@ namespace Microsoft.Win32.SafeHandles
                 return false;
             }
 
-            exitStatus = new ProcessExitStatus(GetExitCode(), false);
+            exitStatus = GetExitStatus();
             return true;
         }
 
         private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
         {
-            bool signalWasSent = false;
             using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
             if (!processWaitHandle.WaitOne(milliseconds))
             {
 #pragma warning disable CA1416 // PosixSignal.SIGKILL is supported on Windows via SignalCore
-                signalWasSent = SignalCore(PosixSignal.SIGKILL);
+                Canceled = SignalCore(PosixSignal.SIGKILL);
 #pragma warning restore CA1416
                 processWaitHandle.WaitOne(Timeout.Infinite);
             }
 
-            return new ProcessExitStatus(GetExitCode(), signalWasSent);
+            return GetExitStatus();
         }
 
         private Interop.Kernel32.ProcessWaitHandle GetWaitHandle() => new(this);
 
-        private ProcessExitStatus GetExitStatus(bool canceled = false) => new(GetExitCode(), canceled);
-
-        private int GetExitCode()
+        private ProcessExitStatus GetExitStatus()
         {
             if (!Interop.Kernel32.GetExitCodeProcess(this, out int exitCode))
             {
                 throw new Win32Exception();
             }
 
-            return exitCode;
+            return new ProcessExitStatus(exitCode, Canceled);
         }
 
         private bool SignalCore(PosixSignal signal)
