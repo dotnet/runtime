@@ -62,6 +62,12 @@ internal sealed class MockLoaderModule : TypedView
         set => WritePointerField(AssemblyFieldName, value);
     }
 
+    public ulong PEAssembly
+    {
+        get => ReadPointerField(PEAssemblyFieldName);
+        set => WritePointerField(PEAssemblyFieldName, value);
+    }
+
     public ulong SimpleName
     {
         get => ReadPointerField(SimpleNameFieldName);
@@ -78,6 +84,12 @@ internal sealed class MockLoaderModule : TypedView
     {
         get => ReadPointerField(FileNameFieldName);
         set => WritePointerField(FileNameFieldName, value);
+    }
+
+    public uint Flags
+    {
+        get => ReadUInt32Field(FlagsFieldName);
+        set => WriteUInt32Field(FlagsFieldName, value);
     }
 
     public ulong ReadyToRunInfo
@@ -113,6 +125,22 @@ internal sealed class MockLoaderAssembly : TypedView
     }
 }
 
+internal sealed class MockEEConfig : TypedView
+{
+    private const string ModifiableAssembliesFieldName = "ModifiableAssemblies";
+
+    public static Layout<MockEEConfig> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("EEConfig", architecture)
+            .AddUInt32Field(ModifiableAssembliesFieldName)
+            .Build<MockEEConfig>();
+
+    public uint ModifiableAssemblies
+    {
+        get => ReadUInt32Field(ModifiableAssembliesFieldName);
+        set => WriteUInt32Field(ModifiableAssembliesFieldName, value);
+    }
+}
+
 internal sealed class MockLoaderBuilder
 {
     private const ulong DefaultAllocationRangeStart = 0x0001_0000;
@@ -121,6 +149,7 @@ internal sealed class MockLoaderBuilder
     internal MockMemorySpace.Builder Builder { get; }
     internal Layout<MockLoaderModule> ModuleLayout { get; }
     internal Layout<MockLoaderAssembly> AssemblyLayout { get; }
+    internal Layout<MockEEConfig> EEConfigLayout { get; }
 
     private readonly MockMemorySpace.BumpAllocator _allocator;
 
@@ -138,15 +167,22 @@ internal sealed class MockLoaderBuilder
 
         ModuleLayout = MockLoaderModule.CreateLayout(builder.TargetTestHelpers.Arch);
         AssemblyLayout = MockLoaderAssembly.CreateLayout(builder.TargetTestHelpers.Arch);
+        EEConfigLayout = MockEEConfig.CreateLayout(builder.TargetTestHelpers.Arch);
     }
 
     internal MockLoaderModule AddModule(
         string? path = null,
         string? fileName = null,
         string? simpleName = null,
-        byte[]? simpleNameBytes = null)
+        byte[]? simpleNameBytes = null,
+        uint flags = 0)
     {
         MockLoaderModule module = ModuleLayout.Create(_allocator.Allocate((ulong)ModuleLayout.Size, "Module"));
+
+        if (flags != 0)
+        {
+            module.Flags = flags;
+        }
 
         byte[]? rawSimpleName = simpleName is not null ? Encoding.UTF8.GetBytes(simpleName) : simpleNameBytes;
         if (rawSimpleName is not null)
@@ -168,6 +204,13 @@ internal sealed class MockLoaderBuilder
         assembly.Module = module.Address;
         module.Assembly = assembly.Address;
         return module;
+    }
+
+    internal MockEEConfig AddEEConfig(uint modifiableAssemblies)
+    {
+        MockEEConfig config = EEConfigLayout.Create(_allocator.Allocate((ulong)EEConfigLayout.Size, "EEConfig"));
+        config.ModifiableAssemblies = modifiableAssemblies;
+        return config;
     }
 
     private ulong AddNullTerminatedUtf8(ReadOnlySpan<byte> bytes, string name)

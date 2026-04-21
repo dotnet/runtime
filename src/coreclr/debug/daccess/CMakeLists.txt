@@ -17,7 +17,6 @@ endif(CLR_CMAKE_HOST_UNIX)
 set(DACCESS_SOURCES
   cdac.cpp
   dacdbiimpl.cpp
-  dacdbiimpllocks.cpp
   dacdbiimplstackwalk.cpp
   daccess.cpp
   dacfn.cpp

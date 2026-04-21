@@ -3053,6 +3053,25 @@ namespace Internal.JitInterface
             if (type.HasTypeEquivalence || type.HasVariance)
                 return false;
 
+            // SZArrayHelper (CoreCLR) and Array<T> (NativeAOT) are phantom dispatch
+            // targets: the runtime maps generic array interface methods
+            // (IList<T>.set_Item, etc.) to methods on these sealed/effectively-sealed
+            // types, but no runtime object ever has them as its MethodTable - `this`
+            // inside those methods is always a T[]. Reporting them as exact would
+            // allow the JIT (e.g. VN-based invariant-load folding of GetMethodTable)
+            // to embed their MT as a constant and mis-read fields off it. Both types
+            // are marked [Intrinsic] so that the cheap flag check filters out
+            // non-candidates before we compare names.
+            if (type.IsIntrinsic && type is MetadataType mdType)
+            {
+                ReadOnlySpan<byte> name = mdType.Name;
+                if ((name.SequenceEqual("SZArrayHelper"u8) || name.SequenceEqual("Array`1"u8)) &&
+                    mdType.Namespace.SequenceEqual("System"u8))
+                {
+                    return false;
+                }
+            }
+
             // Valuetypes are invariant. This assumes that introducing type equivalence to an existing type
             // is not compatible change.
             if (type.IsValueType)
