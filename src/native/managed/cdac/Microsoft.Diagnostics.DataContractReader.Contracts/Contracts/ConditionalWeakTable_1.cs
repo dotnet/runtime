@@ -105,11 +105,10 @@ internal struct ConditionalWeakTable_1 : IConditionalWeakTable
             int entryHashCode = _target.Read<int>(entryAddress + _hashCodeFieldOffset.Value);
             if (entryHashCode == hashCode)
             {
-                TargetPointer depHnd = _target.ReadPointer(entryAddress + _depHndFieldOffset.Value);
-                Data.ObjectHandle handle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(depHnd);
+                Data.ObjectHandle handle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(entryAddress + _depHndFieldOffset.Value);
                 if (handle.Object == key)
                 {
-                    TargetNUInt extraInfo = _target.Contracts.GC.GetHandleExtraInfo(depHnd);
+                    TargetNUInt extraInfo = _target.Contracts.GC.GetHandleExtraInfo(handle.Handle);
                     value = new TargetPointer(extraInfo.Value);
 
                     return true;
