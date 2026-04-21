@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
         /// <summary>
         /// Checks if the systemd journal log formatter should be enabled.
         /// </summary>
-        /// <remarks>Will use <c>$JOURNAL_STREAM</c> + fstat in a follow-up.</remarks>
+        //TODO: #127218
         internal static bool IsSystemdLogger() => IsSystemdService();
 
         /// <summary>
