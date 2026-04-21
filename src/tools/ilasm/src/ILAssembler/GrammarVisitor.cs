@@ -3268,7 +3268,15 @@ namespace ILAssembler
                         _currentMethod!.Definition.MethodBody.OpCode(opcode);
                         if (context.mdtoken() is CILParser.MdtokenContext mdtoken)
                         {
-                            _currentMethod.Definition.MethodBody.Token(VisitMdtoken(mdtoken).Value.Handle);
+                            var entity = VisitMdtoken(mdtoken).Value;
+                            if (entity is EntityRegistry.TypeReferenceEntity mdTokenTypeRef)
+                            {
+                                mdTokenTypeRef.RecordBlobToWriteResolvedToken(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
+                            }
+                            else
+                            {
+                                _currentMethod.Definition.MethodBody.Token(entity.Handle);
+                            }
                         }
                         else
                         {
@@ -3487,13 +3495,27 @@ namespace ILAssembler
                 case CILParser.RULE_instr_tok:
                     var tok = VisitOwnerType(context.ownerType()).Value;
                     _currentMethod!.Definition.MethodBody.OpCode(opcode);
-                    _currentMethod.Definition.MethodBody.Token(tok.Handle);
+                    if (tok is EntityRegistry.TypeReferenceEntity tokTypeRef)
+                    {
+                        tokTypeRef.RecordBlobToWriteResolvedToken(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
+                    }
+                    else
+                    {
+                        _currentMethod.Definition.MethodBody.Token(tok.Handle);
+                    }
                     break;
                 case CILParser.RULE_instr_type:
                     {
                         var arg = VisitTypeSpec(context.typeSpec()).Value;
                         _currentMethod!.Definition.MethodBody.OpCode(opcode);
-                        _currentMethod.Definition.MethodBody.Token(arg.Handle);
+                        if (arg is EntityRegistry.TypeReferenceEntity argTypeRef)
+                        {
+                            argTypeRef.RecordBlobToWriteResolvedToken(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
+                        }
+                        else
+                        {
+                            _currentMethod.Definition.MethodBody.Token(arg.Handle);
+                        }
                     }
                     break;
                 case CILParser.RULE_instr_var:

@@ -1767,6 +1767,27 @@ namespace ILAssembler
             /// </summary>
             public override EntityHandle Handle => base.Handle.IsNil ? PseudoHandle : base.Handle;
 
+            private readonly List<Blob> _placesToWriteResolvedToken = new();
+
+            /// <summary>
+            /// Records a 4-byte blob location (e.g., in an IL instruction stream) that
+            /// contains the PseudoHandle token and needs to be backpatched with the real
+            /// handle once TypeRef resolution is complete.
+            /// </summary>
+            public void RecordBlobToWriteResolvedToken(Blob blob)
+            {
+                _placesToWriteResolvedToken.Add(blob);
+            }
+
+            protected override void SetHandle(EntityHandle token)
+            {
+                base.SetHandle(token);
+                foreach (var blob in _placesToWriteResolvedToken)
+                {
+                    var writer = new BlobWriter(blob);
+                    writer.WriteInt32(MetadataTokens.GetToken(token));
+                }
+            }
         }
 
         public sealed class TypeSpecificationEntity(BlobBuilder signature) : TypeEntity
