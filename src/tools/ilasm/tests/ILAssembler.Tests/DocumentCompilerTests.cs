@@ -5024,5 +5024,180 @@ namespace ILAssembler.Tests
             //           1 (generic arg count), VAR 0 (type parameter !PlusT at index 0)
             Assert.Equal(0x15, sigBytes[0]); // ELEMENT_TYPE_GENERICINST
         }
+
+        [Fact]
+        public void ModReq_InFieldSignature_PreservedInRewrittenBlob()
+        {
+            // A field with modreq should preserve the modifier in the signature
+            // after the TypeRef→TypeDef signature rewriting pass.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field public static int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) volatileField
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            var sigBytes = reader.GetBlobBytes(field.Signature);
+
+            // Field sig: 0x06 (FIELD), 0x1F (CMOD_REQD), <coded index for IsVolatile>, 0x08 (I4)
+            Assert.Equal(0x06, sigBytes[0]); // FIELD header
+            Assert.Equal((byte)SignatureTypeCode.RequiredModifier, sigBytes[1]); // CMOD_REQD
+            // The last byte should be the underlying type (int32 = 0x08)
+            Assert.Equal(0x08, sigBytes[^1]);
+        }
+
+        [Fact]
+        public void ModOpt_InMethodSignature_PreservedInRewrittenBlob()
+        {
+            // A method parameter with modopt should preserve the modifier
+            // after signature rewriting.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M(int32 modopt([mscorlib]System.Runtime.CompilerServices.IsConst) x) cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "M");
+            var sigBytes = reader.GetBlobBytes(method.Signature);
+
+            // Method sig: 0x00 (DEFAULT), 0x01 (1 param), 0x01 (void ret),
+            // then param: 0x20 (CMOD_OPT), <coded index>, 0x08 (I4)
+            Assert.Equal(0x00, sigBytes[0]); // DEFAULT
+            Assert.Equal(0x01, sigBytes[1]); // 1 param
+            Assert.Equal(0x01, sigBytes[2]); // void return
+            Assert.Equal((byte)SignatureTypeCode.OptionalModifier, sigBytes[3]); // CMOD_OPT
+            // The last byte is the underlying type (int32 = 0x08)
+            Assert.Equal(0x08, sigBytes[^1]);
+        }
+
+        [Fact]
+        public void ModReq_WithSelfAssemblyTypeRef_PreservedAfterResolution()
+        {
+            // modreq referencing a type in the same assembly should still
+            // produce a correct signature after TypeRef→TypeDef resolution.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi MyModifier extends [mscorlib]System.Object
+                {
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field public static int32 modreq([test]MyModifier) myField
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            var sigBytes = reader.GetBlobBytes(field.Signature);
+
+            Assert.Equal(0x06, sigBytes[0]); // FIELD header
+            Assert.Equal((byte)SignatureTypeCode.RequiredModifier, sigBytes[1]); // CMOD_REQD
+            // After the modifier coded index, the underlying type is int32
+            Assert.Equal(0x08, sigBytes[^1]);
+            // The [test]MyModifier TypeRef should have resolved to TypeDef,
+            // so no TypeRef for MyModifier should exist.
+            foreach (var trHandle in reader.TypeReferences)
+            {
+                var tr = reader.GetTypeReference(trHandle);
+                Assert.NotEqual("MyModifier", reader.GetString(tr.Name));
+            }
+        }
+
+        [Fact]
+        public void ExplicitLayout_EmitsClassLayoutWithDefaultValues()
+        {
+            // Types with explicit layout should emit a ClassLayout row
+            // even when .pack and .size are not specified, matching native ilasm.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public explicit sealed ansi Test extends [mscorlib]System.ValueType
+                {
+                    .field [0] public int32 x
+                    .field [4] public int32 y
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // ClassLayout table should have an entry for the explicit layout type
+            int classLayoutCount = reader.GetTableRowCount(TableIndex.ClassLayout);
+            Assert.True(classLayoutCount >= 1, $"ClassLayout table should have at least 1 entry for explicit layout type, has {classLayoutCount}");
+
+            // Verify the layout has default values (pack=0, size=0)
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            var layout = typeDef.GetLayout();
+            Assert.Equal(0, layout.PackingSize);
+            Assert.Equal(0, layout.Size);
+        }
+
+        [Fact]
+        public void SequentialLayout_NoClassLayoutWithoutPackOrSize()
+        {
+            // Types with sequential layout should NOT emit ClassLayout
+            // unless .pack or .size is explicitly specified.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public sequential sealed ansi Test extends [mscorlib]System.ValueType
+                {
+                    .field public int32 x
+                    .field public int32 y
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // ClassLayout table should have NO entries for sequential layout without .pack/.size
+            int classLayoutCount = reader.GetTableRowCount(TableIndex.ClassLayout);
+            Assert.Equal(0, classLayoutCount);
+        }
+
+        [Fact]
+        public void ExplicitLayout_WithPackAndSize_EmitsSpecifiedValues()
+        {
+            // When .pack and .size are explicitly set, those values should be emitted.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public explicit sealed ansi Test extends [mscorlib]System.ValueType
+                {
+                    .pack 4
+                    .size 16
+                    .field [0] public int32 x
+                    .field [4] public int32 y
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            var layout = typeDef.GetLayout();
+            Assert.Equal(4, layout.PackingSize);
+            Assert.Equal(16, layout.Size);
+        }
     }
 }
