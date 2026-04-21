@@ -4290,8 +4290,13 @@ namespace ILAssembler
             }
             methodDefinition.MethodAttributes = context.methAttr().Aggregate((MethodAttributes)0, (acc, attr) => acc | VisitMethAttr(attr));
 
+            // COMPAT: Native ilasm implicitly adds RTSpecialName + SpecialName for .ctor/.cctor methods
+            if (name is ".ctor" or ".cctor")
+            {
+                methodDefinition.MethodAttributes |= MethodAttributes.RTSpecialName | MethodAttributes.SpecialName;
+            }
             // COMPAT: Native ilasm implicitly adds SpecialName when RTSpecialName is set
-            if (methodDefinition.MethodAttributes.HasFlag(MethodAttributes.RTSpecialName))
+            else if (methodDefinition.MethodAttributes.HasFlag(MethodAttributes.RTSpecialName))
             {
                 methodDefinition.MethodAttributes |= MethodAttributes.SpecialName;
             }
@@ -4322,6 +4327,14 @@ namespace ILAssembler
             if (methodDefinition.MethodAttributes.HasFlag(MethodAttributes.Static) && (parsedHeader.IsInstance || parsedHeader.HasExplicitThis))
             {
                 // Error on static + instance.
+            }
+            // COMPAT: Native ilasm auto-adds instance calling convention for non-static methods in class context
+            if (!methodDefinition.MethodAttributes.HasFlag(MethodAttributes.Static)
+                && !parsedHeader.IsInstance
+                && _currentTypeDefinition.Count > 0)
+            {
+                sigHeader |= (byte)SignatureAttributes.Instance;
+                parsedHeader = new(sigHeader);
             }
             if (parsedHeader.HasExplicitThis && !parsedHeader.IsInstance)
             {
@@ -4356,7 +4369,9 @@ namespace ILAssembler
             {
                 SignatureArg? arg = args[i];
                 arg.SignatureBlob.WriteContentTo(methodSignature);
-                methodDefinition.Parameters.Add(EntityRegistry.CreateParameter(arg.Attributes, arg.Name, arg.MarshallingDescriptor, i + 1));
+                // COMPAT: Native ilasm auto-generates A_N names for unnamed parameters
+                string? paramName = arg.Name ?? $"A_{i}";
+                methodDefinition.Parameters.Add(EntityRegistry.CreateParameter(arg.Attributes, paramName, arg.MarshallingDescriptor, i + 1));
             }
             // We've parsed all signature information. We can reset the current method now (the caller will handle setting/unsetting it for the method body).
             _currentMethod = null;
