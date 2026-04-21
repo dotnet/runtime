@@ -19,7 +19,9 @@ namespace Wasm.Build.Templates.Tests
         {
         }
 
-        [Theory]
+        // Skipped on CoreCLR: WasmAllowUndefinedSymbols=false is not honored on the CoreCLR native-build path.
+        // See https://github.com/dotnet/runtime/pull/127073 for diagnosis.
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsMonoRuntime))]
         [InlineData(true)]
         [InlineData(false)]
         public void BuildWithUndefinedNativeSymbol(bool allowUndefined)
@@ -57,7 +59,10 @@ namespace Wasm.Build.Templates.Tests
             }
         }
 
-        [Theory]
+        // Skipped on CoreCLR: the default template's main.js calls getAssemblyExports() which throws on CoreCLR
+        // when the user assembly has no [JSExport] (JSHostImplementation.CoreCLR.BindAssemblyExports uses
+        // throwOnError: true, while Mono's native path is tolerant). See https://github.com/dotnet/runtime/pull/127073.
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsMonoRuntime))]
         [InlineData(Configuration.Debug)]
         [InlineData(Configuration.Release)]
         public async Task ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(Configuration config)
