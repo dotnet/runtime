@@ -797,6 +797,19 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         return false;
     }
 
+    // Exclude floating point compares.
+    //
+    VNFuncApp treeApp;
+    if (!vnStore->GetVNFunc(treeNormVN, &treeApp))
+    {
+        return false;
+    }
+
+    if (varTypeIsFloating(vnStore->TypeOfVN(treeApp.m_args[0])))
+    {
+        return false;
+    }
+
     // Skip through chains of empty or side effect free blocks.
     // Watch for cycles.
     //
@@ -976,7 +989,8 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         optRelopImpliesRelop(&rii);
         bool canOptimize = rii.canInfer && rii.canInferFromTrue && !rii.reverseSense;
 
-        genTreeOps newRelop = GT_NONE;
+        genTreeOps newRelop   = GT_NONE;
+        bool       isUnsigned = false;
 
         if (!canOptimize)
         {
@@ -994,17 +1008,18 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             ValueNum  andVN = vnStore->VNForFunc(TYP_INT, VNF_AND, blockPathVN, domPathVN);
             VNFuncApp andApp;
             VNFuncApp pathApp;
+            VNFunc    newRelopFunc = VNF_NONE;
             if (vnStore->IsVNRelop(andVN, &andApp) && vnStore->GetVNFunc(blockPathVN, &pathApp))
             {
                 if (andApp.m_args[0] == pathApp.m_args[0] && andApp.m_args[1] == pathApp.m_args[1])
                 {
-                    newRelop = (genTreeOps)andApp.m_func;
+                    newRelopFunc = andApp.m_func;
                 }
                 else if (andApp.m_args[0] == pathApp.m_args[1] && andApp.m_args[1] == pathApp.m_args[0])
                 {
-                    vnStore->GetRelatedRelop(andVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
+                    andVN = vnStore->GetRelatedRelop(andVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
                     vnStore->GetVNFunc(andVN, &andApp);
-                    newRelop = (genTreeOps)andApp.m_func;
+                    newRelopFunc = andApp.m_func;
                 }
 
                 JITDUMPEXEC(vnStore->vnDump(this, blockPathVN));
@@ -1014,12 +1029,18 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
                 JITDUMPEXEC(vnStore->vnDump(this, andVN));
             }
 
-            // Might need to reverse the sense here?
-            //
-            if (newRelop != GT_NONE)
+            // TODO-CQ: if the AND simplifies to a constant, we can optimize both the dominating branch
+            // and the current branch. This is likely rare.
+
+            if (newRelopFunc != VNF_NONE)
             {
-                JITDUMP("; simplified to %s\n", GenTree::OpName(newRelop));
-                canOptimize = true;
+                newRelop = vnStore->VNRelopToGenTreeOp(newRelopFunc, isUnsigned);
+
+                if (newRelop != GT_NONE)
+                {
+                    JITDUMP("; simplified to %s%s\n", GenTree::OpName(newRelop), isUnsigned ? " (unsigned)" : "");
+                    canOptimize = true;
+                }
             }
             else
             {
@@ -1065,6 +1086,15 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         {
             tree->SetOper(newRelop);
             fgValueNumberTree(tree);
+
+            if (isUnsigned)
+            {
+                tree->gtFlags |= GTF_UNSIGNED;
+            }
+            else
+            {
+                tree->gtFlags &= ~GTF_UNSIGNED;
+            }
         }
         madeChanges = true;
 

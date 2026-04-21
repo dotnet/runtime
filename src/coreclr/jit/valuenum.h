@@ -1136,6 +1136,9 @@ public:
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn, VNFuncApp* pFuncApp = nullptr);
 
+    // Map this VNFunc back to a gen tree op (relops only)
+    genTreeOps VNRelopToGenTreeOp(VNFunc vnf, bool& isUnsigned);
+
     enum class VN_RELATION_KIND
     {
         VRK_Inferred,   // (x ?  y)
