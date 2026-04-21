@@ -158,9 +158,7 @@ namespace System.Diagnostics
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
 
-            return cancellationToken.CanBeCanceled
-                ? await processHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false)
-                : await processHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            return await processHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -304,9 +302,7 @@ namespace System.Diagnostics
                 throw;
             }
 
-            ProcessExitStatus exitStatus = cancellationToken.CanBeCanceled
-                ? await process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false)
-                : await process.SafeHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            ProcessExitStatus exitStatus = await process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false);
 
             return new ProcessTextOutput(exitStatus, standardOutput, standardError, process.Id);
         }
