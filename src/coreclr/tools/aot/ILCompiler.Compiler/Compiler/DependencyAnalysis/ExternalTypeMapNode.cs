@@ -68,6 +68,17 @@ namespace ILCompiler.DependencyAnalysis
                                 context.NativeLayout.TemplateTypeLayout(canonElementType),
                                 "External type map array trim target with template-loadable element type");
                         }
+
+                        // Multidimensional arrays can be constructed at runtime from just the element type's
+                        // MethodTable (e.g. via shared generic code that creates T[,]). If the element type
+                        // is reachable, consider the MdArray type reachable as well.
+                        if (!arrayType.IsSzArray)
+                        {
+                            yield return new CombinedDependencyListEntry(
+                                context.NecessaryTypeSymbol(effectiveTrimTargetType),
+                                context.NecessaryTypeSymbol(effectiveElementType),
+                                "MdArray can be constructed at runtime from element type");
+                        }
                     }
                 }
             }
