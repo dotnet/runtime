@@ -284,9 +284,9 @@ variables:
     value: Windows.10.Amd64.Android.Open
 
   # Android on Ubuntu (x86/x64)
-  # Latest: API 29
+  # Latest: API 36
   - name: helix_android_ubuntu_latest
-    value: Ubuntu.2204.Amd64.Android.29.Open
+    value: Ubuntu.2204.Amd64.Android.36.Open
 
   # Oldest: API 21
   - name: helix_android_ubuntu_oldest
