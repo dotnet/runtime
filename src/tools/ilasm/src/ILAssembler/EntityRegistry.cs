@@ -545,7 +545,9 @@ namespace ILAssembler
                     genericParam.Index);
             }
 
-            foreach (GenericParameterConstraintEntity constraint in GetSeenEntities(TableIndex.GenericParamConstraint))
+            foreach (GenericParameterConstraintEntity constraint in GetSeenEntities(TableIndex.GenericParamConstraint)
+                .Cast<GenericParameterConstraintEntity>()
+                .OrderBy(c => MetadataTokens.GetRowNumber(c.Owner!.Handle)))
             {
                 builder.AddGenericParameterConstraint(
                     (GenericParameterHandle)constraint.Owner!.Handle,
