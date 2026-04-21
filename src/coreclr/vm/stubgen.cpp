@@ -1960,7 +1960,7 @@ void StubSigBuilder::EnsureEnoughQuickBytes(size_t cbToAppend)
         // Detect integer overflow
         if ((cbNew - m_cbSig) < cbToAppend)
             COMPlusThrowHR(COR_E_OVERFLOW);
-        m_qbSigBuffer.ReSizeThrows(cbNew.Value());
+        m_qbSigBuffer.ReSizeThrows(cbNew);
         m_pbSigCursor = ((BYTE*)m_qbSigBuffer.Ptr()) + m_cbSig;
     }
 }
