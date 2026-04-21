@@ -219,6 +219,12 @@ partial interface IRuntimeTypeSystem : IContract
     // Returns true if the method is eligible for tiered compilation
     public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
 
+    // Return true if the method is an async thunk method.
+    public virtual bool IsAsyncThunkMethod(MethodDescHandle methodDesc);
+
+    // Return true if the method is a wrapper stub (unboxing or instantiating).
+    public virtual bool IsWrapperStub(MethodDescHandle methodDesc);
+
 }
 ```
 
@@ -1107,6 +1113,13 @@ And the following enumeration definitions
     }
 
     [Flags]
+    internal enum AsyncMethodFlags : uint
+    {
+        None = 0,
+        Thunk = 16,
+    }
+
+    [Flags]
     internal enum ILStubType : uint
     {
         StubPInvokeVarArg = 0x4,
@@ -1508,6 +1521,32 @@ Determining if a method supports multiple code versions:
             return _target.Contracts.CodeVersions.CodeVersionManagerSupportsMethod(methodDesc.Address);
         }
         return false;
+    }
+```
+
+Determining if a method is an async thunk method:
+
+```csharp
+    public bool IsAsyncThunkMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        if (!md.HasAsyncMethodData)
+        {
+            return false;
+        }
+
+        Data.AsyncMethodData asyncData = // Read AsyncMethodData from the address of the async method data optional slot
+        return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.Thunk);
+    }
+```
+
+Determining if a method is a wrapper stub (unboxing or instantiating):
+
+```csharp
+    public bool IsWrapperStub(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        return md.IsUnboxingStub || IsInstantiatingStub(md);
     }
 ```
 

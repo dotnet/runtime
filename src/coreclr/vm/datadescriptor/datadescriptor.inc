@@ -566,6 +566,7 @@ CDAC_TYPE_END(NativeCodeSlot)
 
 CDAC_TYPE_BEGIN(AsyncMethodData)
 CDAC_TYPE_SIZE(sizeof(AsyncMethodData))
+CDAC_TYPE_FIELD(AsyncMethodData, T_UINT32, Flags, offsetof(AsyncMethodData, flags))
 CDAC_TYPE_END(AsyncMethodData)
 
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)

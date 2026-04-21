@@ -758,7 +758,38 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ConvertContextToDebuggerRegDisplay(pInContext, pOutDRD, fActive) : HResults.E_NOTIMPL;
 
     public int IsDiagnosticsHiddenOrLCGMethod(ulong vmMethodDesc, int* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsDiagnosticsHiddenOrLCGMethod(vmMethodDesc, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = (int)DynamicMethodType.kNone;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
+            if (rts.IsILStub(md) || rts.IsAsyncThunkMethod(md) || rts.IsWrapperStub(md))
+            {
+                *pRetVal = (int)DynamicMethodType.kDiagnosticHidden;
+            }
+            else if (rts.IsDynamicMethod(md))
+            {
+                *pRetVal = (int)DynamicMethodType.kLCGMethod;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int resultLocal;
+            int hrLocal = _legacy.IsDiagnosticsHiddenOrLCGMethod(vmMethodDesc, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == resultLocal, $"cDAC: {*pRetVal}, DAC: {resultLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetVarArgSig(ulong VASigCookieAddr, ulong* pArgBase, DacDbiTargetBuffer* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetVarArgSig(VASigCookieAddr, pArgBase, pRetVal) : HResults.E_NOTIMPL;
