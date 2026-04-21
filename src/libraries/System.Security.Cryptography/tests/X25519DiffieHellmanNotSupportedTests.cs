@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Tests
         {
             // A minimal valid SPKI for X25519
             byte[] spki = Convert.FromHexString(
-                "302a300506032b656e032100"
+                "302a300506032b656e032100" +
                 "0000000000000000000000000000000000000000000000000000000000000000");
 
             Assert.Throws<PlatformNotSupportedException>(() =>
