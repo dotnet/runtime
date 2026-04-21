@@ -6629,6 +6629,16 @@ namespace System.Threading.Tasks
                 return WhenAny(tasks[0], tasks[1]);
             }
 
+            if (tasks.Length == 3)
+            {
+                return WhenAny(tasks[0], tasks[1], tasks[2]);
+            }
+
+            if (tasks.Length == 4)
+            {
+                return WhenAny(tasks[0], tasks[1], tasks[2], tasks[3]);
+            }
+
             if (tasks.IsEmpty)
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
@@ -6756,6 +6766,211 @@ namespace System.Threading.Tasks
                     {
                         task2.RemoveContinuation(this);
                     }
+
+                    bool success = TrySetResult((TTask)completingTask);
+                    Debug.Assert(success, "Only one task should have gotten to this point, and thus this must be successful.");
+                }
+            }
+
+            public bool InvokeMayRunArbitraryCode => true;
+        }
+
+        private static Task<TTask> WhenAny<TTask>(TTask task1, TTask task2, TTask task3) where TTask : Task
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+            ArgumentNullException.ThrowIfNull(task3);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                task3.IsCompleted ? FromResult(task3) :
+                new ThreeTaskWhenAnyPromise<TTask>(task1, task2, task3);
+        }
+
+        /// <summary>A promise type used by WhenAny to wait on exactly three tasks.</summary>
+        /// <typeparam name="TTask">Specifies the type of the task.</typeparam>
+        /// <remarks>
+        /// This has essentially the same logic as <see cref="TaskFactory.CompleteOnInvokePromise{TTask}"/>, but optimized
+        /// for three tasks rather than any number.
+        /// </remarks>
+        private sealed class ThreeTaskWhenAnyPromise<TTask> : Task<TTask>, ITaskCompletionAction where TTask : Task
+        {
+            private TTask? _task1, _task2, _task3;
+
+            /// <summary>Instantiate the promise and register it with each task as a completion action.</summary>
+            public ThreeTaskWhenAnyPromise(TTask task1, TTask task2, TTask task3)
+            {
+                Debug.Assert(task1 != null && task2 != null && task3 != null);
+                _task1 = task1;
+                _task2 = task2;
+                _task3 = task3;
+
+                if (TplEventSource.Log.IsEnabled())
+                {
+                    TplEventSource.Log.TraceOperationBegin(this.Id, "Task.WhenAny", 0);
+                }
+
+                if (s_asyncDebuggingEnabled)
+                {
+                    AddToActiveTasks(this);
+                }
+
+                task1.AddCompletionAction(this);
+                task2.AddCompletionAction(this);
+                task3.AddCompletionAction(this);
+
+                if (task1.IsCompleted)
+                {
+                    // If task1 has already completed, Invoke may have tried to remove the continuation from
+                    // each task before task2 and task3 added the continuation, in which case they're now referencing the
+                    // already completed continuation.  To deal with that race condition, explicitly check
+                    // and remove the continuation here.
+                    task2.RemoveContinuation(this);
+                    task3.RemoveContinuation(this);
+                }
+                else if (task2.IsCompleted)
+                {
+                    task3.RemoveContinuation(this);
+                }
+            }
+
+            /// <summary>Completes this task when one of the constituent tasks completes.</summary>
+            public void Invoke(Task completingTask)
+            {
+                Task? task1;
+                if ((task1 = Interlocked.Exchange(ref _task1, null)) != null)
+                {
+                    Task? task2 = _task2;
+                    Task? task3 = _task3;
+                    _task2 = null;
+                    _task3 = null;
+
+                    Debug.Assert(task1 != null && task2 != null && task3 != null);
+
+                    if (TplEventSource.Log.IsEnabled())
+                    {
+                        TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Choice);
+                        TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
+                    }
+
+                    if (s_asyncDebuggingEnabled)
+                    {
+                        RemoveFromActiveTasks(this);
+                    }
+
+                    if (!task1.IsCompleted) task1.RemoveContinuation(this);
+                    if (!task2.IsCompleted) task2.RemoveContinuation(this);
+                    if (!task3.IsCompleted) task3.RemoveContinuation(this);
+
+                    bool success = TrySetResult((TTask)completingTask);
+                    Debug.Assert(success, "Only one task should have gotten to this point, and thus this must be successful.");
+                }
+            }
+
+            public bool InvokeMayRunArbitraryCode => true;
+        }
+
+        private static Task<TTask> WhenAny<TTask>(TTask task1, TTask task2, TTask task3, TTask task4) where TTask : Task
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+            ArgumentNullException.ThrowIfNull(task3);
+            ArgumentNullException.ThrowIfNull(task4);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                task3.IsCompleted ? FromResult(task3) :
+                task4.IsCompleted ? FromResult(task4) :
+                new FourTaskWhenAnyPromise<TTask>(task1, task2, task3, task4);
+        }
+
+        /// <summary>A promise type used by WhenAny to wait on exactly four tasks.</summary>
+        /// <typeparam name="TTask">Specifies the type of the task.</typeparam>
+        /// <remarks>
+        /// This has essentially the same logic as <see cref="TaskFactory.CompleteOnInvokePromise{TTask}"/>, but optimized
+        /// for four tasks rather than any number.
+        /// </remarks>
+        private sealed class FourTaskWhenAnyPromise<TTask> : Task<TTask>, ITaskCompletionAction where TTask : Task
+        {
+            private TTask? _task1, _task2, _task3, _task4;
+
+            /// <summary>Instantiate the promise and register it with each task as a completion action.</summary>
+            public FourTaskWhenAnyPromise(TTask task1, TTask task2, TTask task3, TTask task4)
+            {
+                Debug.Assert(task1 != null && task2 != null && task3 != null && task4 != null);
+                _task1 = task1;
+                _task2 = task2;
+                _task3 = task3;
+                _task4 = task4;
+
+                if (TplEventSource.Log.IsEnabled())
+                {
+                    TplEventSource.Log.TraceOperationBegin(this.Id, "Task.WhenAny", 0);
+                }
+
+                if (s_asyncDebuggingEnabled)
+                {
+                    AddToActiveTasks(this);
+                }
+
+                task1.AddCompletionAction(this);
+                task2.AddCompletionAction(this);
+                task3.AddCompletionAction(this);
+                task4.AddCompletionAction(this);
+
+                if (task1.IsCompleted)
+                {
+                    // If task1 has already completed, Invoke may have tried to remove the continuation from
+                    // each task before task2, task3 and task4 added the continuation, in which case they're now referencing the
+                    // already completed continuation.  To deal with that race condition, explicitly check
+                    // and remove the continuation here.
+                    task2.RemoveContinuation(this);
+                    task3.RemoveContinuation(this);
+                    task4.RemoveContinuation(this);
+                }
+                else if (task2.IsCompleted)
+                {
+                    task3.RemoveContinuation(this);
+                    task4.RemoveContinuation(this);
+                }
+                else if (task3.IsCompleted)
+                {
+                    task4.RemoveContinuation(this);
+                }
+            }
+
+            /// <summary>Completes this task when one of the constituent tasks completes.</summary>
+            public void Invoke(Task completingTask)
+            {
+                Task? task1;
+                if ((task1 = Interlocked.Exchange(ref _task1, null)) != null)
+                {
+                    Task? task2 = _task2;
+                    Task? task3 = _task3;
+                    Task? task4 = _task4;
+                    _task2 = null;
+                    _task3 = null;
+                    _task4 = null;
+
+                    Debug.Assert(task1 != null && task2 != null && task3 != null && task4 != null);
+
+                    if (TplEventSource.Log.IsEnabled())
+                    {
+                        TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Choice);
+                        TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
+                    }
+
+                    if (s_asyncDebuggingEnabled)
+                    {
+                        RemoveFromActiveTasks(this);
+                    }
+
+                    if (!task1.IsCompleted) task1.RemoveContinuation(this);
+                    if (!task2.IsCompleted) task2.RemoveContinuation(this);
+                    if (!task3.IsCompleted) task3.RemoveContinuation(this);
+                    if (!task4.IsCompleted) task4.RemoveContinuation(this);
 
                     bool success = TrySetResult((TTask)completingTask);
                     Debug.Assert(success, "Only one task should have gotten to this point, and thus this must be successful.");
