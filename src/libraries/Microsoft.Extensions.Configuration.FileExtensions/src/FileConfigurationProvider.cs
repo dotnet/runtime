@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Configuration
             catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
             {
                 // assuming file was deleted in meantime, we already checked existence at the begining once
-                HandleLoadingNonExisting(reload, file);
+                HandleLoadingNonExisting(reload, file, ex is DirectoryNotFoundException);
                 return;
             }
             catch (Exception ex)
@@ -134,7 +134,9 @@ namespace Microsoft.Extensions.Configuration
         /// <see langword="false"/> when loading for first time.</param>
         /// <param name="file">The file information returned by the <see cref="FileConfigurationSource.FileProvider"/>,
         /// or <see langword="null"/> if no file information is available.</param>
-        private void HandleLoadingNonExisting(bool reload, IFileInfo? file)
+        /// <param name="directoryException">Determines if <see cref="FileNotFoundException"/> or
+        /// <see cref="DirectoryNotFoundException"/> is thrown on error.</param>
+        private void HandleLoadingNonExisting(bool reload, IFileInfo? file, bool directoryException = false)
         {
             if (Source.Optional || reload) // Always optional on reload
             {
@@ -143,12 +145,19 @@ namespace Microsoft.Extensions.Configuration
             }
             else
             {
-                var error = new StringBuilder(SR.Format(SR.Error_FileNotFound, Source.Path));
+                var error = new StringBuilder(SR.Format(SR.Error_FileNotFound, Source.Path ?? file?.Name));
                 if (!string.IsNullOrEmpty(file?.PhysicalPath))
                 {
                     error.Append(SR.Format(SR.Error_ExpectedPhysicalPath, file.PhysicalPath));
                 }
-                HandleException(ExceptionDispatchInfo.Capture(new FileNotFoundException(error.ToString())));
+                if (!directoryException)
+                {
+                    HandleException(ExceptionDispatchInfo.Capture(new FileNotFoundException(error.ToString())));
+                }
+                else
+                {
+                    HandleException(ExceptionDispatchInfo.Capture(new DirectoryNotFoundException(error.ToString())));
+                }
             }
         }
 
