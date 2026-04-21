@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Logging.Internal
     [Obsolete("This type is retained only for compatibility. The recommended alternative is the Microsoft.Extensions.Diagnostics.Testing package.", error: true)]
     public class FormattedLogValues : IReadOnlyList<KeyValuePair<string, object?>>
     {
-        private readonly Microsoft.Extensions.Logging.FormattedLogValues _inner;
+        private Microsoft.Extensions.Logging.FormattedLogValues _inner;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FormattedLogValues"/> class.
