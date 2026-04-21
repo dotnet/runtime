@@ -41,6 +41,7 @@ typedef DPTR(CallCountingManager) PTR_CallCountingManager;
 typedef SHash<PtrSetSHashTraits<LoaderAllocator *>> LoaderAllocatorSet;
 
 class CustomAssemblyBinder;
+class Assembly;
 
 
 // This implements the Add/Remove rangelist api on top of the CodeRangeMap in the code manager
@@ -183,26 +184,26 @@ private:
     bool _collectible;
 };
 
-// Iterator over a DomainAssembly in the same ALC
-class DomainAssemblyIterator
+// Iterator over Assemblies in the same ALC
+class AssemblyIterator
 {
-    DomainAssembly* pCurrentAssembly;
-    DomainAssembly* pNextAssembly;
+    Assembly* pCurrentAssembly;
+    Assembly* pNextAssembly;
 
 public:
-    DomainAssemblyIterator(DomainAssembly* pFirstAssembly);
+    AssemblyIterator(Assembly* pFirstAssembly);
 
     bool end() const
     {
         return pCurrentAssembly == NULL;
     }
 
-    operator DomainAssembly*() const
+    operator Assembly*() const
     {
         return pCurrentAssembly;
     }
 
-    DomainAssembly* operator ->() const
+    Assembly* operator ->() const
     {
         return pCurrentAssembly;
     }
@@ -222,7 +223,7 @@ protected:
     LoaderAllocatorType m_type;
     union
     {
-        DomainAssembly* m_pDomainAssembly;
+        Assembly* m_pAssembly;
         void* m_pValue;
     };
 
@@ -237,15 +238,15 @@ public:
     VOID Init();
     bool HasAttachedDynamicAssemblies()
     {
-        if (m_type == LAT_Assembly && m_pDomainAssembly != NULL)
+        if (m_type == LAT_Assembly && m_pAssembly != NULL)
         {
             return true;
         }
         return false;
     }
     LoaderAllocatorType GetType();
-    VOID AddDomainAssembly(DomainAssembly* pDomainAssembly);
-    DomainAssemblyIterator GetDomainAssemblyIterator();
+    VOID AddAssembly(Assembly* pAssembly);
+    AssemblyIterator GetAssemblyIterator();
     BOOL Equals(LoaderAllocatorID* pId);
     COUNT_T Hash();
 };
@@ -442,7 +443,7 @@ private:
     Volatile<UINT32>   m_cReferences;
     // This will be set by code:LoaderAllocator::Destroy (from managed scout finalizer) and signalizes that
     // the assembly was collected
-    DomainAssembly * m_pFirstDomainAssemblyFromSameALCToDelete;
+    Assembly * m_pFirstAssemblyFromSameALCToDelete;
 
     BOOL CheckAddReference_Unlocked(LoaderAllocator *pOtherLA);
 
@@ -532,7 +533,7 @@ public:
     //    Detection:
     //        code:IsAlive ... TRUE
     //        code:IsManagedScoutAlive ... TRUE
-    //        code:DomainAssembly::GetExposedAssemblyObject ... non-NULL (may need to allocate GC object)
+    //        code:Assembly::GetExposedAssemblyObject ... non-NULL (may need to allocate GC object)
     //
     //        code:AddReferenceIfAlive ... TRUE (+ adds reference)
     //
@@ -543,7 +544,7 @@ public:
     //    Detection:
     //        code:IsAlive ... TRUE
     //        code:IsManagedScoutAlive ... TRUE
-    //        code:DomainAssembly::GetExposedAssemblyObject ... NULL (change from phase #1)
+    //        code:Assembly::GetExposedAssemblyObject ... NULL (change from phase #1)
     //
     //        code:AddReferenceIfAlive ... TRUE (+ adds reference)
     //
@@ -559,7 +560,7 @@ public:
     //    Detection:
     //        code:IsAlive ... TRUE
     //        code:IsManagedScoutAlive ... FALSE (change from phase #2)
-    //        code:DomainAssembly::GetExposedAssemblyObject ... NULL
+    //        code:Assembly::GetExposedAssemblyObject ... NULL
     //
     //        code:AddReferenceIfAlive ... TRUE (+ adds reference)
     //
@@ -585,7 +586,7 @@ public:
     // Checks if managed scout is alive - see code:#AssemblyPhases.
     BOOL IsManagedScoutAlive()
     {
-        return (m_pFirstDomainAssemblyFromSameALCToDelete == NULL);
+        return (m_pFirstAssemblyFromSameALCToDelete == NULL);
     }
 
     // Collect unreferenced assemblies, delete all their remaining resources.
@@ -984,10 +985,10 @@ public:
     void Init();
     virtual BOOL CanUnload();
 
-    void AddDomainAssembly(DomainAssembly *pDomainAssembly)
+    void AddAssembly(Assembly *pAssembly)
     {
         WRAPPER_NO_CONTRACT;
-        m_Id.AddDomainAssembly(pDomainAssembly);
+        m_Id.AddAssembly(pAssembly);
     }
 
     ShuffleThunkCache* GetShuffleThunkCache()

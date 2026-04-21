@@ -84,7 +84,11 @@ public unsafe class ExceptionStateTests
             AllocContextLimit: TargetPointer.Null,
             Frame: TargetPointer.Null,
             FirstNestedException: firstNestedException,
+            ExposedObjectHandle: TargetPointer.Null,
             LastThrownObjectHandle: lastThrownObjectHandle,
+            CurrentCustomDebuggerNotificationHandle: TargetPointer.Null,
+            LastThrownObjectIsUnhandled: false,
+            HasUnhandledException: false,
             NextThread: TargetPointer.Null));
 
         var target = new TestPlaceholderTarget.Builder(arch)
@@ -461,7 +465,11 @@ public unsafe class ExceptionStateTests
             AllocContextLimit: TargetPointer.Null,
             Frame: TargetPointer.Null,
             FirstNestedException: firstNestedException,
+            ExposedObjectHandle: TargetPointer.Null,
             LastThrownObjectHandle: lastThrownObjectHandle,
+            CurrentCustomDebuggerNotificationHandle: TargetPointer.Null,
+            LastThrownObjectIsUnhandled: false,
+            HasUnhandledException: false,
             NextThread: TargetPointer.Null));
 
         var mockException = new Mock<IException>();
