@@ -215,6 +215,11 @@ public class WasmTemplateTestsBase : BuildTestBase
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
+            // Use the same isolated environment as the rest of the test suite
+            // (DOTNET_ROOT/DOTNET_INSTALL_DIR/PATH/NUGET_PACKAGES overrides), so
+            // `dotnet new install` picks up the harness's SDK and NuGet config.
+            foreach (var kvp in s_buildEnv.EnvVars)
+                psi.Environment[kvp.Key] = kvp.Value;
             psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
 
             using var process = Process.Start(psi)

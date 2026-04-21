@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
-    <RepositoryEngineeringDir Condition="'$(RepositoryEngineeringDir)' == '' and '$(REPOSITORY_ENGINEERING_DIR)' != ''">$(REPOSITORY_ENGINEERING_DIR)</RepositoryEngineeringDir>
-    <WasmAppBuilderTasksAssemblyPath Condition="'$(WasmAppBuilderTasksAssemblyPath)' == '' and '$(WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH)' != ''">$(WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH)</WasmAppBuilderTasksAssemblyPath>
+    <RepositoryEngineeringDir Condition="'$(RepositoryEngineeringDir)' == '' and '$(REPOSITORY_ENGINEERING_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(REPOSITORY_ENGINEERING_DIR)'))))</RepositoryEngineeringDir>
+    <WasmAppBuilderTasksAssemblyPath Condition="'$(WasmAppBuilderTasksAssemblyPath)' == '' and '$(WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH)' != ''">$([System.IO.Path]::GetFullPath('$(WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH)'))</WasmAppBuilderTasksAssemblyPath>
   </PropertyGroup>
 </Project>
