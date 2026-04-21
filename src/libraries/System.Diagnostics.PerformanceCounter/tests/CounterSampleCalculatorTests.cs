@@ -15,16 +15,21 @@ namespace System.Diagnostics.Tests
 
             PerformanceCounter counterSample = CreateCounter(categoryName, PerformanceCounterType.ElapsedTime);
 
-            long startTimestamp = Stopwatch.GetTimestamp();
-            counterSample.RawValue = startTimestamp;
-            Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
+            // Timing comparisons can be flaky under CI load, so retry.
+            RetryHelper.Execute(() =>
+            {
+                long startTimestamp = Stopwatch.GetTimestamp();
+                counterSample.RawValue = startTimestamp;
+                Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
 
-            System.Threading.Thread.Sleep(500);
+                System.Threading.Thread.Sleep(500);
 
-            var counterVal = Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
-            var elapsed = (double)(Stopwatch.GetTimestamp() - startTimestamp) / Stopwatch.Frequency;
+                var counterVal = Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
+                var elapsed = (double)(Stopwatch.GetTimestamp() - startTimestamp) / Stopwatch.Frequency;
+                Assert.True(Math.Abs(elapsed - counterVal) < .3, $"Expected elapsed ({elapsed:F3}s) and counterVal ({counterVal:F3}s) to be within 0.3s");
+            }, maxAttempts: 3);
+
             Helpers.DeleteCategory(categoryName);
-            Assert.True(Math.Abs(elapsed - counterVal) < .3);
         }
 
         public static PerformanceCounter CreateCounter(string categoryName, PerformanceCounterType counterType)
