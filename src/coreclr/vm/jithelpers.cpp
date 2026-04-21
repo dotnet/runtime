@@ -1660,8 +1660,8 @@ extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransit
         // at the call site so the JIT's unconditional jump skips over itself
         // and resumes Tier0 execution.
 #if defined(TARGET_AMD64)
-        // jmp rax = FF E0 (2 bytes)
-        osrMethodCode = ip + 2;
+        // sub rsp,8 (4 bytes) + jmp rax (2 bytes) = 6 bytes to skip
+        osrMethodCode = ip + 6;
 #elif defined(TARGET_ARM64)
         // br xN = 4 bytes
         osrMethodCode = ip + 4;

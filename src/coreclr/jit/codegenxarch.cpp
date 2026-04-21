@@ -1930,7 +1930,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_PATCHPOINT:
-            genPatchpoint(treeNode->AsUnOp());
+            genPatchpoint(treeNode->AsOp());
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            genPatchpointForced(treeNode->AsOp());
             break;
 
         case GT_LEA:

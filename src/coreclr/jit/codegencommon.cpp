@@ -7295,35 +7295,83 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
 //------------------------------------------------------------------------
 // genPatchpoint:
 //   Generate code for a GT_PATCHPOINT node.
-//   This transfers control to the OSR method variant.
-//   The operand contains the PCODE (entry address) of the OSR method.
+//   Emits a call to the patchpoint helper followed by an unconditional jump
+//   to the returned address.
 //
 // Arguments:
-//   treeNode - The GT_PATCHPOINT node
+//   treeNode - The GT_PATCHPOINT node (BINOP: counterAddr, ilOffset)
 //
-void CodeGen::genPatchpoint(GenTreeUnOp* treeNode)
+void CodeGen::genPatchpoint(GenTreeOp* treeNode)
 {
-    GenTree* op = treeNode->gtGetOp1();
-    assert(op->TypeIs(TYP_I_IMPL));
+    genConsumeOperands(treeNode);
 
-    regNumber addrReg = genConsumeReg(op);
+    // Call the patchpoint helper — result in REG_INTRET
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT, 0, EA_UNKNOWN);
 
     // Jump to the address returned by the patchpoint helper.
     // Must not use INS_tail_i_jmp: it is a REX-prefixed jump that the
     // win-x64 unwinder detects as an epilog instruction, which would
     // incorrectly signal that callee saves / RSP have been restored.
 #ifdef TARGET_XARCH
-    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, addrReg);
+    // On x64, the OSR entry point expects RSP = Tier0_SP - 8, simulating
+    // the return-address push of a call instruction.  Since we transfer
+    // via jmp (not call), we adjust RSP manually.  The call/return pair
+    // for the helper left the old return address at [Tier0_SP-8], so the
+    // sub merely re-exposes it for the unwinder.
+    //
+    // No-transition path: the helper returns the address of the add below,
+    // so the jmp lands there and RSP is restored.
+    //
+    // Encoding: sub rsp,8 (4 B) | jmp rax (2 B) | add rsp,8 (4 B)
+    //           <---- skip = 6 bytes ---->
+    GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, 8);
+    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
+    GetEmitter()->emitIns_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, 8);
 #elif defined(TARGET_ARM64)
-    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, addrReg);
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, REG_INTRET);
 #elif defined(TARGET_ARM)
-    GetEmitter()->emitIns_R(INS_bx, EA_PTRSIZE, addrReg);
+    GetEmitter()->emitIns_R(INS_bx, EA_PTRSIZE, REG_INTRET);
 #elif defined(TARGET_LOONGARCH64)
-    GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, addrReg, 0);
+    GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
 #elif defined(TARGET_RISCV64)
-    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, addrReg, 0);
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
 #else
 #error "Unsupported target architecture for GT_PATCHPOINT"
+#endif
+}
+
+//------------------------------------------------------------------------
+// genPatchpointForced:
+//   Generate code for a GT_PATCHPOINT_FORCED node.
+//   Emits a call to the forced patchpoint helper followed by a jump to the
+//   returned OSR method address.
+//
+// Arguments:
+//   treeNode - The GT_PATCHPOINT_FORCED node (UNOP: ilOffset)
+//
+void CodeGen::genPatchpointForced(GenTreeOp* treeNode)
+{
+    genConsumeOperands(treeNode);
+
+    // Call the forced patchpoint helper — result in REG_INTRET
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT_FORCED, 0, EA_UNKNOWN);
+
+    // Jump to the returned OSR method address.
+    // See genPatchpoint for why the sub/add RSP adjustment is needed on x64.
+#ifdef TARGET_XARCH
+    GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, 8);
+    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
+    GetEmitter()->emitIns_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, 8);
+#elif defined(TARGET_ARM64)
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_ARM)
+    GetEmitter()->emitIns_R(INS_bx, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_LOONGARCH64)
+    GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+#elif defined(TARGET_RISCV64)
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+#else
+#error "Unsupported target architecture for GT_PATCHPOINT_FORCED"
 #endif
 }
 

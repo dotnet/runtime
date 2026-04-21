@@ -689,8 +689,14 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_SETCC:
         case GT_MEMORYBARRIER:
         case GT_RETURN_SUSPEND:
-        case GT_PATCHPOINT:
             srcCount = BuildSimple(tree);
+            break;
+
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // NYI on ARM32
+            srcCount = 0;
+            NYI_ARM("GT_PATCHPOINT");
             break;
 
         case GT_JTRUE:

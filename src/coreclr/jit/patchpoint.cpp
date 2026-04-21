@@ -31,13 +31,11 @@ class PatchpointTransformer
 {
     const int HIGH_PROBABILITY = 99;
     unsigned  ppCounterLclNum;
-    unsigned  ppOsrMethodLclNum;
     Compiler* compiler;
 
 public:
     PatchpointTransformer(Compiler* compiler)
         : ppCounterLclNum(BAD_VAR_NUM)
-        , ppOsrMethodLclNum(BAD_VAR_NUM)
         , compiler(compiler)
     {
     }
@@ -118,13 +116,13 @@ private:
     //
     //  if (--ppCounter <= 0)
     //  {
-    //     PCODE target = ppHelper(&ppCounter, ilOffset);
-    //     GT_PATCHPOINT(target);  // unconditional jump
+    //     GT_PATCHPOINT(&ppCounter, ilOffset);  // calls helper + unconditional jump
     //  }
     //  S;
     //
-    // The helper returns the OSR method address when a transition should occur,
-    // or return_address + jump_size to skip the jump and continue in Tier0.
+    // The GT_PATCHPOINT node emits the helper call and a jump to the returned
+    // address. The helper returns the OSR method address when a transition should
+    // occur, or return_address + jump_size to skip the jump and continue in Tier0.
     //
     void TransformBlock(BasicBlock* block)
     {
@@ -138,19 +136,13 @@ private:
             TransformEntry(compiler->fgFirstBB);
         }
 
-        if (ppOsrMethodLclNum == BAD_VAR_NUM)
-        {
-            ppOsrMethodLclNum = compiler->lvaGrabTemp(true DEBUGARG("patchpoint osr method"));
-            compiler->lvaTable[ppOsrMethodLclNum].lvType = TYP_I_IMPL;
-        }
-
         // Capture the IL offset
         IL_OFFSET ilOffset = block->bbCodeOffs;
         assert(ilOffset != BAD_IL_OFFSET);
 
         // Current block now becomes the test block
         BasicBlock* remainderBlock = compiler->fgSplitBlockAtBeginning(block);
-        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_THROW, block);
+        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_ALWAYS, block);
 
         // Update flow and flags
         block->SetFlags(BBF_INTERNAL);
@@ -162,6 +154,11 @@ private:
         trueEdge->setLikelihood(HIGH_PROBABILITY / 100.0);
         falseEdge->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
         block->SetCond(trueEdge, falseEdge);
+
+        // Helper block falls through to remainder (the helper returns a skip
+        // address that jumps past the GT_PATCHPOINT jump instruction).
+        FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, helperBlock);
+        helperBlock->SetTargetEdge(newEdge);
 
         // Update weights
         remainderBlock->inheritWeight(block);
@@ -187,22 +184,14 @@ private:
 
         // Fill in helper block
         //
-        // PCODE target = PPHelper(&ppCounter, ilOffset);
-        // GT_PATCHPOINT(target);  // unconditional jump to returned address
-        GenTree*     ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTree*     ppCounterAddr = compiler->gtNewLclVarAddrNode(ppCounterLclNum);
-        GenTreeCall* helperCall =
-            compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT, TYP_I_IMPL, ppCounterAddr, ilOffsetNode);
+        // GT_PATCHPOINT(&ppCounter, ilOffset) — emits helper call + unconditional jump
+        GenTree* ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
+        GenTree* ppCounterAddr = compiler->gtNewLclVarAddrNode(ppCounterLclNum);
 
-        GenTree* osrMethodStore = compiler->gtNewStoreLclVarNode(ppOsrMethodLclNum, helperCall);
-        compiler->fgNewStmtAtEnd(helperBlock, osrMethodStore);
+        GenTree* patchpointNode = compiler->gtNewOperNode(GT_PATCHPOINT, TYP_VOID, ppCounterAddr, ilOffsetNode);
+        patchpointNode->gtFlags |= GTF_CALL;
 
-        // Unconditional jump to the address returned by the helper
-        GenTree* osrTarget     = compiler->gtNewLclvNode(ppOsrMethodLclNum, TYP_I_IMPL);
-        GenTree* patchpointJmp = compiler->gtNewOperNode(GT_PATCHPOINT, TYP_VOID, osrTarget);
-        patchpointJmp->gtFlags |= GTF_CALL;
-
-        compiler->fgNewStmtAtEnd(helperBlock, patchpointJmp);
+        compiler->fgNewStmtAtEnd(helperBlock, patchpointNode);
     }
 
     //  ppCounter = <initial value>
@@ -231,8 +220,7 @@ private:
     //  ==>
     //
     //  ~~{ S0; ... SN; }~~ (deleted)
-    //  PCODE target = JIT_PARTIAL_COMPILATION_PATCHPOINT(ilOffset);
-    //  GT_PATCHPOINT(target);  // non-local jump to OSR method
+    //  GT_PATCHPOINT_FORCED(ilOffset);  // calls forced helper + jump to OSR method
     //
     // Note S0 -- SN are not forever lost -- they will appear in the OSR version
     // of the method created when the patchpoint is hit.
@@ -252,29 +240,13 @@ private:
         // Update flow
         block->SetKindAndTargetEdge(BBJ_THROW);
 
-        if (ppOsrMethodLclNum == BAD_VAR_NUM)
-        {
-            ppOsrMethodLclNum = compiler->lvaGrabTemp(true DEBUGARG("patchpoint osr method"));
-            compiler->lvaTable[ppOsrMethodLclNum].lvType = TYP_I_IMPL;
-        }
+        // GT_PATCHPOINT_FORCED(ilOffset) — emits forced helper call + jump to OSR method
+        GenTree* ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
 
-        // Add helper call
-        //
-        // PCODE target = PartialCompilationPatchpointHelper(ilOffset);
-        //
-        GenTree*     ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTreeCall* helperCall =
-            compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_I_IMPL, ilOffsetNode);
+        GenTree* patchpointNode = compiler->gtNewOperNode(GT_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
+        patchpointNode->gtFlags |= GTF_CALL;
 
-        GenTree* osrMethodStore = compiler->gtNewStoreLclVarNode(ppOsrMethodLclNum, helperCall);
-        compiler->fgNewStmtAtEnd(block, osrMethodStore);
-
-        // GT_PATCHPOINT(target) - non-local jump to OSR method
-        GenTree* osrTarget     = compiler->gtNewLclvNode(ppOsrMethodLclNum, TYP_I_IMPL);
-        GenTree* patchpointJmp = compiler->gtNewOperNode(GT_PATCHPOINT, TYP_VOID, osrTarget);
-        patchpointJmp->gtFlags |= GTF_CALL;
-
-        compiler->fgNewStmtAtEnd(block, patchpointJmp);
+        compiler->fgNewStmtAtEnd(block, patchpointNode);
     }
 };
 
