@@ -107,6 +107,15 @@ namespace System.Runtime.CompilerServices
             {
                 if (IsUninitialized(s_activeFlags))
                 {
+                    // The debugger may have set Task.s_asyncDebuggingEnabled directly via ICorDebug
+                    // before any ETW session is established. In that case, s_asyncDebuggerActiveFlags
+                    // will still be Disabled because OnEventCommand was never called. Honor the
+                    // debugger's request by enabling default flags when s_asyncDebuggingEnabled is set.
+                    if (s_asyncDebuggerActiveFlags == Flags.Disabled && Task.s_asyncDebuggingEnabled)
+                    {
+                        s_asyncDebuggerActiveFlags = DefaultFlags | Flags.AsyncDebugger;
+                    }
+
                     s_activeFlags = s_asyncProfilerActiveFlags | s_asyncDebuggerActiveFlags;
                 }
 
