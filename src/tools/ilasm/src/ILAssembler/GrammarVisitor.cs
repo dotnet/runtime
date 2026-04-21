@@ -142,6 +142,14 @@ namespace ILAssembler
                 _entityRegistry.Module.Name = _options.OutputFileName;
             }
 
+            // Apply DebuggableAttribute AFTER all source declarations have been processed,
+            // so that GetCoreLibAssemblyReference() can find the correct corelib assembly ref
+            // declared in the source (e.g., System.Runtime) instead of creating a fallback mscorlib.
+            if (_entityRegistry.Assembly is not null && (_options.Debug || _options.DebugMode is not null))
+            {
+                ApplyDebuggableAttribute();
+            }
+
             // Return early if there are structural errors that prevent building valid metadata.
             // However, allow errors in method bodies (ILA0016-0019) to pass through so we can
             // emit the assembly with the errors reported.
@@ -620,11 +628,8 @@ namespace ILAssembler
                 ApplyKeyFile(_options.KeyFile);
             }
 
-            // Apply DebuggableAttribute for --debug option
-            if (_options.Debug || _options.DebugMode is not null)
-            {
-                ApplyDebuggableAttribute();
-            }
+            // DebuggableAttribute is applied in BuildImage() after all source declarations
+            // have been processed, so the correct corelib assembly ref can be found.
 
             return GrammarResult.SentinelValue.Result;
         }
