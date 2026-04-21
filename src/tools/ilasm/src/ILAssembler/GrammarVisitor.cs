@@ -2099,6 +2099,19 @@ namespace ILAssembler
             {
                 VisitLanguageDecl(languageDecl);
             }
+            if (context.customAttrDecl() is { } topLevelCustomAttr)
+            {
+                // Top-level custom attribute — set owner to assembly or module
+                if (VisitCustomAttrDecl(topLevelCustomAttr).Value is { } customAttr)
+                {
+                    customAttr.Owner = _entityRegistry.Assembly ?? (EntityRegistry.EntityBase)_entityRegistry.Module;
+                }
+            }
+            if (context.secDecl() is { } topSecDecl)
+            {
+                var declarativeSecurity = VisitSecDecl(topSecDecl).Value;
+                declarativeSecurity?.Parent = _entityRegistry.Assembly;
+            }
             if (context.typedefDecl() is { } typedefDecl)
             {
                 VisitTypedefDecl(typedefDecl);
