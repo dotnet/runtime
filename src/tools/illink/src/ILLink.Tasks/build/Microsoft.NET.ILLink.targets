@@ -204,8 +204,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     ResolvedFileToPublish items for the intermediate assembly and project references.
 
     This is a public extension point. Other targets may hook into it via
-    BeforeTargets="PrepareTrimConfiguration" to add RuntimeHostConfigurationOption items
-    that will be included in _TrimmerFeatureSettings for both ILLink and ILC.
+    BeforeTargets="PrepareTrimConfiguration" to add RuntimeHostConfigurationOption items.
+    Only items with Trim="true" metadata will be included in _TrimmerFeatureSettings
+    for both ILLink and ILC.
 
     Consumers that need trim metadata on ResolvedFileToPublish should depend on this target.
     Metadata set here flows to ManagedAssemblyToLink via _ComputeManagedAssemblyToLink (which
