@@ -2127,7 +2127,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     Metrics.LoopsInverted++;
 
-    // Synthesize a GT_ASSERTION at the start of `stayInLoopSucc` recording that the
+    // Synthesize a GT_ASSUME at the start of `stayInLoopSucc` recording that the
     // loop guard is known to be true on every entry into the loop body. This compensates
     // for the cyclic value numbers that loop inversion creates on phi merges, which can
     // otherwise prevent later phases (assertion prop, range check) from proving that
@@ -2152,11 +2152,11 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             relopClone->gtFlags &= ~GTF_RELOP_JMP_USED;
             relopClone->gtFlags |= GTF_DONT_CSE;
 
-            GenTree*   assertion = gtNewOperNode(GT_ASSERTION, TYP_VOID, relopClone);
+            GenTree*   assertion = gtNewOperNode(GT_ASSUME, TYP_VOID, relopClone);
             Statement* stmt      = fgNewStmtFromTree(assertion, condBlock->lastStmt()->GetDebugInfo());
             fgInsertStmtAtBeg(stayInLoopSucc, stmt);
-            setMethodHasAssertionNodes();
-            JITDUMP("Inserted GT_ASSERTION at start of " FMT_BB " to record loop guard\n", stayInLoopSucc->bbNum);
+            setMethodHasAssumptions();
+            JITDUMP("Inserted GT_ASSUME at start of " FMT_BB " to record loop guard\n", stayInLoopSucc->bbNum);
         }
     }
 

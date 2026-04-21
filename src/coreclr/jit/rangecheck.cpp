@@ -20,9 +20,9 @@ PhaseStatus Compiler::rangeCheckPhase()
         madeChanges = GetRangeCheck()->OptimizeRangeChecks();
     }
 
-    // GT_ASSERTION nodes are no longer needed. Remove all side-effect-free instances
+    // GT_ASSUME nodes are no longer needed. Remove all side-effect-free instances
     // to avoid pessimizing subsequent phases
-    if (doesMethodHaveAssertionNodes())
+    if (doesMethodHaveAssumptions())
     {
         for (BasicBlock* const block : Blocks())
         {
@@ -30,7 +30,7 @@ PhaseStatus Compiler::rangeCheckPhase()
             {
                 Statement* nextStmt = stmt->GetNextStmt();
                 GenTree*   root     = stmt->GetRootNode();
-                if (root->OperIs(GT_ASSERTION) && ((root->gtGetOp1()->gtFlags & GTF_SIDE_EFFECT) == 0))
+                if (root->OperIs(GT_ASSUME) && ((root->gtGetOp1()->gtFlags & GTF_SIDE_EFFECT) == 0))
                 {
                     fgRemoveStmt(block, stmt);
                     madeChanges = true;

@@ -12956,7 +12956,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     case GT_RETFILT:
                     case GT_RETURN_SUSPEND:
                     case GT_NULLCHECK:
-                    case GT_ASSERTION:
+                    case GT_ASSUME:
                         if (tree->gtGetOp1() != nullptr)
                         {
                             tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),

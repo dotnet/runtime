@@ -7615,7 +7615,7 @@ public:
 #define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 #define OMF_HAS_BOUNDS_CHECKS                  0x00200000 // Method contains bounds checks
 #define OMF_HAS_EARLY_QMARKS                   0x00400000 // Method contains early expandable QMARKs
-#define OMF_HAS_ASSERTION_NODES                0x00800000 // Method contains GT_ASSERTION nodes
+#define OMF_HAS_ASSUMPTIONS                    0x00800000 // Method contains GT_ASSUME nodes
 
     // clang-format on
 
@@ -7666,14 +7666,14 @@ public:
         optMethodFlags |= OMF_HAS_EXPANDABLE_CAST;
     }
 
-    bool doesMethodHaveAssertionNodes() const
+    bool doesMethodHaveAssumptions() const
     {
-        return (optMethodFlags & OMF_HAS_ASSERTION_NODES) != 0;
+        return (optMethodFlags & OMF_HAS_ASSUMPTIONS) != 0;
     }
 
-    void setMethodHasAssertionNodes()
+    void setMethodHasAssumptions()
     {
-        optMethodFlags |= OMF_HAS_ASSERTION_NODES;
+        optMethodFlags |= OMF_HAS_ASSUMPTIONS;
     }
 
     bool doesMethodHaveGuardedDevirtualization() const
@@ -12501,7 +12501,7 @@ public:
             case GT_RUNTIMELOOKUP:
             case GT_ARR_ADDR:
             case GT_KEEPALIVE:
-            case GT_ASSERTION:
+            case GT_ASSUME:
             case GT_INC_SATURATE:
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();

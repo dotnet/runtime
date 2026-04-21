@@ -2189,8 +2189,8 @@ void Compiler::optAssertionGen(GenTree* tree)
             assertionInfo = optAssertionGenJtrue(tree);
             break;
 
-        case GT_ASSERTION:
-            // The relop wrapped by GT_ASSERTION is known to be true at this point.
+        case GT_ASSUME:
+            // The relop wrapped by GT_ASSUME is known to be true at this point.
             // Generate the same assertion we would for `JTRUE(relop)` taking the true edge,
             // but skip the complementary assertion since this is a one-sided fact.
             assertionInfo = optCreateJTrueBoundsAssertion(tree, /* createComplementary */ false);
