@@ -3822,9 +3822,9 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
                 // TODO: Microsoft, implement the wait list
                 pSyncBlockData->AdditionalThreadCount = 0;
 
-                if (pBlock->m_Link.m_pNext != NULL)
+                if (pBlock->m_pNext != NULL)
                 {
-                    PTR_SLink pLink = pBlock->m_Link.m_pNext;
+                    PTR_SyncBlock pLink = pBlock->m_pNext;
                     do
                     {
                         pSyncBlockData->AdditionalThreadCount++;
@@ -3855,7 +3855,7 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
     if (syncBlock == (CLRDATA_ADDRESS)NULL && SyncBlockCache::s_pSyncBlockCache->m_pCleanupBlockList)
     {
         pBlock = (SyncBlock *) PTR_SyncBlock(
-            PTR_HOST_TO_TADDR(SyncBlockCache::s_pSyncBlockCache->m_pCleanupBlockList) - offsetof(SyncBlock, m_Link));
+            PTR_HOST_TO_TADDR(SyncBlockCache::s_pSyncBlockCache->m_pCleanupBlockList));
     }
     else
     {
@@ -3865,10 +3865,10 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
     if (pBlock)
     {
         syncBlockCData->SyncBlockPointer = HOST_CDADDR(pBlock);
-        if (pBlock->m_Link.m_pNext)
+        if (pBlock->m_pNext)
         {
             syncBlockCData->nextSyncBlock = (CLRDATA_ADDRESS)
-                (PTR_HOST_TO_TADDR(pBlock->m_Link.m_pNext) - offsetof(SyncBlock, m_Link));
+                PTR_HOST_TO_TADDR(pBlock->m_pNext);
         }
 
 #ifdef FEATURE_COMINTEROP

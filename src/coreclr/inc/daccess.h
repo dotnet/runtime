@@ -238,20 +238,10 @@
 // instance pointers should be held across a Flush().
 //
 // Accessing into an object can lead to some unusual behavior.  For
-// example, the SList class relies on objects to contain an SLink
-// instance that it uses for list maintenance.  This SLink can be
-// embedded anywhere in the larger object.  The SList access is always
-// purely to an SLink, so when using the access layer it will only
-// retrieve an SLink's worth of data.  The SList template will then
-// do some address arithmetic to determine the start of the real
-// object and cast the resulting pointer to the final object type.
-// When using the access layer this results in a new ?PTR being
-// created and used, so a new instance will result.  The internal
-// SLink instance will have no relation to the new object instance
-// even though in target address terms one is embedded in the other.
-// The assumption of data stability means that this won't cause
-// a problem, but care must be taken with the address arithmetic,
-// as laid out in rules #2 and #3.
+// example, the SList class uses an intrusive m_pNext pointer
+// embedded in each object for list maintenance.  The SList access is
+// always to the object itself, so when using the access layer it will
+// retrieve the full object's data.
 //
 // 4.  Global address references cannot be used.  Any reference to a
 //     global piece of code or data, such as a function address, global
