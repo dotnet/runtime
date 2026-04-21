@@ -3,339 +3,397 @@
 //-----------------------------------------------------------------------------
 // @File: slist.h
 //
-
-//
-// @commn: Bunch of utility classes
-//
-// HISTORY:
-//   02/03/98:  	created helper classes
-//						SLink, link node for singly linked list, every class that is intrusively
-//								linked should have a data member of this type
-//						SList, template linked list class, contains only inline
-//								methods for fast list operations, with proper type checking
-//
-//						see below for futher info. on how to use these template classes
+// Unified singly linked list template shared between CoreCLR VM and
+// NativeAOT Runtime.
 //
 //-----------------------------------------------------------------------------
-
-//#ifndef _H_UTIL
-//#error "I am a part of util.hpp Please don't include me alone !"
-//#endif
-
 
 #ifndef _H_SLIST_
 #define _H_SLIST_
 
+// ---------------------------------------------------------------------------
+// Environment compatibility — define CoreCLR macros as no-ops for NativeAOT.
+// ---------------------------------------------------------------------------
+#if defined(FEATURE_NATIVEAOT)
+  #define LIMITED_METHOD_CONTRACT
+  #define LIMITED_METHOD_DAC_CONTRACT
+  #define WRAPPER_NO_CONTRACT
+#endif
+
 #include "cdacdata.h"
+#include <utility> // std::forward (used by SListElem)
 
-//------------------------------------------------------------------
-// struct SLink, to use a singly linked list
-// have a data member m_Link of type SLink in your class
-// and instantiate the template SList class
-//--------------------------------------------------------------------
-
-struct SLink;
-typedef DPTR(struct SLink) PTR_SLink;
-
-struct SLink
+// ---------------------------------------------------------------------------
+// SListMode — controls which SList operations are permitted.
+// ---------------------------------------------------------------------------
+enum class SListMode
 {
-    PTR_SLink m_pNext;
-    SLink()
-    {
-        LIMITED_METHOD_CONTRACT;
+    Thin,         // Head-only: InsertHead, RemoveHead, no tail.
+    Tail,         // Adds InsertTail/GetTail for O(1) tail insertion.
+};
 
-        m_pNext = NULL;
+// ---------------------------------------------------------------------------
+// SListTraits
+//
+// T must have a pointer-sized m_pNext field.
+// ---------------------------------------------------------------------------
+template <typename T, SListMode Mode = SListMode::Thin>
+struct SListTraits
+{
+    typedef DPTR(T) PTR_T;
+    typedef DPTR(PTR_T) PTR_PTR_T;
+
+    static constexpr bool HasTail = (Mode == SListMode::Tail);
+
+    static inline PTR_PTR_T GetNextPtr(PTR_T pT)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(pT != NULL);
+        return dac_cast<PTR_PTR_T>(dac_cast<TADDR>(pT) + offsetof(T, m_pNext));
     }
 
-    void InsertAfter(SLink* pLinkToInsert)
+    static inline bool Equals(PTR_T pA, PTR_T pB)
     {
         LIMITED_METHOD_CONTRACT;
-        PRECONDITION_MSG(NULL == pLinkToInsert->m_pNext, "This method does not support inserting lists");
-
-        PTR_SLink pTemp = m_pNext;
-
-        m_pNext = PTR_SLink(pLinkToInsert);
-        pLinkToInsert->m_pNext = pTemp;
-    }
-
-    // find pLink within the list starting at pHead
-    // if found remove the link from the list and return the link
-    // otherwise return NULL
-    static SLink* FindAndRemove(SLink *pHead, SLink* pLink, SLink ** ppPrior)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-	    _ASSERTE(pHead != NULL);
-	    _ASSERTE(pLink != NULL);
-
-	    SLink* pFreeLink = NULL;
-        *ppPrior = NULL;
-
-	    while (pHead->m_pNext != NULL)
-	    {
-		    if (pHead->m_pNext == pLink)
-		    {
-			    pFreeLink = pLink;
-			    pHead->m_pNext = pLink->m_pNext;
-                *ppPrior = pHead;
-                break;
-		    }
-            pHead = pHead->m_pNext;
-	    }
-
-	    return pFreeLink;
+        return pA == pB;
     }
 };
 
-//------------------------------------------------------------------
-// class SList. Intrusive singly linked list.
-//
-// To use SList with the default instantiation, your class should
-// define a data member of type SLink and named 'm_Link'. To use a
-// different field name, you need to provide an explicit LinkPtr
-// template argument. For example:
-//   'SList<MyClass, false, MyClass*, &MyClass::m_FieldName>'
-//
-// SList has two different behaviours depending on boolean
-// fHead variable,
-//
-// if fHead is true, then the list allows only InsertHead  operations
-// if fHead is false, then the list allows only InsertTail operations
-// the code is optimized to perform these operations
-// all methods are inline, and conditional compiled based on template
-// argument 'fHead'
-// so there is no actual code size increase
-//--------------------------------------------------------------
-template <class T, bool fHead = false, typename __PTR = T*, SLink T::*LinkPtr = &T::m_Link>
-class SList
+// ---------------------------------------------------------------------------
+// SListTailBase — conditionally holds m_pTail when Traits::HasTail is true.
+// ---------------------------------------------------------------------------
+template <typename PTR_T, bool hasTail>
+struct SListTailBase { };
+
+template <typename PTR_T>
+struct SListTailBase<PTR_T, true>
 {
-public:
-    // typedef used by the Queue class below
-    typedef T ENTRY_TYPE;
+    PTR_T m_pTail = NULL;
+};
 
-protected:
-
-    // used as sentinel
-    SLink  m_link; // slink.m_pNext == Null
-    PTR_SLink m_pHead;
-    PTR_SLink m_pTail;
+// ---------------------------------------------------------------------------
+// SList
+//
+// Intrusive singly linked list. Elements must have a pointer-sized m_pNext
+// field. Use SListTraits<T, SListMode::Tail> for O(1) tail insertion.
+// ---------------------------------------------------------------------------
+template <typename T, typename Traits = SListTraits<T>>
+struct SList : public Traits, private SListTailBase<typename Traits::PTR_T, Traits::HasTail>
+{
+    typedef typename Traits::PTR_T PTR_T;
+    typedef typename Traits::PTR_PTR_T PTR_PTR_T;
 
     // as a generic data structure, friend to all specializations of cdac_data
     template<typename U> friend struct ::cdac_data;
 
-    // get the list node within the object
-    static SLink* GetLink (T* pLink)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return &(pLink->*LinkPtr);
-    }
-
-    // move to the beginning of the object given the pointer within the object
-    static T* GetObject (SLink* pLink)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        if (pLink == NULL)
-        {
-            return NULL;
-        }
-        else
-        {
-#if 1
-            // Newer compilers define offsetof to be __builtin_offsetof, which doesn't use the
-            // old-school memory model trick to determine offset.
-            const UINT_PTR offset = (((UINT_PTR)&(((T *)0x1000)->*LinkPtr))-0x1000);
-            return (T*)__PTR(dac_cast<TADDR>(pLink) - offset);
-#else
-            return (T*)__PTR(dac_cast<TADDR>(pLink) - offsetof(T, *LinkPtr));
-#endif
-        }
-    }
+    PTR_T m_pHead = NULL;
 
 public:
-
-    SList()
-    {
-        WRAPPER_NO_CONTRACT;
-#ifndef DACCESS_COMPILE
-        Init();
-#endif // !defined(DACCESS_COMPILE)
-    }
-
-    void Init()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pHead = PTR_SLink(&m_link);
-        // NOTE :: fHead variable is template argument
-        // the following code is a compiled in, only if the fHead flag
-        // is set to false,
-        if (!fHead)
-        {
-            m_pTail = PTR_SLink(&m_link);
-        }
-    }
 
     bool IsEmpty()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pHead->m_pNext == NULL;
+        return m_pHead == NULL;
+    }
+
+    PTR_T GetHead()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pHead;
+    }
+
+    static T* GetNext(T* pObj)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (pObj == NULL)
+            return NULL;
+
+        return *Traits::GetNextPtr(dac_cast<PTR_T>(pObj));
+    }
+
+    // ---------------------------------------------------------------------------
+    // Pointer-to-pointer iterator — supports Insert and Remove at the current
+    // position. Used via Begin()/End().
+    // ---------------------------------------------------------------------------
+    class Iterator
+    {
+        friend struct SList;
+
+    public:
+        Iterator(Iterator const &it)
+            : m_ppCur(it.m_ppCur)
+#ifdef _DEBUG
+            , m_fIsValid(it.m_fIsValid)
+#endif
+        { }
+
+        Iterator& operator=(Iterator const &it)
+        {
+            m_ppCur = it.m_ppCur;
+#ifdef _DEBUG
+            m_fIsValid = it.m_fIsValid;
+#endif
+            return *this;
+        }
+
+        PTR_T operator->()
+        { _Validate(e_HasValue); return _Value(); }
+
+        PTR_T operator*()
+        { _Validate(e_HasValue); return _Value(); }
+
+        Iterator & operator++()
+        {
+            _Validate(e_HasValue);
+            m_ppCur = Traits::GetNextPtr(_Value());
+            return *this;
+        }
+
+        Iterator operator++(int)
+        {
+            _Validate(e_HasValue);
+            PTR_PTR_T ppRet = m_ppCur;
+            ++(*this);
+            return Iterator(ppRet);
+        }
+
+        bool operator==(Iterator const &rhs)
+        {
+            _Validate(e_CanCompare);
+            rhs._Validate(e_CanCompare);
+            return Traits::Equals(_Value(), rhs._Value());
+        }
+
+        bool operator==(PTR_T pT)
+        {
+            _Validate(e_CanCompare);
+            return Traits::Equals(_Value(), pT);
+        }
+
+        bool operator!=(Iterator const &rhs)
+        { return !operator==(rhs); }
+
+    private:
+        Iterator(PTR_PTR_T ppItem)
+            : m_ppCur(ppItem)
+#ifdef _DEBUG
+            , m_fIsValid(true)
+#endif
+        { }
+
+        Iterator Insert(PTR_T pItem)
+        {
+            _Validate(e_CanInsert);
+            *Traits::GetNextPtr(pItem) = *m_ppCur;
+            *m_ppCur = pItem;
+            Iterator itRet(m_ppCur);
+            ++(*this);
+            return itRet;
+        }
+
+        Iterator Remove()
+        {
+            _Validate(e_HasValue);
+            *m_ppCur = *Traits::GetNextPtr(*m_ppCur);
+            PTR_PTR_T ppRet = m_ppCur;
+            *this = End();
+            return Iterator(ppRet);
+        }
+
+        static Iterator End()
+        { return Iterator(NULL); }
+
+        PTR_PTR_T m_ppCur;
+#ifdef _DEBUG
+        mutable bool m_fIsValid;
+#endif
+
+        PTR_T _Value() const
+        {
+#ifdef _DEBUG
+            _ASSERTE(m_fIsValid);
+#endif
+            return dac_cast<PTR_T>(m_ppCur == NULL ? NULL : *m_ppCur);
+        }
+
+        enum e_ValidateOperation
+        {
+            e_CanCompare,
+            e_CanInsert,
+            e_HasValue,
+        };
+
+        void _Validate(e_ValidateOperation op) const
+        {
+#ifdef _DEBUG
+            _ASSERTE(m_fIsValid);
+#endif
+            if ((op != e_CanCompare && m_ppCur == NULL) ||
+                (op == e_HasValue && *m_ppCur == NULL))
+            {
+                _ASSERTE(!"Invalid SList::Iterator use.");
+#ifdef _DEBUG
+                m_fIsValid = false;
+#endif
+            }
+        }
+    };
+
+    Iterator Begin()
+    {
+        typedef SList<T, Traits> T_THIS;
+        return Iterator(dac_cast<PTR_PTR_T>(
+            dac_cast<TADDR>(this) + offsetof(T_THIS, m_pHead)));
+    }
+
+    Iterator End()
+    { return Iterator::End(); }
+
+    Iterator FindFirst(PTR_T pItem)
+    {
+        Iterator it = Begin();
+        for (; it != End(); ++it)
+        {
+            if (Traits::Equals(*it, pItem))
+                break;
+        }
+        return it;
+    }
+
+    // Inserts pItem *before* it. Returns iterator pointing to inserted item.
+    Iterator Insert(Iterator & it, PTR_T pItem)
+    {
+        static_assert(!Traits::HasTail, "Iterator Insert cannot maintain m_pTail");
+        return it.Insert(pItem);
+    }
+
+    // Removes item pointed to by it. Returns iterator to following item.
+    Iterator Remove(Iterator & it)
+    {
+        static_assert(!Traits::HasTail, "Iterator Remove cannot maintain m_pTail");
+        return it.Remove();
     }
 
 #ifndef DACCESS_COMPILE
 
-    void InsertTail(T *pObj)
+    void InsertHead(PTR_T pItem)
     {
         LIMITED_METHOD_CONTRACT;
-        // NOTE : conditional compilation on fHead template variable
-        if (!fHead)
+        _ASSERTE(pItem != NULL);
+        if constexpr (Traits::HasTail)
         {
-            _ASSERTE(pObj != NULL);
-            SLink *pLink = GetLink(pObj);
-
-            m_pTail->m_pNext = pLink;
-            m_pTail = pLink;
+            if (m_pHead == NULL)
+                this->m_pTail = pItem;
         }
-        else
-        {// you instantiated this class asking only for InsertHead operations
-            _ASSERTE(0);
-        }
+        *Traits::GetNextPtr(pItem) = m_pHead;
+        m_pHead = pItem;
     }
 
-    void InsertHead(T *pObj)
+    PTR_T RemoveHead()
     {
         LIMITED_METHOD_CONTRACT;
-        // NOTE : conditional compilation on fHead template variable
-        if (fHead)
+        PTR_T pRet = m_pHead;
+        if (pRet != NULL)
         {
-            _ASSERTE(pObj != NULL);
-            SLink *pLink = GetLink(pObj);
-
-            pLink->m_pNext = m_pHead->m_pNext;
-            m_pHead->m_pNext = pLink;
-        }
-        else
-        {// you instantiated this class asking only for InsertTail operations
-            _ASSERTE(0);
-        }
-    }
-
-    T*	RemoveHead()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SLink* pLink = m_pHead->m_pNext;
-        if (pLink != NULL)
-        {
-            m_pHead->m_pNext = pLink->m_pNext;
-        }
-        // conditionally compiled, if the instantiated class
-        // uses Insert Tail operations
-        if (!fHead)
-        {
-            if(m_pTail == pLink)
+            m_pHead = *Traits::GetNextPtr(pRet);
+            if constexpr (Traits::HasTail)
             {
-                m_pTail = m_pHead;
+                if (m_pHead == NULL)
+                    this->m_pTail = NULL;
             }
         }
 
-        return GetObject(pLink);
+        return pRet;
+    }
+
+    void InsertTail(PTR_T pItem)
+    {
+        static_assert(Traits::HasTail, "InsertTail requires Traits::HasTail to be true");
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pItem != NULL);
+        *Traits::GetNextPtr(pItem) = NULL;
+        if (this->m_pTail != NULL)
+            *Traits::GetNextPtr(this->m_pTail) = pItem;
+        else
+            m_pHead = pItem;
+        this->m_pTail = pItem;
+    }
+
+    PTR_T GetTail()
+    {
+        static_assert(Traits::HasTail, "GetTail requires Traits::HasTail to be true");
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return this->m_pTail;
+    }
+
+    bool RemoveFirst(PTR_T pItem)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pItem != NULL);
+
+        PTR_T prev = NULL;
+        PTR_T cur = m_pHead;
+        while (cur != NULL)
+        {
+            if (Traits::Equals(cur, pItem))
+            {
+                PTR_T next = *Traits::GetNextPtr(cur);
+                if (prev == NULL)
+                    m_pHead = next;
+                else
+                    *Traits::GetNextPtr(prev) = next;
+
+                if constexpr (Traits::HasTail)
+                {
+                    if (cur == this->m_pTail)
+                        this->m_pTail = prev;
+                }
+
+                return true;
+            }
+            prev = cur;
+            cur = *Traits::GetNextPtr(cur);
+        }
+
+        return false;
+    }
+
+    // Alias for RemoveFirst, for API compatibility.
+    bool FindAndRemove(PTR_T pItem)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        return RemoveFirst(pItem);
+    }
+
+    // Inserts pNewItem immediately after pAfter in the list.
+    static void InsertAfter(PTR_T pAfter, PTR_T pNewItem)
+    {
+        static_assert(!Traits::HasTail, "InsertAfter cannot maintain m_pTail");
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pAfter != NULL && pNewItem != NULL);
+        _ASSERTE(*Traits::GetNextPtr(pNewItem) == NULL);
+        *Traits::GetNextPtr(pNewItem) = *Traits::GetNextPtr(pAfter);
+        *Traits::GetNextPtr(pAfter) = pNewItem;
     }
 
 #endif // !DACCESS_COMPILE
-
-    T*	GetHead()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetObject(m_pHead->m_pNext);
-    }
-
-    T*	GetTail()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // conditional compile
-        if (fHead)
-        {	// you instantiated this class asking only for InsertHead operations
-            // you need to walk the list yourself to find the tail
-            _ASSERTE(0);
-        }
-        return (m_pHead != m_pTail) ? GetObject(m_pTail) : NULL;
-    }
-
-    static T *GetNext(T *pObj)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(pObj != NULL);
-        return GetObject(GetLink(pObj)->m_pNext);
-    }
-
-    T* FindAndRemove(T *pObj)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(pObj != NULL);
-
-        SLink   *prior;
-        SLink   *ret = SLink::FindAndRemove(m_pHead, GetLink(pObj), &prior);
-
-        if (ret == m_pTail)
-            m_pTail = PTR_SLink(prior);
-
-        return GetObject(ret);
-    }
-
-    class Iterator
-    {
-        friend class SList;
-
-    public:
-        Iterator & operator++()
-        { _ASSERTE(m_cur != NULL); m_cur = SList::GetNext(m_cur); return *this; }
-
-        Iterator operator++(int)
-        { Iterator it(m_cur); ++(*this); return it; }
-
-        bool operator==(Iterator const & other) const
-        {
-            return m_cur == other.m_cur ||
-                   (m_cur != NULL && other.m_cur != NULL && *m_cur == *other.m_cur);
-        }
-
-        bool operator!=(Iterator const & other) const
-        { return !(*this == other); }
-
-        T & operator*()
-        { _ASSERTE(m_cur != NULL); return *m_cur; }
-
-        T * operator->() const
-        { return m_cur; }
-
-    private:
-        Iterator(SList * pList)
-            : m_cur(pList->GetHead())
-        { }
-
-        Iterator(T* pObj)
-            : m_cur(pObj)
-        { }
-
-        Iterator()
-            : m_cur(NULL)
-        { }
-
-        T* m_cur;
-    };
-
-    Iterator begin()
-    { return Iterator(GetHead()); }
-
-    Iterator end()
-    { return Iterator(); }
 };
 
+// ---------------------------------------------------------------------------
+// Convenience alias for tail-tracking SList.
+// ---------------------------------------------------------------------------
+template <typename T> using SListTail = SList<T, SListTraits<T, SListMode::Tail>>;
+
+// ---------------------------------------------------------------------------
+// SListElem — non-intrusive list element wrapper.
+// ---------------------------------------------------------------------------
 template <typename ElemT>
 struct SListElem
 {
-    SLink m_Link;
+    typedef DPTR(SListElem) PTR_SListElem;
+    PTR_SListElem m_pNext;
     ElemT m_Value;
 
     operator ElemT const &() const
@@ -357,35 +415,33 @@ struct SListElem
     { return m_Value; }
 
     SListElem()
-        : m_Link()
+        : m_pNext(NULL)
         , m_Value()
     { }
 
     template <typename T1>
     SListElem(T1&& val)
-        : m_Link()
+        : m_pNext(NULL)
         , m_Value(std::forward<T1>(val))
     { }
 
     template <typename T1, typename T2>
     SListElem(T1&& val1, T2&& val2)
-        : m_Link()
+        : m_pNext(NULL)
         , m_Value(std::forward<T1>(val1), std::forward<T2>(val2))
     { }
 
     template <typename T1, typename T2, typename T3>
     SListElem(T1&& val1, T2&& val2, T3&& val3)
-        : m_Link()
+        : m_pNext(NULL)
         , m_Value(std::forward<T1>(val1), std::forward<T2>(val2), std::forward<T3>(val3))
     { }
 
     template <typename T1, typename T2, typename T3, typename T4>
     SListElem(T1&& val1, T2&& val2, T3&& val3, T4&& val4)
-        : m_Link()
+        : m_pNext(NULL)
         , m_Value(std::forward<T1>(val1), std::forward<T2>(val2), std::forward<T3>(val3), std::forward<T4>(val4))
     { }
 };
 
 #endif // _H_SLIST_
-
-// End of file: list.h

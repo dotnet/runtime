@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
@@ -17,6 +18,15 @@ public class DacDbiLoaderDumpTests : DumpTestBase
     protected override string DumpType => "full";
 
     private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+
+    private IEnumerable<ModuleHandle> GetAllModules()
+    {
+        ILoader loader = Target.Contracts.Loader;
+        TargetPointer appDomainPtr = Target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        ulong appDomain = Target.ReadPointer(appDomainPtr);
+        return loader.GetModuleHandles(new TargetPointer(appDomain),
+            AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
+    }
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
@@ -59,5 +69,66 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         int hr = dbi.GetTypeHandle(modulePtr.Value, token, &result);
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(objectMT.Value, result);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetModuleData_ReturnsValidFields(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        ILoader loader = Target.Contracts.Loader;
+
+        bool testedAtLeastOne = false;
+        foreach (ModuleHandle module in GetAllModules())
+        {
+            TargetPointer moduleAddr = loader.GetModule(module);
+
+            DacDbiModuleInfo data;
+            int hr = dbi.GetModuleData(moduleAddr, &data);
+            Assert.Equal(System.HResults.S_OK, hr);
+
+            Assert.NotEqual(0UL, data.vmAssembly);
+            Assert.NotEqual(0UL, data.vmPEAssembly);
+
+            if (data.fIsDynamic == Interop.BOOL.FALSE && data.fInMemory == Interop.BOOL.FALSE)
+            {
+                Assert.NotEqual(0UL, data.pPEBaseAddress);
+                Assert.NotEqual(0u, data.nPESize);
+            }
+
+            testedAtLeastOne = true;
+        }
+        Assert.True(testedAtLeastOne, "Expected at least one module in the dump");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void IsModuleMapped_ReturnsValidResult(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        ILoader loader = Target.Contracts.Loader;
+
+        bool testedAtLeastOne = false;
+        foreach (ModuleHandle module in GetAllModules())
+        {
+            TargetPointer moduleAddr = loader.GetModule(module);
+
+            Interop.BOOL isMapped;
+            int hr = dbi.IsModuleMapped(moduleAddr, &isMapped);
+
+            Assert.True(hr == System.HResults.S_OK || hr == System.HResults.S_FALSE,
+                $"Expected S_OK or S_FALSE, got 0x{hr:X8}");
+
+            if (hr == System.HResults.S_OK)
+            {
+                Assert.True(isMapped == Interop.BOOL.TRUE || isMapped == Interop.BOOL.FALSE,
+                    "isModuleMapped should be TRUE or FALSE");
+            }
+
+            testedAtLeastOne = true;
+        }
+        Assert.True(testedAtLeastOne, "Expected at least one module in the dump");
     }
 }

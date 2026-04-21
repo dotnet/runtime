@@ -3941,7 +3941,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     CONTRACTL_END;
 
     BOOL    found;
-    Thread *ret;
 
 #if 0 // This assert is not valid when failing to create background GC thread.
       // Main GC thread holds the TS lock.
@@ -3951,9 +3950,8 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     _ASSERTE(s_pThreadStore->m_Crst.GetEnterCount() > 0 ||
              IsAtProcessExit());
     _ASSERTE(s_pThreadStore->DbgFindThread(target));
-    ret = s_pThreadStore->m_ThreadList.FindAndRemove(target);
-    _ASSERTE(ret && ret == target);
-    found = (ret != NULL);
+    found = s_pThreadStore->m_ThreadList.FindAndRemove(target);
+    _ASSERTE(found);
 
     if (found)
     {
@@ -6941,8 +6939,8 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacEnumCodeForStackwalk(callEnd);
 
         // To stackwalk through funceval frames, we need to be sure to preserve the
-        // DebuggerModule's m_pRuntimeDomainAssembly.  This is the only case that doesn't use the current
-        // vmDomainAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
+        // DebuggerModule's m_pRuntimeAssembly.  This is the only case that doesn't use the current
+        // vmAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
         // code mimics that function.
         // Allow failure, since we want to continue attempting to walk the stack regardless of the outcome.
         EX_TRY
