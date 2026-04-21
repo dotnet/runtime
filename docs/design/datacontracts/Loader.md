@@ -83,6 +83,8 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
 IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table);
 bool IsCollectible(ModuleHandle handle);
+bool IsDynamic(ModuleHandle handle);
+bool IsModuleMapped(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
 TargetPointer GetSystemAssembly();
@@ -399,11 +401,7 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
     size = 0;
     imageFlags = 0;
 
-    TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-    if (peAssembly == 0) return false; // no loaded PEAssembly
-
-    TargetPointer peImage = target.ReadPointer(peAssembly + /* PEAssembly::PEImage offset */);
-    if(peImage == 0) return false; // no loaded PEImage
+    // try to get loaded PE image (peImage), if not loaded return false
 
     TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
 
@@ -411,6 +409,15 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
     size = target.Read<uint>(peImageLayout + /* PEImageLayout::Size offset */);
     imageFlags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
     return true;
+}
+
+bool IsModuleMapped(ModuleHandle handle)
+{
+    // try to get loaded PE image, if not loaded return false
+    // try to get layout (peImageLayout)
+
+    uint format = target.Read<uint>(peImageLayout + /* PEImageLayout::Format offset */);
+    return /* Webcil images are never mapped; for PE images check the FLAG_MAPPED flag */;
 }
 
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
@@ -439,7 +446,7 @@ private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNu
     TargetPointer baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
     uint imageFlags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
 
-    bool isMapped = (imageFlags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+    bool isMapped = /* Webcil images are never mapped; for PE images check the FLAG_MAPPED flag */;
 
     uint offset;
     if (isMapped)
@@ -574,11 +581,7 @@ IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle)
 
 bool IsProbeExtensionResultValid(ModuleHandle handle)
 {
-    TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-    if (peAssembly == 0) return false; // no loaded PEAssembly
-
-    TargetPointer peImage = target.ReadPointer(peAssembly + /* PEAssembly::PEImage offset */);
-    if(peImage == 0) return false; // no loaded PEImage
+    // try to get loaded PE image, if not loaded return false
 
     TargetPointer probeExtensionResult = target.ReadPointer(peImage + /* PEImage::ProbeExtensionResult offset */);
     int type = target.Read<int>(probeExtensionResult + /* ProbeExtensionResult::Type offset */);

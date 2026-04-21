@@ -21,7 +21,7 @@ public enum DataType
 
     /* VM Data Types */
 
-    GCHandle,
+    ObjectHandle,
     CodePointer,
     Thread,
     ThreadStore,
