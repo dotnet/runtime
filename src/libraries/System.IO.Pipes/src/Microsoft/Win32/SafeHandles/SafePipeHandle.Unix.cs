@@ -4,10 +4,10 @@
 using System;
 using System.Diagnostics;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -15,130 +15,477 @@ namespace Microsoft.Win32.SafeHandles
     {
         private const int DefaultInvalidHandle = -1;
 
-        // For anonymous pipes, SafePipeHandle.handle is the file descriptor of the pipe.
-        // For named pipes, SafePipeHandle.handle is a copy of the file descriptor
-        // extracted from the Socket's SafeHandle.
-        // This allows operations related to file descriptors to be performed directly on the SafePipeHandle,
-        // and operations that should go through the Socket to be done via PipeSocket. We keep the
-        // Socket's SafeHandle alive as long as this SafeHandle is alive.
+        private NullableBool _isBlocking;
+        private PollableHandle? _pollHandle;
+        private PipeReadOperation? _cachedReadOp;
+        private PipeWriteOperation? _cachedWriteOp;
 
-        private Socket? _pipeSocket;
-        private SafeHandle? _pipeSocketHandle;
-        private volatile int _disposed;
+        private PipeReadOperation RentReadOperation()
+            => Interlocked.Exchange(ref _cachedReadOp, null) ?? new PipeReadOperation(this);
+
+        private PipeWriteOperation RentWriteOperation()
+            => Interlocked.Exchange(ref _cachedWriteOp, null) ?? new PipeWriteOperation(this);
+
+        private void ReturnReadOperation(PipeReadOperation op)
+        {
+            op.Reset();
+            Volatile.Write(ref _cachedReadOp, op);
+        }
+
+        private void ReturnWriteOperation(PipeWriteOperation op)
+        {
+            op.Reset();
+            Volatile.Write(ref _cachedWriteOp, op);
+        }
+
+        private bool IsBlocking
+        {
+            get
+            {
+                NullableBool isBlocking = _isBlocking;
+                if (isBlocking == NullableBool.Undefined && !IsClosed)
+                {
+                    if (Interop.Sys.Fcntl.GetIsNonBlocking(this, out bool nonBlocking) != 0)
+                    {
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+                    }
+
+                    _isBlocking = isBlocking = nonBlocking ? NullableBool.False : NullableBool.True;
+                }
+
+                return isBlocking == NullableBool.True;
+            }
+        }
+
+        private void SetHandleBlocking(bool blocking)
+        {
+            NullableBool newValue = blocking ? NullableBool.True : NullableBool.False;
+            if (_isBlocking != newValue)
+            {
+                if (Interop.Sys.Fcntl.SetIsNonBlocking(this, blocking ? 0 : 1) != 0)
+                {
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+                }
+                _isBlocking = newValue;
+            }
+        }
+
+        private PollableHandle PollHandle
+        {
+            get
+            {
+                if (_pollHandle == null)
+                {
+                    SetHandleBlocking(false);
+                    PollableHandle.Create(this, ref _pollHandle);
+                }
+                return _pollHandle!;
+            }
+        }
 
         internal SafePipeHandle(Socket namedPipeSocket) : base(ownsHandle: true)
         {
-            SetPipeSocketInterlocked(namedPipeSocket, ownsHandle: true);
-            base.SetHandle(_pipeSocketHandle!.DangerousGetHandle());
+            Debug.Assert(namedPipeSocket != null);
+
+            _isBlocking = namedPipeSocket.Blocking ? NullableBool.True : NullableBool.False;
+
+            // Transfer ownership of the file descriptor from the Socket to this SafeHandle.
+            SafeHandle socketHandle = namedPipeSocket.SafeHandle;
+            base.SetHandle(socketHandle.DangerousGetHandle());
+            socketHandle.SetHandleAsInvalid();
+            namedPipeSocket.Dispose();
         }
-
-        internal Socket PipeSocket => _pipeSocket ?? CreatePipeSocket();
-
-        internal SafeHandle? PipeSocketHandle => _pipeSocketHandle;
 
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing); // must be called before trying to Dispose the socket
-            _disposed = 1;
-            if (disposing && Volatile.Read(ref _pipeSocket) is Socket socket)
+            if (disposing)
             {
-                socket.Dispose();
-                _pipeSocket = null;
+                _pollHandle?.Dispose();
             }
+            base.Dispose(disposing);
         }
 
         protected override bool ReleaseHandle()
         {
-            Debug.Assert(!IsInvalid);
-
-            if (_pipeSocketHandle != null)
-            {
-                base.SetHandle((IntPtr)DefaultInvalidHandle);
-                _pipeSocketHandle.DangerousRelease();
-                _pipeSocketHandle = null;
-                return true;
-            }
-            else
-            {
-                return (long)handle >= 0 ?
-                    Interop.Sys.Close(handle) == 0 :
-                    true;
-            }
+            return (long)handle >= 0 && Interop.Sys.Close(handle) == 0;
         }
 
         public override bool IsInvalid
         {
-            get { return (long)handle < 0 && _pipeSocket == null; }
+            get { return (long)handle < 0; }
         }
 
-        private Socket CreatePipeSocket(bool ownsHandle = true)
+        internal new void SetHandle(IntPtr descriptor)
         {
-            Socket? socket = null;
-            if (_disposed == 0)
+            base.SetHandle(descriptor);
+        }
+
+        // Named pipes on Unix are implemented using Unix domain sockets.
+        // Returns 0 for non-socket handles (getsockopt returns ENOTSOCK).
+        internal unsafe int GetSocketBufferSize(SocketOptionName optionName)
+        {
+            int value;
+            int optLen = sizeof(int);
+            Interop.Error error = Interop.Sys.GetSockOpt(this, SocketOptionLevel.Socket, optionName, (byte*)&value, &optLen);
+            return error == Interop.Error.SUCCESS ? value : 0;
+        }
+
+        internal unsafe (int BytesRead, Interop.ErrorInfo ErrorInfo) Read(Span<byte> buffer)
+        {
+            int sequenceNumber = 0;
+            bool isBlocking = IsBlocking;
+
+            bool doSync = isBlocking || PollHandle.IsReadReady(out sequenceNumber);
+            if (doSync)
             {
-                bool refAdded = false;
+                if (TryCompleteRead(buffer, out var result))
+                {
+                    return result;
+                }
+            }
+
+            PipeReadOperation op = RentReadOperation();
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
+            {
+                op.SyncBuffer = bufPtr;
+                op.SyncBufferLength = buffer.Length;
+
+                PollOperationSyncResult result = PollHandle.ReadSync(op, sequenceNumber, timeout: -1);
+
+                if (result == PollOperationSyncResult.Completed)
+                {
+                    var readResult = op.Result;
+
+                    ReturnReadOperation(op);
+
+                    return readResult;
+                }
+
+                return (-1, new Interop.ErrorInfo(Interop.Error.EPIPE));
+            }
+        }
+
+        internal ValueTask<(int BytesRead, Interop.ErrorInfo ErrorInfo)> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+        {
+            if (PollHandle.IsReadReady(out int sequenceNumber) &&
+                TryCompleteRead(destination.Span, out var readResult))
+            {
+                return new ValueTask<(int, Interop.ErrorInfo)>(readResult);
+            }
+
+            PipeReadOperation op = RentReadOperation();
+            op.Buffer = destination;
+            op.CancellationToken = cancellationToken;
+
+            PollOperationAsyncResult result = PollHandle.ReadAsync(op, sequenceNumber, cancellationToken);
+
+            if (result == PollOperationAsyncResult.Pending)
+            {
+                return new ValueTask<(int, Interop.ErrorInfo)>(op, op.Version);
+            }
+            else if (result == PollOperationAsyncResult.Completed)
+            {
+                readResult = op.Result;
+                ReturnReadOperation(op);
+                return new ValueTask<(int, Interop.ErrorInfo)>(readResult);
+            }
+
+            return new ValueTask<(int, Interop.ErrorInfo)>((-1, new Interop.ErrorInfo(Interop.Error.EPIPE)));
+        }
+
+        internal unsafe Interop.ErrorInfo Write(ReadOnlySpan<byte> buffer)
+        {
+            int sequenceNumber = 0;
+            bool isBlocking = IsBlocking;
+
+            bool doSync = isBlocking || PollHandle.IsWriteReady(out sequenceNumber);
+            while (doSync)
+            {
+                if (TryCompleteWrite(buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo))
+                {
+                    return errorInfo;
+                }
+                buffer = buffer.Slice(bytesWritten);
+                doSync = isBlocking;
+            }
+
+            PipeWriteOperation op = RentWriteOperation();
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
+            {
+                op.SyncBuffer = bufPtr;
+                op.SyncRemaining = buffer.Length;
+
+                PollOperationSyncResult result = PollHandle.WriteSync(op, sequenceNumber, timeout: -1);
+
+                if (result == PollOperationSyncResult.Completed)
+                {
+                    Interop.ErrorInfo errorInfo = op.WriteResult;
+
+                    ReturnWriteOperation(op);
+
+                    return errorInfo;
+                }
+
+                return new Interop.ErrorInfo(Interop.Error.EPIPE);
+            }
+        }
+
+        internal ValueTask<Interop.ErrorInfo> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        {
+            int bytesWritten = 0;
+            if (PollHandle.IsWriteReady(out int sequenceNumber) &&
+                TryCompleteWrite(source.Span, out bytesWritten, out Interop.ErrorInfo writeResult))
+            {
+                return new ValueTask<Interop.ErrorInfo>(writeResult);
+            }
+
+            PipeWriteOperation op = RentWriteOperation();
+            op.Buffer = source.Slice(bytesWritten);
+            op.CancellationToken = cancellationToken;
+
+            PollOperationAsyncResult result = PollHandle.WriteAsync(op, sequenceNumber, cancellationToken);
+
+            if (result == PollOperationAsyncResult.Pending)
+            {
+                return new ValueTask<Interop.ErrorInfo>(op, op.Version);
+            }
+            else if (result == PollOperationAsyncResult.Completed)
+            {
+                writeResult = op.WriteResult;
+                ReturnWriteOperation(op);
+                return new ValueTask<Interop.ErrorInfo>(writeResult);
+            }
+
+            return new ValueTask<Interop.ErrorInfo>(new Interop.ErrorInfo(Interop.Error.EPIPE));
+        }
+
+        private sealed unsafe class PipeReadOperation : PollTriggeredOperation, IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>
+        {
+            private readonly SafePipeHandle _owner;
+            internal (int BytesRead, Interop.ErrorInfo ErrorInfo) Result;
+            private ManualResetValueTaskSourceCore<(int, Interop.ErrorInfo)> _mrvtsc;
+            internal Memory<byte> Buffer;
+            internal byte* SyncBuffer;
+            internal int SyncBufferLength;
+            internal CancellationToken CancellationToken;
+
+            internal PipeReadOperation(SafePipeHandle owner)
+                => _owner = owner;
+
+            internal short Version
+                => _mrvtsc.Version;
+
+            internal void Reset()
+            {
+                Buffer = default;
+                SyncBuffer = null;
+                CancellationToken = default;
+                _mrvtsc.Reset();
+            }
+
+            protected override bool TryCompleteOperation(SafeHandle handle)
+            {
+                if (SyncBuffer != null)
+                {
+                    Debug.Assert(SyncBufferLength > 0);
+                    return TryCompleteRead((SafePipeHandle)handle, SyncBuffer, SyncBufferLength, out Result);
+                }
+
+                Span<byte> span = Buffer.Span;
+                Debug.Assert(!span.IsEmpty);
+
+                fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
+                {
+                    return TryCompleteRead((SafePipeHandle)handle, bufPtr, span.Length, out Result);
+                }
+            }
+
+            protected override void OnCompleted(PollOperationOnCompletedResult result)
+            {
+                if (result == PollOperationOnCompletedResult.Completed)
+                {
+                    _mrvtsc.SetResult(Result);
+                }
+                else if (result == PollOperationOnCompletedResult.Canceled)
+                {
+                    _mrvtsc.SetException(new OperationCanceledException(CancellationToken));
+                }
+                else
+                {
+                    Debug.Assert(result == PollOperationOnCompletedResult.Aborted);
+                    _mrvtsc.SetException(new ObjectDisposedException(typeof(SafePipeHandle).FullName));
+                }
+            }
+
+            ValueTaskSourceStatus IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>.GetStatus(short token)
+                => _mrvtsc.GetStatus(token);
+
+            void IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+                => _mrvtsc.OnCompleted(continuation, state, token, flags);
+
+            (int BytesRead, Interop.ErrorInfo ErrorInfo) IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>.GetResult(short token)
+            {
+                bool canPool = _mrvtsc.GetStatus(token) == ValueTaskSourceStatus.Succeeded;
                 try
                 {
-                    DangerousAddRef(ref refAdded);
-
-                    socket = SetPipeSocketInterlocked(new Socket(new SafeSocketHandle(handle, ownsHandle)), ownsHandle);
-
-                    // Double check if we haven't Disposed in the meanwhile, and ensure
-                    // the Socket is disposed, in case Dispose() missed the _pipeSocket assignment.
-                    if (_disposed == 1)
-                    {
-                        Volatile.Write(ref _pipeSocket, null);
-                        socket.Dispose();
-                        socket = null;
-                    }
+                    return _mrvtsc.GetResult(token);
                 }
                 finally
                 {
-                    if (refAdded)
+                    if (canPool)
                     {
-                        DangerousRelease();
+                        _owner.ReturnReadOperation(this);
                     }
                 }
             }
-
-            ObjectDisposedException.ThrowIf(socket is null, this);
-            return socket;
         }
 
-        private Socket SetPipeSocketInterlocked(Socket socket, bool ownsHandle)
+        private sealed unsafe class PipeWriteOperation : PollTriggeredOperation, IValueTaskSource<Interop.ErrorInfo>
         {
-            Debug.Assert(socket != null);
+            private readonly SafePipeHandle _owner;
+            internal Interop.ErrorInfo WriteResult;
+            private ManualResetValueTaskSourceCore<Interop.ErrorInfo> _mrvtsc;
+            internal ReadOnlyMemory<byte> Buffer;
+            internal byte* SyncBuffer;
+            internal int SyncRemaining;
+            internal CancellationToken CancellationToken;
 
-            // Multiple threads may try to create the PipeSocket.
-            Socket? current = Interlocked.CompareExchange(ref _pipeSocket, socket, null);
-            if (current != null)
+            internal PipeWriteOperation(SafePipeHandle owner)
+                => _owner = owner;
+
+            internal short Version => _mrvtsc.Version;
+
+            internal void Reset()
             {
-                socket.Dispose();
-                return current;
+                Buffer = default;
+                SyncBuffer = null;
+                CancellationToken = default;
+                _mrvtsc.Reset();
             }
 
-            // If we own the handle, defer ownership to the SocketHandle.
-            SafeSocketHandle socketHandle = _pipeSocket.SafeHandle;
-            if (ownsHandle)
+            protected override bool TryCompleteOperation(SafeHandle handle)
             {
-                _pipeSocketHandle = socketHandle;
+                if (SyncBuffer != null)
+                {
+                    Debug.Assert(SyncRemaining > 0);
 
-                bool ignored = false;
-                socketHandle.DangerousAddRef(ref ignored);
+                    if (TryCompleteWrite((SafePipeHandle)handle, SyncBuffer, SyncRemaining, out int bytesWritten, out WriteResult))
+                    {
+                        return true;
+                    }
+                    SyncBuffer += bytesWritten;
+                    SyncRemaining -= bytesWritten;
+                    return false;
+                }
+
+                ReadOnlySpan<byte> span = Buffer.Span;
+                Debug.Assert(!span.IsEmpty);
+
+                fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
+                {
+                    if (TryCompleteWrite((SafePipeHandle)handle, bufPtr, span.Length, out int bytesWritten, out WriteResult))
+                    {
+                        return true;
+                    }
+                    Buffer = Buffer.Slice(bytesWritten);
+                    return false;
+                }
             }
 
-            return socket;
+            protected override void OnCompleted(PollOperationOnCompletedResult result)
+            {
+                if (result == PollOperationOnCompletedResult.Completed)
+                {
+                    _mrvtsc.SetResult(WriteResult);
+                }
+                else if (result == PollOperationOnCompletedResult.Canceled)
+                {
+                    _mrvtsc.SetException(new OperationCanceledException(CancellationToken));
+                }
+                else
+                {
+                    Debug.Assert(result == PollOperationOnCompletedResult.Aborted);
+                    _mrvtsc.SetException(new ObjectDisposedException(typeof(SafePipeHandle).FullName));
+                }
+            }
+
+            ValueTaskSourceStatus IValueTaskSource<Interop.ErrorInfo>.GetStatus(short token)
+                => _mrvtsc.GetStatus(token);
+
+            void IValueTaskSource<Interop.ErrorInfo>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+                => _mrvtsc.OnCompleted(continuation, state, token, flags);
+
+            Interop.ErrorInfo IValueTaskSource<Interop.ErrorInfo>.GetResult(short token)
+            {
+                bool canPool = _mrvtsc.GetStatus(token) == ValueTaskSourceStatus.Succeeded;
+                try
+                {
+                    return _mrvtsc.GetResult(token);
+                }
+                finally
+                {
+                    if (canPool)
+                    {
+                        _owner.ReturnWriteOperation(this);
+                    }
+                }
+            }
         }
 
-        internal void SetHandle(IntPtr descriptor, bool ownsHandle = true)
+        private static unsafe bool TryCompleteRead(SafePipeHandle handle, byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
         {
-            base.SetHandle(descriptor);
-
-            // Avoid throwing when we own the handle by defering pipe creation.
-            if (!ownsHandle)
+            int bytesRead = Interop.Sys.Read(handle, buffer, length);
+            if (bytesRead < 0)
             {
-                _pipeSocket = CreatePipeSocket(ownsHandle);
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (IsPending(errorInfo))
+                {
+                    result = default;
+                    return false;
+                }
+                result = (-1, errorInfo);
+                return true;
+            }
+
+            result = (bytesRead, default);
+            return true;
+        }
+
+        private unsafe bool TryCompleteRead(Span<byte> buffer, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
+        {
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
+            {
+                return TryCompleteRead(this, bufPtr, buffer.Length, out result);
             }
         }
+
+        private unsafe bool TryCompleteWrite(ReadOnlySpan<byte> buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo)
+        {
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
+            {
+                return TryCompleteWrite(this, bufPtr, buffer.Length, out bytesWritten, out errorInfo);
+            }
+        }
+
+        private static unsafe bool TryCompleteWrite(SafePipeHandle handle, byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo)
+        {
+            bytesWritten = Interop.Sys.Write(handle, buffer, length);
+            if (bytesWritten < 0)
+            {
+                errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (IsPending(errorInfo))
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                return true;
+            }
+
+            errorInfo = default;
+            return bytesWritten == length;
+        }
+
+        private static bool IsPending(Interop.ErrorInfo errorInfo)
+            => errorInfo.Error == Interop.Error.EAGAIN || errorInfo.Error == Interop.Error.EWOULDBLOCK;
     }
 }

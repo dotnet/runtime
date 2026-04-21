@@ -96,7 +96,7 @@ namespace System.Net.Sockets
             try
             {
 #endif
-                bool shouldClose = TryOwnClose();
+                bool shouldClose = !IsInvalid && TryOwnClose();
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"abortive={abortive}, shouldClose ={shouldClose}");
 
