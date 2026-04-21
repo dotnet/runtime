@@ -17,7 +17,7 @@ void InProcCrashReportInitialize(const char* dumpPath);
 // All arguments come from the signal handler and are signal-safe to read.
 void InProcCrashReportGenerate(int signal, siginfo_t* siginfo, void* context);
 
-typedef int (*InProcCrashReportIsManagedThreadCallback)();
+typedef bool (*InProcCrashReportIsManagedThreadCallback)();
 
 void InProcCrashReportSetCurrentThreadManagedResolver(InProcCrashReportIsManagedThreadCallback callback);
 
@@ -41,16 +41,16 @@ typedef void (*InProcCrashReportWalkStackCallback)(
 
 void InProcCrashReportSetStackWalker(InProcCrashReportWalkStackCallback callback);
 
-typedef int (*InProcCrashReportGetExceptionCallback)(
+typedef bool (*InProcCrashReportGetExceptionCallback)(
     char* exceptionTypeBuf,
-    int exceptionTypeBufSize,
+    size_t exceptionTypeBufSize,
     uint32_t* hresult);
 
 void InProcCrashReportSetExceptionResolver(InProcCrashReportGetExceptionCallback callback);
 
 typedef void (*InProcCrashReportThreadCallback)(
     uint64_t osThreadId,
-    int isCrashThread,
+    bool isCrashThread,
     const char* exceptionType,
     uint32_t exceptionHResult,
     void* ctx);

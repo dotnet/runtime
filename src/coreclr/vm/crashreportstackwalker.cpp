@@ -33,7 +33,7 @@ FrameCallbackAdapter(
 {
     WalkContext* ctx = static_cast<WalkContext*>(pData);
     MethodDesc* pMD = pCF->GetFunction();
-    if (pMD == NULL)
+    if (pMD == nullptr)
     {
         return SWA_CONTINUE;
     }
@@ -41,49 +41,49 @@ FrameCallbackAdapter(
     LPCUTF8 methodName = pMD->GetName();
     mdMethodDef token = pMD->GetMemberDef();
 
-    LPCUTF8 className = NULL;
-    LPCUTF8 namespaceName = NULL;
+    LPCUTF8 className = nullptr;
+    LPCUTF8 namespaceName = nullptr;
     MethodTable* pMT = pMD->GetMethodTable();
-    if (pMT != NULL)
+    if (pMT != nullptr)
     {
         mdTypeDef cl = pMT->GetCl();
         IMDInternalImport* pImport = pMD->GetMDImport();
-        if (pImport != NULL && cl != mdTypeDefNil)
+        if (pImport != nullptr && cl != mdTypeDefNil)
         {
             pImport->GetNameOfTypeDef(cl, &className, &namespaceName);
         }
     }
 
     char classNameBuf[256] = { 0 };
-    int index = 0;
-    if (namespaceName != NULL)
+    size_t index = 0;
+    if (namespaceName != nullptr)
     {
-        while (*namespaceName != '\0' && index < static_cast<int>(sizeof(classNameBuf)) - 1)
+        while (*namespaceName != '\0' && index + 1 < sizeof(classNameBuf))
         {
             classNameBuf[index++] = *namespaceName++;
         }
     }
 
-    if (className != NULL)
+    if (className != nullptr)
     {
-        if (index > 0 && index < static_cast<int>(sizeof(classNameBuf)) - 1)
+        if (index > 0 && index + 1 < sizeof(classNameBuf))
         {
             classNameBuf[index++] = '.';
         }
 
-        while (*className != '\0' && index < static_cast<int>(sizeof(classNameBuf)) - 1)
+        while (*className != '\0' && index + 1 < sizeof(classNameBuf))
         {
             classNameBuf[index++] = *className++;
         }
     }
     classNameBuf[index] = '\0';
 
-    const char* moduleName = NULL;
+    const char* moduleName = nullptr;
     Module* pModule = pMD->GetModule();
-    if (pModule != NULL)
+    if (pModule != nullptr)
     {
         Assembly* pAssembly = pModule->GetAssembly();
-        if (pAssembly != NULL)
+        if (pAssembly != nullptr)
         {
             moduleName = pAssembly->GetSimpleName();
         }
@@ -94,7 +94,7 @@ FrameCallbackAdapter(
     uint64_t ip = 0;
     uint64_t stackPointer = 0;
     PREGDISPLAY pRD = pCF->GetRegisterSet();
-    if (pRD != NULL)
+    if (pRD != nullptr)
     {
         ip = static_cast<uint64_t>(GetControlPC(pRD));
         stackPointer = static_cast<uint64_t>(GetRegdisplaySP(pRD));
@@ -105,7 +105,7 @@ FrameCallbackAdapter(
         return SWA_CONTINUE;
     }
 
-    if (g_pDebugInterface != NULL && pMD != NULL)
+    if (g_pDebugInterface != nullptr && pMD != nullptr)
     {
         DWORD resolvedILOffset = 0;
         if (g_pDebugInterface->GetILOffsetFromNative(
@@ -123,20 +123,20 @@ FrameCallbackAdapter(
     char moduleGuid[MINIPAL_GUID_BUFFER_LEN];
     moduleGuid[0] = '\0';
 
-    if (pModule != NULL)
+    if (pModule != nullptr)
     {
         PEAssembly* pPEAssembly = pModule->GetPEAssembly();
-        if (pPEAssembly != NULL && pPEAssembly->HasLoadedPEImage())
+        if (pPEAssembly != nullptr && pPEAssembly->HasLoadedPEImage())
         {
             moduleTimestamp = pPEAssembly->GetLoadedLayout()->GetTimeDateStamp();
             moduleSize = static_cast<uint32_t>(pPEAssembly->GetLoadedLayout()->GetSize());
         }
 
         IMDInternalImport* pImport = pModule->GetMDImport();
-        if (pImport != NULL)
+        if (pImport != nullptr)
         {
             GUID mvid;
-            if (SUCCEEDED(pImport->GetScopeProps(NULL, &mvid)))
+            if (SUCCEEDED(pImport->GetScopeProps(nullptr, &mvid)))
             {
                 minipal_guid_as_string(mvid, moduleGuid, MINIPAL_GUID_BUFFER_LEN);
             }
@@ -154,7 +154,7 @@ CrashReportWalkThread(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
-    if (pThread == NULL || frameCallback == NULL)
+    if (pThread == nullptr || frameCallback == nullptr)
     {
         return;
     }
@@ -174,18 +174,18 @@ CrashReportWalkStack(
 }
 
 static
-int
+bool
 CrashReportIsCurrentThreadManaged()
 {
-    return GetThreadAsyncSafe() != NULL;
+    return GetThreadAsyncSafe() != nullptr;
 }
 
 static
-int
+bool
 CrashReportGetExceptionForThread(
     Thread* pThread,
     char* exceptionTypeBuf,
-    int exceptionTypeBufSize,
+    size_t exceptionTypeBufSize,
     uint32_t* hresult)
 {
     if (exceptionTypeBufSize > 0)
@@ -193,7 +193,7 @@ CrashReportGetExceptionForThread(
         exceptionTypeBuf[0] = '\0';
     }
 
-    if (hresult != NULL)
+    if (hresult != nullptr)
     {
         *hresult = 0;
     }
@@ -201,65 +201,68 @@ CrashReportGetExceptionForThread(
     // Only inspect the managed throwable when the thread is already in cooperative mode.
     if (!pThread->PreemptiveGCDisabled())
     {
-        return 0;
+        return false;
     }
 
-    int result = 0;
+    bool result = false;
 
     GCX_COOP();
 
     OBJECTREF throwable = pThread->GetThrowable();
     GCPROTECT_BEGIN(throwable);
 
-    if (throwable != NULL)
+    if (throwable != nullptr)
     {
         MethodTable* pMT = throwable->GetMethodTable();
-        if (pMT != NULL)
+        if (pMT != nullptr)
         {
             mdTypeDef cl = pMT->GetCl();
             Module* pModule = pMT->GetModule();
-            if (pModule != NULL)
+            if (pModule != nullptr)
             {
                 IMDInternalImport* pImport = pModule->GetMDImport();
-                if (pImport != NULL && cl != mdTypeDefNil)
+                if (pImport != nullptr && cl != mdTypeDefNil)
                 {
-                    LPCUTF8 className = NULL;
-                    LPCUTF8 namespaceName = NULL;
+                    LPCUTF8 className = nullptr;
+                    LPCUTF8 namespaceName = nullptr;
                     pImport->GetNameOfTypeDef(cl, &className, &namespaceName);
 
-                    int index = 0;
-                    if (namespaceName != NULL)
+                    size_t index = 0;
+                    if (namespaceName != nullptr)
                     {
-                        while (*namespaceName != '\0' && index < exceptionTypeBufSize - 1)
+                        while (*namespaceName != '\0' && index + 1 < exceptionTypeBufSize)
                         {
                             exceptionTypeBuf[index++] = *namespaceName++;
                         }
                     }
 
-                    if (className != NULL)
+                    if (className != nullptr)
                     {
-                        if (index > 0 && index < exceptionTypeBufSize - 1)
+                        if (index > 0 && index + 1 < exceptionTypeBufSize)
                         {
                             exceptionTypeBuf[index++] = '.';
                         }
 
-                        while (*className != '\0' && index < exceptionTypeBufSize - 1)
+                        while (*className != '\0' && index + 1 < exceptionTypeBufSize)
                         {
                             exceptionTypeBuf[index++] = *className++;
                         }
                     }
 
-                    exceptionTypeBuf[index] = '\0';
+                    if (exceptionTypeBufSize > 0)
+                    {
+                        exceptionTypeBuf[index] = '\0';
+                    }
                 }
             }
         }
 
-        if (hresult != NULL)
+        if (hresult != nullptr)
         {
             *hresult = static_cast<uint32_t>(((EXCEPTIONREF)throwable)->GetHResult());
         }
 
-        result = 1;
+        result = true;
     }
 
     GCPROTECT_END();
@@ -268,16 +271,16 @@ CrashReportGetExceptionForThread(
 }
 
 static
-int
+bool
 CrashReportGetException(
     char* exceptionTypeBuf,
-    int exceptionTypeBufSize,
+    size_t exceptionTypeBufSize,
     uint32_t* hresult)
 {
     Thread* pThread = GetThreadAsyncSafe();
-    if (pThread == NULL)
+    if (pThread == nullptr)
     {
-        return 0;
+        return false;
     }
 
     return CrashReportGetExceptionForThread(pThread, exceptionTypeBuf, exceptionTypeBufSize, hresult);
@@ -345,16 +348,16 @@ CrashReportEnumerateThreads(
 
     // Emit the crashing thread first so the report keeps the most important
     // thread even if later enumeration is incomplete.
-    if (pCrashThread != NULL)
+    if (pCrashThread != nullptr)
     {
         uint64_t crashOsId = static_cast<uint64_t>(pCrashThread->GetOSThreadId());
         if (crashOsId == crashingTid)
         {
             char exceptionType[256];
             uint32_t hresult = 0;
-            int hasException = CrashReportGetExceptionForThread(pCrashThread, exceptionType, sizeof(exceptionType), &hresult);
+            bool hasException = CrashReportGetExceptionForThread(pCrashThread, exceptionType, sizeof(exceptionType), &hresult);
 
-            threadCallback(crashOsId, 1, hasException ? exceptionType : "", hresult, ctx);
+            threadCallback(crashOsId, true, hasException ? exceptionType : "", hresult, ctx);
 
             CrashReportWalkThread(pCrashThread, frameCallback, ctx);
         }
@@ -365,8 +368,8 @@ CrashReportEnumerateThreads(
     // to be at a safe point for them.
     if (s_runtimeSuspendedForCrashReport)
     {
-        Thread* pThread = NULL;
-        while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+        Thread* pThread = nullptr;
+        while ((pThread = ThreadStore::GetThreadList(pThread)) != nullptr)
         {
             if (pThread == pCrashThread)
                 continue;
@@ -375,7 +378,7 @@ CrashReportEnumerateThreads(
             if (osThreadId == 0 || osThreadId == crashingTid)
                 continue;
 
-            threadCallback(osThreadId, 0, "", 0, ctx);
+            threadCallback(osThreadId, false, "", 0, ctx);
             CrashReportWalkThread(pThread, frameCallback, ctx);
         }
     }

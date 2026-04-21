@@ -10,27 +10,47 @@
 
 #include <stddef.h>
 
-typedef int (*CrashJsonOutputCallback)(const char* buffer, int len, void* ctx);
+typedef bool (*CrashJsonOutputCallback)(const char* buffer, size_t len, void* ctx);
 
 // Small streaming buffer used when serializing the crash report JSON.
 #define CRASH_JSON_BUFFER_SIZE (4 * 1024)
 
-struct CrashJsonWriter
+class CrashJsonWriter
 {
-    char buffer[CRASH_JSON_BUFFER_SIZE];
-    int pos;
-    bool commaNeeded;
-    bool writeFailed;
-    CrashJsonOutputCallback outputCallback;
-    void* outputContext;
-};
+public:
+    CrashJsonWriter()
+        : m_pos(0),
+          m_commaNeeded(false),
+          m_writeFailed(false),
+          m_outputCallback(nullptr),
+          m_outputContext(nullptr)
+    {
+        m_buffer[0] = '\0';
+    }
 
-void CrashJsonInit(CrashJsonWriter* w, CrashJsonOutputCallback outputCallback, void* outputContext);
-void CrashJsonOpenObject(CrashJsonWriter* w, const char* key);
-void CrashJsonCloseObject(CrashJsonWriter* w);
-void CrashJsonOpenArray(CrashJsonWriter* w, const char* key);
-void CrashJsonCloseArray(CrashJsonWriter* w);
-void CrashJsonWriteString(CrashJsonWriter* w, const char* key, const char* value);
-void CrashJsonFinish(CrashJsonWriter* w);
-int CrashJsonFlush(CrashJsonWriter* w);
-int CrashJsonHasFailed(CrashJsonWriter* w);
+    CrashJsonWriter(const CrashJsonWriter&) = delete;
+    CrashJsonWriter& operator=(const CrashJsonWriter&) = delete;
+
+    void Init(CrashJsonOutputCallback outputCallback, void* outputContext);
+    void OpenObject(const char* key);
+    void CloseObject();
+    void OpenArray(const char* key);
+    void CloseArray();
+    void WriteString(const char* key, const char* value);
+    void Finish();
+    bool Flush();
+    bool HasFailed() const;
+
+private:
+    bool Append(const char* str, size_t len);
+    bool AppendStr(const char* str);
+    void WriteSeparator();
+    void WriteEscapedString(const char* str);
+
+    char m_buffer[CRASH_JSON_BUFFER_SIZE];
+    size_t m_pos;
+    bool m_commaNeeded;
+    bool m_writeFailed;
+    CrashJsonOutputCallback m_outputCallback;
+    void* m_outputContext;
+};

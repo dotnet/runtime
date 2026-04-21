@@ -8,265 +8,228 @@
 #include <string.h>
 
 static
-int
-CrashJsonAppend(
-    CrashJsonWriter* w,
-    const char* str,
-    int len);
-
-static
-int
-CrashJsonAppendStr(
-    CrashJsonWriter* w,
-    const char* str);
-
-static
 char
 ToHexChar(
     unsigned value);
 
-static
 void
-CrashJsonWriteSeparator(
-    CrashJsonWriter* w);
-
-static
-void
-CrashJsonWriteEscapedString(
-    CrashJsonWriter* w,
-    const char* str);
-
-void
-CrashJsonInit(
-    CrashJsonWriter* w,
+CrashJsonWriter::Init(
     CrashJsonOutputCallback outputCallback,
     void* outputContext)
 {
-    w->pos = 0;
-    w->commaNeeded = false;
-    w->writeFailed = false;
-    w->outputCallback = outputCallback;
-    w->outputContext = outputContext;
-    w->buffer[0] = '\0';
+    m_pos = 0;
+    m_commaNeeded = false;
+    m_writeFailed = false;
+    m_outputCallback = outputCallback;
+    m_outputContext = outputContext;
+    m_buffer[0] = '\0';
 }
 
 void
-CrashJsonOpenObject(
-    CrashJsonWriter* w,
+CrashJsonWriter::OpenObject(
     const char* key)
 {
-    CrashJsonWriteSeparator(w);
-    if (key != NULL)
+    WriteSeparator();
+    if (key != nullptr)
     {
-        CrashJsonWriteEscapedString(w, key);
-        CrashJsonAppendStr(w, ": ");
+        WriteEscapedString(key);
+        AppendStr(": ");
     }
-    CrashJsonAppendStr(w, "{");
-    w->commaNeeded = false;
+    AppendStr("{");
+    m_commaNeeded = false;
 }
 
 void
-CrashJsonCloseObject(
-    CrashJsonWriter* w)
+CrashJsonWriter::CloseObject()
 {
-    CrashJsonAppendStr(w, "}");
-    w->commaNeeded = true;
+    AppendStr("}");
+    m_commaNeeded = true;
 }
 
 void
-CrashJsonOpenArray(
-    CrashJsonWriter* w,
+CrashJsonWriter::OpenArray(
     const char* key)
 {
-    CrashJsonWriteSeparator(w);
-    if (key != NULL)
+    WriteSeparator();
+    if (key != nullptr)
     {
-        CrashJsonWriteEscapedString(w, key);
-        CrashJsonAppendStr(w, ": ");
+        WriteEscapedString(key);
+        AppendStr(": ");
     }
-    CrashJsonAppendStr(w, "[");
-    w->commaNeeded = false;
+    AppendStr("[");
+    m_commaNeeded = false;
 }
 
 void
-CrashJsonCloseArray(
-    CrashJsonWriter* w)
+CrashJsonWriter::CloseArray()
 {
-    CrashJsonAppendStr(w, "]");
-    w->commaNeeded = true;
+    AppendStr("]");
+    m_commaNeeded = true;
 }
 
 void
-CrashJsonWriteString(
-    CrashJsonWriter* w,
+CrashJsonWriter::WriteString(
     const char* key,
     const char* value)
 {
-    CrashJsonWriteSeparator(w);
-    CrashJsonWriteEscapedString(w, key);
-    CrashJsonAppendStr(w, ": ");
-    CrashJsonWriteEscapedString(w, value);
+    WriteSeparator();
+    WriteEscapedString(key);
+    AppendStr(": ");
+    WriteEscapedString(value);
 }
 
 void
-CrashJsonFinish(
-    CrashJsonWriter* w)
+CrashJsonWriter::Finish()
 {
-    (void)CrashJsonFlush(w);
+    (void)Flush();
 }
 
-int
-CrashJsonHasFailed(
-    CrashJsonWriter* w)
+bool
+CrashJsonWriter::HasFailed() const
 {
-    return w->writeFailed ? 1 : 0;
+    return m_writeFailed;
 }
 
-int
-CrashJsonFlush(
-    CrashJsonWriter* w)
+bool
+CrashJsonWriter::Flush()
 {
-    if (w->writeFailed)
+    if (m_writeFailed)
     {
-        return 0;
+        return false;
     }
 
-    if (w->pos == 0)
+    if (m_pos == 0)
     {
-        return 1;
+        return true;
     }
 
-    if (w->outputCallback != NULL && !w->outputCallback(w->buffer, w->pos, w->outputContext))
+    if (m_outputCallback != nullptr && !m_outputCallback(m_buffer, m_pos, m_outputContext))
     {
-        w->writeFailed = true;
-        return 0;
+        m_writeFailed = true;
+        return false;
     }
 
-    w->pos = 0;
-    w->buffer[0] = '\0';
-    return 1;
+    m_pos = 0;
+    m_buffer[0] = '\0';
+    return true;
 }
 
-int
-CrashJsonAppend(
-    CrashJsonWriter* w,
+bool
+CrashJsonWriter::Append(
     const char* str,
-    int len)
+    size_t len)
 {
-    if (w->writeFailed)
+    if (m_writeFailed)
     {
-        return 0;
+        return false;
     }
 
-    if (str == NULL || len < 0)
+    if (str == nullptr)
     {
         // Invalid input mid-document would corrupt the JSON. Latch the
         // failure so subsequent writes become no-ops, matching the
         // behavior when the output callback reports an I/O failure.
-        w->writeFailed = true;
-        return 0;
+        m_writeFailed = true;
+        return false;
     }
 
     if (len == 0)
     {
-        return 1;
+        return true;
     }
 
-    int offset = 0;
+    size_t offset = 0;
     while (offset < len)
     {
-        int remaining = (CRASH_JSON_BUFFER_SIZE - 1) - w->pos;
-        if (remaining == 0 && !CrashJsonFlush(w))
+        size_t remaining = (CRASH_JSON_BUFFER_SIZE - 1) - m_pos;
+        if (remaining == 0 && !Flush())
         {
-            return 0;
+            return false;
         }
 
-        remaining = (CRASH_JSON_BUFFER_SIZE - 1) - w->pos;
-        int chunk = len - offset;
+        remaining = (CRASH_JSON_BUFFER_SIZE - 1) - m_pos;
+        size_t chunk = len - offset;
         if (chunk > remaining)
         {
             chunk = remaining;
         }
 
-        memcpy(w->buffer + w->pos, str + offset, static_cast<size_t>(chunk));
-        w->pos += chunk;
+        memcpy(m_buffer + m_pos, str + offset, chunk);
+        m_pos += chunk;
         offset += chunk;
     }
 
-    return 1;
+    return true;
 }
 
-int
-CrashJsonAppendStr(
-    CrashJsonWriter* w,
+bool
+CrashJsonWriter::AppendStr(
     const char* str)
 {
-    if (str == NULL)
+    if (str == nullptr)
     {
-        w->writeFailed = true;
-        return 0;
+        m_writeFailed = true;
+        return false;
     }
 
-    return CrashJsonAppend(w, str, static_cast<int>(strlen(str)));
+    return Append(str, strlen(str));
 }
 
 char
 ToHexChar(
     unsigned value)
 {
-    return (value < 10) ? (char)('0' + value) : (char)('a' + (value - 10));
+    return (value < 10) ? static_cast<char>('0' + value) : static_cast<char>('a' + (value - 10));
 }
 
 void
-CrashJsonWriteSeparator(
-    CrashJsonWriter* w)
+CrashJsonWriter::WriteSeparator()
 {
-    if (w->commaNeeded)
-        CrashJsonAppendStr(w, ",");
+    if (m_commaNeeded)
+        AppendStr(",");
 
-    w->commaNeeded = true;
+    m_commaNeeded = true;
 }
 
 // Escape a string value for JSON. Handles \, ", and control characters.
 void
-CrashJsonWriteEscapedString(
-    CrashJsonWriter* w,
+CrashJsonWriter::WriteEscapedString(
     const char* str)
 {
-    CrashJsonAppendStr(w, "\"");
-    if (str != NULL)
+    AppendStr("\"");
+    if (str != nullptr)
     {
-        for (int i = 0; str[i]; i++)
+        for (size_t i = 0; str[i]; i++)
         {
             char c = str[i];
             if (c == '"')
-                CrashJsonAppendStr(w, "\\\"");
+                AppendStr("\\\"");
             else if (c == '\\')
-                CrashJsonAppendStr(w, "\\\\");
+                AppendStr("\\\\");
             else if (c == '\n')
-                CrashJsonAppendStr(w, "\\n");
+                AppendStr("\\n");
             else if (c == '\r')
-                CrashJsonAppendStr(w, "\\r");
+                AppendStr("\\r");
             else if (c == '\t')
-                CrashJsonAppendStr(w, "\\t");
-            else if ((unsigned char)c < 0x20)
+                AppendStr("\\t");
+            else if (static_cast<unsigned char>(c) < 0x20)
             {
                 char esc[7];
                 esc[0] = '\\';
                 esc[1] = 'u';
                 esc[2] = '0';
                 esc[3] = '0';
-                esc[4] = ToHexChar(((unsigned char)c >> 4) & 0xF);
-                esc[5] = ToHexChar((unsigned char)c & 0xF);
+                esc[4] = ToHexChar((static_cast<unsigned char>(c) >> 4) & 0xF);
+                esc[5] = ToHexChar(static_cast<unsigned char>(c) & 0xF);
                 esc[6] = '\0';
-                CrashJsonAppendStr(w, esc);
+                AppendStr(esc);
             }
             else
             {
-                CrashJsonAppend(w, &c, 1);
+                Append(&c, 1);
             }
         }
     }
 
-    CrashJsonAppendStr(w, "\"");
+    AppendStr("\"");
 }

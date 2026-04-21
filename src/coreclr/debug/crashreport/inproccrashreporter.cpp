@@ -27,40 +27,123 @@ static CrashJsonWriter s_jsonWriter;
 // These callbacks are published during runtime startup and then only read from
 // the crash path; this minimal branch intentionally reuses the existing VM
 // inspection hooks before the later strict-safety hardening slices.
-static volatile InProcCrashReportIsManagedThreadCallback g_isManagedThreadCallback = NULL;
-static volatile InProcCrashReportWalkStackCallback g_walkStackCallback = NULL;
-static volatile InProcCrashReportGetExceptionCallback g_getExceptionCallback = NULL;
-static volatile InProcCrashReportEnumerateThreadsCallback g_enumerateThreadsCallback = NULL;
+static volatile InProcCrashReportIsManagedThreadCallback g_isManagedThreadCallback = nullptr;
+static volatile InProcCrashReportWalkStackCallback g_walkStackCallback = nullptr;
+static volatile InProcCrashReportGetExceptionCallback g_getExceptionCallback = nullptr;
+static volatile InProcCrashReportEnumerateThreadsCallback g_enumerateThreadsCallback = nullptr;
 static char g_reportPath[256];
 
-struct MultiThreadJsonContext
+class MultiThreadJsonContext
 {
-    CrashJsonWriter* writer;
-    void* signalContext;
-    int threadCount;
-    int sawCrashThread;
-    int hasCrashException;
-    const char* crashExceptionType;
-    uint32_t crashExceptionHResult;
+public:
+    MultiThreadJsonContext(
+        CrashJsonWriter* writer,
+        void* signalContext,
+        bool hasCrashException,
+        const char* crashExceptionType,
+        uint32_t crashExceptionHResult)
+        : m_writer(writer),
+          m_signalContext(signalContext),
+          m_threadCount(0),
+          m_sawCrashThread(false),
+          m_hasCrashException(hasCrashException),
+          m_crashExceptionType(crashExceptionType),
+          m_crashExceptionHResult(crashExceptionHResult)
+    {
+    }
+
+    MultiThreadJsonContext(const MultiThreadJsonContext&) = delete;
+    MultiThreadJsonContext& operator=(const MultiThreadJsonContext&) = delete;
+
+    size_t ThreadCount() const { return m_threadCount; }
+    bool SawCrashThread() const { return m_sawCrashThread; }
+    CrashJsonWriter* Writer() const { return m_writer; }
+
+    void OnThread(
+        uint64_t osThreadId,
+        bool isCrashThread,
+        const char* exceptionType,
+        uint32_t exceptionHResult);
+
+    void OnFrame(
+        uint64_t ip,
+        uint64_t stackPointer,
+        const char* methodName,
+        const char* className,
+        const char* moduleName,
+        uint32_t nativeOffset,
+        uint32_t token,
+        uint32_t ilOffset,
+        uint32_t moduleTimestamp,
+        uint32_t moduleSize,
+        const char* moduleGuid);
+
+    static void ThreadCallback(
+        uint64_t osThreadId,
+        bool isCrashThread,
+        const char* exceptionType,
+        uint32_t exceptionHResult,
+        void* ctx);
+
+    static void FrameCallback(
+        uint64_t ip,
+        uint64_t stackPointer,
+        const char* methodName,
+        const char* className,
+        const char* moduleName,
+        uint32_t nativeOffset,
+        uint32_t token,
+        uint32_t ilOffset,
+        uint32_t moduleTimestamp,
+        uint32_t moduleSize,
+        const char* moduleGuid,
+        void* ctx);
+
+private:
+    CrashJsonWriter* m_writer;
+    void* m_signalContext;
+    size_t m_threadCount;
+    bool m_sawCrashThread;
+    bool m_hasCrashException;
+    const char* m_crashExceptionType;
+    uint32_t m_crashExceptionHResult;
 };
 
-struct CrashReportOutputContext
+class CrashReportOutputContext
 {
-    int fd;
-    int writeFailed;
+public:
+    explicit CrashReportOutputContext(int fd)
+        : m_fd(fd),
+          m_writeFailed(false)
+    {
+    }
+
+    CrashReportOutputContext(const CrashReportOutputContext&) = delete;
+    CrashReportOutputContext& operator=(const CrashReportOutputContext&) = delete;
+
+    int Fd() const { return m_fd; }
+    bool WriteFailed() const { return m_writeFailed; }
+
+    bool HandleChunk(const char* buffer, size_t len);
+
+    static bool ChunkCallback(const char* buffer, size_t len, void* ctx);
+
+private:
+    int m_fd;
+    bool m_writeFailed;
 };
 
 static
 void
 GetVersionString(
     char* buffer,
-    int bufferSize);
+    size_t bufferSize);
 
 static
 void
 FormatHexValue(
     char* buffer,
-    int bufferSize,
+    size_t bufferSize,
     uint64_t value);
 
 static
@@ -89,7 +172,7 @@ static
 void
 BuildMethodName(
     char* buffer,
-    int bufferSize,
+    size_t bufferSize,
     const char* className,
     const char* methodName);
 
@@ -102,14 +185,14 @@ static
 void
 CopyString(
     char* buffer,
-    int bufferSize,
+    size_t bufferSize,
     const char* value);
 
 static
-int
+bool
 TryGetProcessName(
     char* filename,
-    int filenameLen);
+    size_t filenameLen);
 
 static
 void
@@ -127,49 +210,17 @@ JsonFrameCallback(
     const char* moduleGuid,
     void* ctx);
 
-static
-void
-JsonThreadFrameCallback(
-    uint64_t ip,
-    uint64_t stackPointer,
-    const char* methodName,
-    const char* className,
-    const char* moduleName,
-    uint32_t nativeOffset,
-    uint32_t token,
-    uint32_t ilOffset,
-    uint32_t moduleTimestamp,
-    uint32_t moduleSize,
-    const char* moduleGuid,
-    void* ctx);
-
-static
-void
-JsonThreadCallback(
-    uint64_t osThreadId,
-    int isCrashThread,
-    const char* exceptionType,
-    uint32_t exceptionHResult,
-    void* ctx);
-
-int
+bool
 WriteAllToFile(
     int fd,
     const char* buffer,
-    int len);
+    size_t len);
 
 static
-int
-WriteCrashReportChunk(
-    const char* buffer,
-    int len,
-    void* ctx);
-
-static
-int
+bool
 BuildReportPath(
     char* buffer,
-    int bufferSize,
+    size_t bufferSize,
     const char* dumpPath);
 
 void
@@ -204,149 +255,145 @@ InProcCrashReportGenerate(
     uint32_t exHresult = 0;
     exTypeBuf[0] = '\0';
 
-    int hasException = 0;
-    if (g_getExceptionCallback != NULL && signal != SIGSEGV && signal != SIGBUS)
+    bool hasException = false;
+    if (g_getExceptionCallback != nullptr && signal != SIGSEGV && signal != SIGBUS)
     {
         hasException = g_getExceptionCallback(exTypeBuf, sizeof(exTypeBuf), &exHresult);
     }
 
-    CrashReportOutputContext outputContext =
-    {
-        fd,
-        0
-    };
+    CrashReportOutputContext outputContext(fd);
 
-    CrashJsonInit(&s_jsonWriter, WriteCrashReportChunk, &outputContext);
+    s_jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &outputContext);
 
-    CrashJsonOpenObject(&s_jsonWriter, NULL);
-    CrashJsonOpenObject(&s_jsonWriter, "payload");
-    CrashJsonWriteString(&s_jsonWriter, "protocol_version", "1.0.0");
+    s_jsonWriter.OpenObject(nullptr);
+    s_jsonWriter.OpenObject("payload");
+    s_jsonWriter.WriteString("protocol_version", "1.0.0");
 
-    CrashJsonOpenObject(&s_jsonWriter, "configuration");
+    s_jsonWriter.OpenObject("configuration");
 #if defined(__x86_64__)
-    CrashJsonWriteString(&s_jsonWriter, "architecture", "amd64");
+    s_jsonWriter.WriteString("architecture", "amd64");
 #elif defined(__aarch64__)
-    CrashJsonWriteString(&s_jsonWriter, "architecture", "arm64");
+    s_jsonWriter.WriteString("architecture", "arm64");
 #elif defined(__arm__)
-    CrashJsonWriteString(&s_jsonWriter, "architecture", "arm");
+    s_jsonWriter.WriteString("architecture", "arm");
 #endif
     char version[sizeof(sccsid) + 1];
     GetVersionString(version, sizeof(version));
-    CrashJsonWriteString(&s_jsonWriter, "version", version);
-    CrashJsonCloseObject(&s_jsonWriter);
+    s_jsonWriter.WriteString("version", version);
+    s_jsonWriter.CloseObject();
 
     char processName[256];
     if (TryGetProcessName(processName, sizeof(processName)))
     {
-        CrashJsonWriteString(&s_jsonWriter, "process_name", processName);
+        s_jsonWriter.WriteString("process_name", processName);
     }
 
     char pidBuf[16];
     (void)snprintf(pidBuf, sizeof(pidBuf), "%u", static_cast<unsigned>(getpid()));
-    CrashJsonWriteString(&s_jsonWriter, "pid", pidBuf);
+    s_jsonWriter.WriteString("pid", pidBuf);
 
-    CrashJsonOpenArray(&s_jsonWriter, "threads");
-    if (g_enumerateThreadsCallback != NULL)
+    s_jsonWriter.OpenArray("threads");
+    if (g_enumerateThreadsCallback != nullptr)
     {
-        MultiThreadJsonContext threadContext = { &s_jsonWriter, context, 0, 0, hasException, exTypeBuf, exHresult };
+        MultiThreadJsonContext threadContext(&s_jsonWriter, context, hasException, exTypeBuf, exHresult);
         uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
 
-        g_enumerateThreadsCallback(crashingTid, JsonThreadCallback, JsonThreadFrameCallback, &threadContext);
+        g_enumerateThreadsCallback(crashingTid, &MultiThreadJsonContext::ThreadCallback, &MultiThreadJsonContext::FrameCallback, &threadContext);
 
-        if (threadContext.threadCount > 0)
+        if (threadContext.ThreadCount() > 0)
         {
             // Close the last thread's stack_frames + object opened by the
             // enumeration callback.
-            CrashJsonCloseArray(&s_jsonWriter);
-            CrashJsonCloseObject(&s_jsonWriter);
+            s_jsonWriter.CloseArray();
+            s_jsonWriter.CloseObject();
 
             // Flush the final thread so it reaches the crash report file
             // even if any later work (e.g. synthesizing a crash thread
             // fallback) hangs or faults.
-            (void)CrashJsonFlush(&s_jsonWriter);
+            (void)s_jsonWriter.Flush();
         }
 
-        if (threadContext.threadCount == 0 || !threadContext.sawCrashThread)
+        if (threadContext.ThreadCount() == 0 || !threadContext.SawCrashThread())
         {
-            CrashJsonOpenObject(&s_jsonWriter, NULL);
-            CrashJsonWriteString(&s_jsonWriter, "is_managed",
-                g_isManagedThreadCallback != NULL && g_isManagedThreadCallback() ? "true" : "false");
-            CrashJsonWriteString(&s_jsonWriter, "crashed", "true");
+            s_jsonWriter.OpenObject(nullptr);
+            s_jsonWriter.WriteString("is_managed",
+                g_isManagedThreadCallback != nullptr && g_isManagedThreadCallback() ? "true" : "false");
+            s_jsonWriter.WriteString("crashed", "true");
 
             char nativeThreadId[32];
             FormatHexValue(nativeThreadId, sizeof(nativeThreadId), crashingTid);
-            CrashJsonWriteString(&s_jsonWriter, "native_thread_id", nativeThreadId);
+            s_jsonWriter.WriteString("native_thread_id", nativeThreadId);
 
             if (hasException)
             {
                 char hresultBuffer[32];
                 FormatHexValue(hresultBuffer, sizeof(hresultBuffer), exHresult);
 
-                CrashJsonWriteString(&s_jsonWriter, "managed_exception_type", exTypeBuf);
-                CrashJsonWriteString(&s_jsonWriter, "managed_exception_hresult", hresultBuffer);
+                s_jsonWriter.WriteString("managed_exception_type", exTypeBuf);
+                s_jsonWriter.WriteString("managed_exception_hresult", hresultBuffer);
             }
 
             WriteRegistersToJson(&s_jsonWriter, context);
-            CrashJsonOpenArray(&s_jsonWriter, "stack_frames");
+            s_jsonWriter.OpenArray("stack_frames");
             WriteCrashSiteFrameToJson(&s_jsonWriter, context);
-            CrashJsonCloseArray(&s_jsonWriter);
-            CrashJsonCloseObject(&s_jsonWriter);
+            s_jsonWriter.CloseArray();
+            s_jsonWriter.CloseObject();
         }
     }
     else
     {
         uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
 
-        CrashJsonOpenObject(&s_jsonWriter, NULL);
-        CrashJsonWriteString(&s_jsonWriter, "is_managed",
-            g_isManagedThreadCallback != NULL && g_isManagedThreadCallback() ? "true" : "false");
-        CrashJsonWriteString(&s_jsonWriter, "crashed", "true");
+        s_jsonWriter.OpenObject(nullptr);
+        s_jsonWriter.WriteString("is_managed",
+            g_isManagedThreadCallback != nullptr && g_isManagedThreadCallback() ? "true" : "false");
+        s_jsonWriter.WriteString("crashed", "true");
 
         char nativeThreadId[32];
         FormatHexValue(nativeThreadId, sizeof(nativeThreadId), crashingTid);
-        CrashJsonWriteString(&s_jsonWriter, "native_thread_id", nativeThreadId);
+        s_jsonWriter.WriteString("native_thread_id", nativeThreadId);
 
         if (hasException)
         {
             char hresultBuffer[32];
             FormatHexValue(hresultBuffer, sizeof(hresultBuffer), exHresult);
 
-            CrashJsonWriteString(&s_jsonWriter, "managed_exception_type", exTypeBuf);
-            CrashJsonWriteString(&s_jsonWriter, "managed_exception_hresult", hresultBuffer);
+            s_jsonWriter.WriteString("managed_exception_type", exTypeBuf);
+            s_jsonWriter.WriteString("managed_exception_hresult", hresultBuffer);
         }
 
         WriteRegistersToJson(&s_jsonWriter, context);
-        CrashJsonOpenArray(&s_jsonWriter, "stack_frames");
+        s_jsonWriter.OpenArray("stack_frames");
         WriteCrashSiteFrameToJson(&s_jsonWriter, context);
-        if (g_walkStackCallback != NULL)
+        if (g_walkStackCallback != nullptr)
         {
             g_walkStackCallback(JsonFrameCallback, &s_jsonWriter);
         }
-        CrashJsonCloseArray(&s_jsonWriter);
-        CrashJsonCloseObject(&s_jsonWriter);
+        s_jsonWriter.CloseArray();
+        s_jsonWriter.CloseObject();
     }
-    CrashJsonCloseArray(&s_jsonWriter);
+    s_jsonWriter.CloseArray();
 
-    CrashJsonCloseObject(&s_jsonWriter);
+    s_jsonWriter.CloseObject();
 
-    CrashJsonOpenObject(&s_jsonWriter, "parameters");
+    s_jsonWriter.OpenObject("parameters");
     char signalBuf[16];
     (void)snprintf(signalBuf, sizeof(signalBuf), "%d", signal);
-    CrashJsonWriteString(&s_jsonWriter, "signal", signalBuf);
+    s_jsonWriter.WriteString("signal", signalBuf);
 #ifdef __APPLE__
-    CrashJsonWriteString(&s_jsonWriter, "OSVersion", "");
-    CrashJsonWriteString(&s_jsonWriter, "SystemModel", "");
-    CrashJsonWriteString(&s_jsonWriter, "SystemManufacturer", "apple");
+    s_jsonWriter.WriteString("OSVersion", "");
+    s_jsonWriter.WriteString("SystemModel", "");
+    s_jsonWriter.WriteString("SystemManufacturer", "apple");
 #endif
-    CrashJsonCloseObject(&s_jsonWriter);
+    s_jsonWriter.CloseObject();
 
-    CrashJsonCloseObject(&s_jsonWriter);
-    CrashJsonFinish(&s_jsonWriter);
+    s_jsonWriter.CloseObject();
+    s_jsonWriter.Finish();
 
     if (fd != -1)
     {
-        int writeSucceeded = !CrashJsonHasFailed(&s_jsonWriter) &&
-            outputContext.writeFailed == 0 &&
+        bool writeSucceeded = !s_jsonWriter.HasFailed() &&
+            !outputContext.WriteFailed() &&
             WriteAllToFile(fd, "\n", 1);
 
         if (close(fd) != 0 || !writeSucceeded)
@@ -392,19 +439,19 @@ InProcCrashReportSetThreadEnumerator(
     g_enumerateThreadsCallback = callback;
 }
 
-int
+bool
 WriteAllToFile(
     int fd,
     const char* buffer,
-    int len)
+    size_t len)
 {
-    int totalWritten = 0;
+    size_t totalWritten = 0;
     while (totalWritten < len)
     {
         ssize_t written = write(fd, buffer + totalWritten, len - totalWritten);
         if (written > 0)
         {
-            totalWritten += static_cast<int>(written);
+            totalWritten += static_cast<size_t>(written);
             continue;
         }
 
@@ -413,31 +460,44 @@ WriteAllToFile(
             continue;
         }
 
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
-int
-WriteCrashReportChunk(
+bool
+CrashReportOutputContext::HandleChunk(
     const char* buffer,
-    int len,
+    size_t len)
+{
+    if (m_fd == -1)
+    {
+        return false;
+    }
+
+    if (!WriteAllToFile(m_fd, buffer, len))
+    {
+        m_writeFailed = true;
+        return false;
+    }
+
+    return true;
+}
+
+bool
+CrashReportOutputContext::ChunkCallback(
+    const char* buffer,
+    size_t len,
     void* ctx)
 {
     CrashReportOutputContext* outputContext = reinterpret_cast<CrashReportOutputContext*>(ctx);
-    if (outputContext == NULL || outputContext->fd == -1)
+    if (outputContext == nullptr)
     {
-        return 0;
+        return false;
     }
 
-    if (!WriteAllToFile(outputContext->fd, buffer, len))
-    {
-        outputContext->writeFailed = 1;
-        return 0;
-    }
-
-    return 1;
+    return outputContext->HandleChunk(buffer, len);
 }
 
 // Expand a subset of the coredump template patterns used by createdump's
@@ -445,21 +505,21 @@ WriteCrashReportChunk(
 // literally since the remaining createdump patterns (%e, %h, %t) are not
 // meaningful for in-proc crash reports.
 static
-int
+size_t
 ExpandDumpTemplate(
     char* buffer,
-    int bufferSize,
+    size_t bufferSize,
     const char* pattern)
 {
-    if (buffer == NULL || bufferSize <= 0 || pattern == NULL)
+    if (buffer == nullptr || bufferSize == 0 || pattern == nullptr)
     {
         return 0;
     }
 
-    int pos = 0;
+    size_t pos = 0;
     unsigned pid = static_cast<unsigned>(getpid());
 
-    while (*pattern != '\0' && pos < bufferSize - 1)
+    while (*pattern != '\0' && pos + 1 < bufferSize)
     {
         if (*pattern == '%')
         {
@@ -472,20 +532,20 @@ ExpandDumpTemplate(
             {
                 char pidBuf[16];
                 int pidLen = snprintf(pidBuf, sizeof(pidBuf), "%u", pid);
-                if (pidLen > 0 && pos + pidLen < bufferSize)
+                if (pidLen > 0 && pos + static_cast<size_t>(pidLen) < bufferSize)
                 {
                     memcpy(buffer + pos, pidBuf, static_cast<size_t>(pidLen));
-                    pos += pidLen;
+                    pos += static_cast<size_t>(pidLen);
                 }
             }
             else
             {
                 // Unknown specifier — pass through literally.
-                if (pos < bufferSize - 1)
+                if (pos + 1 < bufferSize)
                 {
                     buffer[pos++] = '%';
                 }
-                if (*pattern != '\0' && pos < bufferSize - 1)
+                if (*pattern != '\0' && pos + 1 < bufferSize)
                 {
                     buffer[pos++] = *pattern;
                 }
@@ -506,34 +566,34 @@ ExpandDumpTemplate(
     return pos;
 }
 
-int
+bool
 BuildReportPath(
     char* buffer,
-    int bufferSize,
+    size_t bufferSize,
     const char* dumpPath)
 {
-    if (buffer == NULL || bufferSize <= 0 || dumpPath == NULL || dumpPath[0] == '\0')
+    if (buffer == nullptr || bufferSize == 0 || dumpPath == nullptr || dumpPath[0] == '\0')
     {
-        return 0;
+        return false;
     }
 
     char expanded[256];
-    int expandedLen = ExpandDumpTemplate(expanded, sizeof(expanded), dumpPath);
-    if (expandedLen <= 0)
+    size_t expandedLen = ExpandDumpTemplate(expanded, sizeof(expanded), dumpPath);
+    if (expandedLen == 0)
     {
-        return 0;
+        return false;
     }
 
-    int written = snprintf(buffer, static_cast<size_t>(bufferSize), "%s.crashreport.json", expanded);
-    return written > 0 && written < bufferSize;
+    int written = snprintf(buffer, bufferSize, "%s.crashreport.json", expanded);
+    return written > 0 && static_cast<size_t>(written) < bufferSize;
 }
 
 void
 GetVersionString(
     char* buffer,
-    int bufferSize)
+    size_t bufferSize)
 {
-    if (buffer == NULL || bufferSize <= 0)
+    if (buffer == nullptr || bufferSize == 0)
     {
         return;
     }
@@ -555,24 +615,23 @@ GetVersionString(
 
     version += sizeof(versionPrefix) - 1;
 
-    size_t copied = strnlen(version, static_cast<size_t>(bufferSize - 2));
+    size_t copied = strnlen(version, bufferSize - 2);
     if (copied != 0)
     {
         memcpy(buffer, version, copied);
     }
 
-    int index = static_cast<int>(copied);
-    buffer[index++] = ' ';
-    buffer[index] = '\0';
+    buffer[copied] = ' ';
+    buffer[copied + 1] = '\0';
 }
 
 void
 FormatHexValue(
     char* buffer,
-    int bufferSize,
+    size_t bufferSize,
     uint64_t value)
 {
-    if (buffer == NULL || bufferSize <= 0)
+    if (buffer == nullptr || bufferSize == 0)
     {
         return;
     }
@@ -593,16 +652,16 @@ FormatHexValue(
     buffer[1] = 'x';
 
     char reverse[16];
-    int reverseLength = 0;
+    size_t reverseLength = 0;
     do
     {
-        int digit = static_cast<int>(value & 0xf);
+        unsigned digit = static_cast<unsigned>(value & 0xf);
         reverse[reverseLength++] = static_cast<char>(digit < 10 ? ('0' + digit) : ('a' + digit - 10));
         value >>= 4;
-    } while (value != 0 && reverseLength < static_cast<int>(sizeof(reverse)));
+    } while (value != 0 && reverseLength < sizeof(reverse));
 
-    int index = 2;
-    while (reverseLength > 0 && index < bufferSize - 1)
+    size_t index = 2;
+    while (reverseLength > 0 && index + 1 < bufferSize)
     {
         buffer[index++] = reverse[--reverseLength];
     }
@@ -624,7 +683,7 @@ WriteRegistersToJson(
     FormatHexValue(ip, sizeof(ip), ipValue);
     FormatHexValue(sp, sizeof(sp), spValue);
 
-    if (context != NULL)
+    if (context != nullptr)
     {
         ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
 #if defined(__x86_64__)
@@ -636,18 +695,18 @@ WriteRegistersToJson(
 #endif
     }
 
-    CrashJsonOpenObject(writer, "ctx");
-    CrashJsonWriteString(writer, "IP", ip);
-    CrashJsonWriteString(writer, "SP", sp);
-    CrashJsonWriteString(writer, "BP", bp);
-    CrashJsonCloseObject(writer);
+    writer->OpenObject("ctx");
+    writer->WriteString("IP", ip);
+    writer->WriteString("SP", sp);
+    writer->WriteString("BP", bp);
+    writer->CloseObject();
 }
 
 uint64_t
 GetInstructionPointer(
     void* context)
 {
-    if (context == NULL)
+    if (context == nullptr)
     {
         return 0;
     }
@@ -668,7 +727,7 @@ uint64_t
 GetStackPointer(
     void* context)
 {
-    if (context == NULL)
+    if (context == nullptr)
     {
         return 0;
     }
@@ -698,36 +757,36 @@ WriteCrashSiteFrameToJson(
     FormatHexValue(ip, sizeof(ip), ipValue);
     FormatHexValue(sp, sizeof(sp), spValue);
 
-    CrashJsonOpenObject(writer, NULL);
-    CrashJsonWriteString(writer, "is_managed", "false");
-    CrashJsonWriteString(writer, "stack_pointer", sp);
-    CrashJsonWriteString(writer, "native_address", ip);
-    CrashJsonCloseObject(writer);
+    writer->OpenObject(nullptr);
+    writer->WriteString("is_managed", "false");
+    writer->WriteString("stack_pointer", sp);
+    writer->WriteString("native_address", ip);
+    writer->CloseObject();
 }
 
 void
 BuildMethodName(
     char* buffer,
-    int bufferSize,
+    size_t bufferSize,
     const char* className,
     const char* methodName)
 {
-    if (buffer == NULL || bufferSize <= 0)
+    if (buffer == nullptr || bufferSize == 0)
     {
         return;
     }
 
-    if (className != NULL && methodName != NULL)
+    if (className != nullptr && methodName != nullptr)
     {
-        (void)snprintf(buffer, static_cast<size_t>(bufferSize), "%s.%s", className, methodName);
+        (void)snprintf(buffer, bufferSize, "%s.%s", className, methodName);
     }
-    else if (className != NULL)
+    else if (className != nullptr)
     {
-        (void)snprintf(buffer, static_cast<size_t>(bufferSize), "%s", className);
+        (void)snprintf(buffer, bufferSize, "%s", className);
     }
-    else if (methodName != NULL)
+    else if (methodName != nullptr)
     {
-        (void)snprintf(buffer, static_cast<size_t>(bufferSize), "%s", methodName);
+        (void)snprintf(buffer, bufferSize, "%s", methodName);
     }
     else
     {
@@ -754,21 +813,21 @@ GetFilename(
 void
 CopyString(
     char* buffer,
-    int bufferSize,
+    size_t bufferSize,
     const char* value)
 {
-    if (buffer == NULL || bufferSize <= 0)
+    if (buffer == nullptr || bufferSize == 0)
     {
         return;
     }
 
-    if (value == NULL)
+    if (value == nullptr)
     {
         buffer[0] = '\0';
         return;
     }
 
-    size_t copied = strnlen(value, static_cast<size_t>(bufferSize - 1));
+    size_t copied = strnlen(value, bufferSize - 1);
     if (copied != 0)
     {
         memcpy(buffer, value, copied);
@@ -777,14 +836,14 @@ CopyString(
     buffer[copied] = '\0';
 }
 
-int
+bool
 TryGetProcessName(
     char* filename,
-    int filenameLen)
+    size_t filenameLen)
 {
-    if (filename == NULL || filenameLen <= 0)
+    if (filename == nullptr || filenameLen == 0)
     {
-        return 0;
+        return false;
     }
 
     filename[0] = '\0';
@@ -802,7 +861,7 @@ TryGetProcessName(
             CopyString(filename, filenameLen, GetFilename(cmdline));
             if (filename[0] != '\0')
             {
-                return 1;
+                return true;
             }
         }
     }
@@ -816,7 +875,7 @@ TryGetProcessName(
         return filename[0] != '\0';
     }
 
-    return 0;
+    return false;
 }
 
 void
@@ -851,50 +910,67 @@ JsonFrameCallback(
     FormatHexValue(moduleTimestampBuffer, sizeof(moduleTimestampBuffer), moduleTimestamp);
     FormatHexValue(moduleSizeBuffer, sizeof(moduleSizeBuffer), moduleSize);
 
-    CrashJsonOpenObject(writer, NULL);
-    CrashJsonWriteString(writer, "stack_pointer", stackPointerBuffer);
-    CrashJsonWriteString(writer, "native_address", ipBuffer);
-    CrashJsonWriteString(writer, "native_offset", nativeOffsetBuffer);
+    writer->OpenObject(nullptr);
+    writer->WriteString("stack_pointer", stackPointerBuffer);
+    writer->WriteString("native_address", ipBuffer);
+    writer->WriteString("native_offset", nativeOffsetBuffer);
 
-    if (methodName != NULL)
+    if (methodName != nullptr)
     {
         char fullName[256];
         BuildMethodName(fullName, sizeof(fullName), className, methodName);
-        CrashJsonWriteString(writer, "method_name", fullName);
-        CrashJsonWriteString(writer, "is_managed", "true");
-        CrashJsonWriteString(writer, "token", tokenBuffer);
-        CrashJsonWriteString(writer, "il_offset", ilOffsetBuffer);
-        if (moduleName != NULL)
+        writer->WriteString("method_name", fullName);
+        writer->WriteString("is_managed", "true");
+        writer->WriteString("token", tokenBuffer);
+        writer->WriteString("il_offset", ilOffsetBuffer);
+        if (moduleName != nullptr)
         {
-            CrashJsonWriteString(writer, "filename", moduleName);
+            writer->WriteString("filename", moduleName);
         }
         if (moduleTimestamp != 0)
         {
-            CrashJsonWriteString(writer, "timestamp", moduleTimestampBuffer);
+            writer->WriteString("timestamp", moduleTimestampBuffer);
         }
         if (moduleSize != 0)
         {
-            CrashJsonWriteString(writer, "sizeofimage", moduleSizeBuffer);
+            writer->WriteString("sizeofimage", moduleSizeBuffer);
         }
-        if (moduleGuid != NULL && moduleGuid[0] != '\0')
+        if (moduleGuid != nullptr && moduleGuid[0] != '\0')
         {
-            CrashJsonWriteString(writer, "guid", moduleGuid);
+            writer->WriteString("guid", moduleGuid);
         }
     }
     else
     {
-        CrashJsonWriteString(writer, "is_managed", "false");
-        if (moduleName != NULL)
+        writer->WriteString("is_managed", "false");
+        if (moduleName != nullptr)
         {
-            CrashJsonWriteString(writer, "native_module", moduleName);
+            writer->WriteString("native_module", moduleName);
         }
     }
 
-    CrashJsonCloseObject(writer);
+    writer->CloseObject();
 }
 
 void
-JsonThreadFrameCallback(
+MultiThreadJsonContext::OnFrame(
+    uint64_t ip,
+    uint64_t stackPointer,
+    const char* methodName,
+    const char* className,
+    const char* moduleName,
+    uint32_t nativeOffset,
+    uint32_t token,
+    uint32_t ilOffset,
+    uint32_t moduleTimestamp,
+    uint32_t moduleSize,
+    const char* moduleGuid)
+{
+    JsonFrameCallback(ip, stackPointer, methodName, className, moduleName, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid, m_writer);
+}
+
+void
+MultiThreadJsonContext::FrameCallback(
     uint64_t ip,
     uint64_t stackPointer,
     const char* methodName,
@@ -908,66 +984,74 @@ JsonThreadFrameCallback(
     const char* moduleGuid,
     void* ctx)
 {
-    MultiThreadJsonContext* threadContext = reinterpret_cast<MultiThreadJsonContext*>(ctx);
-    JsonFrameCallback(ip, stackPointer, methodName, className, moduleName, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid, threadContext->writer);
+    reinterpret_cast<MultiThreadJsonContext*>(ctx)->OnFrame(ip, stackPointer, methodName, className, moduleName, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid);
 }
 
 void
-JsonThreadCallback(
+MultiThreadJsonContext::OnThread(
     uint64_t osThreadId,
-    int isCrashThread,
+    bool isCrashThread,
     const char* exceptionType,
-    uint32_t exceptionHResult,
-    void* ctx)
+    uint32_t exceptionHResult)
 {
-    MultiThreadJsonContext* threadContext = reinterpret_cast<MultiThreadJsonContext*>(ctx);
-    if (threadContext->threadCount > 0)
+    if (m_threadCount > 0)
     {
-        CrashJsonCloseArray(threadContext->writer);
-        CrashJsonCloseObject(threadContext->writer);
+        m_writer->CloseArray();
+        m_writer->CloseObject();
 
-        (void)CrashJsonFlush(threadContext->writer);
+        (void)m_writer->Flush();
     }
 
     if (isCrashThread)
     {
-        threadContext->sawCrashThread = 1;
+        m_sawCrashThread = true;
     }
-    threadContext->threadCount++;
+    m_threadCount++;
 
-    CrashJsonOpenObject(threadContext->writer, NULL);
-    CrashJsonWriteString(threadContext->writer, "is_managed", "true");
-    CrashJsonWriteString(threadContext->writer, "crashed", isCrashThread ? "true" : "false");
+    m_writer->OpenObject(nullptr);
+    m_writer->WriteString("is_managed", "true");
+    m_writer->WriteString("crashed", isCrashThread ? "true" : "false");
 
     char nativeThreadId[32];
     FormatHexValue(nativeThreadId, sizeof(nativeThreadId), osThreadId);
-    CrashJsonWriteString(threadContext->writer, "native_thread_id", nativeThreadId);
+    m_writer->WriteString("native_thread_id", nativeThreadId);
 
-    if (isCrashThread && threadContext->hasCrashException)
+    if (isCrashThread && m_hasCrashException)
     {
         char hresultBuffer[32];
-        FormatHexValue(hresultBuffer, sizeof(hresultBuffer), threadContext->crashExceptionHResult);
+        FormatHexValue(hresultBuffer, sizeof(hresultBuffer), m_crashExceptionHResult);
 
-        CrashJsonWriteString(threadContext->writer, "managed_exception_type", threadContext->crashExceptionType);
-        CrashJsonWriteString(threadContext->writer, "managed_exception_hresult", hresultBuffer);
+        m_writer->WriteString("managed_exception_type", m_crashExceptionType);
+        m_writer->WriteString("managed_exception_hresult", hresultBuffer);
     }
-    else if (exceptionType != NULL && exceptionType[0] != '\0')
+    else if (exceptionType != nullptr && exceptionType[0] != '\0')
     {
         char hresultBuffer[32];
         FormatHexValue(hresultBuffer, sizeof(hresultBuffer), exceptionHResult);
 
-        CrashJsonWriteString(threadContext->writer, "managed_exception_type", exceptionType);
-        CrashJsonWriteString(threadContext->writer, "managed_exception_hresult", hresultBuffer);
+        m_writer->WriteString("managed_exception_type", exceptionType);
+        m_writer->WriteString("managed_exception_hresult", hresultBuffer);
     }
 
     if (isCrashThread)
     {
-        WriteRegistersToJson(threadContext->writer, threadContext->signalContext);
+        WriteRegistersToJson(m_writer, m_signalContext);
     }
 
-    CrashJsonOpenArray(threadContext->writer, "stack_frames");
+    m_writer->OpenArray("stack_frames");
     if (isCrashThread)
     {
-        WriteCrashSiteFrameToJson(threadContext->writer, threadContext->signalContext);
+        WriteCrashSiteFrameToJson(m_writer, m_signalContext);
     }
+}
+
+void
+MultiThreadJsonContext::ThreadCallback(
+    uint64_t osThreadId,
+    bool isCrashThread,
+    const char* exceptionType,
+    uint32_t exceptionHResult,
+    void* ctx)
+{
+    reinterpret_cast<MultiThreadJsonContext*>(ctx)->OnThread(osThreadId, isCrashThread, exceptionType, exceptionHResult);
 }
