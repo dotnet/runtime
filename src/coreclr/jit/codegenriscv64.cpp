@@ -2334,7 +2334,7 @@ void CodeGen::genFtnEntry(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genNonLocalJmp: Generate code for a non-local jump (indirect branch)
+// genNonLocalJmp: Emit jump to the specified address.
 //
 // Parameters:
 //   tree - the GT_NONLOCAL_JMP node

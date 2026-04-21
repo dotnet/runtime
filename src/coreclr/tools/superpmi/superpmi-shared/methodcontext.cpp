@@ -4607,8 +4607,7 @@ PatchpointInfo* MethodContext::repGetOSRInfo(unsigned* ilOffset)
     DEBUG_REP(dmpGetOSRInfo(key, value));
 
     *ilOffset = value.ilOffset;
-    PatchpointInfo* ppi = (PatchpointInfo*)GetOSRInfo->GetBuffer(value.index);
-    return ppi;
+    return (PatchpointInfo*)GetOSRInfo->GetBuffer(value.index);
 }
 
 void MethodContext::recGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,

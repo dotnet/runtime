@@ -4269,6 +4269,12 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     GetEmitter()->emitIns_R(INS_i_jmp, emitTypeSize(TYP_I_IMPL), baseReg);
 }
 
+//------------------------------------------------------------------------
+// genNonLocalJmp: Emit jump to the specified address.
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
 void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
 {
     genConsumeOperands(tree->AsOp());
@@ -4308,7 +4314,8 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 //
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
-    GetEmitter()->emitIns_R_C(INS_lea, EA_PTRSIZE, treeNode->GetRegNum(), FLD_FTN_ENTRY, 0);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------

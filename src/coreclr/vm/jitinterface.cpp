@@ -11400,17 +11400,6 @@ void CEECodeGenInfo::reportMetadata(
     EE_TO_JIT_TRANSITION_LEAF();
 }
 
-#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
-struct AltJitPatchpointInfo
-{
-    AltJitPatchpointInfo* Next;
-    MethodDesc* Method;
-    PatchpointInfo* Info;
-};
-
-static AltJitPatchpointInfo* s_altJitPatchpointInfoList;
-#endif
-
 void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     CONTRACTL {

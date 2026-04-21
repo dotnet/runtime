@@ -1376,13 +1376,15 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
-/*****************************************************************************
- *
- *  Add a label instruction referencing an instruction group directly.
- *  This is used by genFtnEntry to load the address of the function entry point
- *  (prolog) into a register.
- */
-
+//--------------------------------------------------------------------
+// emitIns_R_L: Emit an instruction with a label operand.
+//
+// Arguments:
+//   ins - The instruction
+//   attr - Size of the instruction
+//   dst - Instruction group
+//   reg - Register destination
+//
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
 {
     assert(dst != nullptr);

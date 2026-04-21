@@ -9121,6 +9121,68 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     emitCurIGsize += sz;
 }
 
+//--------------------------------------------------------------------
+// emitIns_R_L: Emit an instruction with a label operand.
+//
+// Arguments:
+//   ins - The instruction
+//   attr - Size of the instruction
+//   dst - Instruction group
+//   reg - Register destination
+//
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(ins == INS_lea);
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idReg1(reg);
+    id->idInsFmt(IF_RWR_LABEL);
+    id->idOpSize(EA_SIZE(attr)); // emitNewInstrJmp() sets the size (incorrectly) to EA_1BYTE
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound();
+
+    /* The label reference is always long */
+
+    id->idjShort    = 0;
+    id->idjKeepLong = 1;
+
+    /* Record the current IG and offset within it */
+
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this instruction to this IG's jump list */
+
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#ifdef DEBUG
+    // Mark the catch return
+    if (m_compiler->compCurBB->KindIs(BBJ_EHCATCHRET))
+    {
+        id->idDebugOnlyInfo()->idCatchRet = true;
+    }
+#endif // DEBUG
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    // Set the relocation flags - these give hint to zap to perform
+    // relocation of the specified 32bit address.
+    //
+    // Note the relocation flags influence the size estimate.
+    id->idSetRelocFlags(attr);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
 /*****************************************************************************
  *
  *  The following adds instructions referencing address modes.
@@ -11991,12 +12053,6 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
     if (fldHnd == FLD_GLOBAL_DS)
     {
         printf("[0x%04X]", (unsigned)offs);
-        return;
-    }
-
-    if (fldHnd == FLD_FTN_ENTRY)
-    {
-        emitPrintLabel(emitPrologIG);
         return;
     }
 
@@ -16128,15 +16184,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     else
     {
         // Special case: mov reg, fs:[ddd] or mov reg, [ddd]
-        if (jitStaticFldIsGlobAddr(fldh))
-        {
-            addr = nullptr;
-        }
-        else
-        {
-            assert(fldh == FLD_FTN_ENTRY);
-            addr = emitCodeBlock;
-        }
+        assert(jitStaticFldIsGlobAddr(fldh));
+        addr = nullptr;
     }
 
     BYTE* target = (addr + offs);
