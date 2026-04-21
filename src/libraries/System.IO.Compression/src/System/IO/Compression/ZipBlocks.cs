@@ -779,6 +779,15 @@ namespace System.IO.Compression
                         compressedSize = zip64.CompressedSize.Value;
                 }
 
+                // For data descriptor entries written to non-seekable streams, sizes in the
+                // local header are typically 0 rather than 0xFFFFFFFF, but the data descriptor
+                // still uses 8-byte fields when the entry requires Zip64.
+                bool hasDataDescriptor = (generalPurposeBitFlags & (ushort)ZipArchiveEntry.BitFlagValues.DataDescriptor) != 0;
+                if (!isZip64SizeFields && hasDataDescriptor && versionNeeded >= (ushort)ZipVersionNeededValues.Zip64)
+                {
+                    isZip64SizeFields = true;
+                }
+
                 bool isUtf8 = (generalPurposeBitFlags & (ushort)ZipArchiveEntry.BitFlagValues.UnicodeFileNameAndComment) != 0;
                 Encoding nameEncoding = isUtf8 ? Encoding.UTF8 : (entryNameEncoding ?? Encoding.UTF8);
                 string fullName = nameEncoding.GetString(filenameBytes);
