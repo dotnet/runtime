@@ -257,7 +257,7 @@ private:
 //
 PhaseStatus Compiler::fgTransformPatchpoints()
 {
-    if (!doesMethodHavePatchpoints() && !doesMethodHavePartialCompilationPatchpoints())
+    if (!doesMethodHavePatchpoints())
     {
         JITDUMP("\n -- no patchpoints to transform\n");
         return PhaseStatus::MODIFIED_NOTHING;

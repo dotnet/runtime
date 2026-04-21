@@ -6300,7 +6300,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             JITDUMP("\nBlock " FMT_BB " (%s) will be a partial compilation patchpoint -- not importing\n", block->bbNum,
                     reason);
             block->SetFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
-            setMethodHasPartialCompilationPatchpoint();
+            setMethodHasPatchpoint();
 
             // Block will no longer flow to any of its successors.
             //
