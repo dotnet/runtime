@@ -39,6 +39,23 @@ static const instruction INS_I_gt_u  = INS_i32_gt_u;
 #endif // !TARGET_64BIT
 
 //------------------------------------------------------------------------
+// ensureCurrentFuncIsUnwindable: ensure we set up an unwindable frame
+//    for the current function or funclet.
+//
+void CodeGen::ensureCurrentFuncIsUnwindable()
+{
+    FuncInfoDsc* const func = m_compiler->funCurrentFunc();
+
+    if (!func->needsUnwindableFrame)
+    {
+        JITDUMP("%s (index %u) needs to be unwindable\n", func->IsFunclet() ? "Funclet" : "Main method",
+                func->GetFuncletIdx(m_compiler));
+
+        func->needsUnwindableFrame = true;
+    }
+}
+
+//------------------------------------------------------------------------
 // GetStackPointerRegIndex: get the Wasm local index for the stack pointer
 //
 unsigned CodeGen::GetStackPointerRegIndex() const
@@ -2441,6 +2458,8 @@ void CodeGen::genCall(GenTreeCall* call)
 //
 void CodeGen::genCallInstruction(GenTreeCall* call)
 {
+    ensureCurrentFuncIsUnwindable();
+
     EmitCallParams params;
     params.isJump      = call->IsFastTailCall();
     params.hasAsyncRet = call->IsAsync();
@@ -2570,6 +2589,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 //
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
+    ensureCurrentFuncIsUnwindable();
+
     EmitCallParams params;
 
     CORINFO_CONST_LOOKUP helperFunction = m_compiler->compGetHelperFtn((CorInfoHelpFunc)helper);

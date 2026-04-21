@@ -2475,8 +2475,8 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
 //
 PhaseStatus Compiler::fgWasmVirtualIP()
 {
-    unsigned virtualIP = 0;
-    unsigned callCount = 0;
+    unsigned virtualIP    = 0;
+    unsigned updatesAdded = 0;
 
     // Prefill the EH data fields that are not dependent on
     // the Virtual IP.
@@ -2527,6 +2527,53 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         return lvaWasmVirtualIP;
     };
 
+    // Insert code to update the virtual IP on the stack frame before `beforeNode`.
+    // If `beforeNode` is null, insert at the start of the block.
+    //
+    // In funclet regions we update $sp[4] (on the funclet frame)
+    // by storing indirect through the SP local sym. This sym reference
+    // will be translated by RA to refer to the funclet's $sp.
+    //
+    // In the main method we update the VirtualIP local
+    // (which will end up at $fp[4]).
+    //
+    auto updateVirtualIPOnFrame = [&](FuncInfoDsc* func, BasicBlock* block, GenTree* beforeNode = nullptr) {
+        const unsigned virtualIPlclNum = getVirtualIPLclNum();
+        GenTree* const virtualIPValue  = gtNewIconNode(virtualIP);
+        GenTree*       setVirtualIP    = nullptr;
+
+        if (func->funKind != FUNC_ROOT)
+        {
+            GenTree* const spLocal = gtNewLclVarNode(lvaWasmSpArg, TYP_I_IMPL);
+            GenTree* const virtualIPslotAddr =
+                gtNewOperNode(GT_ADD, TYP_I_IMPL, spLocal, gtNewIconNode(TARGET_POINTER_SIZE));
+            GenTreeFlags indirFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
+            setVirtualIP            = gtNewStoreIndNode(TYP_INT, virtualIPslotAddr, virtualIPValue, indirFlags);
+        }
+        else
+        {
+            setVirtualIP = gtNewStoreLclVarNode(virtualIPlclNum, virtualIPValue);
+        }
+
+        LIR::Range     range     = LIR::SeqTree(this, setVirtualIP);
+        GenTree* const firstNode = range.FirstNode();
+        GenTree* const lastNode  = range.LastNode();
+
+        if (beforeNode != nullptr)
+        {
+            LIR::AsRange(block).InsertBefore(beforeNode, std::move(range));
+        }
+        else
+        {
+            LIR::AsRange(block).InsertAtBeginning(std::move(range));
+        }
+
+        LIR::ReadOnlyRange blockRange(firstNode, lastNode);
+        m_pLowering->LowerRange(block, blockRange);
+
+        updatesAdded++;
+    };
+
     for (FuncInfoDsc* const func : Funcs())
     {
         for (BasicBlock* const block : func->Blocks(this))
@@ -2571,67 +2618,13 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 clauses[block->getHndIndex()].clause.ClassToken = virtualIP;
             }
 
-            LIR::ReadOnlyRange& range = LIR::AsRange(block);
-            for (auto i = range.rbegin(); i != range.rend(); ++i)
+            // For now, just refresh the stack Virtual IP at the start of each non-empty
+            // block (later we can refine this to something lke: blocks that have calls or will inspire
+            // calls during codegen).
+            //
+            if (!block->isEmpty())
             {
-                GenTree* node = *i;
-
-                // TODO-WASM-CQ: we can have shared throw helper per funclet
-                // if we track which non-call nodes will create flow to the
-                // throw helper during codegen, and set a VIP for them as well.
-                //
-                if (!node->IsCall())
-                {
-                    continue;
-                }
-
-                // TODO-WASM: we will eventually need to remember the virtual IP for
-                // each call site for GC reporting.
-                //
-                GenTreeCall* const call = node->AsCall();
-                callCount++;
-
-                // Insert code before the call to update the virtual IP.
-                //
-                // In funclet regions we update $sp[4] (on the funclet frame)
-                // by storing indirect through the SP local sym. This sym reference
-                // will be translated by RA to refer to the funclet's $sp.
-                //
-                // In the main method we update the VirtualIP local
-                // (which will end up at $fp[4]).
-                //
-                // Note for EH this leads to more updates than we need,
-                // but we might want the finer-grained updates for GC,
-                // so we'll leave them like this for now.
-                //
-                const unsigned virtualIPlclNum = getVirtualIPLclNum();
-                GenTree* const virtualIPValue  = gtNewIconNode(virtualIP);
-                GenTree*       setVirtualIP    = nullptr;
-
-                if (func->funKind != FUNC_ROOT)
-                {
-                    GenTree* const spLocal = gtNewLclVarNode(lvaWasmSpArg, TYP_I_IMPL);
-                    GenTree* const virtualIPslotAddr =
-                        gtNewOperNode(GT_ADD, TYP_I_IMPL, spLocal, gtNewIconNode(TARGET_POINTER_SIZE));
-                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
-                    setVirtualIP            = gtNewStoreIndNode(TYP_INT, virtualIPslotAddr, virtualIPValue, indirFlags);
-                }
-                else
-                {
-                    setVirtualIP = gtNewStoreLclVarNode(virtualIPlclNum, virtualIPValue);
-                }
-                LIR::Range     range     = LIR::SeqTree(this, setVirtualIP);
-                GenTree* const firstNode = range.FirstNode();
-                GenTree* const lastNode  = range.LastNode();
-                LIR::AsRange(block).InsertBefore(node, std::move(range));
-                LIR::ReadOnlyRange blockRange(firstNode, lastNode);
-                m_pLowering->LowerRange(block, blockRange);
-
-                virtualIP++;
-
-                // The associated func requires an unwindable frame
-                //
-                func->needsUnwindableFrame = true;
+                updateVirtualIPOnFrame(func, block);
             }
 
             // If this is the end of the region, update its extent.
@@ -2674,23 +2667,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         }
     }
 
-    JITDUMP("Method has %u calls\n", callCount);
-
-    if (callCount == 0)
-    {
-        // No calls, so no need for any Virtual IPs.
-        //
-        JITDUMP("Main method is not unwindable, so not assigning Virtual IPs\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
 #ifdef DEBUG
-    JITDUMP("Main method is unwindable\n");
-    for (FuncInfoDsc* const func : Funclets())
-    {
-        JITDUMP("Funclet %u is %sunwindable\n", func->GetFuncletIdx(this), func->needsUnwindableFrame ? "" : "not ");
-    }
-
     if (compHndBBtabCount > 0)
     {
         // Describe the EH clause info...
@@ -2715,5 +2692,5 @@ PhaseStatus Compiler::fgWasmVirtualIP()
     }
 #endif // DEBUG
 
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    return updatesAdded == 0 ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
 }

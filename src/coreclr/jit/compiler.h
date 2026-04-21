@@ -1731,6 +1731,8 @@ struct FuncInfoDsc
     BasicBlock*          GetLastBlock(Compiler* comp) const;
     BasicBlockRangeList  Blocks(Compiler* comp) const;
     unsigned             GetFuncletIdx(Compiler* comp) const;
+    bool                 IsFunclet() const { return funKind != FUNC_ROOT; }
+    bool                 IsMethod() const { return funKind == FUNC_ROOT; }
 
 #if defined(TARGET_AMD64)
 

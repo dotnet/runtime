@@ -222,6 +222,7 @@ protected:
     void                       genEmitNullCheck(regNumber reg);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
+    void                       ensureCurrentFuncIsUnwindable();
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
