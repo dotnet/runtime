@@ -19,9 +19,10 @@ internal readonly struct Loader_1 : ILoader
 
     private enum ModuleFlags_1 : uint
     {
-        Tenured = 0x1,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
-        EditAndContinue = 0x8, // Edit and Continue is enabled for this module
-        ReflectionEmit = 0x40,    // Reflection.Emit was used to create this module
+        Tenured = 0x1,                  // Set once we know for sure the Module will not be freed until the appdomain itself exits
+        JitOptimizationDisabled = 0x2,  // Cached flag: JIT optimizations are disabled
+        EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
+        ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
     }
 
     private const uint DebuggerInfoMask = 0x0000FC00;
@@ -382,6 +383,8 @@ internal readonly struct Loader_1 : ILoader
         ModuleFlags flags = default;
         if (runtimeFlags.HasFlag(ModuleFlags_1.Tenured))
             flags |= ModuleFlags.Tenured;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.JitOptimizationDisabled))
+            flags |= ModuleFlags.JitOptimizationDisabled;
         if (runtimeFlags.HasFlag(ModuleFlags_1.EditAndContinue))
             flags |= ModuleFlags.EditAndContinue;
         if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
