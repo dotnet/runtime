@@ -1262,28 +1262,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             TargetPointer methodDesc = new TargetPointer(vmMethod);
             TargetCodePointer codeAddress = new TargetCodePointer(codeStartAddress);
             ICodeVersions codeVersions = _target.Contracts.CodeVersions;
-            bool foundMatch = false;
 
-            foreach (ILCodeVersionHandle ilCodeVersion in codeVersions.GetILCodeVersions(methodDesc))
+            NativeCodeVersionHandle nativeCodeVersion = codeVersions.GetSpecificNativeCodeVersion(methodDesc, codeAddress);
+            if (nativeCodeVersion.Valid && nativeCodeVersion.IsExplicit)
             {
-                foreach (NativeCodeVersionHandle nativeCodeVersion in codeVersions.GetNativeCodeVersions(methodDesc, ilCodeVersion))
-                {
-                    if (codeVersions.GetNativeCode(nativeCodeVersion) == codeAddress)
-                    {
-                        if (nativeCodeVersion.IsExplicit)
-                        {
-                            *pVmNativeCodeVersionNode = nativeCodeVersion.CodeVersionNodeAddress.Value;
-                        }
-
-                        foundMatch = true;
-                        break;
-                    }
-                }
-
-                if (foundMatch)
-                {
-                    break;
-                }
+                *pVmNativeCodeVersionNode = nativeCodeVersion.CodeVersionNodeAddress.Value;
             }
         }
         catch (System.Exception ex)

@@ -19,6 +19,7 @@ public interface ICodeVersions : IContract
     public virtual IEnumerable<NativeCodeVersionHandle> GetNativeCodeVersions(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
 
     public virtual NativeCodeVersionHandle GetNativeCodeVersionForIP(TargetCodePointer ip) => throw new NotImplementedException();
+    public virtual NativeCodeVersionHandle GetSpecificNativeCodeVersion(TargetPointer methodDesc, TargetCodePointer codeAddress) => throw new NotImplementedException();
 
     public virtual NativeCodeVersionHandle GetActiveNativeCodeVersionForILCodeVersion(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
 
