@@ -555,7 +555,7 @@ namespace System.Net.Sockets
 
         public bool StopAndAbort()
         {
-            return _pollHandle?.AbortOperationsAndDispose() ?? false;
+            return _pollHandle?.AbortAndDispose() ?? false;
         }
 
         public void SetHandleNonBlocking()

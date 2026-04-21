@@ -353,7 +353,8 @@ namespace Microsoft.Win32.SafeHandles
             internal PipeWriteOperation(SafePipeHandle owner)
                 => _owner = owner;
 
-            internal short Version => _mrvtsc.Version;
+            internal short Version
+                => _mrvtsc.Version;
 
             internal void Reset()
             {

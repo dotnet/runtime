@@ -86,14 +86,10 @@ namespace System.Threading
         public bool IsReadReady(out int observedSequenceNumber) { throw null; }
         public bool IsWriteReady(out int observedSequenceNumber) { throw null; }
         public System.Threading.PollOperationAsyncResult ReadAsync(System.Threading.PollTriggeredOperation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.PollOperationAsyncResult ReadAsync(System.Threading.PollTriggeredOperation operation, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.PollOperationAsyncResult WriteAsync(System.Threading.PollTriggeredOperation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.PollOperationAsyncResult WriteAsync(System.Threading.PollTriggeredOperation operation, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.PollOperationSyncResult ReadSync(System.Threading.PollTriggeredOperation operation, int observedSequenceNumber, int timeout) { throw null; }
-        public System.Threading.PollOperationSyncResult ReadSync(System.Threading.PollTriggeredOperation operation, int timeout) { throw null; }
         public System.Threading.PollOperationSyncResult WriteSync(System.Threading.PollTriggeredOperation operation, int observedSequenceNumber, int timeout) { throw null; }
-        public System.Threading.PollOperationSyncResult WriteSync(System.Threading.PollTriggeredOperation operation, int timeout) { throw null; }
-        public bool AbortOperationsAndDispose() { throw null; }
+        public bool AbortAndDispose() { throw null; }
         public void Dispose() { }
     }
     public enum PollOperationAsyncResult

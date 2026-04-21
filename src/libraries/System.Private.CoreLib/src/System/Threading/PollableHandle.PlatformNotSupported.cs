@@ -27,16 +27,6 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
-        public PollOperationAsyncResult ReadAsync(PollTriggeredOperation operation, CancellationToken cancellationToken)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public PollOperationAsyncResult WriteAsync(PollTriggeredOperation operation, CancellationToken cancellationToken)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public PollOperationSyncResult ReadSync(PollTriggeredOperation operation, int observedSequenceNumber, int timeout)
         {
             throw new PlatformNotSupportedException();
@@ -47,17 +37,7 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
-        public PollOperationSyncResult ReadSync(PollTriggeredOperation operation, int timeout)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public PollOperationSyncResult WriteSync(PollTriggeredOperation operation, int timeout)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public bool AbortOperationsAndDispose()
+        public bool AbortAndDispose()
         {
             throw new PlatformNotSupportedException();
         }
