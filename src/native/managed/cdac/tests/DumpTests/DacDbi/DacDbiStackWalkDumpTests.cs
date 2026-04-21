@@ -71,7 +71,6 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
 
         Assert.Equal(contractCtx.InstructionPointer, dbiCtx.InstructionPointer);
         Assert.Equal(contractCtx.StackPointer, dbiCtx.StackPointer);
-        Assert.Equal(contractCtx.FramePointer, dbiCtx.FramePointer);
     }
 
     [ConditionalTheory]

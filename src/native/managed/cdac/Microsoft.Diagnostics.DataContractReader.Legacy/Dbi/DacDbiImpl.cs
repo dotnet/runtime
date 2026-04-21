@@ -680,9 +680,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             // Read the given context from the native buffer.
             IPlatformAgnosticContext givenCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
-            byte[] givenContext = new byte[leafContext.Length];
-            new Span<byte>(pContext, givenContext.Length).CopyTo(givenContext);
-            givenCtx.FillFromBuffer(givenContext);
+            givenCtx.FillFromBuffer(new Span<byte>(pContext, leafContext.Length));
 
             *pResult = givenCtx.StackPointer == leafCtx.StackPointer
                 && givenCtx.InstructionPointer == leafCtx.InstructionPointer

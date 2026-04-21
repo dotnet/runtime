@@ -305,9 +305,7 @@ internal readonly struct Thread_1 : IThread
         if (filterContext != TargetPointer.Null)
         {
             _target.ReadBuffer(filterContext.Value, buffer);
-            context.FillFromBuffer(buffer);
-
-            return context.GetBytes();
+            return bytes;
         }
 
         if (!_target.TryGetThreadContext(thread.OSId.Value, contextFlags, buffer))
@@ -315,8 +313,6 @@ internal readonly struct Thread_1 : IThread
             throw new InvalidOperationException($"GetThreadContext failed for thread {thread.OSId.Value}");
         }
 
-        context.FillFromBuffer(buffer);
-
-        return context.GetBytes();
+        return bytes;
     }
 }
