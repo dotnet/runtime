@@ -1532,6 +1532,22 @@ namespace ILAssembler
                             return typedefResult;
                         }
                     }
+
+                    // COMPAT: Before creating a forward-reference TypeDef, check if the type
+                    // matches a well-known corelib type. Native ilasm resolves unqualified
+                    // references to types like System.String as TypeRefs from the corelib.
+                    if (typeName.ContainingTypeName is null)
+                    {
+                        var (ns, nm) = NameHelpers.SplitDottedNameToNamespaceAndName(typeName.DottedName);
+                        if (ns == "System" && nm is "String" or "Object" or "ValueType" or "Enum"
+                            or "Type" or "Array" or "Delegate" or "MulticastDelegate"
+                            or "Exception" or "Attribute")
+                        {
+                            var coreLib = _entityRegistry.GetCoreLibAssemblyReference();
+                            return _entityRegistry.GetOrCreateTypeReference(coreLib, typeName);
+                        }
+                    }
+
                     Stack<TypeName> containingTypes = new();
                     for (TypeName? containingType = typeName; containingType is not null; containingType = containingType.ContainingTypeName)
                     {

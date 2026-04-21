@@ -666,6 +666,11 @@ namespace ILAssembler
                 ?? GetOrCreateAssemblyReference("mscorlib", new Version(0, 0, 0, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
         }
 
+        private static bool IsCoreLibAssemblyName(string name)
+        {
+            return name is "mscorlib" or "System.Runtime" or "System.Private.CoreLib" or "netstandard";
+        }
+
         public interface IHasHandle
         {
             EntityHandle Handle { get; }
@@ -773,6 +778,18 @@ namespace ILAssembler
 
         public TypeReferenceEntity GetOrCreateTypeReference(EntityBase resolutionContext, TypeName name)
         {
+            // COMPAT: When the resolution scope is a corelib assembly ref (mscorlib, System.Runtime, etc.),
+            // redirect to the preferred corelib assembly ref to match native ilasm behavior.
+            // Native ilasm always uses the preferred corelib for well-known types.
+            if (resolutionContext is AssemblyReferenceEntity asmRefScope && IsCoreLibAssemblyName(asmRefScope.Name))
+            {
+                var preferredCoreLib = GetCoreLibAssemblyReference();
+                if (preferredCoreLib != asmRefScope)
+                {
+                    resolutionContext = preferredCoreLib;
+                }
+            }
+
             Stack<(string Namespace, string Name)> allTypeNames = new();
             // Record all of the containing type names
             for (TypeName? containingType = name; containingType is not null; containingType = containingType.ContainingTypeName)
