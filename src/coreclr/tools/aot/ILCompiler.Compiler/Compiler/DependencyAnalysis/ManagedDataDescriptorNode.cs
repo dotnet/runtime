@@ -22,9 +22,8 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class ManagedDataDescriptorNode : ObjectNode, ISymbolDefinitionNode
     {
-        private const string CdacTypeAttributeNamespace = "System.Runtime.CompilerServices";
-        private const string CdacTypeAttributeName = "CdacTypeAttribute";
-        private const string CdacFieldAttributeName = "CdacFieldAttribute";
+        private const string DataContractAttributeNamespace = "System.Diagnostics";
+        private const string DataContractAttributeName = "DataContractAttribute";
 
         public const string SymbolName = "DotNetManagedContractDescriptor";
 
@@ -105,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (type is not EcmaType ecmaType)
                         continue;
 
-                    if (!ecmaType.HasCustomAttribute(CdacTypeAttributeNamespace, CdacTypeAttributeName))
+                    if (!ecmaType.HasCustomAttribute(DataContractAttributeNamespace, DataContractAttributeName))
                         continue;
 
                     WriteType(writer, ecmaType);
@@ -123,9 +122,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static void WriteType(Utf8JsonWriter writer, EcmaType type)
         {
-            // Use the Name property from CdacTypeAttribute if set, otherwise use the simple type name
-            string descriptorName = GetCdacTypeName(type);
-            writer.WriteStartObject(descriptorName);
+            writer.WriteStartObject(GetMangledTypeName(type));
 
             if (type.IsValueType)
             {
@@ -137,7 +134,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (field.IsStatic || field is not EcmaField ecmaField)
                     continue;
 
-                if (!ecmaField.HasCustomAttribute(CdacTypeAttributeNamespace, CdacFieldAttributeName))
+                if (!ecmaField.HasCustomAttribute(DataContractAttributeNamespace, DataContractAttributeName))
                     continue;
 
                 writer.WriteNumber(field.GetName(), field.Offset.AsInt);
@@ -147,22 +144,18 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         /// <summary>
-        /// Returns the descriptor name for a type annotated with [CdacType].
-        /// Uses the Name property if set, otherwise falls back to the simple type name.
+        /// Returns a mangled fully-qualified type name matching the NativeAOT symbol convention
+        /// (e.g., System.Threading.Thread → System_Threading_Thread).
         /// </summary>
-        private static string GetCdacTypeName(EcmaType type)
+        private static string GetMangledTypeName(MetadataType type)
         {
-            var decoded = type.GetDecodedCustomAttribute(CdacTypeAttributeNamespace, CdacTypeAttributeName);
-            if (decoded.HasValue)
-            {
-                foreach (var named in decoded.Value.NamedArguments)
-                {
-                    if (named.Name == "Name" && named.Value is string nameOverride && !string.IsNullOrEmpty(nameOverride))
-                        return nameOverride;
-                }
-            }
+            string ns = type.GetNamespace();
+            string name = type.GetName();
 
-            return type.GetName();
+            if (string.IsNullOrEmpty(ns))
+                return name;
+
+            return $"{ns}.{name}".Replace('.', '_');
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
