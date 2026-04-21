@@ -4446,5 +4446,64 @@ namespace ILAssembler.Tests
             Assert.Equal(0x00, blobBytes[2]); // named arg count low
             Assert.Equal(0x00, blobBytes[3]); // named arg count high
         }
+
+        [Fact]
+        public void NonStaticMethod_AutoInstanceCallingConvention()
+        {
+            // Non-static methods in a class should automatically get the instance
+            // calling convention, even if not explicitly specified in the IL source
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public void DoWork() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "DoWork");
+
+            // Check the signature has the instance flag
+            var sigBytes = reader.GetBlobBytes(method.Signature);
+            byte header = sigBytes[0];
+            Assert.True((header & (byte)SignatureAttributes.Instance) != 0,
+                $"Method signature should have Instance flag. Header byte: 0x{header:X2}");
+        }
+
+        [Fact]
+        public void StaticMethod_NoAutoInstanceCallingConvention()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void DoWork() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "DoWork");
+
+            var sigBytes = reader.GetBlobBytes(method.Signature);
+            byte header = sigBytes[0];
+            Assert.True((header & (byte)SignatureAttributes.Instance) == 0,
+                $"Static method should NOT have Instance flag. Header byte: 0x{header:X2}");
+        }
     }
 }
