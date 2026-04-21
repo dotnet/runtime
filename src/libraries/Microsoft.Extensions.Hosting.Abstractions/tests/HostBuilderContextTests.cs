@@ -121,6 +121,13 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        public void UseServiceProviderFactory_FuncOverload_WithNullFactory_ThrowsArgumentNullException()
+        {
+            IHostBuilder builder = new MinimalHostBuilder();
+            Assert.Throws<ArgumentNullException>(() => builder.UseServiceProviderFactory<IServiceCollection>(null!));
+        }
+
+        [Fact]
         public void UseServiceProviderFactory_NonFuncOverload_WithoutDIM_CanBeImplementedAndCalled()
         {
             IHostBuilder builder = new MinimalHostBuilder();
