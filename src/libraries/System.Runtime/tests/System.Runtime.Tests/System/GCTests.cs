@@ -1097,7 +1097,6 @@ namespace System.Tests
 
         [Theory]
         [InlineData(-1)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         private static void AllocateArrayNegativeSize(int negValue)
         {
             Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1));

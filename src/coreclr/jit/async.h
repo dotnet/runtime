@@ -349,6 +349,12 @@ class AsyncTransformation
     BasicBlock*                m_lastResumptionBB        = nullptr;
     BasicBlock*                m_sharedReturnBB          = nullptr;
 
+    void FindAwaits(ArrayStack<BasicBlock*>& blocksWithNormalAwaits,
+                    ArrayStack<BasicBlock*>& blocksWithTailAwaits,
+                    int*                     numNormalAwaits,
+                    int*                     numTailAwaits);
+
+    void        TransformTailAwaits(ArrayStack<BasicBlock*>& blocksWithTailAwaits);
     void        TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** remainder);
     BasicBlock* CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call);
 
@@ -433,17 +439,16 @@ class AsyncTransformation
                                    var_types    storeType,
                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    void        CreateDebugInfoForSuspensionPoint(const ContinuationLayout&        layout,
-                                                  const ContinuationLayoutBuilder& subLayout);
-    unsigned    GetReturnedContinuationVar();
-    unsigned    GetNewContinuationVar();
-    unsigned    GetResultBaseVar();
-    unsigned    GetExceptionVar();
-    BasicBlock* GetSharedReturnBB();
-
-    bool ReuseContinuations();
-    void CreateResumptionsAndSuspensions();
-    void CreateResumptionSwitch();
+    void     CreateDebugInfoForSuspensionPoint(const ContinuationLayout&        layout,
+                                               const ContinuationLayoutBuilder& subLayout);
+    unsigned GetReturnedContinuationVar();
+    unsigned GetNewContinuationVar();
+    unsigned GetResultBaseVar();
+    unsigned GetExceptionVar();
+    void     CreateSharedReturnBB();
+    bool     ReuseContinuations();
+    void     CreateResumptionsAndSuspensions();
+    void     CreateResumptionSwitch();
 
 public:
     AsyncTransformation(Compiler* comp)

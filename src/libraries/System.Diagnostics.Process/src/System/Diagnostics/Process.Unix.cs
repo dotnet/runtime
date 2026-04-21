@@ -54,7 +54,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public void Kill()
         {
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
@@ -69,7 +69,7 @@ namespace System.Diagnostics
                 return;
             }
 
-            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL);
+            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
             if (killResult != 0)
             {
                 Interop.Error error = Interop.Sys.GetLastError();
@@ -105,7 +105,7 @@ namespace System.Diagnostics
 
             // Stop the process, so it won't start additional children.
             // This is best effort: kill can return before the process is stopped.
-            int stopResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGSTOP);
+            int stopResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSIGSTOP());
             if (stopResult != 0)
             {
                 Interop.Error error = Interop.Sys.GetLastError();
@@ -119,7 +119,7 @@ namespace System.Diagnostics
 
             List<Process> children = GetChildProcesses();
 
-            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL);
+            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
             if (killResult != 0)
             {
                 Interop.Error error = Interop.Sys.GetLastError();
@@ -355,9 +355,9 @@ namespace System.Diagnostics
             return new SafeProcessHandle(_processId, GetSafeWaitHandle());
         }
 
-        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)
         {
-            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
+            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, out ProcessWaitState.Holder? waitStateHolder);
             Debug.Assert(!startedProcess.IsInvalid);
 
             _waitStateHolder = waitStateHolder;
@@ -434,14 +434,5 @@ namespace System.Diagnostics
 
         private static bool WaitForInputIdleCore(int _ /*milliseconds*/) => throw new InvalidOperationException(SR.InputIdleUnknownError);
 
-        /// <summary>Gets the friendly name of the process.</summary>
-        public string ProcessName
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.ProcessName;
-            }
-        }
     }
 }

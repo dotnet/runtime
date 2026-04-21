@@ -231,17 +231,4 @@ typedef SimpleRWLock::SimpleReadLockHolder SimpleReadLockHolder;
 typedef SimpleRWLock::SimpleWriteLockHolder SimpleWriteLockHolder;
 typedef DPTR(SimpleRWLock) PTR_SimpleRWLock;
 
-#ifdef TEST_DATA_CONSISTENCY
-// used for test purposes. Determines if a crst is held.
-// Arguments:
-//     input: pLock - the lock to test
-// Note: Throws if the lock is held
-
-FORCEINLINE void DebugTryRWLock(SimpleRWLock * pLock)
-{
-    SUPPORTS_DAC;
-
-    SimpleReadLockHolder rwLock(pLock);
-}
-#endif // TEST_DATA_CONSISTENCY
 #endif
