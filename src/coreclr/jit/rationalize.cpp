@@ -1716,6 +1716,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
         case GT_BOX:
         case GT_ARR_ADDR:
+        case GT_ASSERTION:
             // BOX/ARR_ADDR are "passthrough" nodes,
             // and at this point we no longer need them.
             if (node->gtGetOp1() != nullptr)
@@ -1725,27 +1726,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 node = node->gtGetOp1();
             }
             break;
-
-        case GT_ASSERTION:
-        {
-            bool               isClosed    = false;
-            unsigned           sideEffects = 0;
-            LIR::ReadOnlyRange range       = BlockRange().GetTreeRange(node->gtGetOp1(), &isClosed, &sideEffects);
-            if (isClosed && ((sideEffects & GTF_SIDE_EFFECT) == 0))
-            {
-                BlockRange().Delete(m_compiler, m_block, std::move(range));
-                BlockRange().Remove(node);
-                return Compiler::WALK_CONTINUE;
-            }
-
-            BlockRange().Remove(node);
-            node = node->gtGetOp1();
-            if (node->IsValue())
-            {
-                node->SetUnusedValue();
-            }
-            break;
-        }
 
         case GT_GCPOLL:
         {

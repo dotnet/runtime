@@ -2137,21 +2137,25 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         return node->IsInvariant() || (node->OperIs(GT_LCL_VAR) && !lvaVarAddrExposed(node->AsLclVar()->GetLclNum()));
     };
 
-    GenTree* origRelop = condBlock->lastStmt()->GetRootNode()->gtGetOp1();
-    if (origRelop->OperIsCmpCompare() && isSuitableRelopOp(origRelop->gtGetOp1()) &&
-        isSuitableRelopOp(origRelop->gtGetOp2()))
+    GenTree* jtrue = condBlock->lastStmt()->GetRootNode();
+    if (jtrue->OperIs(GT_JTRUE))
     {
-        GenTree* relopClone = gtCloneExpr(origRelop);
-        if (trueExits)
+        GenTree* origRelop = condBlock->lastStmt()->GetRootNode()->gtGetOp1();
+        if (origRelop->OperIsCmpCompare() && isSuitableRelopOp(origRelop->gtGetOp1()) &&
+            isSuitableRelopOp(origRelop->gtGetOp2()))
         {
-            relopClone = gtReverseCond(relopClone);
+            GenTree* relopClone = gtCloneExpr(origRelop);
+            if (trueExits)
+            {
+                relopClone = gtReverseCond(relopClone);
+            }
+            relopClone->gtFlags &= ~GTF_RELOP_JMP_USED;
+            GenTree*   assertion = gtNewOperNode(GT_ASSERTION, TYP_VOID, relopClone);
+            Statement* stmt      = fgNewStmtFromTree(assertion, condBlock->lastStmt()->GetDebugInfo());
+            fgInsertStmtAtBeg(stayInLoopSucc, stmt);
+            setMethodHasAssertionNodes();
+            JITDUMP("Inserted GT_ASSERTION at start of " FMT_BB " to record loop guard\n", stayInLoopSucc->bbNum);
         }
-        relopClone->gtFlags &= ~GTF_RELOP_JMP_USED;
-        GenTree*   assertion = gtNewOperNode(GT_ASSERTION, TYP_VOID, relopClone);
-        Statement* stmt      = fgNewStmtFromTree(assertion, condBlock->lastStmt()->GetDebugInfo());
-        fgInsertStmtAtBeg(stayInLoopSucc, stmt);
-        setMethodHasAssertionNodes();
-        JITDUMP("Inserted GT_ASSERTION at start of " FMT_BB " to record loop guard\n", stayInLoopSucc->bbNum);
     }
 
     return true;
