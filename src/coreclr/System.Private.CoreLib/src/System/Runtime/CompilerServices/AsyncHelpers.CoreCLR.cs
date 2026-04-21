@@ -128,6 +128,7 @@ namespace System.Runtime.CompilerServices
             return ((uint)Flags & (mask << (int)ContinuationFlags.ExceptionIndexFirstBit)) != 0;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetException(Exception ex)
         {
             const uint mask = (1u << (int)ContinuationFlags.ExceptionIndexNumBits) - 1;
