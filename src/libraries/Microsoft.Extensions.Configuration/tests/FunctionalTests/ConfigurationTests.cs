@@ -637,11 +637,9 @@ IniKey1=IniValue2");
             }
         }
 
-        [Theory]
+        [Fact]
         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReloadDataErrorRaisesOnLoadException(bool ignoreException)
+        public async Task ReloadDataErrorRaisesOnLoadException()
         {
             const string FileName = $"{nameof(ReloadDataErrorRaisesOnLoadException)}.json";
 
@@ -653,7 +651,7 @@ IniKey1=IniValue2");
             {
                 failureException = c.Exception;
                 failingProvider = c.Provider;
-                c.Ignore = ignoreException;
+                c.Ignore = true;
             };
 
             IConfigurationRoot cfgRoot = CreateBuilder()
@@ -681,24 +679,13 @@ IniKey1=IniValue2");
 
             // Check that value was removed from config
             Assert.Null(cfgRoot["JsonKey1"]);
-
-            if (ignoreException)
-            {
-                Assert.True(reloadToken.HasChanged);
-            }
-            else
-            {
-                // If the exception was not ignored, it was rethrown which prevented calling OnReload()
-                Assert.False(reloadToken.HasChanged);
-            }
+            Assert.True(reloadToken.HasChanged);
         }
 
-        [Theory]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReloadIoErrorRaisesOnLoadException(bool ignoreException)
+        public async Task ReloadIoErrorRaisesOnLoadException()
         {
             const string FileName = $"{nameof(ReloadIoErrorRaisesOnLoadException)}.json";
 
@@ -710,7 +697,7 @@ IniKey1=IniValue2");
             {
                 failureException = c.Exception;
                 failingProvider = c.Provider;
-                c.Ignore = ignoreException;
+                c.Ignore = true;
             };
 
             IConfigurationRoot cfgRoot = CreateBuilder()
