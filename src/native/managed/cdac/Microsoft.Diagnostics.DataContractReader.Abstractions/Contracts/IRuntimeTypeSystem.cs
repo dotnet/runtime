@@ -154,6 +154,7 @@ public interface IRuntimeTypeSystem : IContract
     // If this returns CorElementType.ValueType it may be a normal valuetype or a "NATIVE" valuetype used to represent an interop view on a structure
     // HasTypeParam will return true for cases where this is the interop view
     CorElementType GetSignatureCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsValueType(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // return true if the TypeHandle represents an enum type.
     bool IsEnum(TypeHandle typeHandle) => throw new NotImplementedException();
@@ -225,6 +226,10 @@ public interface IRuntimeTypeSystem : IContract
 
     OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     bool IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
+
+    bool IsAsyncThunkMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    bool IsWrapperStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs
     TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer) => throw new NotImplementedException();

@@ -28,10 +28,6 @@
 #include "dbgtransportsession.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
-#ifdef TEST_DATA_CONSISTENCY
-#include "datatest.h"
-#endif // TEST_DATA_CONSISTENCY
-
 #include "dbgenginemetrics.h"
 
 #include "../../vm/rejit.h"
@@ -453,102 +449,6 @@ void Debugger::DoNotCallDirectlyPrivateUnlock(void)
 
     }
 }
-
-#ifdef TEST_DATA_CONSISTENCY
-
-// ---------------------------------------------------------------------------------
-// Implementations for DataTest member functions
-// ---------------------------------------------------------------------------------
-
-// Send an event to the RS to signal that it should test to determine if a crst is held.
-// This is for testing purposes only.
-// Arguments:
-//     input:  pCrst     - the lock to test
-//             fOkToTake - true iff the LS does NOT currently hold the lock
-//     output: none
-// Notes: The RS will throw if the lock is held. The code that tests the lock will catch the
-//        exception and assert if throwing was not the correct thing to do (determined via the
-//        boolean). See the case for DB_IPCE_TEST_CRST in code:CordbProcess::RawDispatchEvent.
-//
-void DataTest::SendDbgCrstEvent(Crst * pCrst, bool fOkToTake)
-{
-    DebuggerIPCEvent * pLockEvent = g_pDebugger->m_pRCThread->GetIPCEventSendBuffer();
-
-    g_pDebugger->InitIPCEvent(pLockEvent, DB_IPCE_TEST_CRST);
-
-    pLockEvent->TestCrstData.vmCrst.SetRawPtr(pCrst);
-    pLockEvent->TestCrstData.fOkToTake = fOkToTake;
-
-    g_pDebugger->SendRawEvent(pLockEvent);
-
-} // DataTest::SendDbgCrstEvent
-
-// Send an event to the RS to signal that it should test to determine if a SimpleRWLock is held.
-// This is for testing purposes only.
-// Arguments:
-//     input:  pRWLock   - the lock to test
-//             fOkToTake - true iff the LS does NOT currently hold the lock
-//     output: none
-// Note:  The RS will throw if the lock is held. The code that tests the lock will catch the
-//        exception and assert if throwing was not the correct thing to do (determined via the
-//        boolean). See the case for DB_IPCE_TEST_RWLOCK in code:CordbProcess::RawDispatchEvent.
-//
-void DataTest::SendDbgRWLockEvent(SimpleRWLock * pRWLock, bool okToTake)
-{
-    DebuggerIPCEvent * pLockEvent = g_pDebugger->m_pRCThread->GetIPCEventSendBuffer();
-
-    g_pDebugger->InitIPCEvent(pLockEvent, DB_IPCE_TEST_RWLOCK);
-
-    pLockEvent->TestRWLockData.vmRWLock.SetRawPtr(pRWLock);
-    pLockEvent->TestRWLockData.fOkToTake = okToTake;
-
-    g_pDebugger->SendRawEvent(pLockEvent);
-} // DataTest::SendDbgRWLockEvent
-
-// Takes a series of locks in various ways and signals the RS to test the locks at interesting
-// points to ensure we reliably detect when the LS holds a lock. If in the course of inspection, the
-// DAC needs to execute a code path where the LS holds a lock, we assume that the locked data is in
-// an inconsistent state. In this situation, we don't want to report information about this data, so
-// we throw an exception.
-// This is for testing purposes only.
-//
-// Arguments: none
-// Return Value: none
-// Notes: See code:CordbProcess::RawDispatchEvent for the RS part of this test and code:Debugger::Startup
-//        for the LS invocation of the test.
-//        The environment variable TestDataConsistency must be set to 1 to make this test run.
-void DataTest::TestDataSafety()
-{
-    const bool okToTake = true;
-
-    SendDbgCrstEvent(&m_crst1, okToTake);
-    {
-        CrstHolder ch1(&m_crst1);
-        SendDbgCrstEvent(&m_crst1, !okToTake);
-        {
-            CrstHolder ch2(&m_crst2);
-            SendDbgCrstEvent(&m_crst2, !okToTake);
-            SendDbgCrstEvent(&m_crst1, !okToTake);
-        }
-        SendDbgCrstEvent(&m_crst2, okToTake);
-        SendDbgCrstEvent(&m_crst1, !okToTake);
-    }
-    SendDbgCrstEvent(&m_crst1, okToTake);
-
-    {
-        SendDbgRWLockEvent(&m_rwLock, okToTake);
-        SimpleReadLockHolder readLock(&m_rwLock);
-        SendDbgRWLockEvent(&m_rwLock, okToTake);
-    }
-    SendDbgRWLockEvent(&m_rwLock, okToTake);
-    {
-        SimpleWriteLockHolder readLock(&m_rwLock);
-        SendDbgRWLockEvent(&m_rwLock, !okToTake);
-    }
-
-} // DataTest::TestDataSafety
-
-#endif // TEST_DATA_CONSISTENCY
 
 #if _DEBUG
 static DebugEventCounter g_debugEventCounter;
@@ -1991,15 +1891,6 @@ HRESULT Debugger::Startup(void)
             LOG((LF_CORDB, LL_EVERYTHING, "Start was successful\n"));
         }
 
-#ifdef TEST_DATA_CONSISTENCY
-        // if we have set the environment variable TestDataConsistency, run the data consistency test.
-        // See code:DataTest::TestDataSafety for more information
-        if (g_pConfig != NULL && g_pConfig->TestDataConsistency())
-        {
-            DataTest dt;
-            dt.TestDataSafety();
-        }
-#endif // TEST_DATA_CONSISTENCY
     }
 
     startup.WaitForContinueNotification();

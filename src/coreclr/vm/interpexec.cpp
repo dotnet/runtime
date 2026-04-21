@@ -624,6 +624,82 @@ void DBG_PrintInterpreterStack()
 }
 #endif // _DEBUG
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef TARGET_WASM
+typedef void* (*HELPER_FTN_P_P)(int*, void*, int32_t);
+typedef void* (*HELPER_FTN_BOX_UNBOX)(int*, MethodTable*, void*, int32_t);
+typedef Object* (*HELPER_FTN_NEWARR)(int*, MethodTable*, intptr_t, int32_t);
+typedef void* (*HELPER_FTN_P_PP)(int*, void*, void*, int32_t);
+typedef void (*HELPER_FTN_V_PPP)(int*, void*, void*, void*, int32_t);
+typedef void* (*HELPER_FTN_P_PPIP)(int*, void*, void*, int32_t, void*, int32_t);
+typedef void (*HELPER_FTN_V_PP)(int*, void*, void*, int32_t);
+
+// These helpers are all noinline, so that when the R2R compiler overwrites values relative to framePointer lower
+// down in the stack, no meaningful state from the C++ code here will be overwritten.
+// This scheme won't work if we actually have a helper function which returns a structure.
+// If we need to deal with that, it can be done with inline assembly, but for now we don't have any such helpers
+// and inline assembly helpers will be more difficult to maintain and debug, so we can cross that bridge if/when we come to it.
+__attribute__((noinline)) void* Call_HELPER_FTN_P_P(HELPER_FTN_P_P helper, void* arg1)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, arg1, 0);
+}
+
+__attribute__((noinline)) void* Call_HELPER_FTN_BOX_UNBOX(HELPER_FTN_BOX_UNBOX helper, MethodTable* pMT, void* arg1)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, pMT, arg1, 0);
+}
+
+__attribute__((noinline)) Object* Call_HELPER_FTN_NEWARR(HELPER_FTN_NEWARR helper, MethodTable* pMT, intptr_t arg1)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, pMT, arg1, 0);
+}
+
+__attribute__((noinline)) void* Call_HELPER_FTN_P_PP(HELPER_FTN_P_PP helper, void* arg1, void* arg2)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, arg1, arg2, 0);
+}
+
+__attribute__((noinline)) void Call_HELPER_FTN_V_PPP(HELPER_FTN_V_PPP helper, void* arg1, void* arg2, void* arg3)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    helper(&framePointer, arg1, arg2, arg3, 0);
+}
+
+__attribute__((noinline)) void* Call_HELPER_FTN_P_PPIP(HELPER_FTN_P_PPIP helper, void* arg1, void* arg2, int32_t arg3, void* arg4)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, arg1, arg2, arg3, arg4, 0);
+}
+
+__attribute__((noinline)) void Call_HELPER_FTN_V_PP(HELPER_FTN_V_PP helper, void* arg1, void* arg2)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    helper(&framePointer, arg1, arg2, 0);
+}
+
+#else // TARGET_WASM
+typedef void* (*HELPER_FTN_P_P)(void*, int32_t);
+typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*, int32_t);
+typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t, int32_t);
+typedef void* (*HELPER_FTN_P_PP)(void*, void*, int32_t);
+typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*, int32_t);
+typedef void* (*HELPER_FTN_P_PPIP)(void*, void*, int32_t, void*, int32_t);
+typedef void (*HELPER_FTN_V_PP)(void*, void*, int32_t);
+
+#define Call_HELPER_FTN_P_P(helper, arg1) helper(arg1, 0)
+#define Call_HELPER_FTN_BOX_UNBOX(helper, pMT, arg1) helper(pMT, arg1, 0)
+#define Call_HELPER_FTN_NEWARR(helper, pMT, arg1) helper(pMT, arg1, 0)
+#define Call_HELPER_FTN_P_PP(helper, arg1, arg2) helper(arg1, arg2, 0)
+#define Call_HELPER_FTN_V_PPP(helper, arg1, arg2, arg3) helper(arg1, arg2, arg3, 0)
+#define Call_HELPER_FTN_P_PPIP(helper, arg1, arg2, arg3, arg4) helper(arg1, arg2, arg3, arg4, 0)
+#define Call_HELPER_FTN_V_PP(helper, arg1, arg2) helper(arg1, arg2, 0)
+
+#endif // TARGET_WASM
+#else // FEATURE_PORTABLE_ENTRYPOINTS
 typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
@@ -631,6 +707,16 @@ typedef void* (*HELPER_FTN_P_PP)(void*, void*);
 typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*);
 typedef void* (*HELPER_FTN_P_PPIP)(void*, void*, int32_t, void*);
 typedef void (*HELPER_FTN_V_PP)(void*, void*);
+
+#define Call_HELPER_FTN_P_P(helper, arg1) helper(arg1)
+#define Call_HELPER_FTN_BOX_UNBOX(helper, pMT, arg1) helper(pMT, arg1)
+#define Call_HELPER_FTN_NEWARR(helper, pMT, arg1) helper(pMT, arg1)
+#define Call_HELPER_FTN_P_PP(helper, arg1, arg2) helper(arg1, arg2)
+#define Call_HELPER_FTN_V_PPP(helper, arg1, arg2, arg3) helper(arg1, arg2, arg3)
+#define Call_HELPER_FTN_P_PPIP(helper, arg1, arg2, arg3, arg4) helper(arg1, arg2, arg3, arg4)
+#define Call_HELPER_FTN_V_PP(helper, arg1, arg2) helper(arg1, arg2)
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -745,7 +831,7 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(const Inter
     }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    if (!PortableEntryPoint::HasNativeEntryPoint((PCODE)addr))
+    if (PortableEntryPoint::PrefersInterpreterEntryPoint((PCODE)addr) || !PortableEntryPoint::HasNativeEntryPoint((PCODE)addr))
     {
         _ASSERTE(pILTargetMethod != NULL);
         *pILTargetMethod = PortableEntryPoint::GetMethodDesc((PCODE)addr);
@@ -1057,6 +1143,10 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
 
     frames.interpMethodContextFrame.pRetVal = (int8_t*)returnValueLocation;
 
+    // resultStorage is an interior pointer into a managed continuation object, passed from DispatchContinuations
+    // in AsyncHelpers. We must report it to the GC so it gets updated if the object moves.
+    GCPROTECT_BEGININTERIOR(resultStorage);
+
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
 
     if (frames.interpreterFrame.GetContinuation() == NULL)
@@ -1082,6 +1172,8 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
         }
     }
 
+    GCPROTECT_END();
+
     contRef = (CONTINUATIONREF)frames.interpreterFrame.GetContinuation();
     frames.interpreterFrame.Pop();
 
@@ -1094,6 +1186,7 @@ FCIMPL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, Continu
     STATIC_CONTRACT_WRAPPER;
 
     TransitionBlock transitionBlock{};
+    transitionBlock.m_StackPointer = callersStackPointer;
     transitionBlock.m_ReturnAddress = (TADDR)&AsyncHelpers_ResumeInterpreterContinuation;
 
     return AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, &transitionBlock);
@@ -2618,7 +2711,6 @@ SWITCH_OPCODE:
                     ip += 4;
                     break;
                 }
-
                 case INTOP_CALL_HELPER_P_P:
                 {
                     void* helperArg = pMethod->pDataItems[ip[3]];
@@ -2639,7 +2731,8 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
                     break;
                 }
@@ -2663,7 +2756,8 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
                     break;
                 }
@@ -2690,7 +2784,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
@@ -2717,7 +2811,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
@@ -2743,7 +2837,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 5;
                     break;
                 }
@@ -2771,7 +2865,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 6;
                     break;
                 }
@@ -2799,7 +2893,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 6;
                     break;
                 }
@@ -2825,7 +2919,7 @@ SWITCH_OPCODE:
                         goto CALL_INTERP_METHOD;
                     }
 
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
@@ -2855,7 +2949,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    helperFtn(helperArg1, helperArg2, helperArg3);
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 6;
                     break;
                 }
@@ -2884,7 +2978,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    helperFtn(helperArg1, helperArg2, helperArg3);
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
                     break;
                 }
@@ -2911,7 +3005,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    helperFtn(helperArg1, helperArg2);
+                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
                     break;
                 }
@@ -2936,7 +3030,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    helperFtn(helperArg1, helperArg2);
+                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
                     break;
                 }
@@ -2964,7 +3058,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    helperFtn(helperArg1, helperArg2, helperArg3);
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
                     break;
                 }
@@ -3070,7 +3164,7 @@ SWITCH_OPCODE:
                         // through CALL_INTERP_METHOD. It is a small optimization and also necessary
                         // for correctness for Newobj allocator helpers where the MethodDesc does not
                         // represent the actual entrypoint.
-                        if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
+                        if (PortableEntryPoint::PrefersInterpreterEntryPoint(calliFunctionPointer) || !PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
                             goto CALL_INTERP_METHOD;
 
                         MetaSig sig(targetMethod);
@@ -3502,7 +3596,7 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    LOCAL_VAR(dreg, void*) = helper(pMT, src);
+                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMT, src);
 
                     ip += 5;
                     break;
@@ -3545,7 +3639,7 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    LOCAL_VAR(dreg, void*) = helper(pMTBoxedObj, src);
+                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMTBoxedObj, src);
 
                     ip += 6;
                     break;
@@ -3569,7 +3663,7 @@ CALL_INTERP_METHOD:
                     MethodTable* arrayClsHnd = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
-                    Object* arr = helper(arrayClsHnd, (intptr_t)length);
+                    Object* arr = Call_HELPER_FTN_NEWARR(helper, arrayClsHnd, (intptr_t)length);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 5;
@@ -3584,7 +3678,7 @@ CALL_INTERP_METHOD:
 
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
-                    Object* arr = helper(arrayClsHnd, (intptr_t)length);
+                    Object* arr = Call_HELPER_FTN_NEWARR(helper, arrayClsHnd, (intptr_t)length);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 6;
@@ -4222,12 +4316,14 @@ do                                                                      \
                     {
                         uintptr_t context = LOCAL_VAR(ip[2], uintptr_t);
                         ip += ipAdjust;
-                        *pDest = ObjectToOBJECTREF((Object*)helperFtnGeneric(OBJECTREFToObject(chainedContinuation), pContinuationType, pAsyncSuspendData->keepAliveOffset, (void*)context));
+                        Object* chainedContinuationObj = OBJECTREFToObject(chainedContinuation);
+                        *pDest = ObjectToOBJECTREF((Object*)Call_HELPER_FTN_P_PPIP(helperFtnGeneric, chainedContinuationObj, pContinuationType, pAsyncSuspendData->keepAliveOffset, (void*)context));
                     }
                     else
                     {
                         ip += ipAdjust;
-                        *pDest = ObjectToOBJECTREF((Object*)helperFtn(OBJECTREFToObject(chainedContinuation), pContinuationType));
+                        Object* chainedContinuationObj = OBJECTREFToObject(chainedContinuation);
+                        *pDest = ObjectToOBJECTREF((Object*)Call_HELPER_FTN_P_PP(helperFtn, chainedContinuationObj, pContinuationType));
                     }
                     break;
                 }
