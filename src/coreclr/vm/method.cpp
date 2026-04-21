@@ -277,51 +277,27 @@ void MethodDesc::SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTi
 #endif // FEATURE_CODE_VERSIONING
 
 #ifdef FEATURE_INTERPRETER
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
 // Cache the calli cookie on the MethodDesc
-// Returns true if the current call set the cookie, false if it was already set.
-bool MethodDesc::SetCalliCookie(void* cookie)
+// Returns true if the current call set the cookie, false if it was already set
+bool MethodDesc::SetCalliCookie(InterpreterCalliCookie cookie)
 {
     STANDARD_VM_CONTRACT;
 
     IfFailThrow(EnsureCodeDataExists(NULL));
 
     _ASSERTE(m_codeData != NULL);
-    return InterlockedCompareExchangeT(&m_codeData->CalliCookie, cookie, (void*)NULL) == NULL;
+    return InterlockedCompareExchangeT(&m_codeData->CalliCookie, (void*)cookie, (void*)NULL) == NULL;
 }
 
-void* MethodDesc::GetCalliCookie()
+InterpreterCalliCookie MethodDesc::GetCalliCookie()
 {
     LIMITED_METHOD_CONTRACT;
 
     PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
     if (codeData == NULL)
-        return NULL;
-    return VolatileLoadWithoutBarrier(&codeData->CalliCookie);
+        return (InterpreterCalliCookie)NULL;
+    return (InterpreterCalliCookie)VolatileLoadWithoutBarrier(&codeData->CalliCookie);
 }
-#else
-// Set the call stub for the interpreter to JIT/AOT calls
-// Returns true if the current call set the stub, false if it was already set
-bool MethodDesc::SetCallStub(CallStubHeader *pHeader)
-{
-    STANDARD_VM_CONTRACT;
-
-    IfFailThrow(EnsureCodeDataExists(NULL));
-
-    _ASSERTE(m_codeData != NULL);
-    return InterlockedCompareExchangeT(&m_codeData->CallStub, pHeader, NULL) == NULL;
-}
-
-CallStubHeader *MethodDesc::GetCallStub()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
-    if (codeData == NULL)
-        return NULL;
-    return VolatileLoadWithoutBarrier(&codeData->CallStub);
-}
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
 #endif // FEATURE_INTERPRETER
 
 #endif //!DACCESS_COMPILE

@@ -765,16 +765,17 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
 
 void InvokeManagedMethod(ManagedMethodParam *pParam)
 {
-    void* cookie = pParam->pMD->GetCalliCookie();
+    InterpreterCalliCookie cookie = pParam->pMD->GetCalliCookie();
     if (cookie == NULL)
     {
         MetaSig sig(pParam->pMD);
-        cookie = GetCookieForCalliSig(sig, pParam->pMD);
+        cookie = (InterpreterCalliCookie)GetCookieForCalliSig(sig, pParam->pMD);
         _ASSERTE(cookie != NULL);
         pParam->pMD->SetCalliCookie(cookie);
+        cookie = pParam->pMD->GetCalliCookie();
     }
 
-    CalliStubParam param = { pParam->target == NULL ? pParam->pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : pParam->target, cookie, pParam->pArgs, pParam->pRet, pParam->pContinuationRet };
+    CalliStubParam param = { pParam->target == NULL ? pParam->pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : pParam->target, (void*)cookie, pParam->pArgs, pParam->pRet, pParam->pContinuationRet };
     InvokeCalliStub(&param);
 }
 
