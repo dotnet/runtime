@@ -114,9 +114,11 @@ namespace ILAssembler
                     RecordEntityInTable(TableIndex.MethodDef, method);
                     foreach (var param in method.Parameters)
                     {
-                        // COMPAT: Only record param entries for parameters that have names
-                        // or other rows that would refer to it.
-                        if (param.Name is not null
+                        // COMPAT: Always emit Param rows for explicit parameters (sequence > 0)
+                        // to match native ilasm behavior. For the return type parameter (sequence 0),
+                        // only emit if it has attributes, a name, or associated metadata.
+                        if (param.Sequence > 0
+                            || param.Name is not null
                             || param.Attributes != ParameterAttributes.None
                             || param.MarshallingDescriptor.Count != 0
                             || param.HasCustomAttributes
@@ -229,8 +231,17 @@ namespace ILAssembler
 
             foreach (FieldDefinitionEntity fieldDef in GetSeenEntities(TableIndex.Field))
             {
+                var fieldAttributes = fieldDef.Attributes;
+                if (fieldDef.HasConstant)
+                {
+                    fieldAttributes |= FieldAttributes.HasDefault;
+                }
+                if (fieldDef.MarshallingDescriptor is { Count: > 0 })
+                {
+                    fieldAttributes |= FieldAttributes.HasFieldMarshal;
+                }
                 builder.AddFieldDefinition(
-                    fieldDef.Attributes,
+                    fieldAttributes,
                     builder.GetOrAddString(fieldDef.Name),
                     fieldDef.Signature!.Count == 0 ? default : builder.GetOrAddBlob(fieldDef.Signature));
 
@@ -312,8 +323,17 @@ namespace ILAssembler
 
             foreach (ParameterEntity param in GetSeenEntities(TableIndex.Param))
             {
+                var paramAttributes = param.Attributes;
+                if (param.HasConstant)
+                {
+                    paramAttributes |= ParameterAttributes.HasDefault;
+                }
+                if (param.MarshallingDescriptor.Count != 0)
+                {
+                    paramAttributes |= ParameterAttributes.HasFieldMarshal;
+                }
                 builder.AddParameter(
-                    param.Attributes,
+                    paramAttributes,
                     param.Name is null ? default : builder.GetOrAddString(param.Name),
                     param.Sequence);
 
