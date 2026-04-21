@@ -60,17 +60,10 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
 
         if (iid == typeof(IMetaDataImport).GUID)
         {
-            nint pUnk = (nint)ComInterfaceMarshaller<IMetaDataImport2>.ConvertToUnmanaged(this);
-            try
-            {
-                Guid iid2 = typeof(IMetaDataImport2).GUID;
-                if (Marshal.QueryInterface(pUnk, in iid2, out ppv) >= 0)
-                    return CustomQueryInterfaceResult.Handled;
-            }
-            finally
-            {
-                ComInterfaceMarshaller<IMetaDataImport2>.Free((void*)pUnk);
-            }
+            // ConvertToUnmanaged returns an already-AddRef'd IMetaDataImport2 COM pointer.
+            // Return it directly so consumers get the full IMetaDataImport2 vtable.
+            ppv = (nint)ComInterfaceMarshaller<IMetaDataImport2>.ConvertToUnmanaged(this);
+            return CustomQueryInterfaceResult.Handled;
         }
 
         return CustomQueryInterfaceResult.NotHandled;

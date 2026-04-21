@@ -90,7 +90,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                     Guid iidMetaDataImport = typeof(IMetaDataImport).GUID;
                     if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, iidMetaDataImport, out nint ppMdi) >= 0)
                     {
-                        legacyImport = (IMetaDataImport)ComInterfaceMarshaller<IMetaDataImport>.ConvertToManaged((void*)ppMdi)!;
+                        legacyImport = ComInterfaceMarshaller<IMetaDataImport>.ConvertToManaged((void*)ppMdi);
                         Marshal.Release(ppMdi);
                     }
                 }
@@ -109,21 +109,11 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
             nint pUnk = (nint)ComInterfaceMarshaller<IMetaDataImport2>.ConvertToUnmanaged(wrapper);
 
-            try
-            {
-                // When asked for IMetaDataImport, return the IMetaDataImport2 vtable pointer.
-                // Some consumers (e.g. ClrMD) QI for IMetaDataImport but access IMetaDataImport2
-                // vtable slots beyond the IMetaDataImport boundary. With native C++ COM objects the
-                // vtable is unified, but [GeneratedComInterface] CCWs have separate per-interface
-                // vtables. Returning IMetaDataImport2 ensures the extended slots are accessible.
-                Guid queryGuid = typeof(IMetaDataImport2).GUID;
-                if (Marshal.QueryInterface(pUnk, queryGuid, out ppv) >= 0)
-                    return CustomQueryInterfaceResult.Handled;
-            }
-            finally
-            {
-                ComInterfaceMarshaller<IMetaDataImport2>.Free((void*)pUnk);
-            }
+            // ConvertToUnmanaged returns a COM pointer for IMetaDataImport2.
+            // We return this directly as ppv so that consumers (e.g. ClrMD) that QI for
+            // IMetaDataImport but access IMetaDataImport2 vtable slots get the full vtable.
+            ppv = pUnk;
+            return CustomQueryInterfaceResult.Handled;
         }
 
         return CustomQueryInterfaceResult.NotHandled;
