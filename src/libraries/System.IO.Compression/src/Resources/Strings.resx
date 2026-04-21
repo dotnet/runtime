@@ -392,4 +392,13 @@
   <data name="ForwardReadInvalidLocalFileHeader" xml:space="preserve">
     <value>The archive stream contains an invalid local file header.</value>
   </data>
+  <data name="ForwardReadEncryptedNotSupported" xml:space="preserve">
+    <value>Encrypted entries are not supported in ForwardRead mode.</value>
+  </data>
+  <data name="ForwardReadMetadataNotYetAvailable" xml:space="preserve">
+    <value>This property is not available because the entry uses a data descriptor and the metadata cannot be determined in ForwardRead mode.</value>
+  </data>
+  <data name="ForwardReadNoDataStream" xml:space="preserve">
+    <value>This entry has no data to read. It may be a directory entry or an empty entry.</value>
+  </data>
 </root>

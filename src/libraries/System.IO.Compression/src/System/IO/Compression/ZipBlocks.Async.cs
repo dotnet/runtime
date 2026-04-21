@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -155,6 +157,127 @@ internal readonly partial struct ZipLocalFileHeader
         }
         bytesRead = await stream.ReadAtLeastAsync(blockBytes, blockBytes.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
         return TrySkipBlockFinalize(stream, blockBytes, bytesRead);
+    }
+
+    /// <summary>
+    /// Async variant of <see cref="TryReadForForwardRead"/>.
+    /// </summary>
+    internal static async ValueTask<ForwardReadHeaderData?> TryReadForForwardReadAsync(Stream stream, Encoding? entryNameEncoding, CancellationToken cancellationToken)
+    {
+        byte[] header = new byte[SizeOfLocalHeader];
+        int bytesRead = await stream.ReadAtLeastAsync(header, SizeOfLocalHeader, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+
+        if (bytesRead == 0)
+            return null;
+        if (bytesRead < SizeOfLocalHeader)
+        {
+            if (bytesRead >= FieldLengths.Signature && IsEndOfEntriesSignature(BinaryPrimitives.ReadUInt32LittleEndian(header)))
+                return null;
+            throw new InvalidDataException(SR.ForwardReadInvalidLocalFileHeader);
+        }
+
+        if (!header.AsSpan(0, FieldLengths.Signature).SequenceEqual(SignatureConstantBytes))
+        {
+            uint sig = BinaryPrimitives.ReadUInt32LittleEndian(header);
+            if (IsEndOfEntriesSignature(sig))
+                return null;
+            throw new InvalidDataException(SR.ForwardReadInvalidLocalFileHeader);
+        }
+
+        return await ParseForwardReadHeaderAsync(header, stream, entryNameEncoding, cancellationToken).ConfigureAwait(false);
+
+        static async ValueTask<ForwardReadHeaderData> ParseForwardReadHeaderAsync(byte[] header, Stream stream, Encoding? entryNameEncoding, CancellationToken cancellationToken)
+        {
+            ushort versionNeeded = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(FieldLocations.VersionNeededToExtract));
+            ushort generalPurposeBitFlags = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(FieldLocations.GeneralPurposeBitFlags));
+            ushort compressionMethodValue = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(FieldLocations.CompressionMethod));
+            uint lastModified = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(FieldLocations.LastModified));
+            uint crc32 = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(FieldLocations.Crc32));
+            uint compressedSizeSmall = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(FieldLocations.CompressedSize));
+            uint uncompressedSizeSmall = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(FieldLocations.UncompressedSize));
+            ushort filenameLength = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(FieldLocations.FilenameLength));
+            ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(FieldLocations.ExtraFieldLength));
+
+            byte[] filenameBytes = new byte[filenameLength];
+            if (filenameLength > 0)
+                await stream.ReadExactlyAsync(filenameBytes, cancellationToken).ConfigureAwait(false);
+
+            byte[] extraFieldBytes = new byte[extraFieldLength];
+            if (extraFieldLength > 0)
+                await stream.ReadExactlyAsync(extraFieldBytes, cancellationToken).ConfigureAwait(false);
+
+            long compressedSize = compressedSizeSmall;
+            long uncompressedSize = uncompressedSizeSmall;
+            bool isZip64SizeFields = false;
+
+            if (compressedSizeSmall == ZipHelper.Mask32Bit || uncompressedSizeSmall == ZipHelper.Mask32Bit)
+            {
+                isZip64SizeFields = true;
+                Zip64ExtraField zip64 = Zip64ExtraField.GetJustZip64Block(extraFieldBytes,
+                    readUncompressedSize: uncompressedSizeSmall == ZipHelper.Mask32Bit,
+                    readCompressedSize: compressedSizeSmall == ZipHelper.Mask32Bit,
+                    readLocalHeaderOffset: false,
+                    readStartDiskNumber: false);
+
+                if (zip64.UncompressedSize.HasValue)
+                    uncompressedSize = zip64.UncompressedSize.Value;
+                if (zip64.CompressedSize.HasValue)
+                    compressedSize = zip64.CompressedSize.Value;
+            }
+
+            bool isUtf8 = (generalPurposeBitFlags & (ushort)ZipArchiveEntry.BitFlagValues.UnicodeFileNameAndComment) != 0;
+            Encoding nameEncoding = isUtf8 ? Encoding.UTF8 : (entryNameEncoding ?? Encoding.UTF8);
+            string fullName = nameEncoding.GetString(filenameBytes);
+
+            DateTimeOffset lastModifiedDto = new DateTimeOffset(ZipHelper.DosTimeToDateTime(lastModified));
+
+            return new ForwardReadHeaderData(
+                versionNeeded, generalPurposeBitFlags, (ZipCompressionMethod)compressionMethodValue,
+                lastModifiedDto, crc32, compressedSize, uncompressedSize,
+                fullName, filenameBytes, isZip64SizeFields);
+        }
+    }
+
+    /// <summary>
+    /// Async variant of <see cref="ReadDataDescriptor"/>.
+    /// </summary>
+    internal static async ValueTask<(uint Crc32, long CompressedSize, long UncompressedSize)> ReadDataDescriptorAsync(Stream stream, bool isZip64, CancellationToken cancellationToken)
+    {
+        byte[] firstFour = new byte[4];
+        await stream.ReadExactlyAsync(firstFour, cancellationToken).ConfigureAwait(false);
+
+        uint firstWord = BinaryPrimitives.ReadUInt32LittleEndian(firstFour);
+        bool hasSignature = firstWord == 0x08074B50;
+
+        int remainingSize = (hasSignature ? 4 : 0) + (isZip64 ? 16 : 8);
+        byte[] remaining = new byte[remainingSize];
+        await stream.ReadExactlyAsync(remaining, cancellationToken).ConfigureAwait(false);
+
+        int pos = 0;
+        uint crc32;
+        if (hasSignature)
+        {
+            crc32 = BinaryPrimitives.ReadUInt32LittleEndian(remaining.AsSpan(pos));
+            pos += 4;
+        }
+        else
+        {
+            crc32 = firstWord;
+        }
+
+        long compressedSize, uncompressedSize;
+        if (isZip64)
+        {
+            compressedSize = BinaryPrimitives.ReadInt64LittleEndian(remaining.AsSpan(pos));
+            uncompressedSize = BinaryPrimitives.ReadInt64LittleEndian(remaining.AsSpan(pos + 8));
+        }
+        else
+        {
+            compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(remaining.AsSpan(pos));
+            uncompressedSize = BinaryPrimitives.ReadUInt32LittleEndian(remaining.AsSpan(pos + 4));
+        }
+
+        return (crc32, compressedSize, uncompressedSize);
     }
 }
 

@@ -151,6 +151,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     case ZipArchiveMode.Read:
                         break;
                     case ZipArchiveMode.ForwardRead:
+                        await DrainPreviousEntryAsync(default).ConfigureAwait(false);
                         break;
                     case ZipArchiveMode.Create:
                         await WriteFileAsync().ConfigureAwait(false);
