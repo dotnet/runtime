@@ -4161,5 +4161,53 @@ namespace ILAssembler.Tests
             Assert.True(field.Attributes.HasFlag(FieldAttributes.SpecialName));
             Assert.True(field.Attributes.HasFlag(FieldAttributes.RTSpecialName));
         }
+
+        [Fact]
+        public void PinvokeMethod_SetsPinvokeImplFlag()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .module test.dll
+                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
+                {
+                    .method public static pinvokeimpl("kernel32.dll" winapi)
+                        int32 GetCurrentProcessId() cil managed preservesig
+                    {
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "GetCurrentProcessId");
+
+            Assert.True(method.Attributes.HasFlag(MethodAttributes.PinvokeImpl));
+            var import = method.GetImport();
+            Assert.False(import.Module.IsNil);
+        }
+
+        [Fact]
+        public void LeadingDotInTypeName_Preserved()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public sequential ansi sealed '.GlobalStructStartingWithDot'
+                    extends [mscorlib]System.ValueType
+                {
+                    .field public int32 Value
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal(".GlobalStructStartingWithDot", reader.GetString(typeDef.Name));
+        }
     }
 }

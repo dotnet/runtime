@@ -303,8 +303,13 @@ namespace ILAssembler
                     }
                 }
 
+                var methodAttributes = methodDef.MethodAttributes;
+                if (methodDef.MethodImportInformation is not null)
+                {
+                    methodAttributes |= MethodAttributes.PinvokeImpl;
+                }
                 builder.AddMethodDefinition(
-                    methodDef.MethodAttributes,
+                    methodAttributes,
                     methodDef.ImplementationAttributes,
                     builder.GetOrAddString(methodDef.Name),
                     builder.GetOrAddBlob(methodDef.MethodSignature!),

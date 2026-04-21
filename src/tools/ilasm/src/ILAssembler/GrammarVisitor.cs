@@ -1221,6 +1221,11 @@ namespace ILAssembler
         {
             string typeFullName = VisitDottedName(context.dottedName()).Value;
             int typeFullNameLastDot = typeFullName.LastIndexOf('.');
+            // A dot at position 0 is part of the name (e.g., ".GlobalStruct"), not a namespace separator
+            if (typeFullNameLastDot == 0)
+            {
+                typeFullNameLastDot = -1;
+            }
             string typeNS;
             if (_currentTypeDefinition.Count != 0)
             {
