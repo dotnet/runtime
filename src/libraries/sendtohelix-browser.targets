@@ -265,10 +265,22 @@
     </ItemGroup>
 
     <!-- CoreCLR WBT needs eng/native.wasm.targets + eng/AcquireEmscriptenSdk.targets (the import chain
-         of BrowserWasmApp.CoreCLR.targets) shipped alongside BrowserBuildTargetsDir. -->
+         of BrowserWasmApp.CoreCLR.targets) shipped alongside BrowserBuildTargetsDir. Stage them into
+         a directory first — HelixCorrelationPayload on individual files causes the Helix client to
+         try unzipping them as archives. -->
+    <PropertyGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <_CoreCLRWbtEngPayloadDir>$(ArtifactsObjDir)helix-staging\coreclr-wbt-eng\</_CoreCLRWbtEngPayloadDir>
+    </PropertyGroup>
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-      <HelixCorrelationPayload Include="$(RepositoryEngineeringDir)native.wasm.targets"         Destination="build/eng" />
-      <HelixCorrelationPayload Include="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" Destination="build/eng" />
+      <_CoreCLRWbtEngFiles Include="$(RepositoryEngineeringDir)native.wasm.targets" />
+      <_CoreCLRWbtEngFiles Include="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
+    </ItemGroup>
+    <Copy Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
+          SourceFiles="@(_CoreCLRWbtEngFiles)"
+          DestinationFolder="$(_CoreCLRWbtEngPayloadDir)"
+          SkipUnchangedFiles="true" />
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <HelixCorrelationPayload Include="$(_CoreCLRWbtEngPayloadDir)" Destination="build/eng" />
     </ItemGroup>
 
     <!-- copy node separately only if EMSDK is not being included -->
