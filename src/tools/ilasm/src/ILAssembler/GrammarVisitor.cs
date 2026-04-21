@@ -2101,10 +2101,10 @@ namespace ILAssembler
             }
             if (context.customAttrDecl() is { } topLevelCustomAttr)
             {
-                // Top-level custom attribute — set owner to assembly or module
+                // Top-level custom attribute — owned by the module (matching native ilasm behavior)
                 if (VisitCustomAttrDecl(topLevelCustomAttr).Value is { } customAttr)
                 {
-                    customAttr.Owner = _entityRegistry.Assembly ?? (EntityRegistry.EntityBase)_entityRegistry.Module;
+                    customAttr.Owner = _entityRegistry.Module;
                 }
             }
             if (context.secDecl() is { } topSecDecl)
