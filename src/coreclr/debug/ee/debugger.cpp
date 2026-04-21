@@ -12850,6 +12850,22 @@ HRESULT Debugger::UpdateFunction(MethodDesc* pMD, SIZE_T encVersion)
 
     // This is called before the MethodDesc is updated to point to the new function.
     // So this call will get the most recent old function.
+    //
+    // Task-returning methods have two MethodDescs: a primary and an async variant.
+    // If the primary is a thunk (i.e. the type loader created it as a wrapper that
+    // packages the result into a Task), the user code lives in the async variant.
+    // Switch to that variant so we plant remap breakpoints on the user code, not
+    // the thunk.
+    if (pMD->IsAsyncThunkMethod() && pMD->ReturnsTaskOrValueTask())
+    {
+        MethodDesc* pAsyncVariant = pMD->GetAsyncVariantNoCreate();
+        if (pAsyncVariant != NULL)
+        {
+            LOG((LF_CORDB, LL_INFO10000, "D::UF: switching from async thunk to user-code variant %p\n", pAsyncVariant));
+            pMD = pAsyncVariant;
+        }
+    }
+
     DebuggerJitInfo *pJitInfo = GetLatestJitInfoFromMethodDesc(pMD);
 
     // We only place the patches if we have jit info for this
@@ -12908,47 +12924,6 @@ HRESULT Debugger::UpdateFunction(MethodDesc* pMD, SIZE_T encVersion)
     }
 
     pJitInfo->m_encBreakpointsApplied = true;
-
-    // For runtime-async methods, also plant EnC remap breakpoints on the async variant.
-    // The JIT creates two MethodDescs: an entry variant (runs pre-await code) and an
-    // async variant (runs on resumption after await). Each has its own JIT info with
-    // different sequence points. Without planting breakpoints on both, remap during
-    // async resumption won't fire because the breakpoints only cover the entry variant.
-    if (pMD->IsAsyncThunkMethod())
-    {
-        MethodDesc* pAsyncOther = pMD->GetAsyncVariantNoCreate();
-        if (pAsyncOther != NULL)
-        {
-            DebuggerJitInfo *pAsyncJitInfo = GetLatestJitInfoFromMethodDesc(pAsyncOther);
-            if (pAsyncJitInfo != NULL && !pAsyncJitInfo->m_encBreakpointsApplied)
-            {
-                LOG((LF_CORDB, LL_INFO10000, "D::UF: Also applying breakpoints to async variant\n"));
-
-                EnCSequencePointHelper asyncSeqHelper(pAsyncJitInfo);
-                PTR_DebuggerILToNativeMap asyncSeqMap = pAsyncJitInfo->GetSequenceMap();
-                for (unsigned int j = 0; j < pAsyncJitInfo->GetSequenceMapCount(); j++)
-                {
-                    if (!asyncSeqHelper.ShouldSetRemapBreakpoint(j))
-                    {
-                        continue;
-                    }
-
-                    SIZE_T asyncOffset = asyncSeqMap[j].ilOffset;
-                    LOG((LF_CORDB, LL_INFO10000, "D::UF: placing async variant EnC breakpoint at offset 0x%x (IL: 0x%x)\n",
-                        asyncSeqMap[j].nativeStartOffset, asyncSeqMap[j].ilOffset));
-
-                    DebuggerEnCBreakpoint *asyncBp;
-                    asyncBp = new (interopsafe) DebuggerEnCBreakpoint(asyncOffset,
-                                                                      pAsyncJitInfo,
-                                                                      DebuggerEnCBreakpoint::REMAP_PENDING,
-                                                                      AppDomain::GetCurrentDomain());
-                    _ASSERTE(asyncBp != NULL);
-                }
-
-                pAsyncJitInfo->m_encBreakpointsApplied = true;
-            }
-        }
-    }
 
     return S_OK;
 }
