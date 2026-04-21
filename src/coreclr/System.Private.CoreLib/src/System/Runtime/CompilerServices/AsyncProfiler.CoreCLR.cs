@@ -140,7 +140,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            internal static long[] GetContinuationWrapperIPs()
+            public static long[] GetContinuationWrapperIPs()
             {
                 long[] ips = new long[COUNT];
                 for (int i = 0; i < COUNT; i++)

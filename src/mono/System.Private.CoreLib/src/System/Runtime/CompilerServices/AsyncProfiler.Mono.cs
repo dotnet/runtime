@@ -13,6 +13,11 @@ namespace System.Runtime.CompilerServices
                 info.ContinuationTable = ref s_dummyContinuationTable;
             }
 
+            public static long[] GetContinuationWrapperIPs()
+            {
+                return new long[COUNT];
+            }
+
             private static nint s_dummyContinuationTable;
         }
 
