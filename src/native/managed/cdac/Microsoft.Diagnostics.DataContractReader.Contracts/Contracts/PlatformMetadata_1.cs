@@ -10,10 +10,11 @@ internal readonly partial struct PlatformMetadata_1 : IPlatformMetadata
     internal readonly Target _target;
     private readonly Data.PlatformMetadata _cdacMetadata;
 
-    public PlatformMetadata_1(Target target, Data.PlatformMetadata cdacMetadata)
+    public PlatformMetadata_1(Target target)
     {
         _target = target;
-        _cdacMetadata = cdacMetadata;
+        TargetPointer cdacMetadataAddress = target.ReadGlobalPointer(Constants.Globals.PlatformMetadata);
+        _cdacMetadata = target.ProcessedData.GetOrAdd<Data.PlatformMetadata>(cdacMetadataAddress);
     }
 
     TargetPointer IPlatformMetadata.GetPrecodeMachineDescriptor()

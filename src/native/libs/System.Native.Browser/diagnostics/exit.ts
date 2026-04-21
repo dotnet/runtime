@@ -55,11 +55,6 @@ function onExit(exitCode: number, reason: any, silent: boolean): boolean {
 function logExitReason(exitCode: number, reason: any) {
     if (exitCode !== 0 && reason) {
         const hasExitStatus = typeof reason === "object" && reason.status !== undefined;
-        if (dotnetLoaderExports.normalizeException) {
-            reason = dotnetLoaderExports.normalizeException(reason);
-        } else {
-            reason = reason + "";
-        }
         const msg = "dotnet exited with: " + exitCode;
         if (hasExitStatus) {
             dotnetLogger.debug(msg, reason);

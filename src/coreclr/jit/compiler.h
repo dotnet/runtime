@@ -90,6 +90,7 @@ class PerLoopInfo;         // defined in inductionvariableopts.cpp
 class RangeCheck;          // defined in rangecheck.h
 #ifdef TARGET_WASM
 class WasmInterval; // defined in fgwasm.h
+enum class WasmValueType : unsigned;
 #endif
 #ifdef DEBUG
 struct IndentStack;
@@ -1696,6 +1697,8 @@ enum FuncKind : BYTE
     FUNC_COUNT
 };
 
+constexpr unsigned ROOT_FUNC_IDX = 0;
+
 class emitLocation;
 
 struct FuncInfoDsc
@@ -1706,10 +1709,26 @@ struct FuncInfoDsc
                                // funclet. It is only valid if funKind field indicates this is a
                                // EH-related funclet: FUNC_HANDLER or FUNC_FILTER
 
+#if !HAS_FIXED_REGISTER_SET
+    regNumber funStackPointerReg;
+    regNumber funFramePointerReg;
+#endif
+
+#if defined(TARGET_WASM)
+    struct WasmLocalsDecl
+    {
+        WasmValueType Type;
+        unsigned      Count;
+    };
+
+    jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
+#endif // defined(TARGET_WASM)
+
     EHblkDsc*            GetEHDesc(Compiler* comp) const;
     BasicBlock*          GetStartBlock(Compiler* comp) const;
     BasicBlock*          GetLastBlock(Compiler* comp) const;
     BasicBlockRangeList  Blocks(Compiler* comp) const;
+    unsigned             GetFuncletIdx(Compiler* comp) const;
 
 #if defined(TARGET_AMD64)
 
@@ -2393,6 +2412,10 @@ public:
     bool TryRegionsIncludeHandlerBlocks() const { return m_tryRegionsIncludeHandlerBlocks; }
 
     bool HasMultipleEntryTryRegions() const { return m_hasMultipleEntryTryRegions; }
+
+    void AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
+
+    void RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
 
 #ifdef DEBUG
     static void Dump(FlowGraphTryRegions* regions);
@@ -3803,6 +3826,7 @@ public:
     void gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCostSz, bool isLikelyRegVar);
     void gtGetLclFldNodeCost(GenTreeLclFld* node, int* pCostEx, int* pCostSz);
     bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
+    bool gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile, int* pCostEx, int* pCostSz);
 
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
@@ -4755,6 +4779,11 @@ protected:
 
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
+#if defined(FEATURE_HW_INTRINSICS)
+    GenTree* impSimdCreateScalarHalf(GenTree* op1);
+    GenTree* impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd);
+#endif // FEATURE_HW_INTRINSICS
+
     enum class BoxPatterns
     {
         None                  = 0,
@@ -5348,6 +5377,30 @@ private:
                                                             GenTree*    dereferencedAddress,
                                                             InlArgInfo* inlArgInfo);
 
+    typedef JitHashTable<CORINFO_METHOD_HANDLE, JitPtrKeyFuncs<struct CORINFO_METHOD_STRUCT_>, CORINFO_METHOD_HANDLE> HelperToManagedMap;
+    HelperToManagedMap* m_helperToManagedMap = nullptr;
+
+public:
+    HelperToManagedMap* GetHelperToManagedMap()
+    {
+        if (m_helperToManagedMap == nullptr)
+        {
+            m_helperToManagedMap = new (getAllocator()) HelperToManagedMap(getAllocator());
+        }
+        return m_helperToManagedMap;
+    }
+    bool HelperToManagedMapLookup(CORINFO_METHOD_HANDLE helperCallHnd, CORINFO_METHOD_HANDLE* userCallHnd)
+    {
+        if (m_helperToManagedMap == nullptr)
+        {
+            return false;
+        }
+        bool found = m_helperToManagedMap->Lookup(helperCallHnd, userCallHnd);
+        return found;
+    }
+private:
+
+    void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
@@ -7834,13 +7887,23 @@ public:
 
     // Redundant branch opts
     //
-    PhaseStatus optRedundantBranches();
-    bool        optRedundantRelop(BasicBlock* const block);
-    bool        optRedundantBranch(BasicBlock* const block);
-    bool        optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
-    bool        optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
-    bool        optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
-    bool        optJumpThreadCore(JumpThreadInfo& jti);
+    enum class JumpThreadCheckResult
+    {
+        CannotThread,
+        CanThread,
+        NeedsPhiUseResolution,
+    };
+
+    PhaseStatus           optRedundantBranches();
+    bool                  optRedundantRelop(BasicBlock* const block);
+    bool                  optRedundantDominatingBranch(BasicBlock* const block);
+    bool                  optRedundantBranch(BasicBlock* const block);
+    bool                  optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool                  optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
+    JumpThreadCheckResult optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
+    bool optFindPhiUsesInBlockAndSuccessors(BasicBlock* block, GenTreeLclVar* phiDef, JumpThreadInfo& jti);
+    bool optCanRewritePhiUses(JumpThreadInfo& jti);
+    bool optJumpThreadCore(JumpThreadInfo& jti);
 
     enum class ReachabilityResult
     {
@@ -9672,6 +9735,17 @@ private:
         return isOpaqueSIMDType(varDsc->GetLayout());
     }
 
+    bool isSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        if (isIntrinsicType(clsHnd))
+        {
+            const char* namespaceName = nullptr;
+            const char* className     = getClassNameFromMetadata(clsHnd, &namespaceName);
+            return (strcmp(className, "Half") == 0) && (strcmp(namespaceName, "System") == 0);
+        }
+        return false;
+    }
+
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
@@ -9778,17 +9852,24 @@ public:
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
-        if (compExactlyDependsOn(InstructionSet_VectorT128))
+#if defined(DEBUG)
+        if (JitConfig.JitUseScalableVectorT() && compExactlyDependsOn(InstructionSet_VectorT))
         {
-            return FP_REGSIZE_BYTES;
+            return SIZE_UNKNOWN;
         }
         else
-        {
-            // TODO: We should be returning 0 here, but there are a number of
-            // places that don't quite get handled correctly in that scenario
+#endif // DEBUG
+            if (compExactlyDependsOn(InstructionSet_VectorT128))
+            {
+                return FP_REGSIZE_BYTES;
+            }
+            else
+            {
+                // TODO: We should be returning 0 here, but there are a number of
+                // places that don't quite get handled correctly in that scenario
 
-            return FP_REGSIZE_BYTES;
-        }
+                return FP_REGSIZE_BYTES;
+            }
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
@@ -12529,15 +12610,6 @@ public:
                     }
                 }
 
-                if (call->gtCallType == CT_INDIRECT)
-                {
-                    result = WalkTree(&call->gtCallAddr, call);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-
                 if (call->gtControlExpr != nullptr)
                 {
                     result = WalkTree(&call->gtControlExpr, call);
@@ -12546,7 +12618,6 @@ public:
                         return result;
                     }
                 }
-
                 break;
             }
 
@@ -12892,6 +12963,14 @@ inline BasicBlock* FuncInfoDsc::GetLastBlock(Compiler* comp) const
 inline BasicBlockRangeList FuncInfoDsc::Blocks(Compiler* comp) const
 {
     return BasicBlockRangeList(GetStartBlock(comp), GetLastBlock(comp));
+}
+
+inline unsigned FuncInfoDsc::GetFuncletIdx(Compiler* comp) const
+{
+    assert((comp->compFuncInfos <= this) && (this < (comp->compFuncInfos + comp->compFuncInfoCount)));
+    unsigned funcletIdx = (unsigned)(this - comp->compFuncInfos);
+    assert(this == &comp->compFuncInfos[funcletIdx]);
+    return funcletIdx;
 }
 
 // FuncInfoRange: adapter class for forward or reverse iteration of a contiguous range of function/funclet
