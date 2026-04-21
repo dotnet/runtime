@@ -1581,11 +1581,11 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
 
     int32_t sizeOfAllocation = MaxExecutableMemorySizeNearCoreClr;
     int32_t initialReserveLimit = -1;
-    #if !defined(TARGET_OPENBSD)
+#ifdef RLIMIT_AS
     int addressSpace = RLIMIT_AS;
-    #else
+#else
     int addressSpace = RLIMIT_DATA;
-    #endif
+#endif
     rlimit addressSpaceLimit;
     if ((getrlimit(addressSpace, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
