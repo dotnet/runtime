@@ -22,14 +22,14 @@ public class LoaderHeapTests
 
     private static ILoader CreateLoaderContract(MockTarget.Architecture arch, Action<MockLoaderBuilder> configure)
     {
-        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
         MockLoaderBuilder loader = new(targetBuilder.MemoryBuilder);
 
         configure(loader);
 
-        TestPlaceholderTarget target = targetBuilder
+        var target = targetBuilder
             .AddTypes(CreateContractTypes(loader))
-            .AddContract<ILoader>(version: 1)
+            .AddContract<ILoader>(version: "c1")
             .Build();
         return target.Contracts.Loader;
     }
