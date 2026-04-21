@@ -3,7 +3,6 @@
 
 using System;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Logging.Abstractions.Internal
 {
