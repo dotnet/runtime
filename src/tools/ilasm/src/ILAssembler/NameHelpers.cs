@@ -20,13 +20,15 @@ namespace ILAssembler
                 lastDotIndex -= 1;
             }
 
+            // A dot at position 0 is part of the name (e.g., ".GlobalStruct"), not a namespace separator
+            if (lastDotIndex <= 0)
+            {
+                return (string.Empty, dottedName);
+            }
+
             return (
-                lastDotIndex != -1
-                    ? dottedName.Substring(0, lastDotIndex)
-                    : string.Empty,
-                lastDotIndex != -1
-                    ? dottedName.Substring(lastDotIndex + 1)
-                    : dottedName);
+                dottedName.Substring(0, lastDotIndex),
+                dottedName.Substring(lastDotIndex + 1));
         }
     }
 }
