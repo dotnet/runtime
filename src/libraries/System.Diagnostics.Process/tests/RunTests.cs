@@ -32,7 +32,7 @@ namespace System.Diagnostics.Tests
         public async Task Run_WithFileName_ExitCodeIsReturned(bool useAsync)
         {
             using Process template = CreateProcess(RemotelyInvokable.Dummy);
-            List<string>? arguments = StartAndForgetTests.MapToArgumentList(template.StartInfo);
+            List<string>? arguments = Helpers.MapToArgumentList(template.StartInfo);
 
             ProcessExitStatus exitStatus = useAsync
                 ? await Process.RunAsync(template.StartInfo.FileName, arguments)
@@ -106,7 +106,7 @@ namespace System.Diagnostics.Tests
                 return RemoteExecutor.SuccessExitCode;
             });
 
-            List<string>? arguments = StartAndForgetTests.MapToArgumentList(template.StartInfo);
+            List<string>? arguments = Helpers.MapToArgumentList(template.StartInfo);
 
             ProcessTextOutput result = useAsync
                 ? await Process.RunAndCaptureTextAsync(template.StartInfo.FileName, arguments)
