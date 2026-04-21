@@ -522,6 +522,13 @@ namespace System.IO.Compression
             _runningCrc = 0;
         }
 
+        internal (uint Crc32, long BytesRead)? GetFinalCrcResult()
+        {
+            if (_crcAbandoned)
+                return null;
+            return (_runningCrc, _totalBytesRead);
+        }
+
         public override bool CanRead => !_isDisposed && _baseStream.CanRead;
         public override bool CanSeek => !_isDisposed && _baseStream.CanSeek;
         public override bool CanWrite => false;
@@ -752,102 +759,6 @@ namespace System.IO.Compression
                 _isDisposed = true;
             }
             await base.DisposeAsync().ConfigureAwait(false);
-        }
-    }
-
-    internal sealed class BoundedReadOnlyStream : Stream
-    {
-        private readonly Stream _baseStream;
-        private long _remaining;
-        private bool _isDisposed;
-
-        public BoundedReadOnlyStream(Stream baseStream, long length)
-        {
-            _baseStream = baseStream;
-            _remaining = length;
-        }
-
-        public override bool CanRead => !_isDisposed && _baseStream.CanRead;
-        public override bool CanSeek => false;
-        public override bool CanWrite => false;
-        public override long Length => throw new NotSupportedException();
-
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
-
-        private void ThrowIfDisposed()
-        {
-            ObjectDisposedException.ThrowIf(_isDisposed, this);
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-            => Read(buffer.AsSpan(offset, count));
-
-        public override int Read(Span<byte> buffer)
-        {
-            ThrowIfDisposed();
-
-            if (_remaining <= 0)
-            {
-                return 0;
-            }
-
-            if (buffer.Length > _remaining)
-            {
-                buffer = buffer.Slice(0, (int)_remaining);
-            }
-
-            int bytesRead = _baseStream.Read(buffer);
-            _remaining -= bytesRead;
-
-            return bytesRead;
-        }
-
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
-
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-
-            if (_remaining <= 0)
-            {
-                return 0;
-            }
-
-            if (buffer.Length > _remaining)
-            {
-                buffer = buffer.Slice(0, (int)_remaining);
-            }
-
-            int bytesRead = await _baseStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
-            _remaining -= bytesRead;
-
-            return bytesRead;
-        }
-
-        public override void Flush() { }
-        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-        public override void SetLength(long value) => throw new NotSupportedException();
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        // Does not dispose the base stream — BoundedReadOnlyStream is a window
-        // into the shared archive stream, which outlives individual entries.
-        protected override void Dispose(bool disposing)
-        {
-            _isDisposed = true;
-            base.Dispose(disposing);
-        }
-
-        public override ValueTask DisposeAsync()
-        {
-            _isDisposed = true;
-
-            return base.DisposeAsync();
         }
     }
 
