@@ -1191,6 +1191,43 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
 
         if (structSizeMightRepresentSIMDType(originalSize))
         {
+            const char* namespaceName = nullptr;
+            const char* className     = info.compCompHnd->getClassNameFromMetadata(structHnd, &namespaceName);
+
+            if (isNumericsNamespace(namespaceName) && (strcmp(className, "Vector`1") == 0))
+            {
+                opts.compSupportsISA.RemoveInstructionSet(InstructionSet_VectorT128);
+                opts.compSupportsISA.RemoveInstructionSet(InstructionSet_VectorT256);
+                opts.compSupportsISA.RemoveInstructionSet(InstructionSet_VectorT512);
+                opts.compSupportsISAReported.RemoveInstructionSet(InstructionSet_VectorT128);
+                opts.compSupportsISAReported.RemoveInstructionSet(InstructionSet_VectorT256);
+                opts.compSupportsISAReported.RemoveInstructionSet(InstructionSet_VectorT512);
+                opts.compSupportsISAExactly.RemoveInstructionSet(InstructionSet_VectorT128);
+                opts.compSupportsISAExactly.RemoveInstructionSet(InstructionSet_VectorT256);
+                opts.compSupportsISAExactly.RemoveInstructionSet(InstructionSet_VectorT512);
+
+                switch (originalSize)
+                {
+                    case 16:
+                        opts.compSupportsISA.AddInstructionSet(InstructionSet_VectorT128);
+                        opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT128);
+                        opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_VectorT128);
+                        break;
+
+                    case 32:
+                        opts.compSupportsISA.AddInstructionSet(InstructionSet_VectorT256);
+                        opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT256);
+                        opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_VectorT256);
+                        break;
+
+                    case 64:
+                        opts.compSupportsISA.AddInstructionSet(InstructionSet_VectorT512);
+                        opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT512);
+                        opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_VectorT512);
+                        break;
+                }
+            }
+
             unsigned int sizeBytes;
             var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
             if (simdBaseType != TYP_UNDEF)

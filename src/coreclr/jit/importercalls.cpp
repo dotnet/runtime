@@ -10835,6 +10835,46 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             }
 
                             uint32_t size = getVectorTByteLength();
+
+                            if (isVectorT)
+                            {
+                                CORINFO_CLASS_HANDLE const vectorClass = info.compCompHnd->getMethodClass(method);
+                                uint32_t const             classSize   = info.compCompHnd->getClassSize(vectorClass);
+
+                                opts.compSupportsISA.RemoveInstructionSet(InstructionSet_VectorT128);
+                                opts.compSupportsISA.RemoveInstructionSet(InstructionSet_VectorT256);
+                                opts.compSupportsISA.RemoveInstructionSet(InstructionSet_VectorT512);
+                                opts.compSupportsISAReported.RemoveInstructionSet(InstructionSet_VectorT128);
+                                opts.compSupportsISAReported.RemoveInstructionSet(InstructionSet_VectorT256);
+                                opts.compSupportsISAReported.RemoveInstructionSet(InstructionSet_VectorT512);
+                                opts.compSupportsISAExactly.RemoveInstructionSet(InstructionSet_VectorT128);
+                                opts.compSupportsISAExactly.RemoveInstructionSet(InstructionSet_VectorT256);
+                                opts.compSupportsISAExactly.RemoveInstructionSet(InstructionSet_VectorT512);
+
+                                switch (classSize)
+                                {
+                                    case 16:
+                                        opts.compSupportsISA.AddInstructionSet(InstructionSet_VectorT128);
+                                        opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT128);
+                                        opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_VectorT128);
+                                        size = 16;
+                                        break;
+
+                                    case 32:
+                                        opts.compSupportsISA.AddInstructionSet(InstructionSet_VectorT256);
+                                        opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT256);
+                                        opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_VectorT256);
+                                        size = 32;
+                                        break;
+
+                                    case 64:
+                                        opts.compSupportsISA.AddInstructionSet(InstructionSet_VectorT512);
+                                        opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT512);
+                                        opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_VectorT512);
+                                        size = 64;
+                                        break;
+                                }
+                            }
 #ifdef TARGET_ARM64
                             assert((size == 16) || (size == SIZE_UNKNOWN));
 #else
