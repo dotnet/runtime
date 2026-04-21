@@ -69,10 +69,22 @@ WasmSuccessorEnumerator::WasmSuccessorEnumerator(Compiler* comp, BasicBlock* blo
 //   Invalidates any existing DFS, because we use the numbering
 //   slots on BasicBlocks.
 //
+//   Special cases try/catch regions with multiple entries, so
+//   that these entries look like they have the enclosing try
+//   region header as a successor.
+//
 FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
 {
     Compiler* const comp = Comp();
     comp->fgInvalidateDfsTree();
+
+    // If we have EH, build the try region structure.
+    //
+    if (comp->compHndBBtabCount > 0)
+    {
+        FlowGraphTryRegions* tryRegions = FlowGraphTryRegions::Build(comp, /* dfs */ nullptr);
+        comp->fgTryRegions              = tryRegions;
+    }
 
     BasicBlock** postOrder = new (comp, CMK_WasmCfgLowering) BasicBlock*[comp->fgBBcount];
     bool         hasCycle  = false;
@@ -204,6 +216,7 @@ private:
     BitVec               m_blocks;
     BitVec               m_entries;
     jitstd::vector<Scc*> m_nested;
+    BasicBlock*          m_wasmTryHeader;
     unsigned             m_numIrr;
 
     // lowest common ancestor try index + 1, or 0 if method region
@@ -227,6 +240,7 @@ public:
         , m_blocks(BitVecOps::UninitVal())
         , m_entries(BitVecOps::UninitVal())
         , m_nested(fgWasm->Comp()->getAllocator(CMK_WasmSccTransform))
+        , m_wasmTryHeader(nullptr)
         , m_numIrr(0)
         , m_enclosingTryIndex(0)
         , m_enclosingHndIndex(0)
@@ -305,6 +319,26 @@ public:
                         // But possibly different try regions
                         m_enclosingTryIndex = m_compiler->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
                     }
+
+                    if (m_compiler->bbIsTryBeg(block))
+                    {
+                        GenTree* const lastNode = block->GetLastLIRNode();
+
+                        if ((lastNode != nullptr) && lastNode->OperIs(GT_WASM_JEXCEPT))
+                        {
+                            JITDUMP(FMT_BB " is also a Wasm try entry\n", block->bbNum);
+
+                            if (m_wasmTryHeader == nullptr)
+                            {
+                                m_wasmTryHeader = block;
+                            }
+                            else
+                            {
+                                JITDUMP("Multiple Wasm try entries in SCC %u\n", m_num);
+                                NYI_WASM("SCC with multiple wasm try entry headers");
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -351,6 +385,7 @@ public:
         return m_entryWeight;
     }
 
+#ifdef DEBUG
     void Dump(int indent = 0)
     {
         BitVecOps::Iter iterator(m_traits, m_blocks);
@@ -360,33 +395,33 @@ public:
         {
             if (first)
             {
-                JITDUMP("%*c", indent, ' ');
+                printf("%*c", indent, ' ');
 
                 if (NumEntries() > 1)
                 {
-                    JITDUMP("[irrd (%u)] ", NumBlocks());
+                    printf("[irrd (%u)] ", NumBlocks());
                 }
                 else
                 {
-                    JITDUMP("[loop (%u)] ", NumBlocks());
+                    printf("[loop (%u)] ", NumBlocks());
                 }
             }
             else
             {
-                JITDUMP(", ");
+                printf(", ");
             }
             first = false;
 
             BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
             bool              isEntry = BitVecOps::IsMember(m_traits, m_entries, poNum);
-            JITDUMP(FMT_BB "%s", block->bbNum, isEntry ? "e" : "");
+            printf(FMT_BB "%s", block->bbNum, isEntry ? "e" : "");
         }
-        JITDUMP("\n");
+        printf("\n");
     }
 
     void DumpDot()
     {
-        JITDUMP("digraph SCC_%u {\n", m_num);
+        printf("digraph SCC_%u {\n", m_num);
         BitVecOps::Iter iterator(m_traits, m_blocks);
         unsigned int    poNum;
         while (iterator.NextElem(&poNum))
@@ -394,7 +429,7 @@ public:
             BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
             bool              isEntry = BitVecOps::IsMember(m_traits, m_entries, poNum);
 
-            JITDUMP(FMT_BB "%s;", block->bbNum, isEntry ? " [style=filled]" : "");
+            printf(FMT_BB "%s;", block->bbNum, isEntry ? " [style=filled]" : "");
 
             // Show entry edges
             //
@@ -414,17 +449,17 @@ public:
                         continue;
                     }
 
-                    JITDUMP(FMT_BB " -> " FMT_BB ";\n", pred->bbNum, block->bbNum);
+                    printf(FMT_BB " -> " FMT_BB ";\n", pred->bbNum, block->bbNum);
                 }
             }
 
             WasmSuccessorEnumerator successors(m_compiler, block, /* useProfile */ true);
             for (BasicBlock* const succ : successors)
             {
-                JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
+                printf(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
             }
         }
-        JITDUMP("}\n");
+        printf("}\n");
     }
 
     void DumpAll(int indent = 0)
@@ -436,6 +471,7 @@ public:
             child->DumpAll(indent + 3);
         }
     }
+#endif // DEBUG
 
     void FindNested()
     {
@@ -452,7 +488,7 @@ public:
         }
 
         JITDUMP("Scc %u  has %u non-entry blocks. Scc Graph:\n", m_num, nestedCount);
-        DumpDot();
+        JITDUMPEXEC(DumpDot());
         JITDUMP("\nLooking for nested SCCs in SCC %u\n", m_num);
 
         // Build a new postorder for the nested blocks
@@ -533,6 +569,11 @@ public:
         return m_enclosingHndIndex;
     }
 
+    BasicBlock* WasmTryHeader() const
+    {
+        return m_wasmTryHeader;
+    }
+
     //-----------------------------------------------------------------------------
     // TransformViaSwitchDispatch: modify Scc into a reducible loop
     //
@@ -574,6 +615,7 @@ public:
             LclVarDsc* const controlVarDsc = m_compiler->lvaGetDesc(controlVarNum);
             controlVarDsc->lvType          = TYP_INT;
             BasicBlock*      dispatcher    = nullptr;
+            BasicBlock*      wasmTryHeader = WasmTryHeader();
             FlowEdge** const succs         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
             FlowEdge** const cases         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
             unsigned         headerNumber  = 0;
@@ -603,12 +645,36 @@ public:
                     {
                         JITDUMP("Dispatch header needs to go in method region\n");
                     }
+
                     dispatcher = m_compiler->fgNewBBinRegion(BBJ_SWITCH, EnclosingTryIndex(), EnclosingHndIndex(),
                                                              /* nearBlk */ nullptr);
                     dispatcher->setBBProfileWeight(TotalEntryWeight());
                 }
 
-                JITDUMP("Fixing flow for preds of header " FMT_BB "\n", header->bbNum);
+                JITDUMP("\nFixing flow for preds of header " FMT_BB "\n", header->bbNum);
+
+                // Each pred should now target the dispatcher.
+                //
+                BasicBlock* inboundTarget = dispatcher;
+
+                // But if the header X is a in Wasm try region, and some other header T is the entry
+                // of that try region, we need to handle flow to X specially. It must route
+                // through T, and then to the dispatcher, and then to X.
+                //
+                // TODO: verify we don't have cross-jumping from sibling trys. In other words
+                // all the edges incident on the wasm try header should either be from blocks in enclosing
+                // trys or from blocks enclosed in this try, not from within some sibling try
+                //
+                // We can likely rule that case out earlier when we build try regions.
+                //
+                if (header->hasTryIndex() && (wasmTryHeader != nullptr) &&
+                    (header->getTryIndex() == wasmTryHeader->getTryIndex()))
+                {
+                    JITDUMP("Will route flow to " FMT_BB " via Wasm try header " FMT_BB "\n", header->bbNum,
+                            wasmTryHeader->bbNum);
+                    inboundTarget = wasmTryHeader;
+                }
+
                 weight_t headerWeight = header->bbWeight;
 
                 for (FlowEdge* const f : header->PredEdgesEditing())
@@ -616,6 +682,15 @@ public:
                     assert(f->getDestinationBlock() == header);
                     BasicBlock* const pred          = f->getSourceBlock();
                     BasicBlock*       transferBlock = nullptr;
+
+                    // When the pred source is a BBJ_EHCATCHRET, the edge does not represent real
+                    // control flow in Wasm, as any resume from catch flow is captured by the post-try
+                    // dispatch block.
+                    //
+                    if (pred->KindIs(BBJ_EHCATCHRET))
+                    {
+                        continue;
+                    }
 
                     // Note we can actually sink the control var store into pred if
                     // pred does not also have some other SCC header as a successor.
@@ -628,9 +703,6 @@ public:
                     //
                     if (pred->HasTarget() && (pred->GetTarget() == header) && !pred->isBBCallFinallyPairTail())
                     {
-                        // Note this handles BBJ_EHCATCHRET which is the only expected case
-                        // of an unsplittable pred edge.
-                        //
                         transferBlock = pred;
                     }
                     else
@@ -653,38 +725,58 @@ public:
                         LIR::InsertBeforeTerminator(transferBlock, std::move(range));
                     }
 
-                    m_compiler->fgReplaceJumpTarget(transferBlock, header, dispatcher);
+                    if (inboundTarget != header)
+                    {
+                        m_compiler->fgReplaceJumpTarget(transferBlock, header, inboundTarget);
+                    }
                 }
 
-                FlowEdge* const dispatchToHeaderEdge = m_compiler->fgAddRefPred(header, dispatcher);
+                // The dispatcher will jump to the header, in most cases
+                //
+                BasicBlock* outboundTarget = header;
 
-                // Since all flow to header now goes through dispatch, we know the likelihood
+                // But for the wasm try header, normal entry flows from the wasm try header T
+                // to its false target F.
+                //
+                // Here we make the dispatcher be the false target of T,
+                // and the dispatcher will then jump to F.
+                //
+                if (header == wasmTryHeader)
+                {
+                    outboundTarget = wasmTryHeader->GetFalseTarget();
+                    m_compiler->fgReplaceJumpTarget(header, outboundTarget, dispatcher);
+                }
+
+                FlowEdge* const dispatchToOutboundTargetEdge = m_compiler->fgAddRefPred(outboundTarget, dispatcher);
+
+                // Since all flow to header now goes through dispatch (or for multi entry try,
+                // all flow to dispatch goes through header), we know the likelihood
                 // of the dispatch targets. If all profile data is zero just divide evenly.
                 //
                 if ((headerNumber + 1) == numHeaders)
                 {
-                    dispatchToHeaderEdge->setLikelihood(max(0.0, (1.0 - netLikelihood)));
+                    dispatchToOutboundTargetEdge->setLikelihood(max(0.0, (1.0 - netLikelihood)));
                 }
                 else if (TotalEntryWeight() > 0)
                 {
-                    dispatchToHeaderEdge->setLikelihood(headerWeight / TotalEntryWeight());
+                    dispatchToOutboundTargetEdge->setLikelihood(headerWeight / TotalEntryWeight());
                 }
                 else
                 {
-                    dispatchToHeaderEdge->setLikelihood(1.0 / numHeaders);
+                    dispatchToOutboundTargetEdge->setLikelihood(1.0 / numHeaders);
                 }
 
-                netLikelihood += dispatchToHeaderEdge->getLikelihood();
+                netLikelihood += dispatchToOutboundTargetEdge->getLikelihood();
 
-                succs[headerNumber] = dispatchToHeaderEdge;
-                cases[headerNumber] = dispatchToHeaderEdge;
+                succs[headerNumber] = dispatchToOutboundTargetEdge;
+                cases[headerNumber] = dispatchToOutboundTargetEdge;
 
                 headerNumber++;
             }
 
             // Create the dispatch switch... really there should be no default but for now we'll have one.
             //
-            JITDUMP("Dispatch header is " FMT_BB "; %u cases\n", dispatcher->bbNum, numHeaders);
+            JITDUMP("\nDispatch header is " FMT_BB "; %u cases\n", dispatcher->bbNum, numHeaders);
             BBswtDesc* const swtDesc =
                 new (m_compiler, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, true);
             dispatcher->SetSwitch(swtDesc);
@@ -731,7 +823,7 @@ void FgWasm::WasmFindSccs(ArrayStack<Scc*>& sccs)
 
         for (Scc* const scc : sccs.BottomUpOrder())
         {
-            scc->DumpAll();
+            JITDUMPEXEC(scc->DumpAll());
 
             numIrreducible += scc->NumIrr();
         }
@@ -940,16 +1032,27 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 {
     assert(fgNodeThreading == NodeThreading::LIR);
 
-    FgWasm                  fgWasm(this);
+    FgWasm fgWasm(this);
+
+    // hasBlocksOnlyReachableViaEH is intentionally unchecked here; multi-entry try
+    // regions are now handled via the SCC transformation below instead of bailing out.
+    //
     bool                    hasBlocksOnlyReachableViaEH = false;
     FlowGraphDfsTree* const dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
     fgWasm.SetDfsAndTraits(dfsTree);
 
-    if (hasBlocksOnlyReachableViaEH)
+    // Build the try region descriptors, and if there are any regions with multiple
+    // entry blocks, add temporary flow edges from those blocks to the enclosing try region
+    // main entry blocks, making the try regions look like loops.
+    //
+    FlowGraphTryRegions*  tryRegions = FlowGraphTryRegions::Build(this, dfsTree);
+    ArrayStack<FlowEdge*> temporaryEdges(getAllocator(CMK_WasmSccTransform));
+
+    if (tryRegions->HasMultipleEntryTryRegions())
     {
-        JITDUMP("\nThere are blocks only reachable via EH, bailing out for now\n");
-        NYI_WASM("Missing EH flow during fgWasmTransformSccs");
-        return PhaseStatus::MODIFIED_NOTHING;
+        JITDUMP("\nThere are try regions with multiple entries.\n");
+        JITDUMPEXEC(FlowGraphTryRegions::Dump(tryRegions));
+        tryRegions->AddMultipleEntryRegionEdges(temporaryEdges);
     }
 
     FlowGraphNaturalLoops* const loops       = FlowGraphNaturalLoops::Find(dfsTree);
@@ -960,9 +1063,15 @@ PhaseStatus Compiler::fgWasmTransformSccs()
     if (loops->ImproperLoopHeaders() > 0)
     {
         JITDUMP("\nThere are irreducible loops.\n");
+
         ArrayStack<Scc*> sccs(getAllocator(CMK_WasmSccTransform));
         fgWasm.WasmFindSccs(sccs);
         assert(!sccs.Empty());
+
+        // Remove the temporary edges before transforming the SCCs.
+        //
+        tryRegions->RemoveMultipleEntryRegionEdges(temporaryEdges);
+
         transformed = fgWasm.WasmTransformSccs(sccs);
         assert(transformed);
 
@@ -976,6 +1085,11 @@ PhaseStatus Compiler::fgWasmTransformSccs()
         FlowGraphNaturalLoops* loops2 = FlowGraphNaturalLoops::Find(dfsTree2);
         assert(loops2->ImproperLoopHeaders() == 0);
 #endif
+    }
+    else
+    {
+        assert(!tryRegions->HasMultipleEntryTryRegions());
+        assert(temporaryEdges.Empty());
     }
 
     return transformed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;

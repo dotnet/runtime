@@ -4056,6 +4056,15 @@ void ILNativeArrayMarshaler::EmitLoadElementCount(ILCodeStream* pslILEmit)
         unsigned countParamIdx = mops.countParamIdx;
         if (!IsCLRToNative(m_dwMarshalFlags))
         {
+            if (m_pargs->m_pMarshalInfo->IsComScenario())
+            {
+                // In the reverse COM scenario, there's
+                // an injected IUnknown* parameter at
+                // the beginning of the parameter list,
+                // so the index of count parameter is incremented by 1.
+                countParamIdx++;
+            }
+
             int lcidParamIdx = GetLCIDParamIndex();
 
             if (lcidParamIdx >= 0 && (unsigned)lcidParamIdx <= countParamIdx)

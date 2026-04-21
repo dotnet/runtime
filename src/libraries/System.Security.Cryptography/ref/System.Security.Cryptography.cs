@@ -3627,6 +3627,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void AddDnsName(string dnsName) { }
         public void AddEmailAddress(string emailAddress) { }
         public void AddIpAddress(System.Net.IPAddress ipAddress) { }
+        public void AddRegisteredId(string registeredId) { }
         public void AddUri(System.Uri uri) { }
         public void AddUserPrincipalName(string upn) { }
         public System.Security.Cryptography.X509Certificates.X509Extension Build(bool critical = false) { throw null; }

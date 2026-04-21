@@ -5,7 +5,7 @@
 #define _SIMD_H_
 
 template <typename T>
-static bool ElementsAreSame(T* array, size_t size)
+static bool ElementsAreSame(const T* array, size_t size)
 {
     for (size_t i = 1; i < size; i++)
     {
@@ -16,7 +16,7 @@ static bool ElementsAreSame(T* array, size_t size)
 }
 
 template <typename T>
-static bool ElementsAreAllBitsSetOrZero(T* array, size_t size)
+static bool ElementsAreAllBitsSetOrZero(const T* array, size_t size)
 {
     for (size_t i = 0; i < size; i++)
     {
@@ -383,6 +383,45 @@ typedef simd64_t simd_t;
 #else
 typedef simd16_t simd_t;
 #endif
+
+static bool ElementsAreAllBitsSetOrZero(const simd_t* simdVal, var_types simdBaseType, unsigned elementCount)
+{
+    assert(simdVal != nullptr);
+
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u8[0], elementCount);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u16[0], elementCount);
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_FLOAT:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u32[0], elementCount);
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u64[0], elementCount);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
 
 inline bool IsUnaryBitwiseOperation(genTreeOps oper)
 {
