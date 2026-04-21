@@ -122,11 +122,14 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Skip the PNSE doc-source self-reference when the local NetCoreApp ref pack hasn't been built
+       (e.g. in NET481-only legs); doc enrichment from the sibling TFM is optional in that case. -->
   <Target Name="AddProjectReferenceToPNSEDocSource"
           DependsOnTargets="GetPNSEDocTargetFramework"
           BeforeTargets="PrepareForBuild"
           Condition="'$(IsPlatformNotSupportedAssembly)' == 'true' and
-                    '$(UseCompilerGeneratedDocXmlFile)' == 'true'">
+                    '$(UseCompilerGeneratedDocXmlFile)' == 'true' and
+                    Exists('$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml')">
     
     <Error Condition="'$(PNSEDocTargetFramework)' == ''"
            Text="Could not find a compatible TargetFramework to use as the documentation source for this PNSE build. Set 'PNSEDocTargetFramework' to the desired target framework." />
