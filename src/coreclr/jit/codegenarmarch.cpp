@@ -4278,12 +4278,16 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
 //
-// Arguments:
+// Arguments (arm64):
 //    initReg        - A scratch register (that gets set to zero on some platforms).
 //    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 //
+#if defined(TARGET_ARM64)
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
+#else
+void CodeGen::genPushCalleeSavedRegisters()
+#endif
 {
     assert(m_compiler->compGeneratingProlog);
 
@@ -4772,7 +4776,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
             JITDUMP("    spAdjustment2=%d\n", spAdjustment2);
 
             genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegZeroed);
-
             offset += spAdjustment2;
 
             // Now subtract off the #outsz (or the rest of the #outsz if it was unaligned, and the above "sub"
@@ -4799,7 +4802,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         {
             genPrologSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false, initReg,
                                  pInitRegZeroed);
-
             offset += remainingFrameSz;
 
             offsetSpToSavedFp = m_compiler->lvaOutgoingArgSpaceSize;

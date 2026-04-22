@@ -9853,11 +9853,11 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #ifdef TARGET_AMD64
 
 //------------------------------------------------------------------------
-// genOSRHandleTier0CalleeSavedRegistersAndFrame: for OSR methods, record the
+// genOSRRecordTier0CalleeSavedRegistersAndFrame: for OSR methods, record the
 //  subset of callee saves already saved by the Tier0 method, and the frame
 //  created by Tier0.
 //
-void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
 {
     assert(m_compiler->compGeneratingProlog);
     assert(m_compiler->opts.IsOSR());
@@ -9999,29 +9999,18 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
         osrAdditionalIntCalleeSaves &= ~regBit;
     }
 }
-#else
-
-//------------------------------------------------------------------------
-// genOSRHandleTier0CalleeSavedRegistersAndFrame:
-//   Not called for x86 without OSR support.
-//
-void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
-{
-    unreached();
-}
-
 #endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
 //
-void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genPushCalleeSavedRegisters()
 {
     assert(m_compiler->compGeneratingProlog);
 
 #if DEBUG
     // OSR root frames must handle this differently. See
-    //   genOSRHandleTier0CalleeSavedRegistersAndFrame()
+    //   genOSRRecordTier0CalleeSavedRegisters()
     //   genOSRSaveRemainingCalleeSavedRegisters()
     //
     if (m_compiler->opts.IsOSR())
