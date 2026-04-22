@@ -65,7 +65,17 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
             }
 
-            return FullJoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer);
+            return
+                IsEmptyArray(inner) ? EmptyInnerIterator(outer, resultSelector) :
+                FullJoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer);
+
+            static IEnumerable<TResult> EmptyInnerIterator(IEnumerable<TOuter> outer, Func<TOuter?, TInner?, TResult> resultSelector)
+            {
+                foreach (TOuter item in outer)
+                {
+                    yield return resultSelector(item, default);
+                }
+            }
         }
 
         /// <summary>
