@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.AnalysisCharacteristic("DynamicInterfaceCastablePresent"), "Implements IDynamicInterfaceCastable");
             }
 
-            if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+            if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type) && _type.Instantiation[0].IsEnum)
             {
                 dependencyList.Add(factory.ConstructedTypeSymbol(_type.Instantiation[0].MakeArrayType()), "Generic interface implemented by arrays");
             }
