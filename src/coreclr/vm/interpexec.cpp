@@ -1148,6 +1148,21 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
     // small subset of frames high.
     pFrame->ip = ip;
     pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Resolve .override before compilation: if a MethodImpl has remapped
+    // targetMethod's vtable slot, switch to the overriding method so we
+    // compile the correct body. Cache the result on the original MethodDesc
+    // so callers that check IsInterpreterCodeInitialized don't re-resolve.
+    MethodDesc* pOriginalMethod = targetMethod;
+    if (targetMethod->IsVtableSlot())
+    {
+        MethodDesc* pResolved = MethodTable::MapMethodDeclToMethodImpl(targetMethod);
+        if (pResolved != targetMethod)
+            targetMethod = pResolved;
+    }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
     {
         GCX_PREEMP();
         if (targetMethod->ShouldCallPrestub())
@@ -1160,34 +1175,21 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
     }
     InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // Handle the case where .override replaces a virtual method's vtable slot.
-    // The targetMethod->GetInterpreterCode() above fails and we need to use the overriding
-    // method's interpreter code instead.
-    if (targetIp == NULL && !targetMethod->IsInterpreterCodePoisoned()
-        && targetMethod->IsVtableSlot())
-    {
-        PCODE entryPoint = targetMethod->GetMethodEntryPointIfExists();
-        if (entryPoint != (PCODE)NULL)
-        {
-            MethodDesc* pSlotMD = PortableEntryPoint::GetMethodDesc(entryPoint);
-            if (pSlotMD != NULL && pSlotMD != targetMethod
-                && pSlotMD->IsMethodImpl())
-            {
-                targetIp = PrepareInterpreterCode(pSlotMD, pFrame, pInterpreterFrame, ip);
-                if (targetIp != NULL)
-                {
-                    targetMethod->SetInterpreterCode(targetIp);
-                }
-            }
-        }
-    }
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
     if (targetIp == NULL)
     {
         // The prestub wasn't able to setup an interpreter code, so it will never be able to.
         targetMethod->PoisonInterpreterCode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        if (pOriginalMethod != targetMethod)
+            pOriginalMethod->PoisonInterpreterCode();
+#endif
     }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    else if (pOriginalMethod != targetMethod)
+    {
+        pOriginalMethod->SetInterpreterCode(targetIp);
+    }
+#endif
 
     return targetIp;
 }
