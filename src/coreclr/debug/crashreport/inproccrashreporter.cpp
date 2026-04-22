@@ -249,8 +249,8 @@ CreateInProcCrashReport(
     siginfo_t* siginfo,
     void* context)
 {
-    static volatile int s_generating = 0;
-    if (__sync_val_compare_and_swap(&s_generating, 0, 1) != 0)
+    static LONG s_generating = 0;
+    if (InterlockedCompareExchange(&s_generating, 1, 0) != 0)
     {
         return;
     }
