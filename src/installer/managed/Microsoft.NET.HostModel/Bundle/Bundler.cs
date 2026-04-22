@@ -248,43 +248,43 @@ namespace Microsoft.NET.HostModel.Bundle
         internal static ReadOnlySpan<byte> BundleHeaderSignature => BundleHeaderPlaceholder.Slice(8);
 
         /// <summary>
-        /// Generate a bundle, given the specification of embedded files
+        /// Generate a bundle, given the specification of embedded files.
         /// </summary>
         /// <param name="fileSpecs">
-        /// An enumeration FileSpecs for the files to be embedded.
-        ///
-        /// Files in fileSpecs that are not bundled within the single file bundle,
-        /// and should be published as separate files are marked as "IsExcluded" by this method.
-        /// This doesn't include unbundled files that should be dropped, and not published as output.
+        /// An enumeration of FileSpecs for the files to be embedded.
+        /// Files that are excluded from the bundle have their <see cref="FileSpec.Excluded"/> flag set by this method.
         /// </param>
         /// <returns>
-        /// The full path the generated bundle file
+        /// The full path of the generated bundle file.
         /// </returns>
         /// <exceptions>
-        /// ArgumentException if input is invalid
+        /// ArgumentException if input is invalid.
         /// IOExceptions and ArgumentExceptions from callees flow to the caller.
         /// </exceptions>
         public string GenerateBundle(IReadOnlyList<FileSpec> fileSpecs)
+        {
+            return GenerateBundle(ComputeBundleContents(fileSpecs));
+        }
+
+        /// <summary>
+        /// Generate a bundle from the given <see cref="BundleContents"/>,
+        /// as computed by <see cref="ComputeBundleContents"/>.
+        /// </summary>
+        /// <param name="bundleContents">
+        /// The bundle contents from <see cref="ComputeBundleContents"/>.
+        /// </param>
+        /// <returns>
+        /// The full path of the generated bundle file.
+        /// </returns>
+        public string GenerateBundle(BundleContents bundleContents)
         {
             _tracer.Log($"Bundler Version: {BundlerMajorVersion}.{BundlerMinorVersion}");
             _tracer.Log($"Bundle  Version: {BundleManifest.BundleVersion}");
             _tracer.Log($"Target Runtime: {_target}");
             _tracer.Log($"Bundler Options: {_options}");
-            if (fileSpecs.Any(x => !x.IsValid()))
-            {
-                throw new ArgumentException("Invalid input specification: Found entry with empty source-path or bundle-relative-path.");
-            }
-            string hostSource;
-            try
-            {
-                hostSource = fileSpecs.Where(x => x.BundleRelativePath.Equals(_hostName)).Single().SourcePath;
-            }
-            catch (InvalidOperationException)
-            {
-                throw new ArgumentException("Invalid input specification: Must specify the host binary");
-            }
 
-            (FileSpec Spec, FileType Type)[] relativePathToSpec = GetFilteredFileSpecs(fileSpecs);
+            string hostSource = bundleContents.Host.SourcePath;
+            (FileSpec Spec, FileType Type)[] relativePathToSpec = bundleContents.TypedIncludedFiles;
             long bundledFilesSize = 0;
             // Conservatively estimate the size of bundled files.
             // Assume no compression and worst case alignment for assemblies.
@@ -445,6 +445,38 @@ namespace Microsoft.NET.HostModel.Bundle
             return headerOffset != 0;
         }
 
+        /// <summary>
+        /// Compute which files would be included in or excluded from the bundle
+        /// for the given set of input file specs and the bundler's current options.
+        /// </summary>
+        /// <param name="fileSpecs">
+        /// An enumeration of FileSpecs for the files to potentially be embedded.
+        /// Files that are excluded from the bundle have their <see cref="FileSpec.Excluded"/> flag set by this method.
+        /// </param>
+        /// <returns>
+        /// A <see cref="BundleContents"/> describing which files would be included in
+        /// and excluded from the bundle.
+        /// </returns>
+        public BundleContents ComputeBundleContents(IReadOnlyList<FileSpec> fileSpecs)
+        {
+            if (fileSpecs.Any(x => !x.IsValid()))
+            {
+                throw new ArgumentException("Invalid input specification: Found entry with empty source-path or bundle-relative-path.");
+            }
+
+            FileSpec? hostSpec = fileSpecs.FirstOrDefault(x => IsHost(x.BundleRelativePath));
+            if (hostSpec is null)
+            {
+                throw new ArgumentException("Invalid input specification: Must specify the host binary");
+            }
+
+            var included = GetFilteredFileSpecs(fileSpecs.Where(x => !IsHost(x.BundleRelativePath)));
+            return new BundleContents(
+                hostSpec,
+                included,
+                fileSpecs.Where(x => x.Excluded).ToArray());
+        }
+
         private (FileSpec Spec, FileType Type)[] GetFilteredFileSpecs(IEnumerable<FileSpec> fileSpecs)
         {
             // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
@@ -454,11 +486,6 @@ namespace Microsoft.NET.HostModel.Bundle
             foreach (var fileSpec in fileSpecs)
             {
                 string relativePath = fileSpec.BundleRelativePath;
-
-                if (IsHost(relativePath))
-                {
-                    continue;
-                }
 
                 if (ShouldIgnore(relativePath))
                 {
