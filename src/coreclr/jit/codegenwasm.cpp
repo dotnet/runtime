@@ -2869,7 +2869,7 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 //   * whether the allocated memory needs to be zeroed or not (info.compInitMem)
 //
 //   If the sp is changed, the value at sp[0] must be set to zero and
-//   the frame pointer stored at sp[4] so that the runtime unwinder
+//   the frame pointer stored at sp[TARGET_POINTER_SIZE] so that the runtime unwinder
 //   can locate the base of the fixed area in the shadow stack.
 //
 void CodeGen::genLclHeap(GenTree* tree)
@@ -2925,11 +2925,11 @@ void CodeGen::genLclHeap(GenTree* tree)
             }
 
             // SP now points at the reserved space just below the allocation.
-            // Save the frame pointer at sp[4].
+            // Save the frame pointer at sp[TARGET_POINTER_SIZE].
             //
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 4);
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TARGET_POINTER_SIZE);
 
             // Set sp[0] zero.
             //
@@ -3005,11 +3005,11 @@ void CodeGen::genLclHeap(GenTree* tree)
             }
 
             // SP now points at the reserved space just below the allocation.
-            // Save the frame pointer at sp[4].
+            // Save the frame pointer at sp[TARGET_POINTER_SIZE].
             //
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 4);
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TARGET_POINTER_SIZE);
 
             // Set sp[0] zero.
             //
