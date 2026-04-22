@@ -1082,6 +1082,18 @@ namespace ILAssembler
             {
                 _currentMethod = new(VisitMethodHead(methodHead).Value);
                 VisitMethodDecls(context.methodDecls());
+                // Build the locals signature from parsed local variable declarations
+                if (_currentMethod.AllLocals.Count > 0)
+                {
+                    var localsSig = new BlobBuilder();
+                    var encoder = new BlobEncoder(localsSig);
+                    var localsEncoder = encoder.LocalVariableSignature(_currentMethod.AllLocals.Count);
+                    foreach (var local in _currentMethod.AllLocals)
+                    {
+                        local.SignatureBlob.WriteContentTo(localsEncoder.AddVariable().Builder);
+                    }
+                    _currentMethod.Definition.LocalsSignature = _entityRegistry.GetOrCreateStandaloneSignature(localsSig);
+                }
                 // Validate that all referenced labels were declared
                 ValidateLabelReferences();
                 _currentMethod = null;
@@ -1961,6 +1973,17 @@ namespace ILAssembler
             {
                 _currentMethod = new(VisitMethodHead(methodHead).Value);
                 VisitMethodDecls(context.methodDecls());
+                if (_currentMethod.AllLocals.Count > 0)
+                {
+                    var localsSig = new BlobBuilder();
+                    var encoder = new BlobEncoder(localsSig);
+                    var localsEncoder = encoder.LocalVariableSignature(_currentMethod.AllLocals.Count);
+                    foreach (var local in _currentMethod.AllLocals)
+                    {
+                        local.SignatureBlob.WriteContentTo(localsEncoder.AddVariable().Builder);
+                    }
+                    _currentMethod.Definition.LocalsSignature = _entityRegistry.GetOrCreateStandaloneSignature(localsSig);
+                }
                 _currentMethod = null;
                 return GrammarResult.SentinelValue.Result;
             }
