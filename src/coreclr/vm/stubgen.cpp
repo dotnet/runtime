@@ -2043,7 +2043,7 @@ void StubSigBuilder::EnsureEnoughQuickBytes(size_t cbToAppend)
     SIZE_T cbBuffer = m_qbSigBuffer.Size();
     if ((cbBuffer - m_cbSig) < cbToAppend)
     {
-        SIZE_T cbNew = max(m_cbSig + cbToAppend, 2 * cbBuffer);
+        SIZE_T cbNew = max((SIZE_T)(m_cbSig + cbToAppend), 2 * cbBuffer);
         // Detect integer overflow
         if ((cbNew - m_cbSig) < cbToAppend)
             COMPlusThrowHR(COR_E_OVERFLOW);
