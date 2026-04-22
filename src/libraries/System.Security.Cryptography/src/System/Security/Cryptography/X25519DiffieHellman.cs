@@ -1372,30 +1372,37 @@ namespace System.Security.Cryptography
 
         private protected bool TryExportPkcs8PrivateKeyImpl(Span<byte> destination, out int bytesWritten)
         {
-            ValueAlgorithmIdentifierAsn algorithmIdentifier = new()
-            {
-                Algorithm = Oids.X25519,
-            };
+            // Pre-encoded PKCS#8 PrivateKeyInfo for X25519 (RFC 8410):
+            ReadOnlySpan<byte> pkcs8Preamble =
+            [
+                0x30, 0x2e,                         // SEQUENCE (46 bytes)
+                0x02, 0x01, 0x00,                   // INTEGER 0
+                0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, // SEQUENCE { OID 1.3.101.110 }
+                0x04, 0x22,                         // OCTET STRING (34 bytes)
+                0x04, 0x20,                         // OCTET STRING (32 bytes)
+            ];
 
-            Span<byte> privateKey = stackalloc byte[PrivateKeySizeInBytes];
-            ExportPrivateKey(privateKey);
+            int pkcs8SizeInBytes = pkcs8Preamble.Length + PrivateKeySizeInBytes;
+
+            if (destination.Length < pkcs8SizeInBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            pkcs8Preamble.CopyTo(destination);
+            Span<byte> privateKeyBuffer = destination.Slice(pkcs8Preamble.Length, PrivateKeySizeInBytes);
 
             try
             {
-                AsnWriter algorithmWriter = new(AsnEncodingRules.DER);
-                algorithmIdentifier.Encode(algorithmWriter);
-                AsnWriter privateKeyWriter = new(AsnEncodingRules.DER);
-                privateKeyWriter.WriteOctetString(privateKey);
-                AsnWriter pkcs8Writer = KeyFormatHelper.WritePkcs8(algorithmWriter, privateKeyWriter);
-
-                bool result = pkcs8Writer.TryEncode(destination, out bytesWritten);
-                privateKeyWriter.Reset();
-                pkcs8Writer.Reset();
-                return result;
+                ExportPrivateKey(privateKeyBuffer);
+                bytesWritten = pkcs8SizeInBytes;
+                return true;
             }
-            finally
+            catch
             {
-                CryptographicOperations.ZeroMemory(privateKey);
+                CryptographicOperations.ZeroMemory(privateKeyBuffer);
+                throw;
             }
         }
 
