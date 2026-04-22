@@ -8,6 +8,7 @@
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
 #include "comdelegate.h"
+#include <dn-stdio.h>
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
