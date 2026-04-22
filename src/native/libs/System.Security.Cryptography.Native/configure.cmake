@@ -24,11 +24,6 @@ check_function_exists(
     HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
 )
 
-check_function_exists(
-    EVP_PKEY_get0_RSA
-    HAVE_OPENSSL_RSA_PRIMITIVE
-)
-
 check_source_compiles(C "
 #include <openssl/evp.h>
 // CodeQL [SM01923] This is a CMake function detection script for the OpenSSL API used to implement the .NET API System.Security.Cryptography.ChaCha20Poly1305, it is not actually using the algorithm here

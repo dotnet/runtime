@@ -209,26 +209,6 @@ int SSL_set_ciphersuites(SSL *s, const char *str);
 const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 #endif
 
-#if !HAVE_OPENSSL_RSA_PRIMITIVE
-// In portable build, we need to support legacy RSA functions even if they were not present
-// on the build OS. The shim will detect their presence at runtime.
-#undef HAVE_OPENSSL_RSA_PRIMITIVE
-#define HAVE_OPENSSL_RSA_PRIMITIVE 1
-
-typedef struct rsa_st RSA;
-typedef struct rsa_meth_st RSA_METHOD;
-
-const RSA* EVP_PKEY_get0_RSA(const EVP_PKEY* pkey);
-int EVP_PKEY_set1_RSA(EVP_PKEY* pkey, RSA* key);
-const RSA_METHOD* RSA_get_method(const RSA* rsa);
-int RSA_get_multi_prime_extra_count(const RSA* rsa);
-void RSA_get0_key(const RSA* r, const BIGNUM** n, const BIGNUM** e, const BIGNUM** d);
-void RSA_get0_factors(const RSA* r, const BIGNUM** p, const BIGNUM** q);
-void RSA_get0_crt_params(const RSA* r, const BIGNUM** dmp1, const BIGNUM** dmq1, const BIGNUM** iqmp);
-int RSA_meth_get_flags(const RSA_METHOD* meth);
-int RSA_test_flags(const RSA* r, int flags);
-#endif
-
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_4_0_RTM
 #include "osslcompat_40.h"
 #endif
