@@ -20,6 +20,8 @@
 #include "RuntimeInstance.h"
 #include "TargetPtrs.h"
 #include <minipal/time.h>
+#include <minipal/thread.h>
+#include "SignalSafeThreadMap.h"
 
 EXTERN_C volatile uint32_t RhpTrapThreads;
 volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
