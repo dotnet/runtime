@@ -591,11 +591,13 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
+#ifdef PROFILING_SUPPORTED
     if (CORProfilerDisableAllNGenImages() || CORProfilerUseProfileImages())
     {
         DoLog("Ready to Run disabled - profiler disabled native images");
         return NULL;
     }
+#endif // PROFILING_SUPPORTED
 
     if (g_pConfig->ExcludeReadyToRun(pModule->GetSimpleName()))
     {
@@ -618,6 +620,20 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 
     READYTORUN_HEADER * pHeader = pLayout->GetReadyToRunHeader();
+
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_STRIPPED_IL_BODIES) != 0)
+    {
+        DoLog("Ready to Run load failed - stripped IL bodies are not supported with dynamic code compilation");
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    if ((pHeader->CoreHeader.Flags & (READYTORUN_FLAG_STRIPPED_INLINING_INFO | READYTORUN_FLAG_STRIPPED_DEBUG_INFO)) != 0)
+    {
+        DoLog("Ready to Run disabled - stripped R2R sections not supported with dynamic code compilation");
+        return NULL;
+    }
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
     // Ignore the content if the image major version is higher or lower than the major version currently supported by the runtime
     if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
@@ -898,6 +914,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
 
     m_pSectionDelayLoadMethodCallThunks = m_pComposite->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
     m_pSectionDebugInfo = m_pComposite->FindSection(ReadyToRunSectionType::DebugInfo);
+    m_pSectionExceptionInfo = m_pComposite->FindSection(ReadyToRunSectionType::ExceptionInfo);
 
     IMAGE_DATA_DIRECTORY * pinstMethodsDir = m_pComposite->FindSection(ReadyToRunSectionType::InstanceMethodEntryPoints);
     if (pinstMethodsDir != NULL)

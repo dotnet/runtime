@@ -49,6 +49,7 @@
     <Compile Include="TarReader\TarReader.TarEntry.ExtractToFile.Tests.cs" />
     <Compile Include="TarReader\TarReader.File.Tests.cs" />
     <Compile Include="TarReader\TarReader.GetNextEntry.Tests.cs" />
+    <Compile Include="TarReader\TarReader.SparseFile.Tests.cs" />
     <Compile Include="TarReader\TarReader.Tests.cs" />
     <Compile Include="TarTestsBase.cs" />
     <Compile Include="TarTestsBase.Gnu.cs" />

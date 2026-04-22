@@ -117,6 +117,9 @@
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\CastingHelper.cs">
       <Link>Internal\TypeSystem\CastingHelper.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\CastingHelper.Canon.cs">
+      <Link>Internal\TypeSystem\CastingHelper.Canon.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\DefType.cs">
       <Link>Internal\TypeSystem\DefType.cs</Link>
     </Compile>

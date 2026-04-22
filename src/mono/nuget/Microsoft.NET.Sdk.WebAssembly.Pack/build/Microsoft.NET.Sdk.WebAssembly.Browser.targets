@@ -203,10 +203,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
+      <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == ''">$(WasmWebcilVersion)</_WasmWebcilVersion>
+      <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">1</_WasmWebcilVersion>
+      <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == ''">0</_WasmWebcilVersion>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
-      <_WasmInlineBootConfig>$(WasmInlineBootConfig)</_WasmInlineBootConfig>
-      <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == '' and '$(_TargetingNET100OrLater)' == 'true' and '$(WasmBootConfigFileName)' == ''">true</_WasmInlineBootConfig>
+      <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == '' and '$(_TargetingNET100OrLater)' == 'true'">true</_WasmInlineBootConfig>
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == ''">false</_WasmInlineBootConfig>
       <!-- true = wasm assets will have hard fingerprint; false = wasm assets won't have even soft fingerprint -->
       <_WasmFingerprintAssets>$(WasmFingerprintAssets)</_WasmFingerprintAssets>
@@ -216,7 +218,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
-      <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true' and '$(_WasmInlineBootConfig)' == 'true'">dotnet.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true'">dotnet.boot.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == ''">blazor.boot.json</_WasmBootConfigFileName>
@@ -355,7 +356,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
       <Output TaskParameter="WebcilCandidates" ItemName="_WebcilAssetsCandidates" />
       <Output TaskParameter="PassThroughCandidates" ItemName="_WasmFrameworkCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
@@ -386,7 +387,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       SourceType="Computed"
       AssetKind="Build"
       AssetRole="Primary"
-      CopyToOutputDirectory="PreserveNewest"
+      CopyToOutputDirectory="Never"
       CopyToPublishDirectory="Never"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
@@ -405,7 +406,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       SourceType="Framework"
       AssetKind="Build"
       AssetRole="Primary"
-      CopyToOutputDirectory="PreserveNewest"
+      CopyToOutputDirectory="Never"
       CopyToPublishDirectory="Never"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
@@ -429,12 +430,12 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Materialized framework assets must be visible to referencing projects (e.g. Blazor WASM
          hosted scenarios where the server project serves the client's framework files).
          UpdatePackageStaticWebAssets defaults AssetMode to CurrentProject and CopyToOutputDirectory
-         to Never. Override both: AssetMode=All so assets flow through project references, and
-         CopyToOutputDirectory=PreserveNewest so they are copied from the intermediate materialized
-         path (obj/fx/{SourceId}/) to bin/wwwroot/_framework/ at build time. -->
+         to Never. Override AssetMode=All so assets flow through project references. Framework
+         files stay in obj/fx/{SourceId}/ and are served by the static web assets middleware
+         during dotnet run — they are not copied to bin/wwwroot/_framework/ at build time. -->
     <ItemGroup>
       <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)"
-        AssetMode="All" CopyToOutputDirectory="PreserveNewest" />
+        AssetMode="All" CopyToOutputDirectory="Never" />
       <WasmStaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
     </ItemGroup>
 
@@ -753,7 +754,13 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- remove the original assemblies -->
       <ResolvedFileToPublish Remove="@(WasmAssembliesToBundle)" />
-      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" />
+      <!-- Exclude items marked CopyToPublishDirectory=Never. These are build-only assets
+           (e.g., HotReload dll) that should not participate in publish. Without this filter,
+           ComputeWasmPublishAssets matches them by filename and replaces Framework-materialized
+           per-project assets with the raw SDK-path original, causing duplicate Identity crashes
+           in multi-client hosted publish scenarios. -->
+      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)"
+        Condition="'%(ResolvedFileToPublish.CopyToPublishDirectory)' != 'Never'" />
     </ItemGroup>
 
     <ComputeWasmPublishAssets
@@ -787,7 +794,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>
