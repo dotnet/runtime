@@ -6,7 +6,6 @@
 #pragma hdrstop
 #endif
 #include "emit.h"
-#include "corexcep.h"
 
 #ifndef DLLEXPORT
 #define DLLEXPORT

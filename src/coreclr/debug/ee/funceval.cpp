@@ -21,7 +21,6 @@
 #include "threads.h"
 #include "appdomain.inl"
 #include <limits.h>
-#include "ilformatter.h"
 
 #ifndef DACCESS_COMPILE
 

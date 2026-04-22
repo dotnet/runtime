@@ -20,7 +20,6 @@
 #include "holder.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "event.h"

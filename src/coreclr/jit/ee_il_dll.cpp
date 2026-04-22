@@ -17,7 +17,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 #include "emit.h"
-#include "corexcep.h"
 
 #if !defined(HOST_UNIX)
 #include <io.h>    // For _dup, _setmode

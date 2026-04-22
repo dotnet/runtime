@@ -3,7 +3,6 @@
 
 #include "standardpch.h"
 #include "runtimedetails.h"
-#include "spmiutil.h"
 #include "methodcallsummarizer.h"
 #include "jithost.h"
 

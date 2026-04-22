@@ -23,7 +23,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "sideeffects.h"
 #include "lower.h"
 #include "gcinfo.h"
-#include "gcinfoencoder.h"
 
 //-----------------------------------------------------------------------------
 // genStoreIndTypeSimd12: store indirect a TYP_SIMD12 (i.e. Vector3) to memory.

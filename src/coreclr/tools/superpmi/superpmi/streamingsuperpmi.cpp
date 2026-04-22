@@ -5,14 +5,11 @@
 #include "superpmi.h"
 #include "jitinstance.h"
 #include "simpletimer.h"
-#include "mclist.h"
 #include "lightweightmap.h"
 #include "commandline.h"
 #include "errorhandling.h"
 #include "methodcontext.h"
 #include "methodcontextreader.h"
-#include "spmiutil.h"
-#include "fileio.h"
 #include "commandline.h"
 
 #if defined(_WIN32)

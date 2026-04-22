@@ -31,12 +31,10 @@
 #include "gcheaputilities.h"
 #include "dbginterface.h"
 #include "comdelegate.h"
-#include "sigformat.h"
 #include "eeprofinterfaces.h"
 #include "dllimportcallback.h"
 #include "listlock.h"
 #include "methodimpl.h"
-#include "guidfromname.h"
 #include "encee.h"
 #include "encee.h"
 #include "comsynchronizable.h"
@@ -47,7 +45,6 @@
 #include "prettyprintsig.h"
 
 #include "comcallablewrapper.h"
-#include "clrtocomcall.h"
 #include "runtimecallablewrapper.h"
 
 #include "generics.h"

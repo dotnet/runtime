@@ -45,7 +45,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
-#include "clrtocomcall.h"
 #include "runtimecallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 

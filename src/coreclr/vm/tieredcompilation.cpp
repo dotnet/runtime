@@ -10,7 +10,6 @@
 #include "common.h"
 #include "excep.h"
 #include "log.h"
-#include "threadsuspend.h"
 #include "tieredcompilation.h"
 #include "minipal/time.h"
 

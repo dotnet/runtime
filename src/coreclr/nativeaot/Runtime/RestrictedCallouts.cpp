@@ -22,7 +22,6 @@
 #include "MethodTable.h"
 #include "ObjectLayout.h"
 #include "event.h"
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"

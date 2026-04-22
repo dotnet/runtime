@@ -21,7 +21,6 @@
 #include "jitinterface.h"
 
 #ifdef FEATURE_COMINTEROP
-#include "clrtocomcall.h"
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_PERFMAP

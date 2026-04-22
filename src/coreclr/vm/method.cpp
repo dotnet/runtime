@@ -33,7 +33,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
-#include "clrtocomcall.h"
 #endif
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS

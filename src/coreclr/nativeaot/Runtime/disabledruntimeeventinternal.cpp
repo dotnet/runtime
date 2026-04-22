@@ -4,7 +4,6 @@
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "Pal.h"
 
 #ifdef FEATURE_PERFTRACING
 

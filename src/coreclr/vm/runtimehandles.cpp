@@ -215,7 +215,6 @@ FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod
     *ppMethod = pMethod;
 }
 FCIMPLEND
-#include <optdefault.h>
 
 FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssemblyIfExists, ReflectClassBaseObject *pTypeUNSAFE)
 {

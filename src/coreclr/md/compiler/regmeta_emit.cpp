@@ -22,7 +22,6 @@
 #include "importhelper.h"
 #include "filtermanager.h"
 #include "switches.h"
-#include "posterror.h"
 #include "stgio.h"
 #include "sstring.h"
 

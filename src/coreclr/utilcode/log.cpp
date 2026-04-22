@@ -17,7 +17,6 @@
 
 #include "log.h"
 #include "utilcode.h"
-#include <dn-stdio.h>
 
 #ifdef LOGGING
 

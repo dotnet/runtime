@@ -10,10 +10,8 @@
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
 #endif
-#include "finalizerthread.h"
 
 // Interop library header
-#include <interoplibabi.h>
 #include <interoplibimports.h>
 
 #include "interoplibinterface.h"

@@ -17,10 +17,8 @@
 #include "Crst.h"
 #include "rhbinder.h"
 #include "RuntimeInstance.h"
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
-#include "event.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
@@ -30,12 +28,9 @@
 #include "ObjectLayout.h"
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
-#include "volatile.h"
 #include "yieldprocessornormalized.h"
 #include "RhConfig.h"
-#include <minipal/cpuid.h>
 #include <minipal/debugger.h>
-#include <minipal/time.h>
 
 FCIMPL0(void, RhDebugBreak)
 {

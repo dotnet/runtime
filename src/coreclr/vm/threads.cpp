@@ -32,8 +32,6 @@
 #include "appdomain.inl"
 #include "exceptmacros.h"
 #include "minipal/time.h"
-#include "minipal/thread.h"
-#include "SignalSafeThreadMap.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"

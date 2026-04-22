@@ -15,7 +15,6 @@
 #include <virtualcallstub.h>
 #include "peimagelayout.inl"
 
-#include "gcinterface.h"
 #include "gcinterface.dac.h"
 struct DacHostVtPtrs
 {

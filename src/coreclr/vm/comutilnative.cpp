@@ -33,7 +33,6 @@
 #include "typestring.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
-#include <minipal/memorybarrierprocesswide.h>
 #include "string.h"
 #include "sstring.h"
 #include "array.h"
@@ -1729,7 +1728,6 @@ FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
 }
 FCIMPLEND
 
-#include <optdefault.h>
 
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)
 {

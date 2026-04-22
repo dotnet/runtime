@@ -10,7 +10,6 @@
 #include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "holder.h"
@@ -20,10 +19,7 @@
 #include "thread.inl"
 #include "RuntimeInstance.h"
 #include "TargetPtrs.h"
-#include "yieldprocessornormalized.h"
 #include <minipal/time.h>
-#include <minipal/thread.h>
-#include "SignalSafeThreadMap.h"
 
 EXTERN_C volatile uint32_t RhpTrapThreads;
 volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;

@@ -17,9 +17,7 @@
 
 #include "PalLimitedContext.h"
 #include "slist.h"
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
-#include "interoplibinterface.h"
 
 #include "thread.h"
 #include "threadstore.h"

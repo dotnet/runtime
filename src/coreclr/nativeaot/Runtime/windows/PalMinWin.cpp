@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include "holder.h"
 
 #define _T(s) L##s
 #include "RhConfig.h"

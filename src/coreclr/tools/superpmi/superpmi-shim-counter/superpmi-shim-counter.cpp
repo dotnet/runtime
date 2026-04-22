@@ -6,7 +6,6 @@
 //----------------------------------------------------------
 
 #include "standardpch.h"
-#include "superpmi-shim-counter.h"
 #include "runtimedetails.h"
 #include "icorjitcompiler.h"
 #include "errorhandling.h"

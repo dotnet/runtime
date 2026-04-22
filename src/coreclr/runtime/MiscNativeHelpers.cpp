@@ -3,7 +3,6 @@
 
 #include "common.h"
 #include "MiscNativeHelpers.h"
-#include <minipal/cpuid.h>
 #include <minipal/memorybarrierprocesswide.h>
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)

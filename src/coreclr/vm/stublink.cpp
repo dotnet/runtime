@@ -14,7 +14,6 @@
 #include "stubgen.h"
 #include "stublink.inl"
 
-#include "rtlfunctions.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"

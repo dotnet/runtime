@@ -4,7 +4,6 @@
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 
-#include "common.h"
 #include "precode_portable.hpp"
 
 #ifdef HOST_64BIT

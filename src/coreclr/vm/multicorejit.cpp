@@ -27,7 +27,6 @@
 #include "eventtracebase.h"
 #include "multicorejit.h"
 #include "multicorejitimpl.h"
-#include <dn-stdio.h>
 
 void MulticoreJitFireEtw(const WCHAR * pAction, const WCHAR * pTarget, int p1, int p2, int p3)
 {

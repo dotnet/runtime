@@ -11,7 +11,6 @@
 #include "common.h"
 
 #include <ole2.h>
-#include <guidfromname.h>
 #include <olectl.h>
 #include <objsafe.h>    // IID_IObjectSafe
 #include "vars.hpp"

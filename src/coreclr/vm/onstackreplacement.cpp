@@ -6,7 +6,6 @@
 // ===========================================================================
 
 #include "common.h"
-#include "onstackreplacement.h"
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 

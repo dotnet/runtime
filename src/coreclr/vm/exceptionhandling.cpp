@@ -16,7 +16,6 @@
 #include "corinfo.h"
 #include "exceptionhandlingqcalls.h"
 #include "exinfo.h"
-#include "configuration.h"
 
 extern MethodDesc* g_pThreadStartCallbackMethodDesc;
 extern MethodDesc* g_pGCRunFinalizersMethodDesc;

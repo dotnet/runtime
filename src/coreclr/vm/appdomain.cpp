@@ -6,7 +6,6 @@
 #include "appdomain.hpp"
 #include "peimagelayout.inl"
 #include "field.h"
-#include "strongnameinternal.h"
 #include "excep.h"
 #include "eeconfig.h"
 #include "gcheaputilities.h"
@@ -39,7 +38,6 @@
 #include "comtoclrcall.h"
 #include "runtimecallablewrapper.h"
 #include "olevariant.h"
-#include "olecontexthelpers.h"
 #endif // FEATURE_COMINTEROP
 
 #if defined(FEATURE_COMWRAPPERS)

@@ -12,7 +12,6 @@
 #include "walker.h"
 
 #include "frames.h"
-#include "openum.h"
 #include "amd64InstrDecode.h"
 
 #ifdef TARGET_AMD64

@@ -16,7 +16,6 @@
 #include "method.hpp"
 #include "wellknownattributes.h"
 #include "nativeimage.h"
-#include "dn-stdio.h"
 #include "ilstubcache.h"
 #include "sigbuilder.h"
 

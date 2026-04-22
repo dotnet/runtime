@@ -19,7 +19,6 @@
 #include "object.h"
 #include "excep.h"
 #include "threads.h"
-#include "comsynchronizable.h"
 #include "threads.h"
 #include "dllimport.h"
 #include "dbginterface.h"

@@ -12,7 +12,6 @@
 #include "RuntimeInstance.h"
 #include "shash.h"
 
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
 
 #include "thread.h"

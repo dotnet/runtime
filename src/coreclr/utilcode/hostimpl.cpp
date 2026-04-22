@@ -5,7 +5,6 @@
 
 #include <minipal/mutex.h>
 
-#include "mscoree.h"
 #include "clrinternal.h"
 #include "clrhost.h"
 #include "ex.h"

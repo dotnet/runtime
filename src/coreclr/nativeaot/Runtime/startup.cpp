@@ -7,8 +7,6 @@
 #include "PalLimitedContext.h"
 #include "Pal.h"
 #include "rhassert.h"
-#include "slist.h"
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "holder.h"
@@ -22,10 +20,7 @@
 #include "RhConfig.h"
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
-#include "yieldprocessornormalized.h"
 #include <minipal/cpufeatures.h>
-#include <minipal/time.h>
-#include <minipal/random.h>
 
 #ifdef FEATURE_PERFTRACING
 #include "EventPipeInterface.h"

@@ -30,7 +30,6 @@
 #endif
 
 #ifdef FEATURE_COMINTEROP
-#include "clrtocomcall.h"
 #endif
 
 #ifdef FEATURE_PERFMAP

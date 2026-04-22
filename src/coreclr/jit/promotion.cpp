@@ -34,7 +34,6 @@
 
 #include "jitpch.h"
 #include "promotion.h"
-#include "jitstd/algorithm.h"
 
 //------------------------------------------------------------------------
 // PhysicalPromotion: Promote structs based on primitive access patterns.

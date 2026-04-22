@@ -11,7 +11,6 @@
 #include "Pal.h"
 #include "holder.h"
 #include "RuntimeInstance.h"
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"

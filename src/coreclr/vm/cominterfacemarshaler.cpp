@@ -15,7 +15,6 @@
 #include "cominterfacemarshaler.h"
 #include "interopconverter.h"
 #include "comdelegate.h"
-#include "olecontexthelpers.h"
 
 
 //--------------------------------------------------------------------------------

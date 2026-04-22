@@ -4,7 +4,6 @@
 
 #include <windows.h>
 #include <inttypes.h>
-#include <assert.h>
 #include <malloc.h>
 #include "minipal.h"
 

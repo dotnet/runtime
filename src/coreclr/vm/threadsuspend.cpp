@@ -13,7 +13,6 @@
 
 #include "threadsuspend.h"
 
-#include "finalizerthread.h"
 #include "dbginterface.h"
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/time.h>

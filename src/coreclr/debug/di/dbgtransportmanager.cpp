@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 #include "dbgtransportsession.h"
-#include "dbgtransportmanager.h"
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_DI
 

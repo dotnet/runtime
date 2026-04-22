@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #endif
 
-#include <sys/types.h>
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>

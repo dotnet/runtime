@@ -12,7 +12,6 @@
 #include "stdafx.h"
 #include "stgtiggerstream.h"
 #include "stgtiggerstorage.h"
-#include "posterror.h"
 
 //
 //

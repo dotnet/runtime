@@ -16,7 +16,6 @@ extern "C" void assertAbort(const char* why, const char* file, unsigned line);
 #define _ASSERTE(expr) (void)0
 #endif // _DEBUG
 
-#include "gcinfohelpers.h"
 #include <stdint.h>
 #include "contract.h"
 #include "iallocator.h"

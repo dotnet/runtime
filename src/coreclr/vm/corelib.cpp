@@ -15,28 +15,16 @@
 #include "arraynative.h"
 #include "dllimport.h"
 #include "comdelegate.h"
-#include "customattribute.h"
-#include "comdynamic.h"
 #include "excep.h"
 #include "fcall.h"
-#include "clrconfignative.h"
-#include "commodule.h"
-#include "marshalnative.h"
-#include "nativelibrarynative.h"
 #include "comutilnative.h"
 #include "comsynchronizable.h"
 #include "floatdouble.h"
 #include "floatsingle.h"
-#include "divmodint.h"
-#include "comdatetime.h"
-#include "debugdebugger.h"
 #include "assemblynative.hpp"
 
 #include "proftoeeinterfaceimpl.h"
 
-#include "appdomainnative.hpp"
-#include "conditionalweaktable.h"
-#include "runtimehandles.h"
 #include "reflectioninvocation.h"
 #include "managedmdimport.hpp"
 #include "typestring.h"
@@ -64,13 +52,11 @@
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 #include "eventpipeadapter.h"
 #include "eventpipeinternal.h"
-#include "nativeeventsource.h"
 #endif //defined(FEATURE_EVENTSOURCE_XPLAT)
 
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadapter.h"
 #include "eventpipeinternal.h"
-#include "nativeeventsource.h"
 #endif //FEATURE_PERFTRACING
 
 #include "tailcallhelp.h"

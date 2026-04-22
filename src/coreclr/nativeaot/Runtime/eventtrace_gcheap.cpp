@@ -10,10 +10,8 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 
-#include "daccess.h"
 
 #include "slist.h"
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"

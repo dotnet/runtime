@@ -5,7 +5,6 @@
 
 #ifdef FEATURE_TIERED_COMPILATION
 
-#include "callcounting.h"
 #include "threadsuspend.h"
 #include <minipal/memorybarrierprocesswide.h>
 

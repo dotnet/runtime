@@ -7,11 +7,9 @@
 //
 
 #include <windows.h>
-#include <stdio.h>
 #include <errno.h>
 #include <evntprov.h>
 #include "CommonTypes.h"
-#include "daccess.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"
 #include <winternl.h>

@@ -17,7 +17,6 @@
 #include <unistd.h>
 #endif
 
-#include <minipal/random.h>
 #include <minipal/time.h>
 
 #include "gcenv.h"

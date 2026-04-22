@@ -28,12 +28,10 @@
 #include "stublink.h"
 #include "cgensys.h"
 #include "comtoclrcall.h"
-#include "clrtocomcall.h"
 #include "comutilnative.h"
 #include "eeconfig.h"
 #include "interoputil.h"
 #include "dispex.h"
-#include "guidfromname.h"
 #include "comconnectionpoints.h"
 #include <objsafe.h>    // IID_IObjctSafe
 #include "virtualcallstub.h"
@@ -1172,7 +1170,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
 
     RETURN NULL;
 }
-#include <optdefault.h>
 
 //--------------------------------------------------------------------------
 // Init Outer unknown, cache a GIT cookie

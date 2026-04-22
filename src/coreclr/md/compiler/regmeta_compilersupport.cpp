@@ -15,10 +15,8 @@
 #include "mdutil.h"
 #include "rwutil.h"
 #include "mdlog.h"
-#include "importhelper.h"
 #include "filtermanager.h"
 #include "switches.h"
-#include "posterror.h"
 #include "stgio.h"
 #include "sstring.h"
 

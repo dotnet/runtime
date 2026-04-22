@@ -11,7 +11,6 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 
-#include "daccess.h"
 
 #include "eventtrace_etw.h"
 #include "eventtracebase.h"
@@ -21,7 +20,6 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 
-#include <minipal/utf8.h>
 
 EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context = { W("Microsoft-Windows-DotNETRuntime"), 0, false, 0 };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = {

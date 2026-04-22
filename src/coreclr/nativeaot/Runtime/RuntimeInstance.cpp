@@ -13,8 +13,6 @@
 #include "Crst.h"
 #include "rhbinder.h"
 #include "RuntimeInstance.h"
-#include "event.h"
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"
