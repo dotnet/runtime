@@ -7,10 +7,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 {
     private readonly Target _target;
-
-    private enum CCWFlags
+    // Mirrors enum SimpleComCallWrapperFlags in src/coreclr/vm/comcallablewrapper.h
+    private enum SimpleComCallWrapperFlags : uint
     {
-        IsHandleWeak = 0x4,
+        IsAggregated    = 0x1,
+        IsExtendsCom    = 0x2,
+        IsHandleWeak    = 0x4,
     }
 
     // Mirrors enum Masks in src/coreclr/vm/comcallablewrapper.h
@@ -23,6 +25,13 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     private enum ComWrapperFlags : uint
     {
         Slot_Basic = 0,
+    }
+
+    [Flags]
+    private enum ComRefCount : long
+    {
+        RefCountMask = 0x7FFFFFFF,
+        CleanupSentinel = 0x80000000,
     }
     // Mirrors RCW::RCWFlags bits in src/coreclr/vm/runtimecallablewrapper.h.
     [Flags]
@@ -43,20 +52,6 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         _target = target;
     }
 
-    public ulong GetRefCount(TargetPointer address)
-    {
-        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
-        Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
-        return simpleWrapper.RefCount & (ulong)_target.ReadGlobal<long>(Constants.Globals.ComRefcountMask);
-    }
-
-    public bool IsHandleWeak(TargetPointer address)
-    {
-        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
-        Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
-        return (simpleWrapper.Flags & (uint)CCWFlags.IsHandleWeak) != 0;
-    }
-
     // See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
     // Handles two cases:
     //   1. Address is a COM IP into a ComCallWrapper          → apply ThisMask to get the CCW
@@ -74,9 +69,9 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             return TargetPointer.Null;
         }
 
-        TargetPointer tearOffAddRef      = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRef);
-        TargetPointer tearOffSimple      = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimple);
-        TargetPointer tearOffSimpleInner = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimpleInner);
+        TargetPointer tearOffAddRef      = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.TearOffAddRef));
+        TargetPointer tearOffSimple      = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimple));
+        TargetPointer tearOffSimpleInner = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimpleInner));
 
         TargetPointer ccw;
         if (addRefValue == tearOffAddRef)
@@ -108,13 +103,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 
     public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
     {
-        // Navigate to the start of the linked chain, mirroring ComCallWrapper::GetStartWrapper in the runtime.
-        Data.ComCallWrapper firstCheck = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
-        if (firstCheck.Next != TargetPointer.Null)
-        {
-            Data.SimpleComCallWrapper sccwFirst = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(firstCheck.SimpleWrapper);
-            ccw = sccwFirst.MainWrapper;
-        }
+        ccw = GetStartWrapper(ccw);
 
         ulong comMethodTableSize = _target.GetTypeInfo(DataType.ComMethodTable).Size!.Value;
         int pointerSize = _target.PointerSize;
@@ -162,6 +151,49 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             current = wrapper.Next == linkedWrapperTerminator ? TargetPointer.Null : wrapper.Next;
         }
     }
+
+    public TargetPointer GetObjectHandle(TargetPointer ccw)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
+        return wrapper.Handle;
+    }
+
+    // Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
+    private TargetPointer GetSimpleComCallWrapper(TargetPointer ccw)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
+        return wrapper.SimpleWrapper;
+    }
+
+    public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer ccw)
+    {
+        TargetPointer sccw = GetSimpleComCallWrapper(ccw);
+        Data.SimpleComCallWrapper data = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(sccw);
+        return new SimpleComCallWrapperData
+        {
+            RefCount = (uint)(data.RefCount & (long)ComRefCount.RefCountMask),
+            IsNeutered = (data.RefCount & (long)ComRefCount.CleanupSentinel) != 0,
+            IsAggregated = (data.Flags & (uint)SimpleComCallWrapperFlags.IsAggregated) != 0,
+            IsExtendsCOMObject = (data.Flags & (uint)SimpleComCallWrapperFlags.IsExtendsCom) != 0,
+            IsHandleWeak = (data.Flags & (uint)SimpleComCallWrapperFlags.IsHandleWeak) != 0,
+            OuterIUnknown = data.OuterIUnknown,
+        };
+    }
+
+    // Navigates to the start ComCallWrapper in a linked chain.
+    // If ccw is already the start wrapper (or the only wrapper), returns ccw unchanged.
+    // Mirrors ComCallWrapper::GetStartWrapper / IsLinked in the runtime.
+    public TargetPointer GetStartWrapper(TargetPointer ccw)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
+        if (wrapper.Next != TargetPointer.Null)
+        {
+            Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+            ccw = sccw.MainWrapper;
+        }
+        return ccw;
+    }
+
     public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr)
     {
         TargetPointer listAddress;

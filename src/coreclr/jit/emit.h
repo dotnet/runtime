@@ -1310,6 +1310,11 @@ protected:
         {
             return _idInsFmt == IF_LOCAL_DECL;
         }
+
+        bool idIsValTypeImm() const
+        {
+            return _idInsFmt == IF_TRY_TABLE;
+        }
 #endif
 
 #ifdef TARGET_ARM64
@@ -2052,13 +2057,17 @@ protected:
 #define PERFSCORE_THROUGHPUT_8C   8.0f   // slower - 8 cycles
 #define PERFSCORE_THROUGHPUT_9C   9.0f   // slower - 9 cycles
 #define PERFSCORE_THROUGHPUT_10C  10.0f  // slower - 10 cycles
-#define PERFSCORE_THROUGHPUT_11C  10.0f  // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_11C  11.0f  // slower - 11 cycles
+#define PERFSCORE_THROUGHPUT_12C  12.0f  // slower - 12 cycles
 #define PERFSCORE_THROUGHPUT_13C  13.0f  // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_14C  14.0f  // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_16C  16.0f  // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_14C  14.0f  // slower - 14 cycles
+#define PERFSCORE_THROUGHPUT_16C  16.0f  // slower - 16 cycles
+#define PERFSCORE_THROUGHPUT_18C  18.0f  // slower - 18 cycles
 #define PERFSCORE_THROUGHPUT_19C  19.0f  // slower - 19 cycles
 #define PERFSCORE_THROUGHPUT_25C  25.0f  // slower - 25 cycles
+#define PERFSCORE_THROUGHPUT_32C  32.0f  // slower - 32 cycles
 #define PERFSCORE_THROUGHPUT_33C  33.0f  // slower - 33 cycles
+#define PERFSCORE_THROUGHPUT_36C  36.0f  // slower - 36 cycles
 #define PERFSCORE_THROUGHPUT_50C  50.0f  // slower - 50 cycles
 #define PERFSCORE_THROUGHPUT_52C  52.0f  // slower - 52 cycles
 #define PERFSCORE_THROUGHPUT_57C  57.0f  // slower - 57 cycles
@@ -2083,11 +2092,18 @@ protected:
 #define PERFSCORE_LATENCY_14C  14.0f
 #define PERFSCORE_LATENCY_15C  15.0f
 #define PERFSCORE_LATENCY_16C  16.0f
+#define PERFSCORE_LATENCY_17C  17.0f
 #define PERFSCORE_LATENCY_18C  18.0f
 #define PERFSCORE_LATENCY_20C  20.0f
 #define PERFSCORE_LATENCY_22C  22.0f
 #define PERFSCORE_LATENCY_23C  23.0f
 #define PERFSCORE_LATENCY_26C  26.0f
+#define PERFSCORE_LATENCY_28C  28.0f
+#define PERFSCORE_LATENCY_31C  31.0f
+#define PERFSCORE_LATENCY_32C  32.0f
+#define PERFSCORE_LATENCY_33C  33.0f
+#define PERFSCORE_LATENCY_41C  41.0f
+#define PERFSCORE_LATENCY_45C  45.0f
 #define PERFSCORE_LATENCY_62C  62.0f
 #define PERFSCORE_LATENCY_69C  69.0f
 #define PERFSCORE_LATENCY_105C 105.0f
@@ -2099,6 +2115,11 @@ protected:
 #define PERFSCORE_LATENCY_BRANCH_INDIRECT 2.0f // includes cost of a possible misprediction
 
 #if defined(TARGET_XARCH)
+
+// a read has 2x (0.5) throughput, while a write has 1C (1.0) throughput
+#define PERFSCORE_THROUGHPUT_RD PERFSCORE_THROUGHPUT_2X
+#define PERFSCORE_THROUGHPUT_WR PERFSCORE_THROUGHPUT_1C
+#define PERFSCORE_THROUGHPUT_RW PERFSCORE_THROUGHPUT_1C
 
 // a read,write or modify from stack location, possible def to use latency from L0 cache
 #define PERFSCORE_LATENCY_RD_STACK    PERFSCORE_LATENCY_2C
@@ -2366,6 +2387,24 @@ protected:
         void idLclCnt(unsigned int cnt)
         {
             lclCnt = cnt;
+        }
+    };
+
+    struct instrDescValTypeImm : instrDesc
+    {
+        instrDescValTypeImm() = delete;
+
+        unsigned int  imm;
+        WasmValueType valType;
+
+        void idValType(WasmValueType type)
+        {
+            valType = type;
+        }
+
+        void idImm(unsigned int i)
+        {
+            imm = i;
         }
     };
 #endif // TARGET_WASM
@@ -2715,10 +2754,6 @@ public:
 
     bool emitHasFramePtr;
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    bool emitInInstrumentation;
-#endif // PSEUDORANDOM_NOP_INSERTION
-
 #ifdef DEBUG
     bool emitChkAlign; // perform some alignment checks
 #endif
@@ -2978,23 +3013,6 @@ private:
 
     unsigned emitNxtIGnum;
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-
-    // random nop insertion to break up nop sleds
-    unsigned emitNextNop;
-    bool     emitRandomNops;
-
-    void emitEnableRandomNops()
-    {
-        emitRandomNops = true;
-    }
-    void emitDisableRandomNops()
-    {
-        emitRandomNops = false;
-    }
-
-#endif // PSEUDORANDOM_NOP_INSERTION
-
     insGroup* emitAllocAndLinkIG();
     insGroup* emitAllocIG();
     void      emitInitIG(insGroup* ig);
@@ -3186,8 +3204,6 @@ private:
 #if defined(FEATURE_SIMD)
     void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider);
 #endif // FEATURE_SIMD
-
-    int emitNextRandomNop();
 
     //
     // Functions for allocating instrDescs.

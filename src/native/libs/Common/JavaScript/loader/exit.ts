@@ -88,19 +88,18 @@ export function exit(exitCode: number, reason: any): void {
         reason.message = message;
     }
 
-    // force stack property to be generated before we shut down managed code, or create current stack if it doesn't exist
-    const stack = "" + (reason.stack || (new Error().stack));
-    try {
-        Object.defineProperty(reason, "stack", {
-            get: () => stack
-        });
-    } catch (e) {
-        // ignore
-    }
-
     // don't report this error twice
     const alreadySilent = !!reason.silent;
     const alreadyExisted = isExited();
+
+    // force stack property to be generated before we shut down managed code, or create current stack if it doesn't exist
+    let stack;
+    if (typeof reason["getManageStack"] === "function" && isRuntimeRunning()) {
+        stack = reason.getManageStack();
+    } else {
+        stack = reason.stack || new Error().stack || "";
+    }
+
     reason.silent = true;
     let shouldQuitNow = true;
 

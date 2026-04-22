@@ -7,7 +7,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using WasmAppBuilder;
+
+namespace Microsoft.WebAssembly.Build.Tasks.Mono;
 
 internal static class SignatureMapper
 {

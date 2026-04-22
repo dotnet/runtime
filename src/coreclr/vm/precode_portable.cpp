@@ -17,7 +17,7 @@ bool PortableEntryPoint::HasNativeEntryPoint(PCODE addr)
 {
     LIMITED_METHOD_CONTRACT;
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    return portableEntryPoint->HasNativeCode();
+    return portableEntryPoint->HasNativeCode() && !portableEntryPoint->PrefersInterpreterEntryPoint();
 }
 
 bool PortableEntryPoint::HasInterpreterData(PCODE addr)
@@ -43,9 +43,18 @@ void PortableEntryPoint::SetActualCode(PCODE addr, PCODE actualCode)
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
     _ASSERTE_ALL_BUILDS(actualCode != (PCODE)NULL);
 
-    // This is a lock free write. It can either be NULL or was already set to the same value.
-    _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode));
+    // This is a lock free write. The existing value can either be NULL, already set to the same value,
+    // or still be an interpreter-preferred temporary/native placeholder while PrefersInterpreterEntryPoint() is set.
+    _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode) || portableEntryPoint->PrefersInterpreterEntryPoint());
+
     portableEntryPoint->_pActualCode = (void*)PCODEToPINSTR(actualCode);
+
+    if (portableEntryPoint->PrefersInterpreterEntryPoint())
+    {
+        // We can "upgrade" a portable entrypoint from the interpreter entry point to the actual code. If we do so
+        // we need to clear the PrefersInterpreterEntryPoint flag to allow future callers to use the actual code.
+        portableEntryPoint->ClearPrefersInterpreterEntryPoint();
+    }
 }
 
 MethodDesc* PortableEntryPoint::GetMethodDesc(PCODE addr)
@@ -74,6 +83,13 @@ void PortableEntryPoint::SetInterpreterData(PCODE addr, PCODE interpreterData)
     _ASSERTE(!portableEntryPoint->HasInterpreterCode());
     _ASSERTE(interpreterData != (PCODE)NULL);
     portableEntryPoint->_pInterpreterData = (void*)PCODEToPINSTR(interpreterData);
+}
+
+bool PortableEntryPoint::PrefersInterpreterEntryPoint(PCODE addr)
+{
+    LIMITED_METHOD_CONTRACT;
+    PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
+    return portableEntryPoint->PrefersInterpreterEntryPoint();
 }
 
 #ifdef _DEBUG
@@ -111,6 +127,17 @@ void PortableEntryPoint::Init(void* nativeEntryPoint)
     _ASSERTE(nativeEntryPoint != NULL);
     _pActualCode = nativeEntryPoint;
     _pMD = NULL;
+    _pInterpreterData = NULL;
+    _flags = kNone;
+    INDEBUG(_canary = CANARY_VALUE);
+}
+
+void PortableEntryPoint::Init(void* nativeEntryPoint, MethodDesc* pMD)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    _pActualCode = nativeEntryPoint;
+    _pMD = pMD;
     _pInterpreterData = NULL;
     _flags = kNone;
     INDEBUG(_canary = CANARY_VALUE);

@@ -45,13 +45,13 @@ namespace Microsoft.Interop
                     new BlittableTypeMarshallingInfoProvider(env.Compilation)));
         }
 
-        public static IMarshallingGeneratorResolver GeneratorResolver { get; } = new ByValueContentsMarshalKindValidator(new CompositeMarshallingGeneratorResolver(
+        public static IMarshallingGeneratorResolver GeneratorResolver { get; } = new CompositeMarshallingGeneratorResolver(
             [
                 new BlittableMarshallerResolver(runtimeMarshallingDisabled: false),
                 new MarshalAsMarshallingGeneratorResolver(new InteropGenerationOptions(UseMarshalType: true)),
                 new NoMarshallingInfoErrorResolver(TypeNames.LibraryImportAttribute_ShortName),
                 new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: false, TypeNames.LibraryImportAttribute_ShortName),
                 new ForwarderResolver()
-            ]));
+            ]);
     }
 }

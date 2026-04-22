@@ -317,7 +317,7 @@ namespace System
             Overflow
         }
 
-        private static bool IsSpaceReplacingChar(uint c) => (c == '\u00a0') || (c == '\u202f');
+        private static bool IsSpaceReplacingChar(uint c) => c is '\u00a0' or '\u202f';
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint NormalizeSpaceReplacingChar(uint c) => IsSpaceReplacingChar(c) ? '\u0020' : c;

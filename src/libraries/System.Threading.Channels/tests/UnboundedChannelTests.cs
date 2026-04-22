@@ -242,6 +242,23 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(42, await t2);
         }
 
+        [Fact]
+        public async Task WaitToReadAsync_ReturnsFalse_WhenReadAsyncWasCanceledAndChannelCompleted()
+        {
+            Channel<int> c = CreateChannel();
+
+            using var cts = new CancellationTokenSource();
+            ValueTask<int> readTask = c.Reader.ReadAsync(cts.Token);
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await readTask);
+
+            ValueTask<bool> waitTask = c.Reader.WaitToReadAsync(CancellationToken.None);
+
+            c.Writer.Complete();
+
+            Assert.False(await waitTask);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Stress_TryWrite_TryRead()
         {

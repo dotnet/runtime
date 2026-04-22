@@ -109,6 +109,20 @@ namespace System
             }
         }
 
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void ReleaseAllData(__ComObject* pComObject, Exception* pException)
+        {
+            try
+            {
+                pComObject->ReleaseAllData();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         /// <summary>
         /// Called from within the EE and is used to handle calls on methods of event interfaces.
         /// </summary>
@@ -124,20 +138,6 @@ namespace System
 
             // If we don't then we need to create one.
             return CreateEventProvider(t);
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:Value passed to parameter cannot be statically determined", Justification = "The runtime passes a RuntimeType describing the COM event provider. The dynamic constructor access requirements are enforced by runtime callsite semantics.")]
-        [UnmanagedCallersOnly]
-        private static unsafe void GetEventProvider(__ComObject* pComObject, RuntimeType* pProviderType, object* pResult, Exception* pException)
-        {
-            try
-            {
-                *pResult = pComObject->GetEventProvider(*pProviderType);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
         }
 
         private object CreateEventProvider(

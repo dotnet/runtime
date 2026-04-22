@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -118,6 +119,7 @@ namespace System.Text
         /// <summary>
         /// Entry point from <see cref="EncoderNLS.GetByteCount"/>.
         /// </summary>
+        [RequiresUnsafe]
         internal virtual unsafe int GetByteCount(char* pChars, int charCount, EncoderNLS? encoder)
         {
             Debug.Assert(encoder != null, "This code path should only be called from EncoderNLS.");
@@ -171,6 +173,7 @@ namespace System.Text
         /// The implementation should not attempt to perform any sort of fallback behavior.
         /// If custom fallback behavior is necessary, override <see cref="GetByteCountWithFallback"/>.
         /// </remarks>
+        [RequiresUnsafe]
         private protected virtual unsafe int GetByteCountFast(char* pChars, int charsLength, EncoderFallback? fallback, out int charsConsumed)
         {
             // Any production-quality type would override this method and provide a real
@@ -222,6 +225,7 @@ namespace System.Text
         /// (Implementation should call <see cref="ThrowConversionOverflow"/>.)
         /// </exception>
         [MethodImpl(MethodImplOptions.NoInlining)] // don't stack spill spans into our caller
+        [RequiresUnsafe]
         private protected unsafe int GetByteCountWithFallback(char* pCharsOriginal, int originalCharCount, int charsConsumedSoFar)
         {
             // This is a stub method that's marked "no-inlining" so that it we don't stack-spill spans
@@ -252,6 +256,7 @@ namespace System.Text
         /// If the return value would exceed <see cref="int.MaxValue"/>.
         /// (The implementation should call <see cref="ThrowConversionOverflow"/>.)
         /// </exception>
+        [RequiresUnsafe]
         private unsafe int GetByteCountWithFallback(char* pOriginalChars, int originalCharCount, int charsConsumedSoFar, EncoderNLS encoder)
         {
             Debug.Assert(encoder != null, "This code path should only be called from EncoderNLS.");
@@ -395,6 +400,7 @@ namespace System.Text
         /// <summary>
         /// Entry point from <see cref="EncoderNLS.GetBytes"/> and <see cref="EncoderNLS.Convert"/>.
         /// </summary>
+        [RequiresUnsafe]
         internal virtual unsafe int GetBytes(char* pChars, int charCount, byte* pBytes, int byteCount, EncoderNLS? encoder)
         {
             Debug.Assert(encoder != null, "This code path should only be called from EncoderNLS.");
@@ -439,6 +445,7 @@ namespace System.Text
         /// The implementation should not attempt to perform any sort of fallback behavior.
         /// If custom fallback behavior is necessary, override <see cref="GetBytesWithFallback"/>.
         /// </remarks>
+        [RequiresUnsafe]
         private protected virtual unsafe int GetBytesFast(char* pChars, int charsLength, byte* pBytes, int bytesLength, out int charsConsumed)
         {
             // Any production-quality type would override this method and provide a real
@@ -485,6 +492,7 @@ namespace System.Text
         /// If the destination buffer is not large enough to hold the entirety of the transcoded data.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private protected unsafe int GetBytesWithFallback(char* pOriginalChars, int originalCharCount, byte* pOriginalBytes, int originalByteCount, int charsConsumedSoFar, int bytesWrittenSoFar, bool throwForDestinationOverflow = true)
         {
             // This is a stub method that's marked "no-inlining" so that it we don't stack-spill spans
@@ -519,6 +527,7 @@ namespace System.Text
         /// too small to contain the entirety of the transcoded data and the <see cref="EncoderNLS"/> instance disallows
         /// partial transcoding.
         /// </exception>
+        [RequiresUnsafe]
         private unsafe int GetBytesWithFallback(char* pOriginalChars, int originalCharCount, byte* pOriginalBytes, int originalByteCount, int charsConsumedSoFar, int bytesWrittenSoFar, EncoderNLS encoder)
         {
             Debug.Assert(encoder != null, "This code path should only be called from EncoderNLS.");
@@ -711,6 +720,7 @@ namespace System.Text
         /// <summary>
         /// Entry point from <see cref="DecoderNLS.GetCharCount"/>.
         /// </summary>
+        [RequiresUnsafe]
         internal virtual unsafe int GetCharCount(byte* pBytes, int byteCount, DecoderNLS? decoder)
         {
             Debug.Assert(decoder != null, "This code path should only be called from DecoderNLS.");
@@ -766,6 +776,7 @@ namespace System.Text
         /// The implementation should not attempt to perform any sort of fallback behavior.
         /// If custom fallback behavior is necessary, override <see cref="GetCharCountWithFallback"/>.
         /// </remarks>
+        [RequiresUnsafe]
         private protected virtual unsafe int GetCharCountFast(byte* pBytes, int bytesLength, DecoderFallback? fallback, out int bytesConsumed)
         {
             // Any production-quality type would override this method and provide a real
@@ -816,6 +827,7 @@ namespace System.Text
         /// (Implementation should call <see cref="ThrowConversionOverflow"/>.)
         /// </exception>
         [MethodImpl(MethodImplOptions.NoInlining)] // don't stack spill spans into our caller
+        [RequiresUnsafe]
         private protected unsafe int GetCharCountWithFallback(byte* pBytesOriginal, int originalByteCount, int bytesConsumedSoFar)
         {
             // This is a stub method that's marked "no-inlining" so that it we don't stack-spill spans
@@ -846,6 +858,7 @@ namespace System.Text
         /// If the return value would exceed <see cref="int.MaxValue"/>.
         /// (The implementation should call <see cref="ThrowConversionOverflow"/>.)
         /// </exception>
+        [RequiresUnsafe]
         private unsafe int GetCharCountWithFallback(byte* pOriginalBytes, int originalByteCount, int bytesConsumedSoFar, DecoderNLS decoder)
         {
             Debug.Assert(decoder != null, "This code path should only be called from DecoderNLS.");
@@ -991,6 +1004,7 @@ namespace System.Text
         /// <summary>
         /// Entry point from <see cref="DecoderNLS.GetChars"/> and <see cref="DecoderNLS.Convert"/>.
         /// </summary>
+        [RequiresUnsafe]
         internal virtual unsafe int GetChars(byte* pBytes, int byteCount, char* pChars, int charCount, DecoderNLS? decoder)
         {
             Debug.Assert(decoder != null, "This code path should only be called from DecoderNLS.");
@@ -1035,6 +1049,7 @@ namespace System.Text
         /// The implementation should not attempt to perform any sort of fallback behavior.
         /// If custom fallback behavior is necessary, override <see cref="GetCharsWithFallback"/>.
         /// </remarks>
+        [RequiresUnsafe]
         private protected virtual unsafe int GetCharsFast(byte* pBytes, int bytesLength, char* pChars, int charsLength, out int bytesConsumed)
         {
             // Any production-quality type would override this method and provide a real
@@ -1081,6 +1096,7 @@ namespace System.Text
         /// If the destination buffer is not large enough to hold the entirety of the transcoded data.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private protected unsafe int GetCharsWithFallback(byte* pOriginalBytes, int originalByteCount, char* pOriginalChars, int originalCharCount, int bytesConsumedSoFar, int charsWrittenSoFar, bool throwForDestinationOverflow = true)
         {
             // This is a stub method that's marked "no-inlining" so that it we don't stack-spill spans
@@ -1115,6 +1131,7 @@ namespace System.Text
         /// too small to contain the entirety of the transcoded data and the <see cref="DecoderNLS"/> instance disallows
         /// partial transcoding.
         /// </exception>
+        [RequiresUnsafe]
         private protected unsafe int GetCharsWithFallback(byte* pOriginalBytes, int originalByteCount, char* pOriginalChars, int originalCharCount, int bytesConsumedSoFar, int charsWrittenSoFar, DecoderNLS decoder)
         {
             Debug.Assert(decoder != null, "This code path should only be called from DecoderNLS.");

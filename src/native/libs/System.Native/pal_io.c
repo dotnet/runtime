@@ -201,6 +201,12 @@ c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 
+// Validate that our UserFlags enum values match the platform, since
+// SystemNative_LChflags and SystemNative_FChflags pass them directly to the OS.
+#if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
+c_static_assert(PAL_UF_HIDDEN == UF_HIDDEN);
+#endif
+
 static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
     dst->Dev = (int64_t)src->st_dev;
@@ -231,10 +237,12 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 #endif
 
 #if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
-    dst->UserFlags = ((src->st_flags & UF_HIDDEN) == UF_HIDDEN) ? PAL_UF_HIDDEN : 0;
+    dst->UserFlags = (uint32_t)src->st_flags;
 #else
     dst->UserFlags = 0;
 #endif
+
+    dst->HardLinkCount = (uint32_t)src->st_nlink;
 }
 
 int32_t SystemNative_Stat(const char* path, FileStatus* output)
@@ -558,6 +566,15 @@ int32_t SystemNative_CloseDir(DIR* dir)
     }
 
     return result;
+}
+
+int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported(void)
+{
+#if HAVE_PIPE2
+    return 1;
+#else
+    return 0;
+#endif
 }
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
@@ -1949,7 +1966,6 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
     return (int32_t)count;
 }
 
-#if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
 static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
 {
 #if defined(IOV_MAX)
@@ -1994,7 +2010,45 @@ static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
 
     return allowedCount;
 }
-#endif // (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
+
+int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int fileDescriptor = ToFileDescriptor(fd);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
+
+    while (1)
+    {
+        int64_t count;
+        while ((count = readv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
+
+        if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            assert(count >= -1);
+            return count;
+        }
+
+        // The fd is non-blocking and no data is available yet.
+        // Block (on a thread pool thread) until data arrives or the pipe/socket is closed.
+        PollEvent pollEvent = { .FileDescriptor = fileDescriptor, .Events = PAL_POLLIN, .TriggeredEvents = 0 };
+        uint32_t triggered = 0;
+        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
+        if (pollResult != Error_SUCCESS)
+        {
+            errno = ConvertErrorPalToPlatform(pollResult);
+            return -1;
+        }
+
+        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
+            (pollEvent.TriggeredEvents & PAL_POLLIN) == 0)
+        {
+            // The pipe/socket was closed with no data available (EOF).
+            return 0;
+        }
+    }
+}
 
 int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
@@ -2035,6 +2089,46 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
 
     assert(count >= -1);
     return count;
+}
+
+int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int fileDescriptor = ToFileDescriptor(fd);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
+
+    while (1)
+    {
+        int64_t count;
+        while ((count = writev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
+
+        if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            assert(count >= -1);
+            return count;
+        }
+
+        // The fd is non-blocking and the write buffer is full.
+        // Block (on a thread pool thread) until space is available or the pipe/socket is closed.
+        PollEvent pollEvent = { .FileDescriptor = fileDescriptor, .Events = PAL_POLLOUT, .TriggeredEvents = 0 };
+        uint32_t triggered = 0;
+        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
+        if (pollResult != Error_SUCCESS)
+        {
+            errno = ConvertErrorPalToPlatform(pollResult);
+            return -1;
+        }
+
+        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
+            (pollEvent.TriggeredEvents & PAL_POLLOUT) == 0)
+        {
+            // The pipe/socket was closed.
+            errno = EPIPE;
+            return -1;
+        }
+    }
 }
 
 int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
