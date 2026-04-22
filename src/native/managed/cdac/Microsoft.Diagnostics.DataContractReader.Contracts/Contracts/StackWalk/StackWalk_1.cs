@@ -49,6 +49,12 @@ internal partial class StackWalk_1 : IStackWalk
         bool IsActiveFrame = false) : IStackDataFrameHandle
     { }
 
+    private enum ContextFlags
+    {
+        Full = 0x1,
+        All = 0x2,
+    }
+
     private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
     {
         public IPlatformAgnosticContext Context { get; set; } = context;
@@ -106,7 +112,7 @@ internal partial class StackWalk_1 : IStackWalk
     }
 
     IEnumerable<IStackDataFrameHandle> IStackWalk.CreateStackWalk(ThreadData threadData)
-        => CreateStackWalkCore(threadData, skipInitialFrames: false);
+        => CreateStackWalkCore(threadData, skipInitialFrames: false, flags: ContextFlags.All);
 
     /// <summary>
     /// Core stack walk implementation.
@@ -121,10 +127,16 @@ internal partial class StackWalk_1 : IStackWalk
     /// Must be false for ClrDataStackWalk, which advances the cDAC and legacy DAC in
     /// lockstep and must yield the same frame sequence (including initial skipped frames).
     /// </param>
-    private IEnumerable<IStackDataFrameHandle> CreateStackWalkCore(ThreadData threadData, bool skipInitialFrames)
+    private IEnumerable<IStackDataFrameHandle> CreateStackWalkCore(ThreadData threadData, bool skipInitialFrames, ContextFlags flags)
     {
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
-        FillContextFromThread(context, threadData);
+        uint contextFlags = flags switch
+        {
+            ContextFlags.Full => context.FullContextFlags,
+            ContextFlags.All => context.AllContextFlags,
+            _ => throw new ArgumentOutOfRangeException(nameof(flags)),
+        };
+        FillContextFromThread(context, threadData, contextFlags);
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
         FrameIterator frameIterator = new(_target, threadData);
 
@@ -176,7 +188,7 @@ internal partial class StackWalk_1 : IStackWalk
 
     IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData)
     {
-        IEnumerable<IStackDataFrameHandle> stackFrames = CreateStackWalkCore(threadData, skipInitialFrames: true);
+        IEnumerable<IStackDataFrameHandle> stackFrames = CreateStackWalkCore(threadData, skipInitialFrames: true, flags: ContextFlags.Full);
         IEnumerable<StackDataFrameHandle> frames = stackFrames.Select(AssertCorrectHandle);
         IEnumerable<GCFrameData> gcFrames = Filter(frames);
 
@@ -758,12 +770,12 @@ internal partial class StackWalk_1 : IStackWalk
         return false;
     }
 
-    private void FillContextFromThread(IPlatformAgnosticContext context, ThreadData threadData)
+    private void FillContextFromThread(IPlatformAgnosticContext context, ThreadData threadData, uint flags)
     {
         byte[] bytes = _target.Contracts.Thread.GetContext(
             threadData.ThreadAddress,
             ThreadContextSource.Debugger | ThreadContextSource.Profiler,
-            context.AllContextFlags);
+            flags);
         context.FillFromBuffer(bytes);
     }
 
