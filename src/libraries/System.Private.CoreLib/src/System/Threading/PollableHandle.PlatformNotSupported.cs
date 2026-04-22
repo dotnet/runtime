@@ -7,6 +7,8 @@ namespace System.Threading
 {
     public sealed partial class PollableHandle : IDisposable
     {
+        private PollableHandle() { }
+
         public bool InlineCompletions { get; set; }
 
         public static PollableHandle Create(SafeHandle handle, ref PollableHandle? field)
