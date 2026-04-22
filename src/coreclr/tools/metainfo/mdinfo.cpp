@@ -13,9 +13,9 @@
 #include "assert.h"
 #include "corerror.h"
 #include <winwrap.h>
-#include "caparser.h"
 #include <prettyprintsig.h>
 
+#include <cahlpr.h>
 #include <limits.h>
 
 #include "mdinfo.h"
