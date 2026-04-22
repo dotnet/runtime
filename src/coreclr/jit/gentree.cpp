@@ -6516,8 +6516,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             else
 #endif
                             {
-                                // signed:   vcvtts*2sis  eax, xmm0
                                 // unsigned: vcvtts*2usis eax, xmm0
+                                // signed:   vcvtts*2sis  eax, xmm0
 
                                 costEx = 7;
                                 costSz = 6;
@@ -6586,15 +6586,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 else
                                 {
                                     // vcmpords*    k1, xmm0, xmm0
-                                    // vcvttp*2qq   xmm1 {k1}{z}, xmm0
-                                    // vcmpge_oqs*  k1, xmm0, qword ptr [@RWD00]
-                                    // vpcmpeqd     xmm0, xmm0, xmm0
-                                    // vpsrlq       xmm1 {k1}, xmm0, 1
+                                    // vcmpge_oqs*  k2, xmm0, qword ptr [@RWD00]
+                                    // vcvttp*2qq   xmm0 {k1}{z}, xmm0
+                                    // vpblendmq    xmm0 {k2}, xmm0, qword ptr [@RWD08] {1to2}
                                     // vmovq        [mem], xmm0
 
-                                    costEx = 4 + 4 + 4 + FLT_IND_COST_EX + 1 + 1 +
-                                             FLT_IND_COST_EX;        // 14 + (2 * FLT_IND_COST_EX)
-                                    costSz = 7 + 6 + 11 + 4 + 7 + 6; // 41
+                                    costEx = 4 + (4 + FLT_IND_COST_EX) + 4 + (1 + FLT_IND_COST_EX) +
+                                             FLT_IND_COST_EX;     // 13 + (3 * FLT_IND_COST_EX)
+                                    costSz = 7 + 11 + 6 + 10 + 6; // 40
                                 }
 
                                 if (op1Type == TYP_FLOAT)

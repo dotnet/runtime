@@ -664,14 +664,20 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             srcUse.ReplaceWithLclVar(m_compiler);
             srcVector = srcUse.Def();
 
+            // This logic is similar to the floating->long saturating logic in Lowering::LowerCast,
+            // except that here we must keep everything in SIMD registers. We can also take advantage
+            // of EVEX masking since the conversion itself requires AVX-512.
+            //
             // We fix up NaN values by masking in zero during conversion. Negative saturation is handled
             // correctly by the conversion instructions. Positive saturation is handled after conversion,
             // because MaxValue is not precisely representable in the floating format.
             //
             // This creates roughly the equivalent of the following C# code:
             //   var nanMask = Avx.CompareScalar(srcVec, srcVec, FloatComparisonMode.OrderedNonSignaling);
-            //   var convert = Avx512DQ.VL.ConvertToVector128Int64WithTruncation(srcVec);
-            //   convertResult = Vector128.ConditionalSelect(nanMask, convert, Vector128<long>.Zero);
+            //
+            //   var compareMode      = FloatComparisonMode.OrderedGreaterThanOrEqualNonSignaling;
+            //   var ovfFloatingValue = Vector128.Create(9223372036854775808.0);
+            //   var ovfMask          = Avx.CompareScalar(srcVec, ovfFloatingValue, compareMode);
 
             GenTree* srcClone = m_compiler->gtClone(srcVector);
             GenTree* compareMode =
@@ -682,34 +688,6 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             castRange.InsertAtEnd(srcClone);
             castRange.InsertAtEnd(compareMode);
             castRange.InsertAtEnd(nanMask);
-
-            srcClone = m_compiler->gtClone(srcVector);
-            GenTree* convertResult =
-                m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone,
-                                                     NI_AVX512_ConvertToVector128Int64WithTruncation, srcType, 16);
-
-            castRange.InsertAtEnd(srcClone);
-            castRange.InsertAtEnd(convertResult);
-
-            nanMask       = m_compiler->gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, nanMask, dstType, 16);
-            GenTree* zero = m_compiler->gtNewZeroConNode(TYP_SIMD16);
-            convertResult = m_compiler->gtNewSimdCndSelNode(TYP_SIMD16, nanMask, convertResult, zero, dstType, 16);
-
-            castRange.InsertAtEnd(nanMask);
-            castRange.InsertAtEnd(zero);
-            castRange.InsertAtEnd(convertResult);
-
-            // Now we handle saturation of the result for positive overflow.
-            // This logic is similar to the floating->long saturating logic in Lowering::LowerCast,
-            // except that here we must keep everything in SIMD registers. We can also take advantage
-            // of EVEX masking, so the construction and blending of `maxLong` is optimized for that.
-            //
-            // This creates roughly the equivalent of the following C# code:
-            //   var compareMode      = FloatComparisonMode.OrderedGreaterThanOrEqualNonSignaling;
-            //   var ovfFloatingValue = Vector128.Create(9223372036854775808.0);
-            //   var ovfMask          = Avx.CompareScalar(srcVec, ovfFloatingValue, compareMode);
-            //   var maxLong          = Vector128<long>.AllBitsSet >>> 1;
-            //   castResult = Vector128.ConditionalSelect(ovfMask, maxLong, convertResult);
 
             compareMode = m_compiler->gtNewIconNode(
                 static_cast<int32_t>(FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling));
@@ -726,18 +704,40 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             castRange.InsertAtEnd(compareMode);
             castRange.InsertAtEnd(ovfMask);
 
-            GenTree* allBitsSet = m_compiler->gtNewAllBitsSetConNode(TYP_SIMD16);
-            GenTree* one        = m_compiler->gtNewIconNode(1);
-            GenTree* maxLong    = m_compiler->gtNewSimdBinOpNode(GT_RSZ, TYP_SIMD16, allBitsSet, one, dstType, 16);
+            // Now we convert, using the masks created above for NaN and overflow saturation.
+            //
+            // This creates roughly the equivalent of the following C# code:
+            //   var convert   = Avx512DQ.VL.ConvertToVector128Int64WithTruncation(srcVec);
+            //   convertResult = Vector128.ConditionalSelect(nanMask, convert, Vector128<long>.Zero);
+            //
+            //   var maxLong   = Vector128.Create(long.MaxValue);
+            //   castResult    = Vector128.ConditionalSelect(ovfMask, maxLong, convertResult);
 
-            castRange.InsertAtEnd(allBitsSet);
-            castRange.InsertAtEnd(one);
+            srcClone = m_compiler->gtClone(srcVector);
+            GenTree* convertResult =
+                m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone,
+                                                     NI_AVX512_ConvertToVector128Int64WithTruncation, srcType, 16);
+
+            castRange.InsertAtEnd(srcClone);
+            castRange.InsertAtEnd(convertResult);
+
+            nanMask       = m_compiler->gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, nanMask, dstType, 16);
+            GenTree* zero = m_compiler->gtNewZeroConNode(TYP_SIMD16);
+
+            castRange.InsertAtEnd(nanMask);
+            castRange.InsertAtEnd(zero);
+
+            GenTreeVecCon* maxLong = m_compiler->gtNewVconNode(TYP_SIMD16);
+            maxLong->EvaluateBroadcastInPlace(dstType, INT64_MAX);
+
+            ovfMask       = m_compiler->gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, ovfMask, dstType, 16);
+            convertResult = m_compiler->gtNewSimdCndSelNode(TYP_SIMD16, nanMask, convertResult, zero, dstType, 16);
+
             castRange.InsertAtEnd(maxLong);
-
-            ovfMask    = m_compiler->gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, ovfMask, dstType, 16);
-            castResult = m_compiler->gtNewSimdCndSelNode(TYP_SIMD16, ovfMask, maxLong, convertResult, dstType, 16);
-
             castRange.InsertAtEnd(ovfMask);
+            castRange.InsertAtEnd(convertResult);
+
+            castResult = m_compiler->gtNewSimdCndSelNode(TYP_SIMD16, ovfMask, maxLong, convertResult, dstType, 16);
         }
 
         // Because the results are in a SIMD register, we need to ToScalar() them out.
