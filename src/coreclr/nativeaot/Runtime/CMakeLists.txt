@@ -290,6 +290,7 @@ if(CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM)
   add_definitions(-DINTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER)
 endif()
 add_definitions(-D_LIB)
+add_definitions(-DGC_DESCRIPTOR)
 
 # there is a problem with undefined symbols when this is set
 # add_definitions(-DSTRESS_HEAP)
