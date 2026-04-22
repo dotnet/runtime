@@ -15,10 +15,13 @@ namespace Microsoft.Extensions.Caching.Hybrid;
 public sealed class HybridCacheEntryOptions
 {
     /// <summary>
-    /// Gets or set the overall cache duration of this entry, passed to the backend distributed cache.
+    /// Gets or sets the overall cache duration of this entry, passed to the backend distributed cache.
     /// </summary>
     public TimeSpan? Expiration { get; init; }
 
+    /// <summary>
+    /// Gets or sets the expiration for the local (in-process) cache entry.
+    /// </summary>
     /// <remarks>
     /// When retrieving a cached value from an external cache store, this value will be used to calculate the local
     /// cache expiration, not exceeding the remaining overall cache lifetime.
