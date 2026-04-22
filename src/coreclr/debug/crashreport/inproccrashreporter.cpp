@@ -8,6 +8,8 @@
 #include "inproccrashreporter.h"
 #include "signalsafejsonwriter.h"
 
+#include "pal.h"
+
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
@@ -167,6 +169,11 @@ GetStackPointer(
     void* context);
 
 static
+uint64_t
+GetFramePointer(
+    void* context);
+
+static
 void
 WriteCrashSiteFrameToJson(
     SignalSafeJsonWriter* writer,
@@ -301,7 +308,7 @@ CreateInProcCrashReport(
     }
 
     char pidBuf[16];
-    (void)snprintf(pidBuf, sizeof(pidBuf), "%u", static_cast<unsigned>(getpid()));
+    (void)snprintf(pidBuf, sizeof(pidBuf), "%u", static_cast<unsigned>(GetCurrentProcessId()));
     s_jsonWriter.WriteString("pid", pidBuf);
 
     s_jsonWriter.OpenArray("threads");
@@ -390,6 +397,11 @@ WriteToFile(
     const char* buffer,
     size_t len)
 {
+    if (fd < 0 || buffer == nullptr)
+    {
+        return false;
+    }
+
     size_t totalWritten = 0;
     while (totalWritten < len)
     {
@@ -462,7 +474,7 @@ ExpandDumpTemplate(
     }
 
     size_t pos = 0;
-    unsigned pid = static_cast<unsigned>(getpid());
+    unsigned pid = static_cast<unsigned>(GetCurrentProcessId());
 
     while (*pattern != '\0' && pos + 1 < bufferSize)
     {
@@ -570,6 +582,10 @@ GetVersionString(
     buffer[copied + 1] = '\0';
 }
 
+// Formats a 64-bit value as a lowercase hexadecimal C string with a "0x"
+// prefix into |buffer|. The output is always null-terminated provided
+// |bufferSize| > 0. This helper is async-signal-safe: it performs no
+// allocation, locking, or TLS access.
 void
 FormatHexValue(
     char* buffer,
@@ -620,24 +636,14 @@ WriteRegistersToJson(
 {
     uint64_t ipValue = GetInstructionPointer(context);
     uint64_t spValue = GetStackPointer(context);
+    uint64_t bpValue = GetFramePointer(context);
     char ip[32] = "0x0";
     char sp[32] = "0x0";
     char bp[32] = "0x0";
 
     FormatHexValue(ip, sizeof(ip), ipValue);
     FormatHexValue(sp, sizeof(sp), spValue);
-
-    if (context != nullptr)
-    {
-        ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if defined(__x86_64__)
-        FormatHexValue(bp, sizeof(bp), static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RBP]));
-#elif defined(__aarch64__)
-        FormatHexValue(bp, sizeof(bp), static_cast<uint64_t>(ucontext->uc_mcontext.regs[29]));
-#elif defined(__arm__)
-        FormatHexValue(bp, sizeof(bp), static_cast<uint64_t>(ucontext->uc_mcontext.arm_fp));
-#endif
-    }
+    FormatHexValue(bp, sizeof(bp), bpValue);
 
     writer->OpenObject("ctx");
     writer->WriteString("IP", ip);
@@ -683,6 +689,27 @@ GetStackPointer(
     return static_cast<uint64_t>(ucontext->uc_mcontext.sp);
 #elif defined(__arm__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.arm_sp);
+#else
+    return 0;
+#endif
+}
+
+uint64_t
+GetFramePointer(
+    void* context)
+{
+    if (context == nullptr)
+    {
+        return 0;
+    }
+
+    ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
+#if defined(__x86_64__)
+    return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RBP]);
+#elif defined(__aarch64__)
+    return static_cast<uint64_t>(ucontext->uc_mcontext.regs[29]);
+#elif defined(__arm__)
+    return static_cast<uint64_t>(ucontext->uc_mcontext.arm_fp);
 #else
     return 0;
 #endif
@@ -838,26 +865,20 @@ JsonFrameCallback(
     void* ctx)
 {
     SignalSafeJsonWriter* writer = reinterpret_cast<SignalSafeJsonWriter*>(ctx);
-    char ipBuffer[32];
-    char stackPointerBuffer[32];
-    char nativeOffsetBuffer[32];
-    char tokenBuffer[32];
-    char ilOffsetBuffer[32];
-    char moduleTimestampBuffer[32];
-    char moduleSizeBuffer[32];
 
-    FormatHexValue(ipBuffer, sizeof(ipBuffer), ip);
-    FormatHexValue(stackPointerBuffer, sizeof(stackPointerBuffer), stackPointer);
-    FormatHexValue(nativeOffsetBuffer, sizeof(nativeOffsetBuffer), nativeOffset);
-    FormatHexValue(tokenBuffer, sizeof(tokenBuffer), token);
-    FormatHexValue(ilOffsetBuffer, sizeof(ilOffsetBuffer), ilOffset);
-    FormatHexValue(moduleTimestampBuffer, sizeof(moduleTimestampBuffer), moduleTimestamp);
-    FormatHexValue(moduleSizeBuffer, sizeof(moduleSizeBuffer), moduleSize);
+    // Reuse a single scratch buffer for hex formatting: WriteString copies the
+    // value into the writer's buffer before we format the next field, so we
+    // don't need one scratch buffer per hex field. Keeps the signal-handler
+    // stack footprint down.
+    char scratch[32];
 
     writer->OpenObject();
-    writer->WriteString("stack_pointer", stackPointerBuffer);
-    writer->WriteString("native_address", ipBuffer);
-    writer->WriteString("native_offset", nativeOffsetBuffer);
+    FormatHexValue(scratch, sizeof(scratch), stackPointer);
+    writer->WriteString("stack_pointer", scratch);
+    FormatHexValue(scratch, sizeof(scratch), ip);
+    writer->WriteString("native_address", scratch);
+    FormatHexValue(scratch, sizeof(scratch), nativeOffset);
+    writer->WriteString("native_offset", scratch);
 
     if (methodName != nullptr)
     {
@@ -865,19 +886,23 @@ JsonFrameCallback(
         BuildMethodName(fullName, sizeof(fullName), className, methodName);
         writer->WriteString("method_name", fullName);
         writer->WriteString("is_managed", "true");
-        writer->WriteString("token", tokenBuffer);
-        writer->WriteString("il_offset", ilOffsetBuffer);
+        FormatHexValue(scratch, sizeof(scratch), token);
+        writer->WriteString("token", scratch);
+        FormatHexValue(scratch, sizeof(scratch), ilOffset);
+        writer->WriteString("il_offset", scratch);
         if (moduleName != nullptr)
         {
             writer->WriteString("filename", moduleName);
         }
         if (moduleTimestamp != 0)
         {
-            writer->WriteString("timestamp", moduleTimestampBuffer);
+            FormatHexValue(scratch, sizeof(scratch), moduleTimestamp);
+            writer->WriteString("timestamp", scratch);
         }
         if (moduleSize != 0)
         {
-            writer->WriteString("sizeofimage", moduleSizeBuffer);
+            FormatHexValue(scratch, sizeof(scratch), moduleSize);
+            writer->WriteString("sizeofimage", scratch);
         }
         if (moduleGuid != nullptr && moduleGuid[0] != '\0')
         {
@@ -960,9 +985,9 @@ ThreadEnumerationContext::OnThread(
     FormatHexValue(nativeThreadId, sizeof(nativeThreadId), osThreadId);
     m_writer->WriteString("native_thread_id", nativeThreadId);
 
+    char hresultBuffer[32];
     if (isCrashThread && m_hasCrashException)
     {
-        char hresultBuffer[32];
         FormatHexValue(hresultBuffer, sizeof(hresultBuffer), m_crashExceptionHResult);
 
         m_writer->WriteString("managed_exception_type", m_crashExceptionType);
@@ -970,7 +995,6 @@ ThreadEnumerationContext::OnThread(
     }
     else if (exceptionType != nullptr && exceptionType[0] != '\0')
     {
-        char hresultBuffer[32];
         FormatHexValue(hresultBuffer, sizeof(hresultBuffer), exceptionHResult);
 
         m_writer->WriteString("managed_exception_type", exceptionType);

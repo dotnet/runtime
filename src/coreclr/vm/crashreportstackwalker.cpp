@@ -180,6 +180,46 @@ CrashReportIsCurrentThreadManaged()
     return GetThreadAsyncSafe() != nullptr;
 }
 
+// Copy a type's namespace-qualified name (namespace + '.' + class) into
+// |buffer|, truncating if needed. Always null-terminates when bufferSize > 0.
+static
+void
+BuildTypeName(
+    char* buffer,
+    size_t bufferSize,
+    LPCUTF8 namespaceName,
+    LPCUTF8 className)
+{
+    if (bufferSize == 0)
+    {
+        return;
+    }
+
+    size_t index = 0;
+    if (namespaceName != nullptr)
+    {
+        while (*namespaceName != '\0' && index + 1 < bufferSize)
+        {
+            buffer[index++] = *namespaceName++;
+        }
+    }
+
+    if (className != nullptr)
+    {
+        if (index > 0 && index + 1 < bufferSize)
+        {
+            buffer[index++] = '.';
+        }
+
+        while (*className != '\0' && index + 1 < bufferSize)
+        {
+            buffer[index++] = *className++;
+        }
+    }
+
+    buffer[index] = '\0';
+}
+
 static
 bool
 CrashReportGetExceptionForThread(
@@ -227,32 +267,7 @@ CrashReportGetExceptionForThread(
                     LPCUTF8 namespaceName = nullptr;
                     pImport->GetNameOfTypeDef(cl, &className, &namespaceName);
 
-                    size_t index = 0;
-                    if (namespaceName != nullptr)
-                    {
-                        while (*namespaceName != '\0' && index + 1 < exceptionTypeBufSize)
-                        {
-                            exceptionTypeBuf[index++] = *namespaceName++;
-                        }
-                    }
-
-                    if (className != nullptr)
-                    {
-                        if (index > 0 && index + 1 < exceptionTypeBufSize)
-                        {
-                            exceptionTypeBuf[index++] = '.';
-                        }
-
-                        while (*className != '\0' && index + 1 < exceptionTypeBufSize)
-                        {
-                            exceptionTypeBuf[index++] = *className++;
-                        }
-                    }
-
-                    if (exceptionTypeBufSize > 0)
-                    {
-                        exceptionTypeBuf[index] = '\0';
-                    }
+                    BuildTypeName(exceptionTypeBuf, exceptionTypeBufSize, namespaceName, className);
                 }
             }
         }
