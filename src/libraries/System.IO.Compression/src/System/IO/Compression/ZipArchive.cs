@@ -496,17 +496,22 @@ namespace System.IO.Compression
 
                 if (prev.HasDataDescriptor)
                 {
-                    var (crc32, _, uncompressedSize) = useAsync
-                        ? await ZipLocalFileHeader.ReadDataDescriptorAsync(_archiveStream, prev.IsZip64SizeFields, cancellationToken).ConfigureAwait(false)
-                        : ZipLocalFileHeader.ReadDataDescriptor(_archiveStream, prev.IsZip64SizeFields);
+                    if (crcResult is not { } actual)
+                        throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
 
-                    if (crcResult is { } actual)
-                    {
-                        if (actual.Crc32 != crc32)
-                            throw new InvalidDataException(SR.CrcMismatch);
-                        if (actual.BytesRead != uncompressedSize)
-                            throw new InvalidDataException(SR.UnexpectedStreamLength);
-                    }
+                    // Use adaptive parsing: try 32-bit DD first, fall back to Zip64 if
+                    // the parsed values don't match. This handles archives where the writer
+                    // couldn't signal Zip64 in the local header (non-seekable stream writes).
+                    var (crc32, _, uncompressedSize) = useAsync
+                        ? await ZipLocalFileHeader.ReadDataDescriptorAdaptiveAsync(
+                            _archiveStream, actual.Crc32, actual.BytesRead, cancellationToken).ConfigureAwait(false)
+                        : ZipLocalFileHeader.ReadDataDescriptorAdaptive(
+                            _archiveStream, actual.Crc32, actual.BytesRead);
+
+                    if (actual.Crc32 != crc32)
+                        throw new InvalidDataException(SR.CrcMismatch);
+                    if (actual.BytesRead != uncompressedSize)
+                        throw new InvalidDataException(SR.UnexpectedStreamLength);
                 }
             }
             else if (prev.HasDataDescriptor)

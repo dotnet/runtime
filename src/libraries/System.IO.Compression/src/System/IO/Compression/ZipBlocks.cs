@@ -779,15 +779,6 @@ namespace System.IO.Compression
                         compressedSize = zip64.CompressedSize.Value;
                 }
 
-                // For data descriptor entries written to non-seekable streams, sizes in the
-                // local header are typically 0 rather than 0xFFFFFFFF, but the data descriptor
-                // still uses 8-byte fields when the entry requires Zip64.
-                bool hasDataDescriptor = (generalPurposeBitFlags & (ushort)ZipArchiveEntry.BitFlagValues.DataDescriptor) != 0;
-                if (!isZip64SizeFields && hasDataDescriptor && versionNeeded >= (ushort)ZipVersionNeededValues.Zip64)
-                {
-                    isZip64SizeFields = true;
-                }
-
                 bool isUtf8 = (generalPurposeBitFlags & (ushort)ZipArchiveEntry.BitFlagValues.UnicodeFileNameAndComment) != 0;
                 Encoding nameEncoding = isUtf8 ? Encoding.UTF8 : (entryNameEncoding ?? Encoding.UTF8);
                 string fullName = nameEncoding.GetString(filenameBytes);
@@ -813,9 +804,53 @@ namespace System.IO.Compression
             bool hasSignature = firstWord == 0x08074B50;
 
             int remainingSize = (hasSignature ? 4 : 0) + (isZip64 ? 16 : 8);
-            Span<byte> remaining = stackalloc byte[20]; // max: sig-CRC(4) + comp(8) + uncomp(8) = 20
+            Span<byte> remaining = stackalloc byte[20];
             stream.ReadExactly(remaining[..remainingSize]);
 
+            return ParseDataDescriptor(remaining[..remainingSize], hasSignature, isZip64, firstWord);
+        }
+
+        /// <summary>
+        /// Reads a data descriptor whose size (32-bit or Zip64) is unknown.
+        /// Parses as 32-bit first; if the CRC and uncompressed size don't match
+        /// the expected values, reads additional bytes and re-parses as Zip64.
+        /// </summary>
+        /// <remarks>
+        /// Some writers (including .NET on non-seekable streams) emit a Zip64
+        /// data descriptor without setting any Zip64 indicator in the local
+        /// file header, because the final sizes are not known at header-write
+        /// time. The known values from the decompressor let us detect the
+        /// correct layout without relying on header signals.
+        /// </remarks>
+        internal static (uint Crc32, long CompressedSize, long UncompressedSize) ReadDataDescriptorAdaptive(
+            Stream stream, uint knownCrc32, long knownUncompressedSize)
+        {
+            Span<byte> firstFour = stackalloc byte[4];
+            stream.ReadExactly(firstFour);
+
+            uint firstWord = BinaryPrimitives.ReadUInt32LittleEndian(firstFour);
+            bool hasSignature = firstWord == 0x08074B50;
+
+            // Read enough for the 32-bit layout: CRC(4) + CompSize(4) + UncompSize(4),
+            // plus CRC(4) again if the signature consumed firstWord.
+            int smallSize = (hasSignature ? 4 : 0) + 8;
+            Span<byte> buf = stackalloc byte[20];
+            stream.ReadExactly(buf[..smallSize]);
+
+            var small = ParseDataDescriptor(buf[..smallSize], hasSignature, isZip64: false, firstWord);
+            if (small.Crc32 == knownCrc32 && small.UncompressedSize == knownUncompressedSize)
+                return small;
+
+            // 32-bit interpretation didn't match — read 8 more bytes for the Zip64 layout.
+            stream.ReadExactly(buf.Slice(smallSize, 8));
+            int fullSize = smallSize + 8;
+
+            return ParseDataDescriptor(buf[..fullSize], hasSignature, isZip64: true, firstWord);
+        }
+
+        private static (uint Crc32, long CompressedSize, long UncompressedSize) ParseDataDescriptor(
+            ReadOnlySpan<byte> remaining, bool hasSignature, bool isZip64, uint firstWord)
+        {
             int pos = 0;
             uint crc32;
             if (hasSignature)
