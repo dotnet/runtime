@@ -19,7 +19,7 @@ namespace System.Reflection.Metadata
         /// <seealso cref="EnsureCanWriteSegment"/>
         private bool CanWriteSegment => _nextOrPrevious != this && Length == 0 && _nextOrPrevious.FreeBytes > 0;
 
-        // TODO: Move the cunking logic to the main BlobBuilder.cs file, and use it everywhere in BlobBuilder.
+        // TODO: Move the chunking logic to the main BlobBuilder.cs file, and use it everywhere in BlobBuilder.
         // https://github.com/dotnet/runtime/issues/100418
         internal const int DefaultMaxChunkSize = 8192;
 
@@ -226,7 +226,7 @@ namespace System.Reflection.Metadata
                         leftStart = 0;
                     }
 
-                    // nothing remains in left chunk to compare:
+                    // nothing remains in right chunk to compare:
                     if (rightStart == right.Length)
                     {
                         rightContinues = rightEnumerator.MoveNext();
@@ -276,7 +276,7 @@ namespace System.Reflection.Metadata
                         leftStart = 0;
                     }
 
-                    // nothing remains in left chunk to compare:
+                    // nothing remains in right chunk to compare:
                     if (rightStart == right.Length)
                     {
                         rightContinues = rightEnumerator.MoveNext();
@@ -319,7 +319,7 @@ namespace System.Reflection.Metadata
                 {
                     if (_remaining == 0 && _steps != 0)
                     {
-                        // If the segment was empty, return an empty chunk, to match BlobBuilder.GetChunks().
+                        // The segment has been fully enumerated, including the case where it was empty.
                         return false;
                     }
                     switch (_steps++)

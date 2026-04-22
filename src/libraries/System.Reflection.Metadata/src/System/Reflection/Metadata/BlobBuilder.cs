@@ -267,7 +267,7 @@ namespace System.Reflection.Metadata
                     leftStart = 0;
                 }
 
-                // nothing remains in left chunk to compare:
+                // nothing remains in right chunk to compare:
                 if (rightStart == right.Length)
                 {
                     rightContinues = rightEnumerator.MoveNext();

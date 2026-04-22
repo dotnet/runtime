@@ -54,17 +54,17 @@ namespace System.Reflection.Metadata.Ecma335
 
         public BlobHandle GetOrAdd(BlobBuilder key, BlobHandle value)
         {
-            int dictionarykey = key.GetContentFNVHashCode();
+            int dictionaryKey = key.GetContentFNVHashCode();
             KeyValuePair<BlobBuilder.Segment, BlobHandle> entry;
             bool exists;
             while (true)
             {
-                if (!(exists = _dictionary.TryGetValue(dictionarykey, out entry))
+                if (!(exists = _dictionary.TryGetValue(dictionaryKey, out entry))
                     || entry.Key.ContentEquals(key))
                 {
                     break;
                 }
-                dictionarykey = GetNextDictionaryKey(dictionarykey);
+                dictionaryKey = GetNextDictionaryKey(dictionaryKey);
             }
 
             if (exists)
@@ -72,23 +72,23 @@ namespace System.Reflection.Metadata.Ecma335
                 return entry.Value;
             }
 
-            _dictionary.Add(dictionarykey, new(_builder.WriteSegment(key, prependCompressedSize: true), value));
+            _dictionary.Add(dictionaryKey, new(_builder.WriteSegment(key, prependCompressedSize: true), value));
             return value;
         }
 
         public BlobHandle GetOrAdd(ReadOnlySpan<byte> key, BlobHandle value)
         {
-            int dictionarykey = Hash.GetFNVHashCode(key);
+            int dictionaryKey = Hash.GetFNVHashCode(key);
             KeyValuePair<BlobBuilder.Segment, BlobHandle> entry;
             bool exists;
             while (true)
             {
-                if (!(exists = _dictionary.TryGetValue(dictionarykey, out entry))
+                if (!(exists = _dictionary.TryGetValue(dictionaryKey, out entry))
                     || entry.Key.ContentEquals(key))
                 {
                     break;
                 }
-                dictionarykey = GetNextDictionaryKey(dictionarykey);
+                dictionaryKey = GetNextDictionaryKey(dictionaryKey);
             }
 
             if (exists)
@@ -96,7 +96,7 @@ namespace System.Reflection.Metadata.Ecma335
                 return entry.Value;
             }
 
-            _dictionary.Add(dictionarykey, new(_builder.WriteSegment(key, prependCompressedSize: true), value));
+            _dictionary.Add(dictionaryKey, new(_builder.WriteSegment(key, prependCompressedSize: true), value));
             return value;
         }
 #endif
