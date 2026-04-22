@@ -1455,7 +1455,7 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
     _ASSERTE(g_patches != NULL);
 
     CORDB_ADDRESS_TYPE *addr = (CORDB_ADDRESS_TYPE *)
-                               CodeRegionInfo::GetCodeRegionInfo(NULL, NULL, startAddr).OffsetToAddress(patch->offset);
+                               CodeRegionInfo::GetCodeRegionInfo(info, pMD, startAddr).OffsetToAddress(patch->offset);
     g_patches->BindPatch(patch, addr);
 
     LOG((LF_CORDB, LL_INFO10000, "DC::BP:Binding patch at %p (off:0x%zx)\n", addr, patch->offset));
