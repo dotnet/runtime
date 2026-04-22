@@ -105,12 +105,13 @@ Run the helper script to determine the .NET version context:
 pwsh .github/skills/breaking-change-doc/Get-VersionInfo.ps1 -PrNumber <number>
 ```
 
-**You MUST display the complete script output.** The script outputs JSON with:
+**You MUST display the complete script output.** The script outputs JSON that includes:
 - `LastTagBeforeMerge` — the closest release tag before the merge commit
 - `FirstTagWithChange` — the first tag that contains this commit (or "Not yet released")
 - `EstimatedVersion` — human-readable version string like ".NET 11 Preview 3"
 - `MergeCommit` — the merge commit SHA
 - `MergedAt` — when the PR was merged
+- `BaseRef` — the PR base branch used to determine version context
 
 After running the script, **print the full JSON output** so it is visible in the
 workflow log. Then check the JSON:
