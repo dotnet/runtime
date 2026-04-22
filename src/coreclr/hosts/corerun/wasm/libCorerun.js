@@ -207,8 +207,8 @@ function libCoreRunFactory() {
             try {
                 wasmTable.grow(tableSize);
             } catch (e) {
-                const errormessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to grow WebAssembly table for Webcil image:", {wasmPath, errormessage});
+                const errorMessage = e instanceof Error ? e.message : String(e);
+                console.error("Failed to grow WebAssembly table for Webcil image:", {wasmPath, errorMessage});
                 return false;
             }
 
