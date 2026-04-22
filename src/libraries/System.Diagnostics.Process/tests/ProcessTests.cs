@@ -193,7 +193,7 @@ namespace System.Diagnostics.Tests
             const string PosixSignalRegistrationCreatedMessage = "PosixSignalRegistration created.";
             const string PosixSignalHandlerStartedMessage = "PosixSignalRegistration handler started.";
             const string PosixSignalHandlerDisposedMessage = "PosixSignalRegistration disposed.";
-            const int UnterminatedExitCode = -1;
+            const int UnterminatedExitCode = 1;
 
             // Process operations timeout cascading:
             // WaitInMS * 1: Remote process wait for second signal after unregistering exercised signal handler
