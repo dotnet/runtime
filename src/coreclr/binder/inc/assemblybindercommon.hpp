@@ -74,15 +74,13 @@ namespace BINDER_SPACE
                                   /* in */  bool                skipFailureCaching,
                                   /* in */  bool                skipVersionCompatibilityCheck,
                                   /* in */  bool                excludeAppPaths,
-                                  /* out */ BindResult         *pBindResult,
-                                  /* out */ SString            *pDiagnosticInfo = NULL);
+                                  /* out */ BindResult         *pBindResult);
 
         static HRESULT BindLocked(/* in */  ApplicationContext *pApplicationContext,
                                   /* in */  AssemblyName       *pAssemblyName,
                                   /* in */  bool                skipVersionCompatibilityCheck,
                                   /* in */  bool                excludeAppPaths,
-                                  /* out */ BindResult         *pBindResult,
-                                  /* out */ SString            *pDiagnosticInfo = NULL);
+                                  /* out */ BindResult         *pBindResult);
 
         static HRESULT FindInExecutionContext(/* in */  ApplicationContext  *pApplicationContext,
                                               /* in */  AssemblyName        *pAssemblyName,
@@ -91,8 +89,7 @@ namespace BINDER_SPACE
         static HRESULT BindByTpaList(/* in */  ApplicationContext  *pApplicationContext,
                                      /* in */  AssemblyName        *pRequestedAssemblyName,
                                      /* in */  bool                 excludeAppPaths,
-                                     /* out */ BindResult          *pBindResult,
-                                     /* out */ SString            *pDiagnosticInfo = NULL);
+                                     /* out */ BindResult          *pBindResult);
 
         static HRESULT Register(/* in */  ApplicationContext *pApplicationContext,
                                 /* in */  BindResult         *pBindResult);

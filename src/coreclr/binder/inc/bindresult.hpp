@@ -56,12 +56,16 @@ namespace BINDER_SPACE
 
         const AttemptResult* GetAttempt(bool foundInContext) const;
 
+        SString& GetDiagnosticInfo() { return m_diagnosticInfo; }
+
     protected:
         bool m_isContextBound;
         ReleaseHolder<Assembly> m_pAssembly;
 
         AttemptResult m_inContextAttempt;
         AttemptResult m_applicationAssembliesAttempt;
+
+        SString m_diagnosticInfo;
     };
 };
 
