@@ -84,10 +84,6 @@ public:
     // Is Left-side started up?
     HRESULT STDMETHODCALLTYPE IsLeftSideInitialized(OUT BOOL * pResult);
 
-    // Get an LS Appdomain via an AppDomain unique ID.
-    // Fails if the AD is not found or if the ID is invalid.
-    HRESULT STDMETHODCALLTYPE GetAppDomainFromId(ULONG appdomainId, OUT VMPTR_AppDomain * pRetVal);
-
     // Get the AppDomain ID for an AppDomain.
     HRESULT STDMETHODCALLTYPE GetAppDomainId(VMPTR_AppDomain vmAppDomain, OUT ULONG * pRetVal);
 
@@ -98,17 +94,17 @@ public:
     HRESULT STDMETHODCALLTYPE GetAppDomainFullName(VMPTR_AppDomain vmAppDomain, IStringHolder * pStrName);
 
     // Get the values of the JIT Optimization and EnC flags.
-    HRESULT STDMETHODCALLTYPE GetCompilerFlags(VMPTR_DomainAssembly vmDomainAssembly,
-                           OUT BOOL * pfAllowJITOpts,
-                           OUT BOOL * pfEnableEnC);
+    HRESULT STDMETHODCALLTYPE GetCompilerFlags(VMPTR_Assembly vmAssembly,
+                                                OUT BOOL * pfAllowJITOpts,
+                                                OUT BOOL * pfEnableEnC);
 
     // Helper function for SetCompilerFlags to set EnC status
     bool CanSetEnCBits(Module * pModule);
 
     // Set the values of the JIT optimization and EnC flags.
-    HRESULT STDMETHODCALLTYPE SetCompilerFlags(VMPTR_DomainAssembly vmDomainAssembly,
-                             BOOL             fAllowJitOpts,
-                             BOOL             fEnableEnC);
+    HRESULT STDMETHODCALLTYPE SetCompilerFlags(VMPTR_Assembly vmAssembly,
+                                                BOOL           fAllowJitOpts,
+                                                BOOL           fEnableEnC);
 
 
     // Initialize the native/IL sequence points and native var info for a function.
@@ -131,10 +127,6 @@ public:
 
     HRESULT STDMETHODCALLTYPE IsValidObject(CORDB_ADDRESS obj, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp, OUT VMPTR_Module * pModule, OUT VMPTR_DomainAssembly * pDomainAssembly, OUT BOOL * pResult);
-
-
-
     HRESULT STDMETHODCALLTYPE CreateRefWalk(RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask);
     HRESULT STDMETHODCALLTYPE DeleteRefWalk(RefWalkHandle handle);
     HRESULT STDMETHODCALLTYPE WalkRefs(RefWalkHandle handle, ULONG count, OUT DacGcReference * objects, OUT ULONG *pFetched);
@@ -148,21 +140,17 @@ public:
     HRESULT STDMETHODCALLTYPE GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLayout);
     HRESULT STDMETHODCALLTYPE GetGCHeapInformation(OUT COR_HEAPINFO * pHeapInfo);
     HRESULT STDMETHODCALLTYPE GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW);
-    HRESULT STDMETHODCALLTYPE GetReJitInfo(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ReJitInfo* pReJitInfo);
 #ifdef FEATURE_CODE_VERSIONING
     HRESULT STDMETHODCALLTYPE GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
     HRESULT STDMETHODCALLTYPE GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode);
     HRESULT STDMETHODCALLTYPE GetILCodeVersionNode(VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode, VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
     HRESULT STDMETHODCALLTYPE GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vmILCodeVersionNode, DacSharedReJitInfo* pData);
 #endif // FEATURE_CODE_VERSIONING
-    HRESULT STDMETHODCALLTYPE GetReJitInfoByAddress(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_ReJitInfo* pReJitInfo);
     HRESULT STDMETHODCALLTYPE AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled);
-    HRESULT STDMETHODCALLTYPE GetSharedReJitInfo(VMPTR_ReJitInfo vmReJitInfo, VMPTR_SharedReJitInfo* pSharedReJitInfo);
-    HRESULT STDMETHODCALLTYPE GetSharedReJitInfoData(VMPTR_SharedReJitInfo sharedReJitInfo, DacSharedReJitInfo* pData);
     HRESULT STDMETHODCALLTYPE GetDefinesBitField(ULONG32 *pDefines);
     HRESULT STDMETHODCALLTYPE GetMDStructuresVersion(ULONG32* pMDStructuresVersion);
     HRESULT STDMETHODCALLTYPE EnableGCNotificationEvents(BOOL fEnable);
-    HRESULT STDMETHODCALLTYPE GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly);
+    HRESULT STDMETHODCALLTYPE GetAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_Assembly *pvmAssembly);
     HRESULT STDMETHODCALLTYPE ParseContinuation(CORDB_ADDRESS continuationAddress,
                                               OUT PCODE *pDiagnosticIP,
                                               OUT CORDB_ADDRESS *pNextContinuation,
@@ -172,7 +160,6 @@ public:
 
 private:
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
-                                       VMPTR_AppDomain                 vmAppDomain,
                                        TypeHandle                      typeHandle,
                                        DebuggerIPCE_ExpandedTypeData * pTypeInfo);
 
@@ -219,7 +206,7 @@ public:
     // a module and a token. The info will come from a MethodDesc, if
     // one exists or from metadata.
     //
-    HRESULT STDMETHODCALLTYPE GetILCodeAndSig(VMPTR_DomainAssembly vmDomainAssembly, mdToken functionToken, OUT TargetBuffer * pCodeInfo, OUT mdToken * pLocalSigToken);
+    HRESULT STDMETHODCALLTYPE GetILCodeAndSig(VMPTR_Assembly vmAssembly, mdToken functionToken, OUT TargetBuffer * pCodeInfo, OUT mdToken * pLocalSigToken);
 
     // Gets the following information about the native code blob for a function, if the native
     // code is available:
@@ -227,7 +214,7 @@ public:
     //    whether it's an instantiated generic
     //    its EnC version number
     //    hot and cold region information.
-    HRESULT STDMETHODCALLTYPE GetNativeCodeInfo(VMPTR_DomainAssembly vmDomainAssembly, mdToken functionToken, OUT NativeCodeFunctionData * pCodeInfo);
+    HRESULT STDMETHODCALLTYPE GetNativeCodeInfo(VMPTR_Assembly vmAssembly, mdToken functionToken, OUT NativeCodeFunctionData * pCodeInfo);
 
     // Gets the following information about the native code blob for a function
     //    its method desc
@@ -251,22 +238,22 @@ public:
     HRESULT STDMETHODCALLTYPE HasTypeParams(VMPTR_TypeHandle th, OUT BOOL * pResult);
 
     // Get type information for a class
-    HRESULT STDMETHODCALLTYPE GetClassInfo(VMPTR_AppDomain vmAppDomain, VMPTR_TypeHandle thExact, ClassInfo * pData);
+    HRESULT STDMETHODCALLTYPE GetClassInfo(VMPTR_TypeHandle thExact, ClassInfo * pData);
 
     // get field information and object size for an instantiated generic type
-    HRESULT STDMETHODCALLTYPE GetInstantiationFieldInfo(VMPTR_DomainAssembly vmDomainAssembly, VMPTR_TypeHandle vmThExact, VMPTR_TypeHandle vmThApprox, OUT DacDbiArrayList<FieldData> * pFieldList, OUT SIZE_T * pObjectSize);
+    HRESULT STDMETHODCALLTYPE GetInstantiationFieldInfo(VMPTR_Assembly vmAssembly, VMPTR_TypeHandle vmThExact, VMPTR_TypeHandle vmThApprox, OUT DacDbiArrayList<FieldData> * pFieldList, OUT SIZE_T * pObjectSize);
 
 
-    HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_AppDomain vmAppDomain, CORDB_ADDRESS addr, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo);
 
 
-    HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, VMPTR_AppDomain vmAppDomain, COR_TYPEID id, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo);
 
 
     // @dbgtodo Microsoft inspection: change DebuggerIPCE_ExpandedTypeData to DacDbiStructures type hierarchy
     // once ICorDebugType and ICorDebugClass are DACized
     // use a type handle to get the information needed to create the corresponding RS CordbType instance
-    HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_AppDomain vmAppDomain, VMPTR_TypeHandle vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo);
 
     // Get type handle for a TypeDef token, if one exists. For generics this returns the open type.
     HRESULT STDMETHODCALLTYPE GetTypeHandle(VMPTR_Module vmModule, mdTypeDef metadataToken, OUT VMPTR_TypeHandle * pRetVal);
@@ -282,13 +269,13 @@ public:
 
     // Retrieve the generic type params for a given MethodDesc.  This function is specifically
     // for stackwalking because it requires the generic type token on the stack.
-    HRESULT STDMETHODCALLTYPE GetMethodDescParams(VMPTR_AppDomain vmAppDomain, VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, OUT TypeParamsList * pGenericTypeParams);
+    HRESULT STDMETHODCALLTYPE GetMethodDescParams(VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, OUT TypeParamsList * pGenericTypeParams);
 
     // Get the target field address of a context or thread local static.
     HRESULT STDMETHODCALLTYPE GetThreadStaticAddress(VMPTR_FieldDesc vmField, VMPTR_Thread vmRuntimeThread, OUT CORDB_ADDRESS * pRetVal);
 
     // Get the target field address of a collectible types static.
-    HRESULT STDMETHODCALLTYPE GetCollectibleTypeStaticAddress(VMPTR_FieldDesc vmField, VMPTR_AppDomain vmAppDomain, OUT CORDB_ADDRESS * pRetVal);
+    HRESULT STDMETHODCALLTYPE GetCollectibleTypeStaticAddress(VMPTR_FieldDesc vmField, OUT CORDB_ADDRESS * pRetVal);
 
     // Get information about a field added with Edit And Continue.
     HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData, OUT BOOL * pfStatic);
@@ -298,11 +285,11 @@ public:
     // for "Dict<String,List<int>>", and sends it back to the right side.
     // This should not fail except for OOM
 
-    HRESULT STDMETHODCALLTYPE GetTypeHandleParams(VMPTR_AppDomain vmAppDomain, VMPTR_TypeHandle vmTypeHandle, OUT TypeParamsList * pParams);
+    HRESULT STDMETHODCALLTYPE GetTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, OUT TypeParamsList * pParams);
 
     // DacDbi API: GetSimpleType
-    // gets the metadata token and domain file corresponding to a simple type
-    HRESULT STDMETHODCALLTYPE GetSimpleType(VMPTR_AppDomain vmAppDomain, CorElementType simpleType, OUT mdTypeDef * pMetadataToken, OUT VMPTR_Module * pVmModule, OUT VMPTR_DomainAssembly * pVmDomainAssembly);
+    // gets the metadata token and assembly corresponding to a simple type
+    HRESULT STDMETHODCALLTYPE GetSimpleType(CorElementType simpleType, OUT mdTypeDef * pMetadataToken, OUT VMPTR_Module * pVmModule);
 
     HRESULT STDMETHODCALLTYPE IsExceptionObject(VMPTR_Object vmObject, OUT BOOL * pResult);
 
@@ -318,7 +305,7 @@ public:
     HRESULT STDMETHODCALLTYPE GetDelegateFunctionData(
         DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_DomainAssembly *ppFunctionDomainAssembly,
+        OUT VMPTR_Assembly *ppFunctionAssembly,
         OUT mdMethodDef *pMethodDef);
 
     HRESULT STDMETHODCALLTYPE GetDelegateTargetObject(
@@ -333,24 +320,10 @@ public:
 
     HRESULT STDMETHODCALLTYPE MetadataUpdatesApplied(OUT BOOL * pResult);
 
-    // retrieves the list of COM interfaces implemented by vmObject, as it is known at
-    // the time of the call (the list may change as new interface types become available
-    // in the runtime)
-    HRESULT STDMETHODCALLTYPE GetRcwCachedInterfaceTypes(VMPTR_Object vmObject, VMPTR_AppDomain vmAppDomain, BOOL bIInspectableOnly, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pDacInterfaces);
-
     // retrieves the list of interfaces pointers implemented by vmObject, as it is known at
     // the time of the call (the list may change as new interface types become available
     // in the runtime)
     HRESULT STDMETHODCALLTYPE GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs);
-
-    // retrieves a list of interface types corresponding to the passed in
-    // list of IIDs. the interface types are retrieved from an app domain
-    // IID / Type cache, that is updated as new types are loaded. will
-    // have NULL entries corresponding to unknown IIDs in "iids"
-    HRESULT STDMETHODCALLTYPE GetCachedWinRTTypesForIIDs(VMPTR_AppDomain vmAppDomain, DacDbiArrayList<GUID> * pIids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes);
-
-    // retrieves the whole app domain cache of IID / Type mappings.
-    HRESULT STDMETHODCALLTYPE GetCachedWinRTTypes(VMPTR_AppDomain vmAppDomain, OUT DacDbiArrayList<GUID> * piids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes);
 
 private:
     // Helper to enumerate all possible memory ranges help by a loader allocator.
@@ -391,7 +364,6 @@ private:
 
     // Gets the base table addresses for both GC and non-GC statics
     void GetStaticsBases(TypeHandle  thExact,
-                         AppDomain * pAppDomain,
                          PTR_BYTE *  ppGCStaticsBase,
                          PTR_BYTE *  ppNonGCStaticsBase);
 
@@ -404,32 +376,27 @@ private:
     // Gets information for all the fields for a given type
     void CollectFields(TypeHandle                   thExact,
                        TypeHandle                   thApprox,
-                       AppDomain *                  pAppDomain,
                        DacDbiArrayList<FieldData> * pFieldList);
 
     // Gets additional information to convert a type handle to an instance of CordbType if the type is E_T_ARRAY
     void GetArrayTypeInfo(TypeHandle                      typeHandle,
-                          DebuggerIPCE_ExpandedTypeData * pTypeInfo,
-                          AppDomain *                     pAppDomain);
+                          DebuggerIPCE_ExpandedTypeData * pTypeInfo);
 
     // Gets additional information to convert a type handle to an instance of CordbType if the type is
     // E_T_PTR or E_T_BYREF
     void GetPtrTypeInfo(AreValueTypesBoxed              boxed,
                         TypeHandle                      typeHandle,
-                        DebuggerIPCE_ExpandedTypeData * pTypeInfo,
-                        AppDomain *                     pAppDomain);
+                        DebuggerIPCE_ExpandedTypeData * pTypeInfo);
 
     // Gets additional information to convert a type handle to an instance of CordbType if the type is E_T_FNPTR
     void GetFnPtrTypeInfo(AreValueTypesBoxed              boxed,
                           TypeHandle                      typeHandle,
-                          DebuggerIPCE_ExpandedTypeData * pTypeInfo,
-                          AppDomain *                     pAppDomain);
+                          DebuggerIPCE_ExpandedTypeData * pTypeInfo);
 
     // Gets additional information to convert a type handle to an instance of CordbType if the type is
     // E_T_CLASS or E_T_VALUETYPE
     void GetClassTypeInfo(TypeHandle                      typeHandle,
-                          DebuggerIPCE_ExpandedTypeData * pTypeInfo,
-                          AppDomain *                     pAppDomain);
+                          DebuggerIPCE_ExpandedTypeData * pTypeInfo);
 
     // Gets the correct CorElementType value from a type handle
     CorElementType GetElementType (TypeHandle typeHandle);
@@ -437,8 +404,7 @@ private:
     // Gets additional information to convert a type handle to an instance of CordbType for the referent of an
     // E_T_BYREF or E_T_PTR or for the element type of an E_T_ARRAY or E_T_SZARRAY
     void TypeHandleToBasicTypeInfo(TypeHandle                   typeHandle,
-                                   DebuggerIPCE_BasicTypeData * pTypeInfo,
-                                   AppDomain *                  pAppDomain);
+                                   DebuggerIPCE_BasicTypeData * pTypeInfo);
 
     // wrapper routines to set up for a call to ClassLoader functions to retrieve a type handle for a
     // particular kind of type
@@ -532,7 +498,7 @@ private:
     }; // class TypeDataWalk
 
     // get a typehandle for a class or valuetype from basic type data (metadata token
-    // and domain file
+    // and assembly
     TypeHandle GetClassOrValueTypeHandle(DebuggerIPCE_BasicTypeData * pData);
 
     // get an exact type handle for an array type
@@ -554,7 +520,7 @@ private:
     // the corresponding type handle. If the type parameter is an array or pointer
     // type, we simply extract the LS type handle from the VMPTR_TypeHandle that is
     // part of the type information. If the type parameter is a class or value type,
-    // we use the metadata token and domain file in the type info to look up the
+    // we use the metadata token and assembly in the type info to look up the
     // appropriate type handle. If the type parameter is any other types, we get the
     // type handle by having the loader look up the type handle for the element type.
     TypeHandle BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicTypeData * pArgTypeData);
@@ -588,7 +554,7 @@ private:
 public:
     // Get object information for a TypedByRef object. Initializes the objRef and typedByRefType fields of
     // pObjectData (type info for the referent).
-    HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, VMPTR_AppDomain vmAppDomain, DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, DebuggerIPCE_ObjectData * pObjectData);
 
     // Get the string length and offset to string base for a string object
     HRESULT STDMETHODCALLTYPE GetStringData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData);
@@ -599,7 +565,7 @@ public:
 
     // Get information about an object for which we have a reference, including the object size and
     // type information.
-    HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, VMPTR_AppDomain vmAppDomain, DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, DebuggerIPCE_ObjectData * pObjectData);
 
     // Returns the thread which owns the monitor lock on an object and the acquisition count
     HRESULT STDMETHODCALLTYPE GetThreadOwningMonitorLock(VMPTR_Object vmObject, OUT MonitorLockInfo * pRetVal);
@@ -620,20 +586,7 @@ private:
     // Initialize basic object information: type handle, object size, offset to fields and expanded type
     // information.
     void InitObjectData(PTR_Object                objPtr,
-                        VMPTR_AppDomain           vmAppDomain,
                         DebuggerIPCE_ObjectData * pObjectData);
-
-// ============================================================================
-// Functions to test data safety. In these functions we determine whether a lock
-// is held in a code path we need to execute for inspection. If so, we throw an
-// exception.
-// ============================================================================
-
-#ifdef TEST_DATA_CONSISTENCY
-public:
-    HRESULT STDMETHODCALLTYPE TestCrst(VMPTR_Crst vmCrst);
-    HRESULT STDMETHODCALLTYPE TestRWLock(VMPTR_SimpleRWLock vmRWLock);
-#endif
 
 // ============================================================================
 // CordbAssembly, CordbModule
@@ -645,11 +598,6 @@ public:
 public:
     // Get the full path and file name to the assembly's manifest module.
     HRESULT STDMETHODCALLTYPE GetAssemblyPath(VMPTR_Assembly vmAssembly, IStringHolder * pStrFilename, OUT BOOL * pResult);
-
-    HRESULT STDMETHODCALLTYPE GetAssemblyFromDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Assembly * vmAssembly);
-
-    // Determines whether the runtime security system has assigned full-trust to this assembly.
-    HRESULT STDMETHODCALLTYPE IsAssemblyFullyTrusted(VMPTR_DomainAssembly vmDomainAssembly, OUT BOOL * pResult);
 
     // get a type def resolved across modules
     HRESULT STDMETHODCALLTYPE ResolveTypeReference(const TypeRefData * pTypeRefInfo, TypeRefData * pTargetRefInfo);
@@ -669,26 +617,20 @@ public:
     // Gets properties for a module
     HRESULT STDMETHODCALLTYPE GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData);
 
-    // Gets properties for a domain assembly
-    HRESULT STDMETHODCALLTYPE GetDomainAssemblyData(VMPTR_DomainAssembly vmDomainAssembly, OUT DomainAssemblyInfo * pData);
+    // Gets properties for an assembly
+    HRESULT STDMETHODCALLTYPE GetAssemblyInfo(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData);
 
-    HRESULT STDMETHODCALLTYPE GetModuleForDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule);
-
-    // Yields true if the address is a CLR stub.
-    HRESULT STDMETHODCALLTYPE IsTransitionStub(CORDB_ADDRESS address, OUT BOOL * pResult);
+    HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule);
 
     // Get the "type" of address.
     HRESULT STDMETHODCALLTYPE GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal);
 
 
-    // Enumerate the appdomains
-    HRESULT STDMETHODCALLTYPE EnumerateAppDomains(FP_APPDOMAIN_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData);
-
     // Enumerate the assemblies in the appdomain.
     HRESULT STDMETHODCALLTYPE EnumerateAssembliesInAppDomain(VMPTR_AppDomain vmAppDomain, FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData);
 
     // Enumerate the moduels in the given assembly.
-    HRESULT STDMETHODCALLTYPE EnumerateModulesInAssembly(VMPTR_DomainAssembly vmAssembly, FP_MODULE_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData);
+    HRESULT STDMETHODCALLTYPE EnumerateModulesInAssembly(VMPTR_Assembly vmAssembly, FP_MODULE_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData);
 
     // When stopped at an event, request a synchronization.
     HRESULT STDMETHODCALLTYPE RequestSyncAtEvent();
@@ -759,9 +701,8 @@ public:
     // Return the current appdomain
     HRESULT STDMETHODCALLTYPE GetCurrentAppDomain(OUT VMPTR_AppDomain * pRetVal);
 
-    // Given an assembly ref token and metadata scope (via the DomainAssembly), resolve the assembly.
-    HRESULT STDMETHODCALLTYPE ResolveAssembly(VMPTR_DomainAssembly vmScope, mdToken tkAssemblyRef, OUT VMPTR_DomainAssembly * pRetVal);
-
+    // Given an assembly ref token and metadata scope (via the Assembly), resolve the assembly.
+    HRESULT STDMETHODCALLTYPE ResolveAssembly(VMPTR_Assembly vmScope, mdToken tkAssemblyRef, OUT VMPTR_Assembly * pRetVal);
 
     // Hijack the thread
     HRESULT STDMETHODCALLTYPE Hijack(VMPTR_Thread vmThread, ULONG32 dwThreadId, const EXCEPTION_RECORD * pRecord, T_CONTEXT * pOriginalContext, ULONG32 cbSizeContext, EHijackReason::EHijackReason reason, void * pUserData, CORDB_ADDRESS * pRemoteContextAddr);
@@ -797,10 +738,6 @@ public:
 
     // Enumerate the internal frames on the specified thread and invoke the provided callback on each of them.
     HRESULT STDMETHODCALLTYPE EnumerateInternalFrames(VMPTR_Thread vmThread, FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData);
-
-    // Given the FramePointer of the parent frame and the FramePointer of the current frame,
-    // check if the current frame is the parent frame.
-    HRESULT STDMETHODCALLTYPE IsMatchingParentFrame(FramePointer fpToCheck, FramePointer fpParent, OUT BOOL * pResult);
 
     // Return the stack parameter size of the given method.
     HRESULT STDMETHODCALLTYPE GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal);
@@ -901,16 +838,6 @@ protected:
     // Creates a VMPTR of an Object from a target address
     HRESULT STDMETHODCALLTYPE GetObject(CORDB_ADDRESS ptr, OUT VMPTR_Object * pRetVal);
 
-    // sets state in the native binder
-    HRESULT STDMETHODCALLTYPE EnableNGENPolicy(CorDebugNGENPolicy ePolicy);
-
-    // Sets the NGEN compiler flags. This restricts NGEN to only use images with certain
-    // types of pregenerated code.
-    HRESULT STDMETHODCALLTYPE SetNGENCompilerFlags(DWORD dwFlags);
-
-    // Gets the NGEN compiler flags currently in effect.
-    HRESULT STDMETHODCALLTYPE GetNGENCompilerFlags(DWORD *pdwFlags);
-
     // Creates a VMPTR of an Object from a target address pointing to an OBJECTREF
     HRESULT STDMETHODCALLTYPE GetObjectFromRefPtr(CORDB_ADDRESS ptr, OUT VMPTR_Object * pRetVal);
 
@@ -928,9 +855,6 @@ protected:
 
     // if the specified module is a WinRT module then isWinRT will equal TRUE
     HRESULT STDMETHODCALLTYPE IsWinRTModule(VMPTR_Module vmModule, BOOL * pIsWinRT);
-
-    // Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
-    HRESULT STDMETHODCALLTYPE GetAppDomainIdFromVmObjectHandle(VMPTR_OBJECTHANDLE vmHandle, OUT ULONG * pRetVal);
 
 private:
     // Check whether the specified thread is at a GC-safe place, i.e. in an interruptible region.

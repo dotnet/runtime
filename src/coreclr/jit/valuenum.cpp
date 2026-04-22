@@ -6987,7 +6987,7 @@ const char* ValueNumStore::VNRelationString(VN_RELATION_KIND vrk)
 }
 #endif
 
-bool ValueNumStore::IsVNRelop(ValueNum vn)
+bool ValueNumStore::IsVNRelop(ValueNum vn, VNFuncApp* pFuncApp)
 {
     VNFuncApp funcAttr;
     if (!GetVNFunc(vn, &funcAttr))
@@ -7010,6 +7010,10 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
             case VNF_LE_UN:
             case VNF_GE_UN:
             case VNF_GT_UN:
+                if (pFuncApp != nullptr)
+                {
+                    *pFuncApp = funcAttr;
+                }
                 return true;
             default:
                 return false;
@@ -7017,8 +7021,15 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
     }
     else
     {
-        const genTreeOps op = (genTreeOps)func;
-        return GenTree::OperIsCompare(op);
+        if (GenTree::OperIsCompare(static_cast<genTreeOps>(func)))
+        {
+            if (pFuncApp != nullptr)
+            {
+                *pFuncApp = funcAttr;
+            }
+            return true;
+        }
+        return false;
     }
 }
 

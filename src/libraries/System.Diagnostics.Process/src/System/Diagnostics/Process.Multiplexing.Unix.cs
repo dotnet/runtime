@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.IO;
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -9,13 +11,15 @@ namespace System.Diagnostics
 {
     public partial class Process
     {
+        private static SafePipeHandle GetSafeHandleFromStreamReader(StreamReader reader) => ((AnonymousPipeClientStream)reader.BaseStream).SafePipeHandle;
+
         /// <summary>
         /// Reads from both standard output and standard error pipes using Unix poll-based multiplexing
         /// with non-blocking reads.
         /// </summary>
         private static void ReadPipes(
-            SafeFileHandle outputHandle,
-            SafeFileHandle errorHandle,
+            SafePipeHandle outputHandle,
+            SafePipeHandle errorHandle,
             int timeoutMs,
             ref byte[] outputBuffer,
             ref int outputBytesRead,
@@ -25,7 +29,7 @@ namespace System.Diagnostics
             int outputFd = outputHandle.DangerousGetHandle().ToInt32();
             int errorFd = errorHandle.DangerousGetHandle().ToInt32();
 
-            if (Interop.Sys.Fcntl.DangerousSetIsNonBlocking((IntPtr)outputFd, 1) != 0 || Interop.Sys.Fcntl.DangerousSetIsNonBlocking((IntPtr)errorFd, 1) != 0)
+            if (Interop.Sys.Fcntl.DangerousSetIsNonBlocking(outputFd, 1) != 0 || Interop.Sys.Fcntl.DangerousSetIsNonBlocking(errorFd, 1) != 0)
             {
                 throw new Win32Exception();
             }
@@ -101,7 +105,7 @@ namespace System.Diagnostics
                     }
 
                     bool isError = i == errorIndex;
-                    SafeFileHandle currentHandle = isError ? errorHandle : outputHandle;
+                    SafePipeHandle currentHandle = isError ? errorHandle : outputHandle;
                     ref byte[] currentBuffer = ref (isError ? ref errorBuffer : ref outputBuffer);
                     ref int currentBytesRead = ref (isError ? ref errorBytesRead : ref outputBytesRead);
                     ref bool currentDone = ref (isError ? ref errorDone : ref outputDone);
@@ -130,7 +134,7 @@ namespace System.Diagnostics
         /// Performs a non-blocking read from the given handle into the buffer starting at the specified offset.
         /// Returns the number of bytes read, 0 for EOF, or -1 for EAGAIN (nothing available yet).
         /// </summary>
-        private static unsafe int ReadNonBlocking(SafeFileHandle handle, byte[] buffer, int offset)
+        private static unsafe int ReadNonBlocking(SafePipeHandle handle, byte[] buffer, int offset)
         {
             fixed (byte* pBuffer = buffer)
             {

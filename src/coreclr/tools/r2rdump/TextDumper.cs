@@ -506,6 +506,12 @@ namespace R2RDump
                     InliningInfoSection2 inliningInfoSection2 = new InliningInfoSection2(_r2r, ii2Offset, ii2EndOffset);
                     _writer.WriteLine(inliningInfoSection2.ToString());
                     break;
+                case ReadyToRunSectionType.CrossModuleInlineInfo:
+                    int cmiOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int cmiEndOffset = cmiOffset + section.Size;
+                    CrossModuleInliningInfoSection crossModuleInliningInfo = new CrossModuleInliningInfoSection(_r2r, cmiOffset, cmiEndOffset);
+                    _writer.WriteLine(crossModuleInliningInfo.ToString());
+                    break;
                 case ReadyToRunSectionType.OwnerCompositeExecutable:
                     int oceOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     if (_r2r.Image[oceOffset + section.Size - 1] != 0)

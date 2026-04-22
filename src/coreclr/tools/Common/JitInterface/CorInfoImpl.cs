@@ -1482,29 +1482,6 @@ namespace Internal.JitInterface
                 info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
             }
 
-            bool isArrayInterfaceDevirtualization = objType.IsArray && decl.OwningType.IsInterface;
-            bool isGenericVirtual = decl.HasInstantiation;
-
-            if (isGenericVirtual && originalImpl.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-            {
-                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                return false;
-            }
-
-            if (!info->instParamLookup.lookupKind.needsRuntimeLookup &&
-                (isArrayInterfaceDevirtualization || isGenericVirtual) &&
-                impl.IsCanonicalMethod(CanonicalFormKind.Specific))
-            {
-#if READYTORUN
-                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
-                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodHandle, originalImplWithToken));
-#else
-                // TODO: Implement generic virtual method devirtualization constant lookup for NativeAOT
-                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                return false;
-#endif
-            }
-
 #if READYTORUN
             // Testing has not shown that concerns about virtual matching are significant
             // Only generate verification for builds with the stress mode enabled
@@ -1519,7 +1496,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->exactContext = (isArrayInterfaceDevirtualization || isGenericVirtual) ? contextFromMethod(originalImpl) : contextFromType(owningType);
+            info->exactContext = contextFromType(owningType);
 
             return true;
 
@@ -3073,6 +3050,25 @@ namespace Internal.JitInterface
             // Use conservative answer for equivalent and variant types.
             if (type.HasTypeEquivalence || type.HasVariance)
                 return false;
+
+            // SZArrayHelper (CoreCLR) and Array<T> (NativeAOT) are phantom dispatch
+            // targets: the runtime maps generic array interface methods
+            // (IList<T>.set_Item, etc.) to methods on these sealed/effectively-sealed
+            // types, but no runtime object ever has them as its MethodTable - `this`
+            // inside those methods is always a T[]. Reporting them as exact would
+            // allow the JIT (e.g. VN-based invariant-load folding of GetMethodTable)
+            // to embed their MT as a constant and mis-read fields off it. Both types
+            // are marked [Intrinsic] so that the cheap flag check filters out
+            // non-candidates before we compare names.
+            if (type.IsIntrinsic && type is MetadataType mdType)
+            {
+                ReadOnlySpan<byte> name = mdType.Name;
+                if ((name.SequenceEqual("SZArrayHelper"u8) || name.SequenceEqual("Array`1"u8)) &&
+                    mdType.Namespace.SequenceEqual("System"u8))
+                {
+                    return false;
+                }
+            }
 
             // Valuetypes are invariant. This assumes that introducing type equivalence to an existing type
             // is not compatible change.
