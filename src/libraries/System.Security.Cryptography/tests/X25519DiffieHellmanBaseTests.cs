@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Tests
         public abstract X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source);
         public abstract X25519DiffieHellman ImportPublicKey(ReadOnlySpan<byte> source);
 
-        // SymCrypt, thus SCOSSL and and CNG, are stricter about keys they are willing to import. These keys fall in to
+        // SymCrypt, thus SCOSSL and CNG, are stricter about keys they are willing to import. These keys fall in to
         // two buckets.
         // 1. Public keys that are non-canonical. RFC 7748 says:
         //      Implementations MUST accept non-canonical values and process them as
