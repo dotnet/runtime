@@ -121,8 +121,6 @@ workflow log. Then check the JSON:
   the version for the breaking change issue. **Do not fall back to manual
   detection when the script succeeds.**
 
-Use `EstimatedVersion` as the version for the breaking change issue.
-
 ---
 
 ## Step 3: Check for Existing Documentation

@@ -51,8 +51,10 @@ $notificationEmailUrl = "mailto:dotnetbcn@microsoft.com?subject=$encodedEmailSub
 
 # Build a brief assignee mention line (if any)
 $mentionLine = ""
-if ($Assignees.Trim()) {
-    $mentionLine = "`n`n/cc $($Assignees.Trim())"
+$trimmedAssignees = ""
+if (-not [string]::IsNullOrWhiteSpace($Assignees)) {
+    $trimmedAssignees = $Assignees.Trim()
+    $mentionLine = "`n`n/cc $trimmedAssignees"
 }
 
 $comment = @"
