@@ -1018,6 +1018,80 @@ IniKey1=IniValue2");
             public string XmlKey1 { get; set; }
         }
 
+        [Fact]
+        public void ReferenceResolution_RealWorldScenario_CombinesSectionAliasOverridesAndTokenSyntax()
+        {
+            // appsettings.json provides defaults, including a Services template ("Defaults:Service") that
+            // will be reused via a section alias.
+            _fileSystem.WriteFile(_jsonFile, @"{
+  ""Environment"": ""Staging"",
+  ""Defaults"": {
+    ""Service"": {
+      ""Host"": ""primary.example.com"",
+      ""Port"": ""5432"",
+      ""Protocol"": ""tcp""
+    }
+  },
+  ""Services"": {
+    ""Primary"": ""${Defaults:Service}""
+  },
+  ""ConnectionString"": ""${Services:Primary:Protocol}://${User}@${Services:Primary:Host}:${Services:Primary:Port}/${Database?Defaults:Database}"",
+  ""Tracing"": {
+    ""Collector"": ""${Tracing:Endpoint?}""
+  },
+  ""Defaults"": {
+    ""Database"": ""appdb""
+  },
+  ""Metadata"": {
+    ""Literal"": ""${do-not-interpret}""
+  }
+}");
+
+            // INI layered on top of the JSON. It supplies the User secret and, critically, overrides a
+            // single child of the aliased section (Services:Primary:Port) at a LATER provider than the
+            // alias itself. This validates that provider-order overrides still win over alias projection.
+            _fileSystem.WriteFile(_iniFile, @"User = admin
+[Services:Primary]
+Port = 6543");
+
+            var config = CreateBuilder()
+                .AddJsonFile(_jsonFile, optional: false, reloadOnChange: false)
+                .AddIniFile(_iniFile, optional: false, reloadOnChange: false)
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    // Exercises ${Key?Fallback} — the key isn't present so the fallback ref ("Defaults:Database") applies.
+                    // We intentionally don't set "Database" anywhere else in the chain.
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            // Section alias projects the Defaults:Service children under Services:Primary...
+            Assert.Equal("primary.example.com", config["Services:Primary:Host"]);
+            Assert.Equal("tcp", config["Services:Primary:Protocol"]);
+
+            // ...but the INI override (later provider) shadows a single child.
+            Assert.Equal("6543", config["Services:Primary:Port"]);
+
+            // GetChildren surfaces the union of alias-projected keys and overlaid keys, with no duplicates.
+            string[] primaryChildren = config.GetSection("Services:Primary")
+                .GetChildren()
+                .Select(c => c.Key)
+                .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            Assert.Equal(new[] { "Host", "Port", "Protocol" }, primaryChildren);
+
+            // Multi-token interpolation composes across JSON (aliased), INI (override + secret), and a
+            // default-value token — the single ConnectionString pulls from three providers at once.
+            Assert.Equal("tcp://admin@primary.example.com:6543/appdb", config["ConnectionString"]);
+
+            // Optional ${?Tracing:Endpoint} resolves to an empty string because the key is missing.
+            Assert.Equal(string.Empty, config["Tracing:Collector"]);
+
+            // Excluded scan path: the literal reference text is returned as-is (not interpreted,
+            // not treated as a missing-key failure).
+            Assert.Equal("${do-not-interpret}", config["Metadata:Literal"]);
+        }
+
         private async Task WatchOverConfigJsonFileAndUpdateIt(string filePath)
         {
             var builder = new ConfigurationBuilder().AddJsonFile(filePath, true, true).Build();

@@ -129,4 +129,34 @@
   <data name="StreamConfigurationSourceStreamCannotBeNull" xml:space="preserve">
     <value>Source.Stream cannot be null.</value>
   </data>
+  <data name="ReferenceResolution_CircularReference" xml:space="preserve">
+    <value>A circular reference was detected while resolving '{0}'.</value>
+  </data>
+  <data name="ReferenceResolution_ExpressionIsEmpty" xml:space="preserve">
+    <value>A reference expression at position '{0}' is empty.</value>
+  </data>
+  <data name="ReferenceResolution_ExpressionIsUnclosed" xml:space="preserve">
+    <value>An unclosed reference expression was found at position '{0}'.</value>
+  </data>
+  <data name="ReferenceResolution_InvalidExpression" xml:space="preserve">
+    <value>A reference expression at position '{0}' is malformed. Expected '?' between items or end of expression.</value>
+  </data>
+  <data name="ReferenceResolution_KeyIsEmpty" xml:space="preserve">
+    <value>A reference expression at position '{0}' has an empty key.</value>
+  </data>
+  <data name="ReferenceResolution_KeyNotFound" xml:space="preserve">
+    <value>The reference key '{0}' referenced by '{1}' was not found. Add a fallback reference or mark the chain optional with a trailing '?' (for example '${{Key?}}').</value>
+  </data>
+  <data name="ReferenceResolution_MaxDepthExceeded" xml:space="preserve">
+    <value>Maximum reference-resolution depth '{0}' was exceeded while resolving '{1}'.</value>
+  </data>
+  <data name="ReferenceResolution_SectionReferenceMustBeSingleToken" xml:space="preserve">
+    <value>Section reference at '{0}' must be a single reference expression in the form '${{Path}}'.</value>
+  </data>
+  <data name="ReferenceResolution_NoSourceToConfigure" xml:space="preserve">
+    <value>The configuration builder has no sources; there is nothing to configure for reference resolution.</value>
+  </data>
+  <data name="ReferenceResolution_SourceNotFound" xml:space="preserve">
+    <value>The specified configuration source is not present in the builder.</value>
+  </data>
 </root>

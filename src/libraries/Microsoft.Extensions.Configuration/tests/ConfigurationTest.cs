@@ -603,6 +603,714 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
+        public void ReferenceResolutionIsDisabledByDefault()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["BaseUrl"] = "https://example.com",
+                    ["ServiceUrl"] = "${BaseUrl}/api",
+                })
+                .Build();
+
+            Assert.Equal("${BaseUrl}/api", config["ServiceUrl"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionResolvesValues()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["BaseUrl"] = "https://example.com",
+                    ["ServiceUrl"] = "${BaseUrl}/api",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("https://example.com/api", config["ServiceUrl"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionUsesLastProviderValue()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Environment"] = "development",
+                    ["ServiceUrl"] = "https://${Environment}.example.com",
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Environment"] = "production",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("https://production.example.com", config["ServiceUrl"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionLeavesValueWhenRequiredReferenceIsMissing()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["ServiceUrl"] = "https://${Host}.example.com",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("https://${Host}.example.com", config["ServiceUrl"]);
+        }
+
+        [Theory]
+        [InlineData("${{Host}", "${Host}")]
+        [InlineData("prefix-${{Host}-suffix", "prefix-${Host}-suffix")]
+        [InlineData("${{A}-${Host}-${{B}", "${A}-my-host-${B}")]
+        [InlineData("$${Host}", "$my-host")]
+        [InlineData("It costs $${Host}", "It costs $my-host")]
+        [InlineData("${{}", "${}")]
+        public void EnableReferenceResolutionTreatsEscapeBlockAsLiteral(string raw, string expected)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Host"] = "my-host",
+                    ["Value"] = raw,
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal(expected, config["Value"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionProjectsSectionReferenceChildren()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Defaults:Feature:Enabled"] = "true",
+                    ["Defaults:Feature:Name"] = "feature-default",
+                    ["Feature"] = "${Defaults:Feature}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Null(config["Feature"]);
+            Assert.Equal("true", config["Feature:Enabled"]);
+            Assert.Equal("feature-default", config["Feature:Name"]);
+            Assert.Equal(
+                new[] { "Enabled", "Name" },
+                config.GetSection("Feature").GetChildren().Select(c => c.Key).OrderBy(k => k));
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionProjectsNestedSectionReferenceChildren()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Defaults:Feature:Nested:Enabled"] = "true",
+                    ["Feature"] = "${Defaults:Feature}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("true", config["Feature:Nested:Enabled"]);
+            Assert.Equal("Enabled", config.GetSection("Feature:Nested").GetChildren().Single().Key);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionKeepsSingleTokenReferenceAsLeafWhenTargetIsValue()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Defaults:Feature"] = "feature-default",
+                    ["Feature"] = "${Defaults:Feature}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("feature-default", config["Feature"]);
+            Assert.Null(config["Feature:Enabled"]);
+            Assert.Empty(config.GetSection("Feature").GetChildren());
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionOverridesValuesBeforeSectionReferenceProvider()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Feature:Enabled"] = "from-early-provider",
+                    ["Defaults:Feature:Enabled"] = "from-defaults",
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Feature"] = "${Defaults:Feature}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("from-defaults", config["Feature:Enabled"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionResolvesTokenViaAncestorSectionAlias()
+        {
+            // ${Services:Primary:Host} in ConnectionString must follow the section alias just like a
+            // direct read of config["Services:Primary:Host"] would.
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Defaults:Service:Host"] = "primary.example.com",
+                    ["Defaults:Service:Port"] = "5432",
+                    ["Services:Primary"] = "${Defaults:Service}",
+                    ["ConnectionString"] = "${Services:Primary:Host}:${Services:Primary:Port}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("primary.example.com:5432", config["ConnectionString"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionTokenViaAncestorAliasRespectsShadowing()
+        {
+            // Alias at a later provider shadows a direct value at an earlier provider, both for
+            // direct reads and for tokens embedded in values.
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Services:Primary:Host"] = "direct-literal",
+                    ["Defaults:Service:Host"] = "aliased-target",
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Services:Primary"] = "${Defaults:Service}",
+                    ["ConnectionString"] = "host=${Services:Primary:Host}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("aliased-target", config["Services:Primary:Host"]);
+            Assert.Equal("host=aliased-target", config["ConnectionString"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionMergesEarlierChildrenNotPresentInAliasedSection()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Feature:Legacy"] = "from-early-provider",
+                    ["Defaults:Feature:Enabled"] = "from-defaults",
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Feature"] = "${Defaults:Feature}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("from-early-provider", config["Feature:Legacy"]);
+            Assert.Equal(
+                new[] { "Enabled", "Legacy" },
+                config.GetSection("Feature").GetChildren().Select(c => c.Key).OrderBy(k => k));
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionStrictAliasHidesEarlierChildrenUnderAliasedSection()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Feature:Legacy"] = "from-early-provider",
+                    ["Defaults:Feature:Enabled"] = "from-defaults",
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Feature"] = "${Defaults:Feature!}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Null(config["Feature:Legacy"]);
+            Assert.Equal("from-defaults", config["Feature:Enabled"]);
+            Assert.Equal(
+                new[] { "Enabled" },
+                config.GetSection("Feature").GetChildren().Select(c => c.Key).OrderBy(k => k));
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionStrictAliasAllowsLaterProviderToShadow()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Feature:Legacy"] = "from-early-provider",
+                    ["Defaults:Feature:Enabled"] = "from-defaults",
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Feature"] = "${Defaults:Feature!}",
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Feature:Extra"] = "from-late-provider",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Null(config["Feature:Legacy"]);
+            Assert.Equal("from-defaults", config["Feature:Enabled"]);
+            Assert.Equal("from-late-provider", config["Feature:Extra"]);
+            Assert.Equal(
+                new[] { "Enabled", "Extra" },
+                config.GetSection("Feature").GetChildren().Select(c => c.Key).OrderBy(k => k));
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionPreservesValuesAfterSectionReferenceProvider()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Defaults:Feature:Enabled"] = "from-defaults",
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Feature"] = "${Defaults:Feature}",
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Feature:Enabled"] = "from-late-provider",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("from-late-provider", config["Feature:Enabled"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionTreatsInterpolatedSectionReferenceAsLeafValue()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Defaults:Feature:Enabled"] = "true",
+                    ["Feature"] = "prefix-${Defaults:Feature}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("prefix-${Defaults:Feature}", config["Feature"]);
+            Assert.Empty(config.GetSection("Feature").GetChildren());
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionAppliesToAllSourcesRegardlessOfOrder()
+        {
+            // EnableReferenceResolution is a root-level signal, not a source. Sources added
+            // after the call still participate in substitution.
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["ServiceUrl"] = "https://${Host?}fallback",
+                })
+                .EnableReferenceResolution()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Host"] = "api.example.com",
+                })
+                .Build();
+
+            Assert.Equal("https://api.example.comfallback", config["ServiceUrl"]);
+            Assert.Equal("api.example.com", config["Host"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionIsIdempotent()
+        {
+            // Calling EnableReferenceResolution repeatedly keeps the single shared engine;
+            // there is no longer a per-call resolution "horizon".
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["name"] = "Alice",
+                    ["greeting"] = "Hello ${name}",
+                })
+                .EnableReferenceResolution()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["name"] = "Bob",
+                    ["farewell"] = "Bye ${name}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("Bob", config["name"]);
+            Assert.Equal("Hello Bob", config["greeting"]);
+            Assert.Equal("Bye Bob", config["farewell"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionEscapeIsStillALiteral()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Template"] = "${{hidden}",
+                    ["hidden"] = "secret",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("${hidden}", config["Template"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionOptionalChainCollapsesToEmpty()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["ServiceUrl"] = "https://host${Suffix?}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("https://host", config["ServiceUrl"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionChainTriesReferencesInOrder()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Primary"] = "first",
+                    ["Secondary"] = "second",
+                    ["Fallback"] = "fallback",
+                    ["A"] = "${Missing?Primary}",
+                    ["B"] = "${Missing?AlsoMissing?Secondary}",
+                    ["C"] = "${Missing?AlsoMissing?Fallback}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("first", config["A"]);
+            Assert.Equal("second", config["B"]);
+            Assert.Equal("fallback", config["C"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionChainFirstPresentWins()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Primary"] = "primary-value",
+                    ["Secondary"] = "secondary-value",
+                    ["Fallback"] = "fallback",
+                    ["Value"] = "${Primary?Secondary?Fallback}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("primary-value", config["Value"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionOptionalChainWithAllMissingCollapsesToEmpty()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Value"] = "${A?B?C?}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("", config["Value"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionOptionalChainPrefersFirstResolvedReference()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Primary"] = "hit",
+                    ["Value"] = "${Missing?Primary?}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("hit", config["Value"]);
+        }
+
+        [Theory]
+        [InlineData("${}")]
+        [InlineData("${ }")]
+        [InlineData("${?A}")]
+        [InlineData("${?}")]
+        [InlineData("${A??}")]
+        public void EnableReferenceResolutionMalformedExpressionThrows(string raw)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Value"] = raw,
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Throws<FormatException>(() => _ = config["Value"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionRelativeRefSiblingResolves()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Services:Billing:Host"] = "billing.example.com",
+                    ["Services:Billing:Url"] = "https://${..:Host}/api",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("https://billing.example.com/api", config["Services:Billing:Url"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionRelativeRefUncleResolves()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["App:Shared:Region"] = "eu-west",
+                    ["App:Services:Billing:Zone"] = "${..:..:..:Shared:Region}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            // Three hops up from App:Services:Billing:Zone = App, then :Shared:Region.
+            Assert.Equal("eu-west", config["App:Services:Billing:Zone"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionRelativeRefAnchorsAtStorageNotQuery()
+        {
+            // A section alias maps Services:Billing onto the Defaults subtree. A relative ref
+            // inside a Defaults value must resolve relative to its storage key (Defaults:Db:Conn),
+            // not relative to the user-facing query key (Services:Billing:Db:Conn).
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Defaults:Db:Host"] = "defaults-db-host",
+                    ["Defaults:Db:Conn"] = "${..:Host}",
+                    ["Services:Billing:Db:Host"] = "billing-db-host",
+                    ["Services:Billing"] = "${Defaults}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            // ..:Host anchors at Defaults:Db (storage), so it picks Defaults:Db:Host even when
+            // queried via the aliased path. The user's Services:Billing:Db:Host value (which
+            // exists at the query side) is irrelevant to this resolution.
+            Assert.Equal("defaults-db-host", config["Services:Billing:Db:Conn"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionRelativeRefAboveRootFallsThroughChain()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Fallback"] = "fallback-value",
+                    ["TopLevel"] = "${..:..:DoesNotExist?Fallback}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            // The relative ref wants two parents above a 1-segment key; that fails, chain falls
+            // through to the absolute Fallback reference.
+            Assert.Equal("fallback-value", config["TopLevel"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionRelativeRefAboveRootOptionalYieldsEmpty()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["TopLevel"] = "prefix-${..:..:Nothing?}-suffix",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("prefix--suffix", config["TopLevel"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionRelativeRefPureParentResolvesSection()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Defaults:Host"] = "h",
+                    ["Defaults:Port"] = "p",
+                    ["Services:Db"] = "${..:..:Defaults}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            // ..:..:Defaults from Services:Db = Defaults (section). Rebase exposes its children.
+            Assert.Equal("h", config["Services:Db:Host"]);
+            Assert.Equal("p", config["Services:Db:Port"]);
+        }
+
+        [Theory]
+        [InlineData("${A:..:B}")]
+        [InlineData("${A:..}")]
+        public void EnableReferenceResolutionRelativeSegmentNotAtStartThrows(string raw)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Value"] = raw,
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Throws<FormatException>(() => _ = config["Value"]);
+        }
+
+        [Fact]
+        public void ConfigureReferenceResolutionOnEmptyBuilderThrows()
+        {
+            var builder = new ConfigurationBuilder();
+
+            Assert.Throws<InvalidOperationException>(() => builder.ConfigureReferenceResolution(ReferenceMode.Ignore));
+        }
+
+        [Fact]
+        public void ConfigureReferenceResolutionIgnoreHidesValuesFromSubstitution()
+        {
+            var hiddenSource = new MemoryConfigurationSource
+            {
+                InitialData = new Dictionary<string, string> { ["X"] = "from-hidden" }
+            };
+
+            var config = new ConfigurationBuilder()
+                .Add(hiddenSource)
+                .ConfigureReferenceResolution(ReferenceMode.Ignore)
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["K"] = "${X}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("${X}", config["K"]);
+            Assert.Equal("from-hidden", config["X"]);
+        }
+
+        [Fact]
+        public void ConfigureReferenceResolutionBySourceNoneHidesValuesFromSubstitution()
+        {
+            var hiddenSource = new MemoryConfigurationSource
+            {
+                InitialData = new Dictionary<string, string> { ["X"] = "from-hidden" }
+            };
+            var builder = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["K"] = "${X}",
+                })
+                .EnableReferenceResolution();
+
+            builder.Add(hiddenSource);
+            builder.ConfigureReferenceResolution(hiddenSource, ReferenceMode.Ignore);
+
+            IConfigurationRoot config = builder.Build();
+
+            Assert.Equal("${X}", config["K"]);
+            Assert.Equal("from-hidden", config["X"]);
+        }
+
+        [Fact]
+        public void ConfigureReferenceResolutionBySourceNotPresentThrows()
+        {
+            var builder = new ConfigurationBuilder().AddInMemoryCollection();
+            var otherSource = new MemoryConfigurationSource();
+
+            Assert.Throws<ArgumentException>(() => builder.ConfigureReferenceResolution(otherSource, ReferenceMode.Ignore));
+        }
+
+        [Fact]
+        public void ConfigureReferenceResolutionIgnoreChildrenStillVisibleInGetChildren()
+        {
+            var hiddenSource = new MemoryConfigurationSource
+            {
+                InitialData = new Dictionary<string, string>
+                {
+                    ["Section:A"] = "a",
+                    ["Section:B"] = "b",
+                }
+            };
+
+            var config = new ConfigurationBuilder()
+                .Add(hiddenSource)
+                .ConfigureReferenceResolution(ReferenceMode.Ignore)
+                .EnableReferenceResolution()
+                .Build();
+
+            IEnumerable<string> childKeys = config.GetSection("Section").GetChildren().Select(c => c.Key).OrderBy(k => k);
+            Assert.Equal(new[] { "A", "B" }, childKeys);
+        }
+
+        [Fact]
+        public void ConfigureReferenceResolutionReadTreatsOwnValuesAsLiteralButServesAsTarget()
+        {
+            // Source in Read-only mode is a substitution target but its own ${...} stays literal.
+            var readOnlySource = new MemoryConfigurationSource
+            {
+                InitialData = new Dictionary<string, string>
+                {
+                    ["X"] = "from-readonly",
+                    ["Self"] = "${X}",
+                }
+            };
+
+            var config = new ConfigurationBuilder()
+                .Add(readOnlySource)
+                .ConfigureReferenceResolution(ReferenceMode.Read)
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["K"] = "${X}",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("from-readonly", config["K"]);
+            Assert.Equal("${X}", config["Self"]);
+        }
+
+        private sealed class StubBuilder : IConfigurationBuilder
+        {
+            public IDictionary<string, object> Properties { get; } = new Dictionary<string, object>();
+            public IList<IConfigurationSource> Sources { get; } = new List<IConfigurationSource>();
+            public IConfigurationBuilder Add(IConfigurationSource source) { Sources.Add(source); return this; }
+            public IConfigurationRoot Build() => throw new NotImplementedException();
+        }
+
+        [Fact]
         public void SameReloadTokenIsReturnedRepeatedly()
         {
             // Arrange

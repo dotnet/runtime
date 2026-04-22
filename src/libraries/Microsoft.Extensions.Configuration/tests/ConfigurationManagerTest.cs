@@ -97,6 +97,147 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
+        public void EnableReferenceResolutionResolvesValues()
+        {
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            builder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["Host"] = "api.example.com",
+                ["ServiceUrl"] = "https://${Host}",
+            });
+
+            builder.EnableReferenceResolution();
+
+            Assert.Equal("https://api.example.com", config["ServiceUrl"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionDoesNotReloadExistingSources()
+        {
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            var counter = new LoadCountingProvider(new Dictionary<string, string>
+            {
+                ["Host"] = "api.example.com",
+                ["ServiceUrl"] = "https://${Host}",
+            });
+
+            builder.Add(new LoadCountingSource(counter));
+            Assert.Equal(1, counter.LoadCount);
+
+            builder.EnableReferenceResolution();
+            Assert.Equal(1, counter.LoadCount);
+
+            builder.ConfigureReferenceResolution(ReferenceMode.Read);
+            Assert.Equal(1, counter.LoadCount);
+
+            // And the engine picked up the mode change for the existing provider.
+            Assert.Equal("https://${Host}", config["ServiceUrl"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionObservesLaterAddedSources()
+        {
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            builder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["ServiceUrl"] = "https://${Host?}fallback",
+            });
+            builder.EnableReferenceResolution();
+
+            // Sources added after EnableReferenceResolution do participate in resolution;
+            // the engine is rebuilt whenever the source list changes.
+            builder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["Host"] = "api.example.com",
+            });
+
+            Assert.Equal("https://api.example.comfallback", config["ServiceUrl"]);
+            Assert.Equal("api.example.com", config["Host"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionProjectsSectionReferenceChildren()
+        {
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            builder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["Defaults:Feature:Enabled"] = "true",
+                ["Feature"] = "${Defaults:Feature}",
+            });
+            builder.EnableReferenceResolution();
+
+            Assert.Null(config["Feature"]);
+            Assert.Equal("true", config["Feature:Enabled"]);
+            Assert.Equal("Enabled", config.GetSection("Feature").GetChildren().Single().Key);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionProjectsNestedSectionReferenceChildren()
+        {
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            builder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["Defaults:Feature:Nested:Enabled"] = "true",
+                ["Feature"] = "${Defaults:Feature}",
+            });
+            builder.EnableReferenceResolution();
+
+            Assert.Equal("true", config["Feature:Nested:Enabled"]);
+            Assert.Equal("Enabled", config.GetSection("Feature:Nested").GetChildren().Single().Key);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionKeepsSingleTokenReferenceAsLeafWhenTargetIsValue()
+        {
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            builder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["Defaults:Feature"] = "feature-default",
+                ["Feature"] = "${Defaults:Feature}",
+            });
+            builder.EnableReferenceResolution();
+
+            Assert.Equal("feature-default", config["Feature"]);
+            Assert.Null(config["Feature:Enabled"]);
+            Assert.Empty(config.GetSection("Feature").GetChildren());
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionMergesEarlierChildrenNotPresentInAliasedSection()
+        {
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            builder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["Feature:Legacy"] = "from-early-provider",
+                ["Defaults:Feature:Enabled"] = "from-defaults",
+            });
+            builder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["Feature"] = "${Defaults:Feature}",
+            });
+            builder.EnableReferenceResolution();
+
+            Assert.Equal("from-early-provider", config["Feature:Legacy"]);
+            Assert.Equal(
+                new[] { "Enabled", "Legacy" },
+                config.GetSection("Feature").GetChildren().Select(c => c.Key).OrderBy(k => k));
+        }
+
+        [Fact]
         public void DisposesProvidersOnDispose()
         {
             var provider1 = new TestConfigurationProvider("foo", "foo-value");
@@ -1247,6 +1388,34 @@ namespace Microsoft.Extensions.Configuration.Test
         {
             public TestConfigurationProvider(string key, string value)
                 => Data.Add(key, value);
+        }
+
+        private sealed class LoadCountingSource : IConfigurationSource
+        {
+            private readonly IConfigurationProvider _provider;
+
+            public LoadCountingSource(IConfigurationProvider provider) => _provider = provider;
+
+            public IConfigurationProvider Build(IConfigurationBuilder builder) => _provider;
+        }
+
+        private sealed class LoadCountingProvider : ConfigurationProvider
+        {
+            private readonly IDictionary<string, string> _seed;
+
+            public LoadCountingProvider(IDictionary<string, string> seed) => _seed = seed;
+
+            public int LoadCount { get; private set; }
+
+            public override void Load()
+            {
+                LoadCount++;
+                Data.Clear();
+                foreach (KeyValuePair<string, string> kv in _seed)
+                {
+                    Data[kv.Key] = kv.Value;
+                }
+            }
         }
 
         private class BlockLoadOnMREProvider : ConfigurationProvider

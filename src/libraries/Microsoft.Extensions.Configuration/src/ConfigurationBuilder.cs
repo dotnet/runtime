@@ -47,10 +47,17 @@ namespace Microsoft.Extensions.Configuration
             var providers = new List<IConfigurationProvider>();
             foreach (IConfigurationSource source in _sources)
             {
-                IConfigurationProvider provider = source.Build(this);
-                providers.Add(provider);
+                providers.Add(source.Build(this));
             }
-            return new ConfigurationRoot(providers);
+
+            ReferenceResolutionEngine? engine = null;
+            if (ReferenceResolutionConfigurationBuilderExtensions.HasAnyScanSource(Properties))
+            {
+                Dictionary<IConfigurationProvider, ReferenceMode>? providerModes = ReferenceResolutionConfigurationBuilderExtensions
+                    .ResolveProviderModes(Properties, _sources, providers);
+                engine = new ReferenceResolutionEngine(providers, providerModes);
+            }
+            return new ConfigurationRoot(providers, engine);
         }
     }
 }

@@ -23,9 +23,17 @@ namespace Microsoft.Extensions.Configuration
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
 
-            IEnumerable<IConfigurationSection> children = providers
+            IEnumerable<string> keys = providers
                 .Aggregate(Enumerable.Empty<string>(),
-                    (seed, source) => source.GetChildKeys(seed, path))
+                    (seed, source) => source.GetChildKeys(seed, path));
+
+            ReferenceResolutionEngine? engine = (root as ConfigurationRoot)?.Engine ?? (root as ConfigurationManager)?.Engine;
+            if (engine is not null)
+            {
+                keys = engine.GetChildKeys(keys, path);
+            }
+
+            IEnumerable<IConfigurationSection> children = keys
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Select(key => root.GetSection(path == null ? key : path + ConfigurationPath.KeyDelimiter + key));
 
@@ -42,6 +50,18 @@ namespace Microsoft.Extensions.Configuration
 
         internal static bool TryGetConfiguration(this IConfigurationRoot root, string key, out string? value)
         {
+            ReferenceResolutionEngine? engine = (root as ConfigurationRoot)?.Engine ?? (root as ConfigurationManager)?.Engine;
+            if (engine is not null)
+            {
+                if (engine.TryGet(key, out value))
+                {
+                    return true;
+                }
+
+                value = null;
+                return false;
+            }
+
             // common cases Providers is IList<IConfigurationProvider> in ConfigurationRoot
             IList<IConfigurationProvider> providers = root.Providers is IList<IConfigurationProvider> list
                 ? list

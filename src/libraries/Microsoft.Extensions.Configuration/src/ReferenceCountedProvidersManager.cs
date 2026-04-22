@@ -75,6 +75,22 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
+        // Returns an immutable snapshot of the currently-built providers. Used by the builder's
+        // source.Build(...) loop so a ReferenceResolutionConfigurationSource can observe providers
+        // registered before it.
+        public IReadOnlyList<IConfigurationProvider> GetProvidersSnapshot()
+        {
+            lock (_replaceProvidersLock)
+            {
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException(nameof(ConfigurationManager));
+                }
+
+                return _refCountedProviders.Providers.ToArray();
+            }
+        }
+
         public void Dispose()
         {
             ReferenceCountedProviders oldRefCountedProviders = _refCountedProviders;

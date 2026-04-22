@@ -97,15 +97,27 @@ namespace Microsoft.Extensions.Configuration
         public string Key { get { throw null; } }
         public string Path { get { throw null; } }
         public string? Value { get { throw null; } set { } }
-        public bool TryGetValue(string? key, out string? value) { throw null; }
         public System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren() { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
         public Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key) { throw null; }
+        public bool TryGetValue(string? key, out string? value) { throw null; }
     }
     public static partial class MemoryConfigurationBuilderExtensions
     {
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder AddInMemoryCollection(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder) { throw null; }
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder AddInMemoryCollection(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>? initialData) { throw null; }
+    }
+    public enum ReferenceMode
+    {
+        Ignore = 0,
+        Read = 1,
+        Scan = 2,
+    }
+    public static partial class ReferenceResolutionConfigurationBuilderExtensions
+    {
+        public static Microsoft.Extensions.Configuration.IConfigurationBuilder SetReferenceMode(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder, Microsoft.Extensions.Configuration.IConfigurationSource source, Microsoft.Extensions.Configuration.ReferenceMode mode) { throw null; }
+        public static Microsoft.Extensions.Configuration.IConfigurationBuilder SetReferenceMode(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder, Microsoft.Extensions.Configuration.ReferenceMode mode) { throw null; }
+        public static Microsoft.Extensions.Configuration.IConfigurationBuilder SetReferenceMode(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSource> sources, Microsoft.Extensions.Configuration.ReferenceMode mode) { throw null; }
     }
     public abstract partial class StreamConfigurationProvider : Microsoft.Extensions.Configuration.ConfigurationProvider
     {
