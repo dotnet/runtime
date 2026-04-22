@@ -278,6 +278,8 @@ DEFINE_CLASS(ENUM,                  System,                 Enum)
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
 DEFINE_METHOD(ENVIRONMENT,       GET_RESOURCE_STRING, GetResourceString, SM_PtrChar_PtrStr_PtrException_RetVoid)
 DEFINE_METHOD(ENVIRONMENT,       INITIALIZE_COMMAND_LINE_ARGS, InitializeCommandLineArgs, SM_PtrChar_Int_PtrPtrChar_PtrArrStr_PtrException_RetVoid)
+DEFINE_METHOD(ENVIRONMENT,       CALL_ENTRY_POINT, CallEntryPoint, SM_IntPtr_PtrArrStr_PtrInt_Bool_PtrException_RetVoid)
+DEFINE_METHOD(ENVIRONMENT,       EXECUTE_IN_DEFAULT_APP_DOMAIN, ExecuteInDefaultAppDomain, SM_IntPtr_PtrChar_PtrException_RetInt)
 
 DEFINE_CLASS(EVENT,                 Reflection,             RuntimeEventInfo)
 
@@ -976,7 +978,7 @@ DEFINE_FIELD(EXECUTIONCONTEXT,        DEFAULT_FLOW_SUPPRESSED,     DefaultFlowSu
 DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
 
 DEFINE_CLASS(THREAD,                Threading,              Thread)
-DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
+DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               SM_PtrThread_RetVoid)
 DEFINE_METHOD(THREAD,               POLLGC,                                  PollGC,                               NoSig)
 DEFINE_METHOD(THREAD,               ON_THREAD_EXITING,                       OnThreadExited,                       SM_PtrThread_PtrException_RetVoid)
 #ifdef FOR_ILLINK
@@ -1403,9 +1405,9 @@ DEFINE_FIELD_U(module, GenericHandleArgs, module)
 DEFINE_FIELD_U(dictionaryIndexAndSlot, GenericHandleArgs, dictionaryIndexAndSlot)
 
 DEFINE_CLASS(EH, Runtime, EH)
-DEFINE_METHOD(EH, RH_THROW_EX, RhThrowEx, SM_Obj_RefExInfo_RetVoid)
-DEFINE_METHOD(EH, RH_THROWHW_EX, RhThrowHwEx, SM_UInt_RefExInfo_RetVoid)
-DEFINE_METHOD(EH, RH_RETHROW, RhRethrow, SM_RefExInfo_RefExInfo_RetVoid)
+DEFINE_METHOD(EH, RH_THROW_EX, RhThrowEx, SM_PtrObj_PtrExInfo_RetVoid)
+DEFINE_METHOD(EH, RH_THROWHW_EX, RhThrowHwEx, SM_UInt_PtrExInfo_RetVoid)
+DEFINE_METHOD(EH, RH_RETHROW, RhRethrow, SM_PtrExInfo_PtrExInfo_RetVoid)
 DEFINE_CLASS(EXCEPTIONSERVICES_INTERNALCALLS, ExceptionServices, InternalCalls)
 DEFINE_CLASS(STACKFRAMEITERATOR, Runtime, StackFrameIterator)
 

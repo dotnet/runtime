@@ -2616,7 +2616,7 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     if (genericsContextIsThis)
     {
         const bool mustKeep      = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
-        const bool hasPatchpoint = doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints();
+        const bool hasPatchpoint = doesMethodHavePatchpoints();
 
         if (lvaGenericsContextInUse || mustKeep || hasPatchpoint)
         {
@@ -2656,7 +2656,7 @@ inline bool Compiler::lvaReportParamTypeArg()
 
         // Methoods that have patchpoints always report context as live
         //
-        if (doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints())
+        if (doesMethodHavePatchpoints())
         {
             return true;
         }
@@ -3896,7 +3896,7 @@ inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* is
     bool                    gc     = false;
     bool                    result = false;
     StaticHelperReturnValue retVal = {};
-    switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
+    switch (tree->AsCall()->GetHelperNum())
     {
         case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
         case CORINFO_HELP_GET_GCSTATIC_BASE:
@@ -3937,7 +3937,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         return false;
     }
 
-    CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
+    CorInfoHelpFunc helper = tree->AsCall()->GetHelperNum();
 
     bool result1 =
         // More helpers being added to IsSharedStaticHelper (that have similar behaviors but are not true
@@ -4536,11 +4536,6 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             for (CallArg& arg : call->gtArgs.LateArgs())
             {
                 RETURN_IF_ABORT(visitor(&arg.LateNodeRef()));
-            }
-
-            if (call->gtCallType == CT_INDIRECT)
-            {
-                RETURN_IF_ABORT(visitor(&call->gtCallAddr));
             }
             if (call->gtControlExpr != nullptr)
             {

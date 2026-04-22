@@ -12,8 +12,8 @@ internal sealed class AuxiliarySymbolInfo : IData<AuxiliarySymbolInfo>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.AuxiliarySymbolInfo);
 
-        Address = target.ReadCodePointer(address + (ulong)type.Fields[nameof(Address)].Offset);
-        Name = target.ReadPointer(address + (ulong)type.Fields[nameof(Name)].Offset);
+        Address = target.ReadCodePointerField(address, type, nameof(Address));
+        Name = target.ReadPointerField(address, type, nameof(Name));
     }
 
     public TargetCodePointer Address { get; init; }
