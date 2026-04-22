@@ -161,7 +161,20 @@ public partial class ZipArchiveEntry
         }
     }
 
-
+    /// <summary>
+    /// Asynchronously opens the entry and uses the specified password to decrypt it if it is encrypted.
+    /// If the archive that the entry belongs to was opened in Read mode, the returned stream will be readable, and it may or may not be seekable. If Create mode, the returned stream will be writable and not seekable. If Update mode, the returned stream will be readable, writable, seekable, and support <see cref="Stream.SetLength(long)" />.
+    /// </summary>
+    /// <param name="password">The password used to decrypt the encrypted entry.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A task whose result is a stream that represents the contents of the entry.</returns>
+    /// <remarks>
+    /// <para>If the entry is not encrypted, <paramref name="password" /> is ignored.</para>
+    /// </remarks>
+    /// <exception cref="ArgumentException">The entry is encrypted and <paramref name="password" /> is empty.</exception>
+    /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in <see cref="ZipArchiveMode.Create" />, and this entry has already been written to once.</exception>
+    /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+    /// <exception cref="ObjectDisposedException">The <see cref="ZipArchive" /> that this entry belongs to has been disposed.</exception>
     public Task<Stream> OpenAsync(ReadOnlySpan<char> password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
