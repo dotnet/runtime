@@ -1447,7 +1447,8 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
     ERR_clear_error();
 
 #ifdef NEED_OPENSSL_3_0
-    if (!API_EXISTS(EVP_PKEY_fromdata) || !API_EXISTS(OSSL_PARAM_BLD_new))
+    if (!API_EXISTS(EVP_PKEY_fromdata) || !API_EXISTS(OSSL_PARAM_BLD_new) ||
+        !API_EXISTS(EVP_PKEY_generate) || !API_EXISTS(EVP_PKEY_CTX_new_from_pkey))
     {
         return NULL;
     }
@@ -1709,12 +1710,47 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
         goto error;
     }
 
-    if (EVP_PKEY_fromdata_init(ctx) != 1)
+    if ((!qx || !qy) && (!d || dLength <= 0))
     {
-        goto error;
-    }
+        // No key material — generate a new key from the domain parameters.
+        EVP_PKEY* templateKey = NULL;
 
+        if (EVP_PKEY_fromdata_init(ctx) != 1)
+        {
+            goto error;
+        }
+
+        if (EVP_PKEY_fromdata(ctx, &templateKey, EVP_PKEY_KEY_PARAMETERS, params) != 1)
+        {
+            goto error;
+        }
+
+        EVP_PKEY_CTX_free(ctx);
+        ctx = EVP_PKEY_CTX_new_from_pkey(NULL, templateKey, NULL);
+        EVP_PKEY_free(templateKey);
+
+        if (ctx == NULL)
+        {
+            goto error;
+        }
+
+        if (EVP_PKEY_keygen_init(ctx) != 1)
+        {
+            goto error;
+        }
+
+        if (EVP_PKEY_generate(ctx, &pkey) != 1)
+        {
+            goto error;
+        }
+    }
+    else
     {
+        if (EVP_PKEY_fromdata_init(ctx) != 1)
+        {
+            goto error;
+        }
+
         int selection = (d && dLength > 0) ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY;
         if (EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1)
         {

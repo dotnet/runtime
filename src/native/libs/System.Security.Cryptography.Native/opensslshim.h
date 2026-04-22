@@ -565,6 +565,7 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_PKEY_get0_RSA) \
     LIGHTUP_FUNCTION(EVP_PKEY_get0_type_name) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
+    LIGHTUP_FUNCTION(EVP_PKEY_generate) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_EC_KEY) \
     LIGHTUP_FUNCTION(EVP_PKEY_is_a) \
     REQUIRED_FUNCTION(EVP_PKEY_keygen) \
@@ -1133,6 +1134,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
 #define EVP_PKEY_get0_type_name EVP_PKEY_get0_type_name_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
+#define EVP_PKEY_generate EVP_PKEY_generate_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
 #define EVP_PKEY_is_a EVP_PKEY_is_a_ptr
 #define EVP_PKEY_keygen EVP_PKEY_keygen_ptr

@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
             Debug.Assert(otherPartyPublicKey != null);
             Debug.Assert(_key is not null); // Callers should validate prior.
 
-            bool thisIsNamed = Interop.Crypto.EvpPKeyHasCurveName(_key.Value);
+            bool thisIsNamed = !Interop.Crypto.EvpPKeyEcHasExplicitEncoding(_key.Value);
 
             ECDiffieHellmanOpenSslPublicKey? otherKey = otherPartyPublicKey as ECDiffieHellmanOpenSslPublicKey;
             bool disposeOtherKey = false;
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography
                 otherKey = new ECDiffieHellmanOpenSslPublicKey(otherParameters);
             }
 
-            bool otherIsNamed = otherKey.HasCurveName;
+            bool otherIsNamed = !otherKey.HasExplicitEncoding;
 
             // We need to always duplicate handle in case this operation is done by multiple threads and one of them disposes the handle
             SafeEvpPKeyHandle? ourKey = _key.Value;

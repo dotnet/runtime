@@ -47,6 +47,8 @@ namespace System.Security.Cryptography
 
         internal bool HasCurveName => Interop.Crypto.EvpPKeyHasCurveName(GetKey());
 
+        internal bool HasExplicitEncoding => Interop.Crypto.EvpPKeyEcHasExplicitEncoding(GetKey());
+
         internal int KeySize
         {
             get

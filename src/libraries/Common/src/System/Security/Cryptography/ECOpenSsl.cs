@@ -152,6 +152,31 @@ namespace System.Security.Cryptography
                     return pkey;
                 }
             }
+            else if (curve.IsPrime || curve.IsCharacteristic2)
+            {
+                byte[] pField = curve.IsPrime ? curve.Prime! : curve.Polynomial!;
+
+                // Pass null Q and null D to trigger key generation instead of import.
+                SafeEvpPKeyHandle? pkey = Interop.Crypto.EvpPKeyCreateByEcExplicitParameters(
+                    curve.CurveType,
+                    null, 0,
+                    null, 0,
+                    null, 0,
+                    pField, pField.Length,
+                    curve.A!, curve.A!.Length,
+                    curve.B!, curve.B!.Length,
+                    curve.G.X!, curve.G.X!.Length,
+                    curve.G.Y!, curve.G.Y!.Length,
+                    curve.Order!, curve.Order!.Length,
+                    curve.Cofactor!, curve.Cofactor!.Length,
+                    curve.Seed, curve.Seed is null ? 0 : curve.Seed.Length);
+
+                if (pkey is not null)
+                {
+                    keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(pkey);
+                    return pkey;
+                }
+            }
 
             // Fallback to legacy EC_KEY path (explicit curves or OpenSSL < 3.0)
             return ImportECKeyCore(new ECOpenSsl(curve), out keySize);
