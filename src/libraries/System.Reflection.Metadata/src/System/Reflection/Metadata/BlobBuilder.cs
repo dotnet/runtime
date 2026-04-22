@@ -30,7 +30,16 @@ namespace System.Reflection.Metadata
         //
         // In this case the content represented is a sequence (1,2,3,4).
         // This structure optimizes for append write operations and sequential enumeration from the start of the chain.
-        // Data can only be written to the head node. Other nodes are "frozen".
+        // Usually, data can only be written to the head node and other nodes are "frozen".
+        //
+        // However, when using the Segment APIs, we write to the last node, creating additional nodes if necessary.
+        // Data in a segment cannot reside in the head node, because you cannot link to it from a previous node.
+        // Writing to the last node satisfies this requirement, and also minimizes changes to the existing writing
+        // paths, which write to the head node as always.
+        // This means that alternating between regular and segment writes will lead to gaps in the buffers, but the
+        // Segment APIs are not public, and this is not an expected use case.
+        // Blob builders used for writing segments will always have an empty head node, but that memory does not go
+        // to waste as more data get written, and if the builder is linked, it gets freed normally.
         private BlobBuilder _nextOrPrevious;
         private BlobBuilder FirstChunk => _nextOrPrevious._nextOrPrevious;
 
@@ -51,6 +60,7 @@ namespace System.Reflection.Metadata
         private int Length => (int)(_length & ~IsFrozenMask);
         private uint FrozenLength => _length | IsFrozenMask;
         private Span<byte> Span => _buffer.AsSpan(0, Length);
+        private Span<byte> RemainingSpan => _buffer.AsSpan(Length);
 
         public BlobBuilder(int capacity = DefaultChunkSize)
         {
@@ -133,7 +143,15 @@ namespace System.Reflection.Metadata
                 int totalLength = 0;
                 foreach (var chunk in GetChunks())
                 {
-                    Debug.Assert(chunk.IsHead || chunk.Length > 0);
+                    if (!chunk.IsHead && chunk == _nextOrPrevious)
+                    {
+                        // The last chunk can be empty if we are writing segments.
+                        Debug.Assert(chunk.Length >= 0);
+                    }
+                    else
+                    {
+                        Debug.Assert(chunk.IsHead || (chunk.Length > 0));
+                    }
                     totalLength += chunk.Length;
                 }
 
@@ -260,6 +278,20 @@ namespace System.Reflection.Metadata
             return leftContinues == rightContinues;
         }
 
+        internal int GetContentFNVHashCode()
+        {
+            if (!IsHead)
+            {
+                Throw.InvalidOperationBuilderAlreadyLinked();
+            }
+            int hashCode = Hash.FnvOffsetBias;
+            foreach (BlobBuilder chunk in GetChunks())
+            {
+                hashCode = Hash.AccumulateFNVHashCode(hashCode, chunk.Span);
+            }
+            return hashCode;
+        }
+
         /// <exception cref="InvalidOperationException">Content is not available, the builder has been linked with another one.</exception>
         public byte[] ToArray()
         {
@@ -316,19 +348,6 @@ namespace System.Reflection.Metadata
         {
             byte[]? array = ToArray(start, byteCount);
             return ImmutableCollectionsMarshal.AsImmutableArray(array);
-        }
-
-        internal bool TryGetSpan(out ReadOnlySpan<byte> buffer)
-        {
-            if (_nextOrPrevious == this)
-            {
-                // If the blob builder has one chunk, we can just return it and avoid copies.
-                buffer = Span;
-                return true;
-            }
-
-            buffer = default;
-            return false;
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="destination"/> is null.</exception>
@@ -520,7 +539,7 @@ namespace System.Reflection.Metadata
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void Expand(int newLength)
+        private void Expand(int newLength, bool alwaysAppendBuffer = false)
         {
             // TODO: consider converting the last chunk to a smaller one if there is too much empty space left
 
@@ -540,9 +559,10 @@ namespace System.Reflection.Metadata
 
             var newBuffer = newChunk._buffer;
 
-            if (_length == 0)
+            if (_length == 0 && !alwaysAppendBuffer)
             {
                 // If the first write into an empty buffer needs more space than the buffer provides, swap the buffers.
+                // We don't want this when writing a segment.
                 newChunk._buffer = _buffer;
                 _buffer = newBuffer;
             }

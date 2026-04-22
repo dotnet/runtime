@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Internal;
 #if NET
@@ -12,64 +11,56 @@ using System.Runtime.InteropServices;
 namespace System.Reflection.Metadata.Ecma335
 {
     [DebuggerDisplay("Count = {Count}")]
-    internal readonly struct BlobDictionary
+    internal readonly struct BlobDictionary(BlobBuilder builder, int capacity = 0)
     {
-        private readonly Dictionary<int, KeyValuePair<ImmutableArray<byte>, BlobHandle>> _dictionary;
+#if NET
+        private readonly Dictionary<BlobBuilder.Segment, BlobHandle> _dictionary = new(capacity, new Comparer(builder));
+
+        public BlobHandle GetOrAdd<T>(T key, BlobHandle value) where T : notnull, allows ref struct
+        {
+            // Always use the alternate lookup; we do not support directly adding segments.
+            ref BlobHandle entry =
+                ref CollectionsMarshal.GetValueRefOrAddDefault(_dictionary.GetAlternateLookup<T>(), key, out bool exists);
+
+            if (!exists)
+            {
+                entry = value;
+            }
+
+            return entry;
+        }
+
+        private sealed class Comparer(BlobBuilder builder) : IEqualityComparer<BlobBuilder.Segment>, IAlternateEqualityComparer<ReadOnlySpan<byte>, BlobBuilder.Segment>, IAlternateEqualityComparer<BlobBuilder, BlobBuilder.Segment>
+        {
+            public BlobBuilder.Segment Create(ReadOnlySpan<byte> alternate) => builder.WriteSegment(alternate, prependCompressedSize: true);
+            public BlobBuilder.Segment Create(BlobBuilder alternate) => builder.WriteSegment(alternate, prependCompressedSize: true);
+
+            public bool Equals(BlobBuilder.Segment x, BlobBuilder.Segment y) => x.ContentEquals(y);
+            public bool Equals(ReadOnlySpan<byte> alternate, BlobBuilder.Segment other) => other.ContentEquals(alternate);
+            public bool Equals(BlobBuilder alternate, BlobBuilder.Segment other) => other.ContentEquals(alternate);
+            public int GetHashCode(BlobBuilder.Segment obj) => obj.GetContentFNVHashCode();
+            public int GetHashCode(ReadOnlySpan<byte> alternate) => Hash.GetFNVHashCode(alternate);
+            public int GetHashCode(BlobBuilder alternate) => alternate.GetContentFNVHashCode();
+        }
+#else
+        private readonly BlobBuilder _builder = builder;
+
+        private readonly Dictionary<int, KeyValuePair<BlobBuilder.Segment, BlobHandle>> _dictionary = new(capacity);
 
         // A simple LCG. Constants taken from
         // https://github.com/imneme/pcg-c/blob/83252d9c23df9c82ecb42210afed61a7b42402d7/include/pcg_variants.h#L276-L284
         private static int GetNextDictionaryKey(int dictionaryKey) =>
             (int)((uint)dictionaryKey * 747796405 + 2891336453);
 
-#if NET
-        private unsafe ref KeyValuePair<ImmutableArray<byte>, BlobHandle> GetValueRefOrAddDefault(ReadOnlySpan<byte> key, out bool exists)
+        public BlobHandle GetOrAdd(BlobBuilder key, BlobHandle value)
         {
-            int dictionaryKey = Hash.GetFNVHashCode(key);
-            while (true)
-            {
-                ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_dictionary, dictionaryKey, out exists);
-                if (!exists || entry.Key.AsSpan().SequenceEqual(key))
-                {
-#pragma warning disable CS9082 // Local is returned by reference but was initialized to a value that cannot be returned by reference
-                    // In .NET 6 the assembly of GetValueRefOrAddDefault was compiled with earlier ref safety rules
-                    // and caused an error, which was turned into a warning because of unsafe and was suppressed.
-                    return ref entry;
-#pragma warning restore CS9082
-                }
-                dictionaryKey = GetNextDictionaryKey(dictionaryKey);
-            }
-        }
-
-        public BlobHandle GetOrAdd(ReadOnlySpan<byte> key, ImmutableArray<byte> immutableKey, BlobHandle value, out bool exists)
-        {
-            ref var entry = ref GetValueRefOrAddDefault(key, out exists);
-            if (exists)
-            {
-                return entry.Value;
-            }
-
-            // If we are given an immutable array, do not allocate a new one.
-            if (immutableKey.IsDefault)
-            {
-                immutableKey = key.ToImmutableArray();
-            }
-            else
-            {
-                Debug.Assert(immutableKey.AsSpan().SequenceEqual(key));
-            }
-
-            entry = new(immutableKey, value);
-            return value;
-        }
-#else
-        public BlobHandle GetOrAdd(ReadOnlySpan<byte> key, ImmutableArray<byte> immutableKey, BlobHandle value, out bool exists)
-        {
-            int dictionarykey = Hash.GetFNVHashCode(key);
-            KeyValuePair<ImmutableArray<byte>, BlobHandle> entry;
+            int dictionarykey = key.GetContentFNVHashCode();
+            KeyValuePair<BlobBuilder.Segment, BlobHandle> entry;
+            bool exists;
             while (true)
             {
                 if (!(exists = _dictionary.TryGetValue(dictionarykey, out entry))
-                    || entry.Key.AsSpan().SequenceEqual(key))
+                    || entry.Key.ContentEquals(key))
                 {
                     break;
                 }
@@ -81,29 +72,35 @@ namespace System.Reflection.Metadata.Ecma335
                 return entry.Value;
             }
 
-            // If we are given an immutable array, do not allocate a new one.
-            if (immutableKey.IsDefault)
+            _dictionary.Add(dictionarykey, new(_builder.WriteSegment(key, prependCompressedSize: true), value));
+            return value;
+        }
+
+        public BlobHandle GetOrAdd(ReadOnlySpan<byte> key, BlobHandle value)
+        {
+            int dictionarykey = Hash.GetFNVHashCode(key);
+            KeyValuePair<BlobBuilder.Segment, BlobHandle> entry;
+            bool exists;
+            while (true)
             {
-                immutableKey = key.ToImmutableArray();
-            }
-            else
-            {
-                Debug.Assert(immutableKey.AsSpan().SequenceEqual(key));
+                if (!(exists = _dictionary.TryGetValue(dictionarykey, out entry))
+                    || entry.Key.ContentEquals(key))
+                {
+                    break;
+                }
+                dictionarykey = GetNextDictionaryKey(dictionarykey);
             }
 
-            _dictionary.Add(dictionarykey, new(immutableKey, value));
+            if (exists)
+            {
+                return entry.Value;
+            }
+
+            _dictionary.Add(dictionarykey, new(_builder.WriteSegment(key, prependCompressedSize: true), value));
             return value;
         }
 #endif
 
-        public BlobDictionary(int capacity = 0)
-        {
-            _dictionary = new(capacity);
-        }
-
         public int Count => _dictionary.Count;
-
-        public Dictionary<int, KeyValuePair<ImmutableArray<byte>, BlobHandle>>.Enumerator GetEnumerator() =>
-            _dictionary.GetEnumerator();
     }
 }
