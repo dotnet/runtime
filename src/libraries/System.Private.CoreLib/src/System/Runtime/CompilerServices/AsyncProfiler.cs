@@ -5,7 +5,6 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using static System.Runtime.CompilerServices.AsyncProfilerBufferedEventSource;
@@ -930,76 +929,7 @@ namespace System.Runtime.CompilerServices
             {
                 lock (CacheLock)
                 {
-                    // Make sure all dead threads are flushed and removed from the cache.
-                    for (int i = s_cache.Count - 1; i >= 0; i--)
-                    {
-                        var contextHolder = s_cache[i];
-                        if (!contextHolder.OwnerThread.TryGetTarget(out Thread? target) || !target.IsAlive)
-                        {
-                            // Thread is dead, flush its buffer and remove from cache.
-                            AsyncThreadContext context = contextHolder.Context;
-
-                            Debug.Assert(!context.InUse);
-                            context.InUse = true;
-
-                            context.Flush();
-
-                            context.Reclaim();
-                            s_cache.RemoveAt(i);
-
-                            context.InUse = false;
-                        }
-                    }
-
-                    // Look at live threads, only flush if forced or contexts that have been idle for 250 milliseconds.
-                    long idleWriteTimestamp = Stopwatch.GetTimestamp() - (Stopwatch.Frequency / 4);
-
-                    // Additionally, reclaim buffers for contexts that have been idle for 30 seconds to avoid keeping
-                    // large buffers around indefinitely for threads that are no longer running async code.
-                    long idleReclaimBufferTimestamp = Stopwatch.GetTimestamp() - Stopwatch.Frequency * 30;
-
-                    // Spin wait timeout, 100 milliseconds.
-                    long spinWaitTimeout = Stopwatch.Frequency / 10;
-
-                    foreach (var contextHolder in s_cache)
-                    {
-                        AsyncThreadContext context = contextHolder.Context;
-
-                        // Read LastEventTimestamp without atomics, could cause teared reads but not critical.
-                        long lastEventWriteTimestamp = context.LastEventTimestamp;
-                        if (force || lastEventWriteTimestamp < idleWriteTimestamp)
-                        {
-                            context.BlockContext = true;
-                            SpinWait sw = default;
-                            long timeout = Stopwatch.GetTimestamp() + spinWaitTimeout;
-                            while (context.InUse)
-                            {
-                                sw.SpinOnce();
-                                if (Stopwatch.GetTimestamp() > timeout)
-                                {
-                                    // AsyncThreadContext has been busy for too long, skip flushing this time.
-                                    // NOTE, this should not happen under normal conditions, contexts are only
-                                    // held InUse for a very short time writing events. If this do happen then
-                                    // then write probably triggered a flush or thread have been preempted for
-                                    // a long time while holding the context. Either way, skipping flush this time
-                                    // should be ok, as the next flush will pick it up and flushing is best effort.
-                                    break;
-                                }
-                            }
-
-                            if (!context.InUse)
-                            {
-                                context.Flush();
-
-                                if (force || lastEventWriteTimestamp < idleReclaimBufferTimestamp)
-                                {
-                                    context.Reclaim();
-                                }
-                            }
-
-                            context.BlockContext = false;
-                        }
-                    }
+                    FlushCore(force);
                 }
             }
 
@@ -1043,7 +973,7 @@ namespace System.Runtime.CompilerServices
 
                 lock (CacheLock)
                 {
-                    Flush(true);
+                    FlushCore(true);
 
                     if (s_cache.Count > 0)
                     {
@@ -1059,7 +989,7 @@ namespace System.Runtime.CompilerServices
 
                 lock (CacheLock)
                 {
-                    Flush(false);
+                    FlushCore(false);
 
                     if (IsEnabled.AnyAsyncEvents(Config.ActiveEventKeywords))
                     {
@@ -1070,6 +1000,80 @@ namespace System.Runtime.CompilerServices
                     {
                         // Start cleanup timer.
                         s_cleanupTimer?.Change(ASYNC_THREAD_CONTEXT_CACHE_CLEANUP_TIMER_INTERVAL_MS, Timeout.Infinite);
+                    }
+                }
+            }
+
+            private static void FlushCore(bool force)
+            {
+                // Make sure all dead threads are flushed and removed from the cache.
+                for (int i = s_cache.Count - 1; i >= 0; i--)
+                {
+                    var contextHolder = s_cache[i];
+                    if (!contextHolder.OwnerThread.TryGetTarget(out Thread? target) || !target.IsAlive)
+                    {
+                        // Thread is dead, flush its buffer and remove from cache.
+                        AsyncThreadContext context = contextHolder.Context;
+
+                        Debug.Assert(!context.InUse);
+                        context.InUse = true;
+
+                        context.Flush();
+
+                        context.Reclaim();
+                        s_cache.RemoveAt(i);
+
+                        context.InUse = false;
+                    }
+                }
+
+                // Look at live threads, only flush if forced or contexts that have been idle for 250 milliseconds.
+                long idleWriteTimestamp = Stopwatch.GetTimestamp() - (Stopwatch.Frequency / 4);
+
+                // Additionally, reclaim buffers for contexts that have been idle for 30 seconds to avoid keeping
+                // large buffers around indefinitely for threads that are no longer running async code.
+                long idleReclaimBufferTimestamp = Stopwatch.GetTimestamp() - Stopwatch.Frequency * 30;
+
+                // Spin wait timeout, 100 milliseconds.
+                long spinWaitTimeout = Stopwatch.Frequency / 10;
+
+                foreach (var contextHolder in s_cache)
+                {
+                    AsyncThreadContext context = contextHolder.Context;
+
+                    // Read LastEventTimestamp without atomics, could cause teared reads but not critical.
+                    long lastEventWriteTimestamp = context.LastEventTimestamp;
+                    if (force || lastEventWriteTimestamp < idleWriteTimestamp)
+                    {
+                        context.BlockContext = true;
+                        SpinWait sw = default;
+                        long timeout = Stopwatch.GetTimestamp() + spinWaitTimeout;
+                        while (context.InUse)
+                        {
+                            sw.SpinOnce();
+                            if (Stopwatch.GetTimestamp() > timeout)
+                            {
+                                // AsyncThreadContext has been busy for too long, skip flushing this time.
+                                // NOTE, this should not happen under normal conditions, contexts are only
+                                // held InUse for a very short time writing events. If this do happen then
+                                // then write probably triggered a flush or thread have been preempted for
+                                // a long time while holding the context. Either way, skipping flush this time
+                                // should be ok, as the next flush will pick it up and flushing is best effort.
+                                break;
+                            }
+                        }
+
+                        if (!context.InUse)
+                        {
+                            context.Flush();
+
+                            if (force || lastEventWriteTimestamp < idleReclaimBufferTimestamp)
+                            {
+                                context.Reclaim();
+                            }
+                        }
+
+                        context.BlockContext = false;
                     }
                 }
             }

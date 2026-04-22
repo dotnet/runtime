@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
 
             public static long[] GetContinuationWrapperIPs()
             {
-                return new long[COUNT];
+                return Array.Empty<long>();
             }
 
             private static nint s_dummyContinuationTable;
