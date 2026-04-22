@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- RuntimeHelpers.PrepareMethod is not supported on NativeAOT -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>pdbonly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Desktop\self_override_preparemethod.il" />
+  </ItemGroup>
+</Project>
