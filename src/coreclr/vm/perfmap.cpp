@@ -34,7 +34,7 @@ bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
 bool PerfMap::s_IndividualAllocationStubReporting = false;
 
-unsigned PerfMap::s_StubsMapped = 0;
+volatile LONG PerfMap::s_StubsMapped = 0;
 CrstStatic PerfMap::s_csPerfMap;
 
 bool PerfMapLowGranularityStubs()
@@ -437,7 +437,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
         }
         else
         {
-            name.Printf("stub<%d> %s<%s>", ++(s_StubsMapped), stubType, stubOwner);
+            name.Printf("stub<%d> %s<%s>", InterlockedIncrement(&s_StubsMapped), stubType, stubOwner);
         }
         SString line;
         line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());

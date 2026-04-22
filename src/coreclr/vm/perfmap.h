@@ -37,8 +37,8 @@ private:
     static bool s_GroupStubsOfSameType;
     static bool s_IndividualAllocationStubReporting;
 
-    // Set to true if an error is encountered when writing to the file.
-    static unsigned s_StubsMapped;
+    // Counter for generating unique stub names when s_GroupStubsOfSameType is false.
+    static volatile LONG s_StubsMapped;
 
     static CrstStatic s_csPerfMap;
 
