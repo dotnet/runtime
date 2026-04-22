@@ -34,8 +34,6 @@ namespace System.Threading.Tasks.Sources
         private TResult? _result;
         /// <summary>The current version of this value, used to help prevent misuse.</summary>
         private short _version;
-        /// <summary>Whether the current operation has completed.</summary>
-        private bool _completed;
         /// <summary>Whether to force continuations to run asynchronously.</summary>
         private bool _runContinuationsAsynchronously;
 
@@ -51,13 +49,18 @@ namespace System.Threading.Tasks.Sources
         public void Reset()
         {
             // Reset/update state for the next use/await of this instance.
+            // Order of assignments is unimportant here.
+            // The outer user always ensures that the state is not accessed across
+            // reset point by when implementing Rent/Return operations.
             _version++;
+            Debug.Assert(_continuation == null || IsCompleted);
             _continuation = null;
+            Debug.Assert(_continuationState == null);
+            Debug.Assert(_capturedContext == null);
             _continuationState = null;
             _capturedContext = null;
             _error = null;
             _result = default;
-            _completed = false;
         }
 
         /// <summary>Completes with a successful result.</summary>
@@ -79,13 +82,16 @@ namespace System.Threading.Tasks.Sources
         /// <summary>Gets the operation version.</summary>
         public short Version => _version;
 
+        /// <summary>Gets whether the operation has completed.</summary>
+        internal bool IsCompleted => ReferenceEquals(Volatile.Read(ref _continuation), ManualResetValueTaskSourceCoreShared.s_sentinel);
+
         /// <summary>Gets the status of the operation.</summary>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
         public ValueTaskSourceStatus GetStatus(short token)
         {
             ValidateToken(token);
             return
-                Volatile.Read(ref _continuation) is null || !_completed ? ValueTaskSourceStatus.Pending :
+                !IsCompleted ? ValueTaskSourceStatus.Pending :
                 _error is null ? ValueTaskSourceStatus.Succeeded :
                 _error.SourceException is OperationCanceledException ? ValueTaskSourceStatus.Canceled :
                 ValueTaskSourceStatus.Faulted;
@@ -96,7 +102,7 @@ namespace System.Threading.Tasks.Sources
         [StackTraceHidden]
         public TResult GetResult(short token)
         {
-            if (token != _version || !_completed || _error is not null)
+            if (token != _version || !IsCompleted || _error is not null)
             {
                 ThrowForFailedGetResult();
             }
@@ -125,6 +131,17 @@ namespace System.Threading.Tasks.Sources
             }
             ValidateToken(token);
 
+            // We need to store the state before the CompareExchange, so that if it completes immediately
+            // after the CompareExchange, it'll find the state already stored.  If someone misuses this
+            // and schedules multiple continuations erroneously, we could end up using the wrong state.
+            // Make a best-effort attempt to catch such misuse.
+            if (_continuationState is not null)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+            }
+            _continuationState = state;
+
+            Debug.Assert(_capturedContext is null);
             if ((flags & ValueTaskSourceOnCompletedFlags.FlowExecutionContext) != 0)
             {
                 _capturedContext = ExecutionContext.Capture();
@@ -151,35 +168,36 @@ namespace System.Threading.Tasks.Sources
                 }
             }
 
-            // We need to set the continuation state before we swap in the delegate, so that
-            // if there's a race between this and SetResult/Exception and SetResult/Exception
-            // sees the _continuation as non-null, it'll be able to invoke it with the state
-            // stored here.  However, this also means that if this is used incorrectly (e.g.
-            // awaited twice concurrently), _continuationState might get erroneously overwritten.
-            // To minimize the chances of that, we check preemptively whether _continuation
-            // is already set to something other than the completion sentinel.
-            object? storedContinuation = _continuation;
-            if (storedContinuation is null)
+            // Try to set the provided continuation into _continuation.  If this succeeds, that means the operation
+            // has not yet completed, and the completer will be responsible for invoking the callback.  If this fails,
+            // that means the operation has already completed, and we must invoke the callback, but because we're still
+            // inside the awaiter's OnCompleted method and we want to avoid possible stack dives, we must invoke
+            // the continuation asynchronously rather than synchronously.
+            Action<object?>? prevContinuation = Interlocked.CompareExchange(ref _continuation, continuation, null);
+            if (prevContinuation is null)
             {
-                _continuationState = state;
-                storedContinuation = Interlocked.CompareExchange(ref _continuation, continuation, null);
-                if (storedContinuation is null)
-                {
-                    // Operation hadn't already completed, so we're done. The continuation will be
-                    // invoked when SetResult/Exception is called at some later point.
-                    return;
-                }
+                // Operation hadn't already completed, so we're done. The continuation will be
+                // invoked when SetResult/Exception is called at some later point.
+                return;
             }
 
-            // Operation already completed, so we need to queue the supplied callback.
-            // At this point the storedContinuation should be the sentinal; if it's not, the instance was misused.
-            Debug.Assert(storedContinuation is not null, $"{nameof(storedContinuation)} is null");
-            if (!ReferenceEquals(storedContinuation, ManualResetValueTaskSourceCoreShared.s_sentinel))
+            // Queue the continuation.  We always queue here, even if !RunContinuationsAsynchronously, in order
+            // to avoid stack diving; this path happens in the rare race when we're setting up to await and the
+            // object is completed after the awaiter.IsCompleted but before the awaiter.OnCompleted.
+
+            // We no longer need the stored values as we will be passing the state when queuing directly
+            _continuationState = null;
+            object? capturedContext = _capturedContext;
+            _capturedContext = null;
+
+            // If the set failed because there's already a delegate in _continuation, but that delegate is
+            // something other than the completion sentinel, something went wrong, which should only happen if
+            // the instance was erroneously used, likely to hook up multiple continuations.
+            if (!ReferenceEquals(prevContinuation, ManualResetValueTaskSourceCoreShared.s_sentinel))
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
-            object? capturedContext = _capturedContext;
             switch (capturedContext)
             {
                 case null:
@@ -209,11 +227,10 @@ namespace System.Threading.Tasks.Sources
         /// <summary>Signals that the operation has completed.  Invoked after the result or error has been set.</summary>
         private void SignalCompletion()
         {
-            if (_completed)
+            if (IsCompleted)
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }
-            _completed = true;
 
             Action<object?>? continuation =
                 Volatile.Read(ref _continuation) ??

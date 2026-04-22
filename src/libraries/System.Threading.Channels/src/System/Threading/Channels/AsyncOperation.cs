@@ -139,7 +139,7 @@ namespace System.Threading.Channels
 #endif
 
         /// <summary>Gets whether the operation has completed.</summary>
-        internal bool IsCompleted => ReferenceEquals(_continuation, s_completedSentinel);
+        internal bool IsCompleted => ReferenceEquals(Volatile.Read(ref _continuation), s_completedSentinel);
 
         /// <summary>Completes the operation with a failed state and the specified error.</summary>
         /// <param name="exception">The error.</param>
@@ -267,12 +267,13 @@ namespace System.Threading.Channels
             Debug.Assert(_continuation is not null);
 
             object? ctx = _capturedContext;
+            _capturedContext = null;
+
             ExecutionContext? ec =
                 ctx is null ? null :
                 ctx as ExecutionContext ??
                 (ctx as CapturedSchedulerAndExecutionContext)?._executionContext;
 
-            _capturedContext = null;
             if (ec is null)
             {
                 Action<object?> c = _continuation!;
@@ -359,43 +360,52 @@ namespace System.Threading.Channels
             // inside the awaiter's OnCompleted method and we want to avoid possible stack dives, we must invoke
             // the continuation asynchronously rather than synchronously.
             Action<object?>? prevContinuation = Interlocked.CompareExchange(ref _continuation, continuation, null);
-            if (prevContinuation is not null)
+            if (prevContinuation is null)
             {
-                // If the set failed because there's already a delegate in _continuation, but that delegate is
-                // something other than s_completedSentinel, something went wrong, which should only happen if
-                // the instance was erroneously used, likely to hook up multiple continuations.
-                Debug.Assert(IsCompleted, $"Expected IsCompleted");
-                if (!ReferenceEquals(prevContinuation, s_completedSentinel))
-                {
-                    Debug.Assert(prevContinuation != s_availableSentinel, "Continuation was the available sentinel.");
-                    ThrowMultipleContinuations();
-                }
+                // Operation hadn't already completed, so we're done. The continuation will be
+                // invoked when SetResult/Exception is called at some later point.
+                return;
+            }
 
-                // Queue the continuation.  We always queue here, even if !RunContinuationsAsynchronously, in order
-                // to avoid stack diving; this path happens in the rare race when we're setting up to await and the
-                // object is completed after the awaiter.IsCompleted but before the awaiter.OnCompleted.
-                if (_capturedContext is null)
+            // Queue the continuation.  We always queue here, even if !RunContinuationsAsynchronously, in order
+            // to avoid stack diving; this path happens in the rare race when we're setting up to await and the
+            // object is completed after the awaiter.IsCompleted but before the awaiter.OnCompleted.
+
+            // We no longer need the stored values as we will be passing the state when queuing directly
+            _continuationState = null;
+            object? capturedContext = _capturedContext;
+            _capturedContext = null;
+
+            // If the set failed because there's already a delegate in _continuation, but that delegate is
+            // something other than the completion sentinel, something went wrong, which should only happen if
+            // the instance was erroneously used, likely to hook up multiple continuations.
+            Debug.Assert(prevContinuation != s_availableSentinel, "Continuation was the available sentinel.");
+            Debug.Assert(IsCompleted, $"Expected IsCompleted");
+            if (!ReferenceEquals(prevContinuation, s_completedSentinel))
+            {
+                ThrowMultipleContinuations();
+            }
+
+            if (capturedContext is null)
+            {
+                ChannelUtilities.UnsafeQueueUserWorkItem(continuation, state);
+            }
+            else if (sc is not null)
+            {
+                sc.Post(static s =>
                 {
-                    ChannelUtilities.UnsafeQueueUserWorkItem(continuation, state);
-                }
-                else if (sc is not null)
-                {
-                    sc.Post(static s =>
-                    {
-                        var t = (KeyValuePair<Action<object?>, object?>)s!;
-                        t.Key(t.Value);
-                    }, new KeyValuePair<Action<object?>, object?>(continuation, state));
-                }
-                else if (ts is not null)
-                {
-                    Debug.Assert(ts is not null);
-                    Task.Factory.StartNew(continuation, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, ts);
-                }
-                else
-                {
-                    Debug.Assert(_capturedContext is ExecutionContext);
-                    ChannelUtilities.QueueUserWorkItem(continuation, state);
-                }
+                    var t = (KeyValuePair<Action<object?>, object?>)s!;
+                    t.Key(t.Value);
+                }, new KeyValuePair<Action<object?>, object?>(continuation, state));
+            }
+            else if (ts is not null)
+            {
+                Task.Factory.StartNew(continuation, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, ts);
+            }
+            else
+            {
+                Debug.Assert(capturedContext is ExecutionContext);
+                ChannelUtilities.QueueUserWorkItem(continuation, state);
             }
         }
 
@@ -470,10 +480,19 @@ namespace System.Threading.Channels
 
             if (_pooled)
             {
-                Volatile.Write(ref _continuation, s_availableSentinel); // only after fetching all needed data
+                ClearRetainedState();
+                // enable reuse only after fetching all needed data
+                Volatile.Write(ref _continuation, s_availableSentinel);
             }
 
             error?.Throw();
+        }
+
+        internal virtual void ClearRetainedState()
+        {
+            _error = null;
+            Debug.Assert(_continuationState == null);
+            Debug.Assert(_capturedContext == null);
         }
     }
 
@@ -515,11 +534,19 @@ namespace System.Threading.Channels
 
             if (_pooled)
             {
-                Volatile.Write(ref _continuation, s_availableSentinel); // only after fetching all needed data
+                ClearRetainedState();
+                // enable reuse only after fetching all needed data
+                Volatile.Write(ref _continuation, s_availableSentinel);
             }
 
             error?.Throw();
             return result!;
+        }
+
+        internal override void ClearRetainedState()
+        {
+            base.ClearRetainedState();
+            _result = default;
         }
 
         /// <summary>Attempts to take ownership of the pooled instance.</summary>
@@ -529,10 +556,6 @@ namespace System.Threading.Channels
             Debug.Assert(_pooled, "Should only be used for pooled objects");
             if (ReferenceEquals(Interlocked.CompareExchange(ref _continuation, null, s_availableSentinel), s_availableSentinel))
             {
-                _continuationState = null;
-                _result = default;
-                _error = null;
-                _capturedContext = null;
                 return true;
             }
 
