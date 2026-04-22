@@ -62,7 +62,7 @@ $comment = @"
 
 A breaking change draft has been prepared for this PR.
 
-:point_right: **[Click here to create the issue in dotnet/docs]($issueUrl)**
+:point_right: **[Click here to create the issue in $DocsRepo]($issueUrl)**
 
 After creating the issue, please email a link to it to
 [.NET Breaking Change Notifications]($notificationEmailUrl).$mentionLine
@@ -72,7 +72,8 @@ After creating the issue, please email a link to it to
 "@
 
 # GitHub comment body limit is 65536 characters. The comment is now brief,
-# but the URL itself can be very long. Warn if close to limits.
+# but the URL itself can be very long. Warn if the comment exceeds the
+# configured comment-length threshold; the URL length is checked separately below.
 $maxCommentLength = 65000
 if ($comment.Length -gt $maxCommentLength) {
     Write-Warning "Comment body ($($comment.Length) chars) exceeds GitHub limit."
