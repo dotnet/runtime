@@ -5720,5 +5720,64 @@ namespace ILAssembler.Tests
             Assert.Equal(0x08, sigBytes[3]); // ELEMENT_TYPE_I4
             Assert.Equal(0x01, sigBytes[4]); // rank = 1
         }
+
+        [Fact]
+        public void CatchClause_SelfAssemblyTypeRef_ResolvesToTypeDef()
+        {
+            // When a catch clause references a type via [self-assembly]Type,
+            // the exception handler table must contain the resolved TypeDef token,
+            // not the stale PseudoHandle TypeRef token.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi MyException extends [mscorlib]System.Exception
+                {
+                    .method public specialname rtspecialname instance void .ctor() cil managed
+                    {
+                        ldarg.0
+                        call instance void [mscorlib]System.Exception::.ctor()
+                        ret
+                    }
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TryCatch() cil managed
+                    {
+                        .try
+                        {
+                            leave.s DONE
+                        }
+                        catch [test]MyException
+                        {
+                            pop
+                            leave.s DONE
+                        }
+                        DONE:
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // [test]MyException TypeRef should resolve to TypeDef
+            foreach (var trHandle in reader.TypeReferences)
+            {
+                var tr = reader.GetTypeReference(trHandle);
+                Assert.NotEqual("MyException", reader.GetString(tr.Name));
+            }
+
+            // Verify the method has exception handlers and the catch type is a TypeDef
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "TryCatch");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            var ehRegions = body.ExceptionRegions;
+            Assert.True(ehRegions.Length >= 1, $"Should have at least 1 exception region, got {ehRegions.Length}");
+
+            var catchRegion = ehRegions.First(r => r.Kind == ExceptionRegionKind.Catch);
+            Assert.Equal(HandleKind.TypeDefinition, catchRegion.CatchType.Kind);
+        }
     }
 }

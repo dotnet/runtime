@@ -337,6 +337,27 @@ namespace ILAssembler
                 int bodyOffset = -1;
                 if (methodDef.MethodBody.CodeBuilder.Count != 0)
                 {
+                    // Add deferred exception regions now that TypeRef→TypeDef resolution is complete.
+                    // Catch clause type handles are read here, after resolution has set the real handle.
+                    foreach (var region in methodDef.ExceptionRegions)
+                    {
+                        switch (region)
+                        {
+                            case ExceptionRegion.CatchRegion catchRegion:
+                                methodDef.MethodBody.ControlFlowBuilder!.AddCatchRegion(catchRegion.TryStart, catchRegion.TryEnd, catchRegion.HandlerStart, catchRegion.HandlerEnd, catchRegion.CatchType.Handle);
+                                break;
+                            case ExceptionRegion.FinallyRegion finallyRegion:
+                                methodDef.MethodBody.ControlFlowBuilder!.AddFinallyRegion(finallyRegion.TryStart, finallyRegion.TryEnd, finallyRegion.HandlerStart, finallyRegion.HandlerEnd);
+                                break;
+                            case ExceptionRegion.FaultRegion faultRegion:
+                                methodDef.MethodBody.ControlFlowBuilder!.AddFaultRegion(faultRegion.TryStart, faultRegion.TryEnd, faultRegion.HandlerStart, faultRegion.HandlerEnd);
+                                break;
+                            case ExceptionRegion.FilterRegion filterRegion:
+                                methodDef.MethodBody.ControlFlowBuilder!.AddFilterRegion(filterRegion.TryStart, filterRegion.TryEnd, filterRegion.HandlerStart, filterRegion.HandlerEnd, filterRegion.FilterStart);
+                                break;
+                        }
+                    }
+
                     StandaloneSignatureHandle localsSigHandle = methodDef.LocalsSignature is not null
                         ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle
                         : default;
@@ -1851,6 +1872,14 @@ namespace ILAssembler
 
             public MethodBodyAttributes BodyAttributes { get; set; }
 
+            /// <summary>
+            /// Deferred exception regions. Registered during parsing but added to
+            /// <see cref="InstructionEncoder.ControlFlowBuilder"/> during emission
+            /// so that TypeRef→TypeDef resolution has completed before catch type
+            /// handles are read.
+            /// </summary>
+            public List<ExceptionRegion> ExceptionRegions { get; } = new();
+
             public int MaxStack { get; set; }
 
             public (ModuleReferenceEntity ModuleName, string? EntryPointName, MethodImportAttributes Attributes)? MethodImportInformation { get; set; }
@@ -2093,6 +2122,18 @@ namespace ILAssembler
         {
             public string? DocumentPath { get; set; }
             public List<SequencePoint> SequencePoints { get; } = new();
+        }
+
+        /// <summary>
+        /// A deferred exception region entry. Stored during parsing and applied to the
+        /// <see cref="ControlFlowBuilder"/> during emission, after TypeRef→TypeDef resolution.
+        /// </summary>
+        internal abstract record ExceptionRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd)
+        {
+            internal sealed record CatchRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, TypeEntity CatchType) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
+            internal sealed record FinallyRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
+            internal sealed record FaultRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
+            internal sealed record FilterRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, LabelHandle FilterStart) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
         }
     }
 }
