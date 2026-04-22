@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -20,6 +21,30 @@ namespace Microsoft.Win32.SafeHandles
         // lifetime of the process. When this process exits, the job object is destroyed
         // by the OS, which terminates all child processes in the job.
         private static readonly Lazy<Interop.Kernel32.SafeJobHandle> s_killOnParentExitJob = new(CreateKillOnParentExitJob);
+
+        /// <summary>
+        /// Gets the process ID.
+        /// </summary>
+        public int ProcessId
+        {
+            get
+            {
+                Validate();
+
+                if (field == -1)
+                {
+                    field = Interop.Kernel32.GetProcessId(this);
+                }
+
+                return field;
+            }
+            private set;
+        } = -1;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the process has been terminated due to timeout or cancellation.
+        /// </summary>
+        private bool Canceled { get; set; }
 
         protected override bool ReleaseHandle()
         {
@@ -622,7 +647,52 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
+        private ProcessExitStatus WaitForExitCore()
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            processWaitHandle.WaitOne(Timeout.Infinite);
+
+            return GetExitStatus();
+        }
+
+        private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            if (!processWaitHandle.WaitOne(milliseconds))
+            {
+                exitStatus = null;
+                return false;
+            }
+
+            exitStatus = GetExitStatus();
+            return true;
+        }
+
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            if (!processWaitHandle.WaitOne(milliseconds))
+            {
+#pragma warning disable CA1416 // PosixSignal.SIGKILL is supported on Windows via SignalCore
+                Canceled = SignalCore(PosixSignal.SIGKILL);
+#pragma warning restore CA1416
+                processWaitHandle.WaitOne(Timeout.Infinite);
+            }
+
+            return GetExitStatus();
+        }
+
+        private Interop.Kernel32.ProcessWaitHandle GetWaitHandle() => new(this);
+
+        private ProcessExitStatus GetExitStatus()
+        {
+            if (!Interop.Kernel32.GetExitCodeProcess(this, out int exitCode))
+            {
+                throw new Win32Exception();
+            }
+
+            return new ProcessExitStatus(exitCode, Canceled);
+        }
 
         private bool SignalCore(PosixSignal signal)
         {
