@@ -1311,6 +1311,11 @@ CDAC_GLOBALS_BEGIN()
 #error Handle 'Browser' define
 #endif // Browser
 CDAC_GLOBAL_STRING(OperatingSystem, Browser)
+#elif defined(TARGET_APPLE)
+#ifdef Apple
+#error Handle 'Apple' define
+#endif // Apple
+CDAC_GLOBAL_STRING(OperatingSystem, Apple)
 #elif defined(TARGET_UNIX)
 #ifdef Unix
 #error Handle 'Unix' define
