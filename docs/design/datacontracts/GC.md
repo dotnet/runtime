@@ -250,7 +250,6 @@ Global variables used:
 | `GCHeapInterestingMechanismBits` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
 | `CurrentGCState` | uint | GC | `c_gc_state` enum value. Only available when `GCIdentifiers` contains `background`. |
 | `DynamicAdaptationMode` | int | GC | GC heap dynamic adaptation mode. Only available when `GCIdentifiers` contains `dynamic_heap`. |
-| `FeatureBackgroundGc` | byte | GC | Non-zero when background (concurrent) GC is enabled. If this global does not exist or is set to 0, the `MarkArray`, `NextSweepObj`, `BackgroundMinSavedAddr`, and `BackgroundMaxSavedAddr` fields and globals are not present and are assumed to have the value 0. |
 | `GCLowestAddress` | TargetPointer | VM | Lowest GC address as recorded by the VM/GC interface |
 | `GCHighestAddress` | TargetPointer | VM | Highest GC address as recorded by the VM/GC interface |
 | `HandleTableMap` | TargetPointer | GC | Pointer to the head of the handle table map linked list |
@@ -456,7 +455,6 @@ GCHeapData IGC.GetHeapData()
     GCHeapData data;
 
     // Read background GC globals - these are absent when background GC is disabled (e.g., on WebAssembly).
-    // FeatureBackgroundGc will be 0 or absent in that case; read with TryReadGlobalPointer and default to 0.
     if (target.TryReadGlobalPointer("GCHeapMarkArray", out TargetPointer? markArrayPtr))
     {
         data.MarkArray = target.ReadPointer(markArrayPtr.Value);

@@ -114,7 +114,6 @@ public static class Constants
         // Globals found on GCDescriptor
         // see src/coreclr/gc/datadescriptors/datadescriptor.inc
         public const string GCIdentifiers = nameof(GCIdentifiers);
-        public const string FeatureBackgroundGc = nameof(FeatureBackgroundGc);
         public const string MaxGeneration = nameof(MaxGeneration);
         public const string StructureInvalidCount = nameof(StructureInvalidCount);
         public const string NumHeaps = nameof(NumHeaps);

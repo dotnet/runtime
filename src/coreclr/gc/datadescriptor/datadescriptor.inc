@@ -207,10 +207,8 @@ CDAC_GLOBAL_POINTER(GlobalRegionsToDecommit, cdac_data<GC_NAMESPACE::gc_heap>::G
 
 #ifdef BACKGROUND_GC
 #define BACKGROUND_TYPE background
-CDAC_GLOBAL(FeatureBackgroundGc, T_UINT8, 1)
 #else // BACKGROUND_GC
 #define BACKGROUND_TYPE
-CDAC_GLOBAL(FeatureBackgroundGc, T_UINT8, 0)
 #endif // BACKGROUND_GC
 
 #ifdef DYNAMIC_HEAP_COUNT
