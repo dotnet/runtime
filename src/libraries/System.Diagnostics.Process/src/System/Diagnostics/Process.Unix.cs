@@ -223,11 +223,11 @@ namespace System.Diagnostics
         /// <summary>Checks whether the process has exited and updates state accordingly.</summary>
         private void UpdateHasExited()
         {
-            int? exitCode;
-            _exited = GetWaitState().GetExited(out exitCode, refresh: true);
-            if (_exited && exitCode != null)
+            ProcessExitStatus? exitStatus;
+            _exited = GetWaitState().GetExited(out exitStatus, refresh: true);
+            if (_exited && exitStatus is not null)
             {
-                _exitCode = exitCode.Value;
+                _exitCode = exitStatus.ExitCode;
             }
         }
 
@@ -352,7 +352,10 @@ namespace System.Diagnostics
             }
 
             EnsureState(State.HaveNonExitedId | State.IsLocal);
-            return new SafeProcessHandle(_processId, GetSafeWaitHandle());
+            // GetWaitState() ensures _waitStateHolder is initialized.
+            // IncrementRefCount() creates the Holder reference that is passed to SafeProcessHandle.
+            GetWaitState();
+            return new SafeProcessHandle(_waitStateHolder!.IncrementRefCount());
         }
 
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)
@@ -360,12 +363,12 @@ namespace System.Diagnostics
             SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, out ProcessWaitState.Holder? waitStateHolder);
             Debug.Assert(!startedProcess.IsInvalid);
 
-            _waitStateHolder = waitStateHolder;
+            // SafeProcessHandle has its own copy of the wait state holder, so we need to increment the ref count for our copy.
+            _waitStateHolder = waitStateHolder!.IncrementRefCount();
             SetProcessHandle(startedProcess);
             SetProcessId(startedProcess.ProcessId);
             return true;
         }
-
 
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
         private ProcessWaitState.Holder? _waitStateHolder;

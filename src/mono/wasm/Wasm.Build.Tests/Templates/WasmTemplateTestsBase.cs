@@ -497,8 +497,8 @@ public class WasmTemplateTestsBase : BuildTestBase
     public BuildPaths GetBuildPaths(Configuration config, bool forPublish, string? projectDir = null) =>
         _provider.GetBuildPaths(config, forPublish, projectDir);
 
-    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged) =>
-        _provider.GetFilesTable(projectName, isAOT, paths, unchanged);
+    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged, string? bootConfigDir = null) =>
+        _provider.GetFilesTable(projectName, isAOT, paths, unchanged, bootConfigDir);
 
     public IDictionary<string, FileStat> StatFiles(IDictionary<string, (string fullPath, bool unchanged)> fullpaths) =>
         _provider.StatFiles(fullpaths);
