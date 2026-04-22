@@ -3046,13 +3046,13 @@ void AsyncTransformation::CreateResumptionSwitch()
 
         ilOffset = m_compiler->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
 
-        GenTreeCall* callHelper = m_compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffset);
-        callHelper->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        GenTree* patchpointNode = m_compiler->gtNewOperNode(GT_PATCHPOINT_FORCED, TYP_VOID, ilOffset);
+        patchpointNode->gtFlags |= GTF_CALL;
 
         m_compiler->compCurBB = callHelperBB;
-        m_compiler->fgMorphTree(callHelper);
+        m_compiler->fgMorphTree(patchpointNode);
 
-        LIR::AsRange(callHelperBB).InsertAtEnd(LIR::SeqTree(m_compiler, callHelper));
+        LIR::AsRange(callHelperBB).InsertAtEnd(LIR::SeqTree(m_compiler, patchpointNode));
     }
     else if (m_compiler->opts.IsOSR())
     {
