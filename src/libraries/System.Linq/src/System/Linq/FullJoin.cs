@@ -24,6 +24,66 @@ namespace System.Linq
         /// <typeparam name="TResult">The type of the result elements.</typeparam>
         /// <returns>An <see cref="IEnumerable{T}" /> that has elements of type <typeparamref name="TResult" /> that are obtained by performing a full outer join on two sequences.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
+        /// <example>
+        /// <para>
+        /// The following code example demonstrates how to use <see cref="FullJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult}, IEqualityComparer{TKey})" />
+        /// to perform a full outer join of two sequences based on a common key.
+        /// </para>
+        /// <code>
+        /// class Person
+        /// {
+        ///     public string Name { get; set; }
+        /// }
+        ///
+        /// class Pet
+        /// {
+        ///     public string Name { get; set; }
+        ///     public Person Owner { get; set; }
+        /// }
+        ///
+        /// public static void FullJoin()
+        /// {
+        ///     Person terry = new Person { Name = "Adams, Terry" };
+        ///     Person charlotte = new Person { Name = "Weiss, Charlotte" };
+        ///     Person tom = new Person { Name = "Chapkin, Tom" };
+        ///     Person magnus = new Person { Name = "Hedlund, Magnus" };
+        ///
+        ///     Pet barley = new Pet { Name = "Barley", Owner = terry };
+        ///     Pet boots = new Pet { Name = "Boots", Owner = terry };
+        ///     Pet whiskers = new Pet { Name = "Whiskers", Owner = charlotte };
+        ///     Pet daisy = new Pet { Name = "Daisy", Owner = magnus };
+        ///
+        ///     List{Person} people = new List{Person} { terry, charlotte, tom };
+        ///     List{Pet} pets = new List{Pet} { barley, boots, whiskers, daisy };
+        ///
+        ///     var query =
+        ///         people.FullJoin(
+        ///             pets,
+        ///             person => person,
+        ///             pet => pet.Owner,
+        ///             (person, pet) => new
+        ///             {
+        ///                 OwnerName = person?.Name ?? "NONE",
+        ///                 PetName = pet?.Name ?? "NONE"
+        ///             });
+        ///
+        ///     foreach (var obj in query)
+        ///     {
+        ///         Console.WriteLine("{0} - {1}", obj.OwnerName, obj.PetName);
+        ///     }
+        /// }
+        ///
+        /// /*
+        ///  This code produces the following output:
+        ///
+        ///  Adams, Terry - Barley
+        ///  Adams, Terry - Boots
+        ///  Weiss, Charlotte - Whiskers
+        ///  Chapkin, Tom - NONE
+        ///  NONE - Daisy
+        /// */
+        /// </code>
+        /// </example>
         /// <remarks>
         /// <para>
         /// This method is implemented by using deferred execution. The immediate return value is an object that stores
@@ -66,8 +126,17 @@ namespace System.Linq
             }
 
             return
+                IsEmptyArray(outer) ? EmptyOuterIterator(inner, resultSelector) :
                 IsEmptyArray(inner) ? EmptyInnerIterator(outer, resultSelector) :
                 FullJoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer);
+
+            static IEnumerable<TResult> EmptyOuterIterator(IEnumerable<TInner> inner, Func<TOuter?, TInner?, TResult> resultSelector)
+            {
+                foreach (TInner item in inner)
+                {
+                    yield return resultSelector(default, item);
+                }
+            }
 
             static IEnumerable<TResult> EmptyInnerIterator(IEnumerable<TOuter> outer, Func<TOuter?, TInner?, TResult> resultSelector)
             {

@@ -27,12 +27,19 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public async Task BothEmpty_ProducesEmpty()
+        public void Empty_ProducesExpectedBehavior() // validating an optimization / implementation detail
         {
             IAsyncEnumerable<string> empty = AsyncEnumerable.Empty<string>();
+            IAsyncEnumerable<string> nonEmpty = CreateSource("1", "2", "3");
 
-            Assert.Empty(await empty.FullJoin(empty, s => s, s => s, (s1, s2) => s1).ToListAsync());
-            Assert.Empty(await empty.FullJoin(empty, async (s, ct) => s, async (s, ct) => s, async (s1, s2, ct) => s1).ToListAsync());
+            Assert.Same(AsyncEnumerable.Empty<string>(), empty.FullJoin(empty, s => s, s => s, (s1, s2) => s1));
+            Assert.Same(AsyncEnumerable.Empty<string>(), empty.FullJoin(empty, async (s, ct) => s, async (s, ct) => s, async (s1, s2, ct) => s1));
+
+            Assert.NotSame(AsyncEnumerable.Empty<string>(), nonEmpty.FullJoin(empty, s => s, s => s, (s1, s2) => s1));
+            Assert.NotSame(AsyncEnumerable.Empty<string>(), nonEmpty.FullJoin(empty, async (s, ct) => s, async (s, ct) => s, async (s1, s2, ct) => s1));
+
+            Assert.NotSame(AsyncEnumerable.Empty<string>(), empty.FullJoin(nonEmpty, s => s, s => s, (s1, s2) => s1));
+            Assert.NotSame(AsyncEnumerable.Empty<string>(), empty.FullJoin(nonEmpty, async (s, ct) => s, async (s, ct) => s, async (s1, s2, ct) => s1));
         }
 
         [Fact]

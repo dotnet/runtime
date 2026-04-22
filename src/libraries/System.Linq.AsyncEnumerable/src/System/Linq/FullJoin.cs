@@ -41,7 +41,13 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(innerKeySelector);
             ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer, default);
+            return
+                outer.IsKnownEmpty() ? inner.IsKnownEmpty() ?
+                    Empty<TResult>() :
+                    UnmatchedInner(inner, resultSelector, default) :
+                inner.IsKnownEmpty() ?
+                    UnmatchedOuter(outer, resultSelector, default) :
+                Impl(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TOuter> outer, IAsyncEnumerable<TInner> inner,
@@ -99,6 +105,28 @@ namespace System.Linq
                     }
                 }
             }
+
+            static async IAsyncEnumerable<TResult> UnmatchedOuter(
+                IAsyncEnumerable<TOuter> outer,
+                Func<TOuter?, TInner?, TResult> resultSelector,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                await foreach (TOuter item in outer.WithCancellation(cancellationToken))
+                {
+                    yield return resultSelector(item, default);
+                }
+            }
+
+            static async IAsyncEnumerable<TResult> UnmatchedInner(
+                IAsyncEnumerable<TInner> inner,
+                Func<TOuter?, TInner?, TResult> resultSelector,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                await foreach (TInner item in inner.WithCancellation(cancellationToken))
+                {
+                    yield return resultSelector(default, item);
+                }
+            }
         }
 
         /// <summary>Correlates the elements of two async sequences based on matching keys, producing a result for matched and unmatched elements.</summary>
@@ -132,7 +160,13 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(innerKeySelector);
             ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer, default);
+            return
+                outer.IsKnownEmpty() ? inner.IsKnownEmpty() ?
+                    Empty<TResult>() :
+                    UnmatchedInner(inner, resultSelector, default) :
+                inner.IsKnownEmpty() ?
+                    UnmatchedOuter(outer, resultSelector, default) :
+                Impl(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TOuter> outer,
@@ -189,6 +223,28 @@ namespace System.Linq
                         }
                         while (g != innerLookup._lastGrouping);
                     }
+                }
+            }
+
+            static async IAsyncEnumerable<TResult> UnmatchedOuter(
+                IAsyncEnumerable<TOuter> outer,
+                Func<TOuter?, TInner?, CancellationToken, ValueTask<TResult>> resultSelector,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                await foreach (TOuter item in outer.WithCancellation(cancellationToken))
+                {
+                    yield return await resultSelector(item, default, cancellationToken);
+                }
+            }
+
+            static async IAsyncEnumerable<TResult> UnmatchedInner(
+                IAsyncEnumerable<TInner> inner,
+                Func<TOuter?, TInner?, CancellationToken, ValueTask<TResult>> resultSelector,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                await foreach (TInner item in inner.WithCancellation(cancellationToken))
+                {
+                    yield return await resultSelector(default, item, cancellationToken);
                 }
             }
         }
