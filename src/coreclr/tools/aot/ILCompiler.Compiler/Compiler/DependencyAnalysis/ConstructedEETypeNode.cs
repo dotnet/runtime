@@ -33,6 +33,11 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.AnalysisCharacteristic("DynamicInterfaceCastablePresent"), "Implements IDynamicInterfaceCastable");
             }
 
+            if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+            {
+                dependencyList.Add(factory.ConstructedTypeSymbol(_type.Instantiation[0].MakeArrayType()), "Generic interface implemented by arrays");
+            }
+
             // Ensure that we track the metadata type symbol if we are working with a constructed type symbol.
             // The emitter will ensure we don't emit both, but this allows us assert that we only generate
             // relocs to nodes we emit.
