@@ -280,7 +280,7 @@ namespace System.Linq.Tests
         {
             int?[] outer = [null, null];
             int?[] inner = [null, null, null];
-            int?[] expected = [null, null];
+            int?[] expected = [null, null, null, null, null];
 
             Assert.Equal(expected, outer.FullJoin(inner, e => e, e => e, (x, y) => x));
             Assert.Equal(expected, outer.FullJoin(inner, e => e, e => e, (x, y) => y));
@@ -291,9 +291,27 @@ namespace System.Linq.Tests
         {
             string[] outer = [null, string.Empty];
             string[] inner = [null, string.Empty];
-            string[] expected = [null, string.Empty];
+            string[] expected = [null, string.Empty, null];
 
             Assert.Equal(expected, outer.FullJoin(inner, e => e, e => e, (x, y) => y, EqualityComparer<string>.Default));
+        }
+
+        [Fact]
+        public void NullKeysAreUnmatchedButPreserved()
+        {
+            string[] outer = ["#o1", "a", "#o2"];
+            string[] inner = ["#i1", "A", "#i2", "b"];
+            (string? Outer, string? Inner)[] expected =
+            [
+                ("#o1", null),
+                ("a", "A"),
+                ("#o2", null),
+                (null, "#i1"),
+                (null, "#i2"),
+                (null, "b")
+            ];
+
+            Assert.Equal(expected, outer.FullJoin(inner, s => s[0] == '#' ? null : s, s => s[0] == '#' ? null : s, StringComparer.OrdinalIgnoreCase));
         }
 
         [Fact]

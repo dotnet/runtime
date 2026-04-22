@@ -35,6 +35,68 @@ namespace System.Linq.Tests
             Assert.Empty(await empty.FullJoin(empty, async (s, ct) => s, async (s, ct) => s, async (s1, s2, ct) => s1).ToListAsync());
         }
 
+        [Fact]
+        public async Task NullKeysAreUnmatchedButPreserved()
+        {
+            string[] expected =
+            [
+                "#o1:<null>",
+                "a:A",
+                "#o2:<null>",
+                "<null>:#i1",
+                "<null>:#i2",
+                "<null>:b"
+            ];
+
+            Assert.Equal(
+                expected,
+                await CreateSource("#o1", "a", "#o2").FullJoin(
+                    CreateSource("#i1", "A", "#i2", "b"),
+                    s => s[0] == '#' ? null : s,
+                    s => s[0] == '#' ? null : s,
+                    (outer, inner) => $"{outer ?? "<null>"}:{inner ?? "<null>"}",
+                    StringComparer.OrdinalIgnoreCase).ToListAsync());
+
+            Assert.Equal(
+                expected,
+                await CreateSource("#o1", "a", "#o2").FullJoin(
+                    CreateSource("#i1", "A", "#i2", "b"),
+                    async (s, ct) => s[0] == '#' ? null : s,
+                    async (s, ct) => s[0] == '#' ? null : s,
+                    async (outer, inner, ct) => $"{outer ?? "<null>"}:{inner ?? "<null>"}",
+                    StringComparer.OrdinalIgnoreCase).ToListAsync());
+        }
+
+        [Fact]
+        public async Task TupleOverloads_PreserveNullKeyRows()
+        {
+            (string? Outer, string? Inner)[] expected =
+            [
+                ("#o1", null),
+                ("a", "A"),
+                ("#o2", null),
+                (null, "#i1"),
+                (null, "#i2"),
+                (null, "b")
+            ];
+
+            Assert.Equal(
+                expected,
+                await CreateSource("#o1", "a", "#o2").FullJoin(
+                    CreateSource("#i1", "A", "#i2", "b"),
+                    s => s[0] == '#' ? null : s,
+                    s => s[0] == '#' ? null : s,
+                    StringComparer.OrdinalIgnoreCase).ToListAsync());
+
+            Assert.Equal(
+                expected,
+                await CreateSource("#o1", "a", "#o2").FullJoin(
+                    CreateSource("#i1", "A", "#i2", "b"),
+                    async (s, ct) => s[0] == '#' ? null : s,
+                    async (s, ct) => s[0] == '#' ? null : s,
+                    StringComparer.OrdinalIgnoreCase).ToListAsync());
+        }
+
 #if NET
         [Fact]
         public async Task VariousValues_MatchesEnumerable_String()

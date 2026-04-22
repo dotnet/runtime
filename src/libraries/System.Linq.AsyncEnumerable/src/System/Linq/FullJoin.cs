@@ -51,7 +51,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                AsyncLookup<TKey, TInner> innerLookup = await AsyncLookup<TKey, TInner>.CreateForJoinAsync(inner, innerKeySelector, comparer, cancellationToken);
+                AsyncLookup<TKey, TInner> innerLookup = await CreateLookupPreservingNullKeysAsync(inner, innerKeySelector, comparer, cancellationToken);
 
                 HashSet<Grouping<TKey, TInner>>? matchedGroupings = innerLookup.Count != 0
                     ? new HashSet<Grouping<TKey, TInner>>()
@@ -59,7 +59,8 @@ namespace System.Linq
 
                 await foreach (TOuter item in outer.WithCancellation(cancellationToken))
                 {
-                    Grouping<TKey, TInner>? g = innerLookup.GetGrouping(outerKeySelector(item), create: false);
+                    TKey key = outerKeySelector(item);
+                    Grouping<TKey, TInner>? g = key is null ? null : innerLookup.GetGrouping(key, create: false);
                     if (g is null)
                     {
                         yield return resultSelector(item, default);
@@ -142,7 +143,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                AsyncLookup<TKey, TInner> innerLookup = await AsyncLookup<TKey, TInner>.CreateForJoinAsync(inner, innerKeySelector, comparer, cancellationToken);
+                AsyncLookup<TKey, TInner> innerLookup = await CreateLookupPreservingNullKeysAsync(inner, innerKeySelector, comparer, cancellationToken);
 
                 HashSet<Grouping<TKey, TInner>>? matchedGroupings = innerLookup.Count != 0
                     ? new HashSet<Grouping<TKey, TInner>>()
@@ -150,7 +151,8 @@ namespace System.Linq
 
                 await foreach (TOuter item in outer.WithCancellation(cancellationToken))
                 {
-                    Grouping<TKey, TInner>? g = innerLookup.GetGrouping(await outerKeySelector(item, cancellationToken), create: false);
+                    TKey key = await outerKeySelector(item, cancellationToken);
+                    Grouping<TKey, TInner>? g = key is null ? null : innerLookup.GetGrouping(key, create: false);
                     if (g is null)
                     {
                         yield return await resultSelector(item, default, cancellationToken);
@@ -237,6 +239,36 @@ namespace System.Linq
             IEqualityComparer<TKey>? comparer = null)
         {
             return FullJoin(outer, inner, outerKeySelector, innerKeySelector, static (outer, inner, ct) => new ValueTask<(TOuter?, TInner?)>((outer, inner)), comparer);
+        }
+
+        private static async ValueTask<AsyncLookup<TKey, TElement>> CreateLookupPreservingNullKeysAsync<TElement, TKey>(
+            IAsyncEnumerable<TElement> source,
+            Func<TElement, TKey> keySelector,
+            IEqualityComparer<TKey>? comparer,
+            CancellationToken cancellationToken)
+        {
+            AsyncLookup<TKey, TElement> lookup = new(comparer);
+            await foreach (TElement item in source.WithCancellation(cancellationToken))
+            {
+                lookup.GetGrouping(keySelector(item), create: true)!.Add(item);
+            }
+
+            return lookup;
+        }
+
+        private static async ValueTask<AsyncLookup<TKey, TElement>> CreateLookupPreservingNullKeysAsync<TElement, TKey>(
+            IAsyncEnumerable<TElement> source,
+            Func<TElement, CancellationToken, ValueTask<TKey>> keySelector,
+            IEqualityComparer<TKey>? comparer,
+            CancellationToken cancellationToken)
+        {
+            AsyncLookup<TKey, TElement> lookup = new(comparer);
+            await foreach (TElement item in source.WithCancellation(cancellationToken))
+            {
+                lookup.GetGrouping(await keySelector(item, cancellationToken), create: true)!.Add(item);
+            }
+
+            return lookup;
         }
     }
 }

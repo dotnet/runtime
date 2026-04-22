@@ -97,7 +97,9 @@ namespace System.Linq
 
         private static IEnumerable<TResult> FullJoinIterator<TOuter, TInner, TKey, TResult>(IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter?, TInner?, TResult> resultSelector, IEqualityComparer<TKey>? comparer)
         {
-            Lookup<TKey, TInner> innerLookup = Lookup<TKey, TInner>.CreateForJoin(inner, innerKeySelector, comparer);
+            // FullJoin needs to preserve inner elements with null keys so they can be emitted
+            // as unmatched rows, even though null keys still never participate in matches.
+            Lookup<TKey, TInner> innerLookup = Lookup<TKey, TInner>.Create(inner, innerKeySelector, comparer);
 
             HashSet<Grouping<TKey, TInner>>? matchedGroupings = innerLookup.Count != 0
                 ? new HashSet<Grouping<TKey, TInner>>()
@@ -105,7 +107,8 @@ namespace System.Linq
 
             foreach (TOuter item in outer)
             {
-                Grouping<TKey, TInner>? g = innerLookup.GetGrouping(outerKeySelector(item), create: false);
+                TKey key = outerKeySelector(item);
+                Grouping<TKey, TInner>? g = key is null ? null : innerLookup.GetGrouping(key, create: false);
                 if (g is null)
                 {
                     yield return resultSelector(item, default);
