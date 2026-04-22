@@ -491,6 +491,8 @@ namespace System.Threading.Channels
         internal virtual void ClearRetainedState()
         {
             _error = null;
+            Debug.Assert((object?)Next == null);
+            Debug.Assert((object?)Previous == null);
             Debug.Assert(_continuationState == null);
             Debug.Assert(_capturedContext == null);
         }

@@ -242,7 +242,10 @@ namespace System.Threading.Tasks.Sources
                 _continuationState = null;
                 object? context = _capturedContext;
                 _capturedContext = null;
-                Volatile.Write(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel);
+                // NB: this write must happen after setting result/error, but
+                //     _continuation is set to not-null via CAS after setting result/error,
+                //     and this write is after that.
+                _continuation = ManualResetValueTaskSourceCoreShared.s_sentinel;
 
                 if (context is null)
                 {
