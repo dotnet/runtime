@@ -5599,5 +5599,126 @@ namespace ILAssembler.Tests
             Assert.Equal(0x08, sig2[2]); // ELEMENT_TYPE_I4
             Assert.Equal(0x02, sig2[3]); // rank = 2
         }
+
+        [Fact]
+        public void LocalsInit_EmitsStandaloneSignature()
+        {
+            // .locals init (...) should emit a StandAloneSig that is connected
+            // to the method body, causing ildasm to show the .locals directive.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .locals init (int32 x, string s)
+                        ldc.i4.0
+                        stloc.0
+                        ldnull
+                        stloc.1
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            int sigCount = reader.GetTableRowCount(TableIndex.StandAloneSig);
+            Assert.True(sigCount >= 1, $"Should have at least 1 StandAloneSig for .locals, got {sigCount}");
+
+            var sig = reader.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(1));
+            var sigBytes = reader.GetBlobBytes(sig.Signature);
+
+            // LOCAL_SIG (0x07), 2 locals, I4 (0x08), STRING (0x0E)
+            Assert.Equal(0x07, sigBytes[0]); // LOCAL_SIG
+            Assert.Equal(0x02, sigBytes[1]); // 2 locals
+            Assert.Equal(0x08, sigBytes[2]); // int32
+            Assert.Equal(0x0E, sigBytes[3]); // string
+
+            // The method should have InitLocals flag
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "M");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            Assert.True(body.LocalVariablesInitialized);
+        }
+
+        [Fact]
+        public void LocalsWithoutInit_EmitsStandaloneSignature()
+        {
+            // .locals (...) without init should still emit a StandAloneSig
+            // but without the InitLocals flag.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .locals (int32 x)
+                        ldc.i4.0
+                        stloc.0
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            int sigCount = reader.GetTableRowCount(TableIndex.StandAloneSig);
+            Assert.True(sigCount >= 1, $"Should have at least 1 StandAloneSig for .locals, got {sigCount}");
+
+            var sig = reader.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(1));
+            var sigBytes = reader.GetBlobBytes(sig.Signature);
+
+            Assert.Equal(0x07, sigBytes[0]); // LOCAL_SIG
+            Assert.Equal(0x01, sigBytes[1]); // 1 local
+            Assert.Equal(0x08, sigBytes[2]); // int32
+
+            // The method should NOT have InitLocals flag
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "M");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            Assert.False(body.LocalVariablesInitialized);
+        }
+
+        [Fact]
+        public void LocalsWithArrayType_EmitsStandaloneSignature()
+        {
+            // .locals init with array type should emit correct signature.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .locals init (int32[0...] arr)
+                        ldnull
+                        stloc.0
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            int sigCount = reader.GetTableRowCount(TableIndex.StandAloneSig);
+            Assert.True(sigCount >= 1, $"Should have at least 1 StandAloneSig, got {sigCount}");
+
+            var sig = reader.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(1));
+            var sigBytes = reader.GetBlobBytes(sig.Signature);
+
+            Assert.Equal(0x07, sigBytes[0]); // LOCAL_SIG
+            Assert.Equal(0x01, sigBytes[1]); // 1 local
+            Assert.Equal(0x14, sigBytes[2]); // ELEMENT_TYPE_ARRAY
+            Assert.Equal(0x08, sigBytes[3]); // ELEMENT_TYPE_I4
+            Assert.Equal(0x01, sigBytes[4]); // rank = 1
+        }
     }
 }
