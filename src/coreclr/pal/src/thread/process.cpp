@@ -35,7 +35,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <generatedumpflags.h>
 #include <clrconfignocache.h>
 
-#ifdef HOST_ANDROID
+#ifdef FEATURE_INPROC_CRASHREPORT
 #include "debug/crashreport/inproccrashreporter.h"
 #endif
 
@@ -194,7 +194,7 @@ Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalC
 #define MAX_ARGV_ENTRIES 32
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
-#ifdef HOST_ANDROID
+#ifdef FEATURE_INPROC_CRASHREPORT
 // Read from the fatal-signal path (PROCCreateCrashDumpIfEnabled) and written
 // once during startup (PROCEnableInProcCrashReport); use Volatile<bool> to
 // match the signal-path publication of g_logManagedCallstackForSignalCallback.
@@ -2797,7 +2797,7 @@ Parameters:
 
 (no return value)
 --*/
-#ifdef HOST_ANDROID
+#ifdef FEATURE_INPROC_CRASHREPORT
 #include <minipal/log.h>
 void
 PROCEnableInProcCrashReport()

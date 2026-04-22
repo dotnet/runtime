@@ -116,7 +116,6 @@
 //     boxing this describes this feature.
 
 #include "common.h"
-#include "crashreportstackwalker.h"
 
 #include "vars.hpp"
 #include "log.h"
@@ -206,6 +205,10 @@
 #ifdef FEATURE_GDBJIT
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "crashreportstackwalker.h"
+#endif // FEATURE_INPROC_CRASHREPORT
 
 #include "genanalysis.h"
 
@@ -697,8 +700,11 @@ void EEStartupHelper()
 
 #ifdef HOST_ANDROID
         PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
-        CrashReportRegisterStackWalker();
 #endif // HOST_ANDROID
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        CrashReportRegisterStackWalker();
+#endif // FEATURE_INPROC_CRASHREPORT
 
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {

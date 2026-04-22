@@ -313,7 +313,6 @@ set(VM_SOURCES_WKS
     comutilnative.cpp
     coreassemblyspec.cpp
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
-    crashreportstackwalker.cpp
     customattribute.cpp
     custommarshalerinfo.cpp
     autotrace.cpp
@@ -564,6 +563,12 @@ if(FEATURE_OBJCMARSHAL)
         interoplibinterface_objc.cpp
     )
 endif(FEATURE_OBJCMARSHAL)
+
+if(FEATURE_INPROC_CRASHREPORT)
+    list(APPEND VM_SOURCES_WKS
+        crashreportstackwalker.cpp
+    )
+endif(FEATURE_INPROC_CRASHREPORT)
 
 list(APPEND VM_SOURCES_WKS
     interoplibinterface_java.cpp

@@ -228,7 +228,7 @@ add_library(coreclrpal_objects
 
 add_library(coreclrpal STATIC
   $<TARGET_OBJECTS:coreclrpal_objects>
-  $<$<BOOL:${CLR_CMAKE_TARGET_ANDROID}>:$<TARGET_OBJECTS:inproccrashreport>>
+  $<$<BOOL:${FEATURE_INPROC_CRASHREPORT}>:$<TARGET_OBJECTS:inproccrashreport>>
   ${LIBUNWIND_OBJECTS}
 )
 

@@ -11,7 +11,7 @@
 #include <clrconfignocache.h>
 #include <minipal/guid.h>
 
-#ifdef HOST_ANDROID
+#ifdef FEATURE_INPROC_CRASHREPORT
 
 #include "debug/crashreport/inproccrashreporter.h"
 #include "threadsuspend.h"
@@ -444,4 +444,4 @@ CrashReportRegisterStackWalker()
     PROCEnableInProcCrashReport();
 }
 
-#endif // HOST_ANDROID
+#endif // FEATURE_INPROC_CRASHREPORT
