@@ -1,22 +1,20 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Cecil;
 using Mono.Linker;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.TestCasesRunner;
+using Xunit;
 
 namespace Mono.Linker.Tests
 {
-    [DoNotParallelize]
-    [TestClass]
     public class GetDisplayNameTests
     {
-        [TestMethod]
-        [DynamicData(nameof(GetMemberAssertions), new object[] { typeof(GetDisplayNameTests) })]
+        [Theory]
+        [MemberData(nameof(GetMemberAssertions))]
         public void TestGetDisplayName(IMemberDefinition member, CustomAttribute customAttribute)
         {
             // The only intention with these tests is to check that the language elements that could
@@ -29,21 +27,21 @@ namespace Mono.Linker.Tests
             {
                 case TokenType.TypeRef:
                 case TokenType.TypeDef:
-                    Assert.AreEqual(expectedDisplayName, (member as TypeReference).GetDisplayName());
+                    Assert.Equal(expectedDisplayName, (member as TypeReference).GetDisplayName());
                     break;
                 case TokenType.MemberRef:
                 case TokenType.Method:
-                    Assert.AreEqual(expectedDisplayName, (member as MethodReference).GetDisplayName());
+                    Assert.Equal(expectedDisplayName, (member as MethodReference).GetDisplayName());
                     break;
                 case TokenType.Field:
-                    Assert.AreEqual(expectedDisplayName, (member as FieldReference).GetDisplayName());
+                    Assert.Equal(expectedDisplayName, (member as FieldReference).GetDisplayName());
                     break;
                 default:
                     throw new NotImplementedException();
             }
         }
 
-        public static IEnumerable<TestDataRow<(IMemberDefinition, CustomAttribute)>> GetMemberAssertions(Type type) => MemberAssertionsCollector.GetMemberAssertionsData(type);
+        public static IEnumerable<object[]> GetMemberAssertions() => MemberAssertionsCollector.GetMemberAssertionsData(typeof(GetDisplayNameTests));
 
         [DisplayName("Mono.Linker.Tests.GetDisplayNameTests.Field")]
         public int Field;
@@ -217,18 +215,17 @@ namespace Mono.Linker.Tests
     }
 }
 
-[TestClass]
 public class GetDisplayNameTestsGlobalScope
 {
-    [TestMethod]
-    [DynamicData(nameof(GetMemberAssertions), new object[] { typeof(global::GetDisplayNameTestsGlobalScope) })]
+    [Theory]
+    [MemberData(nameof(GetMemberAssertions))]
     public void TestGetDisplayName(IMemberDefinition member, CustomAttribute customAttribute)
     {
         var expectedDisplayName = (string)customAttribute.ConstructorArguments[0].Value;
-        Assert.AreEqual(expectedDisplayName, (member as MemberReference).GetDisplayName());
+        Assert.Equal(expectedDisplayName, (member as MemberReference).GetDisplayName());
     }
 
-    public static IEnumerable<TestDataRow<(IMemberDefinition, CustomAttribute)>> GetMemberAssertions(Type type) => MemberAssertionsCollector.GetMemberAssertionsData(type);
+    public static IEnumerable<object[]> GetMemberAssertions() => MemberAssertionsCollector.GetMemberAssertionsData(typeof(global::GetDisplayNameTestsGlobalScope));
 
     [DisplayName("GetDisplayNameTestsGlobalScope.TypeInGlobalScope")]
     public class TypeInGlobalScope

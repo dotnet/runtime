@@ -120,11 +120,33 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         else
             BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
 
-        string frameworkDir = GetBinFrameworkDir(config, forPublish: isPublish);
-
-        // The file may be fingerprinted (e.g. dotnet.native.<hash>.js.symbols),
-        // so use a glob pattern to find it.
-        bool symbolsFileExists = Directory.EnumerateFiles(frameworkDir, "dotnet.native*.js.symbols").Any();
+        // Locate the emitted symbols file. With CopyToOutputDirectory=Never, framework files are
+        // no longer in bin/_framework during build: the native symbols file lives in
+        // obj/{config}/{tfm}/wasm/for-build/ (native rebuild) and the materialized copy ends up
+        // in obj/{config}/{tfm}/fx/{name}/_framework/. The publish path still has them in
+        // bin/{config}/{tfm}/publish/wwwroot/_framework/.
+        // The file may be fingerprinted (e.g. dotnet.native.<hash>.js.symbols), so use a glob.
+        const string symbolsPattern = "dotnet.native*.js.symbols";
+        bool symbolsFileExists;
+        if (isPublish)
+        {
+            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
+            symbolsFileExists = Directory.EnumerateFiles(frameworkDir, symbolsPattern).Any();
+        }
+        else
+        {
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework);
+            string fxBaseDir = Path.Combine(objDir, "fx");
+            string[] searchDirs = [
+                Path.Combine(objDir, "wasm", "for-build"),
+                .. Directory.Exists(fxBaseDir)
+                    ? Directory.GetDirectories(fxBaseDir).Select(d => Path.Combine(d, "_framework"))
+                    : Array.Empty<string>()
+            ];
+            symbolsFileExists = searchDirs
+                .Where(Directory.Exists)
+                .Any(d => Directory.EnumerateFiles(d, symbolsPattern).Any());
+        }
         Assert.Equal(emitSymbolMap, symbolsFileExists);
     }
 }
