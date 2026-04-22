@@ -646,9 +646,12 @@ Copyright (c) .NET Foundation. All rights reserved.
        incremental boot JSON target. WriteOnlyWhenDifferent preserves the timestamp when unchanged. -->
   <Target Name="_WriteWasmBootJsonBuildPropertyStamp"
     DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints">
+    <PropertyGroup>
+      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonBuildStampContent>
+    </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
-      Lines="$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)"
+      Lines="$(_WasmBootJsonBuildStampContent)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -1113,9 +1116,12 @@ Copyright (c) .NET Foundation. All rights reserved.
   <!-- Write a property stamp for publish boot JSON incrementalism. Same approach as build stamp. -->
   <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
+    <PropertyGroup>
+      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonPublishStampContent>
+    </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
-      Lines="$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)"
+      Lines="$(_WasmBootJsonPublishStampContent)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
