@@ -26,7 +26,6 @@ public:
           m_outputCallback(nullptr),
           m_outputContext(nullptr)
     {
-        m_buffer[0] = '\0';
     }
 
     SignalSafeJsonWriter(const SignalSafeJsonWriter&) = delete;
@@ -34,16 +33,18 @@ public:
 
     void Init(CrashJsonOutputCallback outputCallback, void* outputContext);
     void OpenObject(const char* key);
+    void OpenObject();
     void CloseObject();
     void OpenArray(const char* key);
+    void OpenArray();
     void CloseArray();
     void WriteString(const char* key, const char* value);
-    void Finish();
+    bool Finish();
     bool Flush();
-    bool HasError() const;
 
 private:
     bool Append(const char* str, size_t len);
+    bool AppendChar(char c);
     bool AppendStr(const char* str);
     void WriteSeparator();
     void WriteEscapedString(const char* str);

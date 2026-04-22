@@ -278,7 +278,7 @@ CreateInProcCrashReport(
 
     s_jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &outputContext);
 
-    s_jsonWriter.OpenObject(nullptr);
+    s_jsonWriter.OpenObject();
     s_jsonWriter.OpenObject("payload");
     s_jsonWriter.WriteString("protocol_version", "1.0.0");
 
@@ -334,11 +334,10 @@ CreateInProcCrashReport(
     s_jsonWriter.CloseObject(); // parameters
 
     s_jsonWriter.CloseObject(); // root
-    s_jsonWriter.Finish();
 
     if (fd != -1)
     {
-        bool writeSucceeded = !s_jsonWriter.HasError() &&
+        bool writeSucceeded = s_jsonWriter.Finish() &&
             !outputContext.WriteFailed() &&
             WriteToFile(fd, "\n", 1);
 
@@ -702,7 +701,7 @@ WriteCrashSiteFrameToJson(
     FormatHexValue(ip, sizeof(ip), ipValue);
     FormatHexValue(sp, sizeof(sp), spValue);
 
-    writer->OpenObject(nullptr);
+    writer->OpenObject();
     writer->WriteString("is_managed", "false");
     writer->WriteString("stack_pointer", sp);
     writer->WriteString("native_address", ip);
@@ -855,7 +854,7 @@ JsonFrameCallback(
     FormatHexValue(moduleTimestampBuffer, sizeof(moduleTimestampBuffer), moduleTimestamp);
     FormatHexValue(moduleSizeBuffer, sizeof(moduleSizeBuffer), moduleSize);
 
-    writer->OpenObject(nullptr);
+    writer->OpenObject();
     writer->WriteString("stack_pointer", stackPointerBuffer);
     writer->WriteString("native_address", ipBuffer);
     writer->WriteString("native_offset", nativeOffsetBuffer);
@@ -953,7 +952,7 @@ ThreadEnumerationContext::OnThread(
     }
     m_threadCount++;
 
-    m_writer->OpenObject(nullptr);
+    m_writer->OpenObject();
     m_writer->WriteString("is_managed", "true");
     m_writer->WriteString("crashed", isCrashThread ? "true" : "false");
 
@@ -1029,7 +1028,7 @@ EmitSynthesizedCrashThread(
 {
     uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
 
-    s_jsonWriter.OpenObject(nullptr);
+    s_jsonWriter.OpenObject();
     s_jsonWriter.WriteString("is_managed",
         g_isManagedThreadCallback != nullptr && g_isManagedThreadCallback() ? "true" : "false");
     s_jsonWriter.WriteString("crashed", "true");

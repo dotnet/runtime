@@ -9,8 +9,10 @@
 
 static
 char
-ToHexChar(
-    unsigned value);
+ToHexChar(unsigned value)
+{
+    return (value < 10) ? static_cast<char>('0' + value) : static_cast<char>('a' + (value - 10));
+}
 
 void
 SignalSafeJsonWriter::Init(
@@ -22,7 +24,6 @@ SignalSafeJsonWriter::Init(
     m_writeFailed = false;
     m_outputCallback = outputCallback;
     m_outputContext = outputContext;
-    m_buffer[0] = '\0';
 }
 
 void
@@ -35,14 +36,20 @@ SignalSafeJsonWriter::OpenObject(
         WriteEscapedString(key);
         AppendStr(": ");
     }
-    AppendStr("{");
+    AppendChar('{');
     m_commaNeeded = false;
+}
+
+void
+SignalSafeJsonWriter::OpenObject()
+{
+    OpenObject(nullptr);
 }
 
 void
 SignalSafeJsonWriter::CloseObject()
 {
-    AppendStr("}");
+    AppendChar('}');
     m_commaNeeded = true;
 }
 
@@ -56,14 +63,20 @@ SignalSafeJsonWriter::OpenArray(
         WriteEscapedString(key);
         AppendStr(": ");
     }
-    AppendStr("[");
+    AppendChar('[');
     m_commaNeeded = false;
+}
+
+void
+SignalSafeJsonWriter::OpenArray()
+{
+    OpenArray(nullptr);
 }
 
 void
 SignalSafeJsonWriter::CloseArray()
 {
-    AppendStr("]");
+    AppendChar(']');
     m_commaNeeded = true;
 }
 
@@ -78,16 +91,10 @@ SignalSafeJsonWriter::WriteString(
     WriteEscapedString(value);
 }
 
-void
+bool
 SignalSafeJsonWriter::Finish()
 {
-    (void)Flush();
-}
-
-bool
-SignalSafeJsonWriter::HasError() const
-{
-    return m_writeFailed;
+    return Flush();
 }
 
 bool
@@ -110,7 +117,6 @@ SignalSafeJsonWriter::Flush()
     }
 
     m_pos = 0;
-    m_buffer[0] = '\0';
     return true;
 }
 
@@ -141,13 +147,12 @@ SignalSafeJsonWriter::Append(
     size_t offset = 0;
     while (offset < len)
     {
-        size_t remaining = (CRASH_JSON_BUFFER_SIZE - 1) - m_pos;
-        if (remaining == 0 && !Flush())
+        if (m_pos == CRASH_JSON_BUFFER_SIZE && !Flush())
         {
             return false;
         }
 
-        remaining = (CRASH_JSON_BUFFER_SIZE - 1) - m_pos;
+        size_t remaining = CRASH_JSON_BUFFER_SIZE - m_pos;
         size_t chunk = len - offset;
         if (chunk > remaining)
         {
@@ -159,6 +164,23 @@ SignalSafeJsonWriter::Append(
         offset += chunk;
     }
 
+    return true;
+}
+
+bool
+SignalSafeJsonWriter::AppendChar(char c)
+{
+    if (m_writeFailed)
+    {
+        return false;
+    }
+
+    if (m_pos == CRASH_JSON_BUFFER_SIZE && !Flush())
+    {
+        return false;
+    }
+
+    m_buffer[m_pos++] = c;
     return true;
 }
 
@@ -175,18 +197,11 @@ SignalSafeJsonWriter::AppendStr(
     return Append(str, strlen(str));
 }
 
-char
-ToHexChar(
-    unsigned value)
-{
-    return (value < 10) ? static_cast<char>('0' + value) : static_cast<char>('a' + (value - 10));
-}
-
 void
 SignalSafeJsonWriter::WriteSeparator()
 {
     if (m_commaNeeded)
-        AppendStr(",");
+        AppendChar(',');
 
     m_commaNeeded = true;
 }
@@ -196,7 +211,7 @@ void
 SignalSafeJsonWriter::WriteEscapedString(
     const char* str)
 {
-    AppendStr("\"");
+    AppendChar('"');
     if (str != nullptr)
     {
         for (size_t i = 0; str[i]; i++)
@@ -214,22 +229,21 @@ SignalSafeJsonWriter::WriteEscapedString(
                 AppendStr("\\t");
             else if (static_cast<unsigned char>(c) < 0x20)
             {
-                char esc[7];
+                char esc[6];
                 esc[0] = '\\';
                 esc[1] = 'u';
                 esc[2] = '0';
                 esc[3] = '0';
                 esc[4] = ToHexChar((static_cast<unsigned char>(c) >> 4) & 0xF);
                 esc[5] = ToHexChar(static_cast<unsigned char>(c) & 0xF);
-                esc[6] = '\0';
-                AppendStr(esc);
+                Append(esc, sizeof(esc));
             }
             else
             {
-                Append(&c, 1);
+                AppendChar(c);
             }
         }
     }
 
-    AppendStr("\"");
+    AppendChar('"');
 }
