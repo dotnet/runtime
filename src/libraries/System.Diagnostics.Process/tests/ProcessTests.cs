@@ -196,10 +196,11 @@ namespace System.Diagnostics.Tests
             const int UnterminatedExitCode = 1;
 
             // Process operations timeout cascading:
-            // WaitInMS * 1: Remote process wait for second signal after unregistering exercised signal handler
-            // WaitInMS * 2: RemoteExecutor Timeout, collects data and makes dump if not exited gracefully before
+            // WaitInMS * 1: Remote process wait for first signal that unregisters the exercised signal handler
+            // WaitInMS * 2: Remote process may additionally wait for a second signal that should terminate it
+            // WaitInMS * 3: RemoteExecutor timeout, leaving slack for process startup, signal delivery, and teardown
 
-            var remoteInvokeOptions = new RemoteInvokeOptions { CheckExitCode = false, TimeOut = WaitInMS * 2 };
+            var remoteInvokeOptions = new RemoteInvokeOptions { CheckExitCode = false, TimeOut = WaitInMS * 3 };
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
             if (OperatingSystem.IsWindows())
             {
