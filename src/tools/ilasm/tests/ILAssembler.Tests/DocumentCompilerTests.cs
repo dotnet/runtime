@@ -5440,5 +5440,164 @@ namespace ILAssembler.Tests
             }
             Assert.Equal(60, ldargCount); // 30 blocks * 2 ldarg.s each
         }
+
+        [Fact]
+        public void MultiDimArrayParam_PreservedAfterSignatureRewrite()
+        {
+            // Multi-dimensional array types in method signatures must survive
+            // the TypeRef→TypeDef signature rewriting pass.
+            // Regression: GetArrayType was missing the ELEMENT_TYPE_ARRAY (0x14) prefix byte.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M(int32[0...,0...] arr) cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "M");
+            var sigBytes = reader.GetBlobBytes(method.Signature);
+
+            // Method sig: 0x00 (DEFAULT), 0x01 (1 param), 0x01 (void ret),
+            // then ELEMENT_TYPE_ARRAY (0x14), ELEMENT_TYPE_I4 (0x08), shape...
+            Assert.Equal(0x00, sigBytes[0]); // DEFAULT
+            Assert.Equal(0x01, sigBytes[1]); // 1 param
+            Assert.Equal(0x01, sigBytes[2]); // void return
+            Assert.Equal(0x14, sigBytes[3]); // ELEMENT_TYPE_ARRAY
+            Assert.Equal(0x08, sigBytes[4]); // ELEMENT_TYPE_I4 (int32)
+            Assert.Equal(0x02, sigBytes[5]); // rank = 2
+        }
+
+        [Fact]
+        public void MultiDimArrayParam_WithSelfAssemblyRef_PreservedAfterRewrite()
+        {
+            // Multi-dimensional array with a self-assembly type reference as element type.
+            // Both the TypeRef resolution AND the array shape must be correct.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi sealed MyStruct extends [mscorlib]System.ValueType
+                {
+                    .field public int32 x
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void Process(valuetype [test]MyStruct[0...,0...,0...] data) cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "Process");
+            var sigBytes = reader.GetBlobBytes(method.Signature);
+
+            Assert.Equal(0x00, sigBytes[0]); // DEFAULT
+            Assert.Equal(0x01, sigBytes[1]); // 1 param
+            Assert.Equal(0x01, sigBytes[2]); // void return
+            Assert.Equal(0x14, sigBytes[3]); // ELEMENT_TYPE_ARRAY
+            // Element type: VALUETYPE (0x11) + TypeDef coded index (MyStruct resolved)
+            Assert.Equal(0x11, sigBytes[4]); // ELEMENT_TYPE_VALUETYPE
+            // After the type token: rank = 3
+            // Find the rank byte (after the compressed TypeDef coded index)
+            int rankIdx = 5;
+            // Skip the compressed integer (coded index for MyStruct TypeDef)
+            if (sigBytes[rankIdx] < 0x80) rankIdx += 1;
+            else if (sigBytes[rankIdx] < 0xC0) rankIdx += 2;
+            else rankIdx += 4;
+            Assert.Equal(0x03, sigBytes[rankIdx]); // rank = 3
+
+            // [test]MyStruct TypeRef should have been resolved to TypeDef
+            foreach (var trHandle in reader.TypeReferences)
+            {
+                var tr = reader.GetTypeReference(trHandle);
+                Assert.NotEqual("MyStruct", reader.GetString(tr.Name));
+            }
+        }
+
+        [Fact]
+        public void SZArrayParam_PreservedAfterSignatureRewrite()
+        {
+            // SZ arrays (char[], int32[]) must preserve their element type
+            // through the signature rewriting pass.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M(char[] chars, int32[] ints) cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "M");
+            var sigBytes = reader.GetBlobBytes(method.Signature);
+
+            // Method sig: 0x00 (DEFAULT), 0x02 (2 params), 0x01 (void ret),
+            // param 1: SZARRAY (0x1D) + CHAR (0x03)
+            // param 2: SZARRAY (0x1D) + I4 (0x08)
+            Assert.Equal(0x00, sigBytes[0]); // DEFAULT
+            Assert.Equal(0x02, sigBytes[1]); // 2 params
+            Assert.Equal(0x01, sigBytes[2]); // void return
+            Assert.Equal(0x1D, sigBytes[3]); // ELEMENT_TYPE_SZARRAY
+            Assert.Equal(0x03, sigBytes[4]); // ELEMENT_TYPE_CHAR
+            Assert.Equal(0x1D, sigBytes[5]); // ELEMENT_TYPE_SZARRAY
+            Assert.Equal(0x08, sigBytes[6]); // ELEMENT_TYPE_I4
+        }
+
+        [Fact]
+        public void MultiDimArrayField_PreservedAfterSignatureRewrite()
+        {
+            // Multi-dimensional array types in field signatures must survive rewriting.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field public int32[0...] arr1d
+                    .field public int32[0...,0...] arr2d
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // arr1d: FIELD (0x06), ARRAY (0x14), I4 (0x08), rank=1, ...
+            var field1 = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            var sig1 = reader.GetBlobBytes(field1.Signature);
+            Assert.Equal(0x06, sig1[0]); // FIELD
+            Assert.Equal(0x14, sig1[1]); // ELEMENT_TYPE_ARRAY
+            Assert.Equal(0x08, sig1[2]); // ELEMENT_TYPE_I4
+            Assert.Equal(0x01, sig1[3]); // rank = 1
+
+            // arr2d: FIELD (0x06), ARRAY (0x14), I4 (0x08), rank=2, ...
+            var field2 = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(2));
+            var sig2 = reader.GetBlobBytes(field2.Signature);
+            Assert.Equal(0x06, sig2[0]); // FIELD
+            Assert.Equal(0x14, sig2[1]); // ELEMENT_TYPE_ARRAY
+            Assert.Equal(0x08, sig2[2]); // ELEMENT_TYPE_I4
+            Assert.Equal(0x02, sig2[3]); // rank = 2
+        }
     }
 }
