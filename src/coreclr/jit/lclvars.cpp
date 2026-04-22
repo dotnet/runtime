@@ -4828,7 +4828,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     //
     // Currently this is x64 only.
     //
-    if (doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints())
+    if (doesMethodHavePatchpoints())
     {
         const unsigned regsPushed    = compCalleeRegsPushed + (codeGen->isFramePointerUsed() ? 1 : 0);
         const unsigned extraSlots    = genCountBits(RBM_OSR_INT_CALLEE_SAVED) - regsPushed;
@@ -6732,7 +6732,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // Likewise for Tier0 methods with patchpoints --
         // if we modify them we'll misreport their locations in the patchpoint info.
         //
-        if (pComp->doesMethodHavePatchpoints() || pComp->doesMethodHavePartialCompilationPatchpoints())
+        if (pComp->doesMethodHavePatchpoints())
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;
