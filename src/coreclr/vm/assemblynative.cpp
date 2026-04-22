@@ -161,7 +161,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
             PathString loadedAssemblyName;
             pExistingAssembly->GetAssemblyName()->GetDisplayName(loadedAssemblyName, BINDER_SPACE::AssemblyName::INCLUDE_VERSION | BINDER_SPACE::AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
-            const SString& loadedAssemblyPath = pExistingAssembly->GetPEImage()->GetPath();
+            PathString loadedAssemblyPath{ pExistingAssembly->GetPEImage()->GetPath() };
 
             StackSString errorString;
             SString format;

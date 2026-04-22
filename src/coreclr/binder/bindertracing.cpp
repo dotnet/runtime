@@ -232,8 +232,8 @@ namespace BinderTracing
             StackSString details;
             if (!loadedAssemblyName.IsEmpty())
             {
-                const SString& simpleName = m_assemblyNameObject->GetSimpleName();
-                const SString& loadedPath = inContextAttempt->AssemblyHolder->GetPEImage()->GetPath();
+                StackSString simpleName{ m_assemblyNameObject->GetSimpleName() };
+                PathString loadedPath{ inContextAttempt->AssemblyHolder->GetPEImage()->GetPath() };
                 SString versionFormat;
                 if (!loadedPath.IsEmpty())
                 {
