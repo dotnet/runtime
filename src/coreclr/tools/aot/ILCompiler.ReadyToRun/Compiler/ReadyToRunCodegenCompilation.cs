@@ -794,43 +794,35 @@ namespace ILCompiler
                 {
                     return;
                 }
-                try
+                var bytes = il.GetILBytes();
+                // Use ILTokenReplacer to iterate over tokens, not actually replace them
+                ILTokenReplacer.Replace(bytes, tok =>
                 {
-                    NodeFactory.ManifestMetadataTable._mutableModule.CreatingTokensForAsyncMethod = true;
-                    var bytes = il.GetILBytes();
-                    // Use ILTokenReplacer to iterate over tokens, not actually replace them
-                    ILTokenReplacer.Replace(bytes, tok =>
+                    switch(il.GetObject(tok))
                     {
-                        switch(il.GetObject(tok))
-                        {
-                            case TypeSystemEntity tse:
-                                _tokenManager.EnsureDefTokensAreAvailable(tse, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
-                                break;
-                            default:
-                                // We don't need to worry about string handles
-                                break;
-                        }
-                        return tok;
-                    });
-                    // ILTokenReplacer doesn't handle exception regions or local variable types, so handle those separately
-                    var exceptionRegions = (ILExceptionRegion[])il.GetExceptionRegions();
-                    for (int i = 0; i < exceptionRegions.Length; i++)
-                    {
-                        var region = exceptionRegions[i];
-                        if (region.Kind == ILExceptionRegionKind.Catch)
-                        {
-                            TypeSystemEntity catchType = (TypeSystemEntity)il.GetObject(region.ClassToken);
-                            _tokenManager.EnsureDefTokensAreAvailable(catchType, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
-                        }
+                        case TypeSystemEntity tse:
+                            _tokenManager.EnsureDefTokensAreAvailable(tse, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
+                            break;
+                        default:
+                            // We don't need to worry about string handles
+                            break;
                     }
-                    foreach (var local in il.GetLocals())
+                    return tok;
+                });
+                // ILTokenReplacer doesn't handle exception regions or local variable types, so handle those separately
+                var exceptionRegions = (ILExceptionRegion[])il.GetExceptionRegions();
+                for (int i = 0; i < exceptionRegions.Length; i++)
+                {
+                    var region = exceptionRegions[i];
+                    if (region.Kind == ILExceptionRegionKind.Catch)
                     {
-                        _tokenManager.EnsureDefTokensAreAvailable(local.Type, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
+                        TypeSystemEntity catchType = (TypeSystemEntity)il.GetObject(region.ClassToken);
+                        _tokenManager.EnsureDefTokensAreAvailable(catchType, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
                     }
                 }
-                finally
+                foreach (var local in il.GetLocals())
                 {
-                    NodeFactory.ManifestMetadataTable._mutableModule.CreatingTokensForAsyncMethod = false;
+                    _tokenManager.EnsureDefTokensAreAvailable(local.Type, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
                 }
             }
 
