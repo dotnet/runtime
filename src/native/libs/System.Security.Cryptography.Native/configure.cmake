@@ -35,11 +35,6 @@ check_source_compiles(C "
 int main(void) { ENGINE_init(NULL); return 1; }"
 HAVE_OPENSSL_ENGINE)
 
-check_source_compiles(C "
-#include <openssl/rsa.h>
-int main(void) { RSA *r = RSA_new(); RSA_free(r); return 0; }"
-HAVE_OPENSSL_RSA_PRIMITIVE)
-
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/pal_crypto_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/pal_crypto_config.h)
