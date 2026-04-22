@@ -662,7 +662,7 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
 }
 
 //------------------------------------------------------------------------
-// GetRangeFromAssertions: Cheaper version of TryGetRange that is based purely on assertions
+// GetRangeFromAssertionsWorker: Cheaper version of TryGetRange that is based purely on assertions
 //    and does not require a full range analysis based on SSA.
 //
 // Arguments:
