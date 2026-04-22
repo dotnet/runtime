@@ -455,7 +455,8 @@ GCHeapData IGC.GetHeapData()
 
     GCHeapData data;
 
-    // Read fields directly from globals
+    // Read background GC globals - these are absent when background GC is disabled (e.g., on WebAssembly).
+    // FeatureBackgroundGc will be 0 or absent in that case; read with TryReadGlobalPointer and default to 0.
     if (target.TryReadGlobalPointer("GCHeapMarkArray", out TargetPointer? markArrayPtr))
     {
         data.MarkArray = target.ReadPointer(markArrayPtr.Value);
@@ -550,8 +551,10 @@ GCHeapData IGC.GetHeapData(TargetPointer heapAddress)
 
     GCHeapData data;
 
-    // Read fields directly from heap
-    if (/* GCHeap::MarkArray is present */)
+    // Read background GC heap fields - these fields are absent when background GC is disabled (e.g., on WebAssembly).
+    // Check whether the field exists in the type layout before reading; default to 0 if not present.
+    Target.TypeInfo gcHeapType = target.GetTypeInfo(DataType.GCHeap);
+    if (gcHeapType.Fields.ContainsKey("MarkArray"))
     {
         data.MarkArray = target.ReadPointer(heapAddress + /* GCHeap::MarkArray offset */);
     }
@@ -559,7 +562,7 @@ GCHeapData IGC.GetHeapData(TargetPointer heapAddress)
     {
         data.MarkArray = 0;
     }
-    if (/* GCHeap::NextSweepObj is present */)
+    if (gcHeapType.Fields.ContainsKey("NextSweepObj"))
     {
         data.NextSweepObj = target.ReadPointer(heapAddress + /* GCHeap::NextSweepObj offset */);
     }
@@ -567,7 +570,7 @@ GCHeapData IGC.GetHeapData(TargetPointer heapAddress)
     {
         data.NextSweepObj = 0;
     }
-    if (/* GCHeap::BackgroundMinSavedAddr is present */)
+    if (gcHeapType.Fields.ContainsKey("BackgroundMinSavedAddr"))
     {
         data.BackgroundMinSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMinSavedAddr offset */);
     }
@@ -575,7 +578,7 @@ GCHeapData IGC.GetHeapData(TargetPointer heapAddress)
     {
         data.BackgroundMinSavedAddr = 0;
     }
-    if (/* GCHeap::BackgroundMaxSavedAddr is present */)
+    if (gcHeapType.Fields.ContainsKey("BackgroundMaxSavedAddr"))
     {
         data.BackgroundMaxSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMaxSavedAddr offset */);
     }
