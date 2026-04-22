@@ -889,19 +889,11 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
     };
 
     // If it's a phi, we need to look at the reaching assertions for each of the phi args and merge them together.
-    if (comp->vnStore->IsPhiDef(num))
+    if (comp->vnStore->IsPhiDef(num) && visited->Add(comp, num) &&
+        (comp->optVisitReachingAssertions(num, visitor) == Compiler::AssertVisit::Continue) && !phiRange.IsUndef())
     {
-        if (!visited->Add(comp, num))
-        {
-            // We already visited this phi in the current search path, which means we have a cycle.
-            return result;
-        }
-
-        if ((comp->optVisitReachingAssertions(num, visitor) == Compiler::AssertVisit::Continue) && !phiRange.IsUndef())
-        {
-            assert(phiRange.IsConstantRange());
-            result = phiRange;
-        }
+        assert(phiRange.IsConstantRange());
+        result = phiRange;
     }
 
     MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, &result, false);
