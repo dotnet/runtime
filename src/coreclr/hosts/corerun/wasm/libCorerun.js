@@ -183,7 +183,7 @@ function libCoreRunFactory() {
                 wasmModule = new WebAssembly.Module(wasmBytes);
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to compile WebAssembly module for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to construct WebAssembly module for Webcil image:", {wasmPath, errorMessage});
                 return false;
             }
 

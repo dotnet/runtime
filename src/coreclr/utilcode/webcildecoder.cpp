@@ -972,7 +972,7 @@ PTR_CVOID WebcilDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
             }
         }
 
-        // ReadyToRun file without large version bubble support doesn't have the ManifestMetadata
+        // Handle the no ManifestMetadata case, which will happen in a ReadyToRun file without large version bubble support.
         if (pDir == NULL)
         {
             if (pSize != NULL)
