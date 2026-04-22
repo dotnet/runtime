@@ -5309,86 +5309,6 @@ ClrDataAccess::GetJitHelperName(IN TADDR address)
     return NULL;
 }
 
-// This function expects more memory than maybe needed.
-static int FormatCLRStubName(
-    _In_opt_z_ LPCWSTR stubNameMaybe,
-    _In_ TADDR stubAddr,
-    _In_ ULONG32 bufLen,
-    _Out_ ULONG32 *symbolLen,
-    _Out_writes_bytes_opt_(bufLen) WCHAR* symbolBuf)
-{
-    // Parts needed to construct a name:
-    // With stub manager name: "CLRStub[%s]@%p"
-    //   No stub manager name: "CLRStub@%p"
-    const WCHAR formatName_Prefix[] = W("CLRStub");
-    const WCHAR formatName_OpenBracket[] = W("[");
-    const WCHAR formatName_CloseBracket[] = W("]");
-    const WCHAR formatName_PrefixEnd[] = W("@");
-
-    // Compute the address as a string safely.
-    WCHAR addrString[Max64BitHexString + 1];
-    FormatInteger(addrString, ARRAY_SIZE(addrString), sizeof(void*) == 8 ? "%016llX" : "%08X", stubAddr);
-    size_t addStringLen = u16_strlen(addrString);
-
-    // Compute maximum length, include the null terminator.
-    size_t formatName_MaxLen = ARRAY_SIZE(formatName_Prefix) // Include trailing null
-                                + ARRAY_SIZE(formatName_PrefixEnd) - 1
-                                + addStringLen;
-
-    // Consider stub manager name
-    size_t stubManagedNameLen = 0;
-    if (stubNameMaybe != NULL)
-    {
-        stubManagedNameLen = u16_strlen(stubNameMaybe);
-        formatName_MaxLen += ARRAY_SIZE(formatName_OpenBracket) - 1;
-        formatName_MaxLen += ARRAY_SIZE(formatName_CloseBracket) - 1;
-    }
-
-    HRESULT hr = S_FALSE;
-
-    // Compute the exact length needed.
-    const size_t lenNeeded = formatName_MaxLen + stubManagedNameLen;
-    if (lenNeeded <= bufLen)
-    {
-        size_t written = 0;
-
-        // Set the prefix
-        wcscpy_s(symbolBuf, bufLen - written, formatName_Prefix);
-        written += ARRAY_SIZE(formatName_Prefix) - 1;
-
-        // Add the name
-        if (stubManagedNameLen > 0)
-        {
-            wcscat_s(symbolBuf, bufLen - written, formatName_OpenBracket);
-            written += ARRAY_SIZE(formatName_OpenBracket) - 1;
-            wcscat_s(symbolBuf, bufLen - written, stubNameMaybe);
-            written += stubManagedNameLen;
-            wcscat_s(symbolBuf, bufLen - written, formatName_CloseBracket);
-            written += ARRAY_SIZE(formatName_CloseBracket) - 1;
-        }
-
-        // Append the prefix end
-        wcscat_s(symbolBuf, bufLen - written, formatName_PrefixEnd);
-        written += ARRAY_SIZE(formatName_PrefixEnd) - 1;
-
-        // Append the address
-        wcscat_s(symbolBuf, bufLen - written, addrString);
-        written += addStringLen;
-
-        hr = S_OK;
-    }
-
-    if (symbolLen)
-    {
-        if (!FitsIn<ULONG32>(lenNeeded))
-            return COR_E_OVERFLOW;
-
-        *symbolLen = (ULONG32)lenNeeded;
-    }
-
-    return hr;
-}
-
 HRESULT
 ClrDataAccess::RawGetMethodName(
     /* [in] */ CLRDATA_ADDRESS address,
@@ -5421,87 +5341,24 @@ ClrDataAccess::RawGetMethodName(
         return status;
     }
 
-    PTR_StubManager pStubManager;
-    MethodDesc* methodDesc = NULL;
-
+    if (displacement)
     {
-        EECodeInfo codeInfo(GetInterpreterCodeFromInterpreterPrecodeIfPresent(TO_TADDR(address)));
-        if (codeInfo.IsValid())
-        {
-            if (displacement)
-            {
-                *displacement = codeInfo.GetRelOffset();
-            }
-
-            methodDesc = codeInfo.GetMethodDesc();
-            goto NameFromMethodDesc;
-        }
+        *displacement = 0;
     }
+
+    PTR_StubManager pStubManager;
 
     pStubManager = StubManager::FindStubManager(TO_TADDR(address));
     if (pStubManager != NULL)
     {
-        if (displacement)
-        {
-            *displacement = 0;
-        }
-
-        //
-        // Special-cased stub managers
-        //
-        if (pStubManager == PrecodeStubManager::g_pManager)
-        {
-            PCODE alignedAddress = AlignDown(TO_TADDR(address), PRECODE_ALIGNMENT);
-
-#ifdef TARGET_ARM
-            alignedAddress += THUMB_CODE;
-#endif
-
-            SIZE_T maxPrecodeSize = sizeof(StubPrecode);
-
-#ifdef HAS_THISPTR_RETBUF_PRECODE
-            maxPrecodeSize = max((size_t)maxPrecodeSize, sizeof(ThisPtrRetBufPrecode));
-#endif
-
-            for (SIZE_T i = 0; i < maxPrecodeSize / PRECODE_ALIGNMENT; i++)
-            {
-                EX_TRY
-                {
-                    // Try to find matching precode entrypoint
-                    Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(alignedAddress, TRUE);
-                    if (pPrecode != NULL && pPrecode->GetType() != PRECODE_UMENTRY_THUNK)
-                    {
-                        methodDesc = pPrecode->GetMethodDesc();
-                        if (methodDesc != NULL)
-                        {
-                            if (DacValidateMD(methodDesc))
-                            {
-                                if (displacement)
-                                {
-                                    *displacement = TO_TADDR(address) - PCODEToPINSTR(alignedAddress);
-                                }
-                                goto NameFromMethodDesc;
-                            }
-                        }
-                    }
-                    alignedAddress -= PRECODE_ALIGNMENT;
-                }
-                EX_CATCH
-                {
-                }
-                EX_END_CATCH
-            }
-        }
-
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
-
-        return FormatCLRStubName(
-            wszStubManagerName,
-            TO_TADDR(address),
-            bufLen,
-            symbolLen,
-            symbolBuf);
+        if (wcscmp(wszStubManagerName, W("ThePreStub")) != 0 && wcscmp(wszStubManagerName, W("InteropDispatchStub")) != 0 && wcscmp(wszStubManagerName, W("TailCallStub")) != 0)
+        {
+            // Skip the stubs that are just assembly helpers.
+            wcscpy_s(symbolBuf, bufLen, wszStubManagerName);
+            return S_OK;
+        }
     }
 
     // Do not waste time looking up name for static helper. Debugger can get the actual name from .pdb.
@@ -5509,11 +5366,6 @@ ClrDataAccess::RawGetMethodName(
     pHelperName = GetJitHelperName(TO_TADDR(address));
     if (pHelperName != NULL)
     {
-        if (displacement)
-        {
-            *displacement = 0;
-        }
-
         HRESULT hr = ConvertUtf8(pHelperName, bufLen, symbolLen, symbolBuf);
         if (FAILED(hr))
             return S_FALSE;
@@ -5522,20 +5374,6 @@ ClrDataAccess::RawGetMethodName(
     }
 
     return E_NOINTERFACE;
-
-NameFromMethodDesc:
-    if (methodDesc->GetClassification() == mcDynamic
-        && methodDesc->GetSigParser().IsNull())
-    {
-        return FormatCLRStubName(
-            NULL,
-            TO_TADDR(address),
-            bufLen,
-            symbolLen,
-            symbolBuf);
-    }
-
-    return GetFullMethodName(methodDesc, bufLen, symbolLen, symbolBuf);
 }
 
 HRESULT

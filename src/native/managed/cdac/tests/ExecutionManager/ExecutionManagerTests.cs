@@ -658,21 +658,16 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void TryGetStubKind_GlobalConstants(string version, MockTarget.Architecture arch)
+    public void GetStubSymbol_NoRangeSection(string version, MockTarget.Architecture arch)
     {
         IExecutionManager em = CreateExecutionManagerContract(version, arch);
 
-        Assert.Equal(StubKind.PreStub, em.GetStubKind(new TargetCodePointer(0x00aa_1000)));
-        Assert.Equal(StubKind.InteropDispatchStub, em.GetStubKind(new TargetCodePointer(0x00aa_2000)));
-        Assert.Equal(StubKind.InteropDispatchStub, em.GetStubKind(new TargetCodePointer(0x00aa_3000)));
-        Assert.Equal(StubKind.InteropDispatchStub, em.GetStubKind(new TargetCodePointer(0x00aa_4000)));
-        Assert.Equal(StubKind.TailCallStub, em.GetStubKind(new TargetCodePointer(0x00aa_5000)));
-        Assert.Equal(StubKind.CodeBlockUnknown, em.GetStubKind(new TargetCodePointer(0x00aa_9000)));
+        Assert.Null(em.GetStubSymbol(new TargetCodePointer(0x00aa_9000)));
     }
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void TryGetStubKind_RangeListStubs(string version, MockTarget.Architecture arch)
+    public void GetStubSymbol_RangeListStubs(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u;
         const uint codeRangeSize = 0x4000u;
@@ -689,13 +684,13 @@ public class ExecutionManagerTests
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        StubKind kind = em.GetStubKind(new TargetCodePointer(codeRangeStart + 0x100));
-        Assert.Equal(StubKind.CodeBlockPrecode, kind);
+        string? symbol = em.GetStubSymbol(new TargetCodePointer(codeRangeStart + 0x100));
+        Assert.Equal("MethodDescPrestub", symbol);
     }
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void TryGetStubKind_CodeHeapStubs(string version, MockTarget.Architecture arch)
+    public void GetStubSymbol_CodeHeapStubs(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u;
         const uint codeRangeSize = 0xc000u;
@@ -720,13 +715,13 @@ public class ExecutionManagerTests
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        StubKind kind = em.GetStubKind(new TargetCodePointer(stubCodeAddress));
-        Assert.Equal(StubKind.CodeBlockJumpStub, kind);
+        string? symbol = em.GetStubSymbol(new TargetCodePointer(stubCodeAddress));
+        Assert.Equal("JumpStub", symbol);
     }
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void TryGetStubKind_ManagedCode(string version, MockTarget.Architecture arch)
+    public void GetStubSymbol_ManagedCode(string version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u;
         const uint codeRangeSize = 0xc000u;
@@ -751,8 +746,8 @@ public class ExecutionManagerTests
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        StubKind kind = em.GetStubKind(new TargetCodePointer(methodStart));
-        Assert.Equal(StubKind.CodeBlockManaged, kind);
+        string? symbol = em.GetStubSymbol(new TargetCodePointer(methodStart));
+        Assert.Null(symbol);
     }
 
     public static IEnumerable<object[]> StdArchAllVersions()

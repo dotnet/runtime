@@ -52,9 +52,9 @@ struct CodeBlockHandle
     // Get the exception clause info for the code block
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle);
 
-    // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
-    // or as managed code. Returns CodeBlockUnknown if the address is not recognized.
-    StubKind GetStubKind(TargetCodePointer jittedCodeAddress);
+    // If the code refers to a dynamically generated runtime stub, return a non-null name
+    // describing what kind of stub it is. Returns null for managed code or unrecognized addresses.
+    string? GetStubSymbol(TargetCodePointer jittedCodeAddress);
 
     // Extension Methods (implemented in terms of other APIs)
     // Returns true if the code block is a funclet (exception handler, filter, or finally)
@@ -225,11 +225,6 @@ Global variables used:
 | `GCInfoVersion` | uint32 | JITted code GCInfo version |
 | `FeatureOnStackReplacement` | uint8 | 1 if FEATURE_ON_STACK_REPLACEMENT is enabled, 0 otherwise |
 | `FeaturePortableEntrypoints` | uint8 | 1 if FEATURE_PORTABLE_ENTRYPOINTS is enabled, 0 otherwise |
-| `ThePreStub` | TargetPointer | Address of the pre-stub entry point (only present when `FeaturePortableEntrypoints` is disabled) |
-| `GenericPInvokeCalliHelper` | TargetPointer | Address of the generic PInvoke CALLI helper stub |
-| `VarargPInvokeStub` | TargetPointer | Address of the vararg PInvoke stub |
-| `VarargPInvokeStub_RetBuffArg` | TargetPointer | Address of the vararg PInvoke stub with return buffer argument (not present on x86, ARM64, LoongArch64, RISC-V) |
-| `TailCallJitHelper` | TargetPointer | Address of the JIT tail call helper (only present on x86 Windows) |
 | `ObjectMethodTable` | TargetPointer | Pointer to the `System.Object` MethodTable, used for catch-all handler detection |
 
 Contract constants used:
@@ -512,33 +507,26 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 
 `IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
 
-### Stub Kind Classification
+### Stub Symbol Classification
 
-`GetStubKind` classifies a code address as a known stub type or managed code. It first checks the address against well-known global stub pointers (`ThePreStub`, `VarargPInvokeStub`, `VarargPInvokeStub_RetBuffArg`, `GenericPInvokeCalliHelper`, `TailCallJitHelper`). If the address matches one of these, it returns the corresponding `StubKind` immediately.
+`GetStubSymbol` classifies a code address as a known stub type. It returns a descriptive string for stub addresses, or `null` for managed code or unrecognized addresses. The exact kinds of stubs and their names might shift across different runtime versions.
 
-If no global match is found, the method looks up the address in the `RangeSectionMap`. If a `RangeSection` is found, the JIT manager for that section classifies the code:
+The method looks up the address in the `RangeSectionMap`. If a `RangeSection` is found, the JIT manager for that section classifies the code:
 
 - **EEJitManager**: If the range section is a range list, reads the `CodeRangeMapRangeList.RangeListType` to determine the stub code block kind. Otherwise, it uses the nibble map to find the method code start, reads the code header indirect pointer, and checks whether it is a stub code block (value ≤ `StubCodeBlockLast`). If so, the value identifies the specific stub kind.
 - **ReadyToRunJitManager**: Checks whether the address falls within a delay-load method call thunk region.
 
 ```csharp
-StubKind GetStubKind(TargetCodePointer jittedCodeAddress)
+string? GetStubSymbol(TargetCodePointer jittedCodeAddress)
 {
     TargetPointer address = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress);
 
-    // Check well-known global stubs
-    if (address == ThePreStub) return StubKind.PreStub;
-    if (address == VarargPInvokeStub || address == VarargPInvokeStub_RetBuffArg
-        || address == GenericPInvokeCalliHelper)
-        return StubKind.InteropDispatchStub;
-    if (address == TailCallJitHelper) return StubKind.TailCallStub;
-
     // Look up in range section map
     RangeSection range = FindRangeSection(jittedCodeAddress);
-    if (range == null) return StubKind.CodeBlockUnknown;
+    if (range == null) return null;
 
     JitManager jitManager = GetJitManager(range);
-    return jitManager.GetStubCodeBlockKind(range, jittedCodeAddress);
+    return jitManager.GetStubSymbol(range, jittedCodeAddress);
 }
 ```
 

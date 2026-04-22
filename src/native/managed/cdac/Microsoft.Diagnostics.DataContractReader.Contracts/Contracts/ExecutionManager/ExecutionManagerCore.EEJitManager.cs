@@ -131,17 +131,17 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return realCodeHeader.DebugInfo;
         }
 
-        public override StubKind GetStubCodeBlockKind(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
+        public override string? GetStubSymbol(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             if (rangeSection.IsRangeList)
             {
                 Data.CodeRangeMapRangeList rangeList = Target.ProcessedData.GetOrAdd<Data.CodeRangeMapRangeList>(rangeSection.Data!.RangeList);
-                return GetStubKind((StubCodeBlockKind)rangeList.RangeListType);
+                return GetStubSymbolForCodeBlockKind((StubCodeBlockKind)rangeList.RangeListType);
             }
             TargetPointer startAddr = FindMethodCode(rangeSection, jittedCodeAddress); // validate that the code address is within the method's code range
             if (startAddr == TargetPointer.Null)
-                return StubKind.CodeBlockNoCode;
-            return GetCodeHeaderStubKind(rangeSection, startAddr);
+                return null;
+            return GetCodeHeaderStubSymbol(rangeSection, startAddr);
         }
 
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
@@ -216,43 +216,33 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return true;
         }
 
-        private static StubKind GetStubKind(StubCodeBlockKind stubCodeBlockKind)
+        private static string? GetStubSymbolForCodeBlockKind(StubCodeBlockKind stubCodeBlockKind)
         {
-            switch (stubCodeBlockKind)
+            return stubCodeBlockKind switch
             {
-                case StubCodeBlockKind.JumpStub:
-                    return StubKind.CodeBlockJumpStub;
-                case StubCodeBlockKind.DynamicHelper:
-                    return StubKind.CodeBlockDynamicHelper;
-                case StubCodeBlockKind.StubPrecode:
-                case StubCodeBlockKind.FixupPrecode:
-                    return StubKind.CodeBlockPrecode;
-                case StubCodeBlockKind.VSDDispatchStub:
-                    return StubKind.CodeBlockVSDDispatchStub;
-                case StubCodeBlockKind.VSDResolveStub:
-                    return StubKind.CodeBlockVSDResolveStub;
-                case StubCodeBlockKind.VSDLookupStub:
-                    return StubKind.CodeBlockVSDLookupStub;
-                case StubCodeBlockKind.VSDVTableStub:
-                    return StubKind.CodeBlockVSDVTableStub;
-                case StubCodeBlockKind.CallCountingStub:
-                    return StubKind.CodeBlockCallCounting;
-                default:
-                    return StubKind.CodeBlockUnknown;
-            }
+                StubCodeBlockKind.JumpStub => "JumpStub",
+                StubCodeBlockKind.DynamicHelper => "DynamicHelper",
+                StubCodeBlockKind.StubPrecode or StubCodeBlockKind.FixupPrecode => "MethodDescPrestub",
+                StubCodeBlockKind.VSDDispatchStub => "VSD_DispatchStub",
+                StubCodeBlockKind.VSDResolveStub => "VSD_ResolveStub",
+                StubCodeBlockKind.VSDLookupStub => "VSD_LookupStub",
+                StubCodeBlockKind.VSDVTableStub => "VSD_VTableStub",
+                StubCodeBlockKind.CallCountingStub => "CallCountingStub",
+                _ => null,
+            };
         }
 
-        private StubKind GetCodeHeaderStubKind(RangeSection rangeSection, TargetPointer codeStart)
+        private string? GetCodeHeaderStubSymbol(RangeSection rangeSection, TargetPointer codeStart)
         {
             if (GetCodeHeaderAddress(rangeSection, codeStart, out TargetPointer codeHeaderAddress))
             {
                 if (RangeSection.IsStubCodeBlock(Target, codeHeaderAddress))
                 {
-                    return GetStubKind((StubCodeBlockKind)codeHeaderAddress.Value);
+                    return GetStubSymbolForCodeBlockKind((StubCodeBlockKind)codeHeaderAddress.Value);
                 }
-                return StubKind.CodeBlockManaged;
+                return null; // managed code, not a stub
             }
-            return StubKind.CodeBlockUnknown;
+            return null;
         }
 
         public override void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr)

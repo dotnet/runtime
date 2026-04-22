@@ -120,58 +120,18 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             IExecutionManager eman = _target.Contracts.ExecutionManager;
             string? resultName = null;
 
-            // First, try to find it as managed code (equivalent of EECodeInfo path in legacy DAC)
-            CodeBlockHandle? cbh = eman.GetCodeBlockHandle(codeAddr);
-            if (cbh is CodeBlockHandle codeBlock)
-            {
-                TargetPointer methodDescPtr = eman.GetMethodDesc(codeBlock);
-                if (displacement is not null)
-                {
-                    TargetNUInt relOffset = eman.GetRelativeOffset(codeBlock);
-                    *displacement = relOffset.Value;
-                }
+            // Try stub classification
+            resultName = eman.GetStubSymbol(codeAddr);
 
-                resultName = GetNameFromMethodDesc(methodDescPtr, address);
+            // try aux symbols
+            if (resultName is null && _target.Contracts.AuxiliarySymbols.TryGetAuxiliarySymbolName(address.ToTargetPointer(_target), out string? auxSymbolName))
+            {
+                resultName = auxSymbolName;
             }
-            else
+
+            if (resultName is null)
             {
-                // Try stub classification
-                StubKind stubKind = eman.GetStubKind(codeAddr);
-
-                if (stubKind == StubKind.CodeBlockPrecode)
-                {
-                    // For precode stubs, resolve the MethodDesc from the precode entry point
-                    IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
-                    foreach (TargetCodePointer potentialEntryPoint in precodeStubs.GetCandidateEntryPoints(codeAddr))
-                    {
-                        TargetPointer methodDescPtr = eman.NonVirtualEntry2MethodDesc(potentialEntryPoint);
-                        if (methodDescPtr != TargetPointer.Null)
-                        {
-                            if (displacement is not null)
-                                *displacement = codeAddr.Value - potentialEntryPoint.Value;
-
-                            resultName = GetNameFromMethodDesc(methodDescPtr, address);
-                            break;
-                        }
-                    }
-                    resultName ??= FormatCLRStubName(GetStubName(stubKind)!, address);
-                }
-                else
-                {
-                    // Known stub type - format as CLRStub[<name>]@<addr>
-                    string? stubName = GetStubName(stubKind);
-
-                    if (stubName is not null)
-                        resultName = FormatCLRStubName(stubName, address);
-                    else if (_target.Contracts.AuxiliarySymbols.TryGetAuxiliarySymbolName(address.ToTargetPointer(_target), out string? auxSymbolName))
-                    {
-                        resultName = auxSymbolName;
-                    }
-                }
-                if (resultName is null)
-                {
-                    throw new InvalidCastException();
-                }
+                throw new InvalidCastException();
             }
 
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, resultName);
@@ -218,69 +178,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 #endif
 
         return hr;
-    }
-
-    private static string? GetStubName(Contracts.StubKind stubKind)
-    {
-        return stubKind switch
-        {
-            Contracts.StubKind.CodeBlockJumpStub => "JumpStub",
-            Contracts.StubKind.CodeBlockPrecode => "MethodDescPrestub",
-            Contracts.StubKind.CodeBlockVSDDispatchStub => "VSD_DispatchStub",
-            Contracts.StubKind.CodeBlockVSDResolveStub => "VSD_ResolveStub",
-            Contracts.StubKind.CodeBlockVSDLookupStub => "VSD_LookupStub",
-            Contracts.StubKind.CodeBlockVSDVTableStub => "VSD_VTableStub",
-            Contracts.StubKind.CodeBlockCallCounting => "CallCountingStub",
-            Contracts.StubKind.CodeBlockStubLinkStub => "StubLinkStub",
-            Contracts.StubKind.CodeBlockMethodCallThunk => "MethodCallThunk",
-            Contracts.StubKind.PreStub => "ThePreStub",
-            Contracts.StubKind.InteropDispatchStub => "InteropDispatchStub",
-            Contracts.StubKind.TailCallStub => "TailCallStub",
-            _ => null,
-        };
-    }
-
-    private string GetNameFromMethodDesc(TargetPointer methodDescPtr, ClrDataAddress address)
-    {
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
-
-        // Dynamic methods with no stored signature get formatted as CLRStub@<addr>
-        if (rts.IsNoMetadataMethod(mdHandle, out _)
-            && rts.IsStoredSigMethodDesc(mdHandle, out ReadOnlySpan<byte> signature)
-            && signature.IsEmpty)
-        {
-            return FormatCLRStubName(null, address);
-        }
-
-        // Get the full method name
-        StringBuilder sb = new();
-        TypeNameBuilder.AppendMethodInternal(
-            _target,
-            sb,
-            mdHandle,
-            TypeNameFormat.FormatSignature |
-            TypeNameFormat.FormatNamespace |
-            TypeNameFormat.FormatFullInst);
-
-        return sb.ToString();
-    }
-
-    private string FormatCLRStubName(string? stubName, ClrDataAddress address)
-    {
-        // Format: "CLRStub[<name>]@<addr>" or "CLRStub@<addr>"
-        StringBuilder sb = new();
-        sb.Append("CLRStub");
-        if (!string.IsNullOrEmpty(stubName))
-        {
-            sb.Append('[');
-            sb.Append(stubName);
-            sb.Append(']');
-        }
-        sb.Append('@');
-        sb.Append(address.Value.ToString($"X{_target.PointerSize * 2}"));
-
-        return sb.ToString();
     }
 
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)

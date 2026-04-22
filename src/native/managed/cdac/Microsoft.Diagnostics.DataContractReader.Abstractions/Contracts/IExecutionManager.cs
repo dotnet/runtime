@@ -46,26 +46,6 @@ public interface ICodeHeapInfo
 {
 }
 
-public enum StubKind : uint
-{
-    CodeBlockUnknown = 0,
-    CodeBlockJumpStub = 1,
-    CodeBlockDynamicHelper = 3,
-    CodeBlockPrecode = 4,
-    CodeBlockVSDDispatchStub = 5,
-    CodeBlockVSDResolveStub = 6,
-    CodeBlockVSDLookupStub = 7,
-    CodeBlockVSDVTableStub = 8,
-    CodeBlockCallCounting = 9,
-    CodeBlockStubLinkStub = 10,
-    CodeBlockMethodCallThunk = 11,
-    CodeBlockNoCode = 12,
-    CodeBlockManaged = 13,
-    PreStub = 14,
-    InteropDispatchStub = 15,
-    TailCallStub = 16,
-}
-
 public sealed class LoaderCodeHeapInfo : ICodeHeapInfo
 {
     public TargetPointer HeapAddress { get; }
@@ -121,7 +101,10 @@ public interface IExecutionManager : IContract
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
-    StubKind GetStubKind(TargetCodePointer jittedCodeAddress) => throw new NotImplementedException();
+    // If the code refers to a dynamically generated runtime stub, return a non-null name
+    // describing what kind of stub it is. The exact kinds of stubs and their functionality
+    // might shift across different runtime versions.
+    string? GetStubSymbol(TargetCodePointer jittedCodeAddress) => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager

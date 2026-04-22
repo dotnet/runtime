@@ -7,11 +7,6 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
 ```csharp
     // Gets a pointer to the MethodDesc for a given stub entrypoint
     TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint);
-
-    // Enumerates candidate precode entry points near a given code address.
-    // This is used to resolve a code address that falls within a
-    // precode stub back to its entry point.
-    IEnumerable<TargetCodePointer> GetCandidateEntryPoints(TargetCodePointer address);
 ```
 
 ## Version 1, 2, and 3
@@ -299,18 +294,5 @@ After the initial precode type is determined, for stub precodes a refined precod
         ValidPrecode precode = GetPrecodeFromEntryPoint(entryPoint);
 
         return precode.GetMethodDesc(_target, MachineDescriptor);
-    }
-
-    IEnumerable<TargetCodePointer> IPrecodeStubs.GetCandidateEntryPoints(TargetCodePointer address)
-    {
-        TargetPointer instrPointer = CodePointerReadableInstrPointer(address);
-        ulong aligned = instrPointer.Value & ~(ulong)(PointerSize - 1);
-        uint count = StubPrecodeSize / PointerSize;
-
-        for (uint i = 0; i < count; i++)
-        {
-            TargetPointer candidateAddr = new TargetPointer(aligned - (i * PointerSize));
-            yield return CodePointerFromAddress(candidateAddr);
-        }
     }
 ```

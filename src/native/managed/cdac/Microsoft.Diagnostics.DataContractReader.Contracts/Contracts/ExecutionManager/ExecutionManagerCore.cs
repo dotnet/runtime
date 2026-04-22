@@ -21,11 +21,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionMapLookup;
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
-    private readonly TargetPointer _thePreStub;
-    private readonly TargetPointer _varargPInvokeStub;
-    private readonly TargetPointer _varargPInvokeStub_RetBuffArg;
-    private readonly TargetPointer _genericPInvokeCalliHelper;
-    private readonly TargetPointer _tailCallJitHelper;
 
     public ExecutionManagerCore(Target target, Data.RangeSectionMap topRangeSectionMap)
     {
@@ -35,19 +30,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         INibbleMap nibbleMap = T.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
-        _thePreStub = ReadOptionalGlobalPointer(_target, Constants.Globals.ThePreStub);
-        _varargPInvokeStub = ReadOptionalGlobalPointer(_target, Constants.Globals.VarargPInvokeStub);
-        _varargPInvokeStub_RetBuffArg = ReadOptionalGlobalPointer(_target, Constants.Globals.VarargPInvokeStub_RetBuffArg);
-        _genericPInvokeCalliHelper = ReadOptionalGlobalPointer(_target, Constants.Globals.GenericPInvokeCalliHelper);
-        _tailCallJitHelper = ReadOptionalGlobalPointer(_target, Constants.Globals.TailCallJitHelper);
-    }
-
-    private static TargetPointer ReadOptionalGlobalPointer(Target target, string name)
-    {
-        if (!target.TryReadGlobalPointer(name, out TargetPointer? ptr))
-            return TargetPointer.Null;
-
-        return target.ReadPointer(ptr.Value);
     }
 
     public void Flush()
@@ -117,7 +99,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         public abstract TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte);
         public abstract void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion);
         public abstract void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
-        public abstract StubKind GetStubCodeBlockKind(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
+        public abstract string? GetStubSymbol(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
     }
 
     private sealed class RangeSection
@@ -559,46 +541,13 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return exceptionClauses;
     }
 
-    private bool TryGetStubKindFromConstants(TargetPointer jittedCodeAddress, out StubKind stubKind)
+    public string? GetStubSymbol(TargetCodePointer jittedCodeAddress)
     {
-        stubKind = StubKind.CodeBlockUnknown;
-        if (jittedCodeAddress == TargetPointer.Null)
-        {
-            return false;
-        }
-        if (jittedCodeAddress == _thePreStub)
-        {
-            stubKind = StubKind.PreStub;
-            return true;
-        }
-        else if (jittedCodeAddress == _varargPInvokeStub
-            || jittedCodeAddress == _varargPInvokeStub_RetBuffArg
-            || jittedCodeAddress == _genericPInvokeCalliHelper)
-        {
-            stubKind = StubKind.InteropDispatchStub;
-            return true;
-        }
-        else if (jittedCodeAddress == _tailCallJitHelper)
-        {
-            stubKind = StubKind.TailCallStub;
-            return true;
-        }
-        return false;
-    }
-
-    public StubKind GetStubKind(TargetCodePointer jittedCodeAddress)
-    {
-        TargetPointer jittedPtr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, _target);
-        if (TryGetStubKindFromConstants(jittedPtr, out StubKind stubKind))
-        {
-            return stubKind;
-        }
-
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, jittedCodeAddress);
         if (range.Data == null)
-            return StubKind.CodeBlockUnknown;
+            return null;
 
         JitManager jitManager = GetJitManager(range.Data);
-        return jitManager.GetStubCodeBlockKind(range, jittedCodeAddress);
+        return jitManager.GetStubSymbol(range, jittedCodeAddress);
     }
 }

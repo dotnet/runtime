@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -146,25 +145,5 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
         ValidPrecode precode = GetPrecodeFromEntryPoint(entryPoint);
 
         return precode.GetMethodDesc(_target, MachineDescriptor);
-    }
-
-    IEnumerable<TargetCodePointer> IPrecodeStubs.GetCandidateEntryPoints(TargetCodePointer address)
-    {
-        uint pointerSize = (uint)_target.PointerSize;
-        TargetPointer instrPointer = CodePointerReadableInstrPointer(address);
-        ulong aligned = instrPointer.Value & ~(ulong)(pointerSize - 1);
-
-        if (MachineDescriptor.StubPrecodeSize is not byte maxPrecodeSize)
-            throw new InvalidOperationException("StubPrecodeSize is required to enumerate candidate entry points");
-        uint count = maxPrecodeSize / pointerSize;
-
-        for (uint i = 0; i < count; i++)
-        {
-            ulong offset = i * pointerSize;
-            if (aligned < offset)
-                yield break;
-            TargetPointer candidateAddr = new TargetPointer(aligned - offset);
-            yield return CodePointerUtils.CodePointerFromAddress(candidateAddr, _target);
-        }
     }
 }
