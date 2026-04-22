@@ -471,6 +471,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     if (g_crash_report_before_signal_chaining)
     {
         PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
+
         PROCLogManagedCallstackForSignal(code);
         PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
     }

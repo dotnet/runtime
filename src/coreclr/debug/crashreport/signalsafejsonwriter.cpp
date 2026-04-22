@@ -3,7 +3,7 @@
 
 // Streaming JSON writer implementation for crash reports.
 
-#include "crashjsonwriter.h"
+#include "signalsafejsonwriter.h"
 
 #include <string.h>
 
@@ -13,7 +13,7 @@ ToHexChar(
     unsigned value);
 
 void
-CrashJsonWriter::Init(
+SignalSafeJsonWriter::Init(
     CrashJsonOutputCallback outputCallback,
     void* outputContext)
 {
@@ -26,7 +26,7 @@ CrashJsonWriter::Init(
 }
 
 void
-CrashJsonWriter::OpenObject(
+SignalSafeJsonWriter::OpenObject(
     const char* key)
 {
     WriteSeparator();
@@ -40,14 +40,14 @@ CrashJsonWriter::OpenObject(
 }
 
 void
-CrashJsonWriter::CloseObject()
+SignalSafeJsonWriter::CloseObject()
 {
     AppendStr("}");
     m_commaNeeded = true;
 }
 
 void
-CrashJsonWriter::OpenArray(
+SignalSafeJsonWriter::OpenArray(
     const char* key)
 {
     WriteSeparator();
@@ -61,14 +61,14 @@ CrashJsonWriter::OpenArray(
 }
 
 void
-CrashJsonWriter::CloseArray()
+SignalSafeJsonWriter::CloseArray()
 {
     AppendStr("]");
     m_commaNeeded = true;
 }
 
 void
-CrashJsonWriter::WriteString(
+SignalSafeJsonWriter::WriteString(
     const char* key,
     const char* value)
 {
@@ -79,19 +79,19 @@ CrashJsonWriter::WriteString(
 }
 
 void
-CrashJsonWriter::Finish()
+SignalSafeJsonWriter::Finish()
 {
     (void)Flush();
 }
 
 bool
-CrashJsonWriter::HasFailed() const
+SignalSafeJsonWriter::HasError() const
 {
     return m_writeFailed;
 }
 
 bool
-CrashJsonWriter::Flush()
+SignalSafeJsonWriter::Flush()
 {
     if (m_writeFailed)
     {
@@ -115,7 +115,7 @@ CrashJsonWriter::Flush()
 }
 
 bool
-CrashJsonWriter::Append(
+SignalSafeJsonWriter::Append(
     const char* str,
     size_t len)
 {
@@ -163,7 +163,7 @@ CrashJsonWriter::Append(
 }
 
 bool
-CrashJsonWriter::AppendStr(
+SignalSafeJsonWriter::AppendStr(
     const char* str)
 {
     if (str == nullptr)
@@ -183,7 +183,7 @@ ToHexChar(
 }
 
 void
-CrashJsonWriter::WriteSeparator()
+SignalSafeJsonWriter::WriteSeparator()
 {
     if (m_commaNeeded)
         AppendStr(",");
@@ -193,7 +193,7 @@ CrashJsonWriter::WriteSeparator()
 
 // Escape a string value for JSON. Handles \, ", and control characters.
 void
-CrashJsonWriter::WriteEscapedString(
+SignalSafeJsonWriter::WriteEscapedString(
     const char* str)
 {
     AppendStr("\"");

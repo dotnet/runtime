@@ -4,7 +4,8 @@
 // Bounded JSON writer for crash reports.
 // Streams content through a small fixed-size buffer using bounded low-level
 // string and memory operations so file output does not require materializing
-// the whole report at once.
+// the whole report at once. All public members are async-signal-safe: no
+// heap allocation, no stdio, no locale or variadic formatting.
 
 #pragma once
 
@@ -15,10 +16,10 @@ using CrashJsonOutputCallback = bool (*)(const char* buffer, size_t len, void* c
 // Small streaming buffer used when serializing the crash report JSON.
 static constexpr size_t CRASH_JSON_BUFFER_SIZE = 4 * 1024;
 
-class CrashJsonWriter
+class SignalSafeJsonWriter
 {
 public:
-    CrashJsonWriter()
+    SignalSafeJsonWriter()
         : m_pos(0),
           m_commaNeeded(false),
           m_writeFailed(false),
@@ -28,8 +29,8 @@ public:
         m_buffer[0] = '\0';
     }
 
-    CrashJsonWriter(const CrashJsonWriter&) = delete;
-    CrashJsonWriter& operator=(const CrashJsonWriter&) = delete;
+    SignalSafeJsonWriter(const SignalSafeJsonWriter&) = delete;
+    SignalSafeJsonWriter& operator=(const SignalSafeJsonWriter&) = delete;
 
     void Init(CrashJsonOutputCallback outputCallback, void* outputContext);
     void OpenObject(const char* key);
@@ -39,7 +40,7 @@ public:
     void WriteString(const char* key, const char* value);
     void Finish();
     bool Flush();
-    bool HasFailed() const;
+    bool HasError() const;
 
 private:
     bool Append(const char* str, size_t len);

@@ -6,7 +6,7 @@
 // Streams a createdump-shaped JSON skeleton to a crashreport.json file.
 
 #include "inproccrashreporter.h"
-#include "crashjsonwriter.h"
+#include "signalsafejsonwriter.h"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -23,21 +23,18 @@
 static char sccsid[] = "@(#)Version N/A";
 #endif
 
-static CrashJsonWriter s_jsonWriter;
-// These callbacks are published during runtime startup and then only read from
-// the crash path; this minimal branch intentionally reuses the existing VM
-// inspection hooks before the later strict-safety hardening slices.
+static SignalSafeJsonWriter s_jsonWriter;
 static volatile InProcCrashReportIsManagedThreadCallback g_isManagedThreadCallback = nullptr;
 static volatile InProcCrashReportWalkStackCallback g_walkStackCallback = nullptr;
 static volatile InProcCrashReportGetExceptionCallback g_getExceptionCallback = nullptr;
 static volatile InProcCrashReportEnumerateThreadsCallback g_enumerateThreadsCallback = nullptr;
 static char g_reportPath[256];
 
-class MultiThreadJsonContext
+class ThreadEnumerationContext
 {
 public:
-    MultiThreadJsonContext(
-        CrashJsonWriter* writer,
+    ThreadEnumerationContext(
+        SignalSafeJsonWriter* writer,
         void* signalContext,
         bool hasCrashException,
         const char* crashExceptionType,
@@ -52,12 +49,12 @@ public:
     {
     }
 
-    MultiThreadJsonContext(const MultiThreadJsonContext&) = delete;
-    MultiThreadJsonContext& operator=(const MultiThreadJsonContext&) = delete;
+    ThreadEnumerationContext(const ThreadEnumerationContext&) = delete;
+    ThreadEnumerationContext& operator=(const ThreadEnumerationContext&) = delete;
 
     size_t ThreadCount() const { return m_threadCount; }
     bool SawCrashThread() const { return m_sawCrashThread; }
-    CrashJsonWriter* Writer() const { return m_writer; }
+    SignalSafeJsonWriter* Writer() const { return m_writer; }
 
     void OnThread(
         uint64_t osThreadId,
@@ -100,7 +97,7 @@ public:
         void* ctx);
 
 private:
-    CrashJsonWriter* m_writer;
+    SignalSafeJsonWriter* m_writer;
     void* m_signalContext;
     size_t m_threadCount;
     bool m_sawCrashThread;
@@ -149,7 +146,7 @@ FormatHexValue(
 static
 void
 WriteRegistersToJson(
-    CrashJsonWriter* writer,
+    SignalSafeJsonWriter* writer,
     void* context);
 
 static
@@ -165,7 +162,7 @@ GetStackPointer(
 static
 void
 WriteCrashSiteFrameToJson(
-    CrashJsonWriter* writer,
+    SignalSafeJsonWriter* writer,
     void* context);
 
 static
@@ -211,7 +208,7 @@ JsonFrameCallback(
     void* ctx);
 
 bool
-WriteAllToFile(
+WriteToFile(
     int fd,
     const char* buffer,
     size_t len);
@@ -280,7 +277,7 @@ InProcCrashReportGenerate(
     char version[sizeof(sccsid) + 1];
     GetVersionString(version, sizeof(version));
     s_jsonWriter.WriteString("version", version);
-    s_jsonWriter.CloseObject();
+    s_jsonWriter.CloseObject(); // configuration
 
     char processName[256];
     if (TryGetProcessName(processName, sizeof(processName)))
@@ -295,17 +292,17 @@ InProcCrashReportGenerate(
     s_jsonWriter.OpenArray("threads");
     if (g_enumerateThreadsCallback != nullptr)
     {
-        MultiThreadJsonContext threadContext(&s_jsonWriter, context, hasException, exTypeBuf, exHresult);
+        ThreadEnumerationContext threadContext(&s_jsonWriter, context, hasException, exTypeBuf, exHresult);
         uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
 
-        g_enumerateThreadsCallback(crashingTid, &MultiThreadJsonContext::ThreadCallback, &MultiThreadJsonContext::FrameCallback, &threadContext);
+        g_enumerateThreadsCallback(crashingTid, &ThreadEnumerationContext::ThreadCallback, &ThreadEnumerationContext::FrameCallback, &threadContext);
 
         if (threadContext.ThreadCount() > 0)
         {
             // Close the last thread's stack_frames + object opened by the
             // enumeration callback.
-            s_jsonWriter.CloseArray();
-            s_jsonWriter.CloseObject();
+            s_jsonWriter.CloseArray(); // stack_frames
+            s_jsonWriter.CloseObject(); // thread
 
             // Flush the final thread so it reaches the crash report file
             // even if any later work (e.g. synthesizing a crash thread
@@ -336,8 +333,8 @@ InProcCrashReportGenerate(
             WriteRegistersToJson(&s_jsonWriter, context);
             s_jsonWriter.OpenArray("stack_frames");
             WriteCrashSiteFrameToJson(&s_jsonWriter, context);
-            s_jsonWriter.CloseArray();
-            s_jsonWriter.CloseObject();
+            s_jsonWriter.CloseArray(); // stack_frames
+            s_jsonWriter.CloseObject(); // thread
         }
     }
     else
@@ -369,12 +366,12 @@ InProcCrashReportGenerate(
         {
             g_walkStackCallback(JsonFrameCallback, &s_jsonWriter);
         }
-        s_jsonWriter.CloseArray();
-        s_jsonWriter.CloseObject();
+        s_jsonWriter.CloseArray(); // stack_frames
+        s_jsonWriter.CloseObject(); // thread
     }
-    s_jsonWriter.CloseArray();
+    s_jsonWriter.CloseArray(); // threads
 
-    s_jsonWriter.CloseObject();
+    s_jsonWriter.CloseObject(); // payload
 
     s_jsonWriter.OpenObject("parameters");
     char signalBuf[16];
@@ -385,16 +382,16 @@ InProcCrashReportGenerate(
     s_jsonWriter.WriteString("SystemModel", "");
     s_jsonWriter.WriteString("SystemManufacturer", "apple");
 #endif
-    s_jsonWriter.CloseObject();
+    s_jsonWriter.CloseObject(); // parameters
 
-    s_jsonWriter.CloseObject();
+    s_jsonWriter.CloseObject(); // root
     s_jsonWriter.Finish();
 
     if (fd != -1)
     {
-        bool writeSucceeded = !s_jsonWriter.HasFailed() &&
+        bool writeSucceeded = !s_jsonWriter.HasError() &&
             !outputContext.WriteFailed() &&
-            WriteAllToFile(fd, "\n", 1);
+            WriteToFile(fd, "\n", 1);
 
         if (close(fd) != 0 || !writeSucceeded)
         {
@@ -440,7 +437,7 @@ InProcCrashReportSetThreadEnumerator(
 }
 
 bool
-WriteAllToFile(
+WriteToFile(
     int fd,
     const char* buffer,
     size_t len)
@@ -476,7 +473,7 @@ CrashReportOutputContext::HandleChunk(
         return false;
     }
 
-    if (!WriteAllToFile(m_fd, buffer, len))
+    if (!WriteToFile(m_fd, buffer, len))
     {
         m_writeFailed = true;
         return false;
@@ -670,10 +667,9 @@ FormatHexValue(
 
 void
 WriteRegistersToJson(
-    CrashJsonWriter* writer,
+    SignalSafeJsonWriter* writer,
     void* context)
 {
-    // Only the crashing thread has a reliable signal context in this slice.
     uint64_t ipValue = GetInstructionPointer(context);
     uint64_t spValue = GetStackPointer(context);
     char ip[32] = "0x0";
@@ -699,7 +695,7 @@ WriteRegistersToJson(
     writer->WriteString("IP", ip);
     writer->WriteString("SP", sp);
     writer->WriteString("BP", bp);
-    writer->CloseObject();
+    writer->CloseObject(); // ctx
 }
 
 uint64_t
@@ -746,7 +742,7 @@ GetStackPointer(
 
 void
 WriteCrashSiteFrameToJson(
-    CrashJsonWriter* writer,
+    SignalSafeJsonWriter* writer,
     void* context)
 {
     uint64_t ipValue = GetInstructionPointer(context);
@@ -761,7 +757,7 @@ WriteCrashSiteFrameToJson(
     writer->WriteString("is_managed", "false");
     writer->WriteString("stack_pointer", sp);
     writer->WriteString("native_address", ip);
-    writer->CloseObject();
+    writer->CloseObject(); // frame
 }
 
 void
@@ -893,7 +889,7 @@ JsonFrameCallback(
     const char* moduleGuid,
     void* ctx)
 {
-    CrashJsonWriter* writer = reinterpret_cast<CrashJsonWriter*>(ctx);
+    SignalSafeJsonWriter* writer = reinterpret_cast<SignalSafeJsonWriter*>(ctx);
     char ipBuffer[32];
     char stackPointerBuffer[32];
     char nativeOffsetBuffer[32];
@@ -949,11 +945,11 @@ JsonFrameCallback(
         }
     }
 
-    writer->CloseObject();
+    writer->CloseObject(); // frame
 }
 
 void
-MultiThreadJsonContext::OnFrame(
+ThreadEnumerationContext::OnFrame(
     uint64_t ip,
     uint64_t stackPointer,
     const char* methodName,
@@ -970,7 +966,7 @@ MultiThreadJsonContext::OnFrame(
 }
 
 void
-MultiThreadJsonContext::FrameCallback(
+ThreadEnumerationContext::FrameCallback(
     uint64_t ip,
     uint64_t stackPointer,
     const char* methodName,
@@ -984,11 +980,11 @@ MultiThreadJsonContext::FrameCallback(
     const char* moduleGuid,
     void* ctx)
 {
-    reinterpret_cast<MultiThreadJsonContext*>(ctx)->OnFrame(ip, stackPointer, methodName, className, moduleName, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid);
+    reinterpret_cast<ThreadEnumerationContext*>(ctx)->OnFrame(ip, stackPointer, methodName, className, moduleName, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid);
 }
 
 void
-MultiThreadJsonContext::OnThread(
+ThreadEnumerationContext::OnThread(
     uint64_t osThreadId,
     bool isCrashThread,
     const char* exceptionType,
@@ -996,8 +992,8 @@ MultiThreadJsonContext::OnThread(
 {
     if (m_threadCount > 0)
     {
-        m_writer->CloseArray();
-        m_writer->CloseObject();
+        m_writer->CloseArray(); // stack_frames
+        m_writer->CloseObject(); // thread
 
         (void)m_writer->Flush();
     }
@@ -1046,12 +1042,12 @@ MultiThreadJsonContext::OnThread(
 }
 
 void
-MultiThreadJsonContext::ThreadCallback(
+ThreadEnumerationContext::ThreadCallback(
     uint64_t osThreadId,
     bool isCrashThread,
     const char* exceptionType,
     uint32_t exceptionHResult,
     void* ctx)
 {
-    reinterpret_cast<MultiThreadJsonContext*>(ctx)->OnThread(osThreadId, isCrashThread, exceptionType, exceptionHResult);
+    reinterpret_cast<ThreadEnumerationContext*>(ctx)->OnThread(osThreadId, isCrashThread, exceptionType, exceptionHResult);
 }
