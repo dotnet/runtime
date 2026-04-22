@@ -104,7 +104,7 @@ public partial class ZipArchiveEntry
     /// <para>The allowed <paramref name="access"/> values depend on the <see cref="ZipArchiveMode"/>:</para>
     /// <list type="bullet">
     /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
-    /// <item><description><see cref="ZipArchiveMode.Create"/>: Not supported - use the overload with encryption method.</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> is allowed; <see cref="FileAccess.Read"/> is not allowed. The <paramref name="password"/> is only used when decrypting existing encrypted entries and is not used when opening a newly created entry for writing.</description></item>
     /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed for encrypted entries.</description></item>
     /// </list>
     /// </remarks>
