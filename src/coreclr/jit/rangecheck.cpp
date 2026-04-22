@@ -687,12 +687,6 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
         return result;
     }
 
-    if (!visited->Add(comp, num))
-    {
-        // We've come back to a node we've already visited
-        return result;
-    }
-
     // Currently, we only handle int32 and smaller integer types.
     assert(genTypeSize(comp->vnStore->TypeOfVN(num)) <= 4);
 
@@ -894,10 +888,20 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
         return Compiler::AssertVisit::Abort;
     };
 
-    if (comp->optVisitReachingAssertions(num, visitor) == Compiler::AssertVisit::Continue && !phiRange.IsUndef())
+    // If it's a phi, we need to look at the reaching assertions for each of the phi args and merge them together.
+    if (comp->vnStore->IsPhiDef(num))
     {
-        assert(phiRange.IsConstantRange());
-        result = phiRange;
+        if (!visited->Add(comp, num))
+        {
+            // We already visited this phi in the current search path, which means we have a cycle.
+            return result;
+        }
+
+        if ((comp->optVisitReachingAssertions(num, visitor) == Compiler::AssertVisit::Continue) && !phiRange.IsUndef())
+        {
+            assert(phiRange.IsConstantRange());
+            result = phiRange;
+        }
     }
 
     MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, &result, false);
