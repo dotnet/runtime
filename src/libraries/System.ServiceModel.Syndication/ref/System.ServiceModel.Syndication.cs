@@ -319,8 +319,10 @@ namespace System.ServiceModel.Syndication
         public static System.ServiceModel.Syndication.TextSyndicationContent CreatePlaintextContent(string content) { throw null; }
         public static System.ServiceModel.Syndication.UrlSyndicationContent CreateUrlContent(System.Uri url, string mediaType) { throw null; }
         public static System.ServiceModel.Syndication.TextSyndicationContent CreateXhtmlContent(string content) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public static System.ServiceModel.Syndication.XmlSyndicationContent CreateXmlContent(object dataContractObject) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public static System.ServiceModel.Syndication.XmlSyndicationContent CreateXmlContent(object dataContractObject, System.Runtime.Serialization.XmlObjectSerializer dataContractSerializer) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
@@ -332,15 +334,19 @@ namespace System.ServiceModel.Syndication
     }
     public partial class SyndicationElementExtension
     {
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public SyndicationElementExtension(object dataContractExtension) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public SyndicationElementExtension(object dataContractExtension, System.Runtime.Serialization.XmlObjectSerializer dataContractSerializer) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public SyndicationElementExtension(object xmlSerializerExtension, System.Xml.Serialization.XmlSerializer serializer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension, System.Runtime.Serialization.XmlObjectSerializer dataContractSerializer) { }
         public SyndicationElementExtension(System.Xml.XmlReader xmlReader) { }
@@ -361,15 +367,19 @@ namespace System.ServiceModel.Syndication
     public sealed partial class SyndicationElementExtensionCollection : System.Collections.ObjectModel.Collection<System.ServiceModel.Syndication.SyndicationElementExtension>
     {
         internal SyndicationElementExtensionCollection() { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public void Add(object extension) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public void Add(object dataContractExtension, System.Runtime.Serialization.DataContractSerializer serializer) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public void Add(object xmlSerializerExtension, System.Xml.Serialization.XmlSerializer serializer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public void Add(string outerName, string outerNamespace, object dataContractExtension) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public void Add(string outerName, string outerNamespace, object dataContractExtension, System.Runtime.Serialization.XmlObjectSerializer dataContractSerializer) { }
         public void Add(System.Xml.XmlReader xmlReader) { }
@@ -649,6 +659,7 @@ namespace System.ServiceModel.Syndication
     public partial class XmlSyndicationContent : System.ServiceModel.Syndication.SyndicationContent
     {
         protected XmlSyndicationContent(System.ServiceModel.Syndication.XmlSyndicationContent source) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public XmlSyndicationContent(string type, object dataContractExtension, System.Runtime.Serialization.XmlObjectSerializer dataContractSerializer) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]

@@ -47,12 +47,14 @@ namespace System.ServiceModel.Syndication
         }
 
         [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public static XmlSyndicationContent CreateXmlContent(object dataContractObject)
         {
             return new XmlSyndicationContent(Atom10Constants.XmlMediaType, dataContractObject, (DataContractSerializer)null);
         }
 
         [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public static XmlSyndicationContent CreateXmlContent(object dataContractObject, XmlObjectSerializer dataContractSerializer)
         {
             return new XmlSyndicationContent(Atom10Constants.XmlMediaType, dataContractObject, dataContractSerializer);

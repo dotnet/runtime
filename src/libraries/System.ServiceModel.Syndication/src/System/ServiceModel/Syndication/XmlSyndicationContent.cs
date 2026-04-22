@@ -55,6 +55,7 @@ namespace System.ServiceModel.Syndication
         }
 
         [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public XmlSyndicationContent(string type, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
             _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;

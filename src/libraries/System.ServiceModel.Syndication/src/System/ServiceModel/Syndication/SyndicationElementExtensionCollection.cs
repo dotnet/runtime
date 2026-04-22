@@ -41,6 +41,7 @@ namespace System.ServiceModel.Syndication
         }
 
         [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public void Add(object extension)
         {
             if (extension is SyndicationElementExtension)
@@ -54,18 +55,21 @@ namespace System.ServiceModel.Syndication
         }
 
         [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public void Add(string outerName, string outerNamespace, object dataContractExtension)
         {
             Add(outerName, outerNamespace, dataContractExtension, null);
         }
 
         [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public void Add(object dataContractExtension, DataContractSerializer serializer)
         {
             Add(null, null, dataContractExtension, serializer);
         }
 
         [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public void Add(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
             if (dataContractExtension is null)

@@ -43,23 +43,27 @@ namespace System.ServiceModel.Syndication
         }
 
         [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public SyndicationElementExtension(object dataContractExtension) : this(dataContractExtension, (XmlObjectSerializer)null)
         {
         }
 
         [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public SyndicationElementExtension(object dataContractExtension, XmlObjectSerializer dataContractSerializer)
             : this(null, null, dataContractExtension, dataContractSerializer)
         {
         }
 
         [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension)
             : this(outerName, outerNamespace, dataContractExtension, null)
         {
         }
 
         [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
             if (dataContractExtension is null)
