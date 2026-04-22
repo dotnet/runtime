@@ -224,7 +224,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     string processPath = CompilerBinaryPath;
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        args = $"/c \"chcp 65001 > nul && \"{CompilerBinaryPath}\" {args}\"";
+                        args = $"/S /c \"chcp 65001 > nul && \"{CompilerBinaryPath}\" {args}\"";
                         processPath = "cmd";
                     }
 
