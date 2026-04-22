@@ -278,8 +278,8 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
     COUNT_T dirPos = 0;
 #ifdef TARGET_WASM
-    // WASM will padd out the reloc size to the next 16 byte boundary, so we need to validate we can safely read the IMAGE_BASE_RELOCATION struct before processing each entry.
-    while (dirPos < (dirSize - sizeof(IMAGE_BASE_RELOCATION)))
+    // WASM will pad out the reloc size to the next 16 byte boundary, so we need to validate we can safely read the IMAGE_BASE_RELOCATION struct before processing each entry.
+    while (dirPos + sizeof(IMAGE_BASE_RELOCATION) <= dirSize)
 #else
     while (dirPos < dirSize)
 #endif

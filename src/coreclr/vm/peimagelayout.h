@@ -242,7 +242,6 @@ protected:
     PEDecoder m_peDecoder;
 #ifdef FEATURE_WEBCIL
     WebcilDecoder m_webcilDecoder;
-    SSIZE_T m_tableBaseOffset;
 #endif
 
 public:

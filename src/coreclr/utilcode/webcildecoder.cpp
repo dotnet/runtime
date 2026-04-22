@@ -936,7 +936,7 @@ READYTORUN_HEADER * WebcilDecoder::GetReadyToRunHeader() const
     CONTRACT(READYTORUN_HEADER *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(CheckWebcilHeaders());
         PRECONDITION(HasCorHeader());
         PRECONDITION(HasReadyToRunHeader());
         NOTHROW;
@@ -1033,7 +1033,7 @@ TADDR WebcilDecoder::GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const
     CONTRACT(TADDR)
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(CheckWebcilHeaders());
         PRECONDITION(CheckDirectory(pDir, 0, NULL_OK));
         NOTHROW;
         GC_NOTRIGGER;
@@ -1051,7 +1051,7 @@ CHECK WebcilDecoder::CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFla
     CONTRACT_CHECK
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(CheckWebcilHeaders());
         PRECONDITION(CheckPointer(pDir));
         NOTHROW;
         GC_NOTRIGGER;

@@ -1370,7 +1370,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
 #else
-    // When we have portable entrypoints enable, the R2R image contains actual entrypoints.
+    // When we have portable entrypoints enabled, the R2R image contains actual entrypoints.
 #ifdef FEATURE_TIERED_COMPILATION
 #error "Portable entry points are not currently supported with tiered compilation, as the interaction between the two is not yet fully worked out."
 #endif

@@ -203,7 +203,7 @@ private:
     BOOL HasReadyToRunHeader() const;
     BOOL IsComponentAssembly() const { return FALSE; }
     READYTORUN_HEADER *GetReadyToRunHeader() const;
-    BOOL IsNativeMachineFormat() const { return TRUE; }
+    BOOL IsNativeMachineFormat() const { return true; } // This can only be loaded on a Wasm runtime which matches the necessary load environment, which means these are always in the native machine format.
     PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize) const;
 
     CHECK CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags = 0, IsNullOK ok = NULL_NOT_OK) const;
