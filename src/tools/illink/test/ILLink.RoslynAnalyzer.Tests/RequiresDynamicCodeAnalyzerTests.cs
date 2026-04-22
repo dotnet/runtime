@@ -579,7 +579,7 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
             """;
 
             return VerifyRequiresDynamicCodeAnalyzer(src,
-                VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(4, 24, 4, 56).WithArguments("System.Enum.GetValues(System.Type)", " It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload or the GetValuesAsUnderlyingType method instead.", ""));
+                VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(4, 24, 4, 38).WithArguments("System.Enum.GetValues(Type)", " It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload or the GetValuesAsUnderlyingType method instead.", ""));
         }
     }
 }
