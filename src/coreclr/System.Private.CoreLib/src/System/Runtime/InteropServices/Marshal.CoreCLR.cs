@@ -234,6 +234,75 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetExceptionCode();
 
+        internal sealed class LayoutTypeMarshalerMethods : RuntimeType.IGenericCacheEntry<LayoutTypeMarshalerMethods>
+        {
+            private static MemberInfo ConvertToUnmanagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToUnmanaged), BindingFlags.Public | BindingFlags.Static)!;
+            private static MemberInfo ConvertToManagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToManaged), BindingFlags.Public | BindingFlags.Static)!;
+            private static MemberInfo FreeMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.Free), BindingFlags.Public | BindingFlags.Static)!;
+
+            private unsafe delegate void ConvertToUnmanagedDelegate(object obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
+            private unsafe delegate void ConvertToManagedDelegate(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList);
+            private unsafe delegate void FreeDelegate(object? obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
+
+            private readonly ConvertToUnmanagedDelegate _convertToUnmanaged;
+            private readonly ConvertToManagedDelegate _convertToManaged;
+            private readonly FreeDelegate _free;
+
+            private readonly int _nativeSize;
+
+            internal LayoutTypeMarshalerMethods(Type instantiatedType, int nativeSize)
+            {
+                _convertToUnmanaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToUnmanagedMethod)).CreateDelegate<ConvertToUnmanagedDelegate>();
+                _convertToManaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToManagedMethod)).CreateDelegate<ConvertToManagedDelegate>();
+                _free = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(FreeMethod)).CreateDelegate<FreeDelegate>();
+                _nativeSize = nativeSize;
+            }
+
+            public unsafe void ConvertToManaged(object obj, byte* native)
+            {
+                _convertToManaged(obj, native, ref Unsafe.NullRef<CleanupWorkListElement?>());
+            }
+
+            public unsafe void ConvertToUnmanaged(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList)
+            {
+                _convertToUnmanaged(obj, native, _nativeSize, ref cleanupWorkList);
+            }
+
+            public unsafe void Free(byte* native)
+            {
+                _free(null, native, _nativeSize, ref Unsafe.NullRef<CleanupWorkListElement?>());
+            }
+
+            internal static LayoutTypeMarshalerMethods GetMarshalMethodsForType(RuntimeType t)
+            {
+                return t.GetOrCreateCacheEntry<LayoutTypeMarshalerMethods>();
+            }
+
+            [RequiresDynamicCode("Marshalling code for the object might not be available.")]
+            public static LayoutTypeMarshalerMethods Create(RuntimeType type)
+            {
+                if (!HasLayout(new QCallTypeHandle(ref type), out _, out int size))
+                    throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(type));
+
+                Type instantiatedMarshaler = typeof(BoxedLayoutTypeMarshaler<>).MakeGenericType([type]);
+                return new LayoutTypeMarshalerMethods(instantiatedMarshaler, size);
+            }
+
+            public static ref LayoutTypeMarshalerMethods? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry)
+            {
+                return ref compositeEntry._marshalerMethods;
+            }
+
+            public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry)
+            {
+                compositeEntry._marshalerMethods = this;
+            }
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_HasLayout")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool HasLayout(QCallTypeHandle t, [MarshalAs(UnmanagedType.Bool)] out bool isBlittable, out int nativeSize);
+
         /// <summary>
         /// Marshals data from a structure class to a native memory block. If the
         /// structure contains pointers to allocated blocks and "fDeleteOld" is
@@ -246,29 +315,28 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(ptr);
             ArgumentNullException.ThrowIfNull(structure);
 
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(structure);
+            RuntimeType type = (RuntimeType)structure.GetType();
 
-            if (pMT->HasInstantiation)
+            if (type.IsGenericType)
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
 
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
-            nuint size;
-            if (!TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size))
-                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structure));
-
-            if (structMarshalStub != null)
+            LayoutTypeMarshalerMethods methods;
+            try
             {
-                if (fDeleteOld)
-                {
-                    structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement?>());
-                }
-
-                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Marshal, ref Unsafe.NullRef<CleanupWorkListElement?>());
+                methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
             }
-            else
+            catch (ArgumentException e)
             {
-                SpanHelpers.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
+                // COMPAT: preserve legacy ParamName for non-marshalable structure values.
+                throw new ArgumentException(e.Message, nameof(structure), e);
             }
+
+            if (fDeleteOld)
+            {
+                methods.Free((byte*)ptr);
+            }
+
+            methods.ConvertToUnmanaged(structure, (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
 
         /// <summary>
@@ -276,24 +344,23 @@ namespace System.Runtime.InteropServices
         /// </summary>
         private static unsafe void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
         {
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(structure);
+            RuntimeType type = (RuntimeType)structure.GetType();
 
-            if (!allowValueClasses && pMT->IsValueType)
+            if (!allowValueClasses && type.IsValueType)
                 throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
 
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
-            nuint size;
-            if (!TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size))
-                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structure));
+            LayoutTypeMarshalerMethods methods;
+            try
+            {
+                methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
+            }
+            catch (ArgumentException e)
+            {
+                // COMPAT: preserve legacy ParamName for non-marshalable structure values.
+                throw new ArgumentException(e.Message, nameof(structure), e);
+            }
 
-            if (structMarshalStub != null)
-            {
-                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Unmarshal, ref Unsafe.NullRef<CleanupWorkListElement?>());
-            }
-            else
-            {
-                SpanHelpers.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
-            }
+            methods.ConvertToManaged(structure, (byte*)ptr);
         }
 
         /// <summary>
@@ -313,22 +380,18 @@ namespace System.Runtime.InteropServices
             if (rt.IsGenericType)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
 
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
-            nuint size;
-            if (!TryGetStructMarshalStub(rt.GetUnderlyingNativeHandle(), &structMarshalStub, &size))
-                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structuretype));
-
-            GC.KeepAlive(rt);
-
-            if (structMarshalStub != null)
+            try
             {
-                structMarshalStub(ref Unsafe.NullRef<byte>(), (byte*)ptr, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement?>());
+                LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(rt);
+
+                methods.Free((byte*)ptr);
+            }
+            catch (ArgumentException)
+            {
+                // COMPAT: rethrow the argument exception with the correct argument name.
+                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structuretype));
             }
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_TryGetStructMarshalStub")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool TryGetStructMarshalStub(IntPtr th, delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void>* structMarshalStub, nuint* size);
 
         // Note: Callers are required to keep obj alive
         internal static unsafe bool IsPinnable(object? obj)
@@ -992,6 +1055,7 @@ namespace System.Runtime.InteropServices
 
 #if DEBUG // Used for testing in Checked or Debug
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIsInCooperativeGCModeFunctionPointer")]
+        [RequiresUnsafe]
         internal static unsafe partial delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
 #endif
     }

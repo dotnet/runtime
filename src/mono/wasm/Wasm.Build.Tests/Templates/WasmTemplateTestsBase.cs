@@ -89,6 +89,8 @@ public class WasmTemplateTestsBase : BuildTestBase
             .ExecuteWithCapturedOutput($"new {template.ToString().ToLower()} {extraArgs}")
             .EnsureSuccessful();
 
+        AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(projectName, projectFilePath, logPath, nugetDir);
@@ -124,35 +126,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             """;
         }
 
-        if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
-        {
-            // TODO-WASM: https://github.com/dotnet/sdk/issues/51213
-            string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
-
-            extraProperties +=
-            """
-                <UseMonoRuntime>false</UseMonoRuntime>
-            """;
-            extraItems +=
-            $$"""
-                <KnownFrameworkReference Update="Microsoft.NETCore.App">
-                  <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
-                  <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
-                  <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
-                  <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
-                </KnownFrameworkReference>
-            """;
-            insertAtEnd +=
-            $$"""
-                <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
-                    <ItemGroup>
-                    <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
-                        <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
-                    </KnownWebAssemblySdkPack>
-                    </ItemGroup>
-                </Target>
-            """;
-        }
+        AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
 
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
@@ -164,6 +138,39 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
+    }
+
+    private static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
+    {
+        if (!s_buildEnv.IsCoreClrRuntime)
+            return;
+
+        string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+
+        extraProperties +=
+        """
+            <UseMonoRuntime>false</UseMonoRuntime>
+            <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
+        """;
+        extraItems +=
+        $$"""
+            <KnownFrameworkReference Update="Microsoft.NETCore.App">
+              <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
+              <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
+              <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
+              <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+            </KnownFrameworkReference>
+        """;
+        insertAtEnd +=
+        $$"""
+            <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
+                <ItemGroup>
+                <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
+                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
+                </KnownWebAssemblySdkPack>
+                </ItemGroup>
+            </Target>
+        """;
     }
 
     public virtual (string projectDir, string buildOutput) PublishProject(
@@ -224,12 +231,6 @@ public class WasmTemplateTestsBase : BuildTestBase
             buildOptions = buildOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
 
         buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
-
-        if (buildOptions.BootConfigFileName != null)
-        {
-            // Omit implicit default
-            buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:WasmBootConfigFileName={buildOptions.BootConfigFileName}" };
-        }
 
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(configuration, info.ProjectName, buildOptions);
 
@@ -357,6 +358,8 @@ public class WasmTemplateTestsBase : BuildTestBase
             runOptions = runOptions with { CustomBundleDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..", "public")) };
         }
 
+        EnsureXHarnessAvailable();
+
         return runOptions.Host switch
         {
             RunHost.DotnetRun =>
@@ -418,6 +421,19 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new() { Timeout = 1 * 60 * 1000 });
+
+        if (runOptions is BlazorRunOptions)
+        {
+            // DOMContentLoaded fires as soon as the initial HTML is parsed,
+            // but Blazor WebAssembly still needs to download the runtime,
+            // assemblies, and render the component tree. Wait for actual
+            // Blazor content to appear before interacting with the page.
+            // The ".page" class comes from MainLayout.razor and is only
+            // present after Blazor has rendered (client-side apps) or is
+            // included in the initial server-rendered HTML (Blazor Web apps).
+            _testOutput.WriteLine("Waiting for Blazor to finish rendering");
+            await page.Locator(".page").WaitForAsync(new() { Timeout = 1 * 60 * 1000 });
+        }
 
         if (runOptions.ExecuteAfterLoaded is not null)
         {
@@ -481,8 +497,8 @@ public class WasmTemplateTestsBase : BuildTestBase
     public BuildPaths GetBuildPaths(Configuration config, bool forPublish, string? projectDir = null) =>
         _provider.GetBuildPaths(config, forPublish, projectDir);
 
-    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged) =>
-        _provider.GetFilesTable(projectName, isAOT, paths, unchanged);
+    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged, string? bootConfigDir = null) =>
+        _provider.GetFilesTable(projectName, isAOT, paths, unchanged, bootConfigDir);
 
     public IDictionary<string, FileStat> StatFiles(IDictionary<string, (string fullPath, bool unchanged)> fullpaths) =>
         _provider.StatFiles(fullpaths);

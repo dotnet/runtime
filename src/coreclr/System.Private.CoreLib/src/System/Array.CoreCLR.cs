@@ -16,9 +16,11 @@ namespace System
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CreateInstance")]
+        [RequiresUnsafe]
         private static unsafe partial void InternalCreate(QCallTypeHandle type, int rank, int* pLengths, int* pLowerBounds,
             [MarshalAs(UnmanagedType.Bool)] bool fromArrayType, ObjectHandleOnStack retArray);
 
+        [RequiresUnsafe]
         private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
         {
             Array? retArray = null;
@@ -27,6 +29,7 @@ namespace System
             return retArray!;
         }
 
+        [RequiresUnsafe]
         private static unsafe Array InternalCreateFromArrayType(RuntimeType arrayType, int rank, int* pLengths, int* pLowerBounds)
         {
             Array? retArray = null;
@@ -36,12 +39,14 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_Ctor")]
+        [RequiresUnsafe]
         private static unsafe partial void Ctor(MethodTable* pArrayMT, uint dwNumArgs, int* pArgList, ObjectHandleOnStack retArray);
 
         // implementation of CORINFO_HELP_NEW_MDARR and CORINFO_HELP_NEW_MDARR_RARE.
         [StackTraceHidden]
         [DebuggerStepThrough]
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static unsafe Array Ctor(MethodTable* pArrayMT, uint dwNumArgs, int* pArgList)
         {
             Array? arr = null;
@@ -304,6 +309,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern CorElementType GetCorElementTypeOfElementType();
 
+        [RequiresUnsafe]
         private unsafe MethodTable* ElementMethodTable => RuntimeHelpers.GetMethodTable(this)->GetArrayElementTypeHandle().AsMethodTable();
 
         private unsafe bool IsValueOfElementType(object value)
@@ -350,8 +356,10 @@ namespace System
             internal readonly delegate*<ref byte, void> ConstructorEntrypoint;
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
+            [RequiresUnsafe]
             private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
 
+            [RequiresUnsafe]
             private ArrayInitializeCache(delegate*<ref byte, void> constructorEntrypoint)
             {
                 ConstructorEntrypoint = constructorEntrypoint;
@@ -387,6 +395,7 @@ namespace System
     // array that is castable to "T[]" (i.e. for primitives and valuetypes, it will be exactly
     // "T[]" - for orefs, it may be a "U[]" where U derives from T.)
     //----------------------------------------------------------------------------------------
+    [Intrinsic]
     internal sealed class SZArrayHelper
     {
         // It is never legal to instantiate this class.

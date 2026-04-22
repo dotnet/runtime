@@ -28,6 +28,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 
 #if READYTORUN
+using ILCompiler.ReadyToRun.TypeSystem;
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
@@ -119,7 +120,7 @@ namespace Internal.JitInterface
         private static extern uint getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitLibrary)]
-        private static extern uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
+        private static extern uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte* pInstrumentationData, int ilOffset);
 
         [DllImport(JitSupportLibrary)]
         private static extern IntPtr GetJitHost(IntPtr configProvider);
@@ -389,6 +390,10 @@ namespace Internal.JitInterface
 #else
                 ThrowHelper.ThrowInvalidProgramException();
 #endif
+            }
+            if (result == CorJitResult.CORJIT_OUTOFMEM)
+            {
+                throw new OutOfMemoryException();
             }
             if (result != CorJitResult.CORJIT_OK)
             {
@@ -697,7 +702,6 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
             _debugInfo = null;
-            _asyncResumptionStub = null;
 #endif
 
             _debugLocInfos = null;
@@ -762,6 +766,7 @@ namespace Internal.JitInterface
 
         private object HandleToObject(void* handle)
         {
+            Debug.Assert(handle != null);
 #if DEBUG
             handle = (void*)(~s_handleHighBitSet & (nint)handle);
 #endif
@@ -3048,6 +3053,25 @@ namespace Internal.JitInterface
             if (type.HasTypeEquivalence || type.HasVariance)
                 return false;
 
+            // SZArrayHelper (CoreCLR) and Array<T> (NativeAOT) are phantom dispatch
+            // targets: the runtime maps generic array interface methods
+            // (IList<T>.set_Item, etc.) to methods on these sealed/effectively-sealed
+            // types, but no runtime object ever has them as its MethodTable - `this`
+            // inside those methods is always a T[]. Reporting them as exact would
+            // allow the JIT (e.g. VN-based invariant-load folding of GetMethodTable)
+            // to embed their MT as a constant and mis-read fields off it. Both types
+            // are marked [Intrinsic] so that the cheap flag check filters out
+            // non-candidates before we compare names.
+            if (type.IsIntrinsic && type is MetadataType mdType)
+            {
+                ReadOnlySpan<byte> name = mdType.Name;
+                if ((name.SequenceEqual("SZArrayHelper"u8) || name.SequenceEqual("Array`1"u8)) &&
+                    mdType.Namespace.SequenceEqual("System"u8))
+                {
+                    return false;
+                }
+            }
+
             // Valuetypes are invariant. This assumes that introducing type equivalence to an existing type
             // is not compatible change.
             if (type.IsValueType)
@@ -3866,20 +3890,6 @@ namespace Internal.JitInterface
 #endif
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
-#pragma warning restore CA1822 // Mark members as static
-        {
-#if READYTORUN
-            throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
-#else
-            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
-
-            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
-            return ObjectToHandle(_asyncResumptionStub);
-#endif
-        }
-
         private byte[] _code;
         private byte[] _coldCode;
         private int _codeAlignment;
@@ -4257,6 +4267,8 @@ namespace Internal.JitInterface
                 CorInfoReloc.WASM_TABLE_INDEX_SLEB => RelocType.WASM_TABLE_INDEX_SLEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_LEB => RelocType.WASM_MEMORY_ADDR_LEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_SLEB => RelocType.WASM_MEMORY_ADDR_SLEB,
+                CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB => RelocType.WASM_MEMORY_ADDR_REL_SLEB,
+                CorInfoReloc.WASM_MEMORY_ADDR_REL_LEB => RelocType.WASM_MEMORY_ADDR_REL_LEB,
                 CorInfoReloc.WASM_TYPE_INDEX_LEB => RelocType.WASM_TYPE_INDEX_LEB,
                 CorInfoReloc.WASM_GLOBAL_INDEX_LEB => RelocType.WASM_GLOBAL_INDEX_LEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
@@ -4505,7 +4517,17 @@ namespace Internal.JitInterface
                 )
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
+
+                // Runtime cannot handle hot/cold splitting for async methods
+                flags.Clear(CorJitFlag.CORJIT_FLAG_PROCSPLIT);
             }
+
+#if READYTORUN
+            if (this.MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Browser)
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
+            }
+#endif
 
             return (uint)sizeof(CORJIT_FLAGS);
         }

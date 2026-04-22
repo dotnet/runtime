@@ -275,6 +275,11 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?>(?>(?>(?>))))", "")]
         [InlineData("(?>(?>(?>(?>(?!)))))", "(?!)")]
         [InlineData("(?=(?>))", "")]
+        // Atomic wrapping non-backtrackable nodes (One, Notone, Set, Multi) is redundant
+        [InlineData("(?>a)", "a")]
+        [InlineData("(?>[^a])", "[^a]")]
+        [InlineData("(?>[abc])", "[abc]")]
+        [InlineData("(?>abc)", "abc")]
         // Lookaround reduction
         [InlineData("(?!(abc))", "(?!abc)")]
         [InlineData("(?!a(b*)c)", "(?!ab*c)")]
@@ -330,7 +335,6 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[a-f]+(?=[^a-f])", @"(?>[a-f]+)(?=[^a-f])")]
         [InlineData(@"[0-9]*(?=[^0-9])", @"(?>[0-9]*)(?=[^0-9])")]
         [InlineData(@"a*(?=b)(?=bc)", @"(?>a*)(?=b)(?=bc)")]
-        // [InlineData("abcde|abcdef", "abcde(?>|f)")] // TODO https://github.com/dotnet/runtime/issues/66031: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
         [InlineData("abcdef|abcde", "abcde(?>f|)")]
         [InlineData("abcdef|abcdeg|abcdeh|abcdei|abcdej|abcdek|abcdel", "abcde[f-l]")]
         [InlineData("(ab|ab*)bc", "(a(?:b|b*))bc")]
@@ -385,7 +389,6 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("ab??c", "a(?>b?)c")]
         [InlineData("ab{2}?c", "abbc")]
         [InlineData("ab{2,3}?c", "a(?>b{2,3})c")]
-        //[InlineData("(abc*?)", "(ab)")] // TODO https://github.com/dotnet/runtime/issues/66031: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
         [InlineData("a{1,3}?", "a{1,4}?")]
         [InlineData("a{2,3}?", "a{2}")]
         [InlineData("bc(a){1,3}?", "bc(a){1,2}?")]
@@ -475,12 +478,37 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:http|https)://foo", "http(?>s?)://foo")]
         [InlineData("(?:ab|abc)d", "ab(?>c?)d")]
         [InlineData("(?:abc|abcd|abce|abcfg)h", "abc(?:|[de]|fg)h")]
+        // Shared-prefix extraction skips non-text branches and factors later text branches
+        [InlineData("[^x]|ab|ac", "[^x]|a[bc]")]
+        [InlineData("[^x]|\\ab|\\ac", "[^x]|\\a[bc]")]
         public void PatternsReduceIdentically(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.
 
             string actualStr = RegexParser.Parse(actual, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
             string expectedStr = RegexParser.Parse(expected, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
+            if (actualStr != expectedStr)
+            {
+                throw Xunit.Sdk.EqualException.ForMismatchedValues(expectedStr, actualStr);
+            }
+        }
+
+        [Theory]
+        [InlineData("abcde|abcdef", "abcde")]                                   // prefix extraction leaves Concat(a, Empty); FinalReduce strips Empty
+        [InlineData("(abc*?)", "(ab)")]                                         // lazy loop at end eliminated, leaving trailing Empty; FinalReduce strips it
+        [InlineData("a|ab", "a")]                                               // prefix extraction leaves Concat(a, Empty); FinalReduce strips Empty
+        [InlineData(@"\n|\n\r|\r\n", @"(?>\n|\r\n)")]                           // shared prefix \n leaves Concat(\n, Empty) in branch; FinalReduce collapses it
+        [InlineData(@"[ab]+c[ab]+|[ab]+", @"(?>(?>[ab]+)(?:c(?>[ab]+))?)")]     // quantified set prefix [ab]+ not extracted until FinalReduce
+        [InlineData("ab|a|ac", "ab?")]                                          // prefix extraction + Atomic context creates redundant Atomic(Oneloopatomic); FinalReduce strips Atomic
+        [InlineData("ab|a|ac|d", "(?>ab?|d)")]                                  // same redundant Atomic removal, within a larger Alternate
+        [InlineData("a?b|a??b", "(?>a?(?>b))")]                                 // greedy/lazy branches merge after atomic promotion; FinalReduce converts single-char [b] to b
+        [InlineData("[ab]?c|[ab]??c", "(?>[ab]?(?>c))")]                        // same single-char class simplification with set loop prefix
+        public void PatternsReduceIdentically_Compiled(string actual, string expected)
+        {
+            // FinalReduce: post-FinalOptimize re-reduction only applies to Compiled/source generator.
+            // Source generator uses RegexOptions.Compiled during parsing.
+            string actualStr = RegexParser.Parse(actual, RegexOptions.Compiled, CultureInfo.InvariantCulture).Root.ToString();
+            string expectedStr = RegexParser.Parse(expected, RegexOptions.Compiled, CultureInfo.InvariantCulture).Root.ToString();
             if (actualStr != expectedStr)
             {
                 throw Xunit.Sdk.EqualException.ForMismatchedValues(expectedStr, actualStr);

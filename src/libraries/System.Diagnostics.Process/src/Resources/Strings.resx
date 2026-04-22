@@ -210,6 +210,24 @@
   <data name="CantRedirectStreams" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to redirect IO streams.</value>
   </data>
+  <data name="Arg_InvalidHandle" xml:space="preserve">
+    <value>Invalid handle.</value>
+  </data>
+  <data name="CantSetHandleAndRedirect" xml:space="preserve">
+    <value>The StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties cannot be used together with the corresponding RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties.</value>
+  </data>
+  <data name="InheritedHandlesRequiresCreateProcess" xml:space="preserve">
+    <value>The InheritedHandles property cannot be used with UseShellExecute or UserName.</value>
+  </data>
+  <data name="KillOnParentExitCannotBeUsedWithUseShellExecute" xml:space="preserve">
+    <value>The KillOnParentExit property cannot be used with UseShellExecute.</value>
+  </data>
+  <data name="CantSetRedirectForSafeProcessHandleStart" xml:space="preserve">
+    <value>The RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties cannot be used by SafeProcessHandle.Start or Process.StartAndForget. Use the StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties.</value>
+  </data>
+  <data name="StartDetachedNotCompatible" xml:space="preserve">
+    <value>The StartDetached property cannot be used with UseShellExecute set to true.</value>
+  </data>
   <data name="DirectoryNotValidAsInput" xml:space="preserve">
     <value>The FileName property should not be a directory unless UseShellExecute is set.</value>
   </data>
@@ -321,9 +339,6 @@
   <data name="ArgumentAndArgumentListInitialized" xml:space="preserve">
     <value>Only one of Arguments or ArgumentList may be used.</value>
   </data>
-  <data name="ArgumentListMayNotContainNull" xml:space="preserve">
-    <value>ArgumentList may not contain null.</value>
-  </data>
   <data name="KillEntireProcessTree_DisallowedBecauseTreeContainsCallingProcess" xml:space="preserve">
     <value>Cannot be used to terminate a process tree containing the calling process.</value>
   </data>
@@ -336,7 +351,25 @@
   <data name="InvalidPerfData" xml:space="preserve">
     <value>Invalid performance counter data with type '{0}'.</value>
   </data>
-  <data name="FileNotFoundResolvePath" xml:space="preserve">
-    <value>Could not resolve the file.</value>
+  <data name="InvalidProcessHandle" xml:space="preserve">
+    <value>Invalid process handle.</value>
+  </data>
+  <data name="InheritedHandles_OnlySelectedSafeHandlesAreSupported" xml:space="preserve">
+    <value>InheritedHandles only supports SafeFileHandle and SafePipeHandle. Other handle types are not supported.</value>
+  </data>
+  <data name="InheritedHandles_MustNotContainStandardHandles" xml:space="preserve">
+    <value>InheritedHandles must not contain standard handles. They are always inherited.</value>
+  </data>
+  <data name="InheritedHandles_MustNotContainDuplicates" xml:space="preserve">
+    <value>InheritedHandles must not contain duplicates.</value>
+  </data>
+  <data name="UseShellExecuteNotSupportedForScenario" xml:space="preserve">
+    <value>UseShellExecute is not supported by Process.{0}. On Windows, shell execution may not create a new process, which would make it impossible to return a valid process ID.</value>
+  </data>
+  <data name="RedirectStandardOutputAndErrorRequired" xml:space="preserve">
+    <value>RedirectStandardOutput and RedirectStandardError must both be set to true when calling Process.{0} with a ProcessStartInfo.</value>
+  </data>
+  <data name="NotSupportedForNonChildProcess" xml:space="preserve">
+    <value>On Unix, it's impossible to obtain the exit status of a non-child process.</value>
   </data>
 </root>

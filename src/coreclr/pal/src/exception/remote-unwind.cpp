@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     remote-unwind.cpp
 
 Abstract:
-
     Implementation of out of context unwind using libunwind8
     remote unwind API.
 
@@ -35,7 +32,6 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 --*/
 
 #ifdef HOST_UNIX
@@ -67,7 +63,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 
 #include "crosscomp.h"
 
-#define KNONVOLATILE_CONTEXT_POINTERS T_KNONVOLATILE_CONTEXT_POINTERS
 #define CONTEXT T_CONTEXT
 
 #else // HOST_UNIX
@@ -79,7 +74,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 #include "debugmacros.h"
 #include "crosscomp.h"
 
-#define KNONVOLATILE_CONTEXT_POINTERS T_KNONVOLATILE_CONTEXT_POINTERS
 #define CONTEXT T_CONTEXT
 
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
@@ -2334,16 +2328,22 @@ Parameters:
     functionStart - the pointer to return the starting address of the function or nullptr
     baseAddress - base address of the module to find the unwind info
     readMemoryCallback - reads memory from the target
+    isSignalFrame - output parameter: set to true if the unwound-to frame is a signal trampoline
 --*/
 BOOL
 PALAPI
-PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame)
 {
     unw_addr_space_t addrSpace = 0;
     unw_cursor_t cursor;
     libunwindInfo info;
     BOOL result = FALSE;
     int st;
+
+    if (isSignalFrame)
+    {
+        *isSignalFrame = false;
+    }
 
     info.BaseAddress = baseAddress;
     info.Context = context;
@@ -2414,6 +2414,14 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T base
     {
         result = FALSE;
         goto exit;
+    }
+
+    // Check if the frame we landed on is a signal trampoline. When a signal handler uses
+    // SA_ONSTACK, stepping from a signal frame crosses from the alternate signal stack to the
+    // original thread stack, which can cause the SP to decrease.
+    if (isSignalFrame && unw_is_signal_frame(&cursor) > 0)
+    {
+        *isSignalFrame = true;
     }
 
     UnwindContextToContext(&cursor, context);
@@ -2578,7 +2586,7 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
 
 BOOL
 PALAPI
-PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame)
 {
     return FALSE;
 }
