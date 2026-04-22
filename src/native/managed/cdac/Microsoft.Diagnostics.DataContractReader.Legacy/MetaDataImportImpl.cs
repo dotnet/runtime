@@ -1060,7 +1060,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                     {
                         if (fieldOffsets is not null && count < cMax)
                         {
-                            // Each entry is {ridOfField (uint), ulOffset (uint)}
+                            // Each entry is {FieldDef token (uint), ulOffset (uint)}
                             fieldOffsets[count * 2] = (uint)MetadataTokens.GetToken(fh);
                             int offset = _reader.GetFieldDefinition(fh).GetOffset();
                             fieldOffsets[count * 2 + 1] = offset >= 0 ? (uint)offset : 0xFFFFFFFF;
