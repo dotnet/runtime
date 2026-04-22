@@ -129,7 +129,6 @@ class     PInvoke;
 class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
-class     DomainAssembly;
 class     DeadlockAwareLock;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
@@ -523,7 +522,7 @@ public:
         // unused                 = 0x00000100,
         TS_Background             = 0x00000200,    // Thread is a background thread. [cDAC] [Thread]: Contract depends on this value.
         TS_Unstarted              = 0x00000400,    // Thread has never been started. [cDAC] [Thread]: Contract depends on this value.
-        TS_Dead                   = 0x00000800,    // Thread is dead. [cDAC] [Thread]: Contract depends on this value.
+        TS_Dead                   = 0x00000800,    // .NET runtime has finished shutting down this thread, and it is about to be terminated by the OS.
 
         TS_WeOwn                  = 0x00001000,    // Exposed object initiated this thread
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -534,7 +533,7 @@ public:
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
         // Some bits that only have meaning for reporting the state to clients.
-        TS_ReportDead             = 0x00010000,    // in WaitForOtherThreads()
+        TS_Stopped                = 0x00010000,    // Thread has started to shut down and should not run managed code. Equivalent to ThreadState.Stopped. [cDAC] [Thread]: Contract depends on this value.
         TS_FullyInitialized       = 0x00020000,    // Thread is fully initialized and we are ready to broadcast its existence to external clients
 
         // unused                 = 0x00040000,
@@ -835,8 +834,11 @@ public:
         return (m_State & TS_WeOwn);
     }
 
-    // For reporting purposes, grab a consistent snapshot of the thread's state
-    ThreadState GetSnapshotState();
+    ThreadState GetState()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_State;
+    }
 
     // For delayed destruction of threads
     DWORD           IsDetached()
@@ -902,19 +904,12 @@ public:
     // we fire the AllocationTick event. It's only for tooling purpose.
     TypeHandle m_thAllocContextObj;
 
-#ifndef TARGET_UNIX
-private:
-    _NT_TIB *m_pTEB;
+#ifdef FEATURE_INTERPRETER
 public:
-    _NT_TIB *GetTEB() {
-        LIMITED_METHOD_CONTRACT;
-        return m_pTEB;
-    }
-    PEXCEPTION_REGISTRATION_RECORD *GetExceptionListPtr() {
-        WRAPPER_NO_CONTRACT;
-        return &GetTEB()->ExceptionList;
-    }
-#endif // !TARGET_UNIX
+    InterpThreadContext *m_pInterpThreadContext;
+    InterpThreadContext* GetInterpThreadContext();
+    InterpThreadContext* GetOrCreateInterpThreadContext();
+#endif // FEATURE_INTERPRETER
 
     inline void SetTHAllocContextObj(TypeHandle th) {LIMITED_METHOD_CONTRACT; m_thAllocContextObj = th; }
 
@@ -2229,10 +2224,9 @@ public:
     {
         return m_PreventAbort != 0;
     }
-    // The ThreadStore manages a list of all the threads in the system.  I
-    // can't figure out how to expand the ThreadList template type without
-    // making m_Link public.
-    SLink       m_Link;
+    // The ThreadStore manages a list of all the threads in the system.
+    // Next pointer for SList linkage (ThreadStore::m_ThreadList).
+    PTR_Thread  m_pNext = NULL;
 
     // Debugger per-thread flag for enabling notification on "manual"
     // method calls,  for stepping logic
@@ -3750,13 +3744,6 @@ private:
     bool m_hasPendingActivation;
 
     friend struct ::cdac_data<Thread>;
-
-#ifdef FEATURE_INTERPRETER
-public:
-    InterpThreadContext *m_pInterpThreadContext;
-    InterpThreadContext* GetInterpThreadContext();
-    InterpThreadContext* GetOrCreateInterpThreadContext();
-#endif // FEATURE_INTERPRETER
 };
 
 template<>
@@ -3772,8 +3759,10 @@ struct cdac_data<Thread>
     static constexpr size_t CachedStackLimit = offsetof(Thread, m_CacheStackLimit);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
-    static constexpr size_t Link = offsetof(Thread, m_Link);
+    static constexpr size_t LastThrownObjectIsUnhandled = offsetof(Thread, m_ltoIsUnhandled);
+    static constexpr size_t Link = offsetof(Thread, m_pNext);
     static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
+    static constexpr size_t CurrentCustomDebuggerNotification = offsetof(Thread, m_hCurrNotification);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
         "Thread::m_ExceptionState is of type ThreadExceptionState");
@@ -3783,7 +3772,6 @@ struct cdac_data<Thread>
     static constexpr size_t ProfilerFilterContext = offsetof(Thread, m_pProfilerFilterContext);
 #endif // PROFILING_SUPPORTED
 #ifndef TARGET_UNIX
-    static constexpr size_t TEB = offsetof(Thread, m_pTEB);
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
 #endif
@@ -3806,7 +3794,7 @@ void UndoRevert(BOOL bReverted, HANDLE hToken);
 // ThreadStore::m_pThreadStore.
 // ---------------------------------------------------------------------------
 
-typedef SList<Thread, false, PTR_Thread> ThreadList;
+typedef SListTail<Thread> ThreadList;
 
 
 // The ThreadStore is a singleton class
@@ -4045,7 +4033,7 @@ public:
 template<>
 struct cdac_data<ThreadStore>
 {
-    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_link);
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_pHead);
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
     static constexpr size_t UnstartedCount = offsetof(ThreadStore, m_UnstartedThreadCount);
     static constexpr size_t BackgroundCount = offsetof(ThreadStore, m_BackgroundThreadCount);
@@ -4057,7 +4045,6 @@ typedef StateHolder<ThreadStore::LockThreadStore,ThreadStore::UnlockThreadStore>
 
 
 // This class dispenses small thread ids for the thin lock mechanism.
-// Recently we started using this class to dispense domain neutral module IDs as well.
 class IdDispenser
 {
 private:

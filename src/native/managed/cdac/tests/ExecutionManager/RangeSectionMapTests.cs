@@ -14,13 +14,13 @@ public class RangeSectionMapTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void TestLookupFail(MockTarget.Architecture arch)
     {
-        var builder = MockDescriptors.ExecutionManager.CreateRangeSection(arch);
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget);
+        MockExecutionManagerBuilder executionManager = new("c1", arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        var target = new TestPlaceholderTarget(arch, executionManager.Builder.GetMemoryContext().ReadFromTarget);
 
         var rsla = RangeSectionMap.Create(target);
 
-        var inputPC = new TargetCodePointer(0x007f_0000);
-        var result = rsla.FindFragmentInternal(target, builder.TopLevel, inputPC);
+        const ulong inputPC = 0x007f_0000;
+        var result = rsla.FindFragmentInternal(target, new TargetPointer(executionManager.RangeSectionMapTopLevelAddress), new TargetCodePointer(inputPC));
         Assert.False(result.HasValue);
     }
 
@@ -28,16 +28,16 @@ public class RangeSectionMapTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void TestLookupOne(MockTarget.Architecture arch)
     {
-        var builder = MockDescriptors.ExecutionManager.CreateRangeSection(arch);
-        var inputPC = new TargetCodePointer(0x007f_0000);
+        MockExecutionManagerBuilder executionManager = new("c1", arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        const ulong inputPC = 0x007f_0000;
         var length = 0x1000u;
         var value = 0x0a0a_0a0au;
-        builder.InsertAddressRange(inputPC, length, value);
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget);
+        executionManager.InsertRangeSectionMapAddressRange(inputPC, length, value);
+        var target = new TestPlaceholderTarget(arch, executionManager.Builder.GetMemoryContext().ReadFromTarget);
 
         var rsla = RangeSectionMap.Create(target);
 
-        var cursor = rsla.FindFragmentInternal(target, builder.TopLevel, inputPC);
+        var cursor = rsla.FindFragmentInternal(target, new TargetPointer(executionManager.RangeSectionMapTopLevelAddress), new TargetCodePointer(inputPC));
         Assert.True(cursor.HasValue);
         var result = cursor.Value.LoadValue(target);
         Assert.Equal(value, result.Address.Value);

@@ -1899,6 +1899,7 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
 #else
     // For WASM, create the TransitionBlock in C++ and call the worker directly
     TransitionBlock transitionBlock{};
+    transitionBlock.m_StackPointer = 0;
     transitionBlock.m_ReturnAddress = (TADDR)&CallInterpreterFuncletWorker;
     return CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, &transitionBlock);
 #endif

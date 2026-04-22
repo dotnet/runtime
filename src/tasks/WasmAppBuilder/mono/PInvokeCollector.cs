@@ -9,7 +9,8 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.Build.Tasks;
-using WasmAppBuilder;
+
+namespace Microsoft.WebAssembly.Build.Tasks.Mono;
 
 #pragma warning disable CA1067
 #pragma warning disable CS0649

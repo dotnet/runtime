@@ -14,6 +14,10 @@ public interface IDebugger : IContract
     bool TryGetDebuggerData(out DebuggerData data) => throw new NotImplementedException();
     int GetAttachStateFlags() => throw new NotImplementedException();
     bool MetadataUpdatesApplied() => throw new NotImplementedException();
+    void RequestSyncAtEvent() => throw new NotImplementedException();
+    void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC) => throw new NotImplementedException();
+    TargetPointer GetDebuggerControlBlockAddress() => throw new NotImplementedException();
+    void EnableGCNotificationEvents(bool fEnable) => throw new NotImplementedException();
 }
 
 public readonly struct Debugger : IDebugger

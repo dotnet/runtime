@@ -137,7 +137,7 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
             StringBuilder sb = new();
             foreach (var c in _contracts)
             {
-                sb.Append($"\"{c}\": 1,");
+                sb.Append($"\"{c}\": \"c1\",");
             }
             Debug.Assert(sb.Length > 0);
             sb.Length--; // remove trailing comma
@@ -205,6 +205,6 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
         _created = true;
         ulong contractDescriptorAddress = descriptor.CreateSubDescriptor(ContractDescriptorAddr, JsonDescriptorAddr, ContractPointerDataAddr);
         MockMemorySpace.MemoryContext memoryContext = GetMemoryContext();
-        return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, memoryContext.ReadFromTarget, memoryContext.WriteToTarget, null, [], out target);
+        return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, memoryContext.ReadFromTarget, memoryContext.WriteToTarget, (_, _, _) => throw new NotImplementedException("Tests do not provide GetTargetThreadContext"), [Contracts.CoreCLRContracts.Register], out target);
     }
 }
