@@ -1001,9 +1001,12 @@ namespace ILAssembler
 
             public BlobOrHandle GetArrayType(BlobOrHandle elementType, ArrayShape shape)
             {
-                var encoder = new ArrayShapeEncoder(elementType);
+                var builder = new BlobBuilder();
+                builder.WriteByte((byte)SignatureTypeCode.Array);
+                elementType.WriteBlobTo(builder);
+                var encoder = new ArrayShapeEncoder(builder);
                 encoder.Shape(shape.Rank, shape.Sizes, shape.LowerBounds);
-                return encoder.Builder;
+                return builder;
             }
 
             public BlobOrHandle GetByReferenceType(BlobOrHandle elementType)
