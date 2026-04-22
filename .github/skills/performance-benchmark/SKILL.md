@@ -125,7 +125,7 @@ public class Bench
 
 Post a comment on the PR to trigger EgorBot with your benchmark. The general format is:
 
-> 📝 **AI-generated content disclosure:** When posting benchmark comments to GitHub under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
+> 📝 **AI-generated content disclosure:** When posting benchmark comments to GitHub under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app (e.g., `github-actions[bot]`, `copilot`) — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) at the bottom of the content indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
 
 @EgorBot [targets] [options] [BenchmarkDotNet args]
 

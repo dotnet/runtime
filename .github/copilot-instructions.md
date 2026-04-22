@@ -50,7 +50,7 @@ When NOT running under CCA, guidance for creating commits and pushing changes:
 
 ## AI-Generated Content Disclosure
 
-When posting any content to GitHub under a user's credentials — opening PRs, creating issues, commenting on PRs or issues, posting review comments, or any other public-facing action — and the account is **not** a dedicated "copilot" or "bot" account/app, you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated.
+When posting any content to GitHub under a user's credentials — opening PRs, creating issues, commenting on PRs or issues, posting review comments, or any other public-facing action — and the account is **not** a dedicated "copilot" or "bot" account/app (e.g., `github-actions[bot]`, `copilot`), you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) at the bottom of the content indicating the content was AI/Copilot-generated.
 
 This applies to all GitHub interactions: PR descriptions, issue bodies, comments, review comments, etc. Exceptions:
 - The account is a recognized bot or Copilot app account (e.g., `github-actions[bot]`, `copilot`), where the AI origin is already apparent from the account identity.
