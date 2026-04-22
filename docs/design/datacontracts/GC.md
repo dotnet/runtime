@@ -456,10 +456,38 @@ GCHeapData IGC.GetHeapData()
     GCHeapData data;
 
     // Read fields directly from globals
-    data.MarkArray = target.ReadPointer(target.ReadGlobalPointer("GCHeapMarkArray"));
-    data.NextSweepObj = target.ReadPointer(target.ReadGlobalPointer("GCHeapNextSweepObj"));
-    data.BackgroundMinSavedAddr = target.ReadPointer(target.ReadGlobalPointer("GCHeapBackgroundMinSavedAddr"));
-    data.BackgroundMaxSavedAddr = target.ReadPointer(target.ReadGlobalPointer("GCHeapBackgroundMaxSavedAddr"));
+    if (target.TryReadGlobalPointer("GCHeapMarkArray", out TargetPointer? markArrayPtr))
+    {
+        data.MarkArray = target.ReadPointer(markArrayPtr.Value);
+    }
+    else
+    {
+        data.MarkArray = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapNextSweepObj", out TargetPointer? nextSweepObjPtr))
+    {
+        data.NextSweepObj = target.ReadPointer(nextSweepObjPtr.Value);
+    }
+    else
+    {
+        data.NextSweepObj = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapBackgroundMinSavedAddr", out TargetPointer? bgMinPtr))
+    {
+        data.BackgroundMinSavedAddr = target.ReadPointer(bgMinPtr.Value);
+    }
+    else
+    {
+        data.BackgroundMinSavedAddr = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapBackgroundMaxSavedAddr", out TargetPointer? bgMaxPtr))
+    {
+        data.BackgroundMaxSavedAddr = target.ReadPointer(bgMaxPtr.Value);
+    }
+    else
+    {
+        data.BackgroundMaxSavedAddr = 0;
+    }
     data.AllocAllocated = target.ReadPointer(target.ReadGlobalPointer("GCHeapAllocAllocated"));
     data.EphemeralHeapSegment = target.ReadPointer(target.ReadGlobalPointer("GCHeapEphemeralHeapSegment"));
     data.CardTable = target.ReadPointer(target.ReadGlobalPointer("GCHeapCardTable"));
@@ -523,10 +551,38 @@ GCHeapData IGC.GetHeapData(TargetPointer heapAddress)
     GCHeapData data;
 
     // Read fields directly from heap
-    data.MarkArray = target.ReadPointer(heapAddress + /* GCHeap::MarkArray offset */);
-    data.NextSweepObj = target.ReadPointer(heapAddress + /* GCHeap::NextSweepObj offset */);
-    data.BackgroundMinSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMinSavedAddr offset */);
-    data.BackgroundMaxSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMaxSavedAddr offset */);
+    if (/* GCHeap::MarkArray is present */)
+    {
+        data.MarkArray = target.ReadPointer(heapAddress + /* GCHeap::MarkArray offset */);
+    }
+    else
+    {
+        data.MarkArray = 0;
+    }
+    if (/* GCHeap::NextSweepObj is present */)
+    {
+        data.NextSweepObj = target.ReadPointer(heapAddress + /* GCHeap::NextSweepObj offset */);
+    }
+    else
+    {
+        data.NextSweepObj = 0;
+    }
+    if (/* GCHeap::BackgroundMinSavedAddr is present */)
+    {
+        data.BackgroundMinSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMinSavedAddr offset */);
+    }
+    else
+    {
+        data.BackgroundMinSavedAddr = 0;
+    }
+    if (/* GCHeap::BackgroundMaxSavedAddr is present */)
+    {
+        data.BackgroundMaxSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMaxSavedAddr offset */);
+    }
+    else
+    {
+        data.BackgroundMaxSavedAddr = 0;
+    }
     data.AllocAllocated = target.ReadPointer(heapAddress + /* GCHeap::AllocAllocated offset */);
     data.EphemeralHeapSegment = target.ReadPointer(heapAddress + /* GCHeap::EphemeralHeapSegment offset */);
     data.CardTable = target.ReadPointer(heapAddress + /* GCHeap::CardTable offset */);
