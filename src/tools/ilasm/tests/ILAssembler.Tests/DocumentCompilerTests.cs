@@ -5341,5 +5341,104 @@ namespace ILAssembler.Tests
                 Assert.NotEqual("MyStruct", reader.GetString(tr.Name));
             }
         }
+
+        [Fact]
+        public void LdargByName_CorrectIndexInLongMethod()
+        {
+            // Regression test for NaN comp32 IL corruption: ldarg.s by parameter name
+            // emitted wrong index (0 instead of 3) after ~512 bytes of IL, causing
+            // the IL body to be garbled from that point forward.
+            // Generate enough instructions to cross the 512-byte IL boundary,
+            // then verify ldarg.s with the 4th parameter name emits index 3.
+            var sb = new StringBuilder();
+            sb.AppendLine("""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void Run(float32 a, float32 b, float32 c, float32 d) cil managed
+                    {
+                        .maxstack 8
+                """);
+            // Each block is ~18 bytes: ldarg.s(2) + ldarg.s(2) + ceq(2) + brfalse.s(2) + ldstr(5) + br(5)
+            // 30 blocks = ~540 bytes, crossing the 512-byte boundary
+            for (int i = 0; i < 30; i++)
+            {
+                sb.AppendLine($"        ldarg.s 'd'");
+                sb.AppendLine($"        ldarg.s 'a'");
+                sb.AppendLine($"        ceq");
+                sb.AppendLine($"        brfalse.s LBL_{i}");
+                sb.AppendLine($"        ldstr \"block {i}\"");
+                sb.AppendLine($"        br DONE");
+                sb.AppendLine($"        LBL_{i}:");
+            }
+            sb.AppendLine("""
+                        DONE:
+                        ret
+                    }
+                }
+                """);
+
+            string source = sb.ToString();
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var method = reader.MethodDefinitions
+                .Select(h => reader.GetMethodDefinition(h))
+                .First(m => reader.GetString(m.Name) == "Run");
+
+            // Read the IL body and verify ldarg.s instructions have correct indices
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            var ilBytes = body.GetILBytes()!;
+
+            // Walk the IL and check all ldarg.s (0x0E) instructions
+            int pos = 0;
+            int ldargCount = 0;
+            while (pos < ilBytes.Length)
+            {
+                byte op = ilBytes[pos];
+                if (op == 0x0E) // ldarg.s
+                {
+                    byte argIndex = ilBytes[pos + 1];
+                    ldargCount++;
+                    // Odd ldarg.s (1st, 3rd, 5th...) should load 'd' = index 3
+                    // Even ldarg.s (2nd, 4th, 6th...) should load 'a' = index 0
+                    if (ldargCount % 2 == 1)
+                    {
+                        Assert.True(argIndex == 3, $"ldarg.s #{ldargCount} at IL offset {pos} should load 'd' (index 3) but got index {argIndex}");
+                    }
+                    else
+                    {
+                        Assert.True(argIndex == 0, $"ldarg.s #{ldargCount} at IL offset {pos} should load 'a' (index 0) but got index {argIndex}");
+                    }
+                    pos += 2;
+                }
+                else if (op == 0xFE) // two-byte opcode prefix
+                {
+                    pos += 2; // skip prefix + opcode
+                }
+                else if (op == 0x72) // ldstr
+                {
+                    pos += 5; // opcode + 4-byte token
+                }
+                else if (op == 0x38) // br
+                {
+                    pos += 5;
+                }
+                else if (op == 0x2C) // brfalse.s
+                {
+                    pos += 2;
+                }
+                else if (op == 0x2A) // ret
+                {
+                    pos += 1;
+                }
+                else
+                {
+                    pos += 1; // unknown, advance 1
+                }
+            }
+            Assert.Equal(60, ldargCount); // 30 blocks * 2 ldarg.s each
+        }
     }
 }
