@@ -13,6 +13,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             MakeGenericType.Test();
             MakeGenericMethod.Test();
+            EnumGetValues.Test();
         }
 
         class MakeGenericType
@@ -75,6 +76,29 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL3050", nameof(MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void TestUnknownArgument() => typeof(MakeGenericMethod).GetMethod(nameof(Gen)).MakeGenericMethod(GrabUnknownType());
+        }
+
+        class EnumGetValues
+        {
+            enum SomeEnum
+            {
+                A,
+                B
+            }
+
+            static Type GrabUnknownType() => null;
+
+            public static void Test()
+            {
+                TestKnownType();
+                TestUnknownType();
+            }
+
+            [ExpectedNoWarnings]
+            public static void TestKnownType() => Enum.GetValues(typeof(SomeEnum));
+
+            [ExpectedWarning("IL3050", nameof(Enum.GetValues), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            public static void TestUnknownType() => Enum.GetValues(GrabUnknownType());
         }
     }
 }
