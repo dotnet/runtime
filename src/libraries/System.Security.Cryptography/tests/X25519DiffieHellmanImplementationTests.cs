@@ -16,4 +16,18 @@ namespace System.Security.Cryptography.Tests
         public override X25519DiffieHellman ImportPublicKey(ReadOnlySpan<byte> source) =>
             X25519DiffieHellman.ImportPublicKey(source);
     }
+
+    public static class X25519DiffieHellmanImplementationSupportedTests
+    {
+        [Fact]
+        public static void IsSupported_AgreesWithPlatform()
+        {
+            bool expectedSupported =
+                PlatformDetection.IsWindows10OrLater ||
+                PlatformDetection.IsApplePlatform ||
+                PlatformDetection.IsOpenSslSupported; // X25519 is in OpenSSL 1.1.0 and .NET's floor is 1.1.1.
+
+            Assert.Equal(expectedSupported, X25519DiffieHellman.IsSupported);
+        }
+    }
 }
