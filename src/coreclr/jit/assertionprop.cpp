@@ -1856,10 +1856,6 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     //
     GenTree* op1 = relop->AsOp()->gtOp1->gtCommaStoreVal();
     GenTree* op2 = relop->AsOp()->gtOp2->gtCommaStoreVal();
-    if (op1->IsCnsIntOrI() && !op2->IsCnsIntOrI())
-    {
-        std::swap(op1, op2);
-    }
 
 #if defined(FEATURE_HW_INTRINSICS)
     if (op1->OperIsHWIntrinsic() && (op2->IsIntegralConst(0) || op2->IsIntegralConst(1)))
@@ -1875,8 +1871,6 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         {
 #if defined(TARGET_XARCH)
             case NI_Vector128_op_Equality:
-            case NI_Vector256_op_Equality:
-            case NI_Vector512_op_Equality:
 #elif defined(TARGET_ARM64)
             case NI_Vector64_op_Equality:
             case NI_Vector128_op_Equality:
@@ -1884,8 +1878,6 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
                 break;
 #if defined(TARGET_XARCH)
             case NI_Vector128_op_Inequality:
-            case NI_Vector256_op_Inequality:
-            case NI_Vector512_op_Inequality:
 #elif defined(TARGET_ARM64)
             case NI_Vector64_op_Inequality:
             case NI_Vector128_op_Inequality:
@@ -1899,24 +1891,19 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
 
         // SIMD floating-point equality is not bitwise equality (+0 == -0, NaN != NaN),
         // Only enable for integral SIMD base types.
-        if (varTypeIsIntegral(hwi->GetSimdBaseType()) && (hwi->GetOperandCount() == 2))
+        if (varTypeIsIntegral(hwi->GetSimdBaseType()))
         {
+            assert(hwi->GetOperandCount() == 2);
             op1 = hwi->Op(1);
             op2 = hwi->Op(2);
-            if (op1->OperIs(GT_CNS_VEC))
-            {
-                std::swap(op1, op2);
-            }
 
-            if (!op2->OperIs(GT_CNS_VEC))
+            if (!op2->IsCnsVec())
             {
                 return NO_ASSERTION_INDEX;
             }
 
-            if (!op1->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16) || (op1->TypeGet() != op2->TypeGet()))
-            {
-                return NO_ASSERTION_INDEX;
-            }
+            assert(op1->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16));
+            assert(op1->TypeIs(op2->TypeGet()));
         }
         else
         {

@@ -8035,7 +8035,8 @@ public:
                 unsigned      m_lclNum;
                 double        m_dconVal;
                 IntegralRange m_range;
-                simd16_t      m_simdVal; // for O2K_CONST_VEC (TYP_SIMD8/12/16 only). TODO-CQ: support wider SIMD via heap allocation.
+                simd16_t m_simdVal; // for O2K_CONST_VEC (TYP_SIMD8/12/16 only). TODO-CQ: support wider SIMD via heap
+                                    // allocation.
                 struct
                 {
                     ssize_t   m_iconVal;
