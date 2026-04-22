@@ -12,13 +12,13 @@ final class HashBox {
 }
 
 enum X25519Key {
-    case PrivateKey(Curve25519.KeyAgreement.PrivateKey)
-    case PublicKey(Curve25519.KeyAgreement.PublicKey)
+    case privateKey(Curve25519.KeyAgreement.PrivateKey)
+    case publicKey(Curve25519.KeyAgreement.PublicKey)
 
     func getPublic() -> Curve25519.KeyAgreement.PublicKey {
         switch self {
-            case .PrivateKey(let key): return key.publicKey
-            case .PublicKey(let key): return key
+            case .privateKey(let key): return key.publicKey
+            case .publicKey(let key): return key
         }
     }
 }
@@ -569,7 +569,7 @@ public func AppleCryptoNative_X25519DeriveRawSecretAgreement(
     let keyBox = Unmanaged<X25519KeyBox>.fromOpaque(keyPtr).takeUnretainedValue()
     let peerBox = Unmanaged<X25519KeyBox>.fromOpaque(peerKeyPtr).takeUnretainedValue()
 
-    guard case .PrivateKey(let key) = keyBox.value else {
+    guard case .privateKey(let key) = keyBox.value else {
         return -1
     }
 
@@ -609,7 +609,7 @@ public func AppleCryptoNative_X25519ExportPrivateKey(
 
     let box = Unmanaged<X25519KeyBox>.fromOpaque(keyPtr).takeUnretainedValue()
 
-    guard case .PrivateKey(let key) = box.value else {
+    guard case .privateKey(let key) = box.value else {
         return -1
     }
 
@@ -652,7 +652,7 @@ public func AppleCryptoNative_X25519ExportPublicKey(
 @_silgen_name("AppleCryptoNative_X25519GenerateKey")
 public func AppleCryptoNative_X25519GenerateKey() -> UnsafeMutableRawPointer? {
     let key = Curve25519.KeyAgreement.PrivateKey.init()
-    let box = X25519KeyBox(X25519Key.PrivateKey(key))
+    let box = X25519KeyBox(X25519Key.privateKey(key))
     return Unmanaged.passRetained(box).toOpaque()
 }
 
@@ -668,7 +668,7 @@ public func AppleCryptoNative_X25519ImportPrivateKey(pKey: UnsafeMutableRawPoint
         return nil
     }
 
-    let box = X25519KeyBox(X25519Key.PrivateKey(key))
+    let box = X25519KeyBox(X25519Key.privateKey(key))
     return Unmanaged.passRetained(box).toOpaque()
 }
 
@@ -684,6 +684,6 @@ public func AppleCryptoNative_X25519ImportPublicKey(pKey: UnsafeMutableRawPointe
         return nil
     }
 
-    let box = X25519KeyBox(X25519Key.PublicKey(key))
+    let box = X25519KeyBox(X25519Key.publicKey(key))
     return Unmanaged.passRetained(box).toOpaque()
 }
