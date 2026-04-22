@@ -1840,7 +1840,11 @@ namespace ILAssembler
 
             public StandaloneSignatureEntity? LocalsSignature { get; set; }
 
-            public InstructionEncoder MethodBody { get; } = new(new BlobBuilder(), new ControlFlowBuilder());
+            // TODO: https://github.com/dotnet/runtime/issues/127261
+            // InstructionEncoder produces corrupted IL when mixing OpCode() with
+            // direct CodeBuilder.WriteByte() across BlobBuilder chunk boundaries.
+            // Using a larger initial capacity avoids multi-chunk operation.
+            public InstructionEncoder MethodBody { get; } = new(new BlobBuilder(4096), new ControlFlowBuilder());
 
             public MethodBodyAttributes BodyAttributes { get; set; }
 
