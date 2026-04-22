@@ -28,7 +28,7 @@ namespace AppHost.Bundle.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(StaticHost), nameof(CanCheckExpectedExports))]
         private void ExpectedExports()
         {
             string[] expectedExports =
@@ -78,6 +78,18 @@ namespace AppHost.Bundle.Tests
                     Assert.Contains(exportName, result.StdOut);
                 }
             }
+        }
+
+        private static bool CanCheckExpectedExports()
+        {
+            // On Windows we verify the exports by loading singlefilehost into the current
+            // process. That only works when the built host architecture matches the test
+            // process architecture.
+            return !OperatingSystem.IsWindows()
+                || string.Equals(
+                    TestContext.BuildArchitecture,
+                    RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant(),
+                    StringComparison.Ordinal);
         }
     }
 }
