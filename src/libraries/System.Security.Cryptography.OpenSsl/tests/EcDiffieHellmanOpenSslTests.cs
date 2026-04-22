@@ -129,6 +129,28 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             }
         }
 
+        [Theory]
+        [InlineData(ECDSA_P256_OID_VALUE, 256)]
+        [InlineData(ECDSA_P384_OID_VALUE, 384)]
+        [InlineData(ECDSA_P521_OID_VALUE, 521)]
+        public void CtorEvpPKeyHandle(string oid, int expectedKeySize)
+        {
+            int rc = Interop.Crypto.EvpPKeyGenerateByEcKeyOid(out SafeEvpPKeyHandle pkey, oid);
+
+            if (rc != 1 || pkey.IsInvalid)
+            {
+                pkey.Dispose();
+                throw new SkipTestException("EVP_PKEY EC generation not supported");
+            }
+
+            using (pkey)
+            using (var e = new ECDiffieHellmanOpenSsl(pkey))
+            {
+                Assert.Equal(expectedKeySize, e.KeySize);
+                e.Exercise();
+            }
+        }
+
         [Fact]
         public void KeySizePropWithExercise()
         {
@@ -277,6 +299,121 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             Assert.True(param.Curve.IsNamed);
             Assert.Equal("ECDSA_P521", param.Curve.Oid.FriendlyName); // OpenSsl maps secp521r1 to ECDSA_P521
             Assert.Equal(ECDSA_P521_OID_VALUE, param.Curve.Oid.Value);
+        }
+
+        [Theory]
+        [InlineData(ECDSA_P256_OID_VALUE, 256)]
+        [InlineData(ECDSA_P384_OID_VALUE, 384)]
+        [InlineData(ECDSA_P521_OID_VALUE, 521)]
+        public void EcKeyAndEvpPKeyProduceSameExport(string oid, int expectedKeySize)
+        {
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(oid);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                Assert.NotEqual(0, Interop.Crypto.EcKeyGenerateKey(ecKey));
+
+                using var ecKeyBacked = new ECDiffieHellmanOpenSsl(ecKey);
+                Assert.Equal(expectedKeySize, ecKeyBacked.KeySize);
+
+                ECParameters privateParams = ecKeyBacked.ExportParameters(true);
+
+                using ECDiffieHellman evpBacked = ECDiffieHellman.Create(privateParams);
+                Assert.Equal(expectedKeySize, evpBacked.KeySize);
+
+                ECParameters evpPrivateParams = evpBacked.ExportParameters(true);
+
+                ComparePublicKey(privateParams.Q, evpPrivateParams.Q);
+                ComparePrivateKey(privateParams, evpPrivateParams);
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [Theory]
+        [InlineData(ECDSA_P256_OID_VALUE)]
+        [InlineData(ECDSA_P384_OID_VALUE)]
+        [InlineData(ECDSA_P521_OID_VALUE)]
+        public void EcKeyAndEvpPKeyDeriveCrossCompatible(string oid)
+        {
+            IntPtr rawKey1 = Interop.Crypto.EcKeyCreateByOid(oid);
+            Assert.NotEqual(IntPtr.Zero, rawKey1);
+            IntPtr rawKey2 = Interop.Crypto.EcKeyCreateByOid(oid);
+            Assert.NotEqual(IntPtr.Zero, rawKey2);
+
+            try
+            {
+                Assert.NotEqual(0, Interop.Crypto.EcKeyGenerateKey(rawKey1));
+                Assert.NotEqual(0, Interop.Crypto.EcKeyGenerateKey(rawKey2));
+
+                using var ecKeyBacked1 = new ECDiffieHellmanOpenSsl(rawKey1);
+                using var ecKeyBacked2 = new ECDiffieHellmanOpenSsl(rawKey2);
+
+                using ECDiffieHellman evpBacked1 = ECDiffieHellman.Create(ecKeyBacked1.ExportParameters(true));
+                using ECDiffieHellman evpBacked2 = ECDiffieHellman.Create(ecKeyBacked2.ExportParameters(true));
+
+                using ECDiffieHellmanPublicKey ecPub2 = ecKeyBacked2.PublicKey;
+                using ECDiffieHellmanPublicKey evpPub2 = evpBacked2.PublicKey;
+
+                byte[] ecEc = ecKeyBacked1.DeriveKeyFromHash(ecPub2, HashAlgorithmName.SHA256);
+                byte[] ecEvp = ecKeyBacked1.DeriveKeyFromHash(evpPub2, HashAlgorithmName.SHA256);
+                byte[] evpEc = evpBacked1.DeriveKeyFromHash(ecPub2, HashAlgorithmName.SHA256);
+                byte[] evpEvp = evpBacked1.DeriveKeyFromHash(evpPub2, HashAlgorithmName.SHA256);
+
+                Assert.Equal(ecEc, ecEvp);
+                Assert.Equal(ecEc, evpEc);
+                Assert.Equal(ecEc, evpEvp);
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(rawKey1);
+                Interop.Crypto.EcKeyDestroy(rawKey2);
+            }
+        }
+
+        [Fact]
+        public void ExplicitCurveEcKeyAndEvpPKeyProduceSameExport()
+        {
+            ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
+
+            using ECDiffieHellman ecKeyBacked = ECDiffieHellman.Create(explicitCurve);
+            ECParameters explicitParams = ecKeyBacked.ExportExplicitParameters(true);
+
+            using ECDiffieHellman evpBacked = ECDiffieHellman.Create(explicitParams);
+            ECParameters evpExplicitParams = evpBacked.ExportExplicitParameters(true);
+
+            ComparePublicKey(explicitParams.Q, evpExplicitParams.Q);
+            ComparePrivateKey(explicitParams, evpExplicitParams);
+        }
+
+        [Fact]
+        public void ExplicitCurveEcKeyAndEvpPKeyDeriveCrossCompatible()
+        {
+            ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
+
+            using ECDiffieHellman key1 = ECDiffieHellman.Create(explicitCurve);
+            using ECDiffieHellman key2 = ECDiffieHellman.Create(explicitCurve);
+
+            ECParameters key1Params = key1.ExportExplicitParameters(true);
+            ECParameters key2Params = key2.ExportExplicitParameters(true);
+
+            using ECDiffieHellman key1Reimported = ECDiffieHellman.Create(key1Params);
+            using ECDiffieHellman key2Reimported = ECDiffieHellman.Create(key2Params);
+
+            using ECDiffieHellmanPublicKey pub2 = key2.PublicKey;
+            using ECDiffieHellmanPublicKey pub2Reimported = key2Reimported.PublicKey;
+
+            byte[] derive1 = key1.DeriveKeyFromHash(pub2, HashAlgorithmName.SHA256);
+            byte[] derive2 = key1.DeriveKeyFromHash(pub2Reimported, HashAlgorithmName.SHA256);
+            byte[] derive3 = key1Reimported.DeriveKeyFromHash(pub2, HashAlgorithmName.SHA256);
+            byte[] derive4 = key1Reimported.DeriveKeyFromHash(pub2Reimported, HashAlgorithmName.SHA256);
+
+            Assert.Equal(derive1, derive2);
+            Assert.Equal(derive1, derive3);
+            Assert.Equal(derive1, derive4);
         }
     }
 }

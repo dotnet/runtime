@@ -476,7 +476,7 @@ int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(const EVP_PKEY* pkey)
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (!API_EXISTS(EVP_PKEY_get_utf8_string_param))
     {
-        return 0;
+        return -1;
     }
 #endif
 
@@ -487,7 +487,7 @@ int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(const EVP_PKEY* pkey)
 
     return (strcmp(encoding, "explicit") == 0) ? 1 : 0;
 #else
-    return 0;
+    return -1;
 #endif
 }
 
@@ -1167,7 +1167,7 @@ int32_t CryptoNative_EvpPKeyGenerateByEcKeyOid(
     ERR_clear_error();
 
 #ifdef NEED_OPENSSL_3_0
-    if (!API_EXISTS(EVP_PKEY_keygen))
+    if (!API_EXISTS(EVP_PKEY_CTX_new_from_name))
     {
         return 0;
     }

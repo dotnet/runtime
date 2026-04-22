@@ -244,9 +244,18 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_EvpPKeyEcHasExplicitEncoding(SafeEvpPKeyHandle pkey);
 
-        internal static bool EvpPKeyEcHasExplicitEncoding(SafeEvpPKeyHandle pkey)
+        /// <summary>
+        /// Returns true if the key has explicit encoding, false if named, null if indeterminate (pre-3.0).
+        /// </summary>
+        internal static bool? EvpPKeyEcHasExplicitEncoding(SafeEvpPKeyHandle pkey)
         {
-            return CryptoNative_EvpPKeyEcHasExplicitEncoding(pkey) == 1;
+            int result = CryptoNative_EvpPKeyEcHasExplicitEncoding(pkey);
+            return result switch
+            {
+                1 => true,
+                0 => false,
+                _ => null,
+            };
         }
 
         [LibraryImport(Libraries.CryptoNative)]

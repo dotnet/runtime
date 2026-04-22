@@ -226,7 +226,7 @@ namespace System.Security.Cryptography
         {
             // Check encoding first — explicit-encoding keys must be exported with
             // explicit curve parameters even if OpenSSL can match a named curve.
-            if (Interop.Crypto.EvpPKeyEcHasExplicitEncoding(pkey))
+            if (Interop.Crypto.EvpPKeyEcHasExplicitEncoding(pkey) == true)
             {
                 return ExportExplicitCurveParametersFromEvpPKeyUsingParams(pkey, includePrivateParameters);
             }

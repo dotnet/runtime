@@ -131,6 +131,28 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             }
         }
 
+        [Theory]
+        [InlineData(ECDSA_P256_OID_VALUE, 256)]
+        [InlineData(ECDSA_P384_OID_VALUE, 384)]
+        [InlineData(ECDSA_P521_OID_VALUE, 521)]
+        public void CtorEvpPKeyHandle(string oid, int expectedKeySize)
+        {
+            int rc = Interop.Crypto.EvpPKeyGenerateByEcKeyOid(out SafeEvpPKeyHandle pkey, oid);
+
+            if (rc != 1 || pkey.IsInvalid)
+            {
+                pkey.Dispose();
+                throw new SkipTestException("EVP_PKEY EC generation not supported");
+            }
+
+            using (pkey)
+            using (ECDsaOpenSsl e = new ECDsaOpenSsl(pkey))
+            {
+                Assert.Equal(expectedKeySize, e.KeySize);
+                e.Exercise();
+            }
+        }
+
         [Fact]
         public void KeySizePropWithExercise()
         {
@@ -297,6 +319,101 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             Assert.Equal("ECDSA_P521", param.Curve.Oid.FriendlyName); // OpenSsl maps secp521r1 to ECDSA_P521
             Assert.Equal(ECDSA_P521_OID_VALUE, param.Curve.Oid.Value);
         }
+
+        [Theory]
+        [InlineData(ECDSA_P256_OID_VALUE, 256)]
+        [InlineData(ECDSA_P384_OID_VALUE, 384)]
+        [InlineData(ECDSA_P521_OID_VALUE, 521)]
+        public void EcKeyAndEvpPKeyProduceSameExport(string oid, int expectedKeySize)
+        {
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(oid);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                Assert.NotEqual(0, Interop.Crypto.EcKeyGenerateKey(ecKey));
+
+                using ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey);
+                Assert.Equal(expectedKeySize, ecKeyBacked.KeySize);
+
+                ECParameters privateParams = ecKeyBacked.ExportParameters(true);
+
+                using ECDsa evpBacked = ECDsa.Create(privateParams);
+                Assert.Equal(expectedKeySize, evpBacked.KeySize);
+
+                ECParameters evpPrivateParams = evpBacked.ExportParameters(true);
+
+                ComparePublicKey(privateParams.Q, evpPrivateParams.Q);
+                ComparePrivateKey(privateParams, evpPrivateParams);
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [Theory]
+        [InlineData(ECDSA_P256_OID_VALUE)]
+        [InlineData(ECDSA_P384_OID_VALUE)]
+        [InlineData(ECDSA_P521_OID_VALUE)]
+        public void EcKeyAndEvpPKeySignVerifyCrossCompatible(string oid)
+        {
+            byte[] data = ByteUtils.RepeatByte(0x42, 64);
+
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(oid);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                Assert.NotEqual(0, Interop.Crypto.EcKeyGenerateKey(ecKey));
+
+                using ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey);
+                using ECDsa evpBacked = ECDsa.Create(ecKeyBacked.ExportParameters(true));
+
+                byte[] sig1 = ecKeyBacked.SignData(data, HashAlgorithmName.SHA256);
+                Assert.True(evpBacked.VerifyData(data, sig1, HashAlgorithmName.SHA256));
+
+                byte[] sig2 = evpBacked.SignData(data, HashAlgorithmName.SHA256);
+                Assert.True(ecKeyBacked.VerifyData(data, sig2, HashAlgorithmName.SHA256));
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [Fact]
+        public void ExplicitCurveEcKeyAndEvpPKeyProduceSameExport()
+        {
+            ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
+
+            using ECDsa ecKeyBacked = ECDsa.Create(explicitCurve);
+            ECParameters explicitParams = ecKeyBacked.ExportExplicitParameters(true);
+
+            using ECDsa evpBacked = ECDsa.Create(explicitParams);
+            ECParameters evpExplicitParams = evpBacked.ExportExplicitParameters(true);
+
+            ComparePublicKey(explicitParams.Q, evpExplicitParams.Q);
+            ComparePrivateKey(explicitParams, evpExplicitParams);
+        }
+
+        [Fact]
+        public void ExplicitCurveEcKeyAndEvpPKeySignVerifyCrossCompatible()
+        {
+            byte[] data = ByteUtils.RepeatByte(0x42, 64);
+            ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
+
+            using ECDsa key1 = ECDsa.Create(explicitCurve);
+            ECParameters explicitParams = key1.ExportExplicitParameters(true);
+
+            using ECDsa key2 = ECDsa.Create(explicitParams);
+
+            byte[] sig1 = key1.SignData(data, HashAlgorithmName.SHA256);
+            Assert.True(key2.VerifyData(data, sig1, HashAlgorithmName.SHA256));
+
+            byte[] sig2 = key2.SignData(data, HashAlgorithmName.SHA256);
+            Assert.True(key1.VerifyData(data, sig2, HashAlgorithmName.SHA256));
+        }
     }
 }
 
@@ -315,5 +432,8 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OpenSslVersionNumber")]
         internal static extern uint OpenSslVersionNumber();
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyGenerateByEcKeyOid", CharSet = CharSet.Ansi)]
+        internal static extern int EvpPKeyGenerateByEcKeyOid(out SafeEvpPKeyHandle pkey, string oid);
     }
 }

@@ -47,7 +47,22 @@ namespace System.Security.Cryptography
 
         internal bool HasCurveName => Interop.Crypto.EvpPKeyHasCurveName(GetKey());
 
-        internal bool HasExplicitEncoding => Interop.Crypto.EvpPKeyEcHasExplicitEncoding(GetKey());
+        internal bool HasExplicitEncoding
+        {
+            get
+            {
+                bool? result = Interop.Crypto.EvpPKeyEcHasExplicitEncoding(GetKey());
+                if (result.HasValue)
+                    return result.Value;
+
+                // Pre-3.0 fallback: check via EC_KEY whether the key has a curve name.
+                // If it doesn't have a curve name, it's explicit.
+                using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(GetKey()))
+                {
+                    return !Interop.Crypto.EcKeyHasCurveName(ecKey);
+                }
+            }
+        }
 
         internal int KeySize
         {

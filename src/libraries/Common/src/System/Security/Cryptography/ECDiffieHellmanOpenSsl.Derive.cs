@@ -88,7 +88,22 @@ namespace System.Security.Cryptography
             Debug.Assert(otherPartyPublicKey != null);
             Debug.Assert(_key is not null); // Callers should validate prior.
 
-            bool thisIsNamed = !Interop.Crypto.EvpPKeyEcHasExplicitEncoding(_key.Value);
+            bool thisIsNamed;
+            {
+                bool? explicitEncoding = Interop.Crypto.EvpPKeyEcHasExplicitEncoding(_key.Value);
+                if (explicitEncoding.HasValue)
+                {
+                    thisIsNamed = !explicitEncoding.Value;
+                }
+                else
+                {
+                    // Pre-3.0 fallback: check via EC_KEY.
+                    using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key.Value))
+                    {
+                        thisIsNamed = Interop.Crypto.EcKeyHasCurveName(ecKey);
+                    }
+                }
+            }
 
             ECDiffieHellmanOpenSslPublicKey? otherKey = otherPartyPublicKey as ECDiffieHellmanOpenSslPublicKey;
             bool disposeOtherKey = false;
