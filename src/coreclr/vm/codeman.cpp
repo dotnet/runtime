@@ -2213,7 +2213,6 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
         if (dwSize < SMALL_BLOCK_THRESHOLD)
             dwSize = 4 * SMALL_BLOCK_THRESHOLD;
         pMem = ExecutionManager::GetEEJitManager()->AllocCodeFragmentBlock(dwSize, dwAlignment, m_pAllocator, m_kind);
-        ReportStubBlock(pMem, dwSize, m_kind);
     }
 
     SIZE_T dwExtra = (BYTE *)ALIGN_UP(pMem, dwAlignment) - (BYTE *)pMem;
@@ -2226,6 +2225,8 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
         AddBlock((BYTE *)pMem + dwExtra + dwRequestedSize, dwRemaining);
         dwSize -= dwRemaining;
     }
+
+    ReportStubBlock(pMem, dwSize, m_kind);
 
     TaggedMemAllocPtr tmap;
     tmap.m_pMem             = pMem;
