@@ -439,11 +439,16 @@ CrashReportRegisterStackWalker()
         }
         size_t tmpLen = strlen(tmpDir);
         const char* separator = (tmpLen > 0 && tmpDir[tmpLen - 1] == '/') ? "" : "/";
-        int written = snprintf(dumpPathBuf, sizeof(dumpPathBuf), "%s%s%s", tmpDir, separator, dumpName);
-        if (written <= 0 || static_cast<size_t>(written) >= sizeof(dumpPathBuf))
+        size_t sepLen = strlen(separator);
+        size_t dumpLen = strlen(dumpName);
+        if (tmpLen + sepLen + dumpLen + 1 > sizeof(dumpPathBuf))
         {
             return;
         }
+        memcpy(dumpPathBuf, tmpDir, tmpLen);
+        memcpy(dumpPathBuf + tmpLen, separator, sepLen);
+        memcpy(dumpPathBuf + tmpLen + sepLen, dumpName, dumpLen);
+        dumpPathBuf[tmpLen + sepLen + dumpLen] = '\0';
         dumpName = dumpPathBuf;
     }
 

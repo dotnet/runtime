@@ -12,7 +12,6 @@
 
 #include <fcntl.h>
 #include <errno.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <ucontext.h>
@@ -151,6 +150,28 @@ FormatHexValue(
     char* buffer,
     size_t bufferSize,
     uint64_t value);
+
+static
+size_t
+FormatUnsignedDecimal(
+    char* buffer,
+    size_t bufferSize,
+    uint64_t value);
+
+static
+size_t
+FormatSignedDecimal(
+    char* buffer,
+    size_t bufferSize,
+    int64_t value);
+
+static
+bool
+AppendString(
+    char* buffer,
+    size_t bufferSize,
+    size_t* pos,
+    const char* value);
 
 static
 void
@@ -308,7 +329,7 @@ CreateInProcCrashReport(
     }
 
     char pidBuf[16];
-    (void)snprintf(pidBuf, sizeof(pidBuf), "%u", static_cast<unsigned>(GetCurrentProcessId()));
+    (void)FormatUnsignedDecimal(pidBuf, sizeof(pidBuf), static_cast<uint64_t>(GetCurrentProcessId()));
     s_jsonWriter.WriteString("pid", pidBuf);
 
     s_jsonWriter.OpenArray("threads");
@@ -336,7 +357,7 @@ CreateInProcCrashReport(
 
     s_jsonWriter.OpenObject("parameters");
     char signalBuf[16];
-    (void)snprintf(signalBuf, sizeof(signalBuf), "%d", signal);
+    (void)FormatSignedDecimal(signalBuf, sizeof(signalBuf), static_cast<int64_t>(signal));
     s_jsonWriter.WriteString("signal", signalBuf);
     s_jsonWriter.CloseObject(); // parameters
 
@@ -488,11 +509,11 @@ ExpandDumpTemplate(
             else if (*pattern == 'p' || *pattern == 'd')
             {
                 char pidBuf[16];
-                int pidLen = snprintf(pidBuf, sizeof(pidBuf), "%u", pid);
-                if (pidLen > 0 && pos + static_cast<size_t>(pidLen) < bufferSize)
+                size_t pidLen = FormatUnsignedDecimal(pidBuf, sizeof(pidBuf), pid);
+                if (pidLen > 0 && pos + pidLen < bufferSize)
                 {
-                    memcpy(buffer + pos, pidBuf, static_cast<size_t>(pidLen));
-                    pos += static_cast<size_t>(pidLen);
+                    memcpy(buffer + pos, pidBuf, pidLen);
+                    pos += pidLen;
                 }
             }
             else
@@ -541,8 +562,16 @@ BuildReportPath(
         return false;
     }
 
-    int written = snprintf(buffer, bufferSize, "%s.crashreport.json", expanded);
-    return written > 0 && static_cast<size_t>(written) < bufferSize;
+    size_t pos = 0;
+    if (!AppendString(buffer, bufferSize, &pos, expanded))
+    {
+        return false;
+    }
+    if (!AppendString(buffer, bufferSize, &pos, ".crashreport.json"))
+    {
+        return false;
+    }
+    return true;
 }
 
 void
@@ -627,6 +656,96 @@ FormatHexValue(
         buffer[index++] = reverse[--reverseLength];
     }
     buffer[index] = '\0';
+}
+
+// Formats an unsigned value as decimal into |buffer|. Returns the number of
+// characters written (not counting the null terminator). Always
+// null-terminates when bufferSize > 0. Async-signal-safe.
+size_t
+FormatUnsignedDecimal(
+    char* buffer,
+    size_t bufferSize,
+    uint64_t value)
+{
+    if (buffer == nullptr || bufferSize == 0)
+    {
+        return 0;
+    }
+
+    char reverse[20]; // enough for UINT64_MAX
+    size_t reverseLength = 0;
+    do
+    {
+        reverse[reverseLength++] = static_cast<char>('0' + (value % 10));
+        value /= 10;
+    } while (value != 0 && reverseLength < sizeof(reverse));
+
+    size_t pos = 0;
+    while (reverseLength > 0 && pos + 1 < bufferSize)
+    {
+        buffer[pos++] = reverse[--reverseLength];
+    }
+    buffer[pos] = '\0';
+    return pos;
+}
+
+// Formats a signed value as decimal into |buffer|. Returns the number of
+// characters written (not counting the null terminator). Handles INT64_MIN
+// correctly via unsigned negation. Always null-terminates when
+// bufferSize > 0. Async-signal-safe.
+size_t
+FormatSignedDecimal(
+    char* buffer,
+    size_t bufferSize,
+    int64_t value)
+{
+    if (buffer == nullptr || bufferSize == 0)
+    {
+        return 0;
+    }
+
+    if (value >= 0)
+    {
+        return FormatUnsignedDecimal(buffer, bufferSize, static_cast<uint64_t>(value));
+    }
+
+    if (bufferSize < 2)
+    {
+        buffer[0] = '\0';
+        return 0;
+    }
+
+    buffer[0] = '-';
+    // Cast to unsigned first to handle INT64_MIN without signed overflow.
+    uint64_t absValue = static_cast<uint64_t>(-(value + 1)) + 1;
+    size_t written = FormatUnsignedDecimal(buffer + 1, bufferSize - 1, absValue);
+    return written == 0 ? 0 : written + 1;
+}
+
+// Appends |value| to |buffer| at *|pos|, advancing *|pos|, while leaving
+// room for a trailing null terminator. Always null-terminates when
+// bufferSize > 0. Returns true iff the full value was appended.
+// Async-signal-safe.
+bool
+AppendString(
+    char* buffer,
+    size_t bufferSize,
+    size_t* pos,
+    const char* value)
+{
+    if (buffer == nullptr || pos == nullptr || value == nullptr || bufferSize == 0)
+    {
+        return false;
+    }
+
+    size_t p = *pos;
+    while (*value != '\0' && p + 1 < bufferSize)
+    {
+        buffer[p++] = *value++;
+    }
+    buffer[p] = '\0';
+    *pos = p;
+    return *value == '\0';
 }
 
 void
@@ -749,15 +868,18 @@ BuildMethodName(
 
     if (className != nullptr && methodName != nullptr)
     {
-        (void)snprintf(buffer, bufferSize, "%s.%s", className, methodName);
+        size_t pos = 0;
+        AppendString(buffer, bufferSize, &pos, className);
+        AppendString(buffer, bufferSize, &pos, ".");
+        AppendString(buffer, bufferSize, &pos, methodName);
     }
     else if (className != nullptr)
     {
-        (void)snprintf(buffer, bufferSize, "%s", className);
+        CopyString(buffer, bufferSize, className);
     }
     else if (methodName != nullptr)
     {
-        (void)snprintf(buffer, bufferSize, "%s", methodName);
+        CopyString(buffer, bufferSize, methodName);
     }
     else
     {
