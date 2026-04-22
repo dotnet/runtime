@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using DACF = Microsoft.Diagnostics.DataContractReader.Contracts.DebuggerAssemblyControlFlags;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -35,6 +36,17 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             return GetAssignCopyFnPtr(stringHolder)(stringHolder, pStr);
         }
+    }
+
+    private bool CORProfilerPresent()
+    {
+        if (!_target.TryReadGlobalPointer(Constants.Globals.ProfilerControlBlock, out TargetPointer? profControlBlockAddress))
+            return false;
+
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.ProfControlBlock);
+        TargetPointer mainProfInterface = _target.ReadPointerField(profControlBlockAddress.Value, type, "MainProfilerProfInterface");
+        int notificationCount = _target.ReadField<int>(profControlBlockAddress.Value, type, "NotificationProfilerCount");
+        return mainProfInterface != TargetPointer.Null || notificationCount > 0;
     }
 
     public DacDbiImpl(Target target, object? legacyObj)
@@ -322,27 +334,30 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
 
-            Contracts.DebuggerAssemblyControlFlags controlFlags = loader.GetDebuggerInfoBits(handle);
-            controlFlags &= ~(Contracts.DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS | Contracts.DebuggerAssemblyControlFlags.DACF_ENC_ENABLED);
-            controlFlags &= Contracts.DebuggerAssemblyControlFlags.DACF_CONTROL_FLAGS_MASK;
+            DACF debuggerInfoBits = loader.GetDebuggerInfoBits(handle);
+            DACF controlFlags = debuggerInfoBits & ~(DACF.DACF_ALLOW_JIT_OPTS | DACF.DACF_ENC_ENABLED);
+            controlFlags &= DACF.DACF_CONTROL_FLAGS_MASK;
 
             if (fAllowJitOpts == Interop.BOOL.TRUE)
             {
-                controlFlags |= Contracts.DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS;
+                controlFlags |= DACF.DACF_ALLOW_JIT_OPTS;
             }
 
             if (fEnableEnC == Interop.BOOL.TRUE)
             {
-                controlFlags |= Contracts.DebuggerAssemblyControlFlags.DACF_ENC_ENABLED;
+                bool fIgnorePdbs = (debuggerInfoBits & DACF.DACF_IGNORE_PDBS) != 0;
+                bool canSetEnC = (loader.GetFlags(handle) & Contracts.ModuleFlags.EncCapable) != 0 && !CORProfilerPresent() && fIgnorePdbs;
+                if (canSetEnC)
+                {
+                    controlFlags |= DACF.DACF_ENC_ENABLED;
+                }
+                else
+                {
+                    hr = CorDbgHResults.CORDBG_S_NOT_ALL_BITS_SET;
+                }
             }
 
             loader.SetDebuggerInfoBits(handle, controlFlags);
-
-            // Check if EnC was requested but the module was not capable.
-            if (fEnableEnC == Interop.BOOL.TRUE && (loader.GetFlags(handle) & Contracts.ModuleFlags.EditAndContinue) == 0)
-            {
-                hr = CorDbgHResults.CORDBG_S_NOT_ALL_BITS_SET;
-            }
         }
         catch (System.Exception ex)
         {
