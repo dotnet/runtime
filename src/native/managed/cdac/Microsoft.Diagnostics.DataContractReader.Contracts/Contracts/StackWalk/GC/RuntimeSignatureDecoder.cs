@@ -344,7 +344,8 @@ internal ref struct RuntimeSignatureDecoder<TType, TGenericContext, TReader>
         {
             0 => _provider.GetTypeFromDefinition(null!, MetadataTokens.TypeDefinitionHandle(rid), rawTypeKind),
             1 => _provider.GetTypeFromReference(null!, MetadataTokens.TypeReferenceHandle(rid), rawTypeKind),
-            _ => throw new BadImageFormatException($"Invalid TypeDefOrRefOrSpecEncoded tag: {tag}"),
+            2 => _provider.GetTypeFromSpecification(null!, _genericContext, MetadataTokens.TypeSpecificationHandle(rid), rawTypeKind),
+            _ => _provider.GetPrimitiveType(PrimitiveTypeCode.Object), // tag=3 is BaseType in native
         };
     }
 

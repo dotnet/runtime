@@ -51,10 +51,14 @@ internal sealed class FrameIterator
     private readonly Target target;
     private readonly TargetPointer terminator;
     private TargetPointer currentFramePointer;
+    private CallingConventionInfo? _callingConventionInfo;
 
     internal Data.Frame CurrentFrame => target.ProcessedData.GetOrAdd<Data.Frame>(currentFramePointer);
 
     public TargetPointer CurrentFrameAddress => currentFramePointer;
+
+    private CallingConventionInfo GetCallingConventionInfo()
+        => _callingConventionInfo ??= new CallingConventionInfo(target);
 
     public FrameIterator(Target target, ThreadData threadData)
     {
@@ -414,8 +418,8 @@ internal sealed class FrameIterator
         {
             int pos = decoder.CurrentPos;
             GCRefMapToken token = decoder.ReadToken();
-            uint offset = OffsetFromGCRefMapPos(pos);
-            TargetPointer slotAddress = new(transitionBlock.Value + offset);
+            int offset = GetCallingConventionInfo().OffsetFromGCRefMapPos(pos);
+            TargetPointer slotAddress = new(transitionBlock.Value + (ulong)offset);
 
             switch (token)
             {
@@ -435,13 +439,6 @@ internal sealed class FrameIterator
                     break;
             }
         }
-    }
-
-    private uint OffsetFromGCRefMapPos(int pos)
-    {
-        Target.TypeInfo tbType = target.GetTypeInfo(DataType.TransitionBlock);
-        uint firstSlotOffset = (uint)tbType.Fields[nameof(Data.TransitionBlock.FirstGCRefMapSlot)].Offset;
-        return firstSlotOffset + (uint)(pos * target.PointerSize);
     }
 
     /// <summary>
@@ -662,7 +659,7 @@ internal sealed class FrameIterator
         CallingConventionInfo ccInfo;
         try
         {
-            ccInfo = new CallingConventionInfo(target);
+            ccInfo = GetCallingConventionInfo();
         }
         catch
         {

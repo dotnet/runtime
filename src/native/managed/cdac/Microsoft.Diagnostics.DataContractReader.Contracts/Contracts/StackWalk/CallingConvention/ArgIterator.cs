@@ -421,19 +421,19 @@ internal struct ArgIterator
             {
                 if (_x64UnixIdxFPReg < _ccInfo.NumFloatArgumentRegisters)
                 {
-                    int argOfs = _ccInfo.OffsetOfFloatArgumentRegisters + _x64UnixIdxFPReg * 8;
+                    int argOfs = _ccInfo.OffsetOfFloatArgumentRegisters + _x64UnixIdxFPReg * _ccInfo.FloatRegisterSize;
                     _x64UnixIdxFPReg++;
                     return argOfs;
                 }
             }
             else if (cGenRegs > 0 && _x64UnixIdxGenReg + cGenRegs <= _ccInfo.NumArgumentRegisters)
             {
-                int argOfs = (int)_ccInfo.ArgumentRegistersOffset + _x64UnixIdxGenReg * 8;
+                int argOfs = (int)_ccInfo.ArgumentRegistersOffset + _x64UnixIdxGenReg * _ccInfo.PointerSize;
                 _x64UnixIdxGenReg += cGenRegs;
                 return argOfs;
             }
 
-            int stackOfs = (int)_ccInfo.OffsetOfArgs + _x64UnixIdxStack * 8;
+            int stackOfs = (int)_ccInfo.OffsetOfArgs + _x64UnixIdxStack * _ccInfo.PointerSize;
             _x64UnixIdxStack += _ccInfo.StackElemSize(argSize) / _ccInfo.PointerSize;
             return stackOfs;
         }

@@ -51,7 +51,7 @@ Build the runtime with the cDAC stress hook enabled:
 .\.dotnet\dotnet.exe test src\native\managed\cdac\tests\StressTests
 
 # Run a specific debuggee
-.\.dotnet\dotnet.exe test src\native\managed\cdac\tests\StressTests --filter "debuggeeName=BasicAlloc"
+.\.dotnet\dotnet.exe test src\native\managed\cdac\tests\StressTests --filter "FullyQualifiedName~BasicAlloc"
 
 # Set CORE_ROOT manually if needed
 $env:CORE_ROOT = "path\to\Core_Root"

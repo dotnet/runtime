@@ -155,6 +155,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     internal enum AsyncMethodFlags : uint
     {
         None = 0,
+        AsyncCall = 0x1,
         Thunk = 16,
     }
 
@@ -1342,12 +1343,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         TargetPointer asyncDataAddr = methodDesc.GetAddressOfAsyncMethodData();
         uint asyncFlags = _target.Read<uint>(asyncDataAddr);
         return (asyncFlags & (uint)AsyncMethodFlags.AsyncCall) != 0;
-    }
-
-    [Flags]
-    private enum AsyncMethodFlags : uint
-    {
-        AsyncCall = 0x1,
     }
 
     public uint GetMethodToken(MethodDescHandle methodDescHandle)

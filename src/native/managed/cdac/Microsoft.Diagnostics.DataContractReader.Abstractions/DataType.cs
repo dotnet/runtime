@@ -25,7 +25,6 @@ public enum DataType
     CodePointer,
     Thread,
     ThreadStore,
-    SLink,
     ThreadLocalData,
     ThreadStaticsInfo,
     InFlightTLSData,

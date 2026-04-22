@@ -666,18 +666,9 @@ internal partial class StackWalk_1 : IStackWalk
                 }
                 break;
             case StackWalkState.SW_SKIPPED_FRAME:
-                // Native SFITER_SKIPPED_FRAME_FUNCTION: advance past the frame, then
-                // check for MORE skipped frames before transitioning to FRAMELESS.
-                // This prevents yielding the managed method multiple times between
-                // consecutive skipped frames.
+                // Advance past the skipped frame, then let UpdateState detect
+                // whether there are more skipped frames or we've reached the managed method.
                 handle.FrameIter.Next();
-                if (CheckForSkippedFrames(handle))
-                {
-                    // More skipped frames — stay in SW_SKIPPED_FRAME, don't go through UpdateState
-                    handle.State = StackWalkState.SW_SKIPPED_FRAME;
-                    return true;
-                }
-                // No more skipped frames — fall through to UpdateState which will set SW_FRAMELESS
                 break;
             case StackWalkState.SW_FRAME:
                 // Native SFITER_FRAME_FUNCTION gates ProcessIp + UpdateRegDisplay on

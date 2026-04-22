@@ -86,9 +86,9 @@ internal sealed class CallingConventionInfo
                 break;
 
             case RuntimeInfoArchitecture.X64:
-                if (os == RuntimeInfoOperatingSystem.Unix)
+                if (os is RuntimeInfoOperatingSystem.Unix or RuntimeInfoOperatingSystem.Apple)
                 {
-                    // Unix AMD64 ABI
+                    // Unix/Apple AMD64 ABI (SysV)
                     NumArgumentRegisters = 6;   // RDI, RSI, RDX, RCX, R8, R9
                     NumFloatArgumentRegisters = 8; // XMM0-XMM7
                     FloatRegisterSize = 16;     // M128A
@@ -124,9 +124,7 @@ internal sealed class CallingConventionInfo
                 EnregisteredParamTypeMaxSize = 16;
                 StackSlotSize = 8;
                 IsRetBuffPassedAsFirstArg = false; // ARM64 uses X8 for retbuf
-                // Apple ARM64 has different stack alignment rules.
-                // Unix OS covers macOS/iOS in the runtime's classification.
-                IsAppleArm64ABI = os == RuntimeInfoOperatingSystem.Unix; // TODO: refine Apple vs Linux detection
+                IsAppleArm64ABI = os == RuntimeInfoOperatingSystem.Apple;
                 break;
 
             case RuntimeInfoArchitecture.LoongArch64:
