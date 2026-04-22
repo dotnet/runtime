@@ -21,7 +21,7 @@ public class MetaDataImportDumpTests : DumpTestBase
     protected override string DebuggeeName => "MultiModule";
     protected override string DumpType => "full";
 
-    private (MetadataReader reader, MetaDataImportImpl mdi) GetRootModuleImport()
+    private (MetadataReader reader, IMetaDataImport mdi) GetRootModuleImport()
     {
         ILoader loader = Target.Contracts.Loader;
         IEcmaMetadata ecmaMetadata = Target.Contracts.EcmaMetadata;
