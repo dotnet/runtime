@@ -125,7 +125,7 @@ namespace Microsoft.Extensions.Options
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public virtual TOptions Get(string? name)
         {
-            if (_cache is not OptionsCache<TOptions> optionsCache)
+            if (_fastCache is not OptionsCache<TOptions> optionsCache)
             {
                 // copying captured variables to locals avoids allocating a closure if we don't enter the if
                 string localName = name ?? Options.DefaultName;
@@ -135,7 +135,6 @@ namespace Microsoft.Extensions.Options
 
             // non-allocating fast path
             return optionsCache.GetOrAdd(name, static (name, factory) => factory.Create(name), _factory);
-
         }
 
         /// <summary>
