@@ -76,7 +76,7 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
     return -1;
 }
 
-int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
+int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal)
 {
     return -1;
 }
