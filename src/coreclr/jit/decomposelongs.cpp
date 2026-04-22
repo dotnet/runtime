@@ -704,40 +704,37 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             castRange.InsertAtEnd(compareMode);
             castRange.InsertAtEnd(ovfMask);
 
-            // Now we convert, using the masks created above for NaN and overflow saturation.
+            // Now we convert, using the masks created above for NaN and positive overflow saturation.
             //
             // This creates roughly the equivalent of the following C# code:
-            //   var convert   = Avx512DQ.VL.ConvertToVector128Int64WithTruncation(srcVec);
-            //   convertResult = Vector128.ConditionalSelect(nanMask, convert, Vector128<long>.Zero);
+            //   var convert       = Avx512DQ.VL.ConvertToVector128Int64WithTruncation(srcVec);
+            //   var convertMasked = Avx512F.VL.BlendVariable(Vector128<long>.Zero, convert, nanMask);
             //
-            //   var maxLong   = Vector128.Create(long.MaxValue);
-            //   castResult    = Vector128.ConditionalSelect(ovfMask, maxLong, convertResult);
+            //   var maxLong       = Vector128.Create(long.MaxValue);
+            //   castResult        = Avx512F.VL.BlendVariable(convertMasked, maxLong, ovfMask);
+
+            GenTree* zero = m_compiler->gtNewZeroConNode(TYP_SIMD16);
 
             srcClone = m_compiler->gtClone(srcVector);
-            GenTree* convertResult =
+            GenTree* convert =
                 m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone,
                                                      NI_AVX512_ConvertToVector128Int64WithTruncation, srcType, 16);
 
-            castRange.InsertAtEnd(srcClone);
-            castRange.InsertAtEnd(convertResult);
-
-            nanMask       = m_compiler->gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, nanMask, dstType, 16);
-            GenTree* zero = m_compiler->gtNewZeroConNode(TYP_SIMD16);
-
-            castRange.InsertAtEnd(nanMask);
             castRange.InsertAtEnd(zero);
+            castRange.InsertAtEnd(srcClone);
+            castRange.InsertAtEnd(convert);
+
+            GenTree* convertMasked = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, zero, convert, nanMask,
+                                                                          NI_AVX512_BlendVariableMask, dstType, 16);
 
             GenTreeVecCon* maxLong = m_compiler->gtNewVconNode(TYP_SIMD16);
             maxLong->EvaluateBroadcastInPlace(dstType, INT64_MAX);
 
-            ovfMask       = m_compiler->gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, ovfMask, dstType, 16);
-            convertResult = m_compiler->gtNewSimdCndSelNode(TYP_SIMD16, nanMask, convertResult, zero, dstType, 16);
-
+            castRange.InsertAtEnd(convertMasked);
             castRange.InsertAtEnd(maxLong);
-            castRange.InsertAtEnd(ovfMask);
-            castRange.InsertAtEnd(convertResult);
 
-            castResult = m_compiler->gtNewSimdCndSelNode(TYP_SIMD16, ovfMask, maxLong, convertResult, dstType, 16);
+            castResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, convertMasked, maxLong, ovfMask,
+                                                              NI_AVX512_BlendVariableMask, dstType, 16);
         }
 
         // Because the results are in a SIMD register, we need to ToScalar() them out.
