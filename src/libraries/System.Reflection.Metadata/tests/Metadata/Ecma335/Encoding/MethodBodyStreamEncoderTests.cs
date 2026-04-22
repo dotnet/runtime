@@ -534,9 +534,12 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         }
 
         [Fact]
-        public void AddMethodBody_MixedOpCodeAndCodeBuilderWritesAcrossChunkBoundaries()
+        public unsafe void AddMethodBody_MixedOpCodeAndCodeBuilderWritesAcrossChunkBoundaries()
         {
-            var codeBuilder = new BlobBuilder();
+            // Explicitly use a 256-byte chunk capacity (the BlobBuilder default) so the test
+            // remains deterministic even if BlobBuilder's default capacity ever changes.
+            const int chunkSize = 256;
+            var codeBuilder = new BlobBuilder(chunkSize);
             var flowBuilder = new ControlFlowBuilder();
             var il = new InstructionEncoder(codeBuilder, flowBuilder);
             var doneLabel = il.DefineLabel();
@@ -566,23 +569,32 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             bodyEncoder.AddMethodBody(il, maxStack: 8);
 
             var streamBytes = ilStream.ToArray();
-            Assert.True(streamBytes.Length > 12);
 
-            int pos = 12;
-            int ldargCount = 0;
-            while (pos < streamBytes.Length - 1)
+            // Use MethodBodyBlock to decode the header and extract the IL bytes,
+            // rather than hard-coding the fat-header size.
+            byte[] ilBytes;
+            fixed (byte* streamPtr = &streamBytes[0])
             {
-                switch (streamBytes[pos])
+                var body = MethodBodyBlock.Create(new BlobReader(streamPtr, streamBytes.Length));
+                ilBytes = body.GetILBytes()!;
+            }
+
+            int pos = 0;
+            int ldargCount = 0;
+            while (pos < ilBytes.Length)
+            {
+                switch (ilBytes[pos])
                 {
                     case 0x0E: // ldarg.s
                         ldargCount++;
-                        byte argIndex = streamBytes[pos + 1];
+                        byte argIndex = ilBytes[pos + 1];
                         int expected = (ldargCount % 2 == 1) ? 3 : 0;
                         Assert.Equal(expected, argIndex);
                         pos += 2;
                         break;
 
                     case 0xFE: // 2-byte opcode (ceq)
+                        Assert.Equal(0x01, ilBytes[pos + 1]);
                         pos += 2;
                         break;
 
@@ -600,11 +612,12 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                         break;
 
                     default:
-                        Assert.Fail($"Unexpected opcode 0x{streamBytes[pos]:X2} at offset {pos - 12}.");
+                        Assert.Fail($"Unexpected opcode 0x{ilBytes[pos]:X2} at IL offset {pos}.");
                         break;
                 }
             }
 
+            Assert.Equal(ilBytes.Length, pos);
             Assert.Equal(60, ldargCount);
         }
 
