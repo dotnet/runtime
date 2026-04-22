@@ -12,6 +12,9 @@
     <!-- disabled due to https://github.com/dotnet/runtime/issues/65672 -->
     <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
     <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.Serialization;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -763,7 +764,7 @@ namespace System.Collections.Tests
         #endregion
 
         #region Non-randomized comparers
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void Dictionary_Comparer_NonRandomizedStringComparers()
         {
             RunTest(null);

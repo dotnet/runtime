@@ -9,6 +9,9 @@
     <!-- these tests depend on the pdb files -->
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
     <RootNamespace>System.Diagnostics.SymbolStore.Tests</RootNamespace>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DiagnosticMethodInfoTests.cs" />

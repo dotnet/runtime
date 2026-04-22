@@ -7,6 +7,9 @@
     <!-- Prevent xunit v3 auto-generated namespace from conflicting with the
          System.Net.Http.WinHttpHandler type (CS0435). -->
     <RootNamespace>WinHttpHandlerFunctionalTests</RootNamespace>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"

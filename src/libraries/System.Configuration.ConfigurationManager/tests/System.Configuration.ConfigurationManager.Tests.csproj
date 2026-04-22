@@ -8,6 +8,8 @@
          the (sub)namespace System.Configuration.ConfigurationManager, since that is also a type name.
          Set the root namespace to avoid conflicts. -->
     <RootNamespace>System.ConfigurationTests</RootNamespace>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
