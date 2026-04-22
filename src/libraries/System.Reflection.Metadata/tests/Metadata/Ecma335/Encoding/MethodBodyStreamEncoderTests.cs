@@ -534,6 +534,81 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         }
 
         [Fact]
+        public void AddMethodBody_MixedOpCodeAndCodeBuilderWritesAcrossChunkBoundaries()
+        {
+            var codeBuilder = new BlobBuilder();
+            var flowBuilder = new ControlFlowBuilder();
+            var il = new InstructionEncoder(codeBuilder, flowBuilder);
+            var doneLabel = il.DefineLabel();
+
+            for (int i = 0; i < 30; i++)
+            {
+                var skipLabel = il.DefineLabel();
+
+                il.OpCode(ILOpCode.Ldarg_s);
+                codeBuilder.WriteByte(3);
+
+                il.OpCode(ILOpCode.Ldarg_s);
+                codeBuilder.WriteByte(0);
+
+                il.OpCode(ILOpCode.Ceq);
+                il.Branch(ILOpCode.Brfalse_s, skipLabel);
+                il.LoadString(MetadataTokens.UserStringHandle(i + 1));
+                il.Branch(ILOpCode.Br, doneLabel);
+                il.MarkLabel(skipLabel);
+            }
+
+            il.MarkLabel(doneLabel);
+            il.OpCode(ILOpCode.Ret);
+
+            var ilStream = new BlobBuilder();
+            var bodyEncoder = new MethodBodyStreamEncoder(ilStream);
+            bodyEncoder.AddMethodBody(il, maxStack: 8);
+
+            var streamBytes = ilStream.ToArray();
+            Assert.True(streamBytes.Length > 12);
+
+            int pos = 12;
+            int ldargCount = 0;
+            while (pos < streamBytes.Length - 1)
+            {
+                switch (streamBytes[pos])
+                {
+                    case 0x0E: // ldarg.s
+                        ldargCount++;
+                        byte argIndex = streamBytes[pos + 1];
+                        int expected = (ldargCount % 2 == 1) ? 3 : 0;
+                        Assert.Equal(expected, argIndex);
+                        pos += 2;
+                        break;
+
+                    case 0xFE: // 2-byte opcode (ceq)
+                        pos += 2;
+                        break;
+
+                    case 0x72: // ldstr
+                    case 0x38: // br
+                        pos += 5;
+                        break;
+
+                    case 0x2C: // brfalse.s
+                        pos += 2;
+                        break;
+
+                    case 0x2A: // ret
+                        pos += 1;
+                        break;
+
+                    default:
+                        Assert.Fail($"Unexpected opcode 0x{streamBytes[pos]:X2} at offset {pos - 12}.");
+                        break;
+                }
+            }
+
+            Assert.Equal(60, ldargCount);
+        }
+
+        [Fact]
         public void BranchErrors()
         {
             var codeBuilder = new BlobBuilder();

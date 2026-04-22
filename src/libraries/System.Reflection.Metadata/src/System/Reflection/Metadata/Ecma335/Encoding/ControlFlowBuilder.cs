@@ -350,13 +350,6 @@ namespace System.Reflection.Metadata.Ecma335
                         branch = _branches[branchIndex];
                     }
 
-                    // the branch starts at the very end and its operand is in the next blob:
-                    if (srcBlobOffset == srcBlob.Length - 1)
-                    {
-                        srcBlobOffset = operandSize;
-                        break;
-                    }
-
                     // skip fake branch operand:
                     srcBlobOffset += operandSize;
                 }
