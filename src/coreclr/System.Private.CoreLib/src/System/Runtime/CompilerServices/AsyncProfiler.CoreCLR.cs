@@ -394,7 +394,7 @@ namespace System.Runtime.CompilerServices
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static unsafe void ResumeAsyncCallstacks(AsyncThreadContext context)
             {
-                //Write recursivly all the resume async callstack events.
+                //Write recursively all the resume async callstack events.
                 AsyncDispatcherInfo* info = AsyncDispatcherInfo.t_current;
                 if (info != null)
                 {
