@@ -26,6 +26,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 TestRecognizedIntrinsic();
                 TestRecognizedGenericIntrinsic<object>();
+                TestNullableCornerCase<int?>();
                 TestRecognizedConstraint();
                 TestUnknownOwningType();
                 TestUnknownArgument();
@@ -34,6 +35,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public static void TestRecognizedIntrinsic() => typeof(Gen<>).MakeGenericType(typeof(object));
 
             public static void TestRecognizedGenericIntrinsic<T>() => typeof(Gen<>).MakeGenericType(typeof(T));
+
+            [ExpectedWarning("IL3050", nameof(Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            public static void TestNullableCornerCase<T>() => typeof(Gen<>).MakeGenericType(Nullable.GetUnderlyingType(typeof(T)));
 
             public static void TestRecognizedConstraint() => typeof(GenConstrained<>).MakeGenericType(GrabUnknownType());
 
