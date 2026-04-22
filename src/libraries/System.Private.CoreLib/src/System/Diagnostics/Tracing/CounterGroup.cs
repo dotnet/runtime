@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Threading;
 
@@ -142,9 +143,9 @@ namespace System.Diagnostics.Tracing
 
 #region Timer Processing
 
-        private DateTime _timeStampSinceCollectionStarted;
+        private long _timeStampSinceCollectionStarted;
         private int _pollingIntervalInMilliseconds;
-        private DateTime _nextPollingTimeStamp;
+        private long _nextPollingTimeStamp;
 
         private void EnableTimer(float pollingIntervalInSeconds)
         {
@@ -156,8 +157,9 @@ namespace System.Diagnostics.Tracing
                 // Schedule IncrementingPollingCounter reset and synchronously reset other counters
                 HandleCountersReset();
 
-                _timeStampSinceCollectionStarted = DateTime.UtcNow;
-                _nextPollingTimeStamp = DateTime.UtcNow + new TimeSpan(0, 0, (int)pollingIntervalInSeconds);
+                long now = Stopwatch.GetTimestamp();
+                _timeStampSinceCollectionStarted = now;
+                _nextPollingTimeStamp = now + (long)(Stopwatch.Frequency * pollingIntervalInSeconds);
 
                 // Create the polling thread and init all the shared state if needed
                 if (s_pollingThread == null)
@@ -225,14 +227,14 @@ namespace System.Diagnostics.Tracing
         {
             if (_eventSource.IsEnabled())
             {
-                DateTime now;
+                long now;
                 TimeSpan elapsed;
                 int pollingIntervalInMilliseconds;
                 DiagnosticCounter[] counters;
                 lock (s_counterGroupLock)
                 {
-                    now = DateTime.UtcNow;
-                    elapsed = now - _timeStampSinceCollectionStarted;
+                    now = Stopwatch.GetTimestamp();
+                    elapsed = Stopwatch.GetElapsedTime(_timeStampSinceCollectionStarted, now);
                     pollingIntervalInMilliseconds = _pollingIntervalInMilliseconds;
                     counters = new DiagnosticCounter[_counters.Count];
                     _counters.CopyTo(counters);
@@ -259,10 +261,17 @@ namespace System.Diagnostics.Tracing
                 lock (s_counterGroupLock)
                 {
                     _timeStampSinceCollectionStarted = now;
-                    TimeSpan delta = now - _nextPollingTimeStamp;
-                    delta = _pollingIntervalInMilliseconds > delta.TotalMilliseconds ? TimeSpan.FromMilliseconds(_pollingIntervalInMilliseconds) : delta;
+                    long intervalTicks = (long)((double)Stopwatch.Frequency * _pollingIntervalInMilliseconds / 1000);
+                    long delta = now - _nextPollingTimeStamp;
+                    if (delta < intervalTicks)
+                    {
+                        delta = intervalTicks;
+                    }
+
                     if (_pollingIntervalInMilliseconds > 0)
-                        _nextPollingTimeStamp += TimeSpan.FromMilliseconds(_pollingIntervalInMilliseconds * Math.Ceiling(delta.TotalMilliseconds / _pollingIntervalInMilliseconds));
+                    {
+                        _nextPollingTimeStamp += (long)(intervalTicks * Math.Ceiling((double)delta / intervalTicks));
+                    }
                 }
             }
         }
@@ -292,13 +301,13 @@ namespace System.Diagnostics.Tracing
                     sleepEvent = s_pollingThreadSleepEvent;
                     foreach (CounterGroup counterGroup in s_counterGroupEnabledList!)
                     {
-                        DateTime now = DateTime.UtcNow;
-                        if (counterGroup._nextPollingTimeStamp < now + new TimeSpan(0, 0, 0, 0, 1))
+                        long now = Stopwatch.GetTimestamp();
+                        if (counterGroup._nextPollingTimeStamp < now + Stopwatch.Frequency / 1000)
                         {
                             onTimers.Add(counterGroup);
                         }
 
-                        int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
+                        int millisecondsTillNextPoll = (int)Stopwatch.GetElapsedTime(now, counterGroup._nextPollingTimeStamp).TotalMilliseconds;
                         millisecondsTillNextPoll = Math.Max(1, millisecondsTillNextPoll);
                         sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                     }
