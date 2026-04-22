@@ -192,7 +192,6 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Wasi.cs" />
-    <Compile Include="System\Net\Sockets\SocketPal.Wasi.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
