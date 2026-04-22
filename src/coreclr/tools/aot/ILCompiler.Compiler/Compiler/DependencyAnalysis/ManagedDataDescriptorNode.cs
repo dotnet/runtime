@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
     /// so it can emit field offsets that would otherwise require runtime metadata resolution.
     ///
     /// Types are discovered by scanning MetadataManager.GetTypesWithEETypes() for types
-    /// annotated with [CdacType], ensuring only types that actually have a MethodTable
+    /// annotated with [DataContract], ensuring only types that actually have a MethodTable
     /// in the binary are included.
     /// </summary>
     public class ManagedDataDescriptorNode : ObjectNode, ISymbolDefinitionNode

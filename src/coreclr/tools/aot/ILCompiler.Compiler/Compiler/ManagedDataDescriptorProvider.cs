@@ -7,7 +7,7 @@ namespace ILCompiler
 {
     /// <summary>
     /// Compilation root provider that adds the managed cDAC data descriptor node.
-    /// The node discovers [CdacType]-annotated types from MetadataManager.GetTypesWithEETypes()
+    /// The node discovers [DataContract]-annotated types from MetadataManager.GetTypesWithEETypes()
     /// during object data emission, ensuring only types with MethodTables are included.
     /// </summary>
     public class ManagedDataDescriptorProvider : ICompilationRootProvider
