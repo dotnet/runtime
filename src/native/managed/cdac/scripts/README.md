@@ -8,7 +8,7 @@ A command-line tool that opens a .NET process dump with [ClrMD](https://github.c
 
 ### Prerequisites
 
-- The repo's local .dotnet SDK (built via `build.cmd`/`build.sh`)
+- A .NET SDK — the script prefers the repo-local `.dotnet` SDK (installed by `build.cmd`/`build.sh`) but falls back to any `dotnet` on your PATH
 - A .NET crash dump (Windows minidump, Linux coredump, or macOS coredump) from a runtime that includes the `DotNetRuntimeContractDescriptor` export
 
 ### Quick Start
@@ -36,7 +36,7 @@ Or run directly with `dotnet run`:
 
 | Command | Description |
 |---------|-------------|
-| `descriptor` | Print the full contract descriptor: version, baseline, contracts with versions, types with fields, and globals |
+| `descriptor` | Print the full contract descriptor: version, baseline, contracts with versions, types with fields, globals, and sub-descriptors. Detects merge conflicts across descriptors. |
 | `threads` | List all managed threads with OS ID, thread state, and address |
 | `stacks` | Walk the managed stack for each thread, showing instruction pointers and method descriptors |
 

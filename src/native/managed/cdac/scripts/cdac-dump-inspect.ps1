@@ -22,14 +22,20 @@ $scriptDir = $PSScriptRoot
 $repoRoot = Resolve-Path (Join-Path $scriptDir "../../../../..")
 $dotnetDir = Join-Path $repoRoot ".dotnet"
 $dotnetExe = if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6) { "dotnet.exe" } else { "dotnet" }
-$dotnet = Join-Path $dotnetDir $dotnetExe
 $projFile = Join-Path $scriptDir "cdac-dump-inspect.csproj"
 $config = if ($Release) { "Release" } else { "Debug" }
 
-if (-not (Test-Path $dotnet)) {
-    $buildScript = if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6) { "build.cmd" } else { "build.sh" }
-    Write-Error "Repo-local dotnet SDK not found at '$dotnet'. Run '$buildScript' from the repository root to install the local SDK, then retry."
-    exit 1
+# Prefer repo-local SDK, fall back to dotnet on PATH.
+$localDotnet = Join-Path $dotnetDir $dotnetExe
+if (Test-Path $localDotnet) {
+    $dotnet = $localDotnet
+}
+else {
+    $dotnet = Get-Command $dotnetExe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+    if (-not $dotnet) {
+        Write-Error "dotnet SDK not found. Either run 'build.cmd'/'build.sh' to install the repo-local SDK, or ensure 'dotnet' is on your PATH."
+        exit 1
+    }
 }
 
 if (-not $Command -or -not $DumpPath) {
