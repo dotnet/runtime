@@ -137,7 +137,7 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
             StringBuilder sb = new();
             foreach (var c in _contracts)
             {
-                sb.Append($"\"{c}\": 1,");
+                sb.Append($"\"{c}\": \"c1\",");
             }
             Debug.Assert(sb.Length > 0);
             sb.Length--; // remove trailing comma

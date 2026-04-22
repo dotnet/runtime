@@ -37,7 +37,7 @@
         '$(Scenario)' == 'gcstress0xc_jitstress1' or
         '$(Scenario)' == 'gcstress0xc_jitstress2' or
         '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">06:00:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(Scenario)' == 'interpmode3'">01:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(Scenario)' == 'interpmode1'">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetsAppleMobile)' == 'true'">01:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'android'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'">01:30:00</_workItemTimeout>
@@ -271,7 +271,7 @@
         $(HelixPostCommands);
         %HELIX_PYTHONPATH% %HELIX_CORRELATION_PAYLOAD%\gen-debug-dump-docs.py -buildid $(BUILD_BUILDID) -workitem %HELIX_WORKITEM_FRIENDLYNAME% -jobid %HELIX_CORRELATION_ID% -outdir %HELIX_WORKITEM_UPLOAD_ROOT% -templatedir %HELIX_CORRELATION_PAYLOAD% -dumpdir %HELIX_DUMP_FOLDER% -productver $(ProductVersion)
       </HelixPostCommands>
-      <HelixPostCommands Condition="'$(TargetOS)' != 'windows'">
+      <HelixPostCommands Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'">
         $(HelixPostCommands);
         $HELIX_PYTHONPATH $HELIX_CORRELATION_PAYLOAD/gen-debug-dump-docs.py -buildid $(BUILD_BUILDID) -workitem $HELIX_WORKITEM_FRIENDLYNAME -jobid $HELIX_CORRELATION_ID -outdir $HELIX_WORKITEM_UPLOAD_ROOT -templatedir $HELIX_CORRELATION_PAYLOAD -dumpdir $HELIX_DUMP_FOLDER -productver $(ProductVersion)
       </HelixPostCommands>

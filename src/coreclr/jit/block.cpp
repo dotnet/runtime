@@ -506,7 +506,7 @@ void BasicBlock::dspFlags() const
         {BBF_BACKWARD_JUMP, "bwd"},
         {BBF_BACKWARD_JUMP_TARGET, "bwd-target"},
         {BBF_BACKWARD_JUMP_SOURCE, "bwd-src"},
-        {BBF_PATCHPOINT, "ppoint"},
+        {BBF_OSR_PATCHPOINT, "osr-ppoint"},
         {BBF_PARTIAL_COMPILATION_PATCHPOINT, "pc-ppoint"},
         {BBF_HAS_HISTOGRAM_PROFILE, "hist"},
         {BBF_TAILCALL_SUCCESSOR, "tail-succ"},

@@ -13,10 +13,13 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -28,25 +31,6 @@ namespace Microsoft.Win32.SafeHandles
         // s_startWithShellExecute is defined in platform-specific partial files with OS-appropriate delegate signatures.
         internal static void EnsureShellExecuteFunc() =>
             s_startWithShellExecute ??= StartWithShellExecute;
-
-        /// <summary>
-        /// Gets the process ID.
-        /// </summary>
-        public int ProcessId
-        {
-            get
-            {
-                Validate();
-
-                if (field == -1)
-                {
-                    field = GetProcessIdCore();
-                }
-
-                return field;
-            }
-            private set;
-        } = -1;
 
         /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeHandle" />.
@@ -176,6 +160,214 @@ namespace Microsoft.Win32.SafeHandles
         {
             Validate();
             return SignalCore(signal);
+        }
+
+        /// <summary>
+        /// Waits indefinitely for the process to exit.
+        /// </summary>
+        /// <returns>The exit status of the process.</returns>
+        /// <remarks>
+        /// On Unix, it's impossible to obtain the exit status of a non-child process.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="PlatformNotSupportedException">On Unix, the process is not a child process.</exception>
+        public ProcessExitStatus WaitForExit()
+        {
+            Validate();
+
+            return WaitForExitCore();
+        }
+
+        /// <summary>
+        /// Waits for the process to exit within the specified timeout.
+        /// </summary>
+        /// <param name="timeout">The maximum time to wait for the process to exit.</param>
+        /// <param name="exitStatus">When this method returns <see langword="true"/>, contains the exit status of the process.</param>
+        /// <returns><see langword="true"/> if the process exited before the timeout; otherwise, <see langword="false"/>.</returns>
+        /// <remarks>
+        /// On Unix, it's impossible to obtain the exit status of a non-child process.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="PlatformNotSupportedException">On Unix, the process is not a child process.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan"/>,
+        /// or is greater than <see cref="int.MaxValue"/> milliseconds.</exception>
+        public bool TryWaitForExit(TimeSpan timeout, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            Validate();
+
+            return TryWaitForExitCore(ProcessUtils.ToTimeoutMilliseconds(timeout), out exitStatus);
+        }
+
+        /// <summary>
+        /// Waits for the process to exit within the specified timeout.
+        /// If the process does not exit before the timeout, it is killed and then waited for exit.
+        /// </summary>
+        /// <param name="timeout">The maximum time to wait for the process to exit before killing it.</param>
+        /// <returns>The exit status of the process. If the process was killed due to timeout,
+        /// <see cref="ProcessExitStatus.Canceled"/> will be <see langword="true"/>.</returns>
+        /// <remarks>
+        /// On Unix, it's impossible to obtain the exit status of a non-child process.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="PlatformNotSupportedException">On Unix, the process is not a child process.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan"/>,
+        /// or is greater than <see cref="int.MaxValue"/> milliseconds.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public ProcessExitStatus WaitForExitOrKillOnTimeout(TimeSpan timeout)
+        {
+            Validate();
+
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            return WaitForExitOrKillOnTimeoutCore(ProcessUtils.ToTimeoutMilliseconds(timeout));
+        }
+
+        /// <summary>
+        /// Waits asynchronously for the process to exit.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the wait operation.</param>
+        /// <returns>A task that represents the asynchronous wait operation. The task result contains the exit status of the process.</returns>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled.</exception>
+        /// <remarks>
+        /// <para>
+        /// When the cancellation token is canceled, this method stops waiting and throws <see cref="OperationCanceledException"/>.
+        /// The process is NOT killed and continues running. If you want to kill the process on cancellation,
+        /// use <see cref="WaitForExitOrKillOnCancellationAsync"/> instead.
+        /// </para>
+        /// <para>On Unix, it's impossible to obtain the exit status of a non-child process.</para>
+        /// </remarks>
+        /// <exception cref="PlatformNotSupportedException">On Unix, the process is not a child process.</exception>
+        public async Task<ProcessExitStatus> WaitForExitAsync(CancellationToken cancellationToken = default)
+        {
+            Validate();
+
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            CancellationTokenRegistration ctr = default;
+
+            var exitedEvent = GetWaitHandle();
+
+            try
+            {
+                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    exitedEvent,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    ctr = cancellationToken.UnsafeRegister(
+                        static state =>
+                        {
+                            var (taskSource, token) = ((TaskCompletionSource<bool> taskSource, CancellationToken token))state!;
+                            taskSource.TrySetCanceled(token);
+                        },
+                        (tcs, cancellationToken));
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                ctr.Dispose();
+                registeredWaitHandle?.Unregister(null);
+
+                // On Unix, we don't own the ManualResetEvent.
+                if (OperatingSystem.IsWindows())
+                {
+                    exitedEvent.Dispose();
+                }
+            }
+
+            return GetExitStatus();
+        }
+
+        /// <summary>
+        /// Waits asynchronously for the process to exit.
+        /// When cancelled, kills the process and then waits for it to exit.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the wait operation and kill the process.</param>
+        /// <returns>A task that represents the asynchronous wait operation. The task result contains the exit status of the process.
+        /// If the process was killed due to cancellation, <see cref="ProcessExitStatus.Canceled"/> will be <see langword="true"/>.</returns>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <remarks>
+        /// <para>
+        /// When the cancellation token is canceled, this method kills the process and waits for it to exit.
+        /// The returned exit status will have the <see cref="ProcessExitStatus.Canceled"/> property set to <see langword="true"/> if the process was killed.
+        /// If the cancellation token cannot be canceled (e.g., <see cref="CancellationToken.None"/>), this method behaves identically
+        /// to <see cref="WaitForExitAsync"/> and will wait indefinitely for the process to exit.
+        /// </para>
+        /// <para>On Unix, it's impossible to obtain the exit status of a non-child process.</para>
+        /// </remarks>
+        /// <exception cref="PlatformNotSupportedException">On Unix, the process is not a child process.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken)
+        {
+            Validate();
+
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            CancellationTokenRegistration ctr = default;
+
+            var exitedEvent = GetWaitHandle();
+
+            try
+            {
+                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    exitedEvent,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    ctr = cancellationToken.UnsafeRegister(
+                        static state =>
+                        {
+                            var (handle, tcs) = ((SafeProcessHandle, TaskCompletionSource<bool>))state!;
+                            try
+                            {
+                                handle.Canceled = handle.SignalCore(PosixSignal.SIGKILL);
+                            }
+                            catch (Exception ex)
+                            {
+                                tcs.TrySetException(ex);
+                            }
+                        },
+                        (this, tcs));
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                ctr.Dispose();
+                registeredWaitHandle?.Unregister(null);
+
+                // On Unix, we don't own the ManualResetEvent.
+                if (OperatingSystem.IsWindows())
+                {
+                    exitedEvent.Dispose();
+                }
+            }
+
+            return GetExitStatus();
         }
 
         private void Validate()

@@ -35,7 +35,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     private readonly Configuration _config;
 
     private readonly DataTargetDelegates _dataTargetDelegates;
-    private readonly Dictionary<string, int> _contracts = [];
+    private readonly Dictionary<string, string> _contracts = [];
     private readonly IReadOnlyDictionary<string, GlobalValue> _globals = new Dictionary<string, GlobalValue>();
     private readonly Dictionary<DataType, Target.TypeInfo> _knownTypes = [];
     private readonly Dictionary<string, Target.TypeInfo> _types = [];
@@ -141,7 +141,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 throw new InvalidOperationException("All descriptors must have the same endianness and pointer size.");
 
             // Read contracts and add to map
-            foreach ((string name, int version) in descriptor.ContractDescriptor.Contracts ?? [])
+            foreach ((string name, string version) in descriptor.ContractDescriptor.Contracts ?? [])
             {
                 if (_contracts.ContainsKey(name))
                 {
@@ -807,7 +807,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         throw new InvalidOperationException($"Failed to get type info for '{type}'");
     }
 
-    internal bool TryGetContractVersion(string contractName, out int version)
+    internal bool TryGetContractVersion(string contractName, [NotNullWhen(true)] out string? version)
     {
         return _contracts.TryGetValue(contractName, out version);
     }

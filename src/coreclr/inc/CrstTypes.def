@@ -164,18 +164,6 @@ Crst DebuggerMutex
 
 End
 
-// This lock is used only for testing data consistency (see code:DataTest::TestDataSafety)
-// and is released before taking any other lock except for CrstDataTest2
-Crst DataTest1
-    AcquiredAfter DebuggerMutex
-End
-
-// This lock is used only for testing data consistency (see code:DataTest::TestDataSafety)
-// and is released before taking any other lockCrst DataTest2
-Crst DataTest2
-    AcquiredAfter DataTest1
-End
-
 Crst DbgTransport
 End
 
@@ -240,7 +228,7 @@ Crst IJWHash
 End
 
 Crst ILStubGen
-    AcquiredBefore DeadlockDetection UniqueStack UnresolvedClassLock FusionAppCtx AssemblyLoader
+    AcquiredBefore DeadlockDetection UniqueStack
 End
 
 Crst InstMethodHashTable
