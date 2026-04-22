@@ -14,7 +14,6 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    [TestCategory("native")]
     public class DllImportTests : PInvokeTableGeneratorTestsBase
     {
         public DllImportTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

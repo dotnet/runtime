@@ -14,7 +14,6 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    [TestCategory("native")]
     public class PInvokeTableGeneratorTests : PInvokeTableGeneratorTestsBase
     {
         public PInvokeTableGeneratorTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -351,6 +350,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native")]
         public async Task EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
@@ -361,6 +361,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native")]
         public void EnsureComInteropCompilesInAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "com");
