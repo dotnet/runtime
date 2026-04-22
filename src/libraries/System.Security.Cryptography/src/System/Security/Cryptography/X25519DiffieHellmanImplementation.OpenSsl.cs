@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
         private readonly SafeEvpPKeyHandle _key;
         private readonly bool _hasPrivate;
 
-        internal static new bool IsSupported => true;
+        internal static new bool IsSupported { get; } = Interop.Crypto.X25519Available();
 
         private X25519DiffieHellmanImplementation(SafeEvpPKeyHandle key, bool hasPrivate)
         {

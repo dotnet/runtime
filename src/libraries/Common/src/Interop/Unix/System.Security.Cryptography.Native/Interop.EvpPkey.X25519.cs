@@ -11,6 +11,10 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519Available")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool X25519Available();
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519ExportPrivateKey")]
         private static partial int X25519ExportPrivateKey(
             SafeEvpPKeyHandle key,

@@ -6,6 +6,13 @@
 #include "pal_types.h"
 
 /*
+Determines if the X25519 algorithm is supported.
+
+Returns 1 if the algorithm is available, 0 otherwise.
+*/
+PALEXPORT int32_t CryptoNative_X25519Available(void);
+
+/*
 Exports the raw private key material from an X25519 EVP_PKEY.
 
 Returns 1 on success, 0 on failure, -1 if the exported key length does not match destinationLength.
@@ -39,4 +46,3 @@ Generates a new X25519 key pair and returns it as an EVP_PKEY.
 Returns the new EVP_PKEY on success, NULL on failure.
 */
 PALEXPORT EVP_PKEY* CryptoNative_X25519GenerateKey(void);
-

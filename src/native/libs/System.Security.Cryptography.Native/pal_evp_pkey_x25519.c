@@ -34,6 +34,29 @@ static int32_t ExportRawKeyMaterial(
     return 1;
 }
 
+int32_t CryptoNative_X25519Available(void)
+{
+    ERR_clear_error();
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, NULL);
+
+    if (ctx)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        return 1;
+    }
+
+    // X25519 might not be available for two reasons.
+    // 1. It was built with `no-ecx` which is available starting in OpenSSL 3.2.
+    // 2. The default Provider is the FIPS provider, and X25519 is not available in the FIPS provider.
+    // In both cases, ERR_R_UNSUPPORTED is put in the error queue.
+    // If we errored for a different reason, we _still_ want to return "yes" for is supported. This will allow for
+    // actual use of X25519 to throw the appropriate error.
+    unsigned long error = ERR_peek_error();
+    int32_t result = ERR_GET_REASON(error) == ERR_R_UNSUPPORTED ? 0 : 1;
+    ERR_clear_error();
+    return result;
+}
+
 int32_t CryptoNative_X25519ExportPrivateKey(const EVP_PKEY* key, uint8_t* destination, int32_t destinationLength)
 {
     return ExportRawKeyMaterial(key, destination, destinationLength, EVP_PKEY_get_raw_private_key);
