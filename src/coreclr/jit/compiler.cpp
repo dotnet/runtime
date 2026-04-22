@@ -2687,7 +2687,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 #endif // LATE_DISASM
 
-        if (JitConfig.JitDasmWithAddress() != 0)
+        if (JitConfig.JitDisasmWithAddress() != 0)
         {
             opts.disAddr = true;
         }
