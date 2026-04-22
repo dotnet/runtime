@@ -43,7 +43,7 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
 
         if (type.Fields.ContainsKey(nameof(StubPrecodeSize)))
         {
-            StubPrecodeSize = target.ReadField<byte>(address, type, nameof(StubPrecodeSize));
+            StubPrecodeSize = target.ReadField<byte>(address, type, nameof(FixupStubPrecodeSize));
             StubBytes = new byte[StubPrecodeSize.Value];
             target.ReadBuffer(address + (ulong)type.Fields[nameof(StubBytes)].Offset, StubBytes);
             StubIgnoredBytes = new byte[StubPrecodeSize.Value];
@@ -52,8 +52,8 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
         else
         {
             StubPrecodeSize = null;
-            StubBytes = null;
-            StubIgnoredBytes = null;
+            FixupBytes = null;
+            FixupIgnoredBytes = null;
         }
 
         PInvokeImportPrecodeType = MaybeGetPrecodeType(target, address, nameof(PInvokeImportPrecodeType));
