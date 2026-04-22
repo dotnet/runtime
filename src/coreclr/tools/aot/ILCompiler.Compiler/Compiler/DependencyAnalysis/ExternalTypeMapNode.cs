@@ -79,6 +79,17 @@ namespace ILCompiler.DependencyAnalysis
                                 context.NecessaryTypeSymbol(effectiveElementType),
                                 "MdArray can be constructed at runtime from element type");
                         }
+
+                        // Pointer/function-pointer element SZ arrays can be constructed at runtime from
+                        // just the element type's MethodTable using the hardcoded typeof(char*[]) template.
+                        // If the (underlying) element type is reachable, consider the array reachable as well.
+                        if (arrayType.IsSzArray && (arrayType.ElementType.IsPointer || arrayType.ElementType.IsFunctionPointer))
+                        {
+                            yield return new CombinedDependencyListEntry(
+                                context.NecessaryTypeSymbol(effectiveTrimTargetType),
+                                context.NecessaryTypeSymbol(effectiveElementType),
+                                "Pointer-element SZ array can be constructed at runtime from element type");
+                        }
                     }
                 }
             }
