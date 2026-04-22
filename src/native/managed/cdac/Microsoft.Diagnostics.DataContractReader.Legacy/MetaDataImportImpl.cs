@@ -270,7 +270,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             TypeDefinition typeDef = _reader.GetTypeDefinition(typeHandle);
 
             string fullName = GetTypeDefFullName(typeDef);
-            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szTypeDef, cchTypeDef, pchTypeDef, fullName);
+            OutputBufferHelpers.CopyStringToBuffer(szTypeDef, cchTypeDef, pchTypeDef, fullName, out bool truncated);
 
             if (pdwTypeDefFlags is not null)
                 *pdwTypeDefFlags = (uint)typeDef.Attributes;
@@ -317,7 +317,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             TypeReference typeRef = _reader.GetTypeReference(refHandle);
 
             string fullName = GetTypeRefFullName(typeRef);
-            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, fullName);
+            OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, fullName, out bool truncated);
 
             if (ptkResolutionScope is not null)
             {
@@ -360,7 +360,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             MethodDefinition methodDef = _reader.GetMethodDefinition(methodHandle);
 
             string name = _reader.GetString(methodDef.Name);
-            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szMethod, cchMethod, pchMethod, name);
+            OutputBufferHelpers.CopyStringToBuffer(szMethod, cchMethod, pchMethod, name, out bool truncated);
 
             if (pClass is not null)
                 *pClass = MapGlobalParentToken((uint)MetadataTokens.GetToken(methodDef.GetDeclaringType()));
@@ -431,7 +431,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             FieldDefinition fieldDef = _reader.GetFieldDefinition(fieldHandle);
 
             string name = _reader.GetString(fieldDef.Name);
-            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szField, cchField, pchField, name);
+            OutputBufferHelpers.CopyStringToBuffer(szField, cchField, pchField, name, out bool truncated);
 
             if (pClass is not null)
                 *pClass = MapGlobalParentToken((uint)MetadataTokens.GetToken(fieldDef.GetDeclaringType()));
@@ -638,7 +638,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 *reserved = 0;
 
             string name = _reader.GetString(genericParam.Name);
-            bool truncated = OutputBufferHelpers.CopyStringToBuffer(wzname, cchName, pchName, name);
+            OutputBufferHelpers.CopyStringToBuffer(wzname, cchName, pchName, name, out bool truncated);
 
             hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
@@ -970,7 +970,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             MemberReference memberRef = _reader.GetMemberReference(refHandle);
 
             string name = _reader.GetString(memberRef.Name);
-            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szMember, cchMember, pchMember, name);
+            OutputBufferHelpers.CopyStringToBuffer(szMember, cchMember, pchMember, name, out bool truncated);
 
             if (ptk is not null)
                 *ptk = MapGlobalParentToken((uint)MetadataTokens.GetToken(memberRef.Parent));
@@ -1114,7 +1114,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             ModuleReference modRef = _reader.GetModuleReference(modRefHandle);
 
             string name = _reader.GetString(modRef.Name);
-            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
+            OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name, out bool truncated);
 
             hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
@@ -1329,7 +1329,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             Parameter param = _reader.GetParameter(paramHandle);
 
             string name = _reader.GetString(param.Name);
-            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
+            OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name, out bool truncated);
 
             if (pmd is not null)
             {
@@ -1436,7 +1436,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             AssemblyDefinition assemblyDef = _reader.GetAssemblyDefinition();
             string name = _reader.GetString(assemblyDef.Name);
 
-            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
+            OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name, out bool truncated);
 
             if (!assemblyDef.PublicKey.IsNil)
             {
@@ -1465,7 +1465,8 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 pMetaData->usRevisionNumber = (ushort)version.Revision;
 
                 string culture = _reader.GetString(assemblyDef.Culture);
-                truncated |= OutputBufferHelpers.CopyStringToBuffer(pMetaData->szLocale, pMetaData->cbLocale, null, culture);
+                OutputBufferHelpers.CopyStringToBuffer(pMetaData->szLocale, pMetaData->cbLocale, null, culture, out bool localTruncated);
+                truncated |= localTruncated;
                 pMetaData->cbLocale = (uint)(culture.Length + 1);
                 pMetaData->ulProcessor = 0;
                 pMetaData->ulOS = 0;
@@ -1531,7 +1532,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             AssemblyReference assemblyRef = _reader.GetAssemblyReference(refHandle);
             string name = _reader.GetString(assemblyRef.Name);
 
-            bool truncated = OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
+            OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name, out bool truncated);
 
             if (!assemblyRef.PublicKeyOrToken.IsNil)
             {
@@ -1558,7 +1559,8 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 pMetaData->usRevisionNumber = (ushort)version.Revision;
 
                 string culture = _reader.GetString(assemblyRef.Culture);
-                truncated |= OutputBufferHelpers.CopyStringToBuffer(pMetaData->szLocale, pMetaData->cbLocale, null, culture);
+                OutputBufferHelpers.CopyStringToBuffer(pMetaData->szLocale, pMetaData->cbLocale, null, culture, out bool localTruncated);
+                truncated |= localTruncated;
                 pMetaData->cbLocale = (uint)(culture.Length + 1);
                 pMetaData->ulProcessor = 0;
                 pMetaData->ulOS = 0;
