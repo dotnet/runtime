@@ -27,6 +27,7 @@
 #include <stddef.h>
 
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
+GPTR_DECL(StressLog, g_pStressLog);
 
 // ILC emits a ContractDescriptor named "DotNetManagedContractDescriptor" with
 // managed type layouts. We take its address so datadescriptor.inc can reference

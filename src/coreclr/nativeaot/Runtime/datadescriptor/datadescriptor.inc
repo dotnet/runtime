@@ -84,6 +84,52 @@ CDAC_TYPE_FIELD(ExInfo, T_POINTER, PreviousNestedInfo, offsetof(ExInfo, m_pPrevE
 CDAC_TYPE_FIELD(ExInfo, T_POINTER, ThrownObject, offsetof(ExInfo, m_exception))
 CDAC_TYPE_END(ExInfo)
 
+// ========================
+// StressLog
+// ========================
+
+CDAC_TYPE_BEGIN(StressLog)
+CDAC_TYPE_SIZE(sizeof(StressLog))
+CDAC_TYPE_FIELD(StressLog, T_UINT32, LoggedFacilities, offsetof(StressLog, facilitiesToLog))
+CDAC_TYPE_FIELD(StressLog, T_UINT32, Level, offsetof(StressLog, levelToLog))
+CDAC_TYPE_FIELD(StressLog, T_UINT32, MaxSizePerThread, offsetof(StressLog, MaxSizePerThread))
+CDAC_TYPE_FIELD(StressLog, T_UINT32, MaxSizeTotal, offsetof(StressLog, MaxSizeTotal))
+CDAC_TYPE_FIELD(StressLog, T_INT32, TotalChunks, offsetof(StressLog, totalChunk))
+CDAC_TYPE_FIELD(StressLog, T_POINTER, Logs, offsetof(StressLog, logs))
+CDAC_TYPE_FIELD(StressLog, T_UINT64, TickFrequency, offsetof(StressLog, tickFrequency))
+CDAC_TYPE_FIELD(StressLog, T_UINT64, StartTimestamp, offsetof(StressLog, startTimeStamp))
+CDAC_TYPE_END(StressLog)
+
+CDAC_TYPE_BEGIN(ThreadStressLog)
+CDAC_TYPE_INDETERMINATE(ThreadStressLog)
+CDAC_TYPE_FIELD(ThreadStressLog, T_POINTER, Next, cdac_data<ThreadStressLog>::Next)
+CDAC_TYPE_FIELD(ThreadStressLog, T_UINT64, ThreadId, cdac_data<ThreadStressLog>::ThreadId)
+CDAC_TYPE_FIELD(ThreadStressLog, T_UINT8, WriteHasWrapped, cdac_data<ThreadStressLog>::WriteHasWrapped)
+CDAC_TYPE_FIELD(ThreadStressLog, T_POINTER, CurrentPtr, cdac_data<ThreadStressLog>::CurrentPtr)
+CDAC_TYPE_FIELD(ThreadStressLog, T_POINTER, ChunkListHead, cdac_data<ThreadStressLog>::ChunkListHead)
+CDAC_TYPE_FIELD(ThreadStressLog, T_POINTER, ChunkListTail, cdac_data<ThreadStressLog>::ChunkListTail)
+CDAC_TYPE_FIELD(ThreadStressLog, T_POINTER, CurrentWriteChunk, cdac_data<ThreadStressLog>::CurrentWriteChunk)
+CDAC_TYPE_END(ThreadStressLog)
+
+CDAC_TYPE_BEGIN(StressLogChunk)
+CDAC_TYPE_SIZE(sizeof(StressLogChunk))
+CDAC_TYPE_FIELD(StressLogChunk, T_POINTER, Prev, offsetof(StressLogChunk, prev))
+CDAC_TYPE_FIELD(StressLogChunk, T_POINTER, Next, offsetof(StressLogChunk, next))
+CDAC_TYPE_FIELD(StressLogChunk, T_ARRAY(T_UINT8), Buf, offsetof(StressLogChunk, buf))
+CDAC_TYPE_FIELD(StressLogChunk, T_UINT32, Sig1, offsetof(StressLogChunk, dwSig1))
+CDAC_TYPE_FIELD(StressLogChunk, T_UINT32, Sig2, offsetof(StressLogChunk, dwSig2))
+CDAC_TYPE_END(StressLogChunk)
+
+CDAC_TYPE_BEGIN(StressMsgHeader)
+CDAC_TYPE_SIZE(sizeof(StressMsg))
+CDAC_TYPE_END(StressMsgHeader)
+
+CDAC_TYPE_BEGIN(StressMsg)
+CDAC_TYPE_INDETERMINATE(StressMsg)
+CDAC_TYPE_FIELD(StressMsg, TYPE(StressMsgHeader), Header, 0)
+CDAC_TYPE_FIELD(StressMsg, T_POINTER, Args, offsetof(StressMsg, args))
+CDAC_TYPE_END(StressMsg)
+
 CDAC_TYPES_END()
 
 // ========================
@@ -119,10 +165,19 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 7)
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 3)
 #endif
 
+// StressLog globals (no module table in NativeAOT)
+CDAC_GLOBAL(StressLogEnabled, uint8, 1)
+CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
+CDAC_GLOBAL(StressLogHasModuleTable, uint8, 0)
+CDAC_GLOBAL(StressLogChunkSize, uint32, STRESSLOG_CHUNK_SIZE)
+CDAC_GLOBAL(StressLogValidChunkSig, uint32, 0xCFCFCFCF)
+CDAC_GLOBAL(StressLogMaxMessageSize, uint64, (uint64_t)StressMsg::maxMsgSize)
+
 // Contracts: declare which contracts this runtime supports
 CDAC_GLOBAL_CONTRACT(Thread, 1001)
 CDAC_GLOBAL_CONTRACT(Exception, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1001)
+CDAC_GLOBAL_CONTRACT(StressLog, 2)
 
 // Managed type sub-descriptor: ILC emits a ContractDescriptor with managed type layouts
 // that the cDAC reader merges as a sub-descriptor. This provides field offsets for managed
