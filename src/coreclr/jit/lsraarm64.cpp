@@ -1286,11 +1286,6 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
             break;
 
-        case GT_FTN_ENTRY:
-            srcCount = 0;
-            BuildDef(tree);
-            break;
-
         case GT_INDEX_ADDR:
             assert(dstCount == 1);
             srcCount = BuildBinaryUses(tree->AsOp());
