@@ -2616,7 +2616,7 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     if (genericsContextIsThis)
     {
         const bool mustKeep      = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
-        const bool hasPatchpoint = doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints();
+        const bool hasPatchpoint = doesMethodHavePatchpoints();
 
         if (lvaGenericsContextInUse || mustKeep || hasPatchpoint)
         {
@@ -2656,7 +2656,7 @@ inline bool Compiler::lvaReportParamTypeArg()
 
         // Methoods that have patchpoints always report context as live
         //
-        if (doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints())
+        if (doesMethodHavePatchpoints())
         {
             return true;
         }

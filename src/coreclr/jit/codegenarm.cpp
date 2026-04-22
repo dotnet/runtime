@@ -1854,6 +1854,15 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #endif // PROFILING_SUPPORTED
 
 //------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Not called for arm without OSR support.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
+}
+
+//------------------------------------------------------------------------
 // genEstablishFramePointer: Set up the frame pointer by adding an offset to the stack pointer.
 //
 // Arguments:
