@@ -152,10 +152,10 @@ public readonly struct GCMemoryRegionData
 Data descriptors used:
 | Data Descriptor Name | Field | Source | Meaning |
 | --- | --- | --- | --- |
-| `GCHeap` | MarkArray | GC | Pointer to the heap's MarkArray (in sever builds) |
-| `GCHeap` | NextSweepObj | GC | Pointer to the heap's NextSweepObj (in sever builds) |
-| `GCHeap` | BackgroundMinSavedAddr | GC | Heap's background saved lowest address (in sever builds) |
-| `GCHeap` | BackgroundMaxSavedAddr | GC | Heap's background saved highest address (in sever builds) |
+| `GCHeap` | MarkArray | GC | Pointer to the heap's MarkArray (only in server builds with background GC) |
+| `GCHeap` | NextSweepObj | GC | Pointer to the heap's NextSweepObj (only in server builds with background GC) |
+| `GCHeap` | BackgroundMinSavedAddr | GC | Heap's background saved lowest address (only in server builds with background GC) |
+| `GCHeap` | BackgroundMaxSavedAddr | GC | Heap's background saved highest address (only in server builds with background GC) |
 | `GCHeap` | AllocAllocated | GC | Heap's highest address allocated by Alloc (in sever builds) |
 | `GCHeap` | EphemeralHeapSegment | GC | Pointer to the heap's ephemeral heap segment (in sever builds) |
 | `GCHeap` | CardTable | GC | Pointer to the heap's bookkeeping GC data structure (in sever builds) |
@@ -229,10 +229,10 @@ Global variables used:
 | `CompactReasonsLength` | uint | GC | The number of elements in the `CompactReasons` array |
 | `ExpandMechanismsLength` | uint | GC | The number of elements in the `ExpandMechanisms` array |
 | `InterestingMechanismBitsLength` | uint | GC | The number of elements in the `InterestingMechanismBits` array |
-| `GCHeapMarkArray` | TargetPointer | GC | Pointer to the static heap's MarkArray (in workstation builds) |
-| `GCHeapNextSweepObj` | TargetPointer | GC | Pointer to the static heap's NextSweepObj (in workstation builds) |
-| `GCHeapBackgroundMinSavedAddr` | TargetPointer | GC | Background saved lowest address (in workstation builds) |
-| `GCHeapBackgroundMaxSavedAddr` | TargetPointer | GC | Background saved highest address (in workstation builds) |
+| `GCHeapMarkArray` | TargetPointer | GC | Pointer to the static heap's MarkArray (in workstation builds with background GC) |
+| `GCHeapNextSweepObj` | TargetPointer | GC | Pointer to the static heap's NextSweepObj (in workstation builds with background GC) |
+| `GCHeapBackgroundMinSavedAddr` | TargetPointer | GC | Background saved lowest address (in workstation builds with background GC) |
+| `GCHeapBackgroundMaxSavedAddr` | TargetPointer | GC | Background saved highest address (in workstation builds with background GC) |
 | `GCHeapAllocAllocated` | TargetPointer | GC | Highest address allocated by Alloc (in workstation builds) |
 | `GCHeapEphemeralHeapSegment` | TargetPointer | GC | Pointer to an ephemeral heap segment (in workstation builds) |
 | `GCHeapCardTable` | TargetPointer | GC | Pointer to the static heap's bookkeeping GC data structure (in workstation builds) |
@@ -250,6 +250,7 @@ Global variables used:
 | `GCHeapInterestingMechanismBits` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
 | `CurrentGCState` | uint | GC | `c_gc_state` enum value. Only available when `GCIdentifiers` contains `background`. |
 | `DynamicAdaptationMode` | int | GC | GC heap dynamic adaptation mode. Only available when `GCIdentifiers` contains `dynamic_heap`. |
+| `FeatureBackgroundGc` | byte | GC | Non-zero when background (concurrent) GC is enabled. If this global does not exist or is set to 0, the `MarkArray`, `NextSweepObj`, `BackgroundMinSavedAddr`, and `BackgroundMaxSavedAddr` fields and globals are not present and are assumed to have the value 0. |
 | `GCLowestAddress` | TargetPointer | VM | Lowest GC address as recorded by the VM/GC interface |
 | `GCHighestAddress` | TargetPointer | VM | Highest GC address as recorded by the VM/GC interface |
 | `HandleTableMap` | TargetPointer | GC | Pointer to the head of the handle table map linked list |

@@ -13,10 +13,12 @@ CDAC_TYPES_BEGIN()
 #ifdef SERVER_GC
 CDAC_TYPE_BEGIN(GCHeap)
 CDAC_TYPE_INDETERMINATE(GCHeap)
+#ifdef BACKGROUND_GC
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, MarkArray, cdac_data<GC_NAMESPACE::gc_heap>::MarkArray)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, NextSweepObj, cdac_data<GC_NAMESPACE::gc_heap>::NextSweepObj)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, BackgroundMinSavedAddr, cdac_data<GC_NAMESPACE::gc_heap>::BackgroundMinSavedAddr)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, BackgroundMaxSavedAddr, cdac_data<GC_NAMESPACE::gc_heap>::BackgroundMaxSavedAddr)
+#endif // BACKGROUND_GC
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, AllocAllocated, cdac_data<GC_NAMESPACE::gc_heap>::AllocAllocated)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, EphemeralHeapSegment, cdac_data<GC_NAMESPACE::gc_heap>::EphemeralHeapSegment)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, CardTable, cdac_data<GC_NAMESPACE::gc_heap>::CardTable)
@@ -205,8 +207,10 @@ CDAC_GLOBAL_POINTER(GlobalRegionsToDecommit, cdac_data<GC_NAMESPACE::gc_heap>::G
 
 #ifdef BACKGROUND_GC
 #define BACKGROUND_TYPE background
+CDAC_GLOBAL(FeatureBackgroundGc, T_UINT8, 1)
 #else // BACKGROUND_GC
 #define BACKGROUND_TYPE
+CDAC_GLOBAL(FeatureBackgroundGc, T_UINT8, 0)
 #endif // BACKGROUND_GC
 
 #ifdef DYNAMIC_HEAP_COUNT
