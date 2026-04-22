@@ -21,6 +21,7 @@
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
 #include <minipal/cpufeatures.h>
+#include <minipal/random.h>
 
 #ifdef FEATURE_PERFTRACING
 #include "EventPipeInterface.h"
