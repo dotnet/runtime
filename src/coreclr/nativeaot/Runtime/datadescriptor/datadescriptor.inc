@@ -28,7 +28,8 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, LinkNext, offsetof(RuntimeThreadLocals, m_pNe
 CDAC_TYPE_FIELD(Thread, T_POINTER, ExceptionTracker, offsetof(RuntimeThreadLocals, m_pExInfoStackHead))
 CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackBase, offsetof(RuntimeThreadLocals, m_pStackHigh))
 CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackLimit, offsetof(RuntimeThreadLocals, m_pStackLow))
-CDAC_TYPE_FIELD(Thread, TYPE(RuntimeThreadLocals), RuntimeThreadLocals, offsetof(RuntimeThreadLocals, m_eeAllocContext))
+// Thread inherits from RuntimeThreadLocals at offset 0, so EEAllocContext is directly on Thread
+CDAC_TYPE_FIELD(Thread, TYPE(EEAllocContext), AllocContext, offsetof(RuntimeThreadLocals, m_eeAllocContext))
 CDAC_TYPE_FIELD(Thread, T_POINTER, TransitionFrame, offsetof(RuntimeThreadLocals, m_pTransitionFrame))
 CDAC_TYPE_END(Thread)
 
@@ -36,11 +37,6 @@ CDAC_TYPE_BEGIN(ThreadStore)
 CDAC_TYPE_INDETERMINATE(ThreadStore)
 CDAC_TYPE_FIELD(ThreadStore, T_POINTER, FirstThreadLink, cdac_data<ThreadStore>::FirstThreadLink)
 CDAC_TYPE_END(ThreadStore)
-
-CDAC_TYPE_BEGIN(RuntimeThreadLocals)
-CDAC_TYPE_INDETERMINATE(RuntimeThreadLocals)
-CDAC_TYPE_FIELD(RuntimeThreadLocals, TYPE(EEAllocContext), AllocContext, offsetof(RuntimeThreadLocals, m_eeAllocContext))
-CDAC_TYPE_END(RuntimeThreadLocals)
 
 // ========================
 // Allocation Context
@@ -146,38 +142,38 @@ CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 
 // NativeAOT MethodTable flag constants (accessed via cdac_data friend)
-CDAC_GLOBAL(MethodTableEETypeKindMask, uint32, cdac_data<MethodTable>::EETypeKindMask)
-CDAC_GLOBAL(MethodTableHasComponentSizeFlag, uint32, cdac_data<MethodTable>::HasComponentSizeFlag)
-CDAC_GLOBAL(MethodTableHasFinalizerFlag, uint32, cdac_data<MethodTable>::HasFinalizerFlag)
-CDAC_GLOBAL(MethodTableHasPointersFlag, uint32, cdac_data<MethodTable>::HasPointersFlag)
-CDAC_GLOBAL(MethodTableIsGenericFlag, uint32, cdac_data<MethodTable>::IsGenericFlag)
-CDAC_GLOBAL(MethodTableElementTypeMask, uint32, cdac_data<MethodTable>::ElementTypeMask)
-CDAC_GLOBAL(MethodTableElementTypeShift, uint32, cdac_data<MethodTable>::ElementTypeShift)
+CDAC_GLOBAL(MethodTableEETypeKindMask, T_UINT32, cdac_data<MethodTable>::EETypeKindMask)
+CDAC_GLOBAL(MethodTableHasComponentSizeFlag, T_UINT32, cdac_data<MethodTable>::HasComponentSizeFlag)
+CDAC_GLOBAL(MethodTableHasFinalizerFlag, T_UINT32, cdac_data<MethodTable>::HasFinalizerFlag)
+CDAC_GLOBAL(MethodTableHasPointersFlag, T_UINT32, cdac_data<MethodTable>::HasPointersFlag)
+CDAC_GLOBAL(MethodTableIsGenericFlag, T_UINT32, cdac_data<MethodTable>::IsGenericFlag)
+CDAC_GLOBAL(MethodTableElementTypeMask, T_UINT32, cdac_data<MethodTable>::ElementTypeMask)
+CDAC_GLOBAL(MethodTableElementTypeShift, T_UINT32, cdac_data<MethodTable>::ElementTypeShift)
 
 // Thread state flag constants
-CDAC_GLOBAL(ThreadStateFlagAttached, uint32, 0x00000001)
-CDAC_GLOBAL(ThreadStateFlagDetached, uint32, 0x00000002)
+CDAC_GLOBAL(ThreadStateFlagAttached, T_UINT32, 0x00000001)
+CDAC_GLOBAL(ThreadStateFlagDetached, T_UINT32, 0x00000002)
 
 // Object contract globals
 #ifdef TARGET_64BIT
-CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 7)
+CDAC_GLOBAL(ObjectToMethodTableUnmask, T_UINT8, 7)
 #else
-CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 3)
+CDAC_GLOBAL(ObjectToMethodTableUnmask, T_UINT8, 3)
 #endif
 
 // StressLog globals (no module table in NativeAOT)
-CDAC_GLOBAL(StressLogEnabled, uint8, 1)
+CDAC_GLOBAL(StressLogEnabled, T_UINT8, 1)
 CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
-CDAC_GLOBAL(StressLogHasModuleTable, uint8, 0)
-CDAC_GLOBAL(StressLogChunkSize, uint32, STRESSLOG_CHUNK_SIZE)
-CDAC_GLOBAL(StressLogValidChunkSig, uint32, 0xCFCFCFCF)
-CDAC_GLOBAL(StressLogMaxMessageSize, uint64, (uint64_t)StressMsg::maxMsgSize)
+CDAC_GLOBAL(StressLogHasModuleTable, T_UINT8, 0)
+CDAC_GLOBAL(StressLogChunkSize, T_UINT32, STRESSLOG_CHUNK_SIZE)
+CDAC_GLOBAL(StressLogValidChunkSig, T_UINT32, 0xCFCFCFCF)
+CDAC_GLOBAL(StressLogMaxMessageSize, T_UINT64, (uint64_t)StressMsg::maxMsgSize)
 
 // Contracts: declare which contracts this runtime supports
-CDAC_GLOBAL_CONTRACT(Thread, 1001)
-CDAC_GLOBAL_CONTRACT(Exception, 1)
-CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1001)
-CDAC_GLOBAL_CONTRACT(StressLog, 2)
+CDAC_GLOBAL_CONTRACT(Thread, n1)
+CDAC_GLOBAL_CONTRACT(Exception, c1)
+CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, n1)
+CDAC_GLOBAL_CONTRACT(StressLog, c2)
 
 // Managed type sub-descriptor: ILC emits a ContractDescriptor with managed type layouts
 // that the cDAC reader merges as a sub-descriptor. This provides field offsets for managed
