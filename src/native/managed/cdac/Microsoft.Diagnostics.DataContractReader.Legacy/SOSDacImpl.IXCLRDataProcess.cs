@@ -361,13 +361,30 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
                 emi.LegacyHandle = handleLocal;
 
-                *handle = (ulong)((IEnum<MethodDescHandle>)emi).GetHandle();
                 hr = emi.Start();
+                if (hr == HResults.S_OK)
+                {
+                    *handle = (ulong)((IEnum<MethodDescHandle>)emi).GetHandle();
+                    // Legacy handle ownership transferred to emi — don't clean up below.
+                    handleLocal = default;
+                }
             }
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
+        }
+        finally
+        {
+            // The legacy enumeration is started eagerly (before the cDAC try block) so
+            // that EnumMethodInstanceByAddress can advance both enumerations in lockstep.
+            // If the cDAC side fails to produce an enum (exception, no code block found,
+            // or emi.Start() returns S_FALSE), the legacy handle would be orphaned because
+            // the caller receives *handle == 0 and has no way to call End. Clean it up here.
+            if (_legacyProcess is not null && handleLocal != default)
+            {
+                _legacyProcess.EndEnumMethodInstancesByAddress(handleLocal);
+            }
         }
 
 #if DEBUG

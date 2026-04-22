@@ -196,10 +196,6 @@ CDAC_TYPE_FIELD(SyncBlock, T_POINTER, LinkNext, cdac_data<SyncBlock>::LinkNext)
 CDAC_TYPE_FIELD(SyncBlock, T_UINT32, HashCode, cdac_data<SyncBlock>::HashCode)
 CDAC_TYPE_END(SyncBlock)
 
-CDAC_TYPE_BEGIN(SLink)
-CDAC_TYPE_INDETERMINATE(SLink)
-CDAC_TYPE_FIELD(SLink, T_POINTER, Next, offsetof(SLink, m_pNext))
-CDAC_TYPE_END(SLink)
 
 #ifdef FEATURE_COMWRAPPERS
 CDAC_TYPE_BEGIN(NativeObjectWrapperObject)
@@ -308,6 +304,17 @@ CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, DynamicHelpersStubHeap, cdac_data<Lo
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, VirtualCallStubManager, cdac_data<LoaderAllocator>::VirtualCallStubManager)
 CDAC_TYPE_FIELD(LoaderAllocator, TYPE(ObjectHandle), ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
 CDAC_TYPE_END(LoaderAllocator)
+
+CDAC_TYPE_BEGIN(LoaderHeap)
+CDAC_TYPE_INDETERMINATE(LoaderHeap)
+CDAC_TYPE_FIELD(LoaderHeap, T_POINTER, FirstBlock, cdac_data<UnlockedLoaderHeapBaseTraversable>::FirstBlock)
+CDAC_TYPE_END(LoaderHeap)
+
+CDAC_TYPE_BEGIN(LoaderHeapBlock)
+CDAC_TYPE_FIELD(LoaderHeapBlock, T_POINTER, Next, offsetof(LoaderHeapBlock, pNext))
+CDAC_TYPE_FIELD(LoaderHeapBlock, T_POINTER, VirtualAddress, offsetof(LoaderHeapBlock, pVirtualAddress))
+CDAC_TYPE_FIELD(LoaderHeapBlock, T_NUINT, VirtualSize, offsetof(LoaderHeapBlock, dwVirtualSize))
+CDAC_TYPE_END(LoaderHeapBlock)
 
 CDAC_TYPE_BEGIN(VirtualCallStubManager)
 CDAC_TYPE_INDETERMINATE(VirtualCallStubManager)
@@ -570,6 +577,7 @@ CDAC_TYPE_END(NativeCodeSlot)
 
 CDAC_TYPE_BEGIN(AsyncMethodData)
 CDAC_TYPE_SIZE(sizeof(AsyncMethodData))
+CDAC_TYPE_FIELD(AsyncMethodData, T_UINT32, Flags, offsetof(AsyncMethodData, flags))
 CDAC_TYPE_END(AsyncMethodData)
 
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)

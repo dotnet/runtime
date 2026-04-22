@@ -1967,6 +1967,22 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
 //
 void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
 {
+#if defined(TARGET_WASM)
+    // Fail at this point for any method with funclets, since the Wasm we produce
+    // for such methods requires post-processing by the host before it can be validated.
+    // This must be done BEFORE codegen, because of the edge case of a method
+    // which only needs funclets if compiled with optimizations (e.g., if we inline a method that has EH into a method
+    // that does not). In these cases, if we fail compilation of the optimized method AFTER codegen and then go to
+    // recompile the same method with minopts and succeed, we may be leaving stale relocs on the host side that only
+    // applied to the optimized version, which will cause unexpected behavior.
+    // TODO-WASM: Remove this once the host can do the processing.
+    //
+    if ((JitConfig.JitWasmFunclets() == 0) && (m_compiler->compFuncCount() > 1))
+    {
+        JITDUMP("Failing R2R codegen because method has funclets.\n");
+        implReadyToRunUnsupported();
+    }
+#endif
 
 #ifdef DEBUG
     if (verbose)
@@ -2014,18 +2030,6 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     }
 #endif // defined(TARGET_WASM)
 #endif // DEBUG
-
-#if defined(TARGET_WASM)
-    // Also fail at this point for any method with funclets, since the Wasm we produce
-    // for such methods requires post-processing by the host before it can be validated.
-    // TODO-WASM: Remove this once the host can do the processing.
-    //
-    if ((JitConfig.JitWasmFunclets() == 0) && (m_compiler->compFuncCount() > 1))
-    {
-        JITDUMP("Failing R2R codegen because method has funclets.\n");
-        implReadyToRunUnsupported();
-    }
-#endif
 }
 
 //----------------------------------------------------------------------

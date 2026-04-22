@@ -366,4 +366,7 @@
   <data name="StartAndForget_UseShellExecuteNotSupported" xml:space="preserve">
     <value>UseShellExecute is not supported by StartAndForget. On Windows, shell execution may not create a new process, which would make it impossible to return a valid process ID.</value>
   </data>
+  <data name="NotSupportedForNonChildProcess" xml:space="preserve">
+    <value>On Unix, it's impossible to obtain the exit status of a non-child process.</value>
+  </data>
 </root>
