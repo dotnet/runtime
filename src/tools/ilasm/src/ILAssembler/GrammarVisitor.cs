@@ -5181,16 +5181,16 @@ namespace ILAssembler
                 switch (clause)
                 {
                     case ExceptionClause.Finally finallyClause:
-                        _currentMethod!.Definition.MethodBody.ControlFlowBuilder!.AddFinallyRegion(tryStart, tryEnd, finallyClause.Start, finallyClause.End);
+                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.FinallyRegion(tryStart, tryEnd, finallyClause.Start, finallyClause.End));
                         break;
                     case ExceptionClause.Fault faultClause:
-                        _currentMethod!.Definition.MethodBody.ControlFlowBuilder!.AddFaultRegion(tryStart, tryEnd, faultClause.Start, faultClause.End);
+                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.FaultRegion(tryStart, tryEnd, faultClause.Start, faultClause.End));
                         break;
                     case ExceptionClause.Catch catchClause:
-                        _currentMethod!.Definition.MethodBody.ControlFlowBuilder!.AddCatchRegion(tryStart, tryEnd, catchClause.Start, catchClause.End, catchClause.Type.Handle);
+                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.CatchRegion(tryStart, tryEnd, catchClause.Start, catchClause.End, catchClause.Type));
                         break;
                     case ExceptionClause.Filter filterClause:
-                        _currentMethod!.Definition.MethodBody.ControlFlowBuilder!.AddFilterRegion(tryStart, tryEnd, filterClause.Start, filterClause.End, filterClause.FilterStart);
+                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.FilterRegion(tryStart, tryEnd, filterClause.Start, filterClause.End, filterClause.FilterStart));
                         break;
                     default:
                         throw new UnreachableException();
