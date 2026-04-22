@@ -31,6 +31,7 @@ class Dataflow
         TestMakeGenericConstrainedDataflow.Run();
         TestMarshalIntrinsics.Run();
         Regression97758.Run();
+        TestMakeGenericDataflowInLocalMethod.Run();
 
         return 100;
     }
@@ -790,6 +791,28 @@ class Dataflow
         public static void Run()
         {
             Foo<int>.Trigger();
+        }
+    }
+
+    class TestMakeGenericDataflowInLocalMethod
+    {
+        class Gen<T> { }
+
+        struct Atom { }
+
+        class GenMethods
+        {
+            public static void Bridge<T>() { }
+        }
+
+        public static void Run()
+        {
+            MakeGenericType<Atom>();
+            MakeGenericMethod<Atom>();
+
+            static object MakeGenericType<T>() => Activator.CreateInstance(typeof(Gen<>).MakeGenericType(typeof(T)));
+
+            static void MakeGenericMethod<T>() => typeof(GenMethods).GetMethod(nameof(GenMethods.Bridge)).MakeGenericMethod(typeof(T)).Invoke(null, []);
         }
     }
 }
