@@ -79,18 +79,6 @@ void WebcilDecoder::Init(void *flatBase, COUNT_T size)
     m_relocated = FALSE;
 }
 
-void WebcilDecoder::Reset()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_base = 0;
-    m_size = 0;
-    m_hasContents = false;
-    m_pHeader = NULL;
-    m_sections = NULL;
-    m_pCorHeader = NULL;
-    m_relocated = FALSE;
-}
-
 // ------------------------------------------------------------
 // Basic properties
 // ------------------------------------------------------------

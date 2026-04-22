@@ -110,7 +110,6 @@ public:
 
     WebcilDecoder();
     void Init(void *flatBase, COUNT_T size);
-    void Reset();
 
     // ------------------------------------------------------------
     // COR header — public for CorDecoderHelpers access
