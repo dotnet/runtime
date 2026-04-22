@@ -284,13 +284,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void TryExportSubjectPublicKeyInfo_DestinationTooSmall()
         {
-            using X25519DiffieHellmanContract xdh = new()
-            {
-                OnExportPublicKeyCore = (Span<byte> destination) =>
-                {
-                    destination.Fill(0x42);
-                }
-            };
+            using X25519DiffieHellmanContract xdh = new();
 
             byte[] destination = new byte[1];
             AssertExtensions.FalseExpression(xdh.TryExportSubjectPublicKeyInfo(destination, out int written));

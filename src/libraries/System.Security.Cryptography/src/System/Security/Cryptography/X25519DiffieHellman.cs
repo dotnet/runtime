@@ -41,6 +41,9 @@ namespace System.Security.Cryptography
         /// </summary>
         public const int PublicKeySizeInBytes = 32;
 
+        // Pre-encoded SPKI for X25519 is 44 bytes: 12 byte preamble + 32 byte public key.
+        private const int SpkiSizeInBytes = 12 + PublicKeySizeInBytes;
+
         /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
         /// </summary>
@@ -248,7 +251,7 @@ namespace System.Security.Cryptography
         public bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten)
         {
             ThrowIfDisposed();
-            return ExportSubjectPublicKeyInfoCore().TryEncode(destination, out bytesWritten);
+            return TryExportSubjectPublicKeyInfoCore(destination, out bytesWritten);
         }
 
         /// <summary>
@@ -264,7 +267,16 @@ namespace System.Security.Cryptography
         public byte[] ExportSubjectPublicKeyInfo()
         {
             ThrowIfDisposed();
-            return ExportSubjectPublicKeyInfoCore().Encode();
+            byte[] result = new byte[SpkiSizeInBytes];
+            bool exported = TryExportSubjectPublicKeyInfoCore(result, out int bytesWritten);
+
+            if (!exported || bytesWritten != SpkiSizeInBytes)
+            {
+                Debug.Fail("Export unexpectedly failed to pre-sized buffer or wrote an unexpected number of bytes.");
+                throw new CryptographicException();
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -282,9 +294,16 @@ namespace System.Security.Cryptography
         public string ExportSubjectPublicKeyInfoPem()
         {
             ThrowIfDisposed();
-            AsnWriter writer = ExportSubjectPublicKeyInfoCore();
-            // SPKI does not contain sensitive data.
-            return Helpers.EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
+            Span<byte> spki = stackalloc byte[SpkiSizeInBytes];
+            bool exported = TryExportSubjectPublicKeyInfoCore(spki, out int bytesWritten);
+
+            if (!exported || bytesWritten != SpkiSizeInBytes)
+            {
+                Debug.Fail("Export unexpectedly failed to pre-sized buffer or wrote an unexpected number of bytes.");
+                throw new CryptographicException();
+            }
+
+            return PemEncoding.WriteString(PemLabels.SpkiPublicKey, spki);
         }
 
         /// <summary>
@@ -1322,26 +1341,28 @@ namespace System.Security.Cryptography
         {
         }
 
-        private AsnWriter ExportSubjectPublicKeyInfoCore()
+        private bool TryExportSubjectPublicKeyInfoCore(Span<byte> destination, out int bytesWritten)
         {
-            Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
-            ExportPublicKeyCore(publicKey);
+            // Pre-encoded SubjectPublicKeyInfo for X25519 (RFC 8410):
+            ReadOnlySpan<byte> spkiPreamble =
+            [
+                0x30, 0x2a, // SEQUENCE (42 bytes)
+                0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, // SEQUENCE { OID 1.3.101.110 }
+                0x03, 0x21, 0x00, // BIT STRING (33 bytes, 0 unused bits)
+            ];
 
-            ValueSubjectPublicKeyInfoAsn spki = new ValueSubjectPublicKeyInfoAsn
+            Debug.Assert(spkiPreamble.Length + PublicKeySizeInBytes == SpkiSizeInBytes);
+
+            if (destination.Length < SpkiSizeInBytes)
             {
-                Algorithm = new ValueAlgorithmIdentifierAsn
-                {
-                    Algorithm = Oids.X25519,
-                },
-                SubjectPublicKey = publicKey,
-            };
+                bytesWritten = 0;
+                return false;
+            }
 
-            // The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is 12 bytes.
-            // Round it off to 16.
-            const int Capacity = 16 + PublicKeySizeInBytes;
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, Capacity);
-            spki.Encode(writer);
-            return writer;
+            spkiPreamble.CopyTo(destination);
+            ExportPublicKeyCore(destination.Slice(spkiPreamble.Length, PublicKeySizeInBytes));
+            bytesWritten = SpkiSizeInBytes;
+            return true;
         }
 
         private TResult ExportPkcs8PrivateKeyCallback<TResult>(Func<ReadOnlySpan<byte>, TResult> func)
