@@ -138,9 +138,18 @@ namespace Microsoft.Win32.SafeHandles
             bool doSync = isBlocking || PollHandle.IsReadReady(out sequenceNumber);
             if (doSync)
             {
-                if (TryCompleteRead(buffer, out var result))
+                if (TryCompleteRead(buffer, out var result, out bool pending))
                 {
                     return result;
+                }
+                if (isBlocking)
+                {
+                    // The handle changed to non-blocking due to a concurrent operation.
+                    Debug.Assert(pending);
+                    if (PollHandle.IsReadReady(out sequenceNumber) && TryCompleteRead(buffer, out result, out _))
+                    {
+                        return result;
+                    }
                 }
             }
 
@@ -168,7 +177,7 @@ namespace Microsoft.Win32.SafeHandles
         internal ValueTask<(int BytesRead, Interop.ErrorInfo ErrorInfo)> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
             if (PollHandle.IsReadReady(out int sequenceNumber) &&
-                TryCompleteRead(destination.Span, out var readResult))
+                TryCompleteRead(destination.Span, out var readResult, out _))
             {
                 return new ValueTask<(int, Interop.ErrorInfo)>(readResult);
             }
@@ -201,12 +210,23 @@ namespace Microsoft.Win32.SafeHandles
             bool doSync = isBlocking || PollHandle.IsWriteReady(out sequenceNumber);
             while (doSync)
             {
-                if (TryCompleteWrite(buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo))
+                if (TryCompleteWrite(buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending))
                 {
                     return errorInfo;
                 }
                 buffer = buffer.Slice(bytesWritten);
-                doSync = isBlocking;
+                if (isBlocking && pending)
+                {
+                    // The handle changed to non-blocking due to a concurrent operation.
+                    isBlocking = false;
+                    doSync = PollHandle.IsWriteReady(out sequenceNumber);
+                }
+                else
+                {
+                    // There are bytes remaining for a blocking write.
+                    Debug.Assert(buffer.Length != 0);
+                    doSync = isBlocking;
+                }
             }
 
             PipeWriteOperation op = RentWriteOperation();
@@ -234,7 +254,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             int bytesWritten = 0;
             if (PollHandle.IsWriteReady(out int sequenceNumber) &&
-                TryCompleteWrite(source.Span, out bytesWritten, out Interop.ErrorInfo writeResult))
+                TryCompleteWrite(source.Span, out bytesWritten, out Interop.ErrorInfo writeResult, out _))
             {
                 return new ValueTask<Interop.ErrorInfo>(writeResult);
             }
@@ -288,7 +308,7 @@ namespace Microsoft.Win32.SafeHandles
                 if (SyncBuffer != null)
                 {
                     Debug.Assert(SyncBufferLength > 0);
-                    return TryCompleteRead((SafePipeHandle)handle, SyncBuffer, SyncBufferLength, out Result);
+                    return TryCompleteRead((SafePipeHandle)handle, SyncBuffer, SyncBufferLength, out Result, out _);
                 }
 
                 Span<byte> span = Buffer.Span;
@@ -296,7 +316,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
                 {
-                    return TryCompleteRead((SafePipeHandle)handle, bufPtr, span.Length, out Result);
+                    return TryCompleteRead((SafePipeHandle)handle, bufPtr, span.Length, out Result, out _);
                 }
             }
 
@@ -370,7 +390,7 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     Debug.Assert(SyncRemaining > 0);
 
-                    if (TryCompleteWrite((SafePipeHandle)handle, SyncBuffer, SyncRemaining, out int bytesWritten, out WriteResult))
+                    if (TryCompleteWrite((SafePipeHandle)handle, SyncBuffer, SyncRemaining, out int bytesWritten, out WriteResult, out _))
                     {
                         return true;
                     }
@@ -384,7 +404,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
                 {
-                    if (TryCompleteWrite((SafePipeHandle)handle, bufPtr, span.Length, out int bytesWritten, out WriteResult))
+                    if (TryCompleteWrite((SafePipeHandle)handle, bufPtr, span.Length, out int bytesWritten, out WriteResult, out _))
                     {
                         return true;
                     }
@@ -433,7 +453,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static unsafe bool TryCompleteRead(SafePipeHandle handle, byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
+        private static unsafe bool TryCompleteRead(SafePipeHandle handle, byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
         {
             int bytesRead = Interop.Sys.Read(handle, buffer, length);
             if (bytesRead < 0)
@@ -441,34 +461,37 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (IsPending(errorInfo))
                 {
+                    pending = true;
                     result = default;
                     return false;
                 }
+                pending = false;
                 result = (-1, errorInfo);
                 return true;
             }
 
+            pending = false;
             result = (bytesRead, default);
             return true;
         }
 
-        private unsafe bool TryCompleteRead(Span<byte> buffer, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result)
+        private unsafe bool TryCompleteRead(Span<byte> buffer, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                return TryCompleteRead(this, bufPtr, buffer.Length, out result);
+                return TryCompleteRead(this, bufPtr, buffer.Length, out result, out pending);
             }
         }
 
-        private unsafe bool TryCompleteWrite(ReadOnlySpan<byte> buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo)
+        private unsafe bool TryCompleteWrite(ReadOnlySpan<byte> buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending)
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                return TryCompleteWrite(this, bufPtr, buffer.Length, out bytesWritten, out errorInfo);
+                return TryCompleteWrite(this, bufPtr, buffer.Length, out bytesWritten, out errorInfo, out pending);
             }
         }
 
-        private static unsafe bool TryCompleteWrite(SafePipeHandle handle, byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo)
+        private static unsafe bool TryCompleteWrite(SafePipeHandle handle, byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending)
         {
             bytesWritten = Interop.Sys.Write(handle, buffer, length);
             if (bytesWritten < 0)
@@ -476,12 +499,15 @@ namespace Microsoft.Win32.SafeHandles
                 errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (IsPending(errorInfo))
                 {
+                    pending = true;
                     bytesWritten = 0;
                     return false;
                 }
+                pending = false;
                 return true;
             }
 
+            pending = false;
             errorInfo = default;
             return bytesWritten == length;
         }
