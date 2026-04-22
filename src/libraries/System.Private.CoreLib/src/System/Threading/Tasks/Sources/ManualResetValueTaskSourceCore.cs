@@ -51,7 +51,7 @@ namespace System.Threading.Tasks.Sources
             // Reset/update state for the next use/await of this instance.
             // Order of assignments is unimportant here.
             // The outer user always ensures that the state is not accessed across
-            // reset point by when implementing Rent/Return operations.
+            // the reset point when implementing Rent/Return operations.
             _version++;
             Debug.Assert(_continuation == null || IsCompleted);
             _continuation = null;
@@ -242,7 +242,7 @@ namespace System.Threading.Tasks.Sources
                 _continuationState = null;
                 object? context = _capturedContext;
                 _capturedContext = null;
-                _continuation = ManualResetValueTaskSourceCoreShared.s_sentinel;
+                Volatile.Write(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel);
 
                 if (context is null)
                 {
