@@ -13,6 +13,7 @@
     <Compile Include="MailAddressTests\MailAddressEncodeTest.cs" />
     <Compile Include="MailAddressTests\MailAddressParserTest.cs" />
     <Compile Include="MailAddressTests\MailAddressParsingTest.cs" />
+    <Compile Include="MediaTypeNamesVideoTest.cs" />
     <Compile Include="MessageTests\MessageEncodeHeadersTest.cs" />
     <Compile Include="MessageTests\MessageHeaderBehaviorTest.cs" />
     <Compile Include="MessageTests\ReplyToListTest.cs" />
