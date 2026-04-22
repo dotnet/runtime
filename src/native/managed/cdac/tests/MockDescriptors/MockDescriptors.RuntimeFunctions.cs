@@ -105,7 +105,7 @@ internal sealed class MockRuntimeFunctionsBuilder
 
         uint numRuntimeFunctions = checked((uint)runtimeFunctions.Length);
         uint runtimeFunctionSize = checked((uint)RuntimeFunctionLayout.Size);
-        MockMemorySpace.HeapFragment runtimeFunctionsFragment = AllocateAndAdd(
+        MockMemorySpace.HeapFragment runtimeFunctionsFragment = _allocator.Allocate(
             checked((numRuntimeFunctions + 1) * runtimeFunctionSize),
             $"RuntimeFunctions[{numRuntimeFunctions}]");
 
@@ -127,7 +127,7 @@ internal sealed class MockRuntimeFunctionsBuilder
             }
 
             MockUnwindInfo unwindInfo = UnwindInfoLayout.Create(
-                AllocateAndAdd((ulong)UnwindInfoLayout.Size, $"UnwindInfo for RuntimeFunction {runtimeFunctions[i]}"));
+                _allocator.Allocate((ulong)UnwindInfoLayout.Size, $"UnwindInfo for RuntimeFunction {runtimeFunctions[i]}"));
 
             if (HasFunctionLength())
             {
@@ -162,10 +162,4 @@ internal sealed class MockRuntimeFunctionsBuilder
     private bool HasFunctionLength()
         => Array.Exists(UnwindInfoLayout.Fields, static field => field.Name == "FunctionLength");
 
-    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name)
-    {
-        MockMemorySpace.HeapFragment fragment = _allocator.Allocate(size, name);
-        Builder.AddHeapFragment(fragment);
-        return fragment;
-    }
 }

@@ -890,6 +890,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static event Action<Type> Event;
 
+            // Delegate with a default parameter value.
+            // The default parameter generates an operation block whose OwningSymbol
+            // is the delegate type (INamedTypeSymbol), not a method.
+            delegate void DelegateWithDefaultParameter(Type type = null);
+
             static void TestField()
             {
                 var d = new UnannotatedDelegate(field);

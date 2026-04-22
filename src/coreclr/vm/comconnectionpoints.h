@@ -35,7 +35,7 @@ struct EventMethodInfo
 // Structure passed out as a cookie when Advise is called.
 struct ConnectionCookie
 {
-    ConnectionCookie(OBJECTHANDLEHolder hndEventProvObj) : m_hndEventProvObj(std::move(hndEventProvObj))
+    ConnectionCookie(OBJECTHANDLEHolder hndEventProvObj) : m_pNext(NULL), m_hndEventProvObj(std::move(hndEventProvObj))
     {
         CONTRACTL
         {
@@ -65,8 +65,8 @@ public:
 
         RETURN (new ConnectionCookie(std::move(hndEventProvObj)));
     }
-
-    SLink               m_Link;
+    // Next pointer for SList linkage.
+    DPTR(ConnectionCookie)   m_pNext;
     OBJECTHANDLEHolder  m_hndEventProvObj;
     DWORD               m_id;
 };
@@ -75,7 +75,7 @@ public:
 using ConnectionCookieHolder = NewHolder<ConnectionCookie>;
 
 // List of connection cookies.
-typedef SList<ConnectionCookie, true> CONNECTIONCOOKIELIST;
+typedef SList<ConnectionCookie> CONNECTIONCOOKIELIST;
 
 // ConnectionPoint class. This class implements IConnectionPoint and does the mapping
 // from a CP handler to a TCE provider.

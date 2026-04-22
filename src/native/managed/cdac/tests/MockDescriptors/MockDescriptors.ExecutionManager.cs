@@ -488,7 +488,7 @@ internal sealed class MockExecutionManagerBuilder
         public ulong RangeSize => RangeEnd - RangeStart;
     }
 
-    internal int Version { get; }
+    internal string Version { get; }
     internal MockMemorySpace.Builder Builder { get; }
     internal Layout<MockRangeSectionMap> RangeSectionMapLayout { get; }
     internal Layout<MockRangeSectionFragment> RangeSectionFragmentLayout { get; }
@@ -518,12 +518,12 @@ internal sealed class MockExecutionManagerBuilder
     private readonly int _rangeSectionMapLevelsCount;
     private readonly int _rangeSectionMapMaxSetBit;
 
-    internal MockExecutionManagerBuilder(int version, MockTarget.Architecture arch, AllocationRange allocationRange, ulong allCodeHeaps = 0)
+    internal MockExecutionManagerBuilder(string version, MockTarget.Architecture arch, AllocationRange allocationRange, ulong allCodeHeaps = 0)
         : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange, allCodeHeaps)
     {
     }
 
-    internal MockExecutionManagerBuilder(int version, MockMemorySpace.Builder builder, AllocationRange allocationRange, ulong allCodeHeaps = 0)
+    internal MockExecutionManagerBuilder(string version, MockMemorySpace.Builder builder, AllocationRange allocationRange, ulong allCodeHeaps = 0)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -540,7 +540,6 @@ internal sealed class MockExecutionManagerBuilder
         _rangeSectionMapLevelsCount = architecture.Is64Bit ? 5 : 2;
         _rangeSectionMapMaxSetBit = architecture.Is64Bit ? 56 : 31;
         MockMemorySpace.HeapFragment topRangeSectionMapLevel = _rangeSectionMapAllocator.Allocate((ulong)_rangeSectionMapLevelLayout.Size, $"Map Level {_rangeSectionMapLevelsCount}");
-        Builder.AddHeapFragment(topRangeSectionMapLevel);
         _rangeSectionMapTopLevelAddress = topRangeSectionMapLevel.Address;
         _rangeSectionMapLevels[_rangeSectionMapTopLevelAddress] = _rangeSectionMapLevelLayout.Create(topRangeSectionMapLevel);
 
@@ -580,12 +579,11 @@ internal sealed class MockExecutionManagerBuilder
     {
         NibbleMapTestBuilderBase nibBuilder = Version switch
         {
-            1 => new NibbleMapTestBuilder_1(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
-            2 => new NibbleMapTestBuilder_2(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
-            _ => throw new InvalidOperationException("Unknown version"),
+            "c1" => new NibbleMapTestBuilder_1(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
+            "c2" => new NibbleMapTestBuilder_2(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
+            _ => throw new InvalidOperationException($"Unknown version '{Version}'"),
         };
 
-        Builder.AddHeapFragment(nibBuilder.NibbleMapFragment);
         return nibBuilder;
     }
 
@@ -649,7 +647,7 @@ internal sealed class MockExecutionManagerBuilder
     public MockLoaderCodeHeap AddLoaderCodeHeap()
     {
         ulong allocationSize = (ulong)Math.Max(CodeHeapLayout.Size, LoaderCodeHeapLayout.Size);
-        MockMemorySpace.HeapFragment heapFragment = AllocateAndAdd(allocationSize, "LoaderCodeHeap");
+        MockMemorySpace.HeapFragment heapFragment = _allocator.Allocate(allocationSize, "LoaderCodeHeap");
         MockLoaderCodeHeap loaderCodeHeap = LoaderCodeHeapLayout.Create(heapFragment);
         MockCodeHeap codeHeap = CodeHeapLayout.Create(
             heapFragment.Data.AsMemory(0, CodeHeapLayout.Size),
@@ -661,7 +659,7 @@ internal sealed class MockExecutionManagerBuilder
     public MockHostCodeHeap AddHostCodeHeap(ulong baseAddress, ulong currentAddress)
     {
         ulong allocationSize = (ulong)Math.Max(CodeHeapLayout.Size, HostCodeHeapLayout.Size);
-        MockMemorySpace.HeapFragment heapFragment = AllocateAndAdd(allocationSize, "HostCodeHeap");
+        MockMemorySpace.HeapFragment heapFragment = _allocator.Allocate(allocationSize, "HostCodeHeap");
         MockHostCodeHeap hostCodeHeap = HostCodeHeapLayout.Create(heapFragment);
         MockCodeHeap codeHeap = CodeHeapLayout.Create(
             heapFragment.Data.AsMemory(0, CodeHeapLayout.Size),
@@ -694,7 +692,7 @@ internal sealed class MockExecutionManagerBuilder
         ulong hotColdMapAddress = 0;
         if (hotColdMap.Length > 0)
         {
-            MockMemorySpace.HeapFragment hotColdMapFragment = AllocateAndAdd((ulong)hotColdMap.Length * sizeof(uint), $"HotColdMap[{hotColdMap.Length}]");
+            MockMemorySpace.HeapFragment hotColdMapFragment = _allocator.Allocate((ulong)hotColdMap.Length * sizeof(uint), $"HotColdMap[{hotColdMap.Length}]");
             hotColdMapAddress = hotColdMapFragment.Address;
             for (uint i = 0; i < hotColdMap.Length; i++)
             {
@@ -758,27 +756,19 @@ internal sealed class MockExecutionManagerBuilder
     {
         Layout<MockJittedMethod> jittedMethodLayout = MockJittedMethod.CreateLayout(Builder.TargetTestHelpers.Arch, checked((int)codeSize));
         MockMemorySpace.HeapFragment methodFragment = jittedCodeRange.Allocator.Allocate((ulong)jittedMethodLayout.Size, name);
-        Builder.AddHeapFragment(methodFragment);
         return jittedMethodLayout.Create(methodFragment);
     }
 
     private ulong AddPointerGlobal(ulong value, string name)
     {
-        MockMemorySpace.HeapFragment fragment = AllocateAndAdd((ulong)Builder.TargetTestHelpers.PointerSize, name);
+        MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)Builder.TargetTestHelpers.PointerSize, name);
         Builder.TargetTestHelpers.WritePointer(fragment.Data, value);
         return fragment.Address;
     }
 
     private TView AllocateAndCreate<TView>(Layout<TView> layout, string name, MockMemorySpace.BumpAllocator? allocator = null)
         where TView : TypedView, new()
-        => layout.Create(AllocateAndAdd((ulong)layout.Size, name, allocator));
-
-    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name, MockMemorySpace.BumpAllocator? allocator = null)
-    {
-        MockMemorySpace.HeapFragment fragment = (allocator ?? _allocator).Allocate(size, name);
-        Builder.AddHeapFragment(fragment);
-        return fragment;
-    }
+        => layout.Create((allocator ?? _allocator).Allocate((ulong)layout.Size, name));
 
     private int RangeSectionMapBitsAtLastLevel => _rangeSectionMapMaxSetBit - RangeSectionMapBitsPerLevel * _rangeSectionMapLevelsCount + 1;
 
@@ -807,7 +797,6 @@ internal sealed class MockExecutionManagerBuilder
     private MockRangeSectionMapLevel AllocateRangeSectionMapLevel(int level)
     {
         MockMemorySpace.HeapFragment mapLevel = _rangeSectionMapAllocator.Allocate((ulong)_rangeSectionMapLevelLayout.Size, $"Map Level {level}");
-        Builder.AddHeapFragment(mapLevel);
         _rangeSectionMapLevels[mapLevel.Address] = _rangeSectionMapLevelLayout.Create(mapLevel);
         return _rangeSectionMapLevels[mapLevel.Address];
     }

@@ -22,13 +22,15 @@ internal unsafe static partial class MockMemorySpace
 {
     internal class BumpAllocator
     {
+        private readonly Builder _builder;
         private readonly ulong _blockStart;
         private readonly ulong _blockEnd; // exclusive
         ulong _current;
 
         public int MinAlign { get; init; } = 16; // by default align to 16 bytes
-        public BumpAllocator(ulong blockStart, ulong blockEnd)
+        public BumpAllocator(Builder builder, ulong blockStart, ulong blockEnd)
         {
+            _builder = builder;
             _blockStart = blockStart;
             _blockEnd = blockEnd;
             _current = blockStart;
@@ -49,11 +51,13 @@ internal unsafe static partial class MockMemorySpace
             Debug.Assert((current % (ulong)MinAlign) == 0);
             if (current + size <= _blockEnd)
             {
-                fragment = new HeapFragment {
+                fragment = new HeapFragment
+                {
                     Address = current,
                     Data = new byte[size],
                     Name = name,
                 };
+                _builder.AddHeapFragment(fragment.Value);
                 current += size;
                 _current = current;
                 return true;
