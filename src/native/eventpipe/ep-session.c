@@ -156,6 +156,7 @@ static size_t streaming_loop_tick(EventPipeSession *const session) {
 	bool events_written = false;
 	bool ok;
 	if (!ep_session_get_streaming_enabled (session)){
+		EP_ASSERT (session->buffer_manager != NULL);
 		session->streaming_thread = NULL;
 		ep_session_dec_ref (session);
 		return 1; // done
