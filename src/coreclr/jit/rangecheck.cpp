@@ -687,7 +687,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
         return result;
     }
 
-    if (visited->Add(comp, num))
+    if (!visited->Add(comp, num))
     {
         // We've come back to a node we've already visited
         return result;
