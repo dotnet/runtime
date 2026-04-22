@@ -196,7 +196,7 @@ const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 // Read from the fatal-signal path (PROCCreateCrashDumpIfEnabled) and written
-// once during startup (PROCEnableInProcCrashReport); use Volatile<bool> to
+// once during startup (PROCInitializeInProcCrashReport); use Volatile<bool> to
 // match the signal-path publication of g_logManagedCallstackForSignalCallback.
 static Volatile<bool> g_inProcCrashReportEnabled = false;
 #endif
@@ -2800,8 +2800,12 @@ Parameters:
 #ifdef FEATURE_INPROC_CRASHREPORT
 #include <minipal/log.h>
 void
-PROCEnableInProcCrashReport()
+PROCInitializeInProcCrashReport(const char* dumpPath)
 {
+    InitializeInProcCrashReport(dumpPath);
+
+    // Publish last so PROCCreateCrashDumpIfEnabled only observes the reporter
+    // as enabled after the crashreport path (and any other state) is set.
     g_inProcCrashReportEnabled = true;
 }
 
@@ -2814,7 +2818,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
     // TODO: Dump stress log into logcat and/or file when enabled?
     if (g_inProcCrashReportEnabled)
     {
-        InProcCrashReportGenerate(signal, siginfo, context);
+        CreateInProcCrashReport(signal, siginfo, context);
     }
     minipal_log_write_fatal("Aborting process.\n");
 }

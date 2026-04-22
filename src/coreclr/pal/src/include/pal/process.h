@@ -173,7 +173,7 @@ Parameters:
 VOID PROCLogManagedCallstackForSignal(int signal);
 
 #ifdef FEATURE_INPROC_CRASHREPORT
-void PROCEnableInProcCrashReport();
+void PROCInitializeInProcCrashReport(const char* dumpPath);
 #endif
 
 #ifdef __cplusplus

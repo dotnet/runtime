@@ -17,7 +17,7 @@
 #include "threadsuspend.h"
 #include "gcenv.h"
 
-extern "C" void PROCEnableInProcCrashReport();
+extern "C" void PROCInitializeInProcCrashReport(const char* dumpPath);
 
 struct WalkContext
 {
@@ -432,16 +432,15 @@ CrashReportRegisterStackWalker()
         dumpName = dumpPathBuf;
     }
 
-    InProcCrashReportInitialize(dumpName);
-
     InProcCrashReportSetCurrentThreadManagedResolver(CrashReportIsCurrentThreadManaged);
     InProcCrashReportSetStackWalker(CrashReportWalkStack);
     InProcCrashReportSetExceptionResolver(CrashReportGetException);
     InProcCrashReportSetThreadEnumerator(CrashReportEnumerateThreads);
 
-    // Enable the PAL flag last so PROCCreateCrashDumpIfEnabled only observes
-    // the reporter as enabled after all VM callbacks are registered.
-    PROCEnableInProcCrashReport();
+    // Initialize and enable the PAL side last so PROCCreateCrashDumpIfEnabled
+    // only observes the reporter as enabled after all VM callbacks are
+    // registered.
+    PROCInitializeInProcCrashReport(dumpName);
 }
 
 #endif // FEATURE_INPROC_CRASHREPORT

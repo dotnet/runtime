@@ -11,11 +11,11 @@
 #include <signal.h>
 #include <stdint.h>
 
-void InProcCrashReportInitialize(const char* dumpPath);
+void InitializeInProcCrashReport(const char* dumpPath);
 
 // Generate an in-proc crash report. Called from PROCCreateCrashDumpIfEnabled.
 // All arguments come from the signal handler and are signal-safe to read.
-void InProcCrashReportGenerate(int signal, siginfo_t* siginfo, void* context);
+void CreateInProcCrashReport(int signal, siginfo_t* siginfo, void* context);
 
 using InProcCrashReportIsManagedThreadCallback = bool (*)();
 
