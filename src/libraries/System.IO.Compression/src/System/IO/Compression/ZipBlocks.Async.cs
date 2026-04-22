@@ -225,15 +225,6 @@ internal readonly partial struct ZipLocalFileHeader
                     compressedSize = zip64.CompressedSize.Value;
             }
 
-            // For data descriptor entries written to non-seekable streams, sizes in the
-            // local header are typically 0 rather than 0xFFFFFFFF, but the data descriptor
-            // still uses 8-byte fields when the entry requires Zip64.
-            bool hasDataDescriptor = (generalPurposeBitFlags & (ushort)ZipArchiveEntry.BitFlagValues.DataDescriptor) != 0;
-            if (!isZip64SizeFields && hasDataDescriptor && versionNeeded >= (ushort)ZipVersionNeededValues.Zip64)
-            {
-                isZip64SizeFields = true;
-            }
-
             bool isUtf8 = (generalPurposeBitFlags & (ushort)ZipArchiveEntry.BitFlagValues.UnicodeFileNameAndComment) != 0;
             Encoding nameEncoding = isUtf8 ? Encoding.UTF8 : (entryNameEncoding ?? Encoding.UTF8);
             string fullName = nameEncoding.GetString(filenameBytes);
@@ -287,6 +278,32 @@ internal readonly partial struct ZipLocalFileHeader
         }
 
         return (crc32, compressedSize, uncompressedSize);
+    }
+
+    /// <summary>
+    /// Async variant of <see cref="ReadDataDescriptorAdaptive"/>.
+    /// </summary>
+    internal static async ValueTask<(uint Crc32, long CompressedSize, long UncompressedSize)> ReadDataDescriptorAdaptiveAsync(
+        Stream stream, uint knownCrc32, long knownUncompressedSize, CancellationToken cancellationToken)
+    {
+        byte[] firstFour = new byte[4];
+        await stream.ReadExactlyAsync(firstFour, cancellationToken).ConfigureAwait(false);
+
+        uint firstWord = BinaryPrimitives.ReadUInt32LittleEndian(firstFour);
+        bool hasSignature = firstWord == 0x08074B50;
+
+        int smallSize = (hasSignature ? 4 : 0) + 8;
+        byte[] buf = new byte[20];
+        await stream.ReadExactlyAsync(buf.AsMemory(0, smallSize), cancellationToken).ConfigureAwait(false);
+
+        var small = ParseDataDescriptor(buf.AsSpan(0, smallSize), hasSignature, isZip64: false, firstWord);
+        if (small.Crc32 == knownCrc32 && small.UncompressedSize == knownUncompressedSize)
+            return small;
+
+        await stream.ReadExactlyAsync(buf.AsMemory(smallSize, 8), cancellationToken).ConfigureAwait(false);
+        int fullSize = smallSize + 8;
+
+        return ParseDataDescriptor(buf.AsSpan(0, fullSize), hasSignature, isZip64: true, firstWord);
     }
 }
 
