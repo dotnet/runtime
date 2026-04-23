@@ -879,5 +879,25 @@ namespace Microsoft.Extensions.Options.Tests
                 HasBeenCalled = true;
             }
         }
+
+        [Fact]
+        public void ValidateWithValidatorType_AreNotScopedToNamedOptions()
+        {
+            var services = new ServiceCollection();
+
+            services.AddOptions<ComplexOptions>("invalid")
+                .Configure(o => o.Boolean = false);
+
+            // ComplexOptionsValidator is only added to the valid option
+            services.AddOptions<ComplexOptions>("valid")
+                .Configure(o => o.Boolean = true)
+                .Validate<ComplexOptionsValidator>();
+
+            var sp = services.BuildServiceProvider();
+
+            // but validation fails regardless
+            var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<ComplexOptions>>().Value);
+            ValidateFailure<ComplexOptions>(error, Options.DefaultName, 1, "Boolean != true");
+        }
     }
 }
