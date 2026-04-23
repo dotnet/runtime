@@ -30,8 +30,8 @@ namespace System.Runtime.CompilerServices
             AsyncProfiler = 0x1000000,
             AsyncDebugger = 0x2000000,
 
-            // Bit 32 reserved for initialization state.
-            Uninitialized = 0x80000000
+            // Bit 32 reserved for synchronization flag.
+            Synchronize = 0x80000000
         }
 
         public const Flags DefaultFlags =
@@ -58,9 +58,9 @@ namespace System.Runtime.CompilerServices
         public static Flags SyncActiveFlags()
         {
             Flags flags = s_activeFlags;
-            if (IsUninitialized(flags))
+            if ((flags & Flags.Synchronize) != 0)
             {
-                return InitializeFlags();
+                return SynchronizeFlags();
             }
             return flags;
         }
@@ -75,10 +75,7 @@ namespace System.Runtime.CompilerServices
             lock (s_lock)
             {
                 s_asyncProfilerActiveFlags = asyncProfilerFlags;
-                if (IsInitialized(s_activeFlags))
-                {
-                    s_activeFlags = s_asyncProfilerActiveFlags | s_asyncDebuggerActiveFlags;
-                }
+                UpdateFlags(true);
             }
         }
 
@@ -92,38 +89,52 @@ namespace System.Runtime.CompilerServices
             lock (s_lock)
             {
                 s_asyncDebuggerActiveFlags = asyncDebuggerFlags;
-                if (IsInitialized(s_activeFlags))
-                {
-                    s_activeFlags = s_asyncProfilerActiveFlags | s_asyncDebuggerActiveFlags;
-                }
+                UpdateFlags(true);
             }
         }
 
-        private static Flags InitializeFlags()
+        private static Flags SynchronizeFlags()
         {
             _ = TplEventSource.Log; // Touch TplEventSource to trigger static constructor which will initialize TPL flags if EventSource is supported.
             _ = AsyncProfilerBufferedEventSource.Log; // Touch AsyncProfilerBufferedEventSource to trigger static constructor which will initialize async profiler flags if EventSource is supported.
 
             lock (s_lock)
             {
-                if (IsUninitialized(s_activeFlags))
-                {
-                    s_activeFlags = s_asyncProfilerActiveFlags | s_asyncDebuggerActiveFlags;
-                }
-
-                return s_activeFlags;
+                return UpdateFlags(false);
             }
         }
 
-        private static bool IsInitialized(Flags flags) => !IsUninitialized(flags);
+        private static Flags UpdateFlags(bool setSynchronizeFlag)
+        {
+            if (!IsEnabled.AsyncDebugger(s_internalAsyncDebuggerActiveFlags) && Task.s_asyncDebuggingEnabled)
+            {
+                s_internalAsyncDebuggerActiveFlags = DefaultFlags | Flags.AsyncDebugger;
+            }
+            else if (IsEnabled.AsyncDebugger(s_internalAsyncDebuggerActiveFlags) && !Task.s_asyncDebuggingEnabled)
+            {
+                s_internalAsyncDebuggerActiveFlags = Flags.Disabled;
+            }
 
-        private static bool IsUninitialized(Flags flags) => (flags & Flags.Uninitialized) != 0;
+            s_activeFlags = s_asyncProfilerActiveFlags | s_asyncDebuggerActiveFlags | s_internalAsyncDebuggerActiveFlags;
+            if (setSynchronizeFlag)
+            {
+                s_activeFlags |= Flags.Synchronize;
+            }
+            else
+            {
+                s_activeFlags &= ~Flags.Synchronize;
+            }
 
-        private static Flags s_activeFlags = Flags.Uninitialized;
+            return s_activeFlags;
+        }
+
+        private static Flags s_activeFlags = Flags.Synchronize;
 
         private static Flags s_asyncProfilerActiveFlags;
 
         private static Flags s_asyncDebuggerActiveFlags;
+
+        private static Flags s_internalAsyncDebuggerActiveFlags;
 
         private static readonly Lock s_lock = new();
     }

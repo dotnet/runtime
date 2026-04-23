@@ -1197,7 +1197,7 @@ namespace System.Runtime.CompilerServices
 
         internal static class AsyncDebugger
         {
-            public static bool IsEnabled(AsyncInstrumentation.Flags flags) => AsyncInstrumentation.IsEnabled.AsyncDebugger(flags)  && IsAsyncDebuggingEnabled();
+            public static bool IsEnabled(AsyncInstrumentation.Flags flags) => AsyncInstrumentation.IsEnabled.AsyncDebugger(flags);
 
             public static void CreateAsyncContext(Task task)
             {
@@ -1290,8 +1290,6 @@ namespace System.Runtime.CompilerServices
                     Task.RemoveRuntimeAsyncTask(task);
                 }
             }
-
-            private static bool IsAsyncDebuggingEnabled() => Task.s_asyncDebuggingEnabled;
         }
     }
 }
