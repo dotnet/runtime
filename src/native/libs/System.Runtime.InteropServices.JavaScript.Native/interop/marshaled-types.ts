@@ -256,7 +256,7 @@ export class PromiseHolder extends ManagedObject {
         } catch (ex) {
             try {
                 dotnetLoaderExports.exit(1, ex);
-            } catch (ex2) {
+            } catch {
                 // there is no point to propagate the exception into the unhandled promise rejection
             }
         }
