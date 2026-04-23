@@ -96,8 +96,59 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
-    //_ASSERTE(!"NYI");
-    return sizeof(instrDesc);
+    if (emitIsSmallInsDsc(id))
+        return SMALL_IDSC_SIZE;
+
+    // For PPC64LE, we don't use instruction formats yet, so we check the descriptor type directly
+    // Check if this is a jump instruction
+    if (id->idIns() == INS_b || id->idIns() == INS_beq || id->idIns() == INS_bne ||
+        id->idIns() == INS_blt || id->idIns() == INS_bge || id->idIns() == INS_bgt || id->idIns() == INS_ble)
+    {
+        return sizeof(instrDescJmp);
+    }
+
+    // Check if this is a call instruction
+    bool isCallIns = (id->idIns() == INS_bl) || (id->idIns() == INS_blr) ||
+                     (id->idIns() == INS_bctrl);
+    
+    if (isCallIns)
+    {
+        if (id->idIsLargeCall())
+        {
+            /* Must be a "fat" call descriptor */
+            return sizeof(instrDescCGCA);
+        }
+        else
+        {
+            assert(!id->idIsLargeDsp());
+            assert(!id->idIsLargeCns());
+            return sizeof(instrDesc);
+        }
+    }
+
+    // Handle other descriptor types based on flags
+    if (id->idIsLargeCns())
+    {
+        if (id->idIsLargeDsp())
+        {
+            return sizeof(instrDescCnsDsp);
+        }
+        else
+        {
+            return sizeof(instrDescCns);
+        }
+    }
+    else
+    {
+        if (id->idIsLargeDsp())
+        {
+            return sizeof(instrDescDsp);
+        }
+        else
+        {
+            return sizeof(instrDesc);
+        }
+    }
 }
 
 #ifdef DEBUG
