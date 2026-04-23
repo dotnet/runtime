@@ -232,7 +232,15 @@ namespace BinderTracing
             StackSString details;
             if (!loadedAssemblyName.IsEmpty())
             {
-                StackSString simpleName{ m_assemblyNameObject->GetSimpleName() };
+                StackSString simpleName;
+                if (m_assemblyNameObject != nullptr)
+                {
+                    simpleName.Set(m_assemblyNameObject->GetSimpleName());
+                }
+                else
+                {
+                    simpleName.Set(m_assemblyName);
+                }
                 PathString loadedPath{ inContextAttempt->AssemblyHolder->GetPEImage()->GetPath() };
                 SString versionFormat;
                 if (!loadedPath.IsEmpty())
