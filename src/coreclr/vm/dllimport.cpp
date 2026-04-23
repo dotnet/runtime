@@ -459,16 +459,6 @@ public:
                 ((PTR_DynamicMethodDesc)pStubMD)->SetFlags(DynamicMethodDesc::FlagStatic);
                 pStubMD->SetStatic();
             }
-
-#ifdef TARGET_X86
-            // we store the real native argument stack size in the stub MethodDesc
-            UINT stackSize = pStubMD->SizeOfNativeArgStack();
-
-            if (!FitsInU2(stackSize))
-                COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
-
-            pStubMD->AsDynamicMethodDesc()->SetNativeStackArgSize(static_cast<WORD>(stackSize));
-#endif // TARGET_X86
         }
 
         DWORD   cbTempModuleIndependentSigLength;
@@ -3991,38 +3981,30 @@ static void CreatePInvokeStubWorker(ILStubState*               pss,
             nativeStackSize += TARGET_POINTER_SIZE;
     }
 
+#ifdef TARGET_X86
     if (pMD->IsDynamicMethod())
     {
-        // Set the native stack size to the IL stub MD. It is needed for alignment
-        // thunk generation on the Mac and stdcall name decoration on Windows.
-        // We do not store it directly in the interop MethodDesc here because due
-        // to sharing we come here only for the first call with given signature and
-        // the target MD may even be NULL.
-
-#ifdef TARGET_X86
+        // Set the native stack size to the IL stub MD. It is needed for
+        // stdcall name decoration and correct stack management in error cases for COM->CLR calls.
         if (fThisCall)
         {
             _ASSERTE(nativeStackSize >= TARGET_POINTER_SIZE);
             nativeStackSize -= TARGET_POINTER_SIZE;
         }
-#endif // TARGET_X86
 
         nativeStackSize = ALIGN_UP(nativeStackSize, TARGET_POINTER_SIZE);
 
         if (!FitsInU2(nativeStackSize))
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
-#ifdef TARGET_X86
         DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
 
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
         if (fStubNeedsCOM)
             pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
-#endif
     }
+#endif
 
-    // FinishEmit needs to know the native stack arg size so we call it after the number
-    // has been set in the stub MD (code:DynamicMethodDesc.SetNativeStackArgSize)
     pss->FinishEmit(pMD);
 }
 

@@ -1760,20 +1760,6 @@ UINT MethodDesc::SizeOfArgStack()
 }
 
 #ifdef TARGET_X86
-UINT MethodDesc::SizeOfNativeArgStack()
-{
-#ifndef UNIX_AMD64_ABI
-    return SizeOfArgStack();
-#else
-    WRAPPER_NO_CONTRACT;
-    MetaSig msig(this);
-    PInvokeArgIterator argit(&msig);
-    return argit.SizeOfArgStack();
-#endif
-}
-#endif // TARGET_X86
-
-#ifdef TARGET_X86
 //*******************************************************************************
 UINT MethodDesc::CbStackPop()
 {

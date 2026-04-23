@@ -866,12 +866,6 @@ public:
     // arguments passed in registers.
     UINT SizeOfArgStack();
 
-#ifdef TARGET_X86
-    // Returns the # of bytes of stack used by arguments in a call from native to this function.
-    // Does not include arguments passed in registers.
-    UINT SizeOfNativeArgStack();
-#endif // TARGET_X86
-
     // Returns the # of bytes to pop after a call. Not necessary the
     // same as SizeOfArgStack()!
     UINT CbStackPop();
