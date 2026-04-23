@@ -107,7 +107,7 @@ internal sealed class ParserErrorListener : Antlr4.Runtime.IAntlrErrorListener<I
     public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
     {
         var sourceName = offendingSymbol?.TokenSource?.SourceName ?? "";
-        var span = new SourceSpan(offendingSymbol?.StartIndex ?? 0, offendingSymbol is null ? 0 : offendingSymbol.StopIndex - offendingSymbol.StartIndex);
+        var span = new SourceSpan(offendingSymbol?.StartIndex ?? 0, offendingSymbol is null ? 0 : offendingSymbol.StopIndex - offendingSymbol.StartIndex + 1);
         if (_loadedDocuments.TryGetValue(sourceName, out var sourceText))
         {
             _diagnostics.Add(new Diagnostic("Parser", DiagnosticSeverity.Warning, $"line {line}:{charPositionInLine} {msg}", new Location(span, sourceText)));
