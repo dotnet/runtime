@@ -3121,9 +3121,20 @@ namespace ILAssembler
 
         public static byte VisitHexbyte(CILParser.HexbyteContext context)
         {
-            // hexbyte can be either HEXBYTE or INT32 token (due to lexer ambiguity)
+            // hexbyte can be HEXBYTE, INT32, or ID token (due to lexer ambiguity).
+            // Validate the text is 1-2 hex characters to avoid FormatException
+            // from non-hex ID tokens or values > 0xFF from longer INT32 tokens.
             string text = context.GetText();
-            return byte.Parse(text, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
+            if (text.Length <= 2 && byte.TryParse(text, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out byte value))
+            {
+                return value;
+            }
+            // For invalid hex values, mask to byte (matching native ilasm tolerance).
+            if (int.TryParse(text, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out int intValue))
+            {
+                return (byte)(intValue & 0xFF);
+            }
+            return 0;
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitNativeInt(CILParser.NativeIntContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
