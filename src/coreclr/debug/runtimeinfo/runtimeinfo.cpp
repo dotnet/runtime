@@ -8,6 +8,7 @@
 //
 //*****************************************************************************
 
+#include <windows.h>
 #include <runtimeinfo.h>
 #include <runtime_version.h>
 
