@@ -383,29 +383,6 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(DumpType dumpType)
         // env var didn't generate a complete enough heap dump on Linux and this new path does.
         CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_HEAP2;
         MINIDUMP_TYPE minidumpType = GetMiniDumpType(dumpType);
-        if (dumpType == DumpType::Heap)
-        {
-            // This is the old fast heap env var for backwards compatibility for VS4Mac.
-            CLRConfigNoCache fastHeapDumps = CLRConfigNoCache::Get("DbgEnableFastHeapDumps", /*noprefix*/ false, &getenv);
-            DWORD val = 0;
-            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
-            {
-                // Since on MacOS all the RW regions will be added for heap dumps by createdump, the
-                // only thing differentiating a MiniDumpNormal and a MiniDumpWithPrivateReadWriteMemory
-                // is that the later uses the EnumMemoryRegions APIs. This is kind of expensive on larger
-                // applications (4 minutes, or even more), and this should already be in RW pages. Change
-                // the dump type to the faster normal one. This one already ensures necessary DAC globals,
-                // etc. without the costly assembly, module, class, type runtime data structures enumeration.
-                minidumpType = MiniDumpNormal;
-                flags = CLRDATA_ENUM_MEM_DEFAULT;
-            }
-            // This env var allows the CLRDATA_ENUM_MEM_HEAP2 fast path to be opt-ed out
-            fastHeapDumps = CLRConfigNoCache::Get("EnableFastHeapDumps", /*noprefix*/ false, &getenv);
-            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 0)
-            {
-                flags = CLRDATA_ENUM_MEM_DEFAULT;
-            }
-        }
         // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
         HRESULT hr = m_pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, flags);
         if (FAILED(hr))
