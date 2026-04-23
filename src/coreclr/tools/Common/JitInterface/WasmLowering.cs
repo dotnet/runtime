@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 using ILCompiler;
 using ILCompiler.DependencyAnalysis.Wasm;
 
@@ -121,6 +122,28 @@ namespace Internal.JitInterface
             }
         }
 
+        /// <summary>
+        /// Determines whether a type is an empty struct (no instance fields) that should
+        /// be ignored in the WebAssembly calling convention per the BasicCABI spec.
+        /// </summary>
+        // WASM-TODO: This currently always returns false because .NET pads empty structs
+        // to size 1. A proper implementation should check for 0 non-static fields.
+        // See https://github.com/dotnet/runtime/issues/127361
+        private static bool IsEmptyStruct(TypeDesc type) => false;
+
+        /// <summary>
+        /// Maps a WasmValueType to its single-character signature encoding.
+        /// </summary>
+        private static char WasmValueTypeToSigChar(WasmValueType vt) => vt switch
+        {
+            WasmValueType.I32 => 'i',
+            WasmValueType.I64 => 'l',
+            WasmValueType.F32 => 'f',
+            WasmValueType.F64 => 'd',
+            WasmValueType.V128 => 'V',
+            _ => throw new NotSupportedException($"Unknown WasmValueType: {vt}")
+        };
+
         private static TypeDesc RaiseType(WasmValueType valueType, TypeSystemContext context)
         {
             return valueType switch
@@ -156,7 +179,7 @@ namespace Internal.JitInterface
         /// </summary>
         /// <param name="method"></param>
         /// <returns></returns>
-        public static WasmFuncType GetSignature(MethodDesc method)
+        public static (WasmFuncType FuncType, string SignatureString) GetSignature(MethodDesc method)
         {
             return GetSignature(method.Signature, GetLoweringFlags(method));
         }
@@ -188,10 +211,13 @@ namespace Internal.JitInterface
             IsUnmanagedCallersOnly = 0x4
         }
 
-        public static WasmFuncType GetSignature(MethodSignature signature, LoweringFlags flags)
+        public static (WasmFuncType FuncType, string SignatureString) GetSignature(MethodSignature signature, LoweringFlags flags)
         {
             TypeDesc returnType = signature.ReturnType;
             WasmValueType pointerType = (signature.ReturnType.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
+            char hiddenParamChar = WasmValueTypeToSigChar(pointerType);
+
+            StringBuilder sigBuilder = new StringBuilder();
 
             // Determine if the return value is via a return buffer
             //
@@ -203,12 +229,29 @@ namespace Internal.JitInterface
 
             if (loweredReturnType == null)
             {
-                hasReturnBuffer = true;
-                returnIsVoid = true;
+                if (IsEmptyStruct(returnType))
+                {
+                    // Empty struct return — treated as void with no return buffer
+                    returnIsVoid = true;
+                    sigBuilder.Append('v');
+                }
+                else
+                {
+                    hasReturnBuffer = true;
+                    returnIsVoid = true;
+                    int returnSize = returnType.GetElementSize().AsInt;
+                    sigBuilder.Append('S');
+                    sigBuilder.Append(returnSize);
+                }
             }
             else if (loweredReturnType.IsVoid)
             {
                 returnIsVoid = true;
+                sigBuilder.Append('v');
+            }
+            else
+            {
+                sigBuilder.Append(WasmValueTypeToSigChar(LowerType(loweredReturnType)));
             }
 
             // Reserve space for potential implicit this, stack pointer parameter, portable entrypoint parameter,
@@ -230,48 +273,77 @@ namespace Internal.JitInterface
                 if (hasReturnBuffer)
                 {
                     result.Add(pointerType);
+                    sigBuilder.Append(hiddenParamChar);
                 }
             }
             else // managed call
             {
-                result.Add(pointerType); // Stack pointer parameter
+                result.Add(pointerType); // Stack pointer parameter (encoded via 'p' suffix, not here)
 
                 if (hasThis)
                 {
                     result.Add(pointerType);
+                    sigBuilder.Append(hiddenParamChar);
                 }
 
                 if (hasReturnBuffer)
                 {
                     result.Add(pointerType);
+                    sigBuilder.Append(hiddenParamChar);
                 }
             }
 
             if (flags.HasFlag(LoweringFlags.HasGenericContextArg))
             {
                 result.Add(pointerType); // generic context
+                sigBuilder.Append(hiddenParamChar);
             }
 
             if (flags.HasFlag(LoweringFlags.IsAsyncCall))
             {
                 result.Add(pointerType); // async continuation
+                sigBuilder.Append(hiddenParamChar);
             }
 
             for (int i = explicitThis ? 1 : 0; i < signature.Length; i++)
             {
-                result.Add(LowerType(signature[i]));
+                TypeDesc paramType = signature[i];
+                TypeDesc loweredParamType = LowerToAbiType(paramType);
+
+                if (loweredParamType == null)
+                {
+                    if (IsEmptyStruct(paramType))
+                    {
+                        // Empty struct — not emitted as a WebAssembly argument
+                        sigBuilder.Append('e');
+                        continue;
+                    }
+
+                    // Struct that cannot be lowered to a single primitive — passed by reference
+                    int paramSize = paramType.GetElementSize().AsInt;
+                    sigBuilder.Append('S');
+                    sigBuilder.Append(paramSize);
+                    result.Add(pointerType);
+                }
+                else
+                {
+                    WasmValueType paramWasmType = LowerType(paramType);
+                    sigBuilder.Append(WasmValueTypeToSigChar(paramWasmType));
+                    result.Add(paramWasmType);
+                }
             }
 
             if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly))
             {
-                result.Add(pointerType); // PE entrypoint parameter
+                result.Add(pointerType); // PE entrypoint parameter (encoded via 'p' suffix)
+                sigBuilder.Append('p');
             }
 
             WasmResultType ps = new(result.ToArray());
             WasmResultType ret = returnIsVoid ? new(Array.Empty<WasmValueType>())
                 : new([LowerType(loweredReturnType)]);
 
-            return new WasmFuncType(ps, ret);
+            return (new WasmFuncType(ps, ret), sigBuilder.ToString());
         }
     }
 }

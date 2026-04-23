@@ -1248,7 +1248,7 @@ namespace ILCompiler.DependencyAnalysis
         // memory efficiency on lookup
         public WasmTypeNode WasmTypeNode(MethodDesc method)
         {
-            WasmFuncType funcType = WasmLowering.GetSignature(method);
+            (WasmFuncType funcType, _) = WasmLowering.GetSignature(method);
             return _wasmTypeNodes.GetOrAdd(funcType);
         }
     }
