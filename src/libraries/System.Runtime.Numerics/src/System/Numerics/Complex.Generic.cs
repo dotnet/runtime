@@ -53,8 +53,8 @@ namespace System.Numerics
         public T Real => m_real;
         public T Imaginary => m_imaginary;
 
-        public T Magnitude => Abs(this);
-        public T Phase => T.Atan2(m_imaginary, m_real);
+        public T GetMagnitude() => Abs(this);
+        public T GetPhase() => T.Atan2(m_imaginary, m_real);
 
         public static Complex<T> FromPolarCoordinates(T magnitude, T phase)
         {

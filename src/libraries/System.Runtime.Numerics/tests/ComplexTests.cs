@@ -2377,11 +2377,11 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public static void Magnitude_Phase_Double()
+        public static void GetMagnitude_GetPhase_Double()
         {
             var c = new Complex<double>(3.0, 4.0);
-            Assert.Equal(5.0, c.Magnitude, 10);
-            Assert.Equal(Math.Atan2(4.0, 3.0), c.Phase, 10);
+            Assert.Equal(5.0, c.GetMagnitude(), 10);
+            Assert.Equal(Math.Atan2(4.0, 3.0), c.GetPhase(), 10);
         }
 
         [Fact]

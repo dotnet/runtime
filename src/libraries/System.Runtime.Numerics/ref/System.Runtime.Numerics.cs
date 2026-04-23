@@ -410,8 +410,6 @@ namespace System.Numerics
         public static readonly System.Numerics.Complex<T> Zero;
         public Complex(T real, T imaginary) { throw null; }
         public T Imaginary { get { throw null; } }
-        public T Magnitude { get { throw null; } }
-        public T Phase { get { throw null; } }
         public T Real { get { throw null; } }
         static System.Numerics.Complex<T> System.Numerics.IAdditiveIdentity<System.Numerics.Complex<T>,System.Numerics.Complex<T>>.AdditiveIdentity { get { throw null; } }
         static System.Numerics.Complex<T> System.Numerics.IMultiplicativeIdentity<System.Numerics.Complex<T>,System.Numerics.Complex<T>>.MultiplicativeIdentity { get { throw null; } }
@@ -440,6 +438,8 @@ namespace System.Numerics
         public static System.Numerics.Complex<T> Exp(System.Numerics.Complex<T> value) { throw null; }
         public static System.Numerics.Complex<T> FromPolarCoordinates(T magnitude, T phase) { throw null; }
         public override int GetHashCode() { throw null; }
+        public T GetMagnitude() { throw null; }
+        public T GetPhase() { throw null; }
         public static bool IsComplexNumber(System.Numerics.Complex<T> value) { throw null; }
         public static bool IsEvenInteger(System.Numerics.Complex<T> value) { throw null; }
         public static bool IsFinite(System.Numerics.Complex<T> value) { throw null; }
