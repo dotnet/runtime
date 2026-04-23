@@ -22,25 +22,25 @@ namespace System.Threading.Tasks.Tests
         private static readonly FieldInfo s_activeFlagsField = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "s_activeFlags");
 
         private static readonly object s_debuggerLock = new object();
-        private static TestEventListener? s_debuggerTplInstance;
 
         // AsyncDebugger(0x2000000) | all event flags(0x7F)
         private const uint EnabledInstrumentationFlags = 0x200007F;
         private const uint DisabledInstrumentationFlags = 0x0;
-        private const uint UninitializedInstrumentationFlags = 0x80000000;
+        private const uint SynchronizeInstrumentationFlags = 0x80000000;
 
         private static void AttachDebugger()
         {
-            // Simulate a debugger attach to process, creating TPL event source session + setting s_asyncDebuggingEnabled.
+            // Simulate a debugger attach to process by setting s_asyncDebuggingEnabled
+            // and triggering a flag synchronization via the Synchronize bit.
             lock (s_debuggerLock)
             {
                 uint flags = Convert.ToUInt32(s_activeFlagsField.GetValue(null));
-                Assert.True(flags == UninitializedInstrumentationFlags || flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {UninitializedInstrumentationFlags} || {DisabledInstrumentationFlags}");
+                Assert.True(flags == SynchronizeInstrumentationFlags || flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {SynchronizeInstrumentationFlags} || {DisabledInstrumentationFlags}");
 
-                s_debuggerTplInstance = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose);
                 s_asyncDebuggingEnabledField.SetValue(null, true);
+                s_activeFlagsField.SetValue(null, (uint)s_activeFlagsField.GetValue(null) | SynchronizeInstrumentationFlags);
 
-                // Initialize flags and collections.
+                // Run an async method to trigger SyncActiveFlags which will pick up the Synchronize bit.
                 Func().GetAwaiter().GetResult();
 
                 flags = Convert.ToUInt32(s_activeFlagsField.GetValue(null));
@@ -63,8 +63,11 @@ namespace System.Threading.Tasks.Tests
             lock (s_debuggerLock)
             {
                 s_asyncDebuggingEnabledField.SetValue(null, false);
-                s_debuggerTplInstance?.Dispose();
-                s_debuggerTplInstance = null;
+                s_activeFlagsField.SetValue(null, (uint)s_activeFlagsField.GetValue(null) | SynchronizeInstrumentationFlags);
+
+                // Run an async method to trigger SyncActiveFlags which will detect
+                // s_asyncDebuggingEnabled is false and clear the debugger flags.
+                Func().GetAwaiter().GetResult();
 
                 uint flags = Convert.ToUInt32(s_activeFlagsField.GetValue(null));
                 Assert.True(flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {DisabledInstrumentationFlags}");
