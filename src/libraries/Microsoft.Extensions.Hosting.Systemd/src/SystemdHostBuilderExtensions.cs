@@ -115,7 +115,17 @@ namespace Microsoft.Extensions.Hosting
             // systemd-style integration (for example, when NOTIFY_SOCKET is set or the process
             // is detected as a systemd service).
 #pragma warning disable CA1416 // Validate platform compatibility
-            services.AddSingleton<ISystemdNotifier, SystemdNotifier>();
+            services.AddSingleton<ISystemdNotifier>(_ =>
+            {
+                // Construct the notifier first so it reads (and normalizes) NOTIFY_SOCKET, then
+                // clear the env var so child processes don't inherit it and accidentally notify
+                // the parent's service manager. Done inside the DI factory so SystemdNotifier
+                // construction stays lazy and the env var is only mutated when hosting is
+                // actually wired up.
+                var notifier = new SystemdNotifier();
+                Environment.SetEnvironmentVariable(SystemdConstants.NotifySocket, null);
+                return notifier;
+            });
             services.AddSingleton<IHostLifetime, SystemdLifetime>();
 #pragma warning restore CA1416 // Validate platform compatibility
 
