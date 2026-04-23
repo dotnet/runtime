@@ -25,7 +25,7 @@ namespace System.Tests
             Assert.Throws<PlatformNotSupportedException>(() => PosixSignalRegistration.Create(signal, ctx => { }));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), SkipWhenEmpty = true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), SkipTestWithoutData = true)]
         [MemberData(nameof(UninstallableSignals))]
         public void Create_UninstallableSignal_Throws(PosixSignal signal)
         {

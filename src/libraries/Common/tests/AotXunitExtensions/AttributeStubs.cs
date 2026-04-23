@@ -37,7 +37,7 @@ namespace Xunit
         public ConditionalTheoryAttribute(params Type[] conditions) { }
         public string? DisplayName { get; set; }
         public string? Skip { get; set; }
-        public bool SkipWhenEmpty { get; set; }
+        public bool SkipTestWithoutData { get; set; }
         public int Timeout { get; set; }
     }
 
