@@ -79,7 +79,7 @@
     and only for browser-wasm packs which contain .js files.
   -->
   <Target Name="GenerateCatalogFiles" AfterTargets="AddMonoRuntimeFiles"
-          Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(RuntimeIdentifier)' == 'browser-wasm'">
+          Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(MonoObjDir)' != ''">
     <PropertyGroup>
       <_CatOutputPath>$(ArtifactsObjDir)mono-pack\mono-runtime-js.cat</_CatOutputPath>
       <_ErrorIfMakecatNotFound Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(OfficialBuild)' == 'true'">-ErrorIfMakecatNotFound</_ErrorIfMakecatNotFound>
