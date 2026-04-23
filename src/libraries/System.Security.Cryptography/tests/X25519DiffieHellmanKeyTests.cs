@@ -296,6 +296,24 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void PrivateKey_Roundtrip_UnclampedScalar_NoPreservationBits()
+        {
+            byte[] privateKey = (byte[])X25519DiffieHellmanTestData.AlicePrivateKey.Clone();
+            privateKey[0] &= 0b11111000;
+            privateKey[^1] &= 0b00111111;
+
+            Assert.Equal(0, privateKey[0] & 0b111);
+            Assert.Equal(0, privateKey[^1] & 0b11000000);
+
+            using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(privateKey);
+            AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
+
+            byte[] pkcs8 = xdh.ExportPkcs8PrivateKey();
+            using X25519DiffieHellman reimported = X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8);
+            AssertExtensions.SequenceEqual(privateKey, reimported.ExportPrivateKey());
+        }
+
+        [Fact]
         public static void PrivateKey_Roundtrip_ClampedScalar()
         {
             // Construct a private key that is ALREADY properly clamped per RFC 7748:

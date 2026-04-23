@@ -293,11 +293,8 @@ namespace System.Security.Cryptography
 
         private static void RefixPrivateScalar(Span<byte> bytes, byte preservation)
         {
-            if (preservation != 0)
-            {
-                bytes[0] = (byte)((preservation & 0b111) | (bytes[0] & 0b11111000));
-                bytes[^1] = (byte)((preservation & 0b11000000) | (bytes[^1] & 0b00111111));
-            }
+            bytes[0] = (byte)((preservation & 0b111) | (bytes[0] & 0b11111000));
+            bytes[^1] = (byte)((preservation & 0b11000000) | (bytes[^1] & 0b00111111));
         }
 
         private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()
