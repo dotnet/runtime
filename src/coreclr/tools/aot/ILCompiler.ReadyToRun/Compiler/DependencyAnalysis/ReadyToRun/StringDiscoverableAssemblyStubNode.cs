@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
+
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -18,6 +21,14 @@ namespace ILCompiler.DependencyAnalysis
         /// Must be non-empty and must not contain embedded null characters.
         /// </summary>
         public abstract string LookupString { get; }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = new DependencyList();
+            dependencies.Add(factory.InjectStringThunksImport, "StringDiscoverableAssemblyStubNode requires InjectStringThunks fixup");
+
+            return dependencies;
+        }
 
         protected override void OnMarked(NodeFactory factory)
         {

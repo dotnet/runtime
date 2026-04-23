@@ -444,6 +444,12 @@ namespace ILCompiler.DependencyAnalysis
         private readonly ConcurrentBag<StringDiscoverableAssemblyStubNode> _stringDiscoverableStubs = new ConcurrentBag<StringDiscoverableAssemblyStubNode>();
 
         /// <summary>
+        /// The eager import for the InjectStringThunks fixup. Created lazily when the first
+        /// StringDiscoverableAssemblyStubNode is registered. Each such stub depends on this import.
+        /// </summary>
+        public Import InjectStringThunksImport;
+
+        /// <summary>
         /// Register a StringDiscoverableAssemblyStubNode for inclusion in the InjectStringThunks fixup.
         /// Called by StringDiscoverableAssemblyStubNode.OnMarked.
         /// </summary>
@@ -962,10 +968,9 @@ namespace ILCompiler.DependencyAnalysis
                 ReadyToRunHelper.Module));
             graph.AddRoot(ModuleImport, "Module import is required by the R2R format spec");
 
-            // String-discoverable thunk injection fixup. The signature collects all
-            // StringDiscoverableAssemblyStubNode instances at emission time.
-            Import injectStringThunksImport = new Import(EagerImports, new InjectStringThunksSignature());
-            graph.AddRoot(injectStringThunksImport, "InjectStringThunks fixup for string-discoverable stubs");
+            // Create the InjectStringThunks import but don't root it. It gets pulled in
+            // as a dependency of any StringDiscoverableAssemblyStubNode that gets marked.
+            InjectStringThunksImport = new Import(EagerImports, new InjectStringThunksSignature());
 
             if ((Target.Architecture != TargetArchitecture.X86) && (Target.Architecture != TargetArchitecture.Wasm32))
             {
