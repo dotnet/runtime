@@ -173,11 +173,6 @@ namespace Internal.TypeSystem
                 return true;
             }
 
-            if (IsCanonicalCastTarget(thisType, otherType))
-            {
-                return true;
-            }
-
             switch (thisType.Category)
             {
                 case TypeFlags.GenericParameter:
@@ -423,14 +418,14 @@ namespace Internal.TypeSystem
 
         private static bool CanCastToNonVariantInterface(this TypeDesc thisType, TypeDesc otherType)
         {
-            if (otherType.IsEquivalentTo(thisType) || IsCanonEquivalent(thisType, otherType))
+            if (otherType.IsEquivalentTo(thisType))
             {
                 return true;
             }
 
             foreach (var interfaceType in thisType.RuntimeInterfaces)
             {
-                if (interfaceType.IsEquivalentTo(otherType) || IsCanonEquivalent(interfaceType, otherType))
+                if (interfaceType.IsEquivalentTo(otherType))
                 {
                     return true;
                 }
@@ -474,9 +469,6 @@ namespace Internal.TypeSystem
 
                 if (!arg.IsEquivalentTo(targetArg))
                 {
-                    if (IsCanonicalTypeArgMatch(arg, targetArg))
-                        continue;
-
                     GenericVariance variance = arrayCovariance
                         ? GenericVariance.Covariant : ((GenericParameterDesc)instantiationOpen[i]).Variance;
 
@@ -549,7 +541,7 @@ namespace Internal.TypeSystem
 
                 do
                 {
-                    if (curType.IsEquivalentTo(otherType) || IsCanonEquivalent(curType, otherType))
+                    if (curType.IsEquivalentTo(otherType))
                         return true;
 
                     curType = curType.BaseType;

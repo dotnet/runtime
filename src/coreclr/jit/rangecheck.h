@@ -776,6 +776,13 @@ private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
 
+    // Cheaper version of TryGetRange that is based only on incoming assertions.
+    static Range GetRangeFromAssertionsWorker(Compiler*                        comp,
+                                              ValueNum                         num,
+                                              ASSERT_VALARG_TP                 assertions,
+                                              int                              budget,
+                                              ValueNumStore::SmallValueNumSet* visited);
+
     int GetArrLength(ValueNum vn);
 
     // Check whether the computed range is within 0 and upper bounds. This function

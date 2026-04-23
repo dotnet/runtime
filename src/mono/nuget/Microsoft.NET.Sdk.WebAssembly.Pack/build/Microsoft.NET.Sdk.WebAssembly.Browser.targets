@@ -354,6 +354,12 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmBuildWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebcilPath>
       <_WasmBuildTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebcilPath>
+      <!-- Controls whether WASM framework/webcil static web assets are copied to bin/wwwroot/_framework/
+           at build time. Defaults to 'Never' (assets stay in obj/fx/ and are served via the static web
+           assets middleware). Set to 'PreserveNewest' to copy them to the output directory — this is
+           required for scenarios that run the app from bin/ without the static web assets middleware
+           (e.g. in-tree library tests). -->
+      <_WasmFrameworkCopyToOutputDirectory Condition="'$(_WasmFrameworkCopyToOutputDirectory)' == ''">Never</_WasmFrameworkCopyToOutputDirectory>
     </PropertyGroup>
 
     <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
@@ -387,7 +393,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       SourceType="Computed"
       AssetKind="Build"
       AssetRole="Primary"
-      CopyToOutputDirectory="Never"
+      CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)"
       CopyToPublishDirectory="Never"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
@@ -406,7 +412,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       SourceType="Framework"
       AssetKind="Build"
       AssetRole="Primary"
-      CopyToOutputDirectory="Never"
+      CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)"
       CopyToPublishDirectory="Never"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
@@ -435,7 +441,7 @@ Copyright (c) .NET Foundation. All rights reserved.
          during dotnet run — they are not copied to bin/wwwroot/_framework/ at build time. -->
     <ItemGroup>
       <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)"
-        AssetMode="All" CopyToOutputDirectory="Never" />
+        AssetMode="All" CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)" />
       <WasmStaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
     </ItemGroup>
 
