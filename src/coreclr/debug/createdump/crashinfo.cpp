@@ -379,9 +379,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(DumpType dumpType)
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
 
         // CLRDATA_ENUM_MEM_HEAP2 skips the expensive (in both time and memory usage) enumeration of the
-        // low level data structures and adds all the loader allocator heaps instead. The older 'DbgEnableFastHeapDumps'
-// CLRDATA_ENUM_MEM_HEAP2 skips the expensive (in both time and memory usage) enumeration of the
-// low level data structures and adds all the loader allocator heaps instead.
+        // low level data structures and adds all the loader allocator heaps instead.
         CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_HEAP2;
         MINIDUMP_TYPE minidumpType = GetMiniDumpType(dumpType);
         // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
