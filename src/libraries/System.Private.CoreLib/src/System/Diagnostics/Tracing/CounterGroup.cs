@@ -93,7 +93,7 @@ namespace System.Diagnostics.Tracing
 
                 Debug.Assert((s_counterGroupEnabledList == null && !_eventSource.IsEnabled())
                                 || (_eventSource.IsEnabled() && s_counterGroupEnabledList!.Contains(this))
-                                || (_pollingIntervalInMilliseconds == 0 && !s_counterGroupEnabledList!.Contains(this))
+                                || (_pollingInterval == TimeSpan.Zero && !s_counterGroupEnabledList!.Contains(this))
                                 || (!_eventSource.IsEnabled() && !s_counterGroupEnabledList!.Contains(this)));
             }
         }
@@ -144,22 +144,23 @@ namespace System.Diagnostics.Tracing
 #region Timer Processing
 
         private long _timeStampSinceCollectionStarted;
-        private int _pollingIntervalInMilliseconds;
+        private TimeSpan _pollingInterval;
         private long _nextPollingTimeStamp;
 
         private void EnableTimer(float pollingIntervalInSeconds)
         {
             Debug.Assert(pollingIntervalInSeconds > 0);
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
-            if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
+            TimeSpan interval = TimeSpan.FromSeconds(pollingIntervalInSeconds);
+            if (_pollingInterval == TimeSpan.Zero || interval < _pollingInterval)
             {
-                _pollingIntervalInMilliseconds = (int)(pollingIntervalInSeconds * 1000);
+                _pollingInterval = interval;
                 // Schedule IncrementingPollingCounter reset and synchronously reset other counters
                 HandleCountersReset();
 
                 long now = Stopwatch.GetTimestamp();
                 _timeStampSinceCollectionStarted = now;
-                _nextPollingTimeStamp = now + (long)(Stopwatch.Frequency * pollingIntervalInSeconds);
+                _nextPollingTimeStamp = now + _pollingInterval.Ticks * Stopwatch.Frequency / TimeSpan.TicksPerSecond;
 
                 // Create the polling thread and init all the shared state if needed
                 if (s_pollingThread == null)
@@ -188,7 +189,7 @@ namespace System.Diagnostics.Tracing
         private void DisableTimer()
         {
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
-            _pollingIntervalInMilliseconds = 0;
+            _pollingInterval = TimeSpan.Zero;
             s_counterGroupEnabledList?.Remove(this);
 
             if (s_needsResetIncrementingPollingCounters.Count > 0)
@@ -229,13 +230,13 @@ namespace System.Diagnostics.Tracing
             {
                 long now;
                 TimeSpan elapsed;
-                int pollingIntervalInMilliseconds;
+                TimeSpan pollingInterval;
                 DiagnosticCounter[] counters;
                 lock (s_counterGroupLock)
                 {
                     now = Stopwatch.GetTimestamp();
                     elapsed = Stopwatch.GetElapsedTime(_timeStampSinceCollectionStarted, now);
-                    pollingIntervalInMilliseconds = _pollingIntervalInMilliseconds;
+                    pollingInterval = _pollingInterval;
                     counters = new DiagnosticCounter[_counters.Count];
                     _counters.CopyTo(counters);
                 }
@@ -255,22 +256,21 @@ namespace System.Diagnostics.Tracing
                     // written to the old session or the new session. The behavior change is not being treated as a
                     // significant problem to address for now, but we can come back and address it if it turns out to
                     // be an actual issue.
-                    counter.WritePayload((float)elapsed.TotalSeconds, pollingIntervalInMilliseconds);
+                    counter.WritePayload((float)elapsed.TotalSeconds, (int)pollingInterval.TotalMilliseconds);
                 }
 
                 lock (s_counterGroupLock)
                 {
                     _timeStampSinceCollectionStarted = now;
-                    long intervalTicks = (long)((double)Stopwatch.Frequency * _pollingIntervalInMilliseconds / 1000);
-                    long delta = now - _nextPollingTimeStamp;
-                    if (delta < intervalTicks)
+                    TimeSpan delta = Stopwatch.GetElapsedTime(_nextPollingTimeStamp, now);
+                    if (delta < _pollingInterval)
                     {
-                        delta = intervalTicks;
+                        delta = _pollingInterval;
                     }
 
-                    if (_pollingIntervalInMilliseconds > 0)
+                    if (_pollingInterval > TimeSpan.Zero)
                     {
-                        _nextPollingTimeStamp += (long)(intervalTicks * Math.Ceiling((double)delta / intervalTicks));
+                        _nextPollingTimeStamp += (long)Math.Ceiling(delta / _pollingInterval) * _pollingInterval.Ticks * Stopwatch.Frequency / TimeSpan.TicksPerSecond;
                     }
                 }
             }
@@ -302,13 +302,13 @@ namespace System.Diagnostics.Tracing
                     foreach (CounterGroup counterGroup in s_counterGroupEnabledList!)
                     {
                         long now = Stopwatch.GetTimestamp();
-                        if (counterGroup._nextPollingTimeStamp < now + Stopwatch.Frequency / 1000)
+                        TimeSpan timeUntilNextPoll = Stopwatch.GetElapsedTime(now, counterGroup._nextPollingTimeStamp);
+                        if (timeUntilNextPoll < TimeSpan.FromMilliseconds(1))
                         {
                             onTimers.Add(counterGroup);
                         }
 
-                        int millisecondsTillNextPoll = (int)Stopwatch.GetElapsedTime(now, counterGroup._nextPollingTimeStamp).TotalMilliseconds;
-                        millisecondsTillNextPoll = Math.Max(1, millisecondsTillNextPoll);
+                        int millisecondsTillNextPoll = Math.Max(1, (int)timeUntilNextPoll.TotalMilliseconds);
                         sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                     }
 
