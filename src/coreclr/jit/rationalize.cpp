@@ -652,7 +652,6 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
     // If the mask was originally a vector, we don't want to create a mask solely for
     // the purpose of embedding it. vpmov*2m is relatively costly compared to blendvp*.
     bool isVectorToMask          = op3->OperIsConvertVectorToMask();
-    bool isVectorBlendCompatible = true;
 
     if (isVectorToMask)
     {
@@ -668,8 +667,7 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
                 case TYP_SHORT:
                 case TYP_USHORT:
                 {
-                    isVectorBlendCompatible = false;
-                    break;
+                    return;
                 }
 
                 case TYP_INT:
@@ -712,7 +710,7 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
         }
     }
 
-    if (!isVectorBlendCompatible || !ShouldRewriteToNonMaskHWIntrinsic(op3))
+    if (!ShouldRewriteToNonMaskHWIntrinsic(op3))
     {
         return;
     }
