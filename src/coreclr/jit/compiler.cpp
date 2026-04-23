@@ -5622,7 +5622,7 @@ void Compiler::generatePatchpointInfo()
     // offset.
 
 #if defined(TARGET_AMD64)
-    // We add +TARGET_POINTER_SIZE here to account for the return address slot that the OSR method
+    // We add +TARGET_POINTER_SIZE here to account for the return address slot that the OSR method prolog
     // pushes on entry (the "pseudo return address" slot) to make the stack unaligned.
     // This is effectively a new slot at the bottom of the Tier0 frame.
     //
