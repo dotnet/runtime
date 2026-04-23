@@ -565,6 +565,18 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     // the normal type loading path in MethodTableBuilder::EnumerateClassMethods.
     // For IsMiAsync methods the primary is a thunk and the async variant owns the IL;
     // for non-IsMiAsync methods the primary owns the IL and the async variant is a thunk.
+    //
+    // The normal type loading path also creates a void-returning ReturnDroppingThunk
+    // for covariant virtual overrides (base returns Task, derived returns Task<T>).
+    // EnC-added methods cannot be METHOD_IMPL overrides, so that case does not apply here.
+    // Note: There are multiple corner-case bugs here we are choosing not to address:
+    // 1. The types might not be the well-known Task/ValueTask types from 
+    //    System.Private.CoreLib. We won't know the answer until after 
+    //    ClassifyMethodReturnKind returns.
+    // 2. Even if the types are the well-known types that alone doesn't guarantee this 
+    //    call won't trigger a GC.
+    // Accepted as Won't Fix given this requires an unlikely combination events during 
+    // an EnC operation while debugging.
     AsyncMethodFlags primaryAsyncFlags = AsyncMethodFlags::None;
     AsyncMethodFlags variantAsyncFlags = AsyncMethodFlags::None;
     BYTE* pAsyncVariantSig = NULL;
