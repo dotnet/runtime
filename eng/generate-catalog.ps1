@@ -42,13 +42,13 @@ foreach ($f in $files) {
     $i++
 }
 
-$cdf | Set-Content -Path $cdfPath -Encoding ASCII
-Write-Host "Generated CDF with $($files.Count) .js files at $cdfPath"
-
 $catDir = [System.IO.Path]::GetDirectoryName($CatOutputPath)
 if (-not (Test-Path $catDir)) {
     New-Item -ItemType Directory -Path $catDir -Force | Out-Null
 }
+
+$cdf | Set-Content -Path $cdfPath -Encoding ASCII
+Write-Host "Generated CDF with $($files.Count) .js files at $cdfPath"
 
 # Find makecat.exe - it ships with the Windows SDK and may not be on PATH.
 $makecat = $null

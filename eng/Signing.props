@@ -52,7 +52,8 @@
     <!-- JS files are customer-modifiable runtime/toolchain files. They cannot be
          Authenticode-signed because modifying a signed file breaks the signature.
          Instead, a catalog file (.cat) is generated and signed to provide integrity
-         verification. See the GenerateCatalogFiles target in eng/mono.proj. -->
+         verification. See the GenerateCatalogFiles target in
+         src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.Mono.sfxproj. -->
     <FileExtensionSignInfo Update=".js" CertificateName="None" />
     <FileExtensionSignInfo Include=".cat" CertificateName="Microsoft400" />
 
