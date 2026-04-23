@@ -161,6 +161,7 @@ private:
     //-------------------------------------------------------------------------
 
     void genReportEH();
+    void genReportEHClauses(EHClauseInfo* clauses);
 
     // Allocates storage for the GC info, writes the GC info into that storage, records the address of the
     // GC info of the method with the EE, and returns a pointer to the "info" portion (just post-header) of
@@ -221,6 +222,7 @@ protected:
     void                       genEmitNullCheck(regNumber reg);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
+    void                       ensureCurrentFuncIsUnwindable();
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
@@ -1244,6 +1246,7 @@ protected:
     void                 genJumpTable(GenTree* tree);
     void                 genTableBasedSwitch(GenTree* tree);
     void                 genAsyncResumeInfo(GenTreeVal* tree);
+    void                 genFtnEntry(GenTree* tree);
     UNATIVE_OFFSET       genEmitAsyncResumeInfoTable(emitter::dataSection** dataSec);
     CORINFO_FIELD_HANDLE genEmitAsyncResumeInfo(unsigned stateNum);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1306,6 +1309,8 @@ protected:
 #ifdef SWIFT_SUPPORT
     void genSwiftErrorReturn(GenTree* treeNode);
 #endif // SWIFT_SUPPORT
+
+    void genNonLocalJmp(GenTreeUnOp* treeNode);
 
 #ifdef TARGET_XARCH
     void           genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);

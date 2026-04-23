@@ -119,6 +119,7 @@ enum DebuggerAssemblyControlFlags : uint
     DACF_NONE = 0x00,
     DACF_ALLOW_JIT_OPTS = 0x02,
     DACF_ENC_ENABLED = 0x08,
+    DACF_IGNORE_PDBS = 0x20,
     DACF_CONTROL_FLAGS_MASK = 0x2E,
 }
 ```
