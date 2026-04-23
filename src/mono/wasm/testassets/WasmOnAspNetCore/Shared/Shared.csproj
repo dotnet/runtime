@@ -10,7 +10,7 @@
 
   <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->
   <ItemGroup>
-    <PackageReference Include="System.Net.Http.Json" Version="11.0.0-preview.4.26215.121" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="11.0.0-preview.4.26215.121" />
+    <PackageReference Include="System.Net.Http.Json" Version="11.0.0-preview.4.26211.102" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="11.0.0-preview.4.26211.102" />
   </ItemGroup>
 </Project>
