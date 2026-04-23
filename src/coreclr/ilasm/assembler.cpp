@@ -386,25 +386,15 @@ DWORD Assembler::CheckClassFlagsIfNested(Class* pEncloser, DWORD attr)
     DWORD wasAttr = attr;
     if(pEncloser && (!IsTdNested(attr)))
     {
-        if(OnErrGo)
-            report->error("Nested class has non-nested visibility (0x%08X)\n",attr);
-        else
-        {
-            attr &= ~tdVisibilityMask;
-            attr |= (IsTdPublic(wasAttr) ? tdNestedPublic : tdNestedPrivate);
-            report->warn("Nested class has non-nested visibility (0x%08X), changed to nested (0x%08X)\n",wasAttr,attr);
-        }
+        attr &= ~tdVisibilityMask;
+        attr |= (IsTdPublic(wasAttr) ? tdNestedPublic : tdNestedPrivate);
+        report->warn("Nested class has non-nested visibility (0x%08X), changed to nested (0x%08X)\n",wasAttr,attr);
     }
     else if((pEncloser==NULL) && IsTdNested(attr))
     {
-        if(OnErrGo)
-            report->error("Non-nested class has nested visibility (0x%08X)\n",attr);
-        else
-        {
-            attr &= ~tdVisibilityMask;
-            attr |= (IsTdNestedPublic(wasAttr) ? tdPublic : tdNotPublic);
-            report->warn("Non-nested class has nested visibility (0x%08X), changed to non-nested (0x%08X)\n",wasAttr,attr);
-        }
+        attr &= ~tdVisibilityMask;
+        attr |= (IsTdNestedPublic(wasAttr) ? tdPublic : tdNotPublic);
+        report->warn("Non-nested class has nested visibility (0x%08X), changed to non-nested (0x%08X)\n",wasAttr,attr);
     }
     return attr;
 }
@@ -533,12 +523,8 @@ void Assembler::AddClass()
         {
             if(!IsTdSealed(attr))
             {
-                if(OnErrGo) report->error("Non-sealed value class\n");
-                else
-                {
-                    report->warn("Non-sealed value class, made sealed\n");
-                    m_pCurClass->m_Attr |= tdSealed;
-                }
+                report->warn("Non-sealed value class, made sealed\n");
+                m_pCurClass->m_Attr |= tdSealed;
             }
         }
         m_pCurClass->m_bIsMaster = FALSE;
@@ -626,12 +612,8 @@ void Assembler::StartMethod(_In_ __nullterminated char* name, BinStr* sig, CorMe
         *(sig->ptr()) |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
     else if(*(sig->ptr()) & (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS))
     {
-        if(OnErrGo) report->error("Method '%s' -- both static and instance\n", name);
-        else
-        {
-            report->warn("Method '%s' -- both static and instance, set to static\n", name);
-            *(sig->ptr()) &= ~(IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS);
-        }
+        report->warn("Method '%s' -- both static and instance, set to static\n", name);
+        *(sig->ptr()) &= ~(IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS);
     }
 
     if(!IsMdPrivateScope(flags))
@@ -713,22 +695,14 @@ void Assembler::StartMethod(_In_ __nullterminated char* name, BinStr* sig, CorMe
         {
             if(IsMdAbstract(flags))
             {
-                if(OnErrGo) report->error("Global method '%s' can't be abstract\n",name);
-                else
-                {
-                    report->warn("Global method '%s' can't be abstract, flag removed\n",name);
-                    flags = (CorMethodAttr)(((int) flags) &~mdAbstract);
-                }
+                report->warn("Global method '%s' can't be abstract, flag removed\n",name);
+                flags = (CorMethodAttr)(((int) flags) &~mdAbstract);
             }
             if(!IsMdStatic(flags))
             {
-                if(OnErrGo) report->error("Non-static global method '%s'\n",name);
-                else
-                {
-                    report->warn("Non-static global method '%s', made static\n",name);
-                    flags = (CorMethodAttr)(flags | mdStatic);
-                    *((BYTE*)(sig->ptr())) &= ~(IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS);
-                }
+                report->warn("Non-static global method '%s', made static\n",name);
+                flags = (CorMethodAttr)(flags | mdStatic);
+                *((BYTE*)(sig->ptr())) &= ~(IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS);
             }
             m_pCurMethod = new Method(this, m_pCurClass, name, sig, flags);
             if (m_pCurMethod)
@@ -842,12 +816,8 @@ void Assembler::AddField(__inout_z __inout char* name, BinStr* sig, CorFieldAttr
         }
         if(!IsFdStatic(flags))
         {
-            if(OnErrGo) report->error("Non-static global field\n");
-            else
-            {
-                report->warn("Non-static global field, made static\n");
-                flags = (CorFieldAttr)(flags | fdStatic);
-            }
+            report->warn("Non-static global field, made static\n");
+            flags = (CorFieldAttr)(flags | fdStatic);
         }
     }
     pClass = (m_pCurClass ? m_pCurClass : m_pModuleClass);
