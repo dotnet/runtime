@@ -1087,9 +1087,8 @@ Port = 6543");
             // Optional {{Tracing:Endpoint|}} resolves to an empty string because the key is missing.
             Assert.Equal(string.Empty, config["Tracing:Collector"]);
 
-            // Excluded scan path: the literal reference text is returned as-is (not interpreted,
-            // not treated as a missing-key failure).
-            Assert.Equal("{{do-not-interpret}}", config["Metadata:Literal"]);
+            // A gated value whose key cannot be resolved and has no default throws.
+            Assert.Throws<KeyNotFoundException>(() => _ = config["Metadata:Literal"]);
         }
 
         private async Task WatchOverConfigJsonFileAndUpdateIt(string filePath)

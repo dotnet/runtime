@@ -95,11 +95,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     if (target.NeedsResolving)
                     {
-                        if (!_resolver.TryResolve(targetKey, target.AsString!, target.ProviderIndex, out value))
-                        {
-                            // Soft fail: surface the unresolved literal from the alias target.
-                            value = target.AsString;
-                        }
+                        _resolver.TryResolve(targetKey, target.AsString!, target.ProviderIndex, out value);
                     }
                     else
                     {
@@ -149,13 +145,7 @@ namespace Microsoft.Extensions.Configuration
                 return true;
             }
 
-            if (!_resolver.TryResolve(path, raw.AsString!, _providers.LastIndex, out value))
-            {
-                // Soft fail: surface the unresolved literal rather than forcing the caller to
-                // re-walk the providers.
-                value = raw.AsString;
-                return true;
-            }
+            _resolver.TryResolve(path, raw.AsString!, _providers.LastIndex, out value);
 
             cache.TryAdd(path.Value, value);
             return true;
@@ -591,8 +581,9 @@ namespace Microsoft.Extensions.Configuration
                     return TryResolveTokens(storageKey, token.LiteralDefault!, resolutionStack, depth, upperIndex, out value);
                 }
 
-                value = null;
-                return false;
+                string missing = string.Join("?", token.Items.Select(i => i.Value));
+                throw new KeyNotFoundException(
+                    SR.Format(SR.ReferenceResolution_KeyNotFound, missing, storageKey));
             }
 
             private static bool TryBuildAbsolutePath(Path storageKey, ReferenceItem item, out Path absolute)

@@ -671,7 +671,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void EnableReferenceResolutionLeavesValueWhenRequiredReferenceIsMissing()
+        public void EnableReferenceResolutionThrowsWhenRequiredReferenceIsMissing()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -681,7 +681,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .EnableReferenceResolution()
                 .Build();
 
-            Assert.Equal("{{|https://{{Host}}.example.com}}", config["ServiceUrl"]);
+            Assert.Throws<KeyNotFoundException>(() => _ = config["ServiceUrl"]);
         }
 
         [Theory]
@@ -918,7 +918,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void EnableReferenceResolutionTreatsInterpolatedSectionReferenceAsLeafValue()
+        public void EnableReferenceResolutionThrowsWhenInterpolatedReferenceTargetsSection()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -929,8 +929,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .EnableReferenceResolution()
                 .Build();
 
-            Assert.Equal("{{|prefix-{{Defaults:Feature}}}}", config["Feature"]);
-            Assert.Empty(config.GetSection("Feature").GetChildren());
+            Assert.Throws<KeyNotFoundException>(() => _ = config["Feature"]);
         }
 
         [Fact]
@@ -1432,7 +1431,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .EnableReferenceResolution()
                 .Build();
 
-            Assert.Equal("{{X}}", config["K"]);
+            Assert.Throws<KeyNotFoundException>(() => _ = config["K"]);
             Assert.Equal("from-hidden", config["X"]);
         }
 
@@ -1455,7 +1454,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             IConfigurationRoot config = builder.Build();
 
-            Assert.Equal("{{X}}", config["K"]);
+            Assert.Throws<KeyNotFoundException>(() => _ = config["K"]);
             Assert.Equal("from-hidden", config["X"]);
         }
 
