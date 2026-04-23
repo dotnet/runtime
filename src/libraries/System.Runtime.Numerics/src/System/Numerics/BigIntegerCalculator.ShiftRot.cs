@@ -9,25 +9,11 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        /// <summary>
-        /// Rotates a span of 32-bit words left by the specified amount.
-        /// </summary>
-        /// <remarks>
-        /// The caller provides a <see cref="Span{T}"/> of <see cref="uint"/> words obtained via
-        /// <see cref="MemoryMarshal.Cast{TFrom, TTo}(Span{TFrom})"/> from the underlying <c>nuint[]</c> buffer.
-        /// On 64-bit, the last <c>nuint</c> limb may contain 32 extra zero bits compared to the
-        /// <c>uint[]</c> storage; the caller trims those before passing the word span. The shift
-        /// operations delegate to the SIMD-accelerated <c>LeftShiftSelf</c>/<c>RightShiftSelf</c>
-        /// <c>nuint</c> overloads internally, while carry extraction and digit swapping operate at
-        /// 32-bit word granularity (the swap point may fall mid-<c>nuint</c> when the word count
-        /// is odd on 64-bit).
-        /// </remarks>
-        public static void RotateLeft(Span<uint> bits, long rotateLeftAmount)
+        public static void RotateLeft(Span<nuint> bits, long rotateLeftAmount)
         {
             Debug.Assert(Math.Abs(rotateLeftAmount) <= 0x80000000);
 
-            const int BitsPerWord = 32;
-            int digitShiftMax = (int)(0x80000000 / BitsPerWord);
+            int digitShiftMax = (int)(0x80000000 / BitsPerLimb);
 
             int digitShift = digitShiftMax;
             int smallShift = 0;
@@ -36,7 +22,7 @@ namespace System.Numerics
             {
                 if (rotateLeftAmount != -0x80000000)
                 {
-                    (digitShift, smallShift) = Math.DivRem(-(int)rotateLeftAmount, BitsPerWord);
+                    (digitShift, smallShift) = Math.DivRem(-(int)rotateLeftAmount, BitsPerLimb);
                 }
 
                 RotateRight(bits, digitShift % bits.Length, smallShift);
@@ -45,18 +31,18 @@ namespace System.Numerics
             {
                 if (rotateLeftAmount != 0x80000000)
                 {
-                    (digitShift, smallShift) = Math.DivRem((int)rotateLeftAmount, BitsPerWord);
+                    (digitShift, smallShift) = Math.DivRem((int)rotateLeftAmount, BitsPerLimb);
                 }
 
                 RotateLeft(bits, digitShift % bits.Length, smallShift);
             }
         }
 
-        private static void RotateLeft(Span<uint> bits, int digitShift, int smallShift)
+        public static void RotateLeft(Span<nuint> bits, int digitShift, int smallShift)
         {
             Debug.Assert(bits.Length > 0);
 
-            LeftShiftSelf(bits, smallShift, out uint carry);
+            LeftShiftSelf(bits, smallShift, out nuint carry);
             bits[0] |= carry;
 
             if (digitShift == 0)
@@ -67,11 +53,11 @@ namespace System.Numerics
             SwapUpperAndLower(bits, bits.Length - digitShift);
         }
 
-        private static void RotateRight(Span<uint> bits, int digitShift, int smallShift)
+        public static void RotateRight(Span<nuint> bits, int digitShift, int smallShift)
         {
             Debug.Assert(bits.Length > 0);
 
-            RightShiftSelf(bits, smallShift, out uint carry);
+            RightShiftSelf(bits, smallShift, out nuint carry);
             bits[^1] |= carry;
 
             if (digitShift == 0)
@@ -82,7 +68,43 @@ namespace System.Numerics
             SwapUpperAndLower(bits, digitShift);
         }
 
-        private static void SwapUpperAndLower(Span<uint> bits, int lowerLength)
+        private static void SwapUpperAndLower(Span<nuint> bits, int lowerLength)
+        {
+            Debug.Assert(lowerLength > 0);
+            Debug.Assert(lowerLength < bits.Length);
+
+            int upperLength = bits.Length - lowerLength;
+
+            Span<nuint> lower = bits.Slice(0, lowerLength);
+            Span<nuint> upper = bits.Slice(lowerLength);
+
+            Span<nuint> lowerDst = bits.Slice(upperLength);
+
+            int tmpLength = Math.Min(lowerLength, upperLength);
+            Span<nuint> tmp = BigInteger.RentedBuffer.Create(tmpLength, out BigInteger.RentedBuffer tmpBuffer);
+
+            if (upperLength < lowerLength)
+            {
+                upper.CopyTo(tmp);
+                lower.CopyTo(lowerDst);
+                tmp.CopyTo(bits);
+            }
+            else
+            {
+                lower.CopyTo(tmp);
+                upper.CopyTo(bits);
+                tmp.CopyTo(lowerDst);
+            }
+
+            tmpBuffer.Dispose();
+        }
+
+        // 32-bit word helpers for the partial-limb edge case on 64-bit.
+        // When the last nuint limb has only 32 significant bits, the rotation ring
+        // width is not a multiple of BitsPerLimb. Shift and swap must then operate
+        // at 32-bit word granularity because the swap point may fall mid-nuint.
+
+        public static void SwapUpperAndLower(Span<uint> bits, int lowerLength)
         {
             Debug.Assert(lowerLength > 0);
             Debug.Assert(lowerLength < bits.Length);
@@ -121,7 +143,7 @@ namespace System.Numerics
         /// Delegates to the SIMD-accelerated <c>LeftShiftSelf(Span&lt;nuint&gt;, ...)</c>
         /// overload where possible; the carry is always extracted at 32-bit word granularity.
         /// </summary>
-        private static void LeftShiftSelf(Span<uint> bits, int shift, out uint carry)
+        public static void LeftShiftSelf(Span<uint> bits, int shift, out uint carry)
         {
             Debug.Assert((uint)shift < 32);
 
@@ -176,7 +198,7 @@ namespace System.Numerics
         /// Delegates to the SIMD-accelerated <c>RightShiftSelf(Span&lt;nuint&gt;, ...)</c>
         /// overload where possible; the carry is always extracted at 32-bit word granularity.
         /// </summary>
-        private static void RightShiftSelf(Span<uint> bits, int shift, out uint carry)
+        public static void RightShiftSelf(Span<uint> bits, int shift, out uint carry)
         {
             Debug.Assert((uint)shift < 32);
 

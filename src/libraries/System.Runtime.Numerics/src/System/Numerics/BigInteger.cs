@@ -3301,36 +3301,37 @@ namespace System.Numerics
             Debug.Assert(bits.Length > 0);
             Debug.Assert(Math.Abs(rotateLeftAmount) <= 0x80000000);
 
-            // Determine the number of 32-bit words in the magnitude.
-            // On 64-bit, each nuint limb holds two 32-bit words; the MSL's upper
-            // half may be zero (matching the original uint[] layout).
-            int wordCount;
-            if (Environment.Is64BitProcess)
+            if (!Environment.Is64BitProcess)
             {
-                wordCount = bits.Length * 2;
-                if ((uint)(bits[^1] >> BitsPerUInt32) == 0)
-                {
-                    wordCount--;
-                }
-            }
-            else
-            {
-                wordCount = bits.Length;
+                // On 32-bit, nuint and uint are the same width so the standard nuint
+                // rotation algorithm (with BitsPerLimb = 32) is directly correct.
+                return RotateNuint(bits, negative, rotateLeftAmount);
             }
 
-            // Allocate the result buffer with one extra word for possible sign-extension,
-            // and work directly in it to avoid a temporary array.
+            // On 64-bit, each nuint limb holds two 32-bit words. The rotation ring
+            // width must be a multiple of 32 bits (not 64) for platform-independent
+            // results, and sign-extension for negative values adds one 32-bit word
+            // (not one 64-bit limb). Both of these requirements mean the ring width
+            // may not align to nuint boundaries, so we work at 32-bit word granularity
+            // via MemoryMarshal.Cast<nuint, uint>.
+
+            int wordCount = bits.Length * 2;
+            if ((uint)(bits[^1] >> BitsPerUInt32) == 0)
+            {
+                wordCount--;
+            }
+
+            // Allocate one extra word for possible sign-extension.
             int maxWordCount = wordCount + 1;
-            int zLimbCount = Environment.Is64BitProcess ? (maxWordCount + 1) / 2 : maxWordCount;
+            int zLimbCount = (maxWordCount + 1) / 2;
             Span<nuint> zd = RentedBuffer.Create(zLimbCount, out RentedBuffer zdBuffer);
 
-            // Copy input magnitude and zero any extra limbs for sign extension / partial last limb.
             bits.CopyTo(zd);
             zd.Slice(bits.Length).Clear();
 
             // On big-endian 64-bit, swap uint halves within each limb so that
             // MemoryMarshal.Cast<nuint, uint> yields words in low-to-high order.
-            if (Environment.Is64BitProcess && !BitConverter.IsLittleEndian)
+            if (!BitConverter.IsLittleEndian)
             {
                 for (int i = 0; i < zd.Length; i++)
                 {
@@ -3372,9 +3373,47 @@ namespace System.Numerics
                 }
             }
 
+            // Rotate at 32-bit word granularity.
             Span<uint> zwSpan = allWords.Slice(0, zWordCount);
+            {
+                const int BitsPerWord = 32;
+                int digitShiftMax = (int)(0x80000000 / BitsPerWord);
+                int digitShift = digitShiftMax;
+                int smallShift = 0;
 
-            BigIntegerCalculator.RotateLeft(zwSpan, rotateLeftAmount);
+                if (rotateLeftAmount < 0)
+                {
+                    if (rotateLeftAmount != -0x80000000)
+                    {
+                        (digitShift, smallShift) = Math.DivRem(-(int)rotateLeftAmount, BitsPerWord);
+                    }
+
+                    BigIntegerCalculator.RightShiftSelf(zwSpan, smallShift, out uint carry);
+                    zwSpan[^1] |= carry;
+
+                    digitShift %= zwSpan.Length;
+                    if (digitShift != 0)
+                    {
+                        BigIntegerCalculator.SwapUpperAndLower(zwSpan, digitShift);
+                    }
+                }
+                else
+                {
+                    if (rotateLeftAmount != 0x80000000)
+                    {
+                        (digitShift, smallShift) = Math.DivRem((int)rotateLeftAmount, BitsPerWord);
+                    }
+
+                    BigIntegerCalculator.LeftShiftSelf(zwSpan, smallShift, out uint carry);
+                    zwSpan[0] |= carry;
+
+                    digitShift %= zwSpan.Length;
+                    if (digitShift != 0)
+                    {
+                        BigIntegerCalculator.SwapUpperAndLower(zwSpan, zwSpan.Length - digitShift);
+                    }
+                }
+            }
 
             if (negative && (int)zwSpan[^1] < 0)
             {
@@ -3396,13 +3435,61 @@ namespace System.Numerics
             }
 
             // On big-endian 64-bit, swap uint halves back to restore correct nuint layout.
-            if (Environment.Is64BitProcess && !BitConverter.IsLittleEndian)
+            if (!BitConverter.IsLittleEndian)
             {
                 for (int i = 0; i < zd.Length; i++)
                 {
                     nuint limb = zd[i];
                     zd[i] = ((limb & 0xFFFFFFFF) << BitsPerUInt32) | (limb >> BitsPerUInt32);
                 }
+            }
+
+            BigInteger result = new(zd, negative);
+
+            zdBuffer.Dispose();
+
+            return result;
+        }
+
+        /// <summary>
+        /// Rotation using the standard nuint algorithm. Only correct on 32-bit where
+        /// nuint and uint have the same width (BitsPerLimb = 32).
+        /// </summary>
+        private static BigInteger RotateNuint(ReadOnlySpan<nuint> bits, bool negative, long rotateLeftAmount)
+        {
+            Debug.Assert(!Environment.Is64BitProcess);
+
+            int zLength = bits.Length;
+            int leadingZeroCount = negative ? bits.IndexOfAnyExcept((nuint)0) : 0;
+
+            if (negative && (nint)bits[^1] < 0
+                && (leadingZeroCount != bits.Length - 1 || bits[^1] != ((nuint)1 << (BigIntegerCalculator.BitsPerLimb - 1))))
+            {
+                ++zLength;
+            }
+
+            Span<nuint> zd = RentedBuffer.Create(zLength, out RentedBuffer zdBuffer);
+
+            zd[^1] = 0;
+            bits.CopyTo(zd);
+
+            if (negative)
+            {
+                Debug.Assert((uint)leadingZeroCount < (uint)zd.Length);
+
+                zd[leadingZeroCount] = (nuint)(-(nint)zd[leadingZeroCount]);
+                NumericsHelpers.DangerousMakeOnesComplement(zd.Slice(leadingZeroCount + 1));
+            }
+
+            BigIntegerCalculator.RotateLeft(zd, rotateLeftAmount);
+
+            if (negative && (nint)zd[^1] < 0)
+            {
+                NumericsHelpers.DangerousMakeTwosComplement(zd);
+            }
+            else
+            {
+                negative = false;
             }
 
             BigInteger result = new(zd, negative);
