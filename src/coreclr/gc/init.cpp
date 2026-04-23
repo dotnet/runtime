@@ -882,7 +882,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         // Right now all the non mark array portions are commmitted since I'm calling make_card_table
         // on the whole range. This can be committed as needed.
         size_t reserve_size = regions_range;
-        // In fake large pages mode, use normal reserve (not real large pages) then
+        // In large pages emulation mode, use normal reserve (not real large pages) then
         // commit all upfront to simulate the "always committed" property.
         bool use_real_large_pages = use_large_pages_p && !large_pages_emulation_mode_p;
         uint8_t* reserve_range = (uint8_t*)virtual_alloc (reserve_size, use_real_large_pages);

@@ -5369,7 +5369,7 @@ private:
 #endif
 
     // Indicate to use large pages. This only works if hardlimit is also enabled.
-    // GCLargePages=1 uses real OS large pages, GCLargePages=2 fakes it for testing.
+    // GCLargePages=1 uses real OS large pages, GCLargePages=2 emulates it for testing.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool use_large_pages_p;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool large_pages_emulation_mode_p;
 

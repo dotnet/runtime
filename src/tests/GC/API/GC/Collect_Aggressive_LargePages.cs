@@ -8,8 +8,8 @@ using System.Threading;
 using Xunit;
 
 // Regression test for https://github.com/dotnet/runtime/issues/126903
-// Verifies that aggressive GC does not corrupt the heap under (fake) large pages.
-// The fake large pages mode (DOTNET_GCLargePagesFakeMode=1) exercises the same
+// Verifies that aggressive GC does not corrupt the heap under emulated large pages.
+// The large pages emulation mode (DOTNET_GCLargePages=2) exercises the same
 // GC code paths as real large pages without requiring OS-level large page setup.
 public class AggressiveCollectLargePages
 {
