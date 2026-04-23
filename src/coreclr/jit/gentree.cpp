@@ -28269,28 +28269,28 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
 
         if (simdSize == 64)
         {
-            // Split v512 into its two V256 halves and reduce each to a V128
-            // independently (GetLower + GetUpper + Add), then add the two
-            // V128 results. This preserves `Sum(lower256) + Sum(upper256)`
-            // grouping, i.e. `(s0 + s1) + (s2 + s3)` where s_i is the sum
-            // of the i-th 128-bit lane.
-            GenTree* op1Upper = fgMakeMultiUse(&op1);
+            // Extract each of the four 128-bit lanes directly from the V512
+            // using GetLower128 (lane 0) and AVX512 ExtractVector128 (lanes
+            // 1-3), then combine as `(s0 + s1) + (s2 + s3)` to preserve the
+            // prior recursive `Sum(lower256) + Sum(upper256)` grouping.
+            GenTree* op1Lane1 = fgMakeMultiUse(&op1);
+            GenTree* op1Lane2 = fgMakeMultiUse(&op1);
+            GenTree* op1Lane3 = fgMakeMultiUse(&op1);
 
-            op1      = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseType, 64);
-            op1Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op1Upper, simdBaseType, 64);
+            GenTree* op1Lane0 =
+                gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector512_GetLower128, simdBaseType, 64);
+            op1Lane1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lane1, gtNewIconNode(1), NI_AVX512_ExtractVector128,
+                                                simdBaseType, 64);
+            op1Lane2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lane2, gtNewIconNode(2), NI_AVX512_ExtractVector128,
+                                                simdBaseType, 64);
+            op1Lane3 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lane3, gtNewIconNode(3), NI_AVX512_ExtractVector128,
+                                                simdBaseType, 64);
 
-            GenTree* tmpDup = fgMakeMultiUse(&op1);
-            op1             = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, 32);
-            tmpDup          = gtNewSimdGetUpperNode(TYP_SIMD16, tmpDup, simdBaseType, 32);
-            op1             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, tmpDup, simdBaseType, 16);
-
-            tmpDup   = fgMakeMultiUse(&op1Upper);
-            op1Upper = gtNewSimdGetLowerNode(TYP_SIMD16, op1Upper, simdBaseType, 32);
-            tmpDup   = gtNewSimdGetUpperNode(TYP_SIMD16, tmpDup, simdBaseType, 32);
-            op1Upper = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1Upper, tmpDup, simdBaseType, 16);
+            GenTree* lowerSum = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1Lane0, op1Lane1, simdBaseType, 16);
+            GenTree* upperSum = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1Lane2, op1Lane3, simdBaseType, 16);
 
             simdSize = 16;
-            op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Upper, simdBaseType, 16);
+            op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, lowerSum, upperSum, simdBaseType, 16);
         }
         else if (simdSize == 32)
         {
