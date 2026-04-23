@@ -219,7 +219,6 @@ interface IDacDbiInterface : IUnknown
 
     // Address
     HRESULT GetAddressType([in] CORDB_ADDRESS address, [out] AddressType * pRetVal);
-    HRESULT IsTransitionStub([in] CORDB_ADDRESS address, [out] BOOL * pResult);
 
     // Compiler
     HRESULT GetCompilerFlags([in] VMPTR_Assembly vmAssembly, [out] BOOL * pfAllowJITOpts, [out] BOOL * pfEnableEnC);
@@ -285,7 +284,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetStackWalkCurrentFrameInfo([in] StackWalkHandle pSFIHandle, [out] struct DebuggerIPCE_STRData * pFrameData, [out] FrameType * pRetVal);
     HRESULT GetCountOfInternalFrames([in] VMPTR_Thread vmThread, [out] ULONG32 * pRetVal);
     HRESULT EnumerateInternalFrames([in] VMPTR_Thread vmThread, [in] FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
-    HRESULT IsMatchingParentFrame([in] FramePointer fpToCheck, [in] FramePointer fpParent, [out] BOOL * pResult);
     HRESULT GetStackParameterSize([in] CORDB_ADDRESS controlPC, [out] ULONG32 * pRetVal);
     HRESULT GetFramePointer([in] StackWalkHandle pSFIHandle, [out] FramePointer * pRetVal);
     HRESULT IsLeafFrame([in] VMPTR_Thread vmThread, [in] const DT_CONTEXT * pContext, [out] BOOL * pResult);
@@ -348,10 +346,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetStringData([in] CORDB_ADDRESS objectAddress, [out] struct DebuggerIPCE_ObjectData * pObjectData);
     HRESULT GetArrayData([in] CORDB_ADDRESS objectAddress, [out] struct DebuggerIPCE_ObjectData * pObjectData);
     HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [in] CorElementType type, [out] struct DebuggerIPCE_ObjectData * pObjectData);
-
-    // Data Consistency (TEST_DATA_CONSISTENCY only)
-    HRESULT TestCrst([in] VMPTR_Crst vmCrst);
-    HRESULT TestRWLock([in] VMPTR_SimpleRWLock vmRWLock);
 
     // Debugger Control Block
     HRESULT GetDebuggerControlBlockAddress([out] CORDB_ADDRESS * pRetVal);

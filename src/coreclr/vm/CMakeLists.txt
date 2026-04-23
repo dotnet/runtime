@@ -410,7 +410,6 @@ set(VM_HEADERS_WKS
     cachelinealloc.h
     callhelpers.h
     callconvbuilder.hpp
-    cdacdata.h
     ceemain.h
     clrconfignative.h
     clrex.h

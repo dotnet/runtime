@@ -13,6 +13,9 @@
 
      <!-- some tests require full ICU data, force it -->
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>

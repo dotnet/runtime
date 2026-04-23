@@ -138,6 +138,13 @@ public struct COR_FIELD
 
 #pragma warning restore CS0649
 
+public enum DynamicMethodType
+{
+    kNone = 0,
+    kDiagnosticHidden = 1,
+    kLCGMethod = 2,
+}
+
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
 // Parameter shapes are intentionally coarse placeholders and will be refined with method implementation work.
 [GeneratedComInterface]
@@ -196,9 +203,6 @@ public unsafe partial interface IDacDbiInterface
     int GetAddressType(ulong address, int* pRetVal);
 
     [PreserveSig]
-    int IsTransitionStub(ulong address, Interop.BOOL* pResult);
-
-    [PreserveSig]
     int GetCompilerFlags(ulong vmAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC);
 
     [PreserveSig]
@@ -226,7 +230,7 @@ public unsafe partial interface IDacDbiInterface
     int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr);
 
     [PreserveSig]
-    int EnumerateThreads(nint fpCallback, nint pUserData);
+    int EnumerateThreads(delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int IsThreadMarkedDead(ulong vmThread, Interop.BOOL* pResult);
@@ -311,9 +315,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int EnumerateInternalFrames(ulong vmThread, nint fpCallback, nint pUserData);
-
-    [PreserveSig]
-    int IsMatchingParentFrame(ulong fpToCheck, ulong fpParent, Interop.BOOL* pResult);
 
     [PreserveSig]
     int GetStackParameterSize(ulong controlPC, uint* pRetVal);
@@ -422,12 +423,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetBasicObjectInfo(ulong objectAddress, int type, nint pObjectData);
-
-    [PreserveSig]
-    int TestCrst(ulong vmCrst);
-
-    [PreserveSig]
-    int TestRWLock(ulong vmRWLock);
 
     [PreserveSig]
     int GetDebuggerControlBlockAddress(ulong* pRetVal);
@@ -556,7 +551,7 @@ public unsafe partial interface IDacDbiInterface
     int GetLoaderHeapMemoryRanges(nint pRanges);
 
     [PreserveSig]
-    int IsModuleMapped(ulong pModule, int* isModuleMapped);
+    int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);
 
     [PreserveSig]
     int MetadataUpdatesApplied(Interop.BOOL* pResult);

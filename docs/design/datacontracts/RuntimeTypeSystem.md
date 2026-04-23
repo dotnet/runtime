@@ -90,6 +90,7 @@ partial interface IRuntimeTypeSystem : IContract
     // HasTypeParam will return true for cases where this is the interop view, and false for normal valuetypes.
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
 
+    bool IsValueType(TypeHandle typeHandle);
     // return true if the TypeHandle represents an enum type.
     bool IsEnum(TypeHandle typeHandle);
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
@@ -218,6 +219,12 @@ partial interface IRuntimeTypeSystem : IContract
     // Returns true if the method is eligible for tiered compilation
     public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
 
+    // Return true if the method is an async thunk method.
+    public virtual bool IsAsyncThunkMethod(MethodDescHandle methodDesc);
+
+    // Return true if the method is a wrapper stub (unboxing or instantiating).
+    public virtual bool IsWrapperStub(MethodDescHandle methodDesc);
+
 }
 ```
 
@@ -266,6 +273,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_Mask = 0x000F0000,
         Category_ElementType_Mask = 0x000E0000,
         Category_Array_Mask = 0x000C0000,
+        Category_ValueType_Mask = 0x000C0000,
 
         Category_IfArrayThenSzArray = 0x00020000,
         Category_Array = 0x00080000,
@@ -747,6 +755,12 @@ Contracts used:
         return default(CorElementType);
     }
 
+    public bool IsValueType(TypeHandle typeHandle)
+    {
+        // if methodtable: check WFLAGS_HIGH for Category_ValueType
+        // if typedesc: check for CorElementType.ValueType
+    }
+
     // Enums have Category_PrimitiveValueType in their MethodTable flags and their
     // InternalCorElementType is a primitive type (I1, U1, I2, U2, I4, U4, I8, U8),
     // not ValueType. Regular primitive value types (IntPtr/UIntPtr) have Category_TruePrimitive.
@@ -1096,6 +1110,13 @@ And the following enumeration definitions
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
         ILStubTypeMask = 0x000007FF,
+    }
+
+    [Flags]
+    internal enum AsyncMethodFlags : uint
+    {
+        None = 0,
+        Thunk = 16,
     }
 
     [Flags]
@@ -1500,6 +1521,32 @@ Determining if a method supports multiple code versions:
             return _target.Contracts.CodeVersions.CodeVersionManagerSupportsMethod(methodDesc.Address);
         }
         return false;
+    }
+```
+
+Determining if a method is an async thunk method:
+
+```csharp
+    public bool IsAsyncThunkMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        if (!md.HasAsyncMethodData)
+        {
+            return false;
+        }
+
+        Data.AsyncMethodData asyncData = // Read AsyncMethodData from the address of the async method data optional slot
+        return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.Thunk);
+    }
+```
+
+Determining if a method is a wrapper stub (unboxing or instantiating):
+
+```csharp
+    public bool IsWrapperStub(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        return md.IsUnboxingStub || IsInstantiatingStub(md);
     }
 ```
 
