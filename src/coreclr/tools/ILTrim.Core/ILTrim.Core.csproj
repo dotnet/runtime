@@ -51,6 +51,7 @@
     <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DescriptorMarker.cs" Link="Shared\DescriptorMarker.cs"/>
     <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DependencyAnalysis\ObjectGetTypeCalledNode.cs" Link="DependencyAnalysis\ObjectGetTypeCalledNode.cs" />
     <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" Link="DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
+    <Compile Include="..\aot\ILCompiler.Compiler\Compiler\DependencyAnalysis\TrimmingDescriptorNode.cs" Link="DependencyAnalysis\TrimmingDescriptorNode.cs" />
   </ItemGroup>
 
   <!-- ILCompiler.Compiler shared extension method files -->

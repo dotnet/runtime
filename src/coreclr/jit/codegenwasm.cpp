@@ -85,7 +85,7 @@ void CodeGen::genBeginFnProlog()
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: no-op since we don't need to save anything.
 //
-void CodeGen::genPushCalleeSavedRegisters()
+void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
 }
 
@@ -137,9 +137,18 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 //------------------------------------------------------------------------
 // genEnregisterOSRArgsAndLocals: enregister OSR args and locals.
 //
-void CodeGen::genEnregisterOSRArgsAndLocals()
+void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
 {
     unreached(); // OSR not supported on WASM.
+}
+
+//------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Not called for WASM without OSR support.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
 }
 
 //------------------------------------------------------------------------

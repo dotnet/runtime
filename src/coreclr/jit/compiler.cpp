@@ -5592,7 +5592,7 @@ void Compiler::SplitTreesRemoveCommas()
 //
 void Compiler::generatePatchpointInfo()
 {
-    if (!doesMethodHavePatchpoints() && !doesMethodHavePartialCompilationPatchpoints())
+    if (!doesMethodHavePatchpoints())
     {
         // Nothing to report
         return;
@@ -5724,17 +5724,30 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->AsyncSynchronizationContextOffset());
     }
 
-#if defined(TARGET_AMD64)
     // Record callee save registers.
-    // Currently only needed for x64.
     //
     regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FPBASE;
-    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
-    JITDUMP("--OSR-- Tier0 callee saves: ");
-    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
-    JITDUMP("\n");
+#if defined(TARGET_ARM64)
+    rsPushRegs |= RBM_LR;
+#elif defined(TARGET_LOONGARCH64)
+    rsPushRegs |= RBM_RA;
+#elif defined(TARGET_RISCV64)
+    rsPushRegs |= RBM_RA;
 #endif
+
+#ifdef TARGET_ARM64
+    // For arm64 we communicate whether fp/lr are stored with the callee saves in this mask.
+    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters())
+    {
+        rsPushRegs &= ~(RBM_FP | RBM_LR);
+    }
+#endif
+
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs.getLow());
+    JITDUMP("--OSR-- Tier0 callee saves: ");
+    JITDUMPEXEC(dspRegMask(regMaskTP((regMaskSmall)patchpointInfo->CalleeSaveRegisters())));
+    JITDUMP("\n");
 
     // Register this with the runtime.
     info.compCompHnd->setPatchpointInfo(patchpointInfo);

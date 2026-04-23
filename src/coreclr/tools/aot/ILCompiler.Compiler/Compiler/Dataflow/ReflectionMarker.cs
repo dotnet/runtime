@@ -30,7 +30,7 @@ namespace ILCompiler.Dataflow
         public NodeFactory Factory { get; }
         public FlowAnnotations Annotations { get; }
         public DependencyList Dependencies { get => _dependencies; }
-        public List<INodeWithRuntimeDeterminedDependencies> RuntimeDeterminedDependencies { get; } = new List<INodeWithRuntimeDeterminedDependencies>();
+        public List<(MethodDesc OwningMethod, INodeWithRuntimeDeterminedDependencies Dependency)> RuntimeDeterminedDependencies { get; } = new List<(MethodDesc, INodeWithRuntimeDeterminedDependencies)>();
 
         internal enum AccessKind
         {

@@ -72,8 +72,7 @@ internal struct ComWrappers_1 : IComWrappers
 
     public TargetPointer GetComWrappersObjectFromMOW(TargetPointer mow)
     {
-        TargetPointer objHandle = _target.ReadPointer(mow);
-        Data.ObjectHandle handle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(objHandle);
+        Data.ObjectHandle handle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(mow);
         Data.ManagedObjectWrapperHolderObject mowHolderObject = _target.ProcessedData.GetOrAdd<Data.ManagedObjectWrapperHolderObject>(handle.Object);
         return mowHolderObject.WrappedObject;
     }

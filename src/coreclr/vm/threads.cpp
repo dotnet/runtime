@@ -3941,7 +3941,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     CONTRACTL_END;
 
     BOOL    found;
-    Thread *ret;
 
 #if 0 // This assert is not valid when failing to create background GC thread.
       // Main GC thread holds the TS lock.
@@ -3951,9 +3950,8 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     _ASSERTE(s_pThreadStore->m_Crst.GetEnterCount() > 0 ||
              IsAtProcessExit());
     _ASSERTE(s_pThreadStore->DbgFindThread(target));
-    ret = s_pThreadStore->m_ThreadList.FindAndRemove(target);
-    _ASSERTE(ret && ret == target);
-    found = (ret != NULL);
+    found = s_pThreadStore->m_ThreadList.FindAndRemove(target);
+    _ASSERTE(found);
 
     if (found)
     {
