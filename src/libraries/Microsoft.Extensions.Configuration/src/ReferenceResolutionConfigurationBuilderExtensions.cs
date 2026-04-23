@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
     /// Provides extension methods for configuring how individual <see cref="IConfigurationSource"/>
-    /// instances participate in <c>${...}</c> reference resolution performed by the
+    /// instances participate in <c>ref(...) / fmt(...)</c> reference resolution performed by the
     /// <see cref="IConfigurationRoot"/> built from the containing
     /// <see cref="IConfigurationBuilder"/>.
     /// </summary>

@@ -7,53 +7,117 @@ using System.Text;
 
 namespace Microsoft.Extensions.Configuration
 {
+    // Value syntax:
+    //   ref(<path-expression>)     — the whole value is a reference to another key. Eligible as a
+    //                                 section-alias target when the path names a section.
+    //   fmt(<template>)            — the value is a template with {<path-expression>} placeholders.
+    //                                 Braces are escaped by doubling: '{{' -> '{', '}}' -> '}'.
+    //
+    // A value is processed only if it matches exactly /^(ref|fmt)\(.*\)$/ — the opening directive is
+    // at position 0 and the matching ')' is the final character. Anything else is inert and returned
+    // as-is. This keeps values like "${message}" (NLog), "$(Foo)" (MSBuild), "$100" (currency), or
+    // "ref(literal)" in sources that never opt in, untouched.
+    //
+    // Path expressions inside ref() and inside fmt() placeholders share the same grammar:
+    //   path (? path)*  (!)? (?)?
+    // where each path may have leading ".." segments meaning parent hops. A trailing '!' marks the
+    // (single-item) reference as a strict section alias, i.e. the resulting section is exactly the
+    // aliased target with no merging from earlier providers. A trailing '?' makes the whole chain
+    // optional — if every item misses, the expression resolves to the empty string.
     internal static class ReferenceParser
     {
-        internal static bool ContainsReference(string? value)
-        {
-            if (value is null)
-            {
-                return false;
-            }
+        private const string RefPrefix = "ref(";
+        private const string FmtPrefix = "fmt(";
+        private const int PrefixLength = 4;     // "ref(" and "fmt(" are both 4 chars
+        private const int MinGatedLength = 5;   // "ref()" / "fmt()"
 
-            for (int i = 0; i < value.Length - 1; i++)
-            {
-                if (value[i] != '$' || value[i + 1] != '{')
-                {
-                    continue;
-                }
-
-                // ${{ is a literal-${ shorthand; skip past the second '{' so we don't re-match on it.
-                if (i + 2 < value.Length && value[i + 2] == '{')
-                {
-                    i += 2;
-                    continue;
-                }
-
-                return true;
-            }
-
-            return false;
-        }
+        internal static bool ContainsReference(string? value) =>
+            TryGetGate(value, out _);
 
         internal static IReadOnlyList<ValueToken> Parse(string value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
+            if (!TryGetGate(value, out bool isRef))
+            {
+                return new[] { ValueToken.Literal(value) };
+            }
+
+            string payload = value.Substring(PrefixLength, value.Length - PrefixLength - 1);
+
+            if (isRef)
+            {
+                return new[] { ParseRefExpression(payload, tokenStart: 0, isFromRef: true) };
+            }
+
+            return ParseFmtTemplate(payload, outerStart: PrefixLength);
+        }
+
+        private static bool TryGetGate(string? value, out bool isRef)
+        {
+            isRef = false;
+            if (value is null || value.Length < MinGatedLength)
+            {
+                return false;
+            }
+
+            if (value[value.Length - 1] != ')')
+            {
+                return false;
+            }
+
+            if (StartsWithOrdinal(value, RefPrefix))
+            {
+                isRef = true;
+                return true;
+            }
+
+            return StartsWithOrdinal(value, FmtPrefix);
+        }
+
+        private static bool StartsWithOrdinal(string value, string prefix)
+        {
+            if (value.Length < prefix.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < prefix.Length; i++)
+            {
+                if (value[i] != prefix[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static List<ValueToken> ParseFmtTemplate(string template, int outerStart)
+        {
             var tokens = new List<ValueToken>();
             var literal = new StringBuilder();
 
             int i = 0;
-            while (i < value.Length)
+            while (i < template.Length)
             {
-                if (i < value.Length - 2 && value[i] == '$' && value[i + 1] == '{' && value[i + 2] == '{')
+                char c = template[i];
+
+                if (c == '{' && i + 1 < template.Length && template[i + 1] == '{')
                 {
-                    literal.Append("${");
-                    i += 3;
+                    literal.Append('{');
+                    i += 2;
                     continue;
                 }
 
-                if (i < value.Length - 1 && value[i] == '$' && value[i + 1] == '{')
+                if (c == '}' && i + 1 < template.Length && template[i + 1] == '}')
+                {
+                    literal.Append('}');
+                    i += 2;
+                    continue;
+                }
+
+                if (c == '{')
                 {
                     if (literal.Length > 0)
                     {
@@ -61,17 +125,23 @@ namespace Microsoft.Extensions.Configuration
                         literal.Clear();
                     }
 
-                    int expressionStart = i + 2;
-                    int expressionEnd = FindExpressionEnd(value, expressionStart, i);
-                    string expression = value.Substring(expressionStart, expressionEnd - expressionStart);
+                    int placeholderStart = i + 1;
+                    int placeholderEnd = FindPlaceholderEnd(template, placeholderStart, outerStart + i);
+                    string expression = template.Substring(placeholderStart, placeholderEnd - placeholderStart);
 
-                    tokens.Add(ParseExpression(expression, i));
+                    tokens.Add(ParseRefExpression(expression, tokenStart: outerStart + i, isFromRef: false));
 
-                    i = expressionEnd + 1;
+                    i = placeholderEnd + 1;
                     continue;
                 }
 
-                literal.Append(value[i]);
+                if (c == '}')
+                {
+                    // Unmatched closing brace in template.
+                    throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsUnclosed, outerStart + i));
+                }
+
+                literal.Append(c);
                 i++;
             }
 
@@ -80,14 +150,19 @@ namespace Microsoft.Extensions.Configuration
                 tokens.Add(ValueToken.Literal(literal.ToString()));
             }
 
+            if (tokens.Count == 0)
+            {
+                tokens.Add(ValueToken.Literal(string.Empty));
+            }
+
             return tokens;
         }
 
-        private static int FindExpressionEnd(string value, int start, int tokenStart)
+        private static int FindPlaceholderEnd(string template, int start, int tokenStart)
         {
-            for (int j = start; j < value.Length; j++)
+            for (int j = start; j < template.Length; j++)
             {
-                if (value[j] == '}')
+                if (template[j] == '}')
                 {
                     return j;
                 }
@@ -96,7 +171,7 @@ namespace Microsoft.Extensions.Configuration
             throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsUnclosed, tokenStart));
         }
 
-        private static ValueToken ParseExpression(string expression, int tokenStart)
+        private static ValueToken ParseRefExpression(string expression, int tokenStart, bool isFromRef)
         {
             expression = expression.Trim();
             if (expression.Length == 0)
@@ -162,7 +237,7 @@ namespace Microsoft.Extensions.Configuration
                 i++;
             }
 
-            return ValueToken.Reference(items, isOptional, isStrict);
+            return ValueToken.Reference(items, isOptional, isStrict, isFromRef);
         }
 
         private static int ParseReferenceItem(string expression, int i, int tokenStart, List<ReferenceItem> items)
@@ -248,22 +323,23 @@ namespace Microsoft.Extensions.Configuration
     {
         private static readonly IReadOnlyList<ReferenceItem> s_noItems = Array.Empty<ReferenceItem>();
 
-        private ValueToken(ValueTokenKind kind, string value, IReadOnlyList<ReferenceItem> items, bool isOptional, bool isStrict)
+        private ValueToken(ValueTokenKind kind, string value, IReadOnlyList<ReferenceItem> items, bool isOptional, bool isStrict, bool isFromRef)
         {
             Kind = kind;
             Value = value;
             Items = items;
             IsOptional = isOptional;
             IsStrict = isStrict;
+            IsFromRef = isFromRef;
         }
 
         internal static ValueToken Literal(string text) =>
-            new(ValueTokenKind.Literal, text, s_noItems, isOptional: false, isStrict: false);
+            new(ValueTokenKind.Literal, text, s_noItems, isOptional: false, isStrict: false, isFromRef: false);
 
-        internal static ValueToken Reference(IReadOnlyList<ReferenceItem> items, bool isOptional, bool isStrict = false)
+        internal static ValueToken Reference(IReadOnlyList<ReferenceItem> items, bool isOptional, bool isStrict, bool isFromRef)
         {
             string first = items.Count > 0 ? items[0].Value : string.Empty;
-            return new ValueToken(ValueTokenKind.Reference, first, items, isOptional, isStrict);
+            return new ValueToken(ValueTokenKind.Reference, first, items, isOptional, isStrict, isFromRef);
         }
 
         internal ValueTokenKind Kind { get; }
@@ -277,5 +353,10 @@ namespace Microsoft.Extensions.Configuration
         internal bool IsOptional { get; }
 
         internal bool IsStrict { get; }
+
+        // True only for the single Reference token produced by a top-level ref(...) value. Placeholders
+        // inside fmt(...) never set this flag — they are always string interpolations, even when the
+        // template consists of a single {Key} placeholder.
+        internal bool IsFromRef { get; }
     }
 }

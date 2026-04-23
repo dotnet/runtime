@@ -19,9 +19,9 @@ namespace Microsoft.Extensions.Configuration
     // Per-source modes (ReferenceMode): each provider carries a mode derived from its source's
     // configuration. Default is Read. Providers with mode Ignore are invisible to the engine as
     // substitution targets (GetRawValue skips them). Providers whose mode is not Scan are not
-    // parsed for ${...} — their values are returned sealed, so the engine returns them as
-    // literals. At least one provider must be in Scan mode for the engine to be attached at
-    // Build time.
+    // parsed for ref(...) / fmt(...) — their values are returned sealed, so the engine returns
+    // them as literals. At least one provider must be in Scan mode for the engine to be attached
+    // at Build time.
     internal sealed class ReferenceResolutionEngine : IDisposable
     {
         private const int MaxDepth = 1024;
@@ -256,7 +256,7 @@ namespace Microsoft.Extensions.Configuration
             // providers whose mode lacks the Read flag. Used by substitution and alias scans
             // so that values from non-readable sources never leak into resolved output.
             // Values from providers without the Scan flag are returned sealed so the engine
-            // treats their ${...} text as literal.
+            // treats their ref(...) / fmt(...) text as literal.
             public Value GetRawValue(Path key, int? upperIndex = null)
             {
                 for (int i = upperIndex ?? LastIndex; i >= 0; i--)
@@ -391,7 +391,7 @@ namespace Microsoft.Extensions.Configuration
                 _providers = providers;
             }
 
-            // Detects whether `raw` at `path` is a single-token section alias (e.g. ${other:section}).
+            // Detects whether `raw` at `path` is a single-token section alias (e.g. ref(Other:Section)).
             public bool IsDirectSectionAlias(Path path, Value raw, out SectionAlias alias)
             {
                 if (!raw.IsLeaf)
@@ -404,6 +404,7 @@ namespace Microsoft.Extensions.Configuration
 
                 if (tokens.Count == 1 &&
                     tokens[0].Kind == ValueTokenKind.Reference &&
+                    tokens[0].IsFromRef &&
                     TryDetectSectionTarget(tokens[0], raw.ProviderIndex, out Path targetPath))
                 {
                     alias = new SectionAlias(path, targetPath, raw.ProviderIndex, tokens[0].IsStrict);
@@ -521,7 +522,7 @@ namespace Microsoft.Extensions.Configuration
                 try
                 {
                     IReadOnlyList<ValueToken> tokens = ReferenceParser.Parse(rawValue);
-                    if (tokens.Count == 1 && tokens[0].Kind == ValueTokenKind.Reference)
+                    if (tokens.Count == 1 && tokens[0].Kind == ValueTokenKind.Reference && tokens[0].IsFromRef)
                     {
                         return TryResolveToken(originKey, tokens[0], resolutionStack, depth + 1, upperIndex, out value);
                     }
@@ -760,8 +761,7 @@ namespace Microsoft.Extensions.Configuration
             public bool IsSection => Exists && !IsLeaf;
 
             public bool NeedsResolving =>
-                IsLeaf && !IsSealed && AsString is not null &&
-                (ReferenceParser.ContainsReference(AsString) || AsString.Contains("${{"));
+                IsLeaf && !IsSealed && AsString is not null && ReferenceParser.ContainsReference(AsString);
         }
     }
 }
