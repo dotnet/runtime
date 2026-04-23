@@ -651,9 +651,7 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
 
     // If the mask was originally a vector, we don't want to create a mask solely for
     // the purpose of embedding it. vpmov*2m is relatively costly compared to blendvp*.
-    bool isVectorToMask          = op3->OperIsConvertVectorToMask();
-
-    if (isVectorToMask)
+    if (op3->OperIsConvertVectorToMask())
     {
         // The non-mask blend instructions only come in byte (pblendvb) or floating
         // (blendvp[sd]) forms. We can use the byte variant as long as we have a
