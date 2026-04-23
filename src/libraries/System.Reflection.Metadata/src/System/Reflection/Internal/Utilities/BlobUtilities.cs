@@ -99,10 +99,10 @@ namespace System.Reflection
                             continue;
                         }
 
-                        if (IsSurrogateChar(c))
+                        if (char.IsSurrogate(c))
                         {
                             // surrogate pair
-                            if (IsHighSurrogateChar(c) && charPtr < strEnd && IsLowSurrogateChar(*charPtr))
+                            if (char.IsHighSurrogate(c) && charPtr < strEnd && char.IsLowSurrogate(*charPtr))
                             {
                                 int highSurrogate = c;
                                 int lowSurrogate = *charPtr++;
@@ -165,7 +165,7 @@ namespace System.Reflection
                 {
                     characterSize = 2;
                 }
-                else if (IsHighSurrogateChar(c) && ptr < end && IsLowSurrogateChar(*ptr))
+                else if (char.IsHighSurrogate(c) && ptr < end && char.IsLowSurrogate(*ptr))
                 {
                     // surrogate pair:
                     characterSize = 4;
@@ -187,21 +187,6 @@ namespace System.Reflection
 
             remainder = ptr;
             return byteCount;
-        }
-
-        internal static bool IsSurrogateChar(int c)
-        {
-            return unchecked((uint)(c - 0xD800)) <= 0xDFFF - 0xD800;
-        }
-
-        internal static bool IsHighSurrogateChar(int c)
-        {
-            return unchecked((uint)(c - 0xD800)) <= 0xDBFF - 0xD800;
-        }
-
-        internal static bool IsLowSurrogateChar(int c)
-        {
-            return unchecked((uint)(c - 0xDC00)) <= 0xDFFF - 0xDC00;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
