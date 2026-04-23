@@ -299,82 +299,77 @@ internal sealed class Program
     /// </summary>
     private static string[] NormalizeNativeArgs(string[] args)
     {
-        // Map of uppercase native-style flag prefixes to their canonical alias forms
-        var nativeFlagMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "-OUTPUT", "-OUTPUT" },
-            { "-DLL", "-DLL" },
-            { "-EXE", "-EXE" },
-            { "-DEBUG", "-DEBUG" },
-            { "-OPTIMIZE", "-OPTIMIZE" },
-            { "-FOLD", "-FOLD" },
-            { "-NOLOGO", "-NOLOGO" },
-            { "-QUIET", "-QUIET" },
-            { "-NOAUTOINHERIT", "-NOAUTOINHERIT" },
-            { "-PDB", "-PDB" },
-            { "-APPCONTAINER", "-APPCONTAINER" },
-            { "-DET", "-DET" },
-            { "-ERROR", "-ERROR" },
-            { "-CLOCK", "-CLOCK" },
-            { "-KEY", "-KEY" },
-            { "-ANAME", "-ANAME" },
-            { "-INC", "-INC" },
-            { "-SUBSYSTEM", "-SUBSYSTEM" },
-            { "-SSVER", "-SSVER" },
-            { "-FLAGS", "-FLAGS" },
-            { "-ALIGNMENT", "-ALIGNMENT" },
-            { "-BASE", "-BASE" },
-            { "-STACK", "-STACK" },
-            { "-MDV", "-MDV" },
-            { "-PE64", "-PE64" },
-            { "-HIGHENTROPYVA", "-HIGHENTROPYVA" },
-            { "-NOCORSTUB", "-NOCORSTUB" },
-            { "-STRIPRELOC", "-STRIPRELOC" },
-            { "-X64", "-X64" },
-            { "-ARM", "-ARM" },
-            { "-ARM64", "-ARM64" },
-            { "-32BITPREFERRED", "-32BITPREFERRED" },
-        };
-
-        var result = new List<string>(args.Length);
+        List<string> result = new(args.Length);
         foreach (string arg in args)
         {
-            // Handle -DEBUG=IMPL and -DEBUG=OPT → --debug-mode IMPL/OPT
             if (arg.Equals("-DEBUG=IMPL", StringComparison.OrdinalIgnoreCase))
             {
                 result.Add("--debug-mode");
                 result.Add("Impl");
                 continue;
             }
+
             if (arg.Equals("-DEBUG=OPT", StringComparison.OrdinalIgnoreCase))
             {
                 result.Add("--debug-mode");
                 result.Add("Opt");
                 continue;
             }
+
             if (arg.StartsWith("-RESOURCES=", StringComparison.OrdinalIgnoreCase))
             {
-                // -RESOURCES=file is not currently supported, skip silently for compatibility
                 continue;
             }
 
-            // Normalize native-style flags to canonical uppercase form for case-insensitive matching.
-            // For flags with =value (e.g., -output=file.dll), split and normalize the flag part.
             if (arg.StartsWith('-') && !arg.StartsWith("--"))
             {
                 int eqIndex = arg.IndexOf('=');
                 string flagPart = eqIndex >= 0 ? arg[..eqIndex] : arg;
                 string? valuePart = eqIndex >= 0 ? arg[(eqIndex + 1)..] : null;
 
-                if (nativeFlagMap.TryGetValue(flagPart, out string? canonical))
-                {
-                    result.Add(valuePart is not null ? $"{canonical}={valuePart}" : canonical);
-                    continue;
-                }
+                string upper = flagPart.ToUpperInvariant();
+                if (upper is
+                    "-OUTPUT" or
+                    "-DLL" or
+                    "-EXE" or
+                    "-DEBUG" or
+                    "-OPTIMIZE" or
+                    "-FOLD" or
+                    "-NOLOGO" or
+                    "-QUIET" or
+                    "-NOAUTOINHERIT" or
+                    "-PDB" or
+                    "-APPCONTAINER" or
+                    "-DET" or
+                    "-ERROR" or
+                    "-CLOCK" or
+                    "-KEY" or
+                    "-ANAME" or
+                    "-INC" or
+                    "-SUBSYSTEM" or
+                    "-SSVER" or
+                    "-FLAGS" or
+                    "-ALIGNMENT" or
+                    "-BASE" or
+                    "-STACK" or
+                    "-MDV" or
+                    "-PE64" or
+                    "-HIGHENTROPYVA" or
+                    "-NOCORSTUB" or
+                    "-STRIPRELOC" or
+                    "-X64" or
+                    "-ARM" or
+                    "-ARM64" or
+                    "-32BITPREFERRED")
+                    {
+                        result.Add(valuePart is null ? upper : $"{upper}={valuePart}");
+                        continue;
+                    }
             }
 
             result.Add(arg);
         }
+
         return result.ToArray();
     }
 }
