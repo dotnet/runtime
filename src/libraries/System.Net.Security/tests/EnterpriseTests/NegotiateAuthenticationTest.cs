@@ -73,7 +73,7 @@ namespace System.Net.Security.Enterprise.Tests
             Assert.Equal("Negotiate", client.Package);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData("HOST/localhost")]
         [InlineData("HOST/linuxclient.linux.contoso.com")]
         public void ClientAuthentication_DefaultCredentials_Succeeds(string targetName)
