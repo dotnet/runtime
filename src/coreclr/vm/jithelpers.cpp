@@ -1677,14 +1677,11 @@ extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransit
         goto DONE;
     }
 
-    // If we get here, we have code to transition to.
-    // The JIT-generated code at the patchpoint will handle the actual
-    // transition (setting up SP/FP and jumping to the OSR method).
+    // If we get here, we will transition to OSR code. This can happen
+    // either when this hit triggers OSR creation or when an existing OSR
+    // method is already available for this patchpoint. The JIT-generated
+    // code at the patchpoint handles the actual SP/FP setup and jump.
     {
-        Thread *pThread = GetThread();
-
-        // Note we can get here w/o triggering, if there is an existing OSR method and
-        // we hit the patchpoint.
         const int transitionLogLevel = isNewMethod ? LL_INFO10 : LL_INFO1000;
         LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
     }
