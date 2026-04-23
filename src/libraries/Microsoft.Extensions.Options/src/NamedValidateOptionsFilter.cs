@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Extensions.Options
 {
-    internal class NamedValidateOptionsFilter<TOptions, TInner> : IValidateOptions<TOptions>
+    internal sealed class NamedValidateOptionsFilter<TOptions, TInner> : IValidateOptions<TOptions>
         where TOptions : class
         where TInner : IValidateOptions<TOptions>
     {
