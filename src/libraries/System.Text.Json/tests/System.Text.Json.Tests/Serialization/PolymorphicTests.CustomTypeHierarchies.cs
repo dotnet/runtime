@@ -2668,6 +2668,245 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        #region Open Generic Polymorphism Tests
+
+        [Fact]
+        public async Task OpenGenericDerivedType_WithStringDiscriminator_SerializationWorks()
+        {
+            OpenGenericBase_StringDisc<int> value = new OpenGenericDerived_StringDisc<int> { Value = 42 };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":42}""", json);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_WithStringDiscriminator_DeserializationWorks()
+        {
+            string json = """{"$type":"derived","Value":42}""";
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_StringDisc<int>>(json);
+            Assert.IsType<OpenGenericDerived_StringDisc<int>>(result);
+            Assert.Equal(42, ((OpenGenericDerived_StringDisc<int>)result).Value);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_StringDisc<>), "derived")]
+        public class OpenGenericBase_StringDisc<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericDerived_StringDisc<T> : OpenGenericBase_StringDisc<T>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_WithIntDiscriminator_SerializationWorks()
+        {
+            OpenGenericBase_IntDisc<string> value = new OpenGenericDerived_IntDisc<string> { Value = "hello" };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":1,"Value":"hello"}""", json);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_WithIntDiscriminator_DeserializationWorks()
+        {
+            string json = """{"$type":1,"Value":"hello"}""";
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_IntDisc<string>>(json);
+            Assert.IsType<OpenGenericDerived_IntDisc<string>>(result);
+            Assert.Equal("hello", ((OpenGenericDerived_IntDisc<string>)result).Value);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_IntDisc<>), 1)]
+        public class OpenGenericBase_IntDisc<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericDerived_IntDisc<T> : OpenGenericBase_IntDisc<T>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_MultipleDerivedTypes_Work()
+        {
+            OpenGenericBase_Multi<int> valueA = new OpenGenericDerivedA_Multi<int> { ValueA = 1 };
+            OpenGenericBase_Multi<int> valueB = new OpenGenericDerivedB_Multi<int> { ValueB = 2 };
+
+            string jsonA = await Serializer.SerializeWrapper(valueA);
+            string jsonB = await Serializer.SerializeWrapper(valueB);
+
+            JsonTestHelper.AssertJsonEqual("""{"$type":"a","ValueA":1}""", jsonA);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"b","ValueB":2}""", jsonB);
+
+            var resultA = await Serializer.DeserializeWrapper<OpenGenericBase_Multi<int>>(jsonA);
+            var resultB = await Serializer.DeserializeWrapper<OpenGenericBase_Multi<int>>(jsonB);
+
+            Assert.IsType<OpenGenericDerivedA_Multi<int>>(resultA);
+            Assert.IsType<OpenGenericDerivedB_Multi<int>>(resultB);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerivedA_Multi<>), "a")]
+        [JsonDerivedType(typeof(OpenGenericDerivedB_Multi<>), "b")]
+        public class OpenGenericBase_Multi<T>;
+
+        public class OpenGenericDerivedA_Multi<T> : OpenGenericBase_Multi<T>
+        {
+            public int ValueA { get; set; }
+        }
+
+        public class OpenGenericDerivedB_Multi<T> : OpenGenericBase_Multi<T>
+        {
+            public int ValueB { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_NestedClass_Works()
+        {
+            OpenGenericBase_Nested<int> value = new OpenGenericBase_Nested<int>.Derived();
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"nested"}""", json);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericBase_Nested<>.Derived), "nested")]
+        public class OpenGenericBase_Nested<T>
+        {
+            public class Derived : OpenGenericBase_Nested<T>;
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_ComplexTypeArg_Works()
+        {
+            OpenGenericBase_ComplexArg<List<int>> value = new OpenGenericDerived_ComplexArg<List<int>> { Data = [1, 2, 3] };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Data":[1,2,3]}""", json);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_ComplexArg<>), "derived")]
+        public class OpenGenericBase_ComplexArg<T>
+        {
+            public T? Data { get; set; }
+        }
+
+        public class OpenGenericDerived_ComplexArg<T> : OpenGenericBase_ComplexArg<T>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_WrappedTypeArg_Works()
+        {
+            // Derived<T> : Base<List<T>> - the type args are related but not identical
+            OpenGenericBase_Wrapped<List<string>> value = new OpenGenericDerived_Wrapped<string> { Data = ["a", "b"] };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Data":["a","b"]}""", json);
+
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_Wrapped<List<string>>>(json);
+            Assert.IsType<OpenGenericDerived_Wrapped<string>>(result);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_Wrapped<>), "derived")]
+        public class OpenGenericBase_Wrapped<T>
+        {
+            public T? Data { get; set; }
+        }
+
+        public class OpenGenericDerived_Wrapped<T> : OpenGenericBase_Wrapped<List<T>>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_Interface_Works()
+        {
+            IOpenGenericBase<int> value = new OpenGenericInterfaceImpl<int> { Value = 42 };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","Value":42}""", json);
+
+            var result = await Serializer.DeserializeWrapper<IOpenGenericBase<int>>(json);
+            Assert.IsType<OpenGenericInterfaceImpl<int>>(result);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericInterfaceImpl<>), "impl")]
+        public interface IOpenGenericBase<T>
+        {
+            T? Value { get; set; }
+        }
+
+        public class OpenGenericInterfaceImpl<T> : IOpenGenericBase<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_DifferentTypeArguments_ProduceDifferentResults()
+        {
+            OpenGenericBase_StringDisc<int> intValue = new OpenGenericDerived_StringDisc<int> { Value = 42 };
+            OpenGenericBase_StringDisc<string> strValue = new OpenGenericDerived_StringDisc<string> { Value = "hello" };
+
+            string intJson = await Serializer.SerializeWrapper(intValue);
+            string strJson = await Serializer.SerializeWrapper(strValue);
+
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":42}""", intJson);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":"hello"}""", strJson);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_NonGenericBase_ThrowsInvalidOperationException()
+        {
+            var value = new NonGenericBaseWithOpenGenericDerived();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(NonGenericBaseWithOpenGenericDerived.OpenDerived<>), "derived")]
+        public class NonGenericBaseWithOpenGenericDerived
+        {
+            public class OpenDerived<T> : NonGenericBaseWithOpenGenericDerived;
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_TypeArgsNotResolvable_ThrowsInvalidOperationException()
+        {
+            // Derived<T> : Base<int> - T cannot be determined from Base<int>
+            var value = new OpenGenericBase_Unresolvable<int>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_Unresolvable<>), "derived")]
+        public class OpenGenericBase_Unresolvable<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericDerived_Unresolvable<T> : OpenGenericBase_Unresolvable<int>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_ProgrammaticApi_Works()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        static typeInfo =>
+                        {
+                            if (typeInfo.Type == typeof(OpenGenericBase_Programmatic<int>))
+                            {
+                                typeInfo.PolymorphismOptions = new JsonPolymorphismOptions
+                                {
+                                    DerivedTypes =
+                                    {
+                                        new JsonDerivedType(typeof(OpenGenericDerived_Programmatic<>), "derived"),
+                                    }
+                                };
+                            }
+                        }
+                    }
+                }
+            };
+
+            OpenGenericBase_Programmatic<int> value = new OpenGenericDerived_Programmatic<int> { Value = 99 };
+            string json = JsonSerializer.Serialize(value, options);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":99}""", json);
+        }
+
+        public class OpenGenericBase_Programmatic<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericDerived_Programmatic<T> : OpenGenericBase_Programmatic<T>;
+
+        #endregion
+
         [Fact]
         public async Task PolymorphicClass_CustomConverter_TypeDiscriminator_Serialization_ThrowsNotSupportedException()
         {
