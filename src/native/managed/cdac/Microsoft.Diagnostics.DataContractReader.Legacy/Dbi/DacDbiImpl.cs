@@ -670,9 +670,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 }
             }
 
-            if (!comWrappersSuccess || objectHandle == TargetPointer.Null)
+            if (!comWrappersSuccess && _target.Contracts.TryGetContract<IBuiltInCOM>(out IBuiltInCOM? builtInCOM))
             {
-                IBuiltInCOM builtInCOM = _target.Contracts.BuiltInCOM;
                 TargetPointer ccw = builtInCOM.GetCCWFromInterfacePointer(ccwAddress);
                 if (ccw == TargetPointer.Null)
                 {
