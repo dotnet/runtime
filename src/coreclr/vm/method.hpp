@@ -64,6 +64,7 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 #endif
 
+// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None.
 enum class AsyncMethodFlags
 {
     // Method uses CORINFO_CALLCONV_ASYNCCALL call convention.

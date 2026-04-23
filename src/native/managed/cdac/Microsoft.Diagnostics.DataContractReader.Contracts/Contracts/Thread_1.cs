@@ -9,7 +9,6 @@ internal readonly struct Thread_1 : IThread
 {
     private readonly Target _target;
     private readonly TargetPointer _threadStoreAddr;
-    private readonly ulong _threadLinkOffset;
 
     [Flags]
     private enum TLSIndexType
@@ -41,11 +40,6 @@ internal readonly struct Thread_1 : IThread
     {
         _target = target;
         _threadStoreAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore));
-
-        // Get the offset into Thread of the SLink. We use this to find the actual
-        // first thread from the linked list node contained by the first thread.
-        Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
-        _threadLinkOffset = (ulong)type.Fields[nameof(Data.Thread.LinkNext)].Offset;
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
@@ -53,7 +47,7 @@ internal readonly struct Thread_1 : IThread
         Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);
         return new ThreadStoreData(
             threadStore.ThreadCount,
-            GetThreadFromLink(threadStore.FirstThreadLink),
+            threadStore.FirstThreadLink,
             _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.FinalizerThread)),
             _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCThread)));
     }
@@ -124,7 +118,7 @@ internal readonly struct Thread_1 : IThread
             thread.CurrentCustomDebuggerNotification.Handle,
             thread.LastThrownObjectIsUnhandled != 0,
             hasUnhandledException,
-            GetThreadFromLink(thread.LinkNext));
+            thread.LinkNext);
     }
 
     void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)
@@ -155,15 +149,6 @@ internal readonly struct Thread_1 : IThread
         if (id < idDispenserObj.HighestId)
             threadPtr = _target.ReadPointer(idDispenserObj.IdToThread + (ulong)(id * _target.PointerSize));
         return threadPtr;
-    }
-
-    private TargetPointer GetThreadFromLink(TargetPointer threadLink)
-    {
-        if (threadLink == TargetPointer.Null)
-            return TargetPointer.Null;
-
-        // Get the address of the thread containing the link
-        return new TargetPointer(threadLink - _threadLinkOffset);
     }
 
     TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr)

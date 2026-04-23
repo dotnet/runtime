@@ -380,7 +380,7 @@ namespace Internal.Runtime.TypeLoader
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
             DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, asyncVariant: false, declaringType, nameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles));
+            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, asyncVariant: false, returnDroppingAsyncThunk: false, declaringType, nameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles));
 
             if (TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(methodBeingLoaded), out methodDictionary))
             {

@@ -2,7 +2,12 @@
   "sdk": {
     "version": "11.0.100-preview.3.26170.106",
     "allowPrerelease": true,
-    "rollForward": "major"
+    "rollForward": "major",
+    "paths": [
+      ".dotnet",
+      "$host$"
+    ],
+    "errorMessage": "The required .NET SDK wasn't found. Please run ./eng/common/dotnet.sh (Unix) or eng\\common\\dotnet.cmd (Windows) to install it."
   },
   "tools": {
     "dotnet": "11.0.100-preview.3.26170.106"
