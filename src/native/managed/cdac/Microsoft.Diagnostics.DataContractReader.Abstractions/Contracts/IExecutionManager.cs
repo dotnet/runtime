@@ -42,6 +42,23 @@ public struct JitManagerInfo
     public TargetPointer HeapListAddress;
 }
 
+public enum StubKind : uint
+{
+    UnknownStub = 0,
+    JumpStub = 1,
+    DynamicHelper = 3,
+    Prestub = 4,
+    VSD_DispatchStub = 5,
+    VSD_ResolveStub = 6,
+    VSD_LookupStub = 7,
+    VSD_VTableStub = 8,
+    CallCountingStub = 9,
+    StubLinkStub = 10,
+    MethodCallThunk = 11,
+    NoCodeStub = 12,
+    Managed = 13,
+}
+
 public interface ICodeHeapInfo
 {
 }
@@ -101,10 +118,9 @@ public interface IExecutionManager : IContract
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
-    // If the code refers to a dynamically generated runtime stub, return a non-null name
-    // describing what kind of stub it is. The exact kinds of stubs and their functionality
-    // might shift across different runtime versions.
-    string? GetStubSymbol(TargetCodePointer jittedCodeAddress) => throw new NotImplementedException();
+    // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
+    // or as managed code. Returns UnknownStub if the address is not recognized.
+    StubKind GetStubKind(TargetCodePointer jittedCodeAddress) => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager

@@ -52,9 +52,9 @@ struct CodeBlockHandle
     // Get the exception clause info for the code block
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle);
 
-    // If the code refers to a dynamically generated runtime stub, return a non-null name
-    // describing what kind of stub it is. Returns null for managed code or unrecognized addresses.
-    string? GetStubSymbol(TargetCodePointer jittedCodeAddress);
+    // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
+    // or as managed code. Returns CodeBlockUnknown if the address is not recognized.
+    StubKind GetStubKind(TargetCodePointer jittedCodeAddress);
 
     // Extension Methods (implemented in terms of other APIs)
     // Returns true if the code block is a funclet (exception handler, filter, or finally)
@@ -507,9 +507,9 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 
 `IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
 
-### Stub Symbol Classification
+### Stub Kind Classification
 
-`GetStubSymbol` classifies a code address as a known stub type. It returns a descriptive string for stub addresses, or `null` for managed code or unrecognized addresses. The exact kinds of stubs and their names might shift across different runtime versions.
+`GetStubKind` classifies a code address as a known stub type or managed code. It returns `UnknownStub` if the address is not recognized.
 
 The method looks up the address in the `RangeSectionMap`. If a `RangeSection` is found, the JIT manager for that section classifies the code:
 
@@ -517,16 +517,16 @@ The method looks up the address in the `RangeSectionMap`. If a `RangeSection` is
 - **ReadyToRunJitManager**: Checks whether the address falls within a delay-load method call thunk region.
 
 ```csharp
-string? GetStubSymbol(TargetCodePointer jittedCodeAddress)
+StubKind GetStubKind(TargetCodePointer jittedCodeAddress)
 {
     TargetPointer address = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress);
 
     // Look up in range section map
     RangeSection range = FindRangeSection(jittedCodeAddress);
-    if (range == null) return null;
+    if (range == null) return StubKind.UnknownStub;
 
     JitManager jitManager = GetJitManager(range);
-    return jitManager.GetStubSymbol(range, jittedCodeAddress);
+    return jitManager.GetStubCodeBlockKind(range, jittedCodeAddress);
 }
 ```
 

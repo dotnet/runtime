@@ -5341,11 +5341,6 @@ ClrDataAccess::RawGetMethodName(
         return status;
     }
 
-    if (displacement)
-    {
-        *displacement = 0;
-    }
-
     PTR_StubManager pStubManager;
 
     pStubManager = StubManager::FindStubManager(TO_TADDR(address));
@@ -5353,10 +5348,14 @@ ClrDataAccess::RawGetMethodName(
     {
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
-        if (wcscmp(wszStubManagerName, W("ThePreStub")) != 0 && wcscmp(wszStubManagerName, W("InteropDispatchStub")) != 0 && wcscmp(wszStubManagerName, W("TailCallStub")) != 0)
+        if (u16_strcmp(wszStubManagerName, W("ThePreStub")) != 0 && u16_strcmp(wszStubManagerName, W("InteropDispatchStub")) != 0 && u16_strcmp(wszStubManagerName, W("TailCallStub")) != 0)
         {
             // Skip the stubs that are just assembly helpers.
             wcscpy_s(symbolBuf, bufLen, wszStubManagerName);
+            if (displacement)
+            {
+                *displacement = 0;
+            }
             return S_OK;
         }
     }
@@ -5370,6 +5369,10 @@ ClrDataAccess::RawGetMethodName(
         if (FAILED(hr))
             return S_FALSE;
 
+        if (displacement)
+        {
+            *displacement = 0;
+        }
         return S_OK;
     }
 

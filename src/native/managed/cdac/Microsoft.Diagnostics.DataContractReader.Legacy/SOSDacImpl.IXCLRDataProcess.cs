@@ -103,8 +103,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         char* nameBuf,
         ClrDataAddress* displacement)
     {
-        if (displacement is not null)
-            *displacement = default;
         int hr = HResults.S_OK;
         try
         {
@@ -121,7 +119,8 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             string? resultName = null;
 
             // Try stub classification
-            resultName = eman.GetStubSymbol(codeAddr);
+            StubKind stubKind = eman.GetStubKind(codeAddr);
+            resultName = GetStubName(stubKind);
 
             // try aux symbols
             if (resultName is null && _target.Contracts.AuxiliarySymbols.TryGetAuxiliarySymbolName(address.ToTargetPointer(_target), out string? auxSymbolName))
@@ -132,6 +131,10 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             if (resultName is null)
             {
                 throw new InvalidCastException();
+            }
+            else if (displacement is not null)
+            {
+                *displacement = 0;
             }
 
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, resultName);
@@ -178,6 +181,13 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 #endif
 
         return hr;
+    }
+
+    private static string? GetStubName(Contracts.StubKind stubKind)
+    {
+        if (stubKind == Contracts.StubKind.UnknownStub || stubKind == Contracts.StubKind.Managed || stubKind == Contracts.StubKind.NoCodeStub)
+            return null;
+        return stubKind.ToString();
     }
 
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)

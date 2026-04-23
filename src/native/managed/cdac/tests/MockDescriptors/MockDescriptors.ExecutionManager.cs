@@ -407,7 +407,37 @@ internal sealed class MockReadyToRunInfo : TypedView
         set => WritePointerField(ExceptionInfoSectionFieldName, value);
     }
 
+    public ulong DelayLoadMethodCallThunks
+    {
+        get => ReadPointerField(DelayLoadMethodCallThunksFieldName);
+        set => WritePointerField(DelayLoadMethodCallThunksFieldName, value);
+    }
+
     public ulong EntryPointToMethodDescMapAddress => GetFieldAddress(EntryPointToMethodDescMapFieldName);
+}
+
+internal sealed class MockImageDataDirectory : TypedView
+{
+    private const string VirtualAddressFieldName = "VirtualAddress";
+    private const string SizeFieldName = "Size";
+
+    public static Layout<MockImageDataDirectory> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("ImageDataDirectory", architecture)
+            .AddUInt32Field(VirtualAddressFieldName)
+            .AddUInt32Field(SizeFieldName)
+            .Build<MockImageDataDirectory>();
+
+    public uint VirtualAddress
+    {
+        get => ReadUInt32Field(VirtualAddressFieldName);
+        set => WriteUInt32Field(VirtualAddressFieldName, value);
+    }
+
+    public uint Size
+    {
+        get => ReadUInt32Field(SizeFieldName);
+        set => WriteUInt32Field(SizeFieldName, value);
+    }
 }
 
 internal sealed class MockEEJitManager : TypedView
@@ -527,6 +557,7 @@ internal sealed class MockExecutionManagerBuilder
     internal Layout<MockEEJitManager> EEJitManagerLayout { get; }
     internal Layout<MockLoaderModule> ModuleLayout { get; }
     internal Layout<MockCodeRangeMapRangeList> CodeRangeMapRangeListLayout { get; }
+    internal Layout<MockImageDataDirectory> ImageDataDirectoryLayout { get; }
     internal Layout<MockRuntimeFunction> RuntimeFunctionLayout => _runtimeFunctions.RuntimeFunctionLayout;
     internal Layout<MockUnwindInfo> UnwindInfoLayout => _runtimeFunctions.UnwindInfoLayout;
     internal (string Name, ulong Value)[] Globals { get; }
@@ -582,6 +613,7 @@ internal sealed class MockExecutionManagerBuilder
         EEJitManagerLayout = MockEEJitManager.CreateLayout(architecture);
         ModuleLayout = MockLoaderModule.CreateLayout(architecture);
         CodeRangeMapRangeListLayout = MockCodeRangeMapRangeList.CreateLayout(architecture);
+        ImageDataDirectoryLayout = MockImageDataDirectory.CreateLayout(architecture);
 
         _eeJitManager = AllocateAndCreate(EEJitManagerLayout, "EEJitManager");
         _eeJitManager.AllCodeHeaps = allCodeHeaps;
@@ -756,6 +788,14 @@ internal sealed class MockExecutionManagerBuilder
         readyToRunInfo.NumHotColdMap = checked((uint)hotColdMap.Length);
         readyToRunInfo.HotColdMap = hotColdMapAddress;
         return readyToRunInfo;
+    }
+
+    public void SetDelayLoadMethodCallThunks(MockReadyToRunInfo readyToRunInfo, uint thunkRva, uint thunkSize)
+    {
+        MockImageDataDirectory imageDataDir = AllocateAndCreate(ImageDataDirectoryLayout, "DelayLoadMethodCallThunks");
+        imageDataDir.VirtualAddress = thunkRva;
+        imageDataDir.Size = thunkSize;
+        readyToRunInfo.DelayLoadMethodCallThunks = imageDataDir.Address;
     }
 
     public MockLoaderModule AddReadyToRunModule(ulong readyToRunInfoAddress)
