@@ -16,10 +16,13 @@ namespace Microsoft.Extensions.Caching.Hybrid;
 /// for this cache entry.
 /// <para>
 /// Because the factory executes after cache reads have already been attempted, only write-related
-/// flags in <see cref="Flags"/> are effective (for example,
-/// <see cref="HybridCacheEntryFlags.DisableLocalCacheWrite"/> and
-/// <see cref="HybridCacheEntryFlags.DisableDistributedCacheWrite"/>). Read-related flags
-/// set on the context are ignored.
+/// flags in <see cref="Flags"/> are effective:
+/// <see cref="HybridCacheEntryFlags.DisableLocalCacheWrite"/>,
+/// <see cref="HybridCacheEntryFlags.DisableDistributedCacheWrite"/>, and
+/// <see cref="HybridCacheEntryFlags.DisableCompression"/>.
+/// Read-related flags (<see cref="HybridCacheEntryFlags.DisableLocalCacheRead"/>,
+/// <see cref="HybridCacheEntryFlags.DisableDistributedCacheRead"/>, and
+/// <see cref="HybridCacheEntryFlags.DisableUnderlyingData"/>) set on the context are ignored.
 /// </para>
 /// </remarks>
 public sealed class HybridCacheFactoryContext
@@ -39,7 +42,12 @@ public sealed class HybridCacheFactoryContext
     /// </summary>
     /// <remarks>
     /// Because the factory executes after cache reads have already been attempted, only write-related
-    /// flags are effective. Read-related flags set here are ignored.
+    /// flags are effective: <see cref="HybridCacheEntryFlags.DisableLocalCacheWrite"/>,
+    /// <see cref="HybridCacheEntryFlags.DisableDistributedCacheWrite"/>, and
+    /// <see cref="HybridCacheEntryFlags.DisableCompression"/>. Read-related flags
+    /// (<see cref="HybridCacheEntryFlags.DisableLocalCacheRead"/>,
+    /// <see cref="HybridCacheEntryFlags.DisableDistributedCacheRead"/>, and
+    /// <see cref="HybridCacheEntryFlags.DisableUnderlyingData"/>) set here are ignored.
     /// </remarks>
     public HybridCacheEntryFlags? Flags { get; set; }
 
