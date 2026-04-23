@@ -2800,9 +2800,9 @@ Parameters:
 #ifdef FEATURE_INPROC_CRASHREPORT
 #include <minipal/log.h>
 void
-PROCInitializeInProcCrashReport(const char* dumpPath)
+PROCInitializeInProcCrashReport(const InProcCrashReporterSettings& settings)
 {
-    InitializeInProcCrashReport(dumpPath);
+    InProcCrashReporter::GetInstance().Initialize(settings);
 
     // Publish last so PROCCreateCrashDumpIfEnabled only observes the reporter
     // as enabled after the crashreport path (and any other state) is set.
@@ -2818,7 +2818,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
     // TODO: Dump stress log into logcat and/or file when enabled?
     if (g_inProcCrashReportEnabled)
     {
-        CreateInProcCrashReport(signal, siginfo, context);
+        InProcCrashReporter::GetInstance().CreateReport(signal, siginfo, context);
     }
     minipal_log_write_fatal("Aborting process.\n");
 }

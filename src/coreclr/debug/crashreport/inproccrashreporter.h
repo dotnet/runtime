@@ -11,15 +11,9 @@
 #include <signal.h>
 #include <stdint.h>
 
-void InitializeInProcCrashReport(const char* dumpPath);
-
-// Generate an in-proc crash report. Called from PROCCreateCrashDumpIfEnabled.
-// All arguments come from the signal handler and are signal-safe to read.
-void CreateInProcCrashReport(int signal, siginfo_t* siginfo, void* context);
+#include "signalsafejsonwriter.h"
 
 using InProcCrashReportIsManagedThreadCallback = bool (*)();
-
-void InProcCrashReportSetCurrentThreadManagedResolver(InProcCrashReportIsManagedThreadCallback callback);
 
 using InProcCrashReportFrameCallback = void (*)(
     uint64_t ip,
@@ -39,14 +33,10 @@ using InProcCrashReportWalkStackCallback = void (*)(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx);
 
-void InProcCrashReportSetStackWalker(InProcCrashReportWalkStackCallback callback);
-
 using InProcCrashReportGetExceptionCallback = bool (*)(
     char* exceptionTypeBuf,
     size_t exceptionTypeBufSize,
     uint32_t* hresult);
-
-void InProcCrashReportSetExceptionResolver(InProcCrashReportGetExceptionCallback callback);
 
 using InProcCrashReportThreadCallback = void (*)(
     uint64_t osThreadId,
@@ -61,4 +51,45 @@ using InProcCrashReportEnumerateThreadsCallback = void (*)(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx);
 
-void InProcCrashReportSetThreadEnumerator(InProcCrashReportEnumerateThreadsCallback callback);
+struct InProcCrashReporterSettings
+{
+    const char* reportPath;
+    InProcCrashReportIsManagedThreadCallback isManagedThreadCallback;
+    InProcCrashReportWalkStackCallback walkStackCallback;
+    InProcCrashReportGetExceptionCallback getExceptionCallback;
+    InProcCrashReportEnumerateThreadsCallback enumerateThreadsCallback;
+};
+
+class InProcCrashReporter
+{
+public:
+    static InProcCrashReporter& GetInstance();
+
+    // Capture configuration and the crash-report template path. Must be called
+    // before the PAL enables signal-handler dispatch to CreateReport.
+    void Initialize(const InProcCrashReporterSettings& settings);
+
+    // Generate an in-proc crash report. Called from PROCCreateCrashDumpIfEnabled.
+    // All arguments come from the signal handler and are signal-safe to read.
+    void CreateReport(int signal, siginfo_t* siginfo, void* context);
+
+private:
+    InProcCrashReporter() = default;
+    InProcCrashReporter(const InProcCrashReporter&) = delete;
+    InProcCrashReporter& operator=(const InProcCrashReporter&) = delete;
+
+    void EmitSynthesizedCrashThread(
+        void* context,
+        bool hasException,
+        const char* crashExceptionType,
+        uint32_t crashExceptionHResult,
+        bool walkStack);
+
+    SignalSafeJsonWriter m_jsonWriter;
+    InProcCrashReportIsManagedThreadCallback m_isManagedThreadCallback = nullptr;
+    InProcCrashReportWalkStackCallback m_walkStackCallback = nullptr;
+    InProcCrashReportGetExceptionCallback m_getExceptionCallback = nullptr;
+    InProcCrashReportEnumerateThreadsCallback m_enumerateThreadsCallback = nullptr;
+    char m_reportPath[256] = {};
+    char m_processName[256] = {};
+};

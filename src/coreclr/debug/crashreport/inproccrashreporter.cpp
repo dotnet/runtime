@@ -24,14 +24,6 @@
 static char sccsid[] = "@(#)Version N/A";
 #endif
 
-static SignalSafeJsonWriter s_jsonWriter;
-static volatile InProcCrashReportIsManagedThreadCallback g_isManagedThreadCallback = nullptr;
-static volatile InProcCrashReportWalkStackCallback g_walkStackCallback = nullptr;
-static volatile InProcCrashReportGetExceptionCallback g_getExceptionCallback = nullptr;
-static volatile InProcCrashReportEnumerateThreadsCallback g_enumerateThreadsCallback = nullptr;
-static char g_reportPath[256];
-static char g_processName[256];
-
 class ThreadEnumerationContext
 {
 public:
@@ -255,17 +247,8 @@ BuildReportPath(
     size_t bufferSize,
     const char* dumpPath);
 
-static
 void
-EmitSynthesizedCrashThread(
-    void* context,
-    bool hasException,
-    const char* crashExceptionType,
-    uint32_t crashExceptionHResult,
-    bool walkStack);
-
-void
-CreateInProcCrashReport(
+InProcCrashReporter::CreateReport(
     int signal,
     siginfo_t* siginfo,
     void* context)
@@ -279,7 +262,7 @@ CreateInProcCrashReport(
     char reportPath[256];
     reportPath[0] = '\0';
 
-    if (g_reportPath[0] == '\0' || !BuildReportPath(reportPath, sizeof(reportPath), g_reportPath))
+    if (m_reportPath[0] == '\0' || !BuildReportPath(reportPath, sizeof(reportPath), m_reportPath))
     {
         return;
     }
@@ -297,48 +280,48 @@ CreateInProcCrashReport(
     exTypeBuf[0] = '\0';
 
     bool hasException = false;
-    if (g_getExceptionCallback != nullptr && signal != SIGSEGV && signal != SIGBUS)
+    if (m_getExceptionCallback != nullptr && signal != SIGSEGV && signal != SIGBUS)
     {
-        hasException = g_getExceptionCallback(exTypeBuf, sizeof(exTypeBuf), &exHresult);
+        hasException = m_getExceptionCallback(exTypeBuf, sizeof(exTypeBuf), &exHresult);
     }
 
     CrashReportOutputContext outputContext(fd);
 
-    s_jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &outputContext);
+    m_jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &outputContext);
 
-    s_jsonWriter.OpenObject();
-    s_jsonWriter.OpenObject("payload");
-    s_jsonWriter.WriteString("protocol_version", "1.0.0");
+    m_jsonWriter.OpenObject();
+    m_jsonWriter.OpenObject("payload");
+    m_jsonWriter.WriteString("protocol_version", "1.0.0");
 
-    s_jsonWriter.OpenObject("configuration");
+    m_jsonWriter.OpenObject("configuration");
 #if defined(__x86_64__)
-    s_jsonWriter.WriteString("architecture", "amd64");
+    m_jsonWriter.WriteString("architecture", "amd64");
 #elif defined(__aarch64__)
-    s_jsonWriter.WriteString("architecture", "arm64");
+    m_jsonWriter.WriteString("architecture", "arm64");
 #elif defined(__arm__)
-    s_jsonWriter.WriteString("architecture", "arm");
+    m_jsonWriter.WriteString("architecture", "arm");
 #endif
     char version[sizeof(sccsid) + 1];
     GetVersionString(version, sizeof(version));
-    s_jsonWriter.WriteString("version", version);
-    s_jsonWriter.CloseObject(); // configuration
+    m_jsonWriter.WriteString("version", version);
+    m_jsonWriter.CloseObject(); // configuration
 
-    if (g_processName[0] != '\0')
+    if (m_processName[0] != '\0')
     {
-        s_jsonWriter.WriteString("process_name", g_processName);
+        m_jsonWriter.WriteString("process_name", m_processName);
     }
 
     char pidBuf[16];
     (void)FormatUnsignedDecimal(pidBuf, sizeof(pidBuf), static_cast<uint64_t>(GetCurrentProcessId()));
-    s_jsonWriter.WriteString("pid", pidBuf);
+    m_jsonWriter.WriteString("pid", pidBuf);
 
-    s_jsonWriter.OpenArray("threads");
-    if (g_enumerateThreadsCallback != nullptr)
+    m_jsonWriter.OpenArray("threads");
+    if (m_enumerateThreadsCallback != nullptr)
     {
-        ThreadEnumerationContext threadContext(&s_jsonWriter, context, hasException, exTypeBuf, exHresult);
+        ThreadEnumerationContext threadContext(&m_jsonWriter, context, hasException, exTypeBuf, exHresult);
         uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
 
-        g_enumerateThreadsCallback(crashingTid, &ThreadEnumerationContext::ThreadCallback, &ThreadEnumerationContext::FrameCallback, &threadContext);
+        m_enumerateThreadsCallback(crashingTid, &ThreadEnumerationContext::ThreadCallback, &ThreadEnumerationContext::FrameCallback, &threadContext);
 
         threadContext.EndEnumeration();
 
@@ -351,21 +334,21 @@ CreateInProcCrashReport(
     {
         EmitSynthesizedCrashThread(context, hasException, exTypeBuf, exHresult, /*walkStack*/ true);
     }
-    s_jsonWriter.CloseArray(); // threads
+    m_jsonWriter.CloseArray(); // threads
 
-    s_jsonWriter.CloseObject(); // payload
+    m_jsonWriter.CloseObject(); // payload
 
-    s_jsonWriter.OpenObject("parameters");
+    m_jsonWriter.OpenObject("parameters");
     char signalBuf[16];
     (void)FormatSignedDecimal(signalBuf, sizeof(signalBuf), static_cast<int64_t>(signal));
-    s_jsonWriter.WriteString("signal", signalBuf);
-    s_jsonWriter.CloseObject(); // parameters
+    m_jsonWriter.WriteString("signal", signalBuf);
+    m_jsonWriter.CloseObject(); // parameters
 
-    s_jsonWriter.CloseObject(); // root
+    m_jsonWriter.CloseObject(); // root
 
     if (fd != -1)
     {
-        bool writeSucceeded = s_jsonWriter.Finish() &&
+        bool writeSucceeded = m_jsonWriter.Finish() &&
             !outputContext.WriteFailed() &&
             WriteToFile(fd, "\n", 1);
 
@@ -376,40 +359,23 @@ CreateInProcCrashReport(
     }
 }
 
-void
-InitializeInProcCrashReport(
-    const char* dumpPath)
+InProcCrashReporter&
+InProcCrashReporter::GetInstance()
 {
-    CopyString(g_reportPath, sizeof(g_reportPath), dumpPath);
-    (void)TryGetProcessName(g_processName, sizeof(g_processName));
+    static InProcCrashReporter s_instance;
+    return s_instance;
 }
 
 void
-InProcCrashReportSetCurrentThreadManagedResolver(
-    InProcCrashReportIsManagedThreadCallback callback)
+InProcCrashReporter::Initialize(
+    const InProcCrashReporterSettings& settings)
 {
-    g_isManagedThreadCallback = callback;
-}
-
-void
-InProcCrashReportSetStackWalker(
-    InProcCrashReportWalkStackCallback callback)
-{
-    g_walkStackCallback = callback;
-}
-
-void
-InProcCrashReportSetExceptionResolver(
-    InProcCrashReportGetExceptionCallback callback)
-{
-    g_getExceptionCallback = callback;
-}
-
-void
-InProcCrashReportSetThreadEnumerator(
-    InProcCrashReportEnumerateThreadsCallback callback)
-{
-    g_enumerateThreadsCallback = callback;
+    m_isManagedThreadCallback = settings.isManagedThreadCallback;
+    m_walkStackCallback = settings.walkStackCallback;
+    m_getExceptionCallback = settings.getExceptionCallback;
+    m_enumerateThreadsCallback = settings.enumerateThreadsCallback;
+    CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
+    (void)TryGetProcessName(m_processName, sizeof(m_processName));
 }
 
 bool
@@ -1163,9 +1129,8 @@ ThreadEnumerationContext::EndEnumeration()
     (void)m_writer->Flush();
 }
 
-static
 void
-EmitSynthesizedCrashThread(
+InProcCrashReporter::EmitSynthesizedCrashThread(
     void* context,
     bool hasException,
     const char* crashExceptionType,
@@ -1174,31 +1139,31 @@ EmitSynthesizedCrashThread(
 {
     uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
 
-    s_jsonWriter.OpenObject();
-    s_jsonWriter.WriteString("is_managed",
-        g_isManagedThreadCallback != nullptr && g_isManagedThreadCallback() ? "true" : "false");
-    s_jsonWriter.WriteString("crashed", "true");
+    m_jsonWriter.OpenObject();
+    m_jsonWriter.WriteString("is_managed",
+        m_isManagedThreadCallback != nullptr && m_isManagedThreadCallback() ? "true" : "false");
+    m_jsonWriter.WriteString("crashed", "true");
 
     char nativeThreadId[32];
     FormatHexValue(nativeThreadId, sizeof(nativeThreadId), crashingTid);
-    s_jsonWriter.WriteString("native_thread_id", nativeThreadId);
+    m_jsonWriter.WriteString("native_thread_id", nativeThreadId);
 
     if (hasException)
     {
         char hresultBuffer[32];
         FormatHexValue(hresultBuffer, sizeof(hresultBuffer), crashExceptionHResult);
 
-        s_jsonWriter.WriteString("managed_exception_type", crashExceptionType);
-        s_jsonWriter.WriteString("managed_exception_hresult", hresultBuffer);
+        m_jsonWriter.WriteString("managed_exception_type", crashExceptionType);
+        m_jsonWriter.WriteString("managed_exception_hresult", hresultBuffer);
     }
 
-    WriteRegistersToJson(&s_jsonWriter, context);
-    s_jsonWriter.OpenArray("stack_frames");
-    WriteCrashSiteFrameToJson(&s_jsonWriter, context);
-    if (walkStack && g_walkStackCallback != nullptr)
+    WriteRegistersToJson(&m_jsonWriter, context);
+    m_jsonWriter.OpenArray("stack_frames");
+    WriteCrashSiteFrameToJson(&m_jsonWriter, context);
+    if (walkStack && m_walkStackCallback != nullptr)
     {
-        g_walkStackCallback(JsonFrameCallback, &s_jsonWriter);
+        m_walkStackCallback(JsonFrameCallback, &m_jsonWriter);
     }
-    s_jsonWriter.CloseArray(); // stack_frames
-    s_jsonWriter.CloseObject(); // thread
+    m_jsonWriter.CloseArray(); // stack_frames
+    m_jsonWriter.CloseObject(); // thread
 }

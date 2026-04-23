@@ -172,13 +172,14 @@ Parameters:
 --*/
 VOID PROCLogManagedCallstackForSignal(int signal);
 
-#ifdef FEATURE_INPROC_CRASHREPORT
-void PROCInitializeInProcCrashReport(const char* dumpPath);
-#endif
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+struct InProcCrashReporterSettings;
+void PROCInitializeInProcCrashReport(const InProcCrashReporterSettings& settings);
+#endif
 
 #endif //PAL_PROCESS_H_
 
