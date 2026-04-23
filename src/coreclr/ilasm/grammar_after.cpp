@@ -1809,7 +1809,7 @@ void AsmParse::error(const char* fmt, ...)
 {
     char *sz = (char*)(&wzUniBuf[(dwUniBuf >> 1)]);
     char *psz=&sz[0];
-    FILE* pF = ((!assem->m_fReportProgress)&&(assem->OnErrGo)) ? stdout : stderr;
+    FILE* pF = stderr;
     success = false;
     va_list args;
     va_start(args, fmt);
