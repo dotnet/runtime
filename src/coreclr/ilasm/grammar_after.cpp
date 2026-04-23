@@ -1807,6 +1807,7 @@ void PrintANSILine(FILE* pF, _In_ __nullterminated char* sz)
 /**************************************************************************/
 void AsmParse::error(const char* fmt, ...)
 {
+    if(assem->OnErrGo) return;
     char *sz = (char*)(&wzUniBuf[(dwUniBuf >> 1)]);
     char *psz=&sz[0];
     FILE* pF = stderr;
