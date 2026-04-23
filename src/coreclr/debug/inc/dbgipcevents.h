@@ -655,7 +655,7 @@ class MSLAYOUT VMPTR_Base
     // - In DAC: must be marshalled to a host-pointer and then they can be used via DAC
     // - In RS: opaque handles.
 private:
-    TADDR m_addr;
+    CORDB_ADDRESS m_addr;
 
 public:
     typedef VMPTR_Base<TTargetPtr,TDacPtr> VMPTR_This;
@@ -671,7 +671,7 @@ public:
     TDacPtr GetDacPtr() const
     {
         SUPPORTS_DAC;
-        return TDacPtr(m_addr);
+        return TDacPtr((TADDR)m_addr);
     }
 
 
@@ -681,13 +681,13 @@ public:
     void SetDacTargetPtr(TADDR addr)
     {
         SUPPORTS_DAC;
-        m_addr = addr;
+        m_addr = (CORDB_ADDRESS)addr;
     }
 
     void SetHostPtr(const TTargetPtr * pObject)
     {
         SUPPORTS_DAC;
-        m_addr = PTR_HOST_TO_TADDR(pObject);
+        m_addr = PTR_TO_CORDB_ADDRESS(pObject);
     }
 
 
@@ -701,7 +701,7 @@ public:
     // This is commonly used by the Left-side to create a VMPTR_ for a notification event.
     void SetRawPtr(TTargetPtr * ptr)
     {
-        m_addr = reinterpret_cast<TADDR>(ptr);
+        m_addr = PTR_TO_CORDB_ADDRESS(ptr);
     }
 
     // This will get the raw underlying target pointer.
@@ -709,7 +709,7 @@ public:
     // hijack or in-proc worker threads)
     TTargetPtr * GetRawPtr()
     {
-        return reinterpret_cast<TTargetPtr*>(m_addr);
+        return reinterpret_cast<TTargetPtr*>((TADDR)m_addr);
     }
 
     // Convenience for converting TTargetPtr --> VMPTR
@@ -735,21 +735,21 @@ public:
     // @dbgtodo  inspection: LSPTRs will go away entirely once we've moved completely over to DAC
     LsPointer<TTargetPtr> ToLsPtr()
     {
-        return LsPointer<TTargetPtr>::MakePtr( reinterpret_cast<TTargetPtr *>(m_addr));
+        return LsPointer<TTargetPtr>::MakePtr( reinterpret_cast<TTargetPtr *>((TADDR)m_addr));
     }
 #endif
 
     //
     // Operators to emulate Pointer semantics.
     //
-    bool IsNull() { SUPPORTS_DAC; return m_addr == (TADDR)0; }
+    bool IsNull() { SUPPORTS_DAC; return m_addr == (CORDB_ADDRESS)0; }
 
     static VMPTR_This NullPtr()
     {
         SUPPORTS_DAC;
 
         VMPTR_This dummy;
-        dummy.m_addr = (TADDR)NULL;
+        dummy.m_addr = (CORDB_ADDRESS)NULL;
         return dummy;
     }
 
