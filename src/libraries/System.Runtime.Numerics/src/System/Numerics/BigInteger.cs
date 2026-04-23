@@ -3376,8 +3376,7 @@ namespace System.Numerics
             // Rotate at 32-bit word granularity.
             Span<uint> zwSpan = allWords.Slice(0, zWordCount);
             {
-                const int BitsPerWord = 32;
-                int digitShiftMax = (int)(0x80000000 / BitsPerWord);
+                int digitShiftMax = (int)(0x80000000 / BitsPerUInt32);
                 int digitShift = digitShiftMax;
                 int smallShift = 0;
 
@@ -3385,7 +3384,7 @@ namespace System.Numerics
                 {
                     if (rotateLeftAmount != -0x80000000)
                     {
-                        (digitShift, smallShift) = Math.DivRem(-(int)rotateLeftAmount, BitsPerWord);
+                        (digitShift, smallShift) = Math.DivRem(-(int)rotateLeftAmount, BitsPerUInt32);
                     }
 
                     BigIntegerCalculator.RightShiftSelf(zwSpan, smallShift, out uint carry);
@@ -3401,7 +3400,7 @@ namespace System.Numerics
                 {
                     if (rotateLeftAmount != 0x80000000)
                     {
-                        (digitShift, smallShift) = Math.DivRem((int)rotateLeftAmount, BitsPerWord);
+                        (digitShift, smallShift) = Math.DivRem((int)rotateLeftAmount, BitsPerUInt32);
                     }
 
                     BigIntegerCalculator.LeftShiftSelf(zwSpan, smallShift, out uint carry);

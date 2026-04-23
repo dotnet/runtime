@@ -38,7 +38,7 @@ namespace System.Numerics
             }
         }
 
-        public static void RotateLeft(Span<nuint> bits, int digitShift, int smallShift)
+        private static void RotateLeft(Span<nuint> bits, int digitShift, int smallShift)
         {
             Debug.Assert(bits.Length > 0);
 
@@ -53,7 +53,7 @@ namespace System.Numerics
             SwapUpperAndLower(bits, bits.Length - digitShift);
         }
 
-        public static void RotateRight(Span<nuint> bits, int digitShift, int smallShift)
+        private static void RotateRight(Span<nuint> bits, int digitShift, int smallShift)
         {
             Debug.Assert(bits.Length > 0);
 
