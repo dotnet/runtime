@@ -179,7 +179,7 @@ namespace Internal.JitInterface
         /// </summary>
         /// <param name="method"></param>
         /// <returns></returns>
-        public static (WasmFuncType FuncType, string SignatureString) GetSignature(MethodDesc method)
+        public static WasmSignature GetSignature(MethodDesc method)
         {
             return GetSignature(method.Signature, GetLoweringFlags(method));
         }
@@ -211,7 +211,7 @@ namespace Internal.JitInterface
             IsUnmanagedCallersOnly = 0x4
         }
 
-        public static (WasmFuncType FuncType, string SignatureString) GetSignature(MethodSignature signature, LoweringFlags flags)
+        public static WasmSignature GetSignature(MethodSignature signature, LoweringFlags flags)
         {
             TypeDesc returnType = signature.ReturnType;
             WasmValueType pointerType = (signature.ReturnType.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
@@ -343,7 +343,7 @@ namespace Internal.JitInterface
             WasmResultType ret = returnIsVoid ? new(Array.Empty<WasmValueType>())
                 : new([LowerType(loweredReturnType)]);
 
-            return (new WasmFuncType(ps, ret), sigBuilder.ToString());
+            return new WasmSignature(new WasmFuncType(ps, ret), sigBuilder.ToString());
         }
     }
 }

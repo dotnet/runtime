@@ -128,7 +128,7 @@ namespace ILCompiler.ObjectWriter
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
 
-            (WasmFuncType signature, _) = WasmLowering.GetSignature(managedSignature, flags);
+            WasmFuncType signature = WasmLowering.GetSignature(managedSignature, flags).FuncType;
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(key, out int signatureIndex))
             {
