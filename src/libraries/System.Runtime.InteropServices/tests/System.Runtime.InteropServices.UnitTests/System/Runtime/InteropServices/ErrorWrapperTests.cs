@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -28,21 +27,20 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(value, wrapper.ErrorCode);
         }
 
-        public static IEnumerable<object[]> Ctor_Exception_TestData()
+        [Fact]
+        public void Ctor_NullException()
         {
-            yield return new object[] { null, 0 };
-
-            var exception = new SubException();
-            exception.SetHrResult(1000);
-            yield return new object[] { exception, 1000 };
+            var wrapper = new ErrorWrapper((Exception)null);
+            Assert.Equal(0, wrapper.ErrorCode);
         }
 
-        [Theory]
-        [MemberData(nameof(Ctor_Exception_TestData))]
-        public void Ctor_Exception(Exception exception, int expectedErrorCode)
+        [Fact]
+        public void Ctor_ExceptionWithHResult()
         {
+            var exception = new SubException();
+            exception.SetHrResult(1000);
             var wrapper = new ErrorWrapper(exception);
-            Assert.Equal(expectedErrorCode, wrapper.ErrorCode);
+            Assert.Equal(1000, wrapper.ErrorCode);
         }
 
         [Fact]
