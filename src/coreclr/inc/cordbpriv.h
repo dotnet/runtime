@@ -49,7 +49,7 @@ enum DebuggerControlFlag
 // Flags used to control the debuggable state of modules and
 // assemblies.
 //
-// [cDAC] [Loader]: Contract depends on DACF_NONE, DACF_ALLOW_JIT_OPTS, DACF_ENC_ENABLED, DACF_CONTROL_FLAGS_MASK.
+// [cDAC] [Loader]: Contract depends on DACF_NONE, DACF_ALLOW_JIT_OPTS, DACF_ENC_ENABLED, DACF_IGNORE_PDBS, DACF_CONTROL_FLAGS_MASK.
 enum DebuggerAssemblyControlFlags
 {
     DACF_NONE                       = 0x00,

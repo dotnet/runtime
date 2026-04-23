@@ -621,6 +621,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
 
 // Provided an async variant, emits an async wrapper that drops the returned value.
 // Used in the covariant return scenario.
+// The emitted code matches EmitReturnDroppingThunk in the Managed Type System.
 void MethodDesc::EmitReturnDroppingThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL)
 {
     _ASSERTE(pAsyncOtherVariant->IsAsyncVariantMethod());
