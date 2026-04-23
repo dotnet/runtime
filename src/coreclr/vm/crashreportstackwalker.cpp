@@ -25,6 +25,8 @@ struct WalkContext
     void* userCtx;
 };
 
+static void BuildTypeName(char* buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
+
 static
 StackWalkAction
 FrameCallbackAdapter(
@@ -55,28 +57,7 @@ FrameCallbackAdapter(
     }
 
     char classNameBuf[CRASHREPORT_STRING_BUFFER_SIZE] = { 0 };
-    size_t index = 0;
-    if (namespaceName != nullptr)
-    {
-        while (*namespaceName != '\0' && index + 1 < sizeof(classNameBuf))
-        {
-            classNameBuf[index++] = *namespaceName++;
-        }
-    }
-
-    if (className != nullptr)
-    {
-        if (index > 0 && index + 1 < sizeof(classNameBuf))
-        {
-            classNameBuf[index++] = '.';
-        }
-
-        while (*className != '\0' && index + 1 < sizeof(classNameBuf))
-        {
-            classNameBuf[index++] = *className++;
-        }
-    }
-    classNameBuf[index] = '\0';
+    BuildTypeName(classNameBuf, sizeof(classNameBuf), namespaceName, className);
 
     const char* moduleName = nullptr;
     Module* pModule = pMD->GetModule();
