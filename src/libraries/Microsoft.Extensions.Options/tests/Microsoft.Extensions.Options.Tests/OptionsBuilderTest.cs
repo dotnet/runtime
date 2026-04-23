@@ -872,7 +872,7 @@ namespace Microsoft.Extensions.Options.Tests
 
         private class ObservableDependency
         {
-            public bool HasBeenCalled { get; private set; } = false;
+            public bool HasBeenCalled { get; private set; }
 
             public void Call()
             {
