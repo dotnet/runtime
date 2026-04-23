@@ -660,7 +660,7 @@
     <value>The converter for derived type '{0}' does not support metadata writes or reads.</value>
   </data>
   <data name="Polymorphism_TypeDoesNotSupportPolymorphism" xml:space="preserve">
-    <value>Specified type '{0}' does not support polymorphism. Polymorphic types cannot be structs, sealed types, generic types or System.Object.</value>
+    <value>Specified type '{0}' does not support polymorphism. Polymorphic types cannot be structs, sealed types, open generic type definitions or System.Object.</value>
   </data>
   <data name="Polymorphism_DerivedTypeIsNotSupported" xml:space="preserve">
     <value>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type, must not be open generic type definitions and cannot be abstract classes or interfaces unless 'JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor' is specified.</value>
