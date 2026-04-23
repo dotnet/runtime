@@ -24,9 +24,9 @@ namespace System.Numerics
           ISignedNumber<Complex>,
           IUtf8SpanFormattable
     {
-        private const NumberStyles DefaultNumberStyle = NumberStyles.Float | NumberStyles.AllowThousands;
+        internal const NumberStyles DefaultNumberStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
-        private const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
+        internal const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
                                                          | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
                                                          | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
                                                          | NumberStyles.AllowThousands | NumberStyles.AllowExponent

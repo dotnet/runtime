@@ -23,14 +23,6 @@ namespace System.Numerics
           IUtf8SpanFormattable
         where T : IFloatingPointIeee754<T>, IMinMaxValue<T>
     {
-        private const NumberStyles DefaultNumberStyle = NumberStyles.Float | NumberStyles.AllowThousands;
-
-        private const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
-                                                         | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
-                                                         | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
-                                                         | NumberStyles.AllowThousands | NumberStyles.AllowExponent
-                                                         | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
-
         public static readonly Complex<T> Zero = new(T.Zero, T.Zero);
         public static readonly Complex<T> One = new(T.One, T.Zero);
         public static readonly Complex<T> ImaginaryOne = new(T.Zero, T.One);
@@ -1379,13 +1371,13 @@ namespace System.Numerics
         private static void ValidateParseStyleFloatingPoint(NumberStyles style)
         {
             // Check for undefined flags or hex number
-            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
+            if ((style & (Complex.InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
             {
                 ThrowInvalid(style);
 
                 static void ThrowInvalid(NumberStyles value)
                 {
-                    if ((value & InvalidNumberStyles) != 0)
+                    if ((value & Complex.InvalidNumberStyles) != 0)
                     {
                         throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
                     }
@@ -1411,10 +1403,10 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
-        public static Complex<T> Parse(string s, IFormatProvider? provider) => Parse(s, DefaultNumberStyle, provider);
+        public static Complex<T> Parse(string s, IFormatProvider? provider) => Parse(s, Complex.DefaultNumberStyle, provider);
 
         /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
-        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Complex<T> result) => TryParse(s, DefaultNumberStyle, provider, out result);
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Complex<T> result) => TryParse(s, Complex.DefaultNumberStyle, provider, out result);
 
         //
         // ISignedNumber
@@ -1481,10 +1473,10 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
-        public static Complex<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, DefaultNumberStyle, provider);
+        public static Complex<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, Complex.DefaultNumberStyle, provider);
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
-        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Complex<T> result) => TryParse(s, DefaultNumberStyle, provider, out result);
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Complex<T> result) => TryParse(s, Complex.DefaultNumberStyle, provider, out result);
 
         //
         // IUnaryPlusOperators
@@ -1498,9 +1490,9 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
-        public static Complex<T> Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, DefaultNumberStyle, provider);
+        public static Complex<T> Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, Complex.DefaultNumberStyle, provider);
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out Complex<T> result) => TryParse(utf8Text, DefaultNumberStyle, provider, out result);
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out Complex<T> result) => TryParse(utf8Text, Complex.DefaultNumberStyle, provider, out result);
     }
 }
