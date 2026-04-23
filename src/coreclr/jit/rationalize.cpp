@@ -656,7 +656,42 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
 
     if (isVectorToMask)
     {
-        isVectorBlendCompatible = varTypeIsFloating(simdBaseType) || varTypeIsByte(simdBaseType);
+        // The non-mask blend instructions only come in byte (pblendvb) or floating
+        // (blendvp[sd]) forms. We can use the byte variant as long as we have a
+        // per-element mask, or we can simply use the equivalent-sized floating type.
+        GenTree* maskVector = op3->AsHWIntrinsic()->Op(1);
+
+        if (!maskVector->IsVectorPerElementMask(simdBaseType, simdSize))
+        {
+            switch (simdBaseType)
+            {
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    isVectorBlendCompatible = false;
+                    break;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    simdBaseType = TYP_FLOAT;
+                    break;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    simdBaseType = TYP_DOUBLE;
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+        }
     }
     else if (scratchSideEffects.IsLirInvariantInRange(m_compiler, op2, node))
     {
@@ -702,6 +737,7 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
         intrinsic = NI_X86Base_BlendVariable;
     }
 
+    node->SetSimdBaseType(simdBaseType);
     node->ChangeHWIntrinsicId(intrinsic);
 }
 
