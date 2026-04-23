@@ -94,6 +94,12 @@ namespace Microsoft.Interop.Analyzers
         {
             IMethodSymbol method = (IMethodSymbol)context.Symbol;
 
+            // With Analyze | ReportDiagnostics, the callback fires for both the partial definition
+            // and the partial implementation as separate symbols. Skip the implementation part to
+            // avoid reporting duplicate diagnostics — we only want to report from the definition.
+            if (method.PartialDefinitionPart is not null)
+                return false;
+
             // Only analyze methods with LibraryImportAttribute
             AttributeData? libraryImportAttr = null;
             foreach (AttributeData attr in method.GetAttributes())
@@ -172,9 +178,18 @@ namespace Microsoft.Interop.Analyzers
             // Calculate stub information and collect diagnostics
             var diagnostics = CalculateDiagnostics(methodSyntax, method, libraryImportAttr, env, options, context.CancellationToken);
 
+            SyntaxTree userSyntaxTree = methodSyntax.SyntaxTree;
             foreach (DiagnosticInfo diagnostic in diagnostics)
             {
-                context.ReportDiagnostic(diagnostic.ToDiagnostic());
+                // Only report diagnostics located in the user's (non-generated) source.
+                // With Analyze | ReportDiagnostics, some diagnostics may have locations in
+                // generated source; we must filter those out to avoid duplicates.
+                if (diagnostic.Location is null
+                    || !diagnostic.Location.IsInSource
+                    || diagnostic.Location.SourceTree == userSyntaxTree)
+                {
+                    context.ReportDiagnostic(diagnostic.ToDiagnostic());
+                }
             }
         }
 
