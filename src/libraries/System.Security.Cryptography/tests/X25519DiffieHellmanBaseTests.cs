@@ -8,6 +8,8 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    // The abstract test class that tests instance members of X25519DiffieHellman. It tests the internal "Implementation"
+    // by platform, as well as any platform specific implementations that derive from X25519DiffieHellman.
     public abstract class X25519DiffieHellmanBaseTests
     {
         private static readonly PbeParameters s_aes128Pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 2);
@@ -167,7 +169,6 @@ namespace System.Security.Cryptography.Tests
         public void ExportSubjectPublicKeyInfo_Allocated_Independent()
         {
             using X25519DiffieHellman xdh = GenerateKey();
-            xdh.ExportSubjectPublicKeyInfo().AsSpan().Clear();
             byte[] spki1 = xdh.ExportSubjectPublicKeyInfo();
             byte[] spki2 = xdh.ExportSubjectPublicKeyInfo();
             Assert.NotSame(spki1, spki2);

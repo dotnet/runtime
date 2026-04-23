@@ -8,6 +8,9 @@ using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
+    // Tests the contract of X25519DiffieHellman implementations and how they interact with each other. This does not
+    // require a functional implementation of X25519, it tests how public members use protected Core members, argument
+    // validation, and disposal.
     public static class X25519DiffieHellmanContractTests
     {
         private static readonly PbeParameters s_aes128Pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 2);
@@ -355,6 +358,9 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void TryExportPkcs8PrivateKey()
         {
+            // Test with various inputs of different sizes from TryExportPkcs8PrivateKeyCore that it reports
+            // as-is to the public APIs. Invalid behavior like reporting more byte written than possible is handled
+            // elsewhere.
             int bufferSize = Random.Shared.Next(50, 1024);
             int writtenSize = Random.Shared.Next(48, bufferSize);
             bool success = (writtenSize & 1) == 1;
@@ -371,6 +377,34 @@ namespace System.Security.Cryptography.Tests
 
             AssertExtensions.TrueExpression(success == xdh.TryExportPkcs8PrivateKey(buffer, out int written));
             Assert.Equal(writtenSize, written);
+        }
+
+        [Theory]
+        [InlineData(true, 0)]
+        [InlineData(true, -1)]
+        [InlineData(true, int.MaxValue)]
+        [InlineData(true, 65)]
+        [InlineData(false, 0)]
+        [InlineData(false, -1)]
+        [InlineData(false, int.MaxValue)]
+        public static void TryExportPkcs8PrivateKey_GarbageInGarbageOut(bool coreReturn, int coreBytesWritten)
+        {
+            byte[] buffer = new byte[64];
+
+            using X25519DiffieHellmanContract xdh = new()
+            {
+                OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    AssertExtensions.Same(buffer, destination);
+                    bytesWritten = coreBytesWritten;
+                    return coreReturn;
+                }
+            };
+
+            bool publicReturn = xdh.TryExportPkcs8PrivateKey(buffer, out int publicBytesWritten);
+            Assert.Equal(coreReturn, publicReturn);
+            Assert.Equal(coreBytesWritten, publicBytesWritten);
+            Assert.Equal(1, xdh.TryExportPkcs8PrivateKeyCoreCount);
         }
 
         [Fact]
@@ -391,6 +425,7 @@ namespace System.Security.Cryptography.Tests
             byte[] exported = xdh.ExportPkcs8PrivateKey();
             AssertExtensions.FilledWith<byte>(0x88, exported);
             Assert.Equal(size, exported.Length);
+            Assert.Equal(1, xdh.TryExportPkcs8PrivateKeyCoreCount);
         }
 
         [Fact]
