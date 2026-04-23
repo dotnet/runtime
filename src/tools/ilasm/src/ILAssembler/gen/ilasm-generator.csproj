@@ -36,7 +36,7 @@
     </ItemGroup>
     <WriteLinesToFile
       File="%(_AntlrGeneratedFiles.Identity).tmp"
-      Lines="$([System.IO.File]::ReadAllText('%(_AntlrGeneratedFiles.Identity)').Replace('Generated from $(ProjectDir)CIL.g4', 'Generated from CIL.g4'))"
+      Lines="$([System.IO.File]::ReadAllText('%(_AntlrGeneratedFiles.Identity)').Replace('Generated from $([System.IO.Path]::GetFullPath('$(ProjectDir)CIL.g4').Replace('\','/'))', 'Generated from CIL.g4').Replace('Generated from $(ProjectDir)CIL.g4', 'Generated from CIL.g4'))"
       Overwrite="true" />
     <Move SourceFiles="%(_AntlrGeneratedFiles.Identity).tmp" DestinationFiles="%(_AntlrGeneratedFiles.Identity)" />
   </Target>
