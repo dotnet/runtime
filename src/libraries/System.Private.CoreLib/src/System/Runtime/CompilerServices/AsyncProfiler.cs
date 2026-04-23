@@ -143,6 +143,7 @@ namespace System.Runtime.CompilerServices
                             }
 
                             s_metadataRevision = Revision;
+                            s_lastSyncClockEventTimestamp = Stopwatch.GetTimestamp();
                         }
                     }
                 }
@@ -164,25 +165,28 @@ namespace System.Runtime.CompilerServices
 
                 s_lastSyncClockEventTimestamp = currentTimestamp;
 
-                // SyncClock payload:
-                // [qpcSync (compressed uint64)]
-                // [utcSync (compressed uint64)]
-                int maxEventPayloadSize = EventBuffer.Serializer.MaxCompressedUInt64Size + EventBuffer.Serializer.MaxCompressedUInt64Size;
-
-                AsyncThreadContext transientContext = AsyncThreadContext.AcquireTransient();
-
-                ref EventBuffer eventBuffer = ref transientContext.EventBuffer;
-                if (EventBuffer.Serializer.AsyncEventHeader(transientContext, ref eventBuffer, AsyncEventID.AsyncProfilerSyncClock, maxEventPayloadSize) >= 0)
+                if (IsEnabled.AnyAsyncEvents(ActiveEventKeywords))
                 {
-                    SyncClock(out long utcTimeSync, out long qpcSync);
-                    EventBuffer.Serializer.WriteCompressedUInt64(eventBuffer.Data, ref eventBuffer.Index, (ulong)qpcSync);
-                    EventBuffer.Serializer.WriteCompressedUInt64(eventBuffer.Data, ref eventBuffer.Index, (ulong)utcTimeSync);
+                    AsyncThreadContext transientContext = AsyncThreadContext.AcquireTransient();
 
-                    // Force flush to deliver event promptly.
-                    transientContext.Flush();
+                    // SyncClock payload:
+                    // [qpcSync (compressed uint64)]
+                    // [utcSync (compressed uint64)]
+                    int maxEventPayloadSize = EventBuffer.Serializer.MaxCompressedUInt64Size + EventBuffer.Serializer.MaxCompressedUInt64Size;
+
+                    ref EventBuffer eventBuffer = ref transientContext.EventBuffer;
+                    if (EventBuffer.Serializer.AsyncEventHeader(transientContext, ref eventBuffer, AsyncEventID.AsyncProfilerSyncClock, maxEventPayloadSize) >= 0)
+                    {
+                        SyncClock(out long utcTimeSync, out long qpcSync);
+                        EventBuffer.Serializer.WriteCompressedUInt64(eventBuffer.Data, ref eventBuffer.Index, (ulong)qpcSync);
+                        EventBuffer.Serializer.WriteCompressedUInt64(eventBuffer.Data, ref eventBuffer.Index, (ulong)utcTimeSync);
+
+                        // Force flush to deliver event promptly.
+                        transientContext.Flush();
+                    }
+
+                    AsyncThreadContext.Release(transientContext);
                 }
-
-                AsyncThreadContext.Release(transientContext);
             }
 
             private static void SyncClock(out long utcTimeSync, out long qpcSync)
@@ -594,6 +598,8 @@ namespace System.Runtime.CompilerServices
                 else
                 {
                     context = new AsyncThreadContext();
+                    context.ConfigRevision = Config.Revision;
+                    context.ActiveEventKeywords = Config.ActiveEventKeywords;
                 }
 
                 context.InUse = true;
@@ -656,12 +662,12 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(InUse || BlockContext);
 
-                ref EventBuffer eventBuffer = ref EventBuffer;
-
-                if (eventBuffer.EventCount == 0)
+                if (_eventBuffer.EventCount == 0)
                 {
                     return;
                 }
+
+                ref EventBuffer eventBuffer = ref EventBuffer;
 
                 int index = 1; // Skip version
 
