@@ -649,33 +649,35 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
     // variant
     SideEffectSet scratchSideEffects;
 
-    if (scratchSideEffects.IsLirInvariantInRange(m_compiler, op2, node))
+    // If the mask was originally a vector, we don't want to create a mask solely for
+    // the purpose of embedding it. vpmov*2m is relatively costly compared to blendvp*.
+    bool isVectorToMask          = op3->OperIsConvertVectorToMask();
+    bool isVectorBlendCompatible = true;
+
+    if (isVectorToMask)
+    {
+        isVectorBlendCompatible = varTypeIsFloating(simdBaseType) || varTypeIsByte(simdBaseType);
+    }
+    else if (scratchSideEffects.IsLirInvariantInRange(m_compiler, op2, node))
     {
         unsigned  tgtMaskSize     = simdSize / genTypeSize(simdBaseType);
         var_types tgtSimdBaseType = TYP_UNDEF;
 
         if (op2->isEmbeddedMaskingCompatible(m_compiler, tgtMaskSize, tgtSimdBaseType))
         {
-            // Make sure we had a mask to begin with. We don't want to create a mask
-            // solely for the purpose of embedding it.
+            // We are going to utilize the embedded mask, so we don't need to rewrite. However,
+            // we want to fixup the simdBaseType here since it simplifies lowering and allows
+            // both embedded broadcast and the mask to be live simultaneously.
 
-            if (!op3->OperIsHWIntrinsic() ||
-                (op3->AsHWIntrinsic()->GetHWIntrinsicId() != NI_AVX512_ConvertVectorToMask))
+            if (tgtSimdBaseType != TYP_UNDEF)
             {
-                // We are going to utilize the embedded mask, so we don't need to rewrite. However,
-                // we want to fixup the simdBaseType here since it simplifies lowering and allows
-                // both embedded broadcast and the mask to be live simultaneously.
-
-                if (tgtSimdBaseType != TYP_UNDEF)
-                {
-                    op2->AsHWIntrinsic()->SetSimdBaseType(tgtSimdBaseType);
-                }
-                return;
+                op2->AsHWIntrinsic()->SetSimdBaseType(tgtSimdBaseType);
             }
+            return;
         }
     }
 
-    if (!ShouldRewriteToNonMaskHWIntrinsic(op3))
+    if (!isVectorBlendCompatible || !ShouldRewriteToNonMaskHWIntrinsic(op3))
     {
         return;
     }
