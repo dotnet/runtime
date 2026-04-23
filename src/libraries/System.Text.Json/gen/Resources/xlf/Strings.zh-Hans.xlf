@@ -133,13 +133,13 @@
         <note />
       </trans-unit>
       <trans-unit id="OpenGenericDerivedTypeNotSupportedMessageFormat">
-        <source>The open generic type '{0}' cannot be used as a derived type for the non-generic polymorphic type '{1}'. The base type must be generic to resolve open generic derived types.</source>
-        <target state="new">The open generic type '{0}' cannot be used as a derived type for the non-generic polymorphic type '{1}'. The base type must be generic to resolve open generic derived types.</target>
+        <source>The open generic type '{0}' cannot be used as a derived type for the polymorphic type '{1}'. The type arguments of the open generic derived type must be resolvable from the base type's generic arguments.</source>
+        <target state="new">The open generic type '{0}' cannot be used as a derived type for the polymorphic type '{1}'. The type arguments of the open generic derived type must be resolvable from the base type's generic arguments.</target>
         <note />
       </trans-unit>
       <trans-unit id="OpenGenericDerivedTypeNotSupportedTitle">
-        <source>Open generic derived type is not supported on a non-generic base type.</source>
-        <target state="new">Open generic derived type is not supported on a non-generic base type.</target>
+        <source>Open generic derived type is not resolvable for the polymorphic base type.</source>
+        <target state="new">Open generic derived type is not resolvable for the polymorphic base type.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">

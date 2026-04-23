@@ -51,6 +51,13 @@ namespace System.Text.Json.SourceGeneration
 
         public required bool IsPolymorphic { get; init; }
 
+        /// <summary>
+        /// Resolved open generic derived types for polymorphic serialization.
+        /// These are open generic <c>[JsonDerivedType]</c> declarations that have been
+        /// resolved to closed types at compile time using the base type's type arguments.
+        /// </summary>
+        public required ImmutableEquatableArray<PolymorphicDerivedTypeSpec>? OpenGenericDerivedTypes { get; init; }
+
         public required bool IsValueTuple { get; init; }
 
         public required JsonNumberHandling? NumberHandling { get; init; }

@@ -601,7 +601,8 @@ namespace System.Text.Json.SourceGeneration
                     out JsonIgnoreCondition? typeIgnoreCondition,
                     out bool foundJsonConverterAttribute,
                     out TypeRef? customConverterType,
-                    out bool isPolymorphic);
+                    out bool isPolymorphic,
+                    out List<PolymorphicDerivedTypeSpec>? openGenericDerivedTypes);
 
                 if (type is { IsRefLikeType: true } or INamedTypeSymbol { IsUnboundGenericType: true } or IErrorTypeSymbol)
                 {
@@ -732,6 +733,7 @@ namespace System.Text.Json.SourceGeneration
                     ClassType = classType,
                     PrimitiveTypeKind = primitiveTypeKind,
                     IsPolymorphic = isPolymorphic,
+                    OpenGenericDerivedTypes = openGenericDerivedTypes?.ToImmutableEquatableArray(),
                     NumberHandling = numberHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
                     PreferredPropertyObjectCreationHandling = preferredPropertyObjectCreationHandling,
@@ -770,7 +772,8 @@ namespace System.Text.Json.SourceGeneration
                 out JsonIgnoreCondition? typeIgnoreCondition,
                 out bool foundJsonConverterAttribute,
                 out TypeRef? customConverterType,
-                out bool isPolymorphic)
+                out bool isPolymorphic,
+                out List<PolymorphicDerivedTypeSpec>? openGenericDerivedTypes)
             {
                 numberHandling = null;
                 unmappedMemberHandling = null;
@@ -780,6 +783,7 @@ namespace System.Text.Json.SourceGeneration
                 customConverterType = null;
                 foundJsonConverterAttribute = false;
                 isPolymorphic = false;
+                openGenericDerivedTypes = null;
 
                 foreach (AttributeData attributeData in typeToGenerate.Type.GetAttributes())
                 {
@@ -848,12 +852,26 @@ namespace System.Text.Json.SourceGeneration
                         Debug.Assert(attributeData.ConstructorArguments.Length > 0);
                         var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
 
-                        // Open generic derived types (e.g. typeof(Derived<>)) are resolved at runtime
+                        // Open generic derived types (e.g. typeof(Derived<>)) are resolved at compile time
                         // based on the constructed base type's type arguments.
-                        // Skip enqueueing them for source generation.
-                        if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true })
+                        if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
                         {
-                            if (typeToGenerate.Type is not INamedTypeSymbol { IsGenericType: true })
+                            if (typeToGenerate.Type is INamedTypeSymbol { IsGenericType: true } constructedBase
+                                && TryResolveOpenGenericDerivedType(unboundDerived, constructedBase, out INamedTypeSymbol? resolvedType))
+                            {
+                                EnqueueType(resolvedType, typeToGenerate.Mode);
+
+                                object? discriminator = attributeData.ConstructorArguments.Length > 1
+                                    ? attributeData.ConstructorArguments[1].Value
+                                    : null;
+
+                                (openGenericDerivedTypes ??= new()).Add(new PolymorphicDerivedTypeSpec
+                                {
+                                    DerivedType = new TypeRef(resolvedType),
+                                    TypeDiscriminator = discriminator,
+                                });
+                            }
+                            else
                             {
                                 ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeNotSupported, typeToGenerate.Location, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
                             }
@@ -870,6 +888,136 @@ namespace System.Text.Json.SourceGeneration
 
                         isPolymorphic = true;
                     }
+                }
+            }
+
+            /// <summary>
+            /// Resolves an unbound generic derived type to a closed type using the
+            /// type arguments from the constructed base type at compile time.
+            /// </summary>
+            private static bool TryResolveOpenGenericDerivedType(
+                INamedTypeSymbol unboundDerived,
+                INamedTypeSymbol constructedBase,
+                [NotNullWhen(true)] out INamedTypeSymbol? resolvedType)
+            {
+                resolvedType = null;
+
+                if (!constructedBase.IsGenericType)
+                {
+                    return false;
+                }
+
+                INamedTypeSymbol derivedDefinition = unboundDerived.OriginalDefinition;
+                INamedTypeSymbol baseDefinition = constructedBase.OriginalDefinition;
+
+                // Find the ancestor of the derived type definition that matches the base type definition.
+                INamedTypeSymbol? matchingBase = FindMatchingBaseType(derivedDefinition, baseDefinition);
+                if (matchingBase is null)
+                {
+                    return false;
+                }
+
+                var baseTypeArgs = constructedBase.TypeArguments;
+                var matchingBaseArgs = matchingBase.TypeArguments;
+                var derivedTypeParams = derivedDefinition.TypeParameters;
+                var resolved = new ITypeSymbol?[derivedTypeParams.Length];
+
+                // Unify the type arguments to build a mapping.
+                for (int i = 0; i < matchingBaseArgs.Length; i++)
+                {
+                    if (!TryUnifyTypes(matchingBaseArgs[i], baseTypeArgs[i], derivedTypeParams, resolved))
+                    {
+                        return false;
+                    }
+                }
+
+                // Verify all type parameters were resolved.
+                for (int i = 0; i < resolved.Length; i++)
+                {
+                    if (resolved[i] is null)
+                    {
+                        return false;
+                    }
+                }
+
+                resolvedType = derivedDefinition.Construct(resolved!);
+                return true;
+
+                static INamedTypeSymbol? FindMatchingBaseType(INamedTypeSymbol derivedDef, INamedTypeSymbol baseDef)
+                {
+                    if (baseDef.TypeKind == TypeKind.Interface)
+                    {
+                        foreach (INamedTypeSymbol iface in derivedDef.AllInterfaces)
+                        {
+                            if (SymbolEqualityComparer.Default.Equals(iface.OriginalDefinition, baseDef))
+                            {
+                                return iface;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (INamedTypeSymbol? current = derivedDef.BaseType; current is not null; current = current.BaseType)
+                        {
+                            if (SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, baseDef))
+                            {
+                                return current;
+                            }
+                        }
+                    }
+
+                    return null;
+                }
+
+                static bool TryUnifyTypes(
+                    ITypeSymbol pattern, ITypeSymbol concrete,
+                    System.Collections.Immutable.ImmutableArray<ITypeParameterSymbol> typeParams,
+                    ITypeSymbol?[] resolvedArgs)
+                {
+                    if (pattern is ITypeParameterSymbol typeParam)
+                    {
+                        int index = typeParams.IndexOf(typeParam, SymbolEqualityComparer.Default);
+                        if (index < 0)
+                        {
+                            return false;
+                        }
+
+                        if (resolvedArgs[index] is null)
+                        {
+                            resolvedArgs[index] = concrete;
+                            return true;
+                        }
+
+                        return SymbolEqualityComparer.Default.Equals(resolvedArgs[index], concrete);
+                    }
+
+                    if (pattern is INamedTypeSymbol { IsGenericType: true } namedPattern)
+                    {
+                        if (concrete is not INamedTypeSymbol { IsGenericType: true } namedConcrete)
+                        {
+                            return false;
+                        }
+
+                        if (!SymbolEqualityComparer.Default.Equals(namedPattern.OriginalDefinition, namedConcrete.OriginalDefinition))
+                        {
+                            return false;
+                        }
+
+                        var patternArgs = namedPattern.TypeArguments;
+                        var concreteArgs = namedConcrete.TypeArguments;
+
+                        for (int i = 0; i < patternArgs.Length; i++)
+                        {
+                            if (!TryUnifyTypes(patternArgs[i], concreteArgs[i], typeParams, resolvedArgs))
+                            {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    }
+
+                    return SymbolEqualityComparer.Default.Equals(pattern, concrete);
                 }
             }
 

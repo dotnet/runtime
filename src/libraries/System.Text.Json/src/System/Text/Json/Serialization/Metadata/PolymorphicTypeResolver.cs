@@ -36,30 +36,18 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(typeDiscriminator is null or int or string);
 
-                Type resolvedDerivedType = derivedType;
-
-                if (derivedType is not null && derivedType.IsGenericTypeDefinition)
+                if (!IsSupportedDerivedType(BaseType, derivedType) ||
+                    (derivedType.IsAbstract && UnknownDerivedTypeHandling != JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor))
                 {
-                    if (!TryResolveOpenGenericDerivedType(derivedType, BaseType, out Type? resolved))
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(BaseType, derivedType);
-                    }
-
-                    resolvedDerivedType = resolved;
+                    ThrowHelper.ThrowInvalidOperationException_DerivedTypeNotSupported(BaseType, derivedType);
                 }
 
-                if (!IsSupportedDerivedType(BaseType, resolvedDerivedType) ||
-                    (resolvedDerivedType.IsAbstract && UnknownDerivedTypeHandling != JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor))
-                {
-                    ThrowHelper.ThrowInvalidOperationException_DerivedTypeNotSupported(BaseType, resolvedDerivedType);
-                }
-
-                JsonTypeInfo derivedTypeInfo = options.GetTypeInfoInternal(resolvedDerivedType);
+                JsonTypeInfo derivedTypeInfo = options.GetTypeInfoInternal(derivedType);
                 DerivedJsonTypeInfo derivedTypeInfoHolder = new(typeDiscriminator, derivedTypeInfo);
 
-                if (!_typeToDiscriminatorId.TryAdd(resolvedDerivedType, derivedTypeInfoHolder))
+                if (!_typeToDiscriminatorId.TryAdd(derivedType, derivedTypeInfoHolder))
                 {
-                    ThrowHelper.ThrowInvalidOperationException_DerivedTypeIsAlreadySpecified(BaseType, resolvedDerivedType);
+                    ThrowHelper.ThrowInvalidOperationException_DerivedTypeIsAlreadySpecified(BaseType, derivedType);
                 }
 
                 if (typeDiscriminator is not null)
@@ -204,153 +192,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         public static bool IsSupportedDerivedType(Type baseType, Type? derivedType) =>
             baseType.IsAssignableFrom(derivedType) && !derivedType.IsGenericTypeDefinition;
-
-        /// <summary>
-        /// Attempts to resolve an open generic derived type to a closed generic type
-        /// using the type arguments of the constructed base type.
-        /// </summary>
-        /// <remarks>
-        /// For example, given <c>Base&lt;int&gt;</c> and <c>Derived&lt;&gt;</c> where
-        /// <c>Derived&lt;T&gt; : Base&lt;T&gt;</c>, this resolves to <c>Derived&lt;int&gt;</c>.
-        /// </remarks>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-            Justification = "The types being constructed are derived types explicitly declared as polymorphic by the user.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The call to GetInterfaces is used to find the inheritance relationship between the derived type and the base type definition.")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The open generic derived types are explicitly declared by the user and MakeGenericType is used to construct them with resolved type arguments.")]
-        internal static bool TryResolveOpenGenericDerivedType(Type openDerivedType, Type constructedBaseType, [NotNullWhen(true)] out Type? closedDerivedType)
-        {
-            Debug.Assert(openDerivedType.IsGenericTypeDefinition);
-            closedDerivedType = null;
-
-            if (!constructedBaseType.IsGenericType)
-            {
-                // Base type is not generic; cannot resolve type parameters of an open generic derived type.
-                return false;
-            }
-
-            Type baseTypeDefinition = constructedBaseType.GetGenericTypeDefinition();
-            Type[] baseTypeArgs = constructedBaseType.GetGenericArguments();
-
-            // Find the ancestor of the open derived type that matches the base type definition.
-            Type? matchingBase = FindMatchingBaseType(openDerivedType, baseTypeDefinition);
-            if (matchingBase is null)
-            {
-                return false;
-            }
-
-            Type[] matchingBaseArgs = matchingBase.GetGenericArguments();
-            Debug.Assert(matchingBaseArgs.Length == baseTypeArgs.Length);
-
-            // Build a mapping from the derived type's generic parameters to concrete types.
-            Type[] derivedTypeParams = openDerivedType.GetGenericArguments();
-            Type?[] resolvedArgs = new Type?[derivedTypeParams.Length];
-
-            for (int i = 0; i < matchingBaseArgs.Length; i++)
-            {
-                if (!TryUnifyTypes(matchingBaseArgs[i], baseTypeArgs[i], derivedTypeParams, resolvedArgs))
-                {
-                    return false;
-                }
-            }
-
-            // Verify all type parameters were resolved.
-            for (int i = 0; i < resolvedArgs.Length; i++)
-            {
-                if (resolvedArgs[i] is null)
-                {
-                    return false;
-                }
-            }
-
-            try
-            {
-                closedDerivedType = openDerivedType.MakeGenericType(resolvedArgs!);
-                return true;
-            }
-            catch (ArgumentException)
-            {
-                // Type constraints were violated.
-                return false;
-            }
-
-            static Type? FindMatchingBaseType(Type derivedType, Type baseTypeDefinition)
-            {
-                if (baseTypeDefinition.IsInterface)
-                {
-                    foreach (Type iface in derivedType.GetInterfaces())
-                    {
-                        if (iface.IsGenericType && iface.GetGenericTypeDefinition() == baseTypeDefinition)
-                        {
-                            return iface;
-                        }
-                    }
-                }
-                else
-                {
-                    for (Type? current = derivedType.BaseType; current is not null; current = current.BaseType)
-                    {
-                        if (current.IsGenericType && current.GetGenericTypeDefinition() == baseTypeDefinition)
-                        {
-                            return current;
-                        }
-                    }
-                }
-
-                return null;
-            }
-
-            static bool TryUnifyTypes(Type pattern, Type concrete, Type[] typeParams, Type?[] resolvedArgs)
-            {
-                if (pattern.IsGenericParameter)
-                {
-                    int index = Array.IndexOf(typeParams, pattern);
-                    if (index < 0)
-                    {
-                        // Not one of the derived type's type parameters.
-                        return false;
-                    }
-
-                    if (resolvedArgs[index] is null)
-                    {
-                        resolvedArgs[index] = concrete;
-                        return true;
-                    }
-
-                    return resolvedArgs[index] == concrete;
-                }
-
-                if (pattern.IsGenericType)
-                {
-                    if (!concrete.IsGenericType)
-                    {
-                        return false;
-                    }
-
-                    if (pattern.GetGenericTypeDefinition() != concrete.GetGenericTypeDefinition())
-                    {
-                        return false;
-                    }
-
-                    Type[] patternArgs = pattern.GetGenericArguments();
-                    Type[] concreteArgs = concrete.GetGenericArguments();
-
-                    for (int i = 0; i < patternArgs.Length; i++)
-                    {
-                        if (!TryUnifyTypes(patternArgs[i], concreteArgs[i], typeParams, resolvedArgs))
-                        {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-
-                // Non-generic, non-parameter type: must be an exact match.
-                return pattern == concrete;
-            }
-        }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "The call to GetInterfaces will cross-reference results with interface types " +

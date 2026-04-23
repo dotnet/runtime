@@ -2640,16 +2640,19 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicGenericClass_SupportsOpenGenericDerivedType()
         {
-            PolymorphicGenericClass<int> value = new PolymorphicGenericClass<int>.DerivedClass();
+            PolymorphicGenericClass<int> value = new PolymorphicGenericClass<int>.DerivedClass { BaseValue = 1, DerivedValue = 2 };
             string json = await Serializer.SerializeWrapper(value);
-            Assert.Equal("{}", json);
+            JsonTestHelper.AssertJsonEqual("""{"BaseValue":1,"DerivedValue":2}""", json);
         }
 
         [JsonDerivedType(typeof(PolymorphicGenericClass<>.DerivedClass))]
         public class PolymorphicGenericClass<T>
         {
+            public T? BaseValue { get; set; }
+
             public class DerivedClass : PolymorphicGenericClass<T>
             {
+                public T? DerivedValue { get; set; }
             }
         }
 
@@ -2884,7 +2887,7 @@ namespace System.Text.Json.Serialization.Tests
                                 {
                                     DerivedTypes =
                                     {
-                                        new JsonDerivedType(typeof(OpenGenericDerived_Programmatic<>), "derived"),
+                                        new JsonDerivedType(typeof(OpenGenericDerived_Programmatic<int>), "derived"),
                                     }
                                 };
                             }
@@ -2896,6 +2899,10 @@ namespace System.Text.Json.Serialization.Tests
             OpenGenericBase_Programmatic<int> value = new OpenGenericDerived_Programmatic<int> { Value = 99 };
             string json = JsonSerializer.Serialize(value, options);
             JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":99}""", json);
+
+            var result = JsonSerializer.Deserialize<OpenGenericBase_Programmatic<int>>(json, options);
+            Assert.IsType<OpenGenericDerived_Programmatic<int>>(result);
+            Assert.Equal(99, ((OpenGenericDerived_Programmatic<int>)result).Value);
         }
 
         public class OpenGenericBase_Programmatic<T>

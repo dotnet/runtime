@@ -28,6 +28,7 @@ namespace System.Text.Json.SourceGeneration
             private const string NumberHandlingPropName = "NumberHandling";
             private const string UnmappedMemberHandlingPropName = "UnmappedMemberHandling";
             private const string PreferredPropertyObjectCreationHandlingPropName = "PreferredPropertyObjectCreationHandling";
+            private const string PolymorphismOptionsPropName = "PolymorphismOptions";
             private const string ObjectCreatorPropName = "ObjectCreator";
             private const string OptionsInstanceVariableName = "Options";
             private const string JsonTypeInfoLocalVariableName = "jsonTypeInfo";
@@ -579,6 +580,21 @@ namespace System.Text.Json.SourceGeneration
                     if (typeMetadata.PreferredPropertyObjectCreationHandling != null)
                     {
                         writer.WriteLine($"{JsonTypeInfoLocalVariableName}.{PreferredPropertyObjectCreationHandlingPropName} = {FormatObjectCreationHandling(typeMetadata.PreferredPropertyObjectCreationHandling.Value)};");
+                    }
+                }
+
+                if (typeMetadata.OpenGenericDerivedTypes is { Count: > 0 } openGenericDerivedTypes)
+                {
+                    writer.WriteLine();
+                    foreach (PolymorphicDerivedTypeSpec derivedTypeSpec in openGenericDerivedTypes)
+                    {
+                        string discriminatorArg = derivedTypeSpec.TypeDiscriminator switch
+                        {
+                            string s => $", \"{s}\"",
+                            int i => $", {i}",
+                            _ => "",
+                        };
+                        writer.WriteLine($"({JsonTypeInfoLocalVariableName}.{PolymorphismOptionsPropName} ??= new()).DerivedTypes.Add(new global::System.Text.Json.Serialization.Metadata.JsonDerivedType(typeof({derivedTypeSpec.DerivedType.FullyQualifiedName}){discriminatorArg}));");
                     }
                 }
 

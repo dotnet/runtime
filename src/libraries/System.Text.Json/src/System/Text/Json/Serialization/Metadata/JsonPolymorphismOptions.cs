@@ -114,6 +114,13 @@ namespace System.Text.Json.Serialization.Metadata
 
             foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
             {
+                // Skip open generic derived types; they are resolved separately
+                // by the DefaultJsonTypeInfoResolver (reflection) or source generator (AOT).
+                if (attr.DerivedType is { IsGenericTypeDefinition: true })
+                {
+                    continue;
+                }
+
                 (options ??= new()).DerivedTypes.Add(new JsonDerivedType(attr.DerivedType, attr.TypeDiscriminator));
             }
 

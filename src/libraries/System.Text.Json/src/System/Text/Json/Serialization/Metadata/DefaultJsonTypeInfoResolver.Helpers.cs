@@ -64,6 +64,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             typeInfo.PopulatePolymorphismMetadata();
+            ResolveOpenGenericDerivedTypes(typeInfo);
             typeInfo.MapInterfaceTypesToCallbacks();
 
             Func<object>? createObject = DetermineCreateObjectDelegate(type, converter);
@@ -639,6 +640,197 @@ namespace System.Text.Json.Serialization.Metadata
 #endif
             NullabilityInfo nullability = nullabilityCtx.Create(parameterInfo);
             return nullability.WriteState;
+        }
+
+        /// <summary>
+        /// Resolves any open generic derived types declared via <see cref="JsonDerivedTypeAttribute"/>
+        /// on the given type info. This uses <see cref="Type.MakeGenericType"/> and is only safe
+        /// for the reflection-based resolver path (not source generator / AOT).
+        /// </summary>
+        private static void ResolveOpenGenericDerivedTypes(JsonTypeInfo typeInfo)
+        {
+            Type baseType = typeInfo.Type;
+
+            bool hasOpenGenericDerivedTypes = false;
+            foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
+            {
+                if (attr.DerivedType.IsGenericTypeDefinition)
+                {
+                    hasOpenGenericDerivedTypes = true;
+                    break;
+                }
+            }
+
+            if (!hasOpenGenericDerivedTypes)
+            {
+                return;
+            }
+
+            if (!baseType.IsGenericType)
+            {
+                // Non-generic base with open generic derived types — always an error.
+                foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
+                {
+                    if (attr.DerivedType.IsGenericTypeDefinition)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(baseType, attr.DerivedType);
+                    }
+                }
+
+                return;
+            }
+
+            Type baseTypeDefinition = baseType.GetGenericTypeDefinition();
+            Type[] baseTypeArgs = baseType.GetGenericArguments();
+
+            foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
+            {
+                Type derivedType = attr.DerivedType;
+                if (!derivedType.IsGenericTypeDefinition)
+                {
+                    continue;
+                }
+
+                if (!TryResolveOpenGenericDerivedType(derivedType, baseTypeDefinition, baseTypeArgs, out Type? resolvedType))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(baseType, derivedType);
+                }
+
+                JsonPolymorphismOptions options = typeInfo.PolymorphismOptions ??= new();
+                options.DerivedTypes.Add(new JsonDerivedType(resolvedType, attr.TypeDiscriminator));
+            }
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "The types being constructed are derived types explicitly declared as polymorphic by the user.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The call to GetInterfaces is used to find the inheritance relationship between the derived type and the base type definition.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "Open generic derived type resolution is only performed by the reflection-based DefaultJsonTypeInfoResolver. The source generator resolves these at compile time.")]
+        private static bool TryResolveOpenGenericDerivedType(
+            Type openDerivedType,
+            Type baseTypeDefinition,
+            Type[] baseTypeArgs,
+            [NotNullWhen(true)] out Type? closedDerivedType)
+        {
+            closedDerivedType = null;
+
+            // Find the ancestor of the open derived type that matches the base type definition.
+            Type? matchingBase = FindMatchingBaseType(openDerivedType, baseTypeDefinition);
+            if (matchingBase is null)
+            {
+                return false;
+            }
+
+            Type[] matchingBaseArgs = matchingBase.GetGenericArguments();
+            Debug.Assert(matchingBaseArgs.Length == baseTypeArgs.Length);
+
+            // Build a mapping from the derived type's generic parameters to concrete types.
+            Type[] derivedTypeParams = openDerivedType.GetGenericArguments();
+            Type?[] resolvedArgs = new Type?[derivedTypeParams.Length];
+
+            for (int i = 0; i < matchingBaseArgs.Length; i++)
+            {
+                if (!TryUnifyTypes(matchingBaseArgs[i], baseTypeArgs[i], derivedTypeParams, resolvedArgs))
+                {
+                    return false;
+                }
+            }
+
+            // Verify all type parameters were resolved.
+            for (int i = 0; i < resolvedArgs.Length; i++)
+            {
+                if (resolvedArgs[i] is null)
+                {
+                    return false;
+                }
+            }
+
+            try
+            {
+                closedDerivedType = openDerivedType.MakeGenericType(resolvedArgs!);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                // Type constraints were violated.
+                return false;
+            }
+
+            static Type? FindMatchingBaseType(Type derivedType, Type baseTypeDefinition)
+            {
+                if (baseTypeDefinition.IsInterface)
+                {
+                    foreach (Type iface in derivedType.GetInterfaces())
+                    {
+                        if (iface.IsGenericType && iface.GetGenericTypeDefinition() == baseTypeDefinition)
+                        {
+                            return iface;
+                        }
+                    }
+                }
+                else
+                {
+                    for (Type? current = derivedType.BaseType; current is not null; current = current.BaseType)
+                    {
+                        if (current.IsGenericType && current.GetGenericTypeDefinition() == baseTypeDefinition)
+                        {
+                            return current;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            static bool TryUnifyTypes(Type pattern, Type concrete, Type[] typeParams, Type?[] resolvedArgs)
+            {
+                if (pattern.IsGenericParameter)
+                {
+                    int index = Array.IndexOf(typeParams, pattern);
+                    if (index < 0)
+                    {
+                        return false;
+                    }
+
+                    if (resolvedArgs[index] is null)
+                    {
+                        resolvedArgs[index] = concrete;
+                        return true;
+                    }
+
+                    return resolvedArgs[index] == concrete;
+                }
+
+                if (pattern.IsGenericType)
+                {
+                    if (!concrete.IsGenericType)
+                    {
+                        return false;
+                    }
+
+                    if (pattern.GetGenericTypeDefinition() != concrete.GetGenericTypeDefinition())
+                    {
+                        return false;
+                    }
+
+                    Type[] patternArgs = pattern.GetGenericArguments();
+                    Type[] concreteArgs = concrete.GetGenericArguments();
+
+                    for (int i = 0; i < patternArgs.Length; i++)
+                    {
+                        if (!TryUnifyTypes(patternArgs[i], concreteArgs[i], typeParams, resolvedArgs))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+                // Non-generic, non-parameter type: must be an exact match.
+                return pattern == concrete;
+            }
         }
     }
 }
