@@ -11414,6 +11414,26 @@ void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
     // We receive ownership of the array
     _ASSERTE(m_pPatchpointInfoFromJit == NULL);
     m_pPatchpointInfoFromJit = patchpointInfo;
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    if (m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT))
+    {
+        uint32_t ppiSize = patchpointInfo->PatchpointInfoSize();
+
+        AllocMemTracker am;
+        void* mem = am.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(ppiSize)));
+        PatchpointInfo *newPpi = new (mem) PatchpointInfo;
+        newPpi->Initialize(patchpointInfo->NumberOfLocals(), patchpointInfo->TotalFrameSize());
+        newPpi->Copy(patchpointInfo);
+
+        HRESULT hr = m_pMethodBeingCompiled->SetMethodDescAltJitPatchpointInfo(newPpi);
+        if (SUCCEEDED(hr))
+        {
+            am.SuppressRelease();
+        }
+    }
+#endif
+
 #else
     UNREACHABLE();
 #endif
@@ -11437,6 +11457,18 @@ PatchpointInfo* CEEJitInfo::getOSRInfo(unsigned* ilOffset)
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     result = m_pPatchpointInfoFromRuntime;
     *ilOffset = m_ilOffset;
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    if (m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT))
+    {
+        PatchpointInfo* ppi = m_pMethodBeingCompiled->GetMethodDescAltJitPatchpointInfo();
+        if (ppi != NULL)
+        {
+            result = ppi;
+        }
+    }
+#endif
+
 #endif
 
     EE_TO_JIT_TRANSITION();

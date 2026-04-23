@@ -262,6 +262,9 @@ struct MethodDescCodeData final
 #ifdef FEATURE_INTERPRETER
     CallStubHeader *CallStub;
 #endif // FEATURE_INTERPRETER
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    PatchpointInfo *AltJitPatchpointInfo;
+#endif // _DEBUG && ALLOW_SXS_JIT
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
@@ -1990,6 +1993,11 @@ public:
 #ifndef DACCESS_COMPILE
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
     void SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier);
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    HRESULT SetMethodDescAltJitPatchpointInfo(PatchpointInfo* pInfo);
+    PatchpointInfo* GetMethodDescAltJitPatchpointInfo();
+#endif
 #endif // !DACCESS_COMPILE
     PTR_MethodDescVersioningState GetMethodDescVersionState();
     NativeCodeVersion::OptimizationTier GetMethodDescOptimizationTier();
