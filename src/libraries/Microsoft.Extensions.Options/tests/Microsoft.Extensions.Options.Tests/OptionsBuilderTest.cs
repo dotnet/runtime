@@ -885,25 +885,21 @@ namespace Microsoft.Extensions.Options.Tests
         {
             var services = new ServiceCollection();
 
-            services.AddOptions<ComplexOptions>("invalid")
+            services.AddOptions<ComplexOptions>("unvalidated")
                 .Configure(o => o.Boolean = false);
 
-            // ComplexOptionsValidator is only added to the valid option
-            services.AddOptions<ComplexOptions>("valid")
-                .Configure(o => o.Boolean = true)
+            services.AddOptions<ComplexOptions>("validated")
+                .Configure(o => o.Boolean = false)
                 .Validate<ComplexOptionsValidator>();
 
             var sp = services.BuildServiceProvider();
-
             var monitor = sp.GetRequiredService<IOptionsMonitor<ComplexOptions>>();
- 
-            // "valid" passes — Boolean is true, validator runs and succeeds
-            var valid = monitor.Get("valid");
-            Assert.NotNull(valid);
- 
-            // "invalid" passes — validator is scoped to "valid", so it skips "invalid"
-            var invalid = monitor.Get("invalid");
-            Assert.NotNull(invalid);
+
+            var error = Assert.Throws<OptionsValidationException>(() => monitor.Get("validated"));
+            ValidateFailure<ComplexOptions>(error, "validated", 1, "Boolean != true");
+
+            var unvalidated = monitor.Get("unvalidated");
+            Assert.NotNull(unvalidated);
         }
     }
 }
