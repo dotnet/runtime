@@ -75,7 +75,7 @@ namespace System.Runtime.CompilerServices
             lock (s_lock)
             {
                 s_asyncProfilerActiveFlags = asyncProfilerFlags;
-                UpdateFlags(true);
+                s_activeFlags |= Flags.Synchronize;
             }
         }
 
@@ -89,7 +89,7 @@ namespace System.Runtime.CompilerServices
             lock (s_lock)
             {
                 s_asyncDebuggerActiveFlags = asyncDebuggerFlags;
-                UpdateFlags(true);
+                s_activeFlags |= Flags.Synchronize;
             }
         }
 
@@ -100,32 +100,18 @@ namespace System.Runtime.CompilerServices
 
             lock (s_lock)
             {
-                return UpdateFlags(false);
-            }
-        }
+                if (!IsEnabled.AsyncDebugger(s_internalAsyncDebuggerActiveFlags) && Task.s_asyncDebuggingEnabled)
+                {
+                    s_internalAsyncDebuggerActiveFlags = DefaultFlags | Flags.AsyncDebugger;
+                }
+                else if (IsEnabled.AsyncDebugger(s_internalAsyncDebuggerActiveFlags) && !Task.s_asyncDebuggingEnabled)
+                {
+                    s_internalAsyncDebuggerActiveFlags = Flags.Disabled;
+                }
 
-        private static Flags UpdateFlags(bool setSynchronizeFlag)
-        {
-            if (!IsEnabled.AsyncDebugger(s_internalAsyncDebuggerActiveFlags) && Task.s_asyncDebuggingEnabled)
-            {
-                s_internalAsyncDebuggerActiveFlags = DefaultFlags | Flags.AsyncDebugger;
+                s_activeFlags = (s_asyncProfilerActiveFlags | s_asyncDebuggerActiveFlags | s_internalAsyncDebuggerActiveFlags) & ~Flags.Synchronize;
+                return s_activeFlags;
             }
-            else if (IsEnabled.AsyncDebugger(s_internalAsyncDebuggerActiveFlags) && !Task.s_asyncDebuggingEnabled)
-            {
-                s_internalAsyncDebuggerActiveFlags = Flags.Disabled;
-            }
-
-            s_activeFlags = s_asyncProfilerActiveFlags | s_asyncDebuggerActiveFlags | s_internalAsyncDebuggerActiveFlags;
-            if (setSynchronizeFlag)
-            {
-                s_activeFlags |= Flags.Synchronize;
-            }
-            else
-            {
-                s_activeFlags &= ~Flags.Synchronize;
-            }
-
-            return s_activeFlags;
         }
 
         private static Flags s_activeFlags = Flags.Synchronize;
