@@ -10242,7 +10242,7 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
 #endif // !defined(UNIX_AMD64_ABI)
 
 #ifdef TARGET_AMD64
-    regMaskTP popRegs = rsPopRegs & (RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15 | RBM_HIGHINT);
+    regMaskTP popRegs = rsPopRegs & (RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15);
     while (popRegs != RBM_NONE)
     {
         regNumber reg = genFirstRegNumFromMaskAndToggle(popRegs);
