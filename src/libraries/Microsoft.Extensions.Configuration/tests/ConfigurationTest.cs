@@ -1077,6 +1077,76 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Throws<FormatException>(() => _ = config["Value"]);
         }
 
+        [Theory]
+        [InlineData("ref(\"weird?key\")", "weird?key")]
+        [InlineData("ref('weird?key')", "weird?key")]
+        [InlineData("ref(\"has|pipe\")", "has|pipe")]
+        [InlineData("ref('needs!bang')", "needs!bang")]
+        [InlineData("ref(foo\"?\"bar)", "foo?bar")]
+        [InlineData("ref('it''s')", "it's")]
+        [InlineData("ref(\"say \"\"hi\"\"\")", "say \"hi\"")]
+        [InlineData("ref('say \"hi\"')", "say \"hi\"")]
+        public void EnableReferenceResolutionQuotedSegmentResolvesLiteralKey(string raw, string literalKey)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    [literalKey] = "hit",
+                    ["Value"] = raw,
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("hit", config["Value"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionQuotedSegmentInsidePathResolves()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Section:weird?sub:Leaf"] = "hit",
+                    ["Value"] = "ref(Section:\"weird?sub\":Leaf)",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("hit", config["Value"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionQuotedSegmentInFmtPlaceholderResolves()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["odd?key"] = "value",
+                    ["Greeting"] = "fmt(Hello, {\"odd?key\"}!)",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("Hello, value!", config["Greeting"]);
+        }
+
+        [Theory]
+        [InlineData("ref(\"unterminated)")]
+        [InlineData("ref('unterminated)")]
+        [InlineData("ref(\"mixed')")]
+        public void EnableReferenceResolutionUnterminatedQuoteThrows(string raw)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Value"] = raw,
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Throws<FormatException>(() => _ = config["Value"]);
+        }
+
         [Fact]
         public void EnableReferenceResolutionRelativeRefSiblingResolves()
         {

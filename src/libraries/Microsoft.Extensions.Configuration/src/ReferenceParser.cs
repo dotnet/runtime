@@ -26,6 +26,14 @@ namespace Microsoft.Extensions.Configuration
     // fallback — if every reference in the chain misses, the expression resolves to the text after
     // the '|'. A bare '|' with nothing after it makes the expression optional: the result is the
     // empty string when no reference resolves.
+    //
+    // Path segments may be quoted with single or double quotes to embed characters that would
+    // otherwise be interpreted as syntax ('?', '!', '|', ':', '(', ')', '{', '}', and '..').
+    // The quote character is doubled to represent itself inside the same quote style — e.g.
+    // 'it''s' and "say ""hi""" yield the raw segment values "it's" and 'say "hi"'. Single and
+    // double quotes are fully interchangeable, and either quote style is literal inside the
+    // other ('say "hi"' needs no escape). Quoting can be partial: foo"?"bar resolves to the
+    // raw segment foo?bar.
     internal static class ReferenceParser
     {
         private const string RefPrefix = "ref(";
@@ -164,7 +172,14 @@ namespace Microsoft.Extensions.Configuration
         {
             for (int j = start; j < template.Length; j++)
             {
-                if (template[j] == '}')
+                char ch = template[j];
+                if (ch == '\'' || ch == '"')
+                {
+                    j = SkipQuoted(template, j, tokenStart) - 1;
+                    continue;
+                }
+
+                if (ch == '}')
                 {
                     return j;
                 }
@@ -181,11 +196,11 @@ namespace Microsoft.Extensions.Configuration
                 throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsEmpty, tokenStart));
             }
 
-            // '|' introduces the literal fallback. Everything after the first '|' (verbatim, including
-            // trailing/leading whitespace) is the default value; if it is empty, the expression is
-            // simply optional (empty on miss).
+            // '|' introduces the literal fallback. Everything after the first unquoted '|' (verbatim,
+            // including trailing/leading whitespace) is the default value; if it is empty, the
+            // expression is simply optional (empty on miss).
             string? literalDefault = null;
-            int pipeIndex = expression.IndexOf('|');
+            int pipeIndex = IndexOfUnquoted(expression, '|', 0, tokenStart);
             if (pipeIndex >= 0)
             {
                 literalDefault = expression.Substring(pipeIndex + 1);
@@ -250,6 +265,12 @@ namespace Microsoft.Extensions.Configuration
             int start = i;
             while (i < expression.Length && expression[i] != '?')
             {
+                char ch = expression[i];
+                if (ch == '\'' || ch == '"')
+                {
+                    i = SkipQuoted(expression, i, tokenStart);
+                    continue;
+                }
                 i++;
             }
 
@@ -261,6 +282,8 @@ namespace Microsoft.Extensions.Configuration
 
             // Parse leading ".." segments as parent hops. The remaining text (if any) is an absolute
             // suffix appended to the Nth ancestor of the literal's storage key at resolution time.
+            // A quoted segment never starts with an unquoted '.', so quoted ".." is correctly
+            // treated as a literal segment rather than a hop.
             int parentHops = 0;
             int cursor = 0;
             while (cursor + 2 <= refPath.Length && refPath[cursor] == '.' && refPath[cursor + 1] == '.')
@@ -282,18 +305,7 @@ namespace Microsoft.Extensions.Configuration
                 cursor = next + 1;
             }
 
-            string suffix = cursor == 0 ? refPath : refPath.Substring(cursor);
-
-            if (suffix.Contains(".."))
-            {
-                foreach (string segment in suffix.Split(ConfigurationPath.KeyDelimiter[0]))
-                {
-                    if (segment == "..")
-                    {
-                        throw new FormatException(SR.Format(SR.ReferenceResolution_InvalidExpression, tokenStart));
-                    }
-                }
-            }
+            string suffix = BuildSuffix(refPath, cursor, tokenStart);
 
             if (parentHops == 0 && suffix.Length == 0)
             {
@@ -302,6 +314,172 @@ namespace Microsoft.Extensions.Configuration
 
             items.Add(new ReferenceItem(suffix, parentHops));
             return i;
+        }
+
+        // Walks path[start..], splits on unquoted ':' delimiters, rejects literal ".." segments
+        // (quoted ".." is allowed and becomes a literal segment value), and returns the raw
+        // (unquoted) path joined by ':' — ready for lookup against a provider's underlying keys.
+        private static string BuildSuffix(string path, int start, int tokenStart)
+        {
+            bool anyQuotes = false;
+            for (int k = start; k < path.Length; k++)
+            {
+                if (path[k] == '\'' || path[k] == '"')
+                {
+                    anyQuotes = true;
+                    break;
+                }
+            }
+
+            if (!anyQuotes)
+            {
+                string suffix = start == 0 ? path : path.Substring(start);
+                if (suffix.Contains(".."))
+                {
+                    foreach (string segment in suffix.Split(ConfigurationPath.KeyDelimiter[0]))
+                    {
+                        if (segment == "..")
+                        {
+                            throw new FormatException(SR.Format(SR.ReferenceResolution_InvalidExpression, tokenStart));
+                        }
+                    }
+                }
+
+                return suffix;
+            }
+
+            var result = new StringBuilder();
+            int segStart = start;
+            int j = start;
+            while (j <= path.Length)
+            {
+                if (j == path.Length || path[j] == ':')
+                {
+                    string raw = path.Substring(segStart, j - segStart);
+                    if (raw == "..")
+                    {
+                        throw new FormatException(SR.Format(SR.ReferenceResolution_InvalidExpression, tokenStart));
+                    }
+
+                    if (result.Length > 0)
+                    {
+                        result.Append(ConfigurationPath.KeyDelimiter[0]);
+                    }
+
+                    result.Append(UnquoteSegment(raw));
+                    segStart = j + 1;
+                    j++;
+                    continue;
+                }
+
+                if (path[j] == '\'' || path[j] == '"')
+                {
+                    j = SkipQuoted(path, j, tokenStart);
+                    continue;
+                }
+
+                j++;
+            }
+
+            return result.ToString();
+        }
+
+        // Advance past a single- or double-quoted literal starting at expression[i]. Returns the
+        // index immediately after the closing quote. Doubled quotes inside the same style are
+        // treated as an escape and do not terminate the literal.
+        private static int SkipQuoted(string expression, int i, int tokenStart)
+        {
+            char quote = expression[i];
+            i++;
+            while (i < expression.Length)
+            {
+                if (expression[i] == quote)
+                {
+                    if (i + 1 < expression.Length && expression[i + 1] == quote)
+                    {
+                        i += 2;
+                        continue;
+                    }
+
+                    return i + 1;
+                }
+
+                i++;
+            }
+
+            throw new FormatException(SR.Format(SR.ReferenceResolution_InvalidExpression, tokenStart));
+        }
+
+        // Returns the index of the first occurrence of target in expression at or after start,
+        // skipping characters inside quoted regions. Returns -1 if not found.
+        private static int IndexOfUnquoted(string expression, char target, int start, int tokenStart)
+        {
+            int j = start;
+            while (j < expression.Length)
+            {
+                char ch = expression[j];
+                if (ch == '\'' || ch == '"')
+                {
+                    j = SkipQuoted(expression, j, tokenStart);
+                    continue;
+                }
+
+                if (ch == target)
+                {
+                    return j;
+                }
+
+                j++;
+            }
+
+            return -1;
+        }
+
+        // Strip quoting from a path segment. Quotes may be fully surrounding (e.g. "abc") or
+        // partial (e.g. foo"?"bar). Within a quoted run, a doubled quote character yields one
+        // literal quote. The other quote style is literal inside a run.
+        private static string UnquoteSegment(string segment)
+        {
+            if (segment.Length == 0 || (segment.IndexOf('\'') < 0 && segment.IndexOf('"') < 0))
+            {
+                return segment;
+            }
+
+            var sb = new StringBuilder(segment.Length);
+            int i = 0;
+            while (i < segment.Length)
+            {
+                char c = segment[i];
+                if (c != '\'' && c != '"')
+                {
+                    sb.Append(c);
+                    i++;
+                    continue;
+                }
+
+                char quote = c;
+                i++;
+                while (i < segment.Length)
+                {
+                    if (segment[i] == quote)
+                    {
+                        if (i + 1 < segment.Length && segment[i + 1] == quote)
+                        {
+                            sb.Append(quote);
+                            i += 2;
+                            continue;
+                        }
+
+                        i++;
+                        break;
+                    }
+
+                    sb.Append(segment[i]);
+                    i++;
+                }
+            }
+
+            return sb.ToString();
         }
     }
 
