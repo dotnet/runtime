@@ -924,6 +924,8 @@ CDAC_TYPE_END(ILCodeVersionNode)
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, T_UINT64, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
 CDAC_TYPE_FIELD(ProfControlBlock, T_BOOL, RejitOnAttachEnabled, offsetof(ProfControlBlock, fRejitOnAttachEnabled))
+CDAC_TYPE_FIELD(ProfControlBlock, T_POINTER, MainProfilerProfInterface, offsetof(ProfControlBlock, mainProfilerInfo) + offsetof(ProfilerInfo, pProfInterface))
+CDAC_TYPE_FIELD(ProfControlBlock, T_INT32, NotificationProfilerCount, offsetof(ProfControlBlock, notificationProfilerCount))
 CDAC_TYPE_END(ProfControlBlock)
 #endif // PROFILING_SUPPORTED
 
@@ -1311,6 +1313,11 @@ CDAC_GLOBALS_BEGIN()
 #error Handle 'Browser' define
 #endif // Browser
 CDAC_GLOBAL_STRING(OperatingSystem, Browser)
+#elif defined(TARGET_APPLE)
+#ifdef Apple
+#error Handle 'Apple' define
+#endif // Apple
+CDAC_GLOBAL_STRING(OperatingSystem, Apple)
 #elif defined(TARGET_UNIX)
 #ifdef Unix
 #error Handle 'Unix' define

@@ -13,8 +13,6 @@ namespace Microsoft.Extensions.Hosting.Systemd
     [UnsupportedOSPlatform("browser")]
     public class SystemdNotifier : ISystemdNotifier
     {
-        private const string NOTIFY_SOCKET = "NOTIFY_SOCKET";
-
         private readonly string? _socketPath;
 
         /// <summary>
@@ -60,12 +58,17 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
         private static string? GetNotifySocketPath()
         {
-            string? socketPath = Environment.GetEnvironmentVariable(NOTIFY_SOCKET);
+            string? socketPath = Environment.GetEnvironmentVariable(SystemdConstants.NotifySocket);
 
             if (string.IsNullOrEmpty(socketPath))
             {
                 return null;
             }
+
+            // Because this method is called on Notifier construction, the envvar is cleared when the Host is built
+            // (IHostLifetime depends on ISystemdNotifier). This prevents child processes from inheriting the socket
+            // and interfering with service manager notifications.
+            Environment.SetEnvironmentVariable(SystemdConstants.NotifySocket, null);
 
             // Support abstract socket paths.
             if (socketPath[0] == '@')
