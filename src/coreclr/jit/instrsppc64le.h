@@ -26,7 +26,7 @@
 // clang-format off
 INST(invalid,     "INVALID",      0,      IF_NONE,   	BAD_CODE)
 INST(trap,        "trap",         0,      X_FORM,	0x7FE00008)
-INST(mov,         "mr",           0,      X_FORM,	0x7FE00008)
+INST(mov,         "mr",           0,      X_FORM,	0x7C000378)
 INST(movi,        "movi",         0,      IF_DV_1B,  	0x0F000400)
 INST(nop,         "nop",          0,      IF_SN_0A,  	0xD503201F)
 INST(push,        "push",         0,      IUM_RD, 	0x0030FE)

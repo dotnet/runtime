@@ -358,8 +358,8 @@ bool emitter::IsMovInstruction(instruction ins)
     switch (ins)
     {
         case INS_mov:
-	{
-	    return true;
+	    {
+	        return true;
         }
 
         default:
@@ -391,33 +391,23 @@ void emitter::emitIns_Mov(
 
     switch (ins)
     {
-	case INS_mov:
-	    assert(insOptsNone(opt));
+ case INS_mov:
+     assert(insOptsNone(opt));
 
-	    if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+     if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
             {
                 // These instructions have no side effect and can be skipped
                 return;
             }
 
             // PowerPC uses 'mr' (move register) which is actually 'or rA, rS, rS'
-            // For now, just call emitIns_R_R to emit the move
-            printf("DEBUG: emitIns_Mov calling emitIns_R_R for mov\n");
-	    {
-                instrDesc* id = emitNewInstr(attr);
-                id->idIns(ins);
-                id->idReg1(dstReg);
-                id->idReg2(srcReg);
-                id->idInsFmt(IF_NONE);  // Will set proper format later
-
-                dispIns(id);
-                appendToCurIG(id);
-            
-	    }
-	    break;
-	default:
-	    printf("DEBUG: emitIns_Mov - unhandled instruction %d\n", ins);
-	    assert(!"Unhandled move instruction");
+            // Just call emitIns_R_R to emit the move
+            emitIns_R_R(ins, attr, dstReg, srcReg, opt);
+     break;
+     
+ default:
+     printf("DEBUG: emitIns_Mov - unhandled instruction %d\n", ins);
+     assert(!"Unhandled move instruction");
     }
 }
 
@@ -675,36 +665,51 @@ void emitter::emitIns_R_R(instruction     ins,
 			  insOpts         opt /* = INS_OPTS_NONE */,
 			  insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    if (IsMovInstruction(ins))
-    {
-        assert(!"Please use emitIns_Mov() to correctly handle move elision");
-        emitIns_Mov(ins, attr, reg1, reg2, /* canSkip */ false, opt);
-    }
-
+    // Note: For PPC64LE, we allow move instructions to be handled here
+    // emitIns_Mov() will call this function after checking for redundant moves
+    
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
     insFormat fmt      = IF_NONE;
 
     switch (ins)
     {
+        case INS_mov:
+            // Move register - mr rA, rS (actually or rA, rS, rS)
+            fmt = IF_NONE;  // Will set proper format later
+            break;
+            
         case INS_lwa:
 	    break;
+	    
 	case INS_cmpd:
     	case INS_cmpw:
             // Comparison instructions - these are X-form instructions
             // cmpd rA, rB compares two registers
             fmt = IF_NONE;  // Will set proper format later
             break;
+            
 	default:
 	    abort();
     }
 
-    instrDesc* id = emitNewInstr(size);
+    // Create instruction descriptor AFTER the switch (like ARM64 does)
+    instrDesc* id = emitNewInstr(attr);
+    
+    printf("DEBUG emitIns_R_R: Before idIns - ins=%d, INS_mov=%d\n", ins, INS_mov);
     id->idIns(ins);
+    printf("DEBUG emitIns_R_R: After idIns - id->idIns()=%d\n", id->idIns());
+    
     id->idReg1(reg1);
     id->idReg2(reg2);
+    // TODO TARGET_POWERPC64 - Not using Instruction Formats yet
+    //id->idInsFmt(fmt);
+    
+    printf("DEBUG emitIns_R_R: Before dispIns - id->idIns()=%d\n", id->idIns());
+    dispIns(id);
+    printf("DEBUG emitIns_R_R: After dispIns - id->idIns()=%d\n", id->idIns());
     appendToCurIG(id);
-
+    printf("DEBUG emitIns_R_R: After appendToCurIG - id->idIns()=%d\n", id->idIns());
 }
 
 /*****************************************************************************
@@ -794,7 +799,8 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
     instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
     id->idReg1(reg);
-    id->idInsFmt(IF_NONE);  // Will fix format later
+    // TODO TARGET_POWERPC64 - Not using Instruction Formats yet
+    //id->idInsFmt(IF_NONE);
 
     printf("DEBUG: emitIns_R created instrDesc\n");
 }
@@ -896,8 +902,22 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     BYTE* dst = *dp;
     BYTE* dstRW = dst + writeableOffset;
     
-    switch (id->idIns())
+    instruction ins = id->idIns();
+    printf("DEBUG emitOutputInstr: id=%p, ins=%d, INS_mov=%d, INS_invalid=%d\n",
+           id, ins, INS_mov, INS_invalid);
+    
+    switch (ins)
     {
+       case INS_mov:
+           printf("DEBUG emitOutputInstr: HIT INS_mov case!\n");
+           // mr rA, rS - Move Register
+           ppc_mr(dstRW, id->idReg1(), id->idReg2());
+           break;
+
+       case INS_movi:
+           abort();
+           break;
+
        case INS_nop:
            ppc_nop (dstRW);
            break;

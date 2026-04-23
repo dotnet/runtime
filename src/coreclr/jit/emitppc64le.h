@@ -31,6 +31,8 @@
 #define ppc_mtctr(c,S)     ppc_mtspr  (c, 288, S)
 
 // Logical instructions
+#define ppc_or(c,a,s,b)    ppc_emit32 (c, (31 << 26) | ((s) << 21) | ((a) << 16) | ((b) << 11) | 888)
+#define ppc_mr(c,a,s)      ppc_or     (c, a, s, s)
 #define ppc_ori(c,S,A,ui)  ppc_emit32 (c, (24 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
 #define ppc_oris(c,S,A,ui) ppc_emit32 (c, (25 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
 #define ppc_nop(c)         ppc_ori    (c, 0, 0, 0)
