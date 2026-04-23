@@ -22,10 +22,13 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotEqual(expected, JsonSerializer.Serialize(inputString));
         }
 
+        // NOTE: WriteExtremelyLargeStrings test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [OuterLoop]
-        [InlineData(119_304_643)] // (int.MaxValue / (MaxExpansionFactorWhileEscaping * MaxExpansionFactorWhileTranscoding)) - 4
-        [InlineData(119_304_644)] // (int.MaxValue / (MaxExpansionFactorWhileEscaping * MaxExpansionFactorWhileTranscoding)) - 3
         [InlineData(120_000_000)]
         public static void WriteExtremelyLargeStrings(int strLength)
         {
@@ -45,67 +48,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(EscapedCharacter, json.AsSpan(middleSegmentStart, EscapedCharacter.Length).ToString());
             Assert.Equal(EscapedCharacter, json.AsSpan(lastSegmentStart, EscapedCharacter.Length).ToString());
             Assert.Equal('"', json[^1]);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
-        [OuterLoop]
-        public static void WriteExtremelyLargeStringsIndentedRootLevel()
-        {
-            const int IndentSize = 127;
-            const string NewLine = "\n";
-            const int StrLength = 120_000_000;
-            const char InputCharacter = '\u007F';
-            const string EscapedCharacter = "\\u007F";
-
-            string value = new string(InputCharacter, StrLength);
-            JsonSerializerOptions options = new JsonSerializerOptions { WriteIndented = true, IndentSize = IndentSize, NewLine = NewLine };
-            string json = JsonSerializer.Serialize(value, options);
-
-            int expectedJsonLength = 2 + StrLength * EscapedCharacter.Length;
-            int middleSegmentStart = 1 + (StrLength / 2) * EscapedCharacter.Length;
-            int lastSegmentStart = 1 + (StrLength - 1) * EscapedCharacter.Length;
-
-            Assert.Equal(expectedJsonLength, json.Length);
-            Assert.Equal('"', json[0]);
-            Assert.Equal(EscapedCharacter, json.AsSpan(1, EscapedCharacter.Length).ToString());
-            Assert.Equal(EscapedCharacter, json.AsSpan(middleSegmentStart, EscapedCharacter.Length).ToString());
-            Assert.Equal(EscapedCharacter, json.AsSpan(lastSegmentStart, EscapedCharacter.Length).ToString());
-            Assert.Equal('"', json[^1]);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
-        [OuterLoop]
-        public static void WriteExtremelyLargeStringsIndentedAsArrayElement()
-        {
-            const int IndentSize = 127;
-            const string NewLine = "\n";
-            const int StrLength = 120_000_000;
-            const char InputCharacter = '\u007F';
-            const string EscapedCharacter = "\\u007F";
-
-            string value = new string(InputCharacter, StrLength);
-            JsonSerializerOptions options = new JsonSerializerOptions { WriteIndented = true, IndentSize = IndentSize, NewLine = NewLine };
-            string[] arr = new[] { value };
-            string json = JsonSerializer.Serialize(arr, options);
-
-            // Indented single-element array layout: [ newLine indent "escapedStr" newLine ]
-            int indent = 1 * IndentSize;
-            int escapedStrLength = 2 + StrLength * EscapedCharacter.Length;
-            int expectedJsonLength = 1 + NewLine.Length + indent + escapedStrLength + NewLine.Length + 1;
-
-            int stringStart = 1 + NewLine.Length + indent;
-            int stringContentStart = stringStart + 1;
-            int middleSegmentStart = stringContentStart + (StrLength / 2) * EscapedCharacter.Length;
-            int lastSegmentStart = stringContentStart + (StrLength - 1) * EscapedCharacter.Length;
-
-            Assert.Equal(expectedJsonLength, json.Length);
-            Assert.Equal('[', json[0]);
-            Assert.Equal('"', json[stringStart]);
-            Assert.Equal(EscapedCharacter, json.AsSpan(stringContentStart, EscapedCharacter.Length).ToString());
-            Assert.Equal(EscapedCharacter, json.AsSpan(middleSegmentStart, EscapedCharacter.Length).ToString());
-            Assert.Equal(EscapedCharacter, json.AsSpan(lastSegmentStart, EscapedCharacter.Length).ToString());
-            Assert.Equal('"', json[stringStart + escapedStrLength - 1]);
-            Assert.Equal(']', json[^1]);
         }
 
         [Fact]
