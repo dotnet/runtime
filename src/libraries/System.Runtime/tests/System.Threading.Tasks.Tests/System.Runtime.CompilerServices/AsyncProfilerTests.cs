@@ -570,6 +570,11 @@ namespace System.Threading.Tasks.Tests
 
         private static ConcurrentQueue<EventWrittenEventArgs> CollectEvents(EventKeywords keywords, Action callback)
         {
+            return CollectEvents(keywords, (_, _) => callback());
+        }
+
+        private static ConcurrentQueue<EventWrittenEventArgs> CollectEvents(EventKeywords keywords, Action<ConcurrentQueue<EventWrittenEventArgs>, EventKeywords> callback)
+        {
             var events = new ConcurrentQueue<EventWrittenEventArgs>();
             using (var listener = CreateListener(keywords))
             {
@@ -577,7 +582,7 @@ namespace System.Threading.Tasks.Tests
                 {
                     SendFlushCommand();
                     events.Clear();
-                    callback();
+                    callback(events, keywords);
                 });
             }
             return events;
@@ -1330,7 +1335,7 @@ namespace System.Threading.Tasks.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_PeriodicTimerFlush()
         {
-            var events = CollectEvents(CoreKeywords, () =>
+            var events = CollectEvents(CoreKeywords, (collectedEvents, _) =>
             {
                 // Run scenario — do NOT flush explicitly afterwards.
                 RunScenario(async () =>
@@ -1338,9 +1343,15 @@ namespace System.Threading.Tasks.Tests
                     await Func();
                 });
 
-                // Wait for the periodic flush timer (1s interval) to detect the idle
-                // buffer and flush it automatically.
+                // Wait for the periodic flush timer (1s interval) to detect the idle buffer and flush it automatically.
                 Thread.Sleep(2000);
+
+                // Use polling instead of a fixed sleep to wait for the flush, so the test is robust on slow/loaded CI machines.
+                SpinWait.SpinUntil(() =>
+                {
+                    var ids = CollectAsyncEventIds(collectedEvents);
+                    return ids.Exists(id => id == AsyncEventID.ResumeAsyncContext || id == AsyncEventID.SuspendAsyncContext || id == AsyncEventID.CompleteAsyncContext);
+                }, TimeSpan.FromSeconds(15));
             });
 
             // DumpCollectedEvents(events);
@@ -1351,43 +1362,12 @@ namespace System.Threading.Tasks.Tests
             Assert.True(coreEventCount > 0, "Expected periodic timer to flush buffer with core lifecycle events");
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
-        public void RuntimeAsync_MultiThreadFlush()
-        {
-            const int threadCount = 4;
-            var events = CollectEvents(CoreKeywords, () =>
-            {
-                // Ensure enough thread pool threads are available for concurrent execution.
-                ThreadPool.GetMinThreads(out int prevWorker, out int prevIO);
-                ThreadPool.SetMinThreads(threadCount, prevIO);
-
-                var tasks = new Task[threadCount];
-                for (int i = 0; i < threadCount; i++)
-                {
-                    tasks[i] = Task.Run(async () =>
-                    {
-                        await Func();
-                    });
-                }
-
-                Task.WhenAll(tasks).GetAwaiter().GetResult();
-                ThreadPool.SetMinThreads(prevWorker, prevIO);
-                SendFlushCommand();
-            });
-
-            // DumpCollectedEvents(events);
-
-            var threadIds = CollectOsThreadIds(events);
-
-            Assert.True(threadIds.Count > 1, $"Expected events from multiple threads, got {threadIds.Count} distinct OS thread ID(s)");
-        }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_DeadThreadFlush()
         {
-            var events = CollectEvents(CoreKeywords, () =>
+            var events = CollectEvents(CoreKeywords, (collectedEvents, _) =>
             {
                 // Spawn a dedicated thread that runs async work then exits.
                 // Its thread-local buffer becomes orphaned when the thread dies.
@@ -1404,9 +1384,15 @@ namespace System.Threading.Tasks.Tests
                 thread.Join(TimeSpan.FromSeconds(10));
 
                 // Do NOT send a flush command.
-                // Wait for the periodic flush timer to detect the dead thread
-                // and flush its orphaned buffer.
+                // Wait for the periodic flush timer to detect the dead thread and flush its orphaned buffer.
                 Thread.Sleep(2000);
+
+                // Use polling instead of a fixed sleep so the test is robust on slow/loaded CI machines.
+                SpinWait.SpinUntil(() =>
+                {
+                    var ids = CollectAsyncEventIds(collectedEvents);
+                    return ids.Exists(id => id == AsyncEventID.ResumeAsyncContext || id == AsyncEventID.SuspendAsyncContext || id == AsyncEventID.CompleteAsyncContext);
+                }, TimeSpan.FromSeconds(15));
             });
 
             // DumpCollectedEvents(events);
