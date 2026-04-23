@@ -2587,13 +2587,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 }
                 // NOT(relop(x,y)) ==> Reverse(relop)(x,y)
                 //
-                // Note: GT_NOT in JIT IR is bitwise complement (~v), but this
-                // rewrite treats it as the logical negation of a boolean-valued
-                // relop, which produces 0/1. This is only sound in contexts
-                // where NOT is applied to a value known to be 0/1 (as is the
-                // case throughout the JIT for relop VNs). For non-relop inputs
-                // NOT remains an opaque bitwise complement (see below).
-                //
                 else if (VNFuncIsComparison(funcApp.m_func))
                 {
                     *resultVN = GetRelatedRelop(arg0VN, VN_RELATION_KIND::VRK_Reverse);
@@ -5603,10 +5596,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 // LE(x,y) | NE(x,y) ==> NE(x,y)
                 // LE(x,y) | GT(x,y) ==> 1
                 //
-                // The truth table assumes integer (total-order) semantics; the
-                // VNF_*_UN variants here must be unsigned-integer relops, not
-                // unordered-float relops (which also use VNF_*_UN). Skip this
-                // simplification for floating-point operands.
+                // for integral comparisons
                 //
                 VNFuncApp arg0FN;
                 if (GetVNFunc(arg0VN, &arg0FN) && VNFuncIsComparison(arg0FN.m_func) &&
@@ -5702,10 +5692,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 // LE(x,y) & NE(x,y) ==> LT(x,y)
                 // LE(x,y) & GT(x,y) ==> 0
                 //
-                // The truth table assumes integer (total-order) semantics; the
-                // VNF_*_UN variants here must be unsigned-integer relops, not
-                // unordered-float relops (which also use VNF_*_UN). Skip this
-                // simplification for floating-point operands.
+                // for integral comparisons
                 //
                 VNFuncApp arg0FN;
                 if (GetVNFunc(arg0VN, &arg0FN) && VNFuncIsComparison(arg0FN.m_func) &&

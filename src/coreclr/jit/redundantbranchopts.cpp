@@ -1091,8 +1091,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
 
             tree->SetOper(newRelop);
 
-            // Update GTF_UNSIGNED before re-value-numbering: relop VN depends
-            // on the unsigned flag (see GetVNFuncForNode).
+            // Update GTF_UNSIGNED before re-value-numbering.
             //
             if (isUnsigned)
             {
