@@ -469,7 +469,7 @@ namespace System.Runtime.CompilerServices
 
             internal void InstrumentedHandleSuspended(AsyncInstrumentation.Flags flags, Continuation? newContinuation = null)
             {
-                if (AsyncDebugger.IsEnabled(flags))
+                if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
                     Continuation? nextContinuation = t_runtimeAsyncAwaitState.SentinelContinuation!.Next;
 
@@ -815,7 +815,7 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
-                if (AsyncDebugger.IsEnabled(flags))
+                if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
                     task.NotifyDebuggerOfRuntimeAsyncState();
                     AsyncDebugger.CreateAsyncContext(task);
@@ -1040,7 +1040,7 @@ namespace System.Runtime.CompilerServices
                         AsyncProfiler.ResumeAsyncContext.Resume(ref info);
                     }
 
-                    if (AsyncDebugger.IsEnabled(flags))
+                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.ResumeAsyncContext(task.Id);
                     }
@@ -1057,7 +1057,7 @@ namespace System.Runtime.CompilerServices
                         AsyncProfiler.SuspendAsyncContext.Suspend(ref info, nextContinuation);
                     }
 
-                    if (AsyncDebugger.IsEnabled(flags))
+                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.SuspendAsyncContext(ref info, curContinuation);
                     }
@@ -1075,7 +1075,7 @@ namespace System.Runtime.CompilerServices
                         AsyncProfiler.SuspendAsyncContext.Suspend(ref info, nextContinuation != null ? nextContinuation : newContinuation);
                     }
 
-                    if (AsyncDebugger.IsEnabled(flags))
+                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.SuspendAsyncContext(curContinuation, newContinuation);
                     }
@@ -1092,7 +1092,7 @@ namespace System.Runtime.CompilerServices
                         AsyncProfiler.CompleteAsyncContext.Complete(ref info.AsyncProfilerInfo);
                     }
 
-                    if (AsyncDebugger.IsEnabled(flags))
+                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.CompleteAsyncContext(info.CurrentTask);
                     }
@@ -1113,7 +1113,7 @@ namespace System.Runtime.CompilerServices
                         AsyncProfiler.AsyncMethodException.Unhandled(ref info.AsyncProfilerInfo, unwindedFrames);
                     }
 
-                    if (AsyncDebugger.IsEnabled(flags))
+                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.AsyncMethodUnhandledException(info.CurrentTask, ex, curContinuation);
                     }
@@ -1134,7 +1134,7 @@ namespace System.Runtime.CompilerServices
                         AsyncProfiler.AsyncMethodException.Handled(ref info.AsyncProfilerInfo, unwindedFrames);
                     }
 
-                    if (AsyncDebugger.IsEnabled(flags))
+                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.AsyncMethodHandledException(curContinuation, unwindedFrames);
                     }
@@ -1151,7 +1151,7 @@ namespace System.Runtime.CompilerServices
                         AsyncProfiler.ResumeAsyncMethod.Resume(ref info.AsyncProfilerInfo);
                     }
 
-                    if (AsyncDebugger.IsEnabled(flags))
+                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.ResumeAsyncMethod(ref info, curContinuation);
                     }
@@ -1173,7 +1173,7 @@ namespace System.Runtime.CompilerServices
                         AsyncProfiler.CompleteAsyncMethod.Complete(ref info.AsyncProfilerInfo);
                     }
 
-                    if (AsyncDebugger.IsEnabled(flags))
+                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
                         AsyncDebugger.CompleteAsyncMethod(curContinuation);
                     }
@@ -1197,8 +1197,6 @@ namespace System.Runtime.CompilerServices
 
         internal static class AsyncDebugger
         {
-            public static bool IsEnabled(AsyncInstrumentation.Flags flags) => AsyncInstrumentation.IsEnabled.AsyncDebugger(flags);
-
             public static void CreateAsyncContext(Task task)
             {
                 Task.AddToActiveTasks(task);
