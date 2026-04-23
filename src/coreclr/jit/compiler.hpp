@@ -2616,7 +2616,7 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     if (genericsContextIsThis)
     {
         const bool mustKeep      = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
-        const bool hasPatchpoint = doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints();
+        const bool hasPatchpoint = doesMethodHavePatchpoints();
 
         if (lvaGenericsContextInUse || mustKeep || hasPatchpoint)
         {
@@ -2656,7 +2656,7 @@ inline bool Compiler::lvaReportParamTypeArg()
 
         // Methoods that have patchpoints always report context as live
         //
-        if (doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints())
+        if (doesMethodHavePatchpoints())
         {
             return true;
         }
@@ -5628,8 +5628,13 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             return AssertVisit::Abort;
         }
 
-        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
-        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
+        // fgValueNumberPhiDef may leave gtVNPair as NoVN when it refuses to back-patch
+        // a loop-varying SSA-def VN into the phi-arg slot (a hygiene constraint for general
+        // gtVNPair consumers that does not apply here, since we hand the VN to the visitor
+        // together with this edge's assertion set and never write it back into any tree).
+        LclSsaVarDsc* phiArgSsaDef = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum());
+        ValueNum      phiArgVN     = vnStore->VNConservativeNormalValue(phiArgSsaDef->m_vnPair);
+        ASSERT_TP     assertions   = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
         {
             // The visitor wants to abort the walk.

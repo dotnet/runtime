@@ -161,6 +161,7 @@ private:
     //-------------------------------------------------------------------------
 
     void genReportEH();
+    void genReportEHClauses(EHClauseInfo* clauses);
 
     // Allocates storage for the GC info, writes the GC info into that storage, records the address of the
     // GC info of the method with the EE, and returns a pointer to the "info" portion (just post-header) of
@@ -221,6 +222,7 @@ protected:
     void                       genEmitNullCheck(regNumber reg);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
+    void                       ensureCurrentFuncIsUnwindable();
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
