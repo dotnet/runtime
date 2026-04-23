@@ -287,7 +287,9 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
 
     const HWIntrinsic intrinEmbMask(embMaskOp->AsHWIntrinsic());
     instruction       insEmbMask = HWIntrinsicInfo::lookupIns(intrinEmbMask.id, intrinEmbMask.baseType, m_compiler);
-    const bool        instrIsRMW = embMaskOp->isRMWHWIntrinsic(m_compiler);
+
+    bool isRMW             = embMaskOp->isRMWHWIntrinsic(m_compiler);
+    bool isOptionalEmbMask = HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id);
 
     regNumber maskReg       = maskOp->GetRegNum();
     regNumber embMaskOp1Reg = REG_NA;
@@ -330,7 +332,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
     // Setup instruction options and handle special cases.
     if (intrinEmbMask.numOperands == 1)
     {
-        assert(!instrIsRMW);
+        assert(!isRMW);
 
         if (HWIntrinsicInfo::IsReduceOperation(intrinEmbMask.id))
         {
@@ -414,29 +416,6 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
     }
     else if (intrinEmbMask.numOperands == 2)
     {
-        if (!instrIsRMW)
-        {
-            // Perform the actual "predicated" operation so that `embMaskOp1Reg` is the first operand..
-            switch (intrinEmbMask.id)
-            {
-                case NI_Sve_And_Predicates:
-                case NI_Sve_BitwiseClear_Predicates:
-                case NI_Sve_Or_Predicates:
-                case NI_Sve_Xor_Predicates:
-                    embOpt = INS_OPTS_SCALABLE_B;
-                    break;
-
-                default:
-                    break;
-            }
-
-            GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, embMaskOp2Reg,
-                                          embOpt);
-            return;
-        }
-
-        bool hasOptionalEmbMask = HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id);
-
         switch (intrinEmbMask.id)
         {
             case NI_Sve_CreateBreakPropagateMask:
@@ -502,12 +481,12 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
                 {
                     insEmbMask = (varTypeIsUnsigned(baseType)) ? INS_sve_usqadd : INS_sve_suqadd;
                     // SUQADD and USQADD must be predicated.
-                    hasOptionalEmbMask = false;
+                    isOptionalEmbMask = false;
                 }
                 else
                 {
                     // SQADD and UQADD can be unpredicated.
-                    hasOptionalEmbMask = true;
+                    isOptionalEmbMask = true;
                 }
                 break;
             }
@@ -529,12 +508,33 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
                 break;
         }
 
-        if (hasOptionalEmbMask)
+        if (!isRMW)
         {
-            if (!falseOp->IsVectorZero() && (targetReg != falseReg) && (falseReg != embMaskOp1Reg))
+            // Perform the actual "predicated" operation so that `embMaskOp1Reg` is the first operand..
+            switch (intrinEmbMask.id)
             {
-                // If the embedded instruction supports optional mask operation, use the "unpredicated"
-                // version of the instruction, followed by "sel" to select the active lanes.
+                case NI_Sve_And_Predicates:
+                case NI_Sve_BitwiseClear_Predicates:
+                case NI_Sve_Or_Predicates:
+                case NI_Sve_Xor_Predicates:
+                    embOpt = INS_OPTS_SCALABLE_B;
+                    break;
+
+                default:
+                    break;
+            }
+
+            GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, embMaskOp2Reg,
+                                          embOpt);
+            return;
+        }
+        else if (isOptionalEmbMask)
+        {
+            if (maskOp->IsTrueMask(intrinEmbMask.baseType) ||
+                (!falseOp->IsVectorZero() && (targetReg != falseReg) && (falseReg != embMaskOp1Reg)))
+            {
+                // If the embedded instruction supports optional mask operation, and when movprfx is not needed,
+                // use the "unpredicated" version of the instruction.
                 if (HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id))
                 {
                     HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, embMaskOp->AsHWIntrinsic());
@@ -549,7 +549,12 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
                     GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg, embMaskOp2Reg, embOpt,
                                                 sopt);
                 }
-                GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg, falseReg, opt);
+
+                if (!maskOp->IsTrueMask(intrinCndSel.baseType))
+                {
+                    // Use "sel" to select the active lanes if mask is not all-true.
+                    GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg, falseReg, opt);
+                }
                 return;
             }
         }
