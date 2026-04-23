@@ -10,19 +10,19 @@ using TestLibrary;
 public class CoreLibSizeTest
 {
     // Baseline size of System.Private.CoreLib.dll in bytes for Release builds, measured from the
-    // .NET 11 Preview 1 build (the largest observed size across supported platforms as of March 2026).
+    // .NET 11 Preview 1 build (the largest observed size across supported platforms, win-x64).
     // To update this baseline after an intentional size increase:
     // measure System.Private.CoreLib.dll in Core_Root from a release build and update this constant.
     private const long ReleaseBaselineSizeBytes = 16_763_144;
-    // 30% above the release baseline: 16,763,144 * 1.30 = ~21,791,887 bytes
-    private const long ReleaseMaxAllowedSizeBytes = 21_791_887;
+    // 100kB above the release baseline
+    private const long ReleaseMaxAllowedSizeBytes = ReleaseBaselineSizeBytes + 100_000;
 
     // Baseline size for Debug/Checked builds, measured from the .NET 11 Preview 1 build.
     // To update this baseline after an intentional size increase:
     // measure System.Private.CoreLib.dll in Core_Root from a debug/checked build and update this constant.
     private const long NonReleaseBaselineSizeBytes = 27_131_904;
-    // 30% above the non-release baseline: 27,131,904 * 1.30 = ~35,271,475 bytes
-    private const long NonReleaseMaxAllowedSizeBytes = 35_271_475;
+    // 100kB above the non-release baseline
+    private const long NonReleaseMaxAllowedSizeBytes = NonReleaseBaselineSizeBytes + 100_000;
 
     [SkipOnMono("Ready-To-Run is a CoreCLR-only feature", TestPlatforms.Any)]
     [ConditionalFact(typeof(Utilities), nameof(Utilities.HasAssemblyFiles))]
@@ -40,7 +40,7 @@ public class CoreLibSizeTest
         Console.WriteLine($"System.Private.CoreLib.dll size: {actualSize:N0} bytes");
         Console.WriteLine($"Build configuration: {buildConfiguration}");
         Console.WriteLine($"Baseline size: {baselineSizeBytes:N0} bytes");
-        Console.WriteLine($"Maximum allowed size (130% of baseline): {maxAllowedSizeBytes:N0} bytes");
+        Console.WriteLine($"Maximum allowed size (baseline + 100kB): {maxAllowedSizeBytes:N0} bytes");
 
         if (actualSize <= maxAllowedSizeBytes)
         {
@@ -49,7 +49,7 @@ public class CoreLibSizeTest
         }
 
         Console.WriteLine($"FAIL: System.Private.CoreLib.dll ({actualSize:N0} bytes) exceeds the maximum " +
-            $"allowed size of {maxAllowedSizeBytes:N0} bytes (baseline: {baselineSizeBytes:N0} bytes * 130%).");
+            $"allowed size of {maxAllowedSizeBytes:N0} bytes (baseline: {baselineSizeBytes:N0} bytes + 100kB).");
         return 101;
     }
 }
