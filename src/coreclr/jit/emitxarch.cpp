@@ -14754,11 +14754,6 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
-        {
-            insEncodeReg345(id, id->idReg1(), size, &code);
-        }
-
         if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
             // The built-in REX has been zeroed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
@@ -15650,12 +15645,6 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
-        {
-            // The promoted CRC32 is in 1-byte opcode, unlike other instructions on this path, the register encoding for
-            // CRC32 need to be done here.
-            insEncodeReg345(id, id->idReg1(), size, &code);
-        }
         if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
             // The built-in REX has been zero-ed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
