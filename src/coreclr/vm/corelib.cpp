@@ -21,6 +21,7 @@
 #include "comsynchronizable.h"
 #include "floatdouble.h"
 #include "floatsingle.h"
+#include "divmodint.h"
 #include "assemblynative.hpp"
 
 #include "proftoeeinterfaceimpl.h"

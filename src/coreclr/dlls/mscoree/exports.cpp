@@ -14,6 +14,7 @@
 #include <utilcode.h>
 #include <corhost.h>
 #include <configuration.h>
+#include "../../vm/ceemain.h"
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
