@@ -1003,7 +1003,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
                 JITDUMP("Can't infer, trying simplification instead\n");
             }
 
-            // See if we can simplfy the VN for blockPathVN AND domPathVN
+            // See if we can simplify the VN for blockPathVN AND domPathVN
             //
             ValueNum  andVN = vnStore->VNForFunc(TYP_INT, VNF_AND, blockPathVN, domPathVN);
             VNFuncApp andApp;
@@ -1090,8 +1090,10 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             }
 
             tree->SetOper(newRelop);
-            fgValueNumberTree(tree);
 
+            // Update GTF_UNSIGNED before re-value-numbering: relop VN depends
+            // on the unsigned flag (see GetVNFuncForNode).
+            //
             if (isUnsigned)
             {
                 tree->gtFlags |= GTF_UNSIGNED;
@@ -1100,6 +1102,8 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             {
                 tree->gtFlags &= ~GTF_UNSIGNED;
             }
+
+            fgValueNumberTree(tree);
         }
         madeChanges = true;
 
