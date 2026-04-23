@@ -28195,9 +28195,9 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
         // After that, each 128-bit lane of op1 holds the sum of its elements
         // broadcast across the lane. We then reduce the lanes by combining
         // upper/lower halves step-by-step down to a single V128. Floating-
-        // point addition is not associative, so the exact IR shape of the
-        // half-combine is deliberately preserved and matches the integer
-        // path below.
+        // point addition is not associative, so the halve-combine grouping
+        // below deliberately preserves the prior recursive
+        // `Sum(lower) + Sum(upper)` shape.
 
         if (simdBaseType == TYP_FLOAT)
         {
@@ -28260,24 +28260,39 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
 
         // At this point every 128-bit lane of op1 contains that lane's reduced
         // sum broadcast across the lane. Combine the lanes into a single V128
-        // by combining upper/lower halves step-by-step, mirroring the integer
-        // path below:
-        //     vector256 = vector512.GetLower() + vector512.GetUpper()
-        //     vector128 = vector256.GetLower() + vector256.GetUpper()
-        //     return    vector128.ToScalar()
+        // by reducing upper/lower halves step-by-step. Floating-point addition
+        // is not associative, so the grouping used here deliberately matches
+        // the prior recursive shape:
+        //     V512: Sum = Sum(v512.GetLower()) + Sum(v512.GetUpper())
+        //     V256: Sum = (v256.GetLower() + v256.GetUpper()).ToScalar()
+        //     V128: Sum = v128.ToScalar()
 
         if (simdSize == 64)
         {
-            GenTree* op1Dup = fgMakeMultiUse(&op1);
+            // Split v512 into its two V256 halves and reduce each to a V128
+            // independently (GetLower + GetUpper + Add), then add the two
+            // V128 results. This preserves `Sum(lower256) + Sum(upper256)`
+            // grouping, i.e. `(s0 + s1) + (s2 + s3)` where s_i is the sum
+            // of the i-th 128-bit lane.
+            GenTree* op1Upper = fgMakeMultiUse(&op1);
 
-            op1    = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseType, 64);
-            op1Dup = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseType, 64);
+            op1      = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseType, 64);
+            op1Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op1Upper, simdBaseType, 64);
 
-            simdSize = 32;
-            op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1, op1Dup, simdBaseType, 32);
+            GenTree* tmpDup = fgMakeMultiUse(&op1);
+            op1             = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, 32);
+            tmpDup          = gtNewSimdGetUpperNode(TYP_SIMD16, tmpDup, simdBaseType, 32);
+            op1             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, tmpDup, simdBaseType, 16);
+
+            tmpDup   = fgMakeMultiUse(&op1Upper);
+            op1Upper = gtNewSimdGetLowerNode(TYP_SIMD16, op1Upper, simdBaseType, 32);
+            tmpDup   = gtNewSimdGetUpperNode(TYP_SIMD16, tmpDup, simdBaseType, 32);
+            op1Upper = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1Upper, tmpDup, simdBaseType, 16);
+
+            simdSize = 16;
+            op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Upper, simdBaseType, 16);
         }
-
-        if (simdSize == 32)
+        else if (simdSize == 32)
         {
             GenTree* op1Dup = fgMakeMultiUse(&op1);
 
