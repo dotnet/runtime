@@ -87,7 +87,7 @@ namespace ILLink.Shared.TrimAnalysis
                                             }
                                             else
                                             {
-                                                _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericTypeSite(typeInstantiated));
+                                                _reflectionMarker.RuntimeDeterminedDependencies.Add((_callingMethod, new MakeGenericTypeSite(typeInstantiated)));
                                             }
                                         }
                                     }
@@ -160,7 +160,7 @@ namespace ILLink.Shared.TrimAnalysis
                                             }
                                             else
                                             {
-                                                _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericMethodSite(methodInstantiated));
+                                                _reflectionMarker.RuntimeDeterminedDependencies.Add((_callingMethod, new MakeGenericMethodSite(methodInstantiated)));
                                             }
                                         }
                                     }
@@ -783,6 +783,10 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 var list = new DependencyList();
                 TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+
+                // InstantiateSignature could end up with a denormalized shape (Foo<object, __Canon>) so normalize.
+                instantiatedType = instantiatedType.NormalizeInstantiation();
+
                 if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
                     RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, instantiatedType, "MakeGenericType");
                 return list;

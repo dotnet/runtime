@@ -138,6 +138,13 @@ public struct COR_FIELD
 
 #pragma warning restore CS0649
 
+public enum DynamicMethodType
+{
+    kNone = 0,
+    kDiagnosticHidden = 1,
+    kLCGMethod = 2,
+}
+
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
 // Parameter shapes are intentionally coarse placeholders and will be refined with method implementation work.
 [GeneratedComInterface]

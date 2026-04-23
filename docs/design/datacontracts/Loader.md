@@ -52,6 +52,13 @@ record struct ModuleLookupTables(
     TargetPointer TypeDefToMethodTable,
     TargetPointer TypeRefToMethodTable,
     TargetPointer MethodDefToILCodeVersioningState);
+
+readonly struct LoaderHeapBlockData
+{
+    TargetPointer Address { get; init; }
+    TargetNUInt Size { get; init; }
+    TargetPointer NextBlock { get; init; }
+}
 ```
 
 ``` csharp
@@ -94,6 +101,10 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
+// Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
+TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap);
+// Returns the data for the given loader heap block (address, size, and next block pointer).
+LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block);
 IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
 
 DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle);
@@ -203,6 +214,10 @@ enum ClrModifiableAssemblies : uint
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
 | `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
 | `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
+| `LoaderHeap` | `FirstBlock` | Pointer to the first `LoaderHeapBlock` in the linked list |
+| `LoaderHeapBlock` | `Next` | Pointer to the next `LoaderHeapBlock` in the linked list |
+| `LoaderHeapBlock` | `VirtualAddress` | Pointer to the start of the reserved virtual memory |
+| `LoaderHeapBlock` | `VirtualSize` | Size in bytes of the reserved virtual memory region |
 | `EEConfig` | `ModifiableAssemblies` | Controls Edit and Continue support (ClrModifiableAssemblies enum) |
 
 
@@ -948,5 +963,24 @@ class InstMethodHashTable
         public TargetPointer MethodDesc { get; } = value & ~FLAG_MASK;
         public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
     }
+}
+```
+
+#### GetFirstLoaderHeapBlock, GetLoaderHeapBlockData
+
+```csharp
+TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
+{
+    return target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */);
+}
+
+LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)
+{
+    return new LoaderHeapBlockData
+    {
+        Address = target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */),
+        Size = target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */),
+        NextBlock = target.ReadPointer(block + /* LoaderHeapBlock::Next offset */),
+    };
 }
 ```

@@ -96,8 +96,8 @@ public readonly struct GCOomData
     // Returns pointers to all GC heaps
     IEnumerable<TargetPointer> GetGCHeaps();
 
-    // The following APIs have both a workstation and serer variant.
-    // The workstation variant implitly operates on the global heap.
+    // The following APIs have both a workstation and server variant.
+    // The workstation variant implicitly operates on the global heap.
     // The server variants allow passing in a heap pointer.
 
     // Gets data about a GC heap
