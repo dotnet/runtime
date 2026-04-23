@@ -642,11 +642,6 @@ namespace System.Text.Json.Serialization.Metadata
             return nullability.WriteState;
         }
 
-        /// <summary>
-        /// Resolves any open generic derived types declared via <see cref="JsonDerivedTypeAttribute"/>
-        /// on the given type info. This uses <see cref="Type.MakeGenericType"/> and is only safe
-        /// for the reflection-based resolver path (not source generator / AOT).
-        /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static void ResolveOpenGenericDerivedTypes(JsonTypeInfo typeInfo)
@@ -656,7 +651,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool hasOpenGenericDerivedTypes = false;
             foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
             {
-                if (attr.DerivedType.IsGenericTypeDefinition)
+                if (attr.DerivedType is { IsGenericTypeDefinition: true })
                 {
                     hasOpenGenericDerivedTypes = true;
                     break;
@@ -673,7 +668,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Non-generic base with open generic derived types — always an error.
                 foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
                 {
-                    if (attr.DerivedType.IsGenericTypeDefinition)
+                    if (attr.DerivedType is { IsGenericTypeDefinition: true })
                     {
                         ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(baseType, attr.DerivedType);
                     }
@@ -687,12 +682,12 @@ namespace System.Text.Json.Serialization.Metadata
 
             foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
             {
-                Type derivedType = attr.DerivedType;
-                if (!derivedType.IsGenericTypeDefinition)
+                if (attr.DerivedType is not { IsGenericTypeDefinition: true })
                 {
                     continue;
                 }
 
+                Type derivedType = attr.DerivedType;
                 if (!TryResolveOpenGenericDerivedType(derivedType, baseTypeDefinition, baseTypeArgs, out Type? resolvedType))
                 {
                     ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(baseType, derivedType);

@@ -1235,6 +1235,14 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(!IsReadOnly);
 
+            // If polymorphism options have already been set by the source generator,
+            // skip attribute-based resolution. Preserve the attribute logic for
+            // binary compatibility with source generated code from earlier versions.
+            if (_polymorphismOptions is not null)
+            {
+                return;
+            }
+
             JsonPolymorphismOptions? options = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
             if (options != null)
             {

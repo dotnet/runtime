@@ -733,7 +733,7 @@ namespace System.Text.Json.SourceGeneration
                     ClassType = classType,
                     PrimitiveTypeKind = primitiveTypeKind,
                     IsPolymorphic = isPolymorphic,
-                    OpenGenericDerivedTypes = openGenericDerivedTypes?.ToImmutableEquatableArray(),
+                    OpenGenericDerivedTypes = openGenericDerivedTypes?.OrderBy(d => d.DerivedType.FullyQualifiedName).ToImmutableEquatableArray(),
                     NumberHandling = numberHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
                     PreferredPropertyObjectCreationHandling = preferredPropertyObjectCreationHandling,
@@ -852,12 +852,9 @@ namespace System.Text.Json.SourceGeneration
                         Debug.Assert(attributeData.ConstructorArguments.Length > 0);
                         var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
 
-                        // Open generic derived types (e.g. typeof(Derived<>)) are resolved at compile time
-                        // based on the constructed base type's type arguments.
                         if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
                         {
-                            if (typeToGenerate.Type is INamedTypeSymbol { IsGenericType: true } constructedBase
-                                && TryResolveOpenGenericDerivedType(unboundDerived, constructedBase, out INamedTypeSymbol? resolvedType))
+                            if (TryResolveOpenGenericDerivedType(unboundDerived, typeToGenerate.Type, out INamedTypeSymbol? resolvedType))
                             {
                                 EnqueueType(resolvedType, typeToGenerate.Mode);
 
@@ -894,15 +891,16 @@ namespace System.Text.Json.SourceGeneration
             /// <summary>
             /// Resolves an unbound generic derived type to a closed type using the
             /// type arguments from the constructed base type at compile time.
+            /// Returns null if the type arguments cannot be resolved.
             /// </summary>
             private static bool TryResolveOpenGenericDerivedType(
                 INamedTypeSymbol unboundDerived,
-                INamedTypeSymbol constructedBase,
+                ITypeSymbol baseType,
                 [NotNullWhen(true)] out INamedTypeSymbol? resolvedType)
             {
                 resolvedType = null;
 
-                if (!constructedBase.IsGenericType)
+                if (baseType is not INamedTypeSymbol { IsGenericType: true } constructedBase)
                 {
                     return false;
                 }
