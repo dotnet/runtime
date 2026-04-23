@@ -76,8 +76,8 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonParameterInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonParameterInfoValues";
             private const string JsonPropertyInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPropertyInfo";
             private const string JsonPropertyInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPropertyInfoValues";
-            private const string JsonPolymorphismOptionsTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPolymorphismOptions";
             private const string JsonDerivedTypeTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonDerivedType";
+            private const string JsonPolymorphismOptionsTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPolymorphismOptions";
             private const string JsonTypeInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonTypeInfo";
             private const string JsonTypeInfoResolverTypeRef = "global::System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver";
             private const string ReferenceHandlerTypeRef = "global::System.Text.Json.Serialization.ReferenceHandler";
