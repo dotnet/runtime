@@ -1084,6 +1084,11 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
 
         if (newRelop != GT_NONE)
         {
+            if (sharedSuccessor == blockTrueSucc)
+            {
+                newRelop = GenTree::ReverseRelop(newRelop);
+            }
+
             tree->SetOper(newRelop);
             fgValueNumberTree(tree);
 
