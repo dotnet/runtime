@@ -341,6 +341,11 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <typeparam name="TValidateOptions">The validation type.</typeparam>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
+        /// <remarks>
+        /// Validation is scoped to the options name associated with this builder.
+        /// Dependencies required by <typeparamref name="TValidateOptions"/>
+        /// are resolved from the service provider.
+        /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TValidateOptions>()
             where TValidateOptions : class, IValidateOptions<TOptions>
         {
