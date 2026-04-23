@@ -35,7 +35,8 @@ namespace System.Runtime.CompilerServices
             CompleteAsyncMethod = 10,
             ResetAsyncThreadContext = 11,
             ResetAsyncContinuationWrapperIndex = 12,
-            AsyncProfilerMetadata = 13
+            AsyncProfilerMetadata = 13,
+            AsyncProfilerSyncClock = 14
         }
 
         internal ref struct Info
@@ -110,13 +111,13 @@ namespace System.Runtime.CompilerServices
                             long[] wrapperIPs = ContinuationWrapper.GetContinuationWrapperIPs();
 
                             // Metadata payload:
-                            // [qpcFrequency (8 bytes)]
-                            // [qpcSync (8 bytes)]
-                            // [utcSync (8 bytes)]
-                            // [eventBufferSize (4 bytes)]
+                            // [qpcFrequency (compressed uint64)]
+                            // [qpcSync (compressed uint64)]
+                            // [utcSync (compressed uint64)]
+                            // [eventBufferSize (compressed uint32)]
                             // [wrapperCount byte]
-                            // [wrapperIP0 (8 bytes)] ... [wrapperIPn (8 bytes)]
-                            int maxEventPayloadSize = sizeof(long) + sizeof(long) + sizeof(long) + sizeof(uint) + 1 + (wrapperIPs.Length * sizeof(long));
+                            // [wrapperIP0 (compressed uint64)] ... [wrapperIPn (compressed uint64)]
+                            int maxEventPayloadSize = EventBuffer.Serializer.MaxCompressedUInt64Size + EventBuffer.Serializer.MaxCompressedUInt64Size + EventBuffer.Serializer.MaxCompressedUInt64Size + EventBuffer.Serializer.MaxCompressedUInt32Size + 1 + (wrapperIPs.Length * EventBuffer.Serializer.MaxCompressedUInt64Size);
 
                             ref EventBuffer eventBuffer = ref context.EventBuffer;
                             if (EventBuffer.Serializer.AsyncEventHeader(context, ref eventBuffer, AsyncEventID.AsyncProfilerMetadata, maxEventPayloadSize) >= 0)
@@ -124,29 +125,94 @@ namespace System.Runtime.CompilerServices
                                 byte[] buffer = eventBuffer.Data;
                                 ref int index = ref eventBuffer.Index;
 
-                                long qpcFrequency = Stopwatch.Frequency;
-                                long qpcSync = Stopwatch.GetTimestamp();
-                                long utcSync = DateTime.UtcNow.ToFileTimeUtc();
+                                SyncClock(out long utcTimeSync, out long qpcSync);
 
-                                EventBuffer.Serializer.WriteUInt64(buffer, ref index, (ulong)qpcFrequency);
-                                EventBuffer.Serializer.WriteUInt64(buffer, ref index, (ulong)qpcSync);
-                                EventBuffer.Serializer.WriteUInt64(buffer, ref index, (ulong)utcSync);
-                                EventBuffer.Serializer.WriteUInt32(buffer, ref index, EventBufferSize);
+                                EventBuffer.Serializer.WriteCompressedUInt64(buffer, ref index, (ulong)Stopwatch.Frequency);
+                                EventBuffer.Serializer.WriteCompressedUInt64(buffer, ref index, (ulong)qpcSync);
+                                EventBuffer.Serializer.WriteCompressedUInt64(buffer, ref index, (ulong)utcTimeSync);
+                                EventBuffer.Serializer.WriteCompressedUInt32(buffer, ref index, EventBufferSize);
                                 Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), index++) = (byte)wrapperIPs.Length;
 
                                 for (int i = 0; i < wrapperIPs.Length; i++)
                                 {
-                                    EventBuffer.Serializer.WriteUInt64(buffer, ref index, (ulong)wrapperIPs[i]);
+                                    EventBuffer.Serializer.WriteCompressedUInt64(buffer, ref index, (ulong)wrapperIPs[i]);
                                 }
-                            }
 
-                            // Force flush to deliver metadata event promptly.
-                            context.Flush();
+                                // Force flush to deliver event promptly.
+                                context.Flush();
+                            }
 
                             s_metadataRevision = Revision;
                         }
                     }
                 }
+            }
+
+            public static void EmitSyncClockEventIfNeeded()
+            {
+                long currentTimestamp = Stopwatch.GetTimestamp();
+                if (s_lastSyncClockEventTimestamp == 0)
+                {
+                    s_lastSyncClockEventTimestamp = currentTimestamp;
+                    return;
+                }
+
+                if (currentTimestamp - s_lastSyncClockEventTimestamp < s_intervalBetweenSyncClockEvent)
+                {
+                    return;
+                }
+
+                s_lastSyncClockEventTimestamp = currentTimestamp;
+
+                // SyncClock payload:
+                // [qpcSync (compressed uint64)]
+                // [utcSync (compressed uint64)]
+                int maxEventPayloadSize = EventBuffer.Serializer.MaxCompressedUInt64Size + EventBuffer.Serializer.MaxCompressedUInt64Size;
+
+                AsyncThreadContext transientContext = AsyncThreadContext.AcquireTransient();
+
+                ref EventBuffer eventBuffer = ref transientContext.EventBuffer;
+                if (EventBuffer.Serializer.AsyncEventHeader(transientContext, ref eventBuffer, AsyncEventID.AsyncProfilerSyncClock, maxEventPayloadSize) >= 0)
+                {
+                    SyncClock(out long utcTimeSync, out long qpcSync);
+                    EventBuffer.Serializer.WriteCompressedUInt64(eventBuffer.Data, ref eventBuffer.Index, (ulong)qpcSync);
+                    EventBuffer.Serializer.WriteCompressedUInt64(eventBuffer.Data, ref eventBuffer.Index, (ulong)utcTimeSync);
+
+                    // Force flush to deliver event promptly.
+                    transientContext.Flush();
+                }
+
+                AsyncThreadContext.Release(transientContext);
+            }
+
+            private static void SyncClock(out long utcTimeSync, out long qpcSync)
+            {
+                long qpcDiff = long.MaxValue;
+
+                utcTimeSync = 0;
+                qpcSync = 0;
+
+                // Run calibration loop to find the closest QPC timestamp to UTC timestamp.
+                // This is a best effort to minimize the max error between QPC and UTC timestamps.
+                for (int i = 0; i < 10; i++)
+                {
+                    long qpc1 = Stopwatch.GetTimestamp();
+                    long utcTime = DateTime.UtcNow.ToFileTimeUtc();
+                    long qpc2 = Stopwatch.GetTimestamp();
+                    long diff = qpc2 - qpc1;
+
+                    if (diff < qpcDiff)
+                    {
+                        utcTimeSync = utcTime;
+                        qpcSync = qpc1;
+                        qpcDiff = diff;
+                    }
+                }
+
+                // QPC and UTC clocks are not guaranteed to be perfectly linear, so this is a best effort to minimize the max error.
+                // Both QPC and DateTime.UtcNow should have a 100ns resolution (or better). If latency getting QPC and UTC time is small enough,
+                // the error introduced by non-linearity should be within 100ns.
+                qpcSync += qpcDiff / 2;
             }
 
             private static void UpdateFlags()
@@ -179,6 +245,10 @@ namespace System.Runtime.CompilerServices
             private static readonly Lock s_metadataRevisionLock = new();
 
             private static uint s_metadataRevision;
+
+            private static long s_lastSyncClockEventTimestamp;
+
+            private static readonly long s_intervalBetweenSyncClockEvent = Stopwatch.Frequency * 60; // 1 minute
         }
 
         internal struct EventBuffer
@@ -507,6 +577,30 @@ namespace System.Runtime.CompilerServices
                 {
                     context.InUse = false;
                     lock (AsyncThreadContextCache.CacheLock) { ; }
+                    context.InUse = true;
+                }
+
+                return context;
+            }
+
+            public static AsyncThreadContext AcquireTransient()
+            {
+                AsyncThreadContext? context;
+                if (t_asyncThreadContext != null)
+                {
+                    context = Get();
+                    Debug.Assert(!context.InUse);
+                }
+                else
+                {
+                    context = new AsyncThreadContext();
+                }
+
+                context.InUse = true;
+                if (context.BlockContext)
+                {
+                    context.InUse = false;
+                    lock (AsyncThreadContextCache.CacheLock) {; }
                     context.InUse = true;
                 }
 
@@ -1027,15 +1121,17 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
+                long frequency = Stopwatch.Frequency;
+
                 // Look at live threads, only flush if forced or contexts that have been idle for 250 milliseconds.
-                long idleWriteTimestamp = Stopwatch.GetTimestamp() - (Stopwatch.Frequency / 4);
+                long idleWriteTimestamp = Stopwatch.GetTimestamp() - (frequency / 4);
 
                 // Additionally, reclaim buffers for contexts that have been idle for 30 seconds to avoid keeping
                 // large buffers around indefinitely for threads that are no longer running async code.
-                long idleReclaimBufferTimestamp = Stopwatch.GetTimestamp() - Stopwatch.Frequency * 30;
+                long idleReclaimBufferTimestamp = Stopwatch.GetTimestamp() - frequency * 30;
 
                 // Spin wait timeout, 100 milliseconds.
-                long spinWaitTimeout = Stopwatch.Frequency / 10;
+                long spinWaitTimeout = frequency / 10;
 
                 foreach (var contextHolder in s_cache)
                 {
@@ -1076,6 +1172,8 @@ namespace System.Runtime.CompilerServices
                         context.BlockContext = false;
                     }
                 }
+
+                Config.EmitSyncClockEventIfNeeded();
             }
 
             private sealed class AsyncThreadContextHolder
