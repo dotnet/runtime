@@ -43,7 +43,7 @@ public unsafe class LoaderTests
         return target.Contracts.Loader;
     }
 
-    private static (ILoader Contract, TestPlaceholderTarget Target) CreateLoaderContractWithTarget(
+    internal static (ILoader Contract, TestPlaceholderTarget Target) CreateLoaderContractWithTarget(
         MockTarget.Architecture arch,
         Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
     {
