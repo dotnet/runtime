@@ -1438,6 +1438,394 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     return opr1;
 }
 
+//------------------------------------------------------------------------------
+// IsSimpleIntegralStoreBlock: Check if a block contains a single integral local store.
+//
+// Arguments:
+//    block     - Block to check.
+//    foundStore - [OUT] The found local store.
+//
+// Returns:
+//    true if the block contains only a single GT_STORE_LCL_VAR (ignoring NOPs).
+//
+static bool IsSimpleIntegralStoreBlock(BasicBlock* block, GenTreeLclVar** foundStore)
+{
+    bool found = false;
+
+    for (Statement* stmt : block->Statements())
+    {
+        GenTree* tree = stmt->GetRootNode();
+        if (tree->OperIs(GT_STORE_LCL_VAR))
+        {
+            if (found)
+            {
+                return false;
+            }
+
+            if (!varTypeIsIntegralOrI(tree))
+            {
+                return false;
+            }
+
+#ifndef TARGET_64BIT
+            if (varTypeIsLong(tree))
+            {
+                return false;
+            }
+#endif
+
+            GenTree* data = tree->AsLclVar()->Data();
+            if ((data->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+            {
+                return false;
+            }
+
+            *foundStore = tree->AsLclVar();
+            found       = true;
+        }
+        else if (!tree->OperIs(GT_NOP))
+        {
+            return false;
+        }
+    }
+
+    return found;
+}
+
+//------------------------------------------------------------------------------
+// MatchSimpleLocalReturnBlock: Check if a block ends in "return lcl".
+//
+// Arguments:
+//    block  - Block to check.
+//    lclNum - Expected local number.
+//
+// Returns:
+//    true if the block returns the expected local and any preceding statements
+//    have no globally visible side effects.
+//
+static bool MatchSimpleLocalReturnBlock(BasicBlock* block, unsigned lclNum)
+{
+    if (!block->KindIs(BBJ_RETURN) || (block->lastStmt() == nullptr))
+    {
+        return false;
+    }
+
+    GenTree* root = block->lastStmt()->GetRootNode();
+    if (!root->OperIs(GT_RETURN))
+    {
+        return false;
+    }
+
+    GenTree* returnValue = root->AsOp()->GetReturnValue();
+    if (!returnValue->OperIs(GT_LCL_VAR) || (returnValue->AsLclVarCommon()->GetLclNum() != lclNum))
+    {
+        return false;
+    }
+
+    for (Statement* stmt : block->Statements())
+    {
+        if ((stmt != block->lastStmt()) && GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(stmt->GetRootNode()->gtFlags))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// MatchEqZeroLocal: Match a compare of the form "lcl == 0" or "0 == lcl".
+//
+// Arguments:
+//    tree   - Compare tree to match.
+//    lclNum - [OUT] Matched local number.
+//
+// Returns:
+//    true if the compare matches.
+//
+static bool MatchEqZeroLocal(GenTree* tree, unsigned* lclNum)
+{
+    if (!tree->OperIs(GT_EQ))
+    {
+        return false;
+    }
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    if (op1->OperIs(GT_LCL_VAR) && op2->IsIntegralConst(0))
+    {
+        *lclNum = op1->AsLclVarCommon()->GetLclNum();
+        return true;
+    }
+
+    if (op2->OperIs(GT_LCL_VAR) && op1->IsIntegralConst(0))
+    {
+        *lclNum = op2->AsLclVarCommon()->GetLclNum();
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// MatchSignedZeroCompare: Normalize a zero-compare to "value cmp 0".
+//
+// Arguments:
+//    tree    - Compare tree to match.
+//    cmpOp   - [OUT] Normalized comparison operator.
+//    value   - [OUT] Value compared against zero.
+//
+// Returns:
+//    true if the compare is one of EQ/GT/LT against zero and has no side effects
+//    in the compared value.
+//
+static bool MatchSignedZeroCompare(GenTree* tree, genTreeOps* cmpOp, GenTree** value)
+{
+    if (!tree->OperIs(GT_EQ, GT_GT, GT_LT))
+    {
+        return false;
+    }
+
+    if ((tree->OperGet() != GT_EQ) && tree->AsOp()->IsUnsigned())
+    {
+        return false;
+    }
+
+    GenTree*   op1          = tree->gtGetOp1();
+    GenTree*   op2          = tree->gtGetOp2();
+    genTreeOps normalizedOp = tree->OperGet();
+    GenTree*   normalizedValue;
+
+    if (op2->IsIntegralConst(0))
+    {
+        normalizedValue = op1;
+    }
+    else if (op1->IsIntegralConst(0))
+    {
+        normalizedOp    = GenTree::SwapRelop(normalizedOp);
+        normalizedValue = op2;
+    }
+    else
+    {
+        return false;
+    }
+
+    if (!varTypeIsIntegralOrI(normalizedValue))
+    {
+        return false;
+    }
+
+    if ((normalizedValue->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+    {
+        return false;
+    }
+
+    *cmpOp = normalizedOp;
+    *value = normalizedValue;
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// MatchMaterializedBoolGeLeCompare: Match the EQ/GT/LT pair that can be folded to GE/LE.
+//
+// Arguments:
+//    firstCompare  - First compare tree.
+//    secondCompare - Second compare tree.
+//    value         - [OUT] Value to compare against zero.
+//    cmpOp         - [OUT] Result compare operator (GT_GE or GT_LE).
+//
+// Returns:
+//    true if the compare pair is one of EQ+GT or EQ+LT on the same value.
+//
+static bool MatchMaterializedBoolGeLeCompare(
+    GenTree* firstCompare, GenTree* secondCompare, GenTree** value, genTreeOps* cmpOp)
+{
+    genTreeOps firstCmpOp;
+    genTreeOps secondCmpOp;
+    GenTree*   firstValue;
+    GenTree*   secondValue;
+
+    if (!MatchSignedZeroCompare(firstCompare, &firstCmpOp, &firstValue) ||
+        !MatchSignedZeroCompare(secondCompare, &secondCmpOp, &secondValue))
+    {
+        return false;
+    }
+
+    if (!GenTree::Compare(firstValue->gtEffectiveVal(), secondValue->gtEffectiveVal()))
+    {
+        return false;
+    }
+
+    if (((firstCmpOp == GT_EQ) && (secondCmpOp == GT_GT)) || ((firstCmpOp == GT_GT) && (secondCmpOp == GT_EQ)))
+    {
+        *value = (firstCmpOp == GT_EQ) ? secondValue : firstValue;
+        *cmpOp = GT_GE;
+        return true;
+    }
+
+    if (((firstCmpOp == GT_EQ) && (secondCmpOp == GT_LT)) || ((firstCmpOp == GT_LT) && (secondCmpOp == GT_EQ)))
+    {
+        *value = (firstCmpOp == GT_EQ) ? secondValue : firstValue;
+        *cmpOp = GT_LE;
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// fgOptimizeMaterializedBoolCompare: Fold a materialized-bool store/store diamond
+// into a single GE/LE local store before if-conversion runs.
+//
+// Arguments:
+//    compiler - Compiler instance.
+//    block    - Conditional block that starts the candidate diamond.
+//
+// Returns:
+//    true if the diamond was folded.
+//
+static bool fgOptimizeMaterializedBoolCompare(Compiler* compiler, BasicBlock* block)
+{
+    assert(block->KindIs(BBJ_COND));
+
+    if (compiler->info.compRetType != TYP_UBYTE)
+    {
+        return false;
+    }
+
+    BasicBlock* falseBb = block->GetFalseTarget();
+    BasicBlock* trueBb  = block->GetTrueTarget();
+    if ((falseBb == nullptr) || (trueBb == nullptr) || (falseBb == trueBb))
+    {
+        return false;
+    }
+
+    if (falseBb->HasFlag(BBF_DONT_REMOVE) || trueBb->HasFlag(BBF_DONT_REMOVE) ||
+        !BasicBlock::sameEHRegion(block, falseBb) || !BasicBlock::sameEHRegion(block, trueBb))
+    {
+        return false;
+    }
+
+    if ((falseBb->GetUniquePred(compiler) == nullptr) || (trueBb->GetUniquePred(compiler) == nullptr))
+    {
+        return false;
+    }
+
+    BasicBlock* joinBb = falseBb->GetUniqueSucc();
+    if ((joinBb == nullptr) || (trueBb->GetUniqueSucc() != joinBb) || !BasicBlock::sameEHRegion(block, joinBb))
+    {
+        return false;
+    }
+
+    GenTreeLclVar* falseStore;
+    GenTreeLclVar* trueStore;
+    if (!IsSimpleIntegralStoreBlock(falseBb, &falseStore) || !IsSimpleIntegralStoreBlock(trueBb, &trueStore))
+    {
+        return false;
+    }
+
+    if (falseStore->GetLclNum() != trueStore->GetLclNum())
+    {
+        return false;
+    }
+
+    unsigned lclNum = falseStore->GetLclNum();
+    // Small bool locals are normalized to an int temp when all stores are under JIT control.
+    if (genActualType(compiler->lvaGetDesc(lclNum)->TypeGet()) != TYP_INT)
+    {
+        return false;
+    }
+
+    GenTree* compareStore = nullptr;
+    // This fold is only sound for `cond || otherCompare`, where the entry
+    // BBJ_COND materializes 1 on its true edge. If the false edge materializes
+    // 1 instead, the relop pair alone is insufficient to recover the original
+    // edge orientation.
+    if (trueStore->Data()->IsIntegralConst(1) && !falseStore->Data()->IsIntegralConst(1))
+    {
+        compareStore = falseStore->Data();
+    }
+    else
+    {
+        return false;
+    }
+
+    Statement* condStmt = block->lastStmt();
+    if (condStmt == nullptr)
+    {
+        return false;
+    }
+
+    GenTree* jtrue = condStmt->GetRootNode();
+    if (!jtrue->OperIs(GT_JTRUE))
+    {
+        return false;
+    }
+
+    GenTree* foldedValue;
+    genTreeOps foldedCmp;
+    if (!MatchMaterializedBoolGeLeCompare(jtrue->gtGetOp1(), compareStore, &foldedValue, &foldedCmp))
+    {
+        return false;
+    }
+
+    if (!joinBb->KindIs(BBJ_COND) || (joinBb->lastStmt() == nullptr))
+    {
+        return false;
+    }
+
+    GenTree* joinJtrue = joinBb->lastStmt()->GetRootNode();
+    if (!joinJtrue->OperIs(GT_JTRUE))
+    {
+        return false;
+    }
+
+    unsigned joinLclNum;
+    if (!MatchEqZeroLocal(joinJtrue->gtGetOp1(), &joinLclNum) || (joinLclNum != lclNum))
+    {
+        return false;
+    }
+
+    BasicBlock* returnBb     = joinBb->GetTrueTarget();
+    BasicBlock* sideEffectBb = joinBb->GetFalseTarget();
+    if ((returnBb == nullptr) || (sideEffectBb == nullptr) || (returnBb == sideEffectBb) || sideEffectBb->HasFlag(BBF_DONT_REMOVE) ||
+        !BasicBlock::sameEHRegion(joinBb, returnBb) || !BasicBlock::sameEHRegion(joinBb, sideEffectBb) ||
+        !sideEffectBb->KindIs(BBJ_ALWAYS) || (sideEffectBb->GetUniquePred(compiler) != joinBb) ||
+        (sideEffectBb->GetUniqueSucc() != returnBb) || !MatchSimpleLocalReturnBlock(returnBb, lclNum))
+    {
+        return false;
+    }
+
+    GenTree* foldedValueClone = compiler->gtCloneExpr(foldedValue);
+    noway_assert(foldedValueClone != nullptr);
+    GenTree* foldedCompare =
+        compiler->gtNewOperNode(foldedCmp, TYP_INT, foldedValueClone, compiler->gtNewZeroConNode(foldedValueClone->TypeGet()));
+    GenTree*   storeTree = compiler->gtNewStoreLclVarNode(lclNum, foldedCompare);
+    Statement* storeStmt = compiler->fgNewStmtFromTree(storeTree, condStmt->GetDebugInfo());
+
+    compiler->fgInsertStmtBefore(block, condStmt, storeStmt);
+    compiler->fgRemoveStmt(block, condStmt);
+
+    FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
+    FlowEdge* const oldFalseEdge = block->GetFalseEdge();
+    FlowEdge* const joinEdge     = compiler->fgAddRefPred(joinBb, block);
+
+    block->SetKindAndTargetEdge(BBJ_ALWAYS, joinEdge);
+
+    compiler->fgRemoveRefPred(oldTrueEdge);
+    compiler->fgRemoveRefPred(oldFalseEdge);
+
+    falseBb->bbWeight = BB_ZERO_WEIGHT;
+    trueBb->bbWeight  = BB_ZERO_WEIGHT;
+    compiler->fgRemoveBlock(falseBb, true);
+    compiler->fgRemoveBlock(trueBb, true);
+
+    JITDUMP("fgOptimizeMaterializedBoolCompare: folded " FMT_BB " into a single local store\n", block->bbNum);
+    DISPBLOCK(block)
+    return true;
+}
+
 //-----------------------------------------------------------------------------
 // optOptimizeBools:    Folds boolean conditionals for GT_JTRUE/GT_RETURN/GT_SWIFT_ERROR_RET nodes
 //
@@ -1617,6 +2005,13 @@ PhaseStatus Compiler::optOptimizeBools()
             // The next block must not be marked as BBF_DONT_REMOVE
             if (b2->HasFlag(BBF_DONT_REMOVE))
             {
+                continue;
+            }
+
+            if (fgOptimizeMaterializedBoolCompare(this, b1))
+            {
+                change = true;
+                numCond++;
                 continue;
             }
 
