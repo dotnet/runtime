@@ -907,17 +907,18 @@ TryGetProcessName(
 
     filename[0] = '\0';
 
+    char scratch[CRASHREPORT_STRING_BUFFER_SIZE];
+
     int fd = open("/proc/self/cmdline", O_RDONLY);
     if (fd != -1)
     {
-        char cmdline[CRASHREPORT_STRING_BUFFER_SIZE];
-        ssize_t bytesRead = read(fd, cmdline, sizeof(cmdline) - 1);
+        ssize_t bytesRead = read(fd, scratch, sizeof(scratch) - 1);
         close(fd);
 
         if (bytesRead > 0)
         {
-            cmdline[bytesRead] = '\0';
-            CopyString(filename, filenameLen, GetFilename(cmdline));
+            scratch[bytesRead] = '\0';
+            CopyString(filename, filenameLen, GetFilename(scratch));
             if (filename[0] != '\0')
             {
                 return true;
@@ -925,12 +926,11 @@ TryGetProcessName(
         }
     }
 
-    char exePath[CRASHREPORT_STRING_BUFFER_SIZE];
-    ssize_t pathLength = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
+    ssize_t pathLength = readlink("/proc/self/exe", scratch, sizeof(scratch) - 1);
     if (pathLength > 0)
     {
-        exePath[pathLength] = '\0';
-        CopyString(filename, filenameLen, GetFilename(exePath));
+        scratch[pathLength] = '\0';
+        CopyString(filename, filenameLen, GetFilename(scratch));
         return filename[0] != '\0';
     }
 
@@ -1069,24 +1069,23 @@ ThreadEnumerationContext::OnThread(
     m_writer->WriteString("is_managed", "true");
     m_writer->WriteString("crashed", isCrashThread ? "true" : "false");
 
-    char nativeThreadId[CRASHREPORT_NUMBER_BUFFER_SIZE];
-    FormatHexValue(nativeThreadId, sizeof(nativeThreadId), osThreadId);
-    m_writer->WriteString("native_thread_id", nativeThreadId);
+    char scratch[CRASHREPORT_NUMBER_BUFFER_SIZE];
+    FormatHexValue(scratch, sizeof(scratch), osThreadId);
+    m_writer->WriteString("native_thread_id", scratch);
 
-    char hresultBuffer[CRASHREPORT_NUMBER_BUFFER_SIZE];
     if (isCrashThread && m_hasCrashException)
     {
-        FormatHexValue(hresultBuffer, sizeof(hresultBuffer), m_crashExceptionHResult);
+        FormatHexValue(scratch, sizeof(scratch), m_crashExceptionHResult);
 
         m_writer->WriteString("managed_exception_type", m_crashExceptionType);
-        m_writer->WriteString("managed_exception_hresult", hresultBuffer);
+        m_writer->WriteString("managed_exception_hresult", scratch);
     }
     else if (exceptionType != nullptr && exceptionType[0] != '\0')
     {
-        FormatHexValue(hresultBuffer, sizeof(hresultBuffer), exceptionHResult);
+        FormatHexValue(scratch, sizeof(scratch), exceptionHResult);
 
         m_writer->WriteString("managed_exception_type", exceptionType);
-        m_writer->WriteString("managed_exception_hresult", hresultBuffer);
+        m_writer->WriteString("managed_exception_hresult", scratch);
     }
 
     if (isCrashThread)
@@ -1144,17 +1143,16 @@ InProcCrashReporter::EmitSynthesizedCrashThread(
         m_isManagedThreadCallback != nullptr && m_isManagedThreadCallback() ? "true" : "false");
     m_jsonWriter.WriteString("crashed", "true");
 
-    char nativeThreadId[CRASHREPORT_NUMBER_BUFFER_SIZE];
-    FormatHexValue(nativeThreadId, sizeof(nativeThreadId), crashingTid);
-    m_jsonWriter.WriteString("native_thread_id", nativeThreadId);
+    char scratch[CRASHREPORT_NUMBER_BUFFER_SIZE];
+    FormatHexValue(scratch, sizeof(scratch), crashingTid);
+    m_jsonWriter.WriteString("native_thread_id", scratch);
 
     if (hasException)
     {
-        char hresultBuffer[CRASHREPORT_NUMBER_BUFFER_SIZE];
-        FormatHexValue(hresultBuffer, sizeof(hresultBuffer), crashExceptionHResult);
+        FormatHexValue(scratch, sizeof(scratch), crashExceptionHResult);
 
         m_jsonWriter.WriteString("managed_exception_type", crashExceptionType);
-        m_jsonWriter.WriteString("managed_exception_hresult", hresultBuffer);
+        m_jsonWriter.WriteString("managed_exception_hresult", scratch);
     }
 
     WriteRegistersToJson(&m_jsonWriter, context);
