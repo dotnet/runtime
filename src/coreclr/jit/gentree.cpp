@@ -28185,11 +28185,130 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
 
 #if defined(TARGET_XARCH)
 
-    // For larger vectors, reduce down to a single V128 by adding the upper
-    // and lower halves together. This avoids duplicating the (relatively
-    // expensive) V128 horizontal-reduction sequence for each half and keeps
-    // the per-call-site code size small. The final V128 reduction below
-    // produces the scalar result.
+    if (varTypeIsFloating(simdBaseType))
+    {
+        // For floating-point we first run the horizontal permute+add sequence
+        // at the full simd width. vpermilps/vpermilpd permute WITHIN each
+        // 128-bit lane, so this is effectively 2x (V256) or 4x (V512) V128
+        // reductions running in parallel with no duplicated work.
+        //
+        // After that, each 128-bit lane of op1 holds the sum of its elements
+        // broadcast across the lane. We then reduce the lanes to a single
+        // scalar by combining halves in Sum(lower) + Sum(upper) order, which
+        // is the order used by the managed software fallback. That order is
+        // preserved here because floating-point addition is not associative.
+
+        if (simdBaseType == TYP_FLOAT)
+        {
+            GenTree* op1Shuffled = fgMakeMultiUse(&op1);
+
+            NamedIntrinsic permIntrinsic = NI_AVX_Permute;
+            if (simdSize == 64)
+            {
+                // vpermilps above 256-bit requires AVX-512 encoding
+                permIntrinsic = NI_AVX512_Permute4x32;
+            }
+
+            if ((simdSize > 16) || compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                // Per lane, the permute below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
+                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, gtNewIconNode((int)0b10110001, TYP_INT), permIntrinsic,
+                                               simdBaseType, simdSize);
+                // Per lane, the add below now results in [0 + 1, 1 + 0, 2 + 3, 3 + 2]
+                op1         = gtNewSimdBinOpNode(GT_ADD, simdType, op1, op1Shuffled, simdBaseType, simdSize);
+                op1Shuffled = fgMakeMultiUse(&op1);
+                // Per lane, the permute below gives us [0 + 1, 1 + 0, 2 + 3, 3 + 2] -> [2 + 3, 3 + 2, 0 + 1, 1 + 0]
+                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, gtNewIconNode((int)0b01001110, TYP_INT), permIntrinsic,
+                                               simdBaseType, simdSize);
+            }
+            else
+            {
+                assert(simdSize == 16);
+                // The shuffle below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b10110001, TYP_INT),
+                                               NI_X86Base_Shuffle, simdBaseType, simdSize);
+                op1Shuffled = fgMakeMultiUse(&op1Shuffled);
+                // The add below now results in [0 + 1, 1 + 0, 2 + 3, 3 + 2]
+                op1         = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseType, simdSize);
+                op1Shuffled = fgMakeMultiUse(&op1);
+                // The shuffle below gives us  [0 + 1, 1 + 0, 2 + 3, 3 + 2] -> [2 + 3, 3 + 2, 0 + 1, 1 + 0]
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b01001110, TYP_INT),
+                                               NI_X86Base_Shuffle, simdBaseType, simdSize);
+                op1Shuffled = fgMakeMultiUse(&op1Shuffled);
+            }
+            // Per lane, adding the results gets us [(0 + 1) + (2 + 3), (1 + 0) + (3 + 2), (2 + 3) + (0 + 1),
+            // (3 + 2) + (1 + 0)]
+            op1 = gtNewSimdBinOpNode(GT_ADD, simdType, op1, op1Shuffled, simdBaseType, simdSize);
+        }
+        else
+        {
+            GenTree* op1Shuffled = fgMakeMultiUse(&op1);
+
+            NamedIntrinsic permIntrinsic = NI_AVX_Permute;
+            if (simdSize == 64)
+            {
+                // vpermilpd above 256-bit requires AVX-512 encoding
+                permIntrinsic = NI_AVX512_Permute2x64;
+            }
+
+            if ((simdSize > 16) || compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                // Per lane, the permute below gives us  [0, 1] -> [1, 0]
+                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, gtNewIconNode((int)0b0001, TYP_INT), permIntrinsic,
+                                               simdBaseType, simdSize);
+            }
+            else
+            {
+                assert(simdSize == 16);
+                // The shuffle below gives us  [0, 1] -> [1, 0]
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b0001, TYP_INT),
+                                               NI_X86Base_Shuffle, simdBaseType, simdSize);
+                op1Shuffled = fgMakeMultiUse(&op1Shuffled);
+            }
+            // Per lane, adding the results gets us [0 + 1, 1 + 0]
+            op1 = gtNewSimdBinOpNode(GT_ADD, simdType, op1, op1Shuffled, simdBaseType, simdSize);
+        }
+
+        // At this point every 128-bit lane of op1 contains that lane's reduced
+        // sum broadcast across the lane. Combine the lanes into a single V128
+        // while preserving the Sum(lower) + Sum(upper) order used by the
+        // managed fallback.
+
+        if (simdSize == 64)
+        {
+            GenTree* op1Dup = fgMakeMultiUse(&op1);
+
+            GenTree* lower = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseType, 64);
+            GenTree* upper = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseType, 64);
+
+            GenTree* lowerDup = fgMakeMultiUse(&lower);
+            GenTree* lowerLo  = gtNewSimdGetLowerNode(TYP_SIMD16, lower, simdBaseType, 32);
+            GenTree* lowerHi  = gtNewSimdGetUpperNode(TYP_SIMD16, lowerDup, simdBaseType, 32);
+            lower             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, lowerLo, lowerHi, simdBaseType, 16);
+
+            GenTree* upperDup = fgMakeMultiUse(&upper);
+            GenTree* upperLo  = gtNewSimdGetLowerNode(TYP_SIMD16, upper, simdBaseType, 32);
+            GenTree* upperHi  = gtNewSimdGetUpperNode(TYP_SIMD16, upperDup, simdBaseType, 32);
+            upper             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, upperLo, upperHi, simdBaseType, 16);
+
+            op1 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, lower, upper, simdBaseType, 16);
+        }
+        else if (simdSize == 32)
+        {
+            GenTree* op1Dup = fgMakeMultiUse(&op1);
+
+            GenTree* lower = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, 32);
+            GenTree* upper = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseType, 32);
+
+            op1 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, lower, upper, simdBaseType, 16);
+        }
+
+        return gtNewSimdToScalarNode(type, op1, simdBaseType, 16);
+    }
+
+    // Integer: integer addition is associative, so we can safely reduce the
+    // upper/lower halves element-wise down to a single V128 before running
+    // the V128 reduction.
 
     if (simdSize == 64)
     {
@@ -28214,66 +28333,6 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
     }
 
     assert(simdSize == 16);
-
-    if (varTypeIsFloating(simdBaseType))
-    {
-        if (simdBaseType == TYP_FLOAT)
-        {
-            GenTree* op1Shuffled = fgMakeMultiUse(&op1);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                // The permute below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b10110001, TYP_INT), NI_AVX_Permute,
-                                               simdBaseType, simdSize);
-                // The add below now results in [0 + 1, 1 + 0, 2 + 3, 3 + 2]
-                op1         = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseType, simdSize);
-                op1Shuffled = fgMakeMultiUse(&op1);
-                // The permute below gives us  [0 + 1, 1 + 0, 2 + 3, 3 + 2] -> [2 + 3, 3 + 2, 0 + 1, 1 + 0]
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b01001110, TYP_INT), NI_AVX_Permute,
-                                               simdBaseType, simdSize);
-            }
-            else
-            {
-                // The shuffle below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b10110001, TYP_INT),
-                                               NI_X86Base_Shuffle, simdBaseType, simdSize);
-                op1Shuffled = fgMakeMultiUse(&op1Shuffled);
-                // The add below now results in [0 + 1, 1 + 0, 2 + 3, 3 + 2]
-                op1         = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseType, simdSize);
-                op1Shuffled = fgMakeMultiUse(&op1);
-                // The shuffle below gives us  [0 + 1, 1 + 0, 2 + 3, 3 + 2] -> [2 + 3, 3 + 2, 0 + 1, 1 + 0]
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b01001110, TYP_INT),
-                                               NI_X86Base_Shuffle, simdBaseType, simdSize);
-                op1Shuffled = fgMakeMultiUse(&op1Shuffled);
-            }
-            // Finally adding the results gets us [(0 + 1) + (2 + 3), (1 + 0) + (3 + 2), (2 + 3) + (0 + 1), (3 + 2) + (1
-            // + 0)]
-            op1 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseType, simdSize);
-            return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
-        }
-        else
-        {
-            GenTree* op1Shuffled = fgMakeMultiUse(&op1);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                // The permute below gives us  [0, 1] -> [1, 0]
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b0001, TYP_INT), NI_AVX_Permute,
-                                               simdBaseType, simdSize);
-            }
-            else
-            {
-                // The shuffle below gives us  [0, 1] -> [1, 0]
-                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b0001, TYP_INT),
-                                               NI_X86Base_Shuffle, simdBaseType, simdSize);
-                op1Shuffled = fgMakeMultiUse(&op1Shuffled);
-            }
-            // Finally adding the results gets us [0 + 1, 1 + 0]
-            op1 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseType, simdSize);
-            return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
-        }
-    }
 
     unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
     int      shiftCount   = genLog2(vectorLength);
