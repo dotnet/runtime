@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [SkipKeptItemsValidation]
     [ExpectedNoWarnings]
-    class MakeGenericDataflowIntrinsics
+    class RequiresDynamicCodeAnalyzerIntrinsics
     {
         public static void Main()
         {
