@@ -6,6 +6,7 @@
 #include "simpletimer.h"
 #include "logging.h"
 #include "spmiutil.h"
+#include "config.h"
 #include <stdio.h>
 #ifdef TARGET_UNIX
 #include <sys/types.h>
