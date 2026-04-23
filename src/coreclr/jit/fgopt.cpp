@@ -1035,7 +1035,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     // due to accumulated rounding from prior weight adjustments (e.g.,
     // decreaseBBProfileWeight called during earlier optimizations in the same
     // iteration of fgUpdateFlowGraph). Mark profile as potentially inconsistent.
-    if (targetHadOtherPreds && hasProfileWeight && fgPgoConsistent)
+    if (targetHadOtherPreds && block->hasProfileWeight() && fgPgoConsistent)
     {
         weight_t incomingLikelyWeight = 0;
         for (FlowEdge* const predEdge : block->PredEdges())
