@@ -39,6 +39,7 @@
 #include "pal_crypto_config.h"
 #include "pal_compiler.h"
 #define OPENSSL_VERSION_4_0_RTM 0x40000000L
+#define OPENSSL_VERSION_3_0_2_RTM 0x3000002FL
 #define OPENSSL_VERSION_3_0_RTM 0x30000000L
 #define OPENSSL_VERSION_1_1_1_RTM 0x10101000L
 #define OPENSSL_VERSION_1_1_0_RTM 0x10100000L
@@ -208,26 +209,6 @@ int SSL_set_ciphersuites(SSL *s, const char *str);
 const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 #endif
 
-#if !HAVE_OPENSSL_RSA_PRIMITIVE
-// In portable build, we need to support legacy RSA functions even if they were not present
-// on the build OS. The shim will detect their presence at runtime.
-#undef HAVE_OPENSSL_RSA_PRIMITIVE
-#define HAVE_OPENSSL_RSA_PRIMITIVE 1
-
-typedef struct rsa_st RSA;
-typedef struct rsa_meth_st RSA_METHOD;
-
-const RSA* EVP_PKEY_get0_RSA(const EVP_PKEY* pkey);
-int EVP_PKEY_set1_RSA(EVP_PKEY* pkey, RSA* key);
-const RSA_METHOD* RSA_get_method(const RSA* rsa);
-int RSA_get_multi_prime_extra_count(const RSA* rsa);
-void RSA_get0_key(const RSA* r, const BIGNUM** n, const BIGNUM** e, const BIGNUM** d);
-void RSA_get0_factors(const RSA* r, const BIGNUM** p, const BIGNUM** q);
-void RSA_get0_crt_params(const RSA* r, const BIGNUM** dmp1, const BIGNUM** dmq1, const BIGNUM** iqmp);
-int RSA_meth_get_flags(const RSA_METHOD* meth);
-int RSA_test_flags(const RSA* r, int flags);
-#endif
-
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_4_0_RTM
 #include "osslcompat_40.h"
 #endif
@@ -362,10 +343,12 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(BN_value_one) \
     REQUIRED_FUNCTION(BN_CTX_new) \
     REQUIRED_FUNCTION(BN_CTX_free) \
+    REQUIRED_FUNCTION(CRYPTO_clear_free) \
     REQUIRED_FUNCTION(CRYPTO_free) \
     REQUIRED_FUNCTION(CRYPTO_get_ex_new_index) \
     REQUIRED_FUNCTION(CRYPTO_malloc) \
     REQUIRED_FUNCTION(CRYPTO_set_mem_functions) \
+    REQUIRED_FUNCTION(CRYPTO_zalloc) \
     REQUIRED_FUNCTION(d2i_OCSP_RESPONSE) \
     REQUIRED_FUNCTION(d2i_PKCS12_fp) \
     REQUIRED_FUNCTION(d2i_PKCS7) \
@@ -519,7 +502,9 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_MD_CTX_new) \
     REQUIRED_FUNCTION(EVP_MD_CTX_set_flags) \
     LIGHTUP_FUNCTION(EVP_MD_fetch) \
+    LIGHTUP_FUNCTION(EVP_MD_get0_name) \
     RENAMED_FUNCTION(EVP_MD_get_size, EVP_MD_size) \
+    LIGHTUP_FUNCTION(EVP_MD_is_a) \
     REQUIRED_FUNCTION(EVP_PKCS82PKEY) \
     REQUIRED_FUNCTION(EVP_PKEY2PKCS8) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl) \
@@ -708,6 +693,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_CTX_set_security_level) \
     REQUIRED_FUNCTION(SSL_CTX_set_session_id_context) \
     REQUIRED_FUNCTION(SSL_CTX_set_verify) \
+    REQUIRED_FUNCTION(SSL_CTX_set_cert_verify_callback) \
     REQUIRED_FUNCTION(SSL_CTX_use_certificate) \
     REQUIRED_FUNCTION(SSL_CTX_use_PrivateKey) \
     REQUIRED_FUNCTION(SSL_do_handshake) \
@@ -718,6 +704,8 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_get_current_cipher) \
     REQUIRED_FUNCTION(SSL_get_error) \
     REQUIRED_FUNCTION(SSL_get_ex_data) \
+    REQUIRED_FUNCTION(SSL_get_ex_data_X509_STORE_CTX_idx) \
+    REQUIRED_FUNCTION(SSL_get_pending_cipher) \
     REQUIRED_FUNCTION(SSL_get_finished) \
     REQUIRED_FUNCTION(SSL_get_peer_cert_chain) \
     REQUIRED_FUNCTION(SSL_get_peer_finished) \
@@ -831,6 +819,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(X509_STORE_CTX_set_verify_cb) \
     REQUIRED_FUNCTION(X509_STORE_CTX_set_ex_data) \
     REQUIRED_FUNCTION(X509_STORE_CTX_get_ex_data) \
+    REQUIRED_FUNCTION(X509_STORE_CTX_set_error) \
     REQUIRED_FUNCTION(X509_STORE_free) \
     REQUIRED_FUNCTION(X509_STORE_get0_param) \
     REQUIRED_FUNCTION(X509_STORE_new) \
@@ -913,10 +902,12 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define BN_value_one BN_value_one_ptr
 #define BN_CTX_free BN_CTX_free_ptr
 #define BN_CTX_new BN_CTX_new_ptr
+#define CRYPTO_clear_free CRYPTO_clear_free_ptr
 #define CRYPTO_free CRYPTO_free_ptr
 #define CRYPTO_get_ex_new_index CRYPTO_get_ex_new_index_ptr
 #define CRYPTO_malloc CRYPTO_malloc_ptr
 #define CRYPTO_set_mem_functions CRYPTO_set_mem_functions_ptr
+#define CRYPTO_zalloc CRYPTO_zalloc_ptr
 #define d2i_OCSP_RESPONSE d2i_OCSP_RESPONSE_ptr
 #define d2i_PKCS12_fp d2i_PKCS12_fp_ptr
 #define d2i_PKCS7 d2i_PKCS7_ptr
@@ -1070,7 +1061,9 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
 #define EVP_MD_CTX_set_flags EVP_MD_CTX_set_flags_ptr
 #define EVP_MD_fetch EVP_MD_fetch_ptr
+#define EVP_MD_get0_name EVP_MD_get0_name_ptr
 #define EVP_MD_get_size EVP_MD_get_size_ptr
+#define EVP_MD_is_a EVP_MD_is_a_ptr
 #define EVP_PKCS82PKEY EVP_PKCS82PKEY_ptr
 #define EVP_PKEY2PKCS8 EVP_PKEY2PKCS8_ptr
 #define EVP_PKEY_CTX_ctrl EVP_PKEY_CTX_ctrl_ptr
@@ -1263,6 +1256,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_CTX_set_security_level SSL_CTX_set_security_level_ptr
 #define SSL_CTX_set_session_id_context SSL_CTX_set_session_id_context_ptr
 #define SSL_CTX_set_verify SSL_CTX_set_verify_ptr
+#define SSL_CTX_set_cert_verify_callback SSL_CTX_set_cert_verify_callback_ptr
 #define SSL_CTX_use_certificate SSL_CTX_use_certificate_ptr
 #define SSL_CTX_use_PrivateKey SSL_CTX_use_PrivateKey_ptr
 #define SSL_do_handshake SSL_do_handshake_ptr
@@ -1274,9 +1268,11 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_get_current_cipher SSL_get_current_cipher_ptr
 #define SSL_get_error SSL_get_error_ptr
 #define SSL_get_ex_data SSL_get_ex_data_ptr
+#define SSL_get_ex_data_X509_STORE_CTX_idx SSL_get_ex_data_X509_STORE_CTX_idx_ptr
 #define SSL_get_finished SSL_get_finished_ptr
 #define SSL_get_peer_cert_chain SSL_get_peer_cert_chain_ptr
 #define SSL_get_peer_finished SSL_get_peer_finished_ptr
+#define SSL_get_pending_cipher SSL_get_pending_cipher_ptr
 #define SSL_get_servername SSL_get_servername_ptr
 #define SSL_get_SSL_CTX SSL_get_SSL_CTX_ptr
 #define SSL_get_version SSL_get_version_ptr
@@ -1285,7 +1281,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_is_init_finished SSL_is_init_finished_ptr
 #define SSL_new SSL_new_ptr
 #define SSL_peek SSL_peek_ptr
-#define SSL_state_string_long SSL_state_string_long_ptr
 #define SSL_read SSL_read_ptr
 #define SSL_renegotiate SSL_renegotiate_ptr
 #define SSL_renegotiate_pending SSL_renegotiate_pending_ptr
@@ -1388,6 +1383,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define X509_STORE_CTX_set_verify_cb X509_STORE_CTX_set_verify_cb_ptr
 #define X509_STORE_CTX_set_ex_data X509_STORE_CTX_set_ex_data_ptr
 #define X509_STORE_CTX_get_ex_data X509_STORE_CTX_get_ex_data_ptr
+#define X509_STORE_CTX_set_error X509_STORE_CTX_set_error_ptr
 #define X509_STORE_free X509_STORE_free_ptr
 #define X509_STORE_get0_param X509_STORE_get0_param_ptr
 #define X509_STORE_new X509_STORE_new_ptr

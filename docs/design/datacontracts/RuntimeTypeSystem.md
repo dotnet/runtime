@@ -54,6 +54,8 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool IsString(TypeHandle typeHandle);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
+    // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
+    public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
     public virtual bool IsContinuation(TypeHandle typeHandle);
     public virtual bool IsDynamicStatics(TypeHandle typeHandle);
@@ -88,6 +90,7 @@ partial interface IRuntimeTypeSystem : IContract
     // HasTypeParam will return true for cases where this is the interop view, and false for normal valuetypes.
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
 
+    bool IsValueType(TypeHandle typeHandle);
     // return true if the TypeHandle represents an enum type.
     bool IsEnum(TypeHandle typeHandle);
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
@@ -216,6 +219,12 @@ partial interface IRuntimeTypeSystem : IContract
     // Returns true if the method is eligible for tiered compilation
     public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
 
+    // Return true if the method is an async thunk method.
+    public virtual bool IsAsyncThunkMethod(MethodDescHandle methodDesc);
+
+    // Return true if the method is a wrapper stub (unboxing or instantiating).
+    public virtual bool IsWrapperStub(MethodDescHandle methodDesc);
+
 }
 ```
 
@@ -264,6 +273,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_Mask = 0x000F0000,
         Category_ElementType_Mask = 0x000E0000,
         Category_Array_Mask = 0x000C0000,
+        Category_ValueType_Mask = 0x000C0000,
 
         Category_IfArrayThenSzArray = 0x00020000,
         Category_Array = 0x00080000,
@@ -273,6 +283,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000,
+        RequiresAlign8 = 0x00800000,
         ContainsGCPointers = 0x01000000,
         ContainsGenericVariables = 0x20000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
@@ -319,6 +330,7 @@ internal partial struct RuntimeTypeSystem_1
         public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
+        public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
         public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
@@ -540,6 +552,8 @@ Contracts used:
 
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
+    public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+
     public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
 
     public ushort GetNumInterfaces(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : _methodTables[TypeHandle.Address].NumInterfaces;
@@ -739,6 +753,12 @@ Contracts used:
             return (CorElementType)(TypeAndFlags & 0xFF);
         }
         return default(CorElementType);
+    }
+
+    public bool IsValueType(TypeHandle typeHandle)
+    {
+        // if methodtable: check WFLAGS_HIGH for Category_ValueType
+        // if typedesc: check for CorElementType.ValueType
     }
 
     // Enums have Category_PrimitiveValueType in their MethodTable flags and their
@@ -1090,6 +1110,13 @@ And the following enumeration definitions
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
         ILStubTypeMask = 0x000007FF,
+    }
+
+    [Flags]
+    internal enum AsyncMethodFlags : uint
+    {
+        None = 0,
+        Thunk = 16,
     }
 
     [Flags]
@@ -1494,6 +1521,32 @@ Determining if a method supports multiple code versions:
             return _target.Contracts.CodeVersions.CodeVersionManagerSupportsMethod(methodDesc.Address);
         }
         return false;
+    }
+```
+
+Determining if a method is an async thunk method:
+
+```csharp
+    public bool IsAsyncThunkMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        if (!md.HasAsyncMethodData)
+        {
+            return false;
+        }
+
+        Data.AsyncMethodData asyncData = // Read AsyncMethodData from the address of the async method data optional slot
+        return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.Thunk);
+    }
+```
+
+Determining if a method is a wrapper stub (unboxing or instantiating):
+
+```csharp
+    public bool IsWrapperStub(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        return md.IsUnboxingStub || IsInstantiatingStub(md);
     }
 ```
 

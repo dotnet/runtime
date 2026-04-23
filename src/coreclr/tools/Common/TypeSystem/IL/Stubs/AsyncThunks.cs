@@ -376,5 +376,59 @@ namespace Internal.IL.Stubs
 
             return emitter.Link(asyncMethod);
         }
+
+        // Provided an async variant, emits an async wrapper that drops the returned value.
+        // Used in the covariant return scenario.
+        // The emitted code matches EmitReturnDroppingThunk in CoreCLR VM.
+        public static MethodIL EmitReturnDroppingThunk(MethodDesc returnDroppingMethod, MethodDesc asyncVariantTarget)
+        {
+            TypeSystemContext context = returnDroppingMethod.Context;
+
+            var emitter = new ILEmitter();
+            emitter.SetHasGeneratedTokens();
+
+            var codestream = emitter.NewCodeStream();
+
+            if (asyncVariantTarget.OwningType.HasInstantiation)
+            {
+                var instantiatedType = (InstantiatedType)TypeSystemHelpers.InstantiateAsOpen(asyncVariantTarget.OwningType);
+                asyncVariantTarget = context.GetMethodForInstantiatedType(asyncVariantTarget, instantiatedType);
+            }
+
+            if (asyncVariantTarget.HasInstantiation)
+            {
+                var inst = new TypeDesc[asyncVariantTarget.Instantiation.Length];
+                for (int i = 0; i < inst.Length; i++)
+                {
+                    inst[i] = context.GetSignatureVariable(i, true);
+                }
+                asyncVariantTarget = asyncVariantTarget.MakeInstantiatedMethod(new Instantiation(inst));
+            }
+
+            MethodSignature sig = returnDroppingMethod.Signature;
+
+            // Implement IL that is effectively the following:
+            // {
+            //    this.other(arg);
+            //    return;
+            // }
+
+            int localArg = 0;
+            codestream.EmitLdArg(localArg++);
+
+            for (int iArg = 0; iArg < sig.Length; iArg++)
+            {
+                codestream.EmitLdArg(localArg++);
+            }
+
+            // Use 'call' not 'callvirt': in NativeAOT the target of this thunk is resolved
+            // per type at compile time, so there is no need to redispatch through the vtable.
+            // CoreCLR uses callvirt because thunks can be inherited by subtypes at runtime.
+            codestream.Emit(ILOpcode.call, emitter.NewToken(asyncVariantTarget));
+            codestream.Emit(ILOpcode.pop);
+            codestream.Emit(ILOpcode.ret);
+
+            return emitter.Link(returnDroppingMethod);
+        }
     }
 }

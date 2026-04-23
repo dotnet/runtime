@@ -9,7 +9,7 @@
 #include "clrtypes.h"
 #include "check.h"
 #include "iterator.h"
-#include "../vm/cdacdata.h"
+#include "cdacdata.h"
 
 // SHash is a templated closed chaining hash table of pointers.  It provides
 // for multiple entries under the same key, and also for deleting elements.

@@ -297,16 +297,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                 }
                 else if (pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
                 {
-                    // Skip the new exception handling managed code, the debugger clients are not supposed to see them
-                    MethodDesc *pMD = pIter->m_crawl.GetFunction();
-
-                    // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
-                    // and System.Runtime.StackFrameIterator.*
-                    if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
-                    {
-                        continue;
-                    }
-
+                    // Runtime-internal frames (exception handling helpers, entry point, etc.) are NOT
+                    // skipped here with continue. On x86, GetFrameWorker() unwinds one frame ahead to
+                    // compute the frame pointer (see rsstackwalk.cpp). Skipping frames here would cause
+                    // the unwind to land on the wrong frame, producing incorrect frame pointers.
+                    // Instead, GetStackWalkCurrentFrameInfo classifies these frames and GetFrameWorker
+                    // returns S_FALSE to hide them from debugger clients.
                     fIsAtEndOfStack = FALSE;
                 }
                 else
@@ -417,9 +413,15 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                     {
                         MethodDesc *pMD = pIter->m_crawl.GetFunction();
                         // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
-                        if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
+                        // and System.Runtime.StackFrameIterator.*
+                        if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
                         {
                             ftResult = kManagedExceptionHandlingCodeFrame;
+                        }
+                        // Environment.CallEntryPoint
+                        else if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
+                        {
+                            ftResult = kRuntimeEntryPointFrame;
                         }
                         else
                         {
@@ -605,7 +607,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
                 MethodDesc * pMD = pFrame->GetFunction();
 
                 Module *     pModule = (pMD ? pMD->GetModule() : NULL);
-                DomainAssembly * pDomainAssembly = (pModule ? pModule->GetDomainAssembly() : NULL);
+                Assembly * pAssembly = (pModule ? pModule->GetAssembly() : NULL);
 
                 if (frameData.stubFrame.frameType == STUBFRAME_FUNC_EVAL)
                 {
@@ -613,14 +615,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
                     DebuggerEval *  pDE  = pFEF->GetDebuggerEval();
 
                     frameData.stubFrame.funcMetadataToken = pDE->m_methodToken;
-                    frameData.stubFrame.vmDomainAssembly.SetHostPtr(
-                        pDE->m_debuggerModule ? pDE->m_debuggerModule->GetDomainAssembly() : NULL);
+                    frameData.stubFrame.vmAssembly.SetHostPtr(
+                        pDE->m_debuggerModule ? pDE->m_debuggerModule->GetAssembly() : NULL);
                     frameData.stubFrame.vmMethodDesc = VMPTR_MethodDesc::NullPtr();
                 }
                 else
                 {
                     frameData.stubFrame.funcMetadataToken = (pMD == NULL ? mdTokenNil : pMD->GetMemberDef());
-                    frameData.stubFrame.vmDomainAssembly.SetHostPtr(pDomainAssembly);
+                    frameData.stubFrame.vmAssembly.SetHostPtr(pAssembly);
                     frameData.stubFrame.vmMethodDesc.SetHostPtr(pMD);
                 }
 
@@ -631,28 +633,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
             // move on to the next internal frame
             pFrame = pFrame->Next();
         }
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-// Given the FramePointer of the parent frame and the FramePointer of the current frame,
-// check if the current frame is the parent frame.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePointer fpParent, OUT BOOL * pResult)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        StackFrame sfToCheck = StackFrame((UINT_PTR)fpToCheck.GetSPValue());
-
-        StackFrame sfParent  = StackFrame((UINT_PTR)fpParent.GetSPValue());
-
-        // Ask the ExInfo to figure out the answer.
-        // Don't try to compare the StackFrames/FramePointers ourselves.
-        *pResult = ExInfo::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -826,11 +806,11 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         // Although MiniDumpNormal tries to dump all AppDomains, it's possible
         // target corruption will keep one from being present.  This should mean
         // we'll just fail later, but struggle on for now.
-        DomainAssembly *pDomainAssembly = NULL;
+        Assembly *pAssembly = NULL;
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
         {
-            pDomainAssembly = (pModule ? pModule->GetDomainAssembly() : NULL);
-            _ASSERTE(pDomainAssembly != NULL);
+            pAssembly = (pModule ? pModule->GetAssembly() : NULL);
+            _ASSERTE(pAssembly != NULL);
         }
         EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
 
@@ -911,7 +891,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         //
 
         pFuncData->funcMetadataToken = pMD->GetMemberDef();
-        pFuncData->vmDomainAssembly.SetHostPtr(pDomainAssembly);
+        pFuncData->vmAssembly.SetHostPtr(pAssembly);
 
         // PERF: this is expensive to get so I stopped fetching it eagerly
         // It is only needed if we haven't already got a cached copy
@@ -1229,10 +1209,6 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
 
         case Frame::TT_U2M:
             resultType = STUBFRAME_U2M;
-            break;
-
-        case Frame::TT_AppDomain:
-            resultType = STUBFRAME_APPDOMAIN_TRANSITION;
             break;
 
         case Frame::TT_InternalCall:

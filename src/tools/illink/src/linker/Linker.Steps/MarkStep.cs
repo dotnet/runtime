@@ -1489,6 +1489,8 @@ namespace Mono.Linker.Steps
                     disableMarkingOfCopyAssembliesValue != "true")
                 {
                     MarkEntireAssembly(assembly, assemblyOrigin);
+                    // For copy/save assemblies, also mark scopes of type references, since they won't be rewritten.
+                    TypeReferenceMarker.MarkTypeReferences(assembly, MarkingHelpers);
                 }
                 return;
             }
@@ -1519,8 +1521,14 @@ namespace Mono.Linker.Steps
             foreach (TypeDefinition type in module.Types)
                 MarkEntireType(type, new DependencyInfo(DependencyKind.TypeInAssembly, assembly), origin);
 
-            // Mark scopes of type references and exported types.
-            TypeReferenceMarker.MarkTypeReferences(assembly, MarkingHelpers);
+            MarkExportedTypes(assembly, origin);
+        }
+
+        void MarkExportedTypes(AssemblyDefinition assembly, MessageOrigin origin)
+        {
+            ModuleDefinition module = assembly.MainModule;
+            foreach (ExportedType exportedType in module.ExportedTypes)
+                MarkingHelpers.MarkExportedType(exportedType, module, new DependencyInfo(DependencyKind.ExportedType, assembly), origin);
         }
 
         sealed class TypeReferenceMarker : TypeReferenceWalker
@@ -1546,7 +1554,6 @@ namespace Mono.Linker.Steps
 
             protected override void ProcessExportedType(ExportedType exportedType)
             {
-                markingHelpers.MarkExportedType(exportedType, assembly.MainModule, new DependencyInfo(DependencyKind.ExportedType, assembly), new MessageOrigin(assembly));
                 markingHelpers.MarkForwardedScope(CreateTypeReferenceForExportedTypeTarget(exportedType), new MessageOrigin(assembly));
             }
 
@@ -3160,7 +3167,7 @@ namespace Mono.Linker.Steps
             var methodAction = Annotations.GetAction(method);
             if (methodAction is MethodAction.ConvertToStub)
             {
-                // CodeRewriterStep runs after sweeping, and may request the stubbed value for any preserved method
+                // CodeRewriterStep may request the stubbed value for any preserved method
                 // with the action ConvertToStub. Ensure we have precomputed any stub value that may be needed by
                 // CodeRewriterStep. This ensures sweeping doesn't change the stub value (which can be determined by
                 // FeatureGuardAttribute or FeatureSwitchDefinitionAttribute that might have been removed).

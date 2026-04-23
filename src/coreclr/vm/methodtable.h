@@ -1525,14 +1525,14 @@ public:
 
     // Is this something like List<T> or List<Stack<T>>?
     // List<Blah<T>> only exists for reflection and verification.
-    inline DWORD ContainsGenericVariables(BOOL methodVarsOnly = FALSE)
+    inline BOOL ContainsGenericVariables(BOOL methodVarsOnly = FALSE)
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
         if (methodVarsOnly)
             return ContainsGenericMethodVariables();
         else
-            return GetFlag(enum_flag_ContainsGenericVariables);
+            return !!GetFlag(enum_flag_ContainsGenericVariables);
     }
 
     BOOL IsByRefLike()
@@ -3813,7 +3813,7 @@ private:
         // enum_flag_unused                   = 0x00400000,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
-        enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
+        enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly) [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 #endif
 
         enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
