@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -213,7 +214,17 @@ namespace System.Diagnostics
         /// <summary>Associated process is a child that can use the terminal.</summary>
         private readonly bool _usesTerminal;
         /// <summary>A value indicating whether the process has been terminated due to timeout or cancellation.</summary>
-        internal volatile bool _canceled;
+        internal bool _canceled;
+
+        internal void Cancel(SafeProcessHandle process)
+        {
+            lock (_gate)
+            {
+#pragma warning disable CA1416 // Signal is not supported on iOS/tvOS but Cancel is only called from supported platforms
+                _canceled = process.Signal(PosixSignal.SIGKILL);
+#pragma warning restore CA1416
+            }
+        }
 
         /// <summary>An in-progress or completed wait operation.</summary>
         /// <remarks>A completed task does not mean the process has exited.</remarks>

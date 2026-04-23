@@ -46,6 +46,13 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         private bool Canceled { get; set; }
 
+        private void Cancel()
+        {
+#pragma warning disable CA1416 // PosixSignal.SIGKILL is supported on Windows via SignalCore
+            Canceled = SignalCore(PosixSignal.SIGKILL);
+#pragma warning restore CA1416
+        }
+
         protected override bool ReleaseHandle()
         {
             return Interop.Kernel32.CloseHandle(handle);
@@ -673,9 +680,7 @@ namespace Microsoft.Win32.SafeHandles
             using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
             if (!processWaitHandle.WaitOne(milliseconds))
             {
-#pragma warning disable CA1416 // PosixSignal.SIGKILL is supported on Windows via SignalCore
-                Canceled = SignalCore(PosixSignal.SIGKILL);
-#pragma warning restore CA1416
+                Cancel();
                 processWaitHandle.WaitOne(Timeout.Infinite);
             }
 
