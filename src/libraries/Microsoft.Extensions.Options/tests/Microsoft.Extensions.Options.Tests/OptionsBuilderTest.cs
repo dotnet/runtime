@@ -881,7 +881,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void ValidateWithValidatorType_AreNotScopedToNamedOptions()
+        public void ValidateWithValidatorType_AreScopedToNamedOptions()
         {
             var services = new ServiceCollection();
 
@@ -895,9 +895,9 @@ namespace Microsoft.Extensions.Options.Tests
 
             var sp = services.BuildServiceProvider();
 
-            // but validation fails regardless
-            var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<ComplexOptions>>().Value);
-            ValidateFailure<ComplexOptions>(error, Options.DefaultName, 1, "Boolean != true");
+            // validation succeeds because it only applies to the valid option
+            var value = sp.GetRequiredService<IOptions<FakeOptions>>().Value;
+            Assert.NotNull(value);
         }
     }
 }

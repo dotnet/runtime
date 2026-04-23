@@ -344,7 +344,8 @@ namespace Microsoft.Extensions.Options
         public virtual OptionsBuilder<TOptions> Validate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TValidateOptions>()
             where TValidateOptions : class, IValidateOptions<TOptions>
         {
-            Services.AddTransient<IValidateOptions<TOptions>, TValidateOptions>();
+            Services.AddTransient<IValidateOptions<TOptions>>(sp =>
+                new NamedValidateOptionsFilter<TOptions, TValidateOptions>(Name, ActivatorUtilities.GetServiceOrCreateInstance<TValidateOptions>(sp)));
             return this;
         }
 
