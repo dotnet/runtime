@@ -380,7 +380,8 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(DumpType dumpType)
 
         // CLRDATA_ENUM_MEM_HEAP2 skips the expensive (in both time and memory usage) enumeration of the
         // low level data structures and adds all the loader allocator heaps instead. The older 'DbgEnableFastHeapDumps'
-        // env var didn't generate a complete enough heap dump on Linux and this new path does.
+// CLRDATA_ENUM_MEM_HEAP2 skips the expensive (in both time and memory usage) enumeration of the
+// low level data structures and adds all the loader allocator heaps instead.
         CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_HEAP2;
         MINIDUMP_TYPE minidumpType = GetMiniDumpType(dumpType);
         // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
