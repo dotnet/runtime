@@ -405,6 +405,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EC_GROUP_get0_seed) \
     REQUIRED_FUNCTION(EC_GROUP_get_cofactor) \
     REQUIRED_FUNCTION(EC_GROUP_get_curve_GFp) \
+    REQUIRED_FUNCTION(EC_GROUP_get_curve) \
     REQUIRED_FUNCTION(EC_GROUP_get_curve_name) \
     REQUIRED_FUNCTION(EC_GROUP_get_degree) \
     REQUIRED_FUNCTION(EC_GROUP_get_order) \
@@ -415,6 +416,7 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EC_GROUP_new_by_curve_name) \
     REQUIRED_FUNCTION(EC_GROUP_new_curve_GFp) \
     REQUIRED_FUNCTION(EC_GROUP_set_curve_GFp) \
+    REQUIRED_FUNCTION(EC_GROUP_set_curve) \
     REQUIRED_FUNCTION(EC_GROUP_set_generator) \
     REQUIRED_FUNCTION(EC_GROUP_set_seed) \
     REQUIRED_FUNCTION(EC_KEY_check_key) \
@@ -433,10 +435,12 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EC_METHOD_get_field_type) \
     REQUIRED_FUNCTION(EC_POINT_free) \
     REQUIRED_FUNCTION(EC_POINT_get_affine_coordinates_GFp) \
+    REQUIRED_FUNCTION(EC_POINT_get_affine_coordinates) \
     REQUIRED_FUNCTION(EC_POINT_mul) \
     REQUIRED_FUNCTION(EC_POINT_new) \
     REQUIRED_FUNCTION(EC_POINT_point2oct) \
     REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates_GFp) \
+    REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates) \
     LIGHTUP_FUNCTION(EC_POINT_oct2point) \
     LIGHTUP_FUNCTION(ENGINE_by_id) \
     LIGHTUP_FUNCTION(ENGINE_finish) \
@@ -976,6 +980,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EC_GROUP_get0_seed EC_GROUP_get0_seed_ptr
 #define EC_GROUP_get_cofactor EC_GROUP_get_cofactor_ptr
 #define EC_GROUP_get_curve_GFp EC_GROUP_get_curve_GFp_ptr
+#define EC_GROUP_get_curve EC_GROUP_get_curve_ptr
 #define EC_GROUP_get_curve_name EC_GROUP_get_curve_name_ptr
 #define EC_GROUP_get_degree EC_GROUP_get_degree_ptr
 #define EC_GROUP_get_order EC_GROUP_get_order_ptr
@@ -986,6 +991,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EC_GROUP_new_by_curve_name EC_GROUP_new_by_curve_name_ptr
 #define EC_GROUP_new_curve_GFp EC_GROUP_new_curve_GFp_ptr
 #define EC_GROUP_set_curve_GFp EC_GROUP_set_curve_GFp_ptr
+#define EC_GROUP_set_curve EC_GROUP_set_curve_ptr
 #define EC_GROUP_set_generator EC_GROUP_set_generator_ptr
 #define EC_GROUP_set_seed EC_GROUP_set_seed_ptr
 #define EC_KEY_check_key EC_KEY_check_key_ptr
@@ -1004,10 +1010,12 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EC_METHOD_get_field_type EC_METHOD_get_field_type_ptr
 #define EC_POINT_free EC_POINT_free_ptr
 #define EC_POINT_get_affine_coordinates_GFp EC_POINT_get_affine_coordinates_GFp_ptr
+#define EC_POINT_get_affine_coordinates EC_POINT_get_affine_coordinates_ptr
 #define EC_POINT_mul EC_POINT_mul_ptr
 #define EC_POINT_new EC_POINT_new_ptr
 #define EC_POINT_point2oct EC_POINT_point2oct_ptr
 #define EC_POINT_set_affine_coordinates_GFp EC_POINT_set_affine_coordinates_GFp_ptr
+#define EC_POINT_set_affine_coordinates EC_POINT_set_affine_coordinates_ptr
 #define EC_POINT_oct2point EC_POINT_oct2point_ptr
 #define ENGINE_by_id ENGINE_by_id_ptr
 #define ENGINE_finish ENGINE_finish_ptr

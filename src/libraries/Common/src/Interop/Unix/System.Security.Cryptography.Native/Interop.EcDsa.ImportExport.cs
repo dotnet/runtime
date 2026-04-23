@@ -310,7 +310,6 @@ internal static partial class Interop
                     }
                     else if (rc != 1)
                     {
-                        System.Console.WriteLine($"error getting params: {rc}");
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
@@ -358,7 +357,6 @@ internal static partial class Interop
                 }
                 else if (rc != 1)
                 {
-                    Console.WriteLine($"error getting params: {rc}");
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
