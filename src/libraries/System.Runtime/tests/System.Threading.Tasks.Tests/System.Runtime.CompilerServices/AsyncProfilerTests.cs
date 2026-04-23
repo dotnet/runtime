@@ -29,6 +29,7 @@ namespace System.Threading.Tasks.Tests
         ResetAsyncThreadContext = 11,
         ResetAsyncContinuationWrapperIndex = 12,
         AsyncProfilerMetadata = 13,
+        AsyncProfilerSyncClock = 14,
     }
 
     public class AsyncProfilerTests
@@ -281,6 +282,10 @@ namespace System.Threading.Tasks.Tests
                 case AsyncEventID.AsyncProfilerMetadata:
                     SkipMetadataPayload(buffer, ref index);
                     return true;
+                case AsyncEventID.AsyncProfilerSyncClock:
+                    ReadCompressedUInt64(buffer, ref index); // qpcSync
+                    ReadCompressedUInt64(buffer, ref index); // utcSync
+                    return true;
                 case AsyncEventID.UnwindAsyncException:
                     ReadCompressedUInt32(buffer, ref index);
                     return true;
@@ -362,15 +367,15 @@ namespace System.Threading.Tasks.Tests
         private static void ReadMetadataPayload(ReadOnlySpan<byte> buffer, ref int index,
             out ulong qpcFrequency, out ulong qpcSync, out ulong utcSync, out uint eventBufferSize, out long[] wrapperIPs)
         {
-            EventBuffer.Deserializer.ReadUInt64(buffer, ref index, out qpcFrequency);
-            EventBuffer.Deserializer.ReadUInt64(buffer, ref index, out qpcSync);
-            EventBuffer.Deserializer.ReadUInt64(buffer, ref index, out utcSync);
-            EventBuffer.Deserializer.ReadUInt32(buffer, ref index, out eventBufferSize);
+            qpcFrequency = ReadCompressedUInt64(buffer, ref index);
+            qpcSync = ReadCompressedUInt64(buffer, ref index);
+            utcSync = ReadCompressedUInt64(buffer, ref index);
+            eventBufferSize = ReadCompressedUInt32(buffer, ref index);
             byte wrapperCount = buffer[index++];
             wrapperIPs = new long[wrapperCount];
             for (int i = 0; i < wrapperCount; i++)
             {
-                EventBuffer.Deserializer.ReadInt64(buffer, ref index, out wrapperIPs[i]);
+                wrapperIPs[i] = (long)ReadCompressedUInt64(buffer, ref index);
             }
         }
 
@@ -1405,6 +1410,25 @@ namespace System.Threading.Tasks.Tests
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
+        public void RuntimeAsync_NoSyncClockEventBeforeInterval()
+        {
+            var events = CollectEvents(CoreKeywords, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    await Func();
+                });
+            });
+
+            // DumpCollectedEvents(events);
+
+            var eventIds = CollectAsyncEventIds(events);
+
+            Assert.DoesNotContain(AsyncEventID.AsyncProfilerSyncClock, eventIds);
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_NoEventsWhenDisabled()
         {
             // Run async work WITHOUT a listener attached
@@ -1961,16 +1985,16 @@ namespace System.Threading.Tasks.Tests
             int index = 0;
             Console.WriteLine("--- AsyncProfilerMetadata ---");
 
-            Deserializer.ReadUInt64(buffer, ref index, out ulong qpcFrequency);
+            Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong qpcFrequency);
             Console.WriteLine($"  QPCFrequency: {qpcFrequency}");
 
-            Deserializer.ReadUInt64(buffer, ref index, out ulong qpcSync);
+            Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong qpcSync);
             Console.WriteLine($"  QPCSync: {qpcSync}");
 
-            Deserializer.ReadUInt64(buffer, ref index, out ulong utcSync);
+            Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong utcSync);
             Console.WriteLine($"  UTCSync: {utcSync}");
 
-            Deserializer.ReadUInt32(buffer, ref index, out uint eventBufferSize);
+            Deserializer.ReadCompressedUInt32(buffer, ref index, out uint eventBufferSize);
             Console.WriteLine($"  EventBufferSize: {eventBufferSize}");
 
             byte wrapperCount = buffer[index++];
@@ -1978,7 +2002,7 @@ namespace System.Threading.Tasks.Tests
 
             for (int i = 0; i < wrapperCount; i++)
             {
-                Deserializer.ReadUInt64(buffer, ref index, out ulong ip);
+                Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong ip);
                 Console.WriteLine($"  Wrapper[{i}]: 0x{ip:X16}");
             }
 
