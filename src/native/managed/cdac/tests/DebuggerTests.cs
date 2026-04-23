@@ -105,7 +105,7 @@ public class DebuggerTests
             builder.AddGlobals((Constants.Globals.MetadataUpdatesApplied, metadataFrag.Address));
         }
 
-        builder.AddContract<IDebugger>(version: 1);
+        builder.AddContract<IDebugger>(version: "c1");
 
         return builder.Build();
     }
@@ -121,7 +121,7 @@ public class DebuggerTests
         MockMemorySpace.HeapFragment debuggerPtrFrag = allocator.Allocate((ulong)helpers.PointerSize, "g_pDebugger");
         helpers.WritePointer(debuggerPtrFrag.Data, 0);
         builder.AddGlobals((Constants.Globals.Debugger, debuggerPtrFrag.Address));
-        builder.AddContract<IDebugger>(version: 1);
+        builder.AddContract<IDebugger>(version: "c1");
 
         return builder.Build();
     }

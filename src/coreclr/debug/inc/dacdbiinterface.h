@@ -1948,8 +1948,8 @@ public:
     //
     // Arguments:
     //    vmObject          - The object to check for ownership
-    //    pRetVal           - [out] Inside the structure we have: 
-    //      pVmThread - the owning thread or VMPTR_Thread::NullPtr() if unowned, 
+    //    pRetVal           - [out] Inside the structure we have:
+    //      pVmThread - the owning thread or VMPTR_Thread::NullPtr() if unowned,
     //      pAcquisitionCount - the number of times the lock would need to be released in order for it to be unowned.
     //
     // Return Value:

@@ -26,6 +26,7 @@ public enum ThreadState
     Unstarted           = 0x00000400,   // Thread has never been started
     Stopped             = 0x00010000,   // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
+    Detached            = unchecked((int)0x80000000), // Thread was detached
 }
 
 public record struct ThreadData(
@@ -38,7 +39,11 @@ public record struct ThreadData(
     TargetPointer AllocContextLimit,
     TargetPointer Frame,
     TargetPointer FirstNestedException,
+    TargetPointer ExposedObjectHandle,
     TargetPointer LastThrownObjectHandle,
+    TargetPointer CurrentCustomDebuggerNotificationHandle,
+    bool LastThrownObjectIsUnhandled,
+    bool HasUnhandledException,
     TargetPointer NextThread);
 
 public interface IThread : IContract
@@ -54,7 +59,6 @@ public interface IThread : IContract
     TargetPointer IdToThread(uint id) => throw new NotImplementedException();
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
     TargetPointer GetCurrentExceptionHandle(TargetPointer threadPointer) => throw new NotImplementedException();
-    TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
 }
 

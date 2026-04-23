@@ -51,6 +51,10 @@
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
+
+    <!-- Library tests run directly from bin/ without the static web assets middleware,
+         so copy framework files to the output directory. See https://github.com/dotnet/runtime/issues/127257. -->
+    <_WasmFrameworkCopyToOutputDirectory>PreserveNewest</_WasmFrameworkCopyToOutputDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <WasmTestSupport>true</WasmTestSupport>
