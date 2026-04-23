@@ -594,18 +594,7 @@ namespace Internal.IL
                         _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, method.Instantiation[0]), reason);
                         _dependencies.Add(_factory.ConstructedTypeSymbol(method.Instantiation[0]), reason);
                     }
-
-                    if (method.RequiresInstMethodDescArg())
-                    {
-                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod), reason);
-                    }
-                    else if (method.RequiresInstMethodTableArg())
-                    {
-                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType), reason);
-                    }
-                    _dependencies.Add(_factory.CanonicalEntrypoint(method), reason);
-
-                    return;
+                    // do not return here, we want the method itself rooted too
                 }
 
                 if (opcode != ILOpcode.ldftn)
