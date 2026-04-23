@@ -895,9 +895,15 @@ namespace Microsoft.Extensions.Options.Tests
 
             var sp = services.BuildServiceProvider();
 
-            // validation succeeds because it only applies to the valid option
-            var value = sp.GetRequiredService<IOptions<FakeOptions>>().Value;
-            Assert.NotNull(value);
+            var monitor = sp.GetRequiredService<IOptionsMonitor<ComplexOptions>>();
+ 
+            // "valid" passes — Boolean is true, validator runs and succeeds
+            var valid = monitor.Get("valid");
+            Assert.NotNull(valid);
+ 
+            // "invalid" passes — validator is scoped to "valid", so it skips "invalid"
+            var invalid = monitor.Get("invalid");
+            Assert.NotNull(invalid);
         }
     }
 }
