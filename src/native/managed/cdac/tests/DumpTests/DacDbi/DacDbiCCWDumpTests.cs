@@ -47,11 +47,7 @@ public class DacDbiCCWDumpTests : DumpTestBase
             if (interfaces.Count == 0)
                 continue;
 
-            TargetPointer interfacePointer = Target.ReadPointer(interfaces[0].InterfacePointerAddress);
-            if (interfacePointer == TargetPointer.Null)
-                continue;
-
-            return (startCcw, interfacePointer);
+            return (startCcw, interfaces[0].InterfacePointerAddress);
         }
 
         throw new SkipTestException("No BuiltInCOM CCW interface pointer found in dump.");
