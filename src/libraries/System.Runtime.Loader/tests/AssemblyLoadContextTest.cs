@@ -324,7 +324,7 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains("TestALC", ice.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public static void LoadFromAssemblyPath_CustomAlc_VersionMismatch()
         {
             string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
@@ -350,7 +350,7 @@ namespace System.Runtime.Loader.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public static void LoadFromAssemblyPath_DefaultAlc_Tpa_VersionMismatch()
         {
             Assembly referencedAssembly = typeof(ReferencedClassLib.Program).Assembly;
