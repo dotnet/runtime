@@ -1147,6 +1147,55 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Throws<FormatException>(() => _ = config["Value"]);
         }
 
+        [Theory]
+        [InlineData("ref(Missing|\"quoted default\")", "quoted default")]
+        [InlineData("ref(Missing|'quoted default')", "quoted default")]
+        [InlineData("ref(Missing|\"has}brace\")", "has}brace")]
+        [InlineData("ref(Missing|\"  spaced  \")", "  spaced  ")]
+        [InlineData("ref(Missing|'it''s')", "it's")]
+        [InlineData("ref(Missing|foo\"}\"bar)", "foo}bar")]
+        [InlineData("ref(Missing|\"\")", "")]
+        public void EnableReferenceResolutionQuotedLiteralTail(string raw, string expected)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Value"] = raw,
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal(expected, config["Value"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionQuotedLiteralTailInFmtPlaceholderAllowsBrace()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Template"] = "fmt(prefix-{Missing|\"has}brace\"}-suffix)",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("prefix-has}brace-suffix", config["Template"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionUnterminatedQuoteInLiteralTailThrows()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Value"] = "ref(A|\"unterminated)",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Throws<FormatException>(() => _ = config["Value"]);
+        }
+
         [Fact]
         public void EnableReferenceResolutionRelativeRefSiblingResolves()
         {

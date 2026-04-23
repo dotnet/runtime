@@ -27,13 +27,12 @@ namespace Microsoft.Extensions.Configuration
     // the '|'. A bare '|' with nothing after it makes the expression optional: the result is the
     // empty string when no reference resolves.
     //
-    // Path segments may be quoted with single or double quotes to embed characters that would
-    // otherwise be interpreted as syntax ('?', '!', '|', ':', '(', ')', '{', '}', and '..').
-    // The quote character is doubled to represent itself inside the same quote style — e.g.
-    // 'it''s' and "say ""hi""" yield the raw segment values "it's" and 'say "hi"'. Single and
-    // double quotes are fully interchangeable, and either quote style is literal inside the
-    // other ('say "hi"' needs no escape). Quoting can be partial: foo"?"bar resolves to the
-    // raw segment foo?bar.
+    // Path segments and the literal tail may both be quoted with single or double quotes to embed
+    // characters that would otherwise be interpreted as syntax ('?', '!', '|', ':', '(', ')', '{',
+    // '}', and '..'). The quote character is doubled to represent itself inside the same quote
+    // style — e.g. 'it''s' and "say ""hi""" yield the raw values "it's" and 'say "hi"'. Single
+    // and double quotes are fully interchangeable, and either quote style is literal inside the
+    // other ('say "hi"' needs no escape). Quoting can be partial: foo"?"bar yields foo?bar.
     internal static class ReferenceParser
     {
         private const string RefPrefix = "ref(";
@@ -196,14 +195,19 @@ namespace Microsoft.Extensions.Configuration
                 throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsEmpty, tokenStart));
             }
 
-            // '|' introduces the literal fallback. Everything after the first unquoted '|' (verbatim,
-            // including trailing/leading whitespace) is the default value; if it is empty, the
-            // expression is simply optional (empty on miss).
+            // '|' introduces the literal fallback. Everything after the first unquoted '|' is the
+            // default value; an empty tail makes the expression optional (empty on miss). The tail
+            // may use the same '…' / "…" quoting that path segments use — quoting is the way to
+            // embed characters that would otherwise terminate the enclosing context (e.g. a '}'
+            // inside a fmt placeholder) or preserve explicit leading/trailing whitespace.
             string? literalDefault = null;
             int pipeIndex = IndexOfUnquoted(expression, '|', 0, tokenStart);
             if (pipeIndex >= 0)
             {
-                literalDefault = expression.Substring(pipeIndex + 1);
+                string rawTail = expression.Substring(pipeIndex + 1);
+                // Validate that any quotes in the literal tail are balanced (throws on unterminated).
+                IndexOfUnquoted(rawTail, '\0', 0, tokenStart);
+                literalDefault = UnquoteSegment(rawTail);
                 expression = expression.Substring(0, pipeIndex).TrimEnd();
                 if (expression.Length == 0)
                 {
