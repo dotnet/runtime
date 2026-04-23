@@ -12859,11 +12859,14 @@ HRESULT Debugger::UpdateFunction(MethodDesc* pMD, SIZE_T encVersion)
     if (pMD->IsAsyncThunkMethod() && pMD->ReturnsTaskOrValueTask())
     {
         MethodDesc* pAsyncVariant = pMD->GetAsyncVariantNoCreate();
-        if (pAsyncVariant != NULL)
+        if (pAsyncVariant == NULL)
         {
-            LOG((LF_CORDB, LL_INFO10000, "D::UF: switching from async thunk to user-code variant %p\n", pAsyncVariant));
-            pMD = pAsyncVariant;
+            LOG((LF_CORDB, LL_INFO10000, "D::UF: async variant not found for %s::%s encVersion %zx\n",
+                pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, encVersion));
+            return S_OK;
         }
+        LOG((LF_CORDB, LL_INFO10000, "D::UF: switching from async thunk to user-code variant %p\n", pAsyncVariant));
+        pMD = pAsyncVariant;
     }
 
     DebuggerJitInfo *pJitInfo = GetLatestJitInfoFromMethodDesc(pMD);
