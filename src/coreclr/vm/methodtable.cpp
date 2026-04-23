@@ -7789,14 +7789,6 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         }
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        DispatchMap * pMap = GetDispatchMap();
-        if (pMap != NULL)
-        {
-            pMap->EnumMemoryRegions(flags);
-        }
-    }
 } // MethodTable::EnumMemoryRegions
 
 #endif // DACCESS_COMPILE

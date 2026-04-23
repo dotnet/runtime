@@ -1940,7 +1940,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWrapper(IN CLRDataEnumMemoryFlags flags)
             // triage micro-dump
             status = EnumMemoryRegionsWorkerMicroTriage(flags);
         }
-        else if (flags == CLRDATA_ENUM_MEM_HEAP || flags == CLRDATA_ENUM_MEM_HEAP2)
+        else if (flags == CLRDATA_ENUM_MEM_HEAP2)
         {
             status = EnumMemoryRegionsWorkerHeap(flags);
         }

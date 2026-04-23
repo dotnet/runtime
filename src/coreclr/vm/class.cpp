@@ -3249,21 +3249,6 @@ EEClass::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable * pMT)
     if (HasOptionalFields())
         DacEnumMemoryRegion(dac_cast<TADDR>(GetOptionalFields()), sizeof(EEClassOptionalFields));
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        PTR_Module pModule = pMT->GetModule();
-        if (pModule.IsValid())
-        {
-            pModule->EnumMemoryRegions(flags, true);
-        }
-        PTR_MethodDescChunk chunk = GetChunks();
-        while (chunk.IsValid())
-        {
-            chunk->EnumMemoryRegions(flags);
-            chunk = chunk->GetNextChunk();
-        }
-    }
-
     PTR_FieldDesc pFieldDescList = GetFieldDescList();
     if (pFieldDescList.IsValid())
     {
