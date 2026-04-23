@@ -145,14 +145,18 @@ SignalSafeJsonWriter::Append(
     }
 
     size_t offset = 0;
+    size_t remaining = CRASH_JSON_BUFFER_SIZE - m_pos;
     while (offset < len)
     {
-        if (m_pos == CRASH_JSON_BUFFER_SIZE && !Flush())
+        if (remaining == 0)
         {
-            return false;
+            if (!Flush())
+            {
+                return false;
+            }
+            remaining = CRASH_JSON_BUFFER_SIZE;
         }
 
-        size_t remaining = CRASH_JSON_BUFFER_SIZE - m_pos;
         size_t chunk = len - offset;
         if (chunk > remaining)
         {
@@ -162,6 +166,7 @@ SignalSafeJsonWriter::Append(
         memcpy(m_buffer + m_pos, str + offset, chunk);
         m_pos += chunk;
         offset += chunk;
+        remaining -= chunk;
     }
 
     return true;
