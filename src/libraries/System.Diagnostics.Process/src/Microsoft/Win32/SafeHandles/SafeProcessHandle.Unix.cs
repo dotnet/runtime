@@ -56,9 +56,12 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private void Cancel()
+        /// <summary>
+        /// Sets a value indicating whether the process has been terminated due to timeout or cancellation.
+        /// </summary>
+        private bool Canceled
         {
-            GetWaitState().Cancel(this);
+            set => GetWaitState()._canceled = value;
         }
 
         protected override bool ReleaseHandle()
@@ -129,7 +132,8 @@ namespace Microsoft.Win32.SafeHandles
 
             if (!waitState.WaitForExit(milliseconds))
             {
-                waitState.Cancel(this);
+                waitState._canceled = true;
+                SignalCore(PosixSignal.SIGKILL);
                 waitState.WaitForExit(Timeout.Infinite);
             }
 
