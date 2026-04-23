@@ -296,6 +296,20 @@ namespace System.Collections.Immutable
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
+            if (this.Origin.Root.IsEmpty)
+            {
+                return other.Any();
+            }
+
+            if (other is ICollection<T> otherAsICollectionGeneric)
+            {
+                return IsProperSubsetOfFastPath(otherAsICollectionGeneric, this.Origin);
+            }
+
+            else if (other is ICollection otherAsICollection && otherAsICollection.Count <= this.Origin.Count)
+            {
+                return false;
+            }
 
             return IsProperSubsetOf(other, this.Origin);
         }
@@ -863,49 +877,78 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Performs the set operation on a given data structure.
         /// </summary>
-        private static bool IsProperSubsetOf(IEnumerable<T> other, MutationInput origin)
+        private static bool IsProperSubsetOfFastPath(ICollection<T> other, MutationInput origin)
         {
             Requires.NotNull(other, nameof(other));
 
-            if (origin.Root.IsEmpty)
-            {
-                return other.Any();
-            }
-
-            // To determine whether everything we have is also in another sequence,
-            // we enumerate the sequence and "tag" whether it's in this collection,
-            // then consider whether every element in this collection was tagged.
-            // Since this collection is immutable we cannot directly tag.  So instead
-            // we simply count how many "hits" we have and ensure it's equal to the
-            // size of this collection.  Of course for this to work we need to ensure
-            // the uniqueness of items in the given sequence, so we create a set based
-            // on the sequence first.
-            var otherSet = new HashSet<T>(other, origin.EqualityComparer);
-            if (origin.Count >= otherSet.Count)
+            if (other.Count <= origin.Count)
             {
                 return false;
             }
 
-            int matches = 0;
-            bool extraFound = false;
-            foreach (T item in otherSet)
+            if (other is ImmutableHashSet<T> otherAsImmutableHashSet)
             {
-                if (Contains(item, origin))
+                if (otherAsImmutableHashSet.KeyComparer == origin.EqualityComparer)
                 {
-                    matches++;
-                }
-                else
-                {
-                    extraFound = true;
-                }
-
-                if (matches == origin.Count && extraFound)
-                {
+                   using (var e = new ImmutableHashSet<T>.Enumerator(origin.Root))
+                    {
+                        while (e.MoveNext())
+                        {
+                            if (!otherAsImmutableHashSet.Contains(e.Current))
+                            {
+                                return false;
+                            }
+                        }
+                    }
                     return true;
                 }
             }
 
-            return false;
+            else if (other is HashSet<T> otherAsHashSet)
+            {
+                if (otherAsHashSet.Comparer == origin.EqualityComparer)
+                {
+                    using (var e = new ImmutableHashSet<T>.Enumerator(origin.Root))
+                    {
+                        while (e.MoveNext())
+                        {
+                            if (!otherAsHashSet.Contains(e.Current))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                }
+            }
+
+            return IsProperSubsetOf(other, origin);
+        }
+
+        /// <summary>
+        /// Performs the set operation on a given data structure.
+        /// </summary>
+        private static bool IsProperSubsetOf(IEnumerable<T> other, MutationInput origin)
+        {
+            Requires.NotNull(other, nameof(other));
+
+            var otherSet = new HashSet<T>(other, origin.EqualityComparer);
+            if (otherSet.Count <= origin.Count)
+            {
+                return false;
+            }
+
+            using (var e = new ImmutableHashSet<T>.Enumerator(origin.Root))
+            {
+                while (e.MoveNext())
+                {
+                    if (!otherSet.Contains(e.Current))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         /// <summary>
