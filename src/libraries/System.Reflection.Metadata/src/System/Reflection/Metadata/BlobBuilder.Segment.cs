@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata
     public partial class BlobBuilder
     {
         /// <summary>
-        /// Returns whether the <see cref="BlobBuilder"/> is in a state where <see cref="Segment"/>-addressible
+        /// Returns whether the <see cref="BlobBuilder"/> is in a state where <see cref="Segment"/>-addressable
         /// data can be written to it.
         /// </summary>
         /// <remarks>
@@ -26,7 +26,7 @@ namespace System.Reflection.Metadata
         private int NextChunkLength => Math.Max(MinChunkSize, Math.Min(Count, DefaultMaxChunkSize));
 
         /// <summary>
-        /// Brings the <see cref="BlobBuilder"/> into a state where <see cref="Segment"/>-addressible
+        /// Brings the <see cref="BlobBuilder"/> into a state where <see cref="Segment"/>-addressable
         /// data can be written to it.
         /// </summary>
         /// <seealso cref="CanWriteSegment"/>
@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Starts writing <see cref="Segment"/>-addressible data to the <see cref="BlobBuilder"/>.
+        /// Starts writing <see cref="Segment"/>-addressable data to the <see cref="BlobBuilder"/>.
         /// </summary>
         /// <param name="startChunk">The first chunk of the segment.</param>
         /// <param name="startOffset">The offset to the first byte within the first chunk of the segment.</param>
