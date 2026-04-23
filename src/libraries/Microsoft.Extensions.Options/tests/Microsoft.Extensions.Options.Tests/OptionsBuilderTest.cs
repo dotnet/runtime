@@ -843,5 +843,41 @@ namespace Microsoft.Extensions.Options.Tests
 
             Assert.NotNull(value);
         }
+
+        [Fact]
+        public void ValidateWithValidatorType_WithDependencies_ValidationSuccessful()
+        {
+            var services = new ServiceCollection();
+            var dependency = new ObservableDependency();
+            services.AddSingleton(dependency);
+            services.AddOptions<FakeOptions>()
+                .Validate<FakeOptionsValidatorWithDependencies>();
+
+            var sp = services.BuildServiceProvider();
+
+            var value = sp.GetRequiredService<IOptions<FakeOptions>>().Value;
+
+            Assert.NotNull(value);
+            Assert.True(dependency.HasBeenCalled);
+        }
+
+        private class FakeOptionsValidatorWithDependencies(ObservableDependency dependency) : IValidateOptions<FakeOptions>
+        {
+            public ValidateOptionsResult Validate(string? name, FakeOptions options)
+            {
+                dependency.Call();
+                return ValidateOptionsResult.Success;
+            }
+        }
+
+        private class ObservableDependency
+        {
+            public bool HasBeenCalled { get; private set; } = false;
+
+            public void Call()
+            {
+                HasBeenCalled = true;
+            }
+        }
     }
 }
