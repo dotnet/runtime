@@ -1050,8 +1050,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
         {
             JITDUMP("fgCompactBlock: " FMT_BB " weight " FMT_WT " inconsistent with incoming " FMT_WT
                     " after compaction. Data %s inconsistent.\n",
-                    block->bbNum, block->bbWeight, incomingLikelyWeight,
-                    fgPgoConsistent ? "is now" : "was already");
+                    block->bbNum, block->bbWeight, incomingLikelyWeight, fgPgoConsistent ? "is now" : "was already");
             fgPgoConsistent = false;
         }
     }
