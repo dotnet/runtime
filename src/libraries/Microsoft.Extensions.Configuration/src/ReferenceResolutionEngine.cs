@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Configuration
     // Per-source modes (ReferenceMode): each provider carries a mode derived from its source's
     // configuration. Default is Read. Providers with mode Ignore are invisible to the engine as
     // substitution targets (GetRawValue skips them). Providers whose mode is not Scan are not
-    // parsed for ref(...) / fmt(...) — their values are returned sealed, so the engine returns
+    // parsed for {{…}} — their values are returned sealed, so the engine returns
     // them as literals. At least one provider must be in Scan mode for the engine to be attached
     // at Build time.
     internal sealed class ReferenceResolutionEngine : IDisposable
@@ -27,12 +27,10 @@ namespace Microsoft.Extensions.Configuration
         private const int MaxDepth = 1024;
         private const int CycleCheckThreshold = 32;
 
-        private static readonly IChangeToken s_neverChangedToken = new CancellationChangeToken(CancellationToken.None);
-
         private readonly ProviderSet _providers;
         private readonly AliasFinder _aliasFinder;
         private readonly ReferenceResolver _resolver;
-        private readonly IDisposable _changeTokenRegistration;
+        private readonly IDisposable[] _changeTokenRegistrations;
 
         private volatile ConcurrentDictionary<string, string?> _cache = new(StringComparer.OrdinalIgnoreCase);
 
@@ -45,7 +43,16 @@ namespace Microsoft.Extensions.Configuration
             _providers = new ProviderSet(providers, providerModes);
             _aliasFinder = new AliasFinder(_providers);
             _resolver = new ReferenceResolver(_providers, _aliasFinder);
-            _changeTokenRegistration = ChangeToken.OnChange(_providers.GetCompositeReloadToken, Invalidate);
+
+            // Subscribe to each provider's reload token individually. Using a CompositeChangeToken
+            // here would leak child subscriptions: CompositeChangeToken only cleans up its inner
+            // registrations when it fires, not when the outer registration is disposed.
+            _changeTokenRegistrations = new IDisposable[providers.Count];
+            for (int i = 0; i < providers.Count; i++)
+            {
+                IConfigurationProvider provider = providers[i];
+                _changeTokenRegistrations[i] = ChangeToken.OnChange(provider.GetReloadToken, Invalidate);
+            }
         }
 
         public bool TryGet(string key, out string? value)
@@ -218,7 +225,13 @@ namespace Microsoft.Extensions.Configuration
             return result;
         }
 
-        public void Dispose() => _changeTokenRegistration.Dispose();
+        public void Dispose()
+        {
+            foreach (IDisposable registration in _changeTokenRegistrations)
+            {
+                registration.Dispose();
+            }
+        }
 
         public void Invalidate()
         {
@@ -240,7 +253,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     _modes[i] = providerModes is not null && providerModes.TryGetValue(_providers[i], out ReferenceMode mode)
                         ? mode
-                        : ReferenceMode.Read;
+                        : ReferenceMode.Scan;
                 }
             }
 
@@ -256,7 +269,7 @@ namespace Microsoft.Extensions.Configuration
             // providers whose mode lacks the Read flag. Used by substitution and alias scans
             // so that values from non-readable sources never leak into resolved output.
             // Values from providers without the Scan flag are returned sealed so the engine
-            // treats their ref(...) / fmt(...) text as literal.
+            // treats their {{…}} text as literal.
             public Value GetRawValue(Path key, int? upperIndex = null)
             {
                 for (int i = upperIndex ?? LastIndex; i >= 0; i--)
@@ -359,27 +372,6 @@ namespace Microsoft.Extensions.Configuration
 
                 return GetDirectChildKeys(path, upperIndex)?.Any() is true;
             }
-
-            public IChangeToken GetCompositeReloadToken()
-            {
-                var tokens = new List<IChangeToken>(_providers.Length);
-
-                foreach (IConfigurationProvider provider in _providers)
-                {
-                    IChangeToken token = provider.GetReloadToken();
-                    if (token is not null)
-                    {
-                        tokens.Add(token);
-                    }
-                }
-
-                return tokens.Count switch
-                {
-                    0 => s_neverChangedToken,
-                    1 => tokens[0],
-                    _ => new CompositeChangeToken(tokens),
-                };
-            }
         }
 
         private readonly struct AliasFinder
@@ -391,7 +383,7 @@ namespace Microsoft.Extensions.Configuration
                 _providers = providers;
             }
 
-            // Detects whether `raw` at `path` is a single-token section alias (e.g. ref(Other:Section)).
+            // Detects whether `raw` at `path` is a single-token section alias (e.g. {{Other:Section}}).
             public bool IsDirectSectionAlias(Path path, Value raw, out SectionAlias alias)
             {
                 if (!raw.IsLeaf)
@@ -404,7 +396,7 @@ namespace Microsoft.Extensions.Configuration
 
                 if (tokens.Count == 1 &&
                     tokens[0].Kind == ValueTokenKind.Reference &&
-                    tokens[0].IsFromRef &&
+                    tokens[0].HasHead &&
                     TryDetectSectionTarget(tokens[0], raw.ProviderIndex, out Path targetPath))
                 {
                     alias = new SectionAlias(path, targetPath, raw.ProviderIndex, tokens[0].IsStrict);
@@ -442,7 +434,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 foreach (ReferenceItem item in token.Items)
                 {
-                    var candidate = new Path(item.Value);
+                    var candidate = Path.FromReference(item.Value);
                     if (!candidate.IsEmpty && _providers.IsSectionPath(candidate, sourceProviderIndex))
                     {
                         targetPath = candidate;
@@ -534,7 +526,7 @@ namespace Microsoft.Extensions.Configuration
             // reference's untransformed value) or a fmt-style template concatenation.
             private bool TryResolveTokens(Path originKey, IReadOnlyList<ValueToken> tokens, HashSet<Path>? resolutionStack, int depth, int upperIndex, out string? value)
             {
-                if (tokens.Count == 1 && tokens[0].Kind == ValueTokenKind.Reference && tokens[0].IsFromRef)
+                if (tokens.Count == 1 && tokens[0].Kind == ValueTokenKind.Reference && tokens[0].HasHead)
                 {
                     return TryResolveToken(originKey, tokens[0], resolutionStack, depth + 1, upperIndex, out value);
                 }
@@ -607,7 +599,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 if (item.ParentHops == 0)
                 {
-                    absolute = new Path(item.Value);
+                    absolute = Path.FromReference(item.Value);
                     return true;
                 }
 
@@ -617,7 +609,7 @@ namespace Microsoft.Extensions.Configuration
                     return false;
                 }
 
-                absolute = item.Value.Length == 0 ? anchor : anchor.Combine(item.Value);
+                absolute = item.Value.Length == 0 ? anchor : anchor.Combine(Path.FromReference(item.Value).Value);
                 return true;
             }
         }
@@ -632,9 +624,14 @@ namespace Microsoft.Extensions.Configuration
 
             public bool IsEmpty => string.IsNullOrEmpty(Value);
 
+            public static Path FromReference(string value)
+            {
+                return new Path(value.Trim().Replace('.', ConfigurationPath.KeyDelimiter[0]));
+            }
+
             public Path(string value)
             {
-                Value = value.Trim().Replace('.', ConfigurationPath.KeyDelimiter[0]);
+                Value = value;
             }
 
             public bool IsParentOf(Path candidate)

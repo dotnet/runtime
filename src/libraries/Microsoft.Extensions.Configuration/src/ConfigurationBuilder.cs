@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             ReferenceResolutionEngine? engine = null;
-            if (ReferenceResolutionConfigurationBuilderExtensions.HasAnyScanSource(Properties))
+            if (ReferenceResolutionConfigurationBuilderExtensions.HasAnyScanSource(Properties, _sources))
             {
                 Dictionary<IConfigurationProvider, ReferenceMode>? providerModes = ReferenceResolutionConfigurationBuilderExtensions
                     .ResolveProviderModes(Properties, _sources, providers);

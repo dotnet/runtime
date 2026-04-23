@@ -1033,17 +1033,17 @@ IniKey1=IniValue2");
     }
   },
   ""Services"": {
-    ""Primary"": ""ref(Defaults:Service)""
+    ""Primary"": ""{{Defaults:Service}}""
   },
-  ""ConnectionString"": ""fmt({Services:Primary:Protocol}://{User}@{Services:Primary:Host}:{Services:Primary:Port}/{Database?Defaults:Database})"",
+  ""ConnectionString"": ""{{|{{Services:Primary:Protocol}}://{{User}}@{{Services:Primary:Host}}:{{Services:Primary:Port}}/{{Database?Defaults:Database}}''}}"",
   ""Tracing"": {
-    ""Collector"": ""fmt({Tracing:Endpoint|})""
+    ""Collector"": ""{{|{{Tracing:Endpoint|}}''}}""
   },
   ""Defaults"": {
     ""Database"": ""appdb""
   },
   ""Metadata"": {
-    ""Literal"": ""ref(do-not-interpret)""
+    ""Literal"": ""{{do-not-interpret}}""
   }
 }");
 
@@ -1059,7 +1059,7 @@ Port = 6543");
                 .AddIniFile(_iniFile, optional: false, reloadOnChange: false)
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    // Exercises ref(Key?Fallback) — the key isn't present so the fallback ref ("Defaults:Database") applies.
+                    // Exercises {{Key?Fallback}} — the key isn't present so the fallback reference ("Defaults:Database") applies.
                     // We intentionally don't set "Database" anywhere else in the chain.
                 })
                 .EnableReferenceResolution()
@@ -1084,12 +1084,12 @@ Port = 6543");
             // default-value token — the single ConnectionString pulls from three providers at once.
             Assert.Equal("tcp://admin@primary.example.com:6543/appdb", config["ConnectionString"]);
 
-            // Optional fmt({Tracing:Endpoint|}) resolves to an empty string because the key is missing.
+            // Optional {{Tracing:Endpoint|}} resolves to an empty string because the key is missing.
             Assert.Equal(string.Empty, config["Tracing:Collector"]);
 
             // Excluded scan path: the literal reference text is returned as-is (not interpreted,
             // not treated as a missing-key failure).
-            Assert.Equal("ref(do-not-interpret)", config["Metadata:Literal"]);
+            Assert.Equal("{{do-not-interpret}}", config["Metadata:Literal"]);
         }
 
         private async Task WatchOverConfigJsonFileAndUpdateIt(string filePath)

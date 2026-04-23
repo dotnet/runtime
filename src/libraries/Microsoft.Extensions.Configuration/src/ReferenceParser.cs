@@ -8,326 +8,193 @@ using System.Text;
 namespace Microsoft.Extensions.Configuration
 {
     // Value syntax:
-    //   ref(<path-expression>)     — the whole value is a reference to another key. Eligible as a
-    //                                 section-alias target when the path names a section.
-    //   fmt(<template>)            — the value is a template with {<path-expression>} placeholders.
-    //                                 Braces are escaped by doubling: '{{' -> '{', '}}' -> '}'.
+    //   {{ path-expression }}      — the whole value is a reference / template expression.
+    //                                Anything else (including values that don't start with "{{")
+    //                                is a verbatim literal.
     //
-    // A value is processed only if it matches exactly /^(ref|fmt)\(.*\)$/ — the opening directive is
-    // at position 0 and the matching ')' is the final character. Anything else is inert and returned
-    // as-is. This keeps values like "${message}" (NLog), "$(Foo)" (MSBuild), "$100" (currency), or
-    // "ref(literal)" in sources that never opt in, untouched.
+    // Brace rule (applied uniformly at value level and inside templates):
+    //   1 consecutive '{'  → literal '{'
+    //   2 consecutive '{{' → structural opener (gate/placeholder)
+    //   n ≥ 3 consecutive  → escape; emits (n-1) literal '{' characters
+    //   Same symmetrically for '}'.
     //
-    // Path expressions inside ref() and inside fmt() placeholders share the same grammar:
-    //   path ('?' path)*  ('!')?  ('|' template-tail)?
-    // where each path may have leading ".." segments meaning parent hops. A trailing '!' marks the
-    // (single-item) reference as a strict section alias, i.e. the resulting section is exactly the
-    // aliased target with no merging from earlier providers. A '|' introduces a fallback template
-    // — if every reference in the chain misses, the template after '|' is evaluated and returned.
-    // The template tail follows the same grammar as a fmt() body: literal text, '{{' / '}}' brace
-    // escapes, and '{path-expr}' placeholders that compose recursively. A bare '|' with an empty
-    // tail is equivalent to "empty string on miss".
+    // So "{{A}}" at the value level is processed; "{{{A}}}" is a literal "{{A}}";
+    // "{{{{A}}}}" is a literal "{{{A}}}"; and so on. A literal '{' or '}' in config data
+    // never needs escaping — only doubled occurrences do.
     //
-    // Path segments and template literals may both be quoted with single or double quotes to embed
-    // characters that would otherwise be interpreted as syntax ('?', '!', '|', ':', '(', ')', '{',
-    // '}', and '..'). The quote character is doubled to represent itself inside the same quote
-    // style — e.g. 'it''s' and "say ""hi""" yield the raw values "it's" and 'say "hi"'. Single
-    // and double quotes are fully interchangeable, and either quote style is literal inside the
-    // other ('say "hi"' needs no escape). Quoting can be partial: foo"?"bar yields foo?bar.
+    // Inside the gate, the expression grammar is:
+    //   (path ('?' path)*)?  ('!')?  ('|' template-tail)?
+    //
+    //   - A non-empty head is one or more paths joined by '?'. Paths are tried left-to-right;
+    //     the first one that resolves wins.
+    //   - A trailing '!' on the head marks the reference as a strict section alias (when the
+    //     referent is a section, no earlier-provider keys are merged under the alias path).
+    //   - '|' introduces a fallback template. If the head is empty or every path in the head
+    //     misses, the template is evaluated and its result is returned.
+    //   - The template grammar is the same as the body of a top-level "{{|…}}": literal
+    //     characters plus nested "{{path-expression}}" placeholders, with the same brace
+    //     counting / escaping rule recursively.
+    //
+    // Path segments and template literals may both be quoted with single or double quotes to
+    // embed characters that would otherwise be interpreted as syntax ('?', '!', '|', ':',
+    // '..'). The quote character is doubled to represent itself inside the same quote style —
+    // e.g. 'it''s' and "say ""hi""" yield the raw values "it's" and 'say "hi"'. Single and
+    // double quotes are fully interchangeable, and either style is literal inside the other
+    // ('say "hi"' needs no escape). Quoting can be partial: foo"?"bar yields foo?bar.
     internal static class ReferenceParser
     {
-        private const string RefPrefix = "ref(";
-        private const string FmtPrefix = "fmt(";
-        private const int PrefixLength = 4;     // "ref(" and "fmt(" are both 4 chars
-        private const int MinGatedLength = 5;   // "ref()" / "fmt()"
-
-        internal static bool ContainsReference(string? value) =>
-            TryGetGate(value, out _);
+        internal static bool ContainsReference(string? value) => IsGated(value);
 
         internal static IReadOnlyList<ValueToken> Parse(string value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!TryGetGate(value, out bool isRef))
+            if (!IsGated(value))
             {
                 return new[] { ValueToken.Literal(value) };
             }
 
-            string payload = value.Substring(PrefixLength, value.Length - PrefixLength - 1);
+            int leading = CountLeading(value, '{');
+            int trailing = CountTrailing(value, '}');
 
-            if (isRef)
+            if (leading != trailing || value.Length < leading * 2)
             {
-                return new[] { ParseRefExpression(payload, tokenStart: 0, isFromRef: true) };
+                // Mismatched fence — treat as inert literal rather than error; matches how we
+                // handle values that merely look gated ("{{name}}" text, handlebars templates).
+                return new[] { ValueToken.Literal(value) };
             }
 
-            return ParseFmtTemplate(payload, outerStart: PrefixLength);
+            if (leading > 2)
+            {
+                // n+1 braces ⇒ literal n braces: strip a single layer from each end.
+                return new[] { ValueToken.Literal(value.Substring(1, value.Length - 2)) };
+            }
+
+            string content = value.Substring(2, value.Length - 4);
+            return new[] { ParseGateContent(content, tokenStart: 2) };
         }
 
-        private static bool TryGetGate(string? value, out bool isRef)
+        private static bool IsGated(string? value) =>
+            value is not null && value.Length >= 4 && value[0] == '{' && value[1] == '{';
+
+        private static int CountLeading(string s, char c)
         {
-            isRef = false;
-            if (value is null || value.Length < MinGatedLength)
+            int n = 0;
+            while (n < s.Length && s[n] == c)
             {
-                return false;
+                n++;
             }
-
-            if (value[value.Length - 1] != ')')
-            {
-                return false;
-            }
-
-            if (StartsWithOrdinal(value, RefPrefix))
-            {
-                isRef = true;
-                return true;
-            }
-
-            return StartsWithOrdinal(value, FmtPrefix);
+            return n;
         }
 
-        private static bool StartsWithOrdinal(string value, string prefix)
+        private static int CountTrailing(string s, char c)
         {
-            if (value.Length < prefix.Length)
+            int n = 0;
+            while (n < s.Length && s[s.Length - 1 - n] == c)
             {
-                return false;
+                n++;
             }
-
-            for (int i = 0; i < prefix.Length; i++)
-            {
-                if (value[i] != prefix[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return n;
         }
 
-        private static List<ValueToken> ParseFmtTemplate(string template, int outerStart)
+        // Parses the content between the outermost {{ and }} of a gated value. Produces a single
+        // ValueToken whose Items is the coalesce chain (possibly empty) and whose LiteralDefault
+        // is the parsed template tail after '|' (null if no '|' is present).
+        private static ValueToken ParseGateContent(string content, int tokenStart)
         {
-            var tokens = new List<ValueToken>();
-            var literal = new StringBuilder();
+            // Split head / template-tail on the first unquoted '|' at depth 0.
+            int pipeIndex = IndexOfTopLevelPipe(content, tokenStart);
 
-            int i = 0;
-            while (i < template.Length)
+            string head;
+            IReadOnlyList<ValueToken>? templateTail;
+            if (pipeIndex >= 0)
             {
-                char c = template[i];
-
-                if (c == '\'' || c == '"')
-                {
-                    // Quoted run at template top level: contents are literal (including '{' and '}').
-                    int quoteEnd = SkipQuoted(template, i, outerStart + i);
-                    literal.Append(UnquoteSegment(template.Substring(i, quoteEnd - i)));
-                    i = quoteEnd;
-                    continue;
-                }
-
-                if (c == '{' && i + 1 < template.Length && template[i + 1] == '{')
-                {
-                    literal.Append('{');
-                    i += 2;
-                    continue;
-                }
-
-                if (c == '}' && i + 1 < template.Length && template[i + 1] == '}')
-                {
-                    literal.Append('}');
-                    i += 2;
-                    continue;
-                }
-
-                if (c == '{')
-                {
-                    if (literal.Length > 0)
-                    {
-                        tokens.Add(ValueToken.Literal(literal.ToString()));
-                        literal.Clear();
-                    }
-
-                    int placeholderStart = i + 1;
-                    int placeholderEnd = FindPlaceholderEnd(template, placeholderStart, outerStart + i);
-                    string expression = template.Substring(placeholderStart, placeholderEnd - placeholderStart);
-
-                    tokens.Add(ParseRefExpression(expression, tokenStart: outerStart + i, isFromRef: false));
-
-                    i = placeholderEnd + 1;
-                    continue;
-                }
-
-                if (c == '}')
-                {
-                    // Unmatched closing brace in template.
-                    throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsUnclosed, outerStart + i));
-                }
-
-                literal.Append(c);
-                i++;
+                head = content.Substring(0, pipeIndex).Trim();
+                string rawTail = content.Substring(pipeIndex + 1);
+                templateTail = ParseTemplate(rawTail, outerStart: tokenStart + pipeIndex + 1);
+            }
+            else
+            {
+                head = content.Trim();
+                templateTail = null;
             }
 
-            if (literal.Length > 0)
+            bool isStrict = false;
+            if (head.Length > 0 && head[head.Length - 1] == '!')
             {
-                tokens.Add(ValueToken.Literal(literal.ToString()));
+                isStrict = true;
+                head = head.Substring(0, head.Length - 1).TrimEnd();
             }
 
-            if (tokens.Count == 0)
+            var items = new List<ReferenceItem>();
+            if (head.Length > 0)
             {
-                tokens.Add(ValueToken.Literal(string.Empty));
+                ParseCoalesceChain(head, tokenStart, items);
             }
-
-            return tokens;
-        }
-
-        private static int FindPlaceholderEnd(string template, int start, int tokenStart)
-        {
-            // Track brace depth so nested placeholders inside a default (e.g. {A|{B}}) balance
-            // correctly. Doubled-brace escapes ({{ and }}) and quoted regions do not participate.
-            int depth = 0;
-            int j = start;
-            while (j < template.Length)
-            {
-                char ch = template[j];
-
-                if (ch == '\'' || ch == '"')
-                {
-                    j = SkipQuoted(template, j, tokenStart);
-                    continue;
-                }
-
-                if (ch == '{' && depth == 0 && j + 1 < template.Length && template[j + 1] == '{')
-                {
-                    j += 2;
-                    continue;
-                }
-
-                if (ch == '}' && depth == 0 && j + 1 < template.Length && template[j + 1] == '}')
-                {
-                    j += 2;
-                    continue;
-                }
-
-                if (ch == '{')
-                {
-                    depth++;
-                    j++;
-                    continue;
-                }
-
-                if (ch == '}')
-                {
-                    if (depth == 0)
-                    {
-                        return j;
-                    }
-
-                    depth--;
-                    j++;
-                    continue;
-                }
-
-                j++;
-            }
-
-            throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsUnclosed, tokenStart));
-        }
-
-        private static ValueToken ParseRefExpression(string expression, int tokenStart, bool isFromRef)
-        {
-            expression = expression.Trim();
-            if (expression.Length == 0)
+            else if (templateTail is null)
             {
                 throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsEmpty, tokenStart));
             }
 
-            // '|' introduces the literal fallback. The tail is parsed with the same grammar as a
-            // fmt template body: literal characters (with '{{' / '}}' brace escapes and '…' / "…"
-            // quoted runs), plus '{path-expr}' placeholders that resolve lazily when every
-            // reference in the chain misses.
-            IReadOnlyList<ValueToken>? literalDefault = null;
-            int pipeIndex = IndexOfUnquoted(expression, '|', 0, tokenStart);
-            if (pipeIndex >= 0)
-            {
-                string rawTail = expression.Substring(pipeIndex + 1);
-                literalDefault = ParseFmtTemplate(rawTail, outerStart: tokenStart + pipeIndex + 1);
-                expression = expression.Substring(0, pipeIndex).TrimEnd();
-                if (expression.Length == 0)
-                {
-                    throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsEmpty, tokenStart));
-                }
-            }
+            return ValueToken.Reference(items, templateTail, isStrict);
+        }
 
-            // Trailing '!' marks a section reference as strict: the resulting section is exactly the
-            // aliased target, with no merging of earlier providers' keys under the aliased path.
-            bool isStrict = expression[expression.Length - 1] == '!';
-            if (isStrict)
-            {
-                expression = expression.Substring(0, expression.Length - 1).TrimEnd();
-                if (expression.Length == 0)
-                {
-                    throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsEmpty, tokenStart));
-                }
-            }
-
-            var items = new List<ReferenceItem>();
+        private static void ParseCoalesceChain(string head, int tokenStart, List<ReferenceItem> items)
+        {
             int i = 0;
-            while (i <= expression.Length)
+            while (i <= head.Length)
             {
-                while (i < expression.Length && char.IsWhiteSpace(expression[i]))
+                while (i < head.Length && char.IsWhiteSpace(head[i]))
                 {
                     i++;
                 }
 
-                if (i >= expression.Length)
+                if (i >= head.Length)
                 {
                     throw new FormatException(SR.Format(SR.ReferenceResolution_KeyIsEmpty, tokenStart));
                 }
 
-                i = ParseReferenceItem(expression, i, tokenStart, items);
+                i = ParseReferenceItem(head, i, tokenStart, items);
 
-                while (i < expression.Length && char.IsWhiteSpace(expression[i]))
+                while (i < head.Length && char.IsWhiteSpace(head[i]))
                 {
                     i++;
                 }
 
-                if (i >= expression.Length)
+                if (i >= head.Length)
                 {
                     break;
                 }
 
-                if (expression[i] != '?')
+                if (head[i] != '?')
                 {
                     throw new FormatException(SR.Format(SR.ReferenceResolution_InvalidExpression, tokenStart));
                 }
 
                 i++;
             }
-
-            return ValueToken.Reference(items, literalDefault, isStrict, isFromRef);
         }
 
-        private static int ParseReferenceItem(string expression, int i, int tokenStart, List<ReferenceItem> items)
+        private static int ParseReferenceItem(string head, int i, int tokenStart, List<ReferenceItem> items)
         {
             int start = i;
-            while (i < expression.Length && expression[i] != '?')
+            while (i < head.Length && head[i] != '?')
             {
-                char ch = expression[i];
+                char ch = head[i];
                 if (ch == '\'' || ch == '"')
                 {
-                    i = SkipQuoted(expression, i, tokenStart);
+                    i = SkipQuoted(head, i, tokenStart);
                     continue;
                 }
                 i++;
             }
 
-            string refPath = expression.Substring(start, i - start).Trim();
+            string refPath = head.Substring(start, i - start).Trim();
             if (refPath.Length == 0)
             {
                 throw new FormatException(SR.Format(SR.ReferenceResolution_KeyIsEmpty, tokenStart));
             }
 
-            // Parse leading ".." segments as parent hops. The remaining text (if any) is an absolute
-            // suffix appended to the Nth ancestor of the literal's storage key at resolution time.
-            // A quoted segment never starts with an unquoted '.', so quoted ".." is correctly
-            // treated as a literal segment rather than a hop.
             int parentHops = 0;
             int cursor = 0;
             while (cursor + 2 <= refPath.Length && refPath[cursor] == '.' && refPath[cursor + 1] == '.')
@@ -360,9 +227,222 @@ namespace Microsoft.Extensions.Configuration
             return i;
         }
 
-        // Walks path[start..], splits on unquoted ':' delimiters, rejects literal ".." segments
-        // (quoted ".." is allowed and becomes a literal segment value), and returns the raw
-        // (unquoted) path joined by ':' — ready for lookup against a provider's underlying keys.
+        // Scan a template body, producing a sequence of Literal and Reference tokens.
+        // Applies the unified brace rule:
+        //   '{' solo  → literal
+        //   '{{'      → opens a placeholder (found-end recursed)
+        //   '{{{'+    → escape: emit (n-1) literal '{', skip n chars
+        //   mirror for '}'
+        private static List<ValueToken> ParseTemplate(string template, int outerStart)
+        {
+            var tokens = new List<ValueToken>();
+            var literal = new StringBuilder();
+
+            int i = 0;
+            while (i < template.Length)
+            {
+                char c = template[i];
+
+                if (c == '\'' || c == '"')
+                {
+                    int quoteEnd = SkipQuoted(template, i, outerStart + i);
+                    literal.Append(UnquoteSegment(template.Substring(i, quoteEnd - i)));
+                    i = quoteEnd;
+                    continue;
+                }
+
+                if (c == '{')
+                {
+                    int run = CountRun(template, i, '{');
+                    if (run == 1)
+                    {
+                        literal.Append('{');
+                        i++;
+                        continue;
+                    }
+
+                    if (run >= 3)
+                    {
+                        // Escape: emit (run-1) literal '{' and advance past the whole run.
+                        literal.Append('{', run - 1);
+                        i += run;
+                        continue;
+                    }
+
+                    // run == 2 → placeholder opens
+                    if (literal.Length > 0)
+                    {
+                        tokens.Add(ValueToken.Literal(literal.ToString()));
+                        literal.Clear();
+                    }
+
+                    int placeholderStart = i + 2;
+                    int placeholderEnd = FindPlaceholderEnd(template, placeholderStart, outerStart + i);
+                    string expression = template.Substring(placeholderStart, placeholderEnd - placeholderStart);
+
+                    tokens.Add(ParseGateContent(expression, tokenStart: outerStart + i + 2));
+
+                    i = placeholderEnd + 2; // skip the closing "}}"
+                    continue;
+                }
+
+                if (c == '}')
+                {
+                    int run = CountRun(template, i, '}');
+                    if (run == 1)
+                    {
+                        literal.Append('}');
+                        i++;
+                        continue;
+                    }
+
+                    if (run >= 3)
+                    {
+                        literal.Append('}', run - 1);
+                        i += run;
+                        continue;
+                    }
+
+                    // run == 2 with no matching opener — unbalanced.
+                    throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsUnclosed, outerStart + i));
+                }
+
+                literal.Append(c);
+                i++;
+            }
+
+            if (literal.Length > 0)
+            {
+                tokens.Add(ValueToken.Literal(literal.ToString()));
+            }
+
+            if (tokens.Count == 0)
+            {
+                tokens.Add(ValueToken.Literal(string.Empty));
+            }
+
+            return tokens;
+        }
+
+        // Find the closing '}}' for a placeholder that opened at template[start-2..start]. Returns
+        // the index of the first '}' of the closing pair. Tracks depth for nested '{{…}}' placeholders
+        // and skips quoted regions and brace-escape runs (3+).
+        private static int FindPlaceholderEnd(string template, int start, int tokenStart)
+        {
+            int depth = 0;
+            int j = start;
+            while (j < template.Length)
+            {
+                char ch = template[j];
+
+                if (ch == '\'' || ch == '"')
+                {
+                    j = SkipQuoted(template, j, tokenStart);
+                    continue;
+                }
+
+                if (ch == '{')
+                {
+                    int run = CountRun(template, j, '{');
+                    if (run == 1)
+                    {
+                        j++;
+                        continue;
+                    }
+                    if (run >= 3)
+                    {
+                        j += run; // escape
+                        continue;
+                    }
+                    depth++;
+                    j += 2;
+                    continue;
+                }
+
+                if (ch == '}')
+                {
+                    int run = CountRun(template, j, '}');
+                    if (run == 1)
+                    {
+                        j++;
+                        continue;
+                    }
+                    if (run >= 3)
+                    {
+                        j += run;
+                        continue;
+                    }
+
+                    if (depth == 0)
+                    {
+                        return j;
+                    }
+
+                    depth--;
+                    j += 2;
+                    continue;
+                }
+
+                j++;
+            }
+
+            throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsUnclosed, tokenStart));
+        }
+
+        private static int CountRun(string s, int start, char c)
+        {
+            int n = 0;
+            while (start + n < s.Length && s[start + n] == c)
+            {
+                n++;
+            }
+            return n;
+        }
+
+        private static int IndexOfTopLevelPipe(string content, int tokenStart)
+        {
+            int j = 0;
+            while (j < content.Length)
+            {
+                char ch = content[j];
+                if (ch == '\'' || ch == '"')
+                {
+                    j = SkipQuoted(content, j, tokenStart);
+                    continue;
+                }
+
+                if (ch == '{')
+                {
+                    int run = CountRun(content, j, '{');
+                    if (run >= 2)
+                    {
+                        // Nested placeholder or escape — skip it wholesale. For an escape we
+                        // simply advance past the run; for a real placeholder we find the
+                        // matching '}}' to stay out of its interior.
+                        if (run == 2)
+                        {
+                            int endInner = FindPlaceholderEnd(content, j + 2, tokenStart + j);
+                            j = endInner + 2;
+                            continue;
+                        }
+                        j += run;
+                        continue;
+                    }
+                    j++;
+                    continue;
+                }
+
+                if (ch == '|')
+                {
+                    return j;
+                }
+
+                j++;
+            }
+
+            return -1;
+        }
+
         private static string BuildSuffix(string path, int start, int tokenStart)
         {
             bool anyQuotes = false;
@@ -428,9 +508,6 @@ namespace Microsoft.Extensions.Configuration
             return result.ToString();
         }
 
-        // Advance past a single- or double-quoted literal starting at expression[i]. Returns the
-        // index immediately after the closing quote. Doubled quotes inside the same style are
-        // treated as an escape and do not terminate the literal.
         private static int SkipQuoted(string expression, int i, int tokenStart)
         {
             char quote = expression[i];
@@ -454,34 +531,6 @@ namespace Microsoft.Extensions.Configuration
             throw new FormatException(SR.Format(SR.ReferenceResolution_InvalidExpression, tokenStart));
         }
 
-        // Returns the index of the first occurrence of target in expression at or after start,
-        // skipping characters inside quoted regions. Returns -1 if not found.
-        private static int IndexOfUnquoted(string expression, char target, int start, int tokenStart)
-        {
-            int j = start;
-            while (j < expression.Length)
-            {
-                char ch = expression[j];
-                if (ch == '\'' || ch == '"')
-                {
-                    j = SkipQuoted(expression, j, tokenStart);
-                    continue;
-                }
-
-                if (ch == target)
-                {
-                    return j;
-                }
-
-                j++;
-            }
-
-            return -1;
-        }
-
-        // Strip quoting from a path segment. Quotes may be fully surrounding (e.g. "abc") or
-        // partial (e.g. foo"?"bar). Within a quoted run, a doubled quote character yields one
-        // literal quote. The other quote style is literal inside a run.
         private static string UnquoteSegment(string segment)
         {
             if (segment.Length == 0 || (segment.IndexOf('\'') < 0 && segment.IndexOf('"') < 0))
@@ -550,49 +599,44 @@ namespace Microsoft.Extensions.Configuration
     {
         private static readonly IReadOnlyList<ReferenceItem> s_noItems = Array.Empty<ReferenceItem>();
 
-        private ValueToken(ValueTokenKind kind, string value, IReadOnlyList<ReferenceItem> items, IReadOnlyList<ValueToken>? literalDefault, bool isStrict, bool isFromRef)
+        private ValueToken(ValueTokenKind kind, string value, IReadOnlyList<ReferenceItem> items, IReadOnlyList<ValueToken>? literalDefault, bool isStrict)
         {
             Kind = kind;
             Value = value;
             Items = items;
             LiteralDefault = literalDefault;
             IsStrict = isStrict;
-            IsFromRef = isFromRef;
         }
 
         internal static ValueToken Literal(string text) =>
-            new(ValueTokenKind.Literal, text, s_noItems, literalDefault: null, isStrict: false, isFromRef: false);
+            new(ValueTokenKind.Literal, text, s_noItems, literalDefault: null, isStrict: false);
 
-        internal static ValueToken Reference(IReadOnlyList<ReferenceItem> items, IReadOnlyList<ValueToken>? literalDefault, bool isStrict, bool isFromRef)
+        internal static ValueToken Reference(IReadOnlyList<ReferenceItem> items, IReadOnlyList<ValueToken>? literalDefault, bool isStrict)
         {
             string first = items.Count > 0 ? items[0].Value : string.Empty;
-            return new ValueToken(ValueTokenKind.Reference, first, items, literalDefault, isStrict, isFromRef);
+            return new ValueToken(ValueTokenKind.Reference, first, items, literalDefault, isStrict);
         }
 
         internal ValueTokenKind Kind { get; }
 
         // For Literal tokens: the literal text.
-        // For Reference tokens: the first reference path (convenience).
+        // For Reference tokens: the first reference path (convenience; empty when the head is empty).
         internal string Value { get; }
 
         internal IReadOnlyList<ReferenceItem> Items { get; }
 
-        // Non-null iff the expression contained an explicit '|' literal-default tail. The parsed
-        // template tokens are resolved lazily when every reference in Items misses: literal text
-        // is emitted verbatim, and nested placeholders run through the same resolution machinery.
-        // A bare '|' produces a single empty-literal token (equivalent to the old "optional"
-        // marker — empty string on miss).
+        // Non-null iff the expression contained an explicit '|' template tail. The parsed tokens
+        // are resolved lazily when every reference in Items misses (or when Items is empty, i.e.
+        // the gate was "{{|…}}"). Literal text is emitted verbatim; nested placeholders run
+        // through the same resolution machinery.
         internal IReadOnlyList<ValueToken>? LiteralDefault { get; }
 
-        // True when LiteralDefault is non-null: the expression cannot be "unresolvable", it falls
-        // back to LiteralDefault (possibly empty).
         internal bool HasDefault => LiteralDefault is not null;
 
         internal bool IsStrict { get; }
 
-        // True only for the single Reference token produced by a top-level ref(...) value. Placeholders
-        // inside fmt(...) never set this flag — they are always string interpolations, even when the
-        // template consists of a single {Key} placeholder.
-        internal bool IsFromRef { get; }
+        // True when this reference has a non-empty head — i.e. it can resolve via a referenced
+        // key and therefore may preserve section semantics when it's the sole top-level token.
+        internal bool HasHead => Items.Count > 0;
     }
 }

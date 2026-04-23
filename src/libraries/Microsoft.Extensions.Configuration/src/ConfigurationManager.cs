@@ -60,13 +60,13 @@ namespace Microsoft.Extensions.Configuration
         {
             get
             {
+                using ReferenceCountedProviders reference = _providerManager.GetReference();
                 ReferenceResolutionEngine? engine = _engine;
                 if (engine is not null)
                 {
                     return engine.TryGet(key, out string? resolved) ? resolved : null;
                 }
 
-                using ReferenceCountedProviders reference = _providerManager.GetReference();
                 return ConfigurationRoot.GetConfiguration(reference.Providers, key);
             }
             set
@@ -182,7 +182,7 @@ namespace Microsoft.Extensions.Configuration
         private void SwapEngine()
         {
             ReferenceResolutionEngine? newEngine = null;
-            if (ReferenceResolutionConfigurationBuilderExtensions.HasAnyScanSource(_properties.Raw))
+            if (ReferenceResolutionConfigurationBuilderExtensions.HasAnyScanSource(_properties.Raw, _sources))
             {
                 IReadOnlyList<IConfigurationProvider> providers = _providerManager.GetProvidersSnapshot();
                 Dictionary<IConfigurationProvider, ReferenceMode>? providerModes = ReferenceResolutionConfigurationBuilderExtensions

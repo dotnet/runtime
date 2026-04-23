@@ -8,14 +8,14 @@ namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
     /// Provides extension methods for configuring how individual <see cref="IConfigurationSource"/>
-    /// instances participate in <c>ref(...) / fmt(...)</c> reference resolution performed by the
+    /// instances participate in <c>{{…}}</c> reference resolution performed by the
     /// <see cref="IConfigurationRoot"/> built from the containing
     /// <see cref="IConfigurationBuilder"/>.
     /// </summary>
     /// <remarks>
-    /// Sources default to <see cref="ReferenceMode.Read"/>. The reference-resolution engine is
-    /// attached to the built root only when at least one source is marked
-    /// <see cref="ReferenceMode.Scan"/>; otherwise the built root behaves as a plain
+    /// Sources default to <see cref="ReferenceMode.Scan"/>. The reference-resolution engine is
+    /// attached to the built root unless every source has been explicitly set to a
+    /// non-<see cref="ReferenceMode.Scan"/> mode, in which case the built root behaves as a plain
     /// <see cref="IConfigurationRoot"/> with no reference interpretation.
     /// </remarks>
     public static class ReferenceResolutionConfigurationBuilderExtensions
@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Configuration
         // overrides. The value is a Dictionary<IConfigurationSource, ReferenceMode>
         // (reference-equality keys); at Build time it is correlated with the produced providers
         // so the engine can apply the correct mode per provider without wrapping them. Sources
-        // without an entry default to ReferenceMode.Read.
+        // without an entry default to ReferenceMode.Scan.
         internal const string SourceModesPropertyName = "Microsoft.Extensions.Configuration.ReferenceResolution.SourceModes";
 
         /// <summary>
@@ -128,7 +128,7 @@ namespace Microsoft.Extensions.Configuration
         // correspondence. Sources and providers share order: ConfigurationBuilder.Build iterates
         // sources to produce providers, and ConfigurationManager tracks source additions one-to-one
         // with provider additions. Providers whose source has no override are omitted — callers
-        // treat a missing key as ReferenceMode.Read. Mismatched counts return null.
+        // treat a missing key as ReferenceMode.Scan. Mismatched counts return null.
         internal static Dictionary<IConfigurationProvider, ReferenceMode>? ResolveProviderModes(
             IDictionary<string, object> properties,
             IList<IConfigurationSource> sources,
@@ -153,21 +153,39 @@ namespace Microsoft.Extensions.Configuration
             return result;
         }
 
-        // Checks whether at least one source in the builder is marked ReferenceMode.Scan.
-        // Used by the builder/manager to decide whether to attach the engine at Build time;
-        // when no source is Scan the feature is dormant and the root falls through to the
-        // normal provider walk.
-        internal static bool HasAnyScanSource(IDictionary<string, object> properties)
+        // Checks whether at least one source effectively participates as Scan. Since the default
+        // for sources without an explicit override is Scan, the engine attaches whenever any
+        // source is not explicitly set to a non-Scan mode. Used by the builder/manager to decide
+        // whether to attach the engine at Build time; when every source is explicitly Read/Ignore
+        // the feature is dormant and the root falls through to the normal provider walk.
+        internal static bool HasAnyScanSource(IDictionary<string, object> properties, IList<IConfigurationSource> sources)
         {
-            Dictionary<IConfigurationSource, ReferenceMode>? overrides = TryGetSourceModes(properties);
-            if (overrides is null)
+            if (sources.Count == 0)
             {
                 return false;
             }
 
+            Dictionary<IConfigurationSource, ReferenceMode>? overrides = TryGetSourceModes(properties);
+            if (overrides is null || overrides.Count == 0)
+            {
+                // No overrides — every source defaults to Scan.
+                return true;
+            }
+
+            // If any override is Scan, obviously attach.
             foreach (ReferenceMode mode in overrides.Values)
             {
                 if (mode == ReferenceMode.Scan)
+                {
+                    return true;
+                }
+            }
+
+            // No explicit Scan. Attach only if at least one source is missing from the override
+            // map (and therefore defaults to Scan).
+            foreach (IConfigurationSource source in sources)
+            {
+                if (!overrides.ContainsKey(source))
                 {
                     return true;
                 }
