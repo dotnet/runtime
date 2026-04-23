@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,31 +11,6 @@ internal static class StreamPolyfills
 {
     extension(Stream stream)
     {
-        public int ReadAtLeast(Span<byte> destination, int minimumBytes, bool throwOnEndOfStream = true)
-        {
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Min(destination.Length, 81920));
-            int totalWritten = 0;
-            while (totalWritten < minimumBytes && !destination.IsEmpty)
-            {
-                int written = stream.Read(buffer, 0, Math.Min(buffer.Length, destination.Length));
-                if (written == 0)
-                {
-                    if (throwOnEndOfStream)
-                    {
-                        ThrowEndOfStreamException();
-                    }
-                    break;
-                }
-                buffer.AsSpan(0, written).CopyTo(destination);
-                totalWritten += written;
-                destination = destination.Slice(written);
-            }
-            ArrayPool<byte>.Shared.Return(buffer);
-            return totalWritten;
-
-            static void ThrowEndOfStreamException() => throw new EndOfStreamException();
-        }
-
         public void ReadExactly(byte[] buffer)
         {
             int totalRead = 0;
