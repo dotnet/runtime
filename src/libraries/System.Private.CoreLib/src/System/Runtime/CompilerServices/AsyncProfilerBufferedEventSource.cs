@@ -78,7 +78,7 @@ namespace System.Runtime.CompilerServices
                     eventPayload[0].DataPointer = ((IntPtr)(&length));
                     eventPayload[0].Reserved = 0;
                     eventPayload[1].Size = sizeof(byte) * length;
-                    eventPayload[1].DataPointer = ((IntPtr)pBuffer);
+                    eventPayload[1].DataPointer = length != 0 ? ((IntPtr)pBuffer) : ((IntPtr)(&length));
                     eventPayload[1].Reserved = 0;
                     WriteEventCore(ASYNC_EVENTS_ID, 2, eventPayload);
                 }
@@ -86,7 +86,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Get callbacks when the ETW sends us commands`
+        /// Get callbacks when the ETW sends us commands
         /// </summary>
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
