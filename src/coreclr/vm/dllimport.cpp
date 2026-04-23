@@ -3998,12 +3998,15 @@ static void CreatePInvokeStubWorker(ILStubState*               pss,
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
         DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
-
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
-        if (fStubNeedsCOM)
-            pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
     }
 #endif
+
+    if (fStubNeedsCOM && pMD->IsDynamicMethod())
+    {
+        DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
+        pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
+    }
 
     pss->FinishEmit(pMD);
 }
