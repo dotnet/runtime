@@ -264,6 +264,7 @@ namespace System.Runtime.CompilerServices
             public void Pop()
             {
                 StackState->Pop(CurrentThread);
+                StackState = null;
             }
         }
 
