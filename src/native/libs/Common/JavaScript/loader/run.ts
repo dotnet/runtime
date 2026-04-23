@@ -38,9 +38,11 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         // Wire user-provided out/err overrides to Emscripten's print/printErr.
         // This must happen before the native module loads so Emscripten picks them up.
         if (!Module.out) {
+            // eslint-disable-next-line no-console
             Module.out = console.log.bind(console);
         }
         if (!Module.err) {
+            // eslint-disable-next-line no-console
             Module.err = console.error.bind(console);
         }
         if (!Module.print) {
