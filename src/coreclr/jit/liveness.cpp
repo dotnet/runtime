@@ -2558,6 +2558,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_RETURN_SUSPEND:
             case GT_PATCHPOINT:
             case GT_PATCHPOINT_FORCED:
+            case GT_NONLOCAL_JMP:
             case GT_SWITCH:
             case GT_RETFILT:
             case GT_START_NONGC:

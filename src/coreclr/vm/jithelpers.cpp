@@ -1660,8 +1660,8 @@ extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransit
         // at the call site so the JIT's unconditional jump skips over itself
         // and resumes Tier0 execution.
 #if defined(TARGET_AMD64)
-        // sub rsp,8 (4 bytes) + jmp rax (2 bytes) = 6 bytes to skip
-        osrMethodCode = ip + 6;
+        // jmp rax = 2 bytes to skip
+        osrMethodCode = ip + 2;
 #elif defined(TARGET_ARM64)
         // br xN = 4 bytes
         osrMethodCode = ip + 4;
@@ -1682,12 +1682,6 @@ extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransit
     // transition (setting up SP/FP and jumping to the OSR method).
     {
         Thread *pThread = GetThread();
-
-#ifdef FEATURE_HIJACK
-        // We can't have a hijack pending when transitioning to the OSR method,
-        // because the return address may have been overwritten.
-        pThread->UnhijackThread();
-#endif
 
         // Note we can get here w/o triggering, if there is an existing OSR method and
         // we hit the patchpoint.

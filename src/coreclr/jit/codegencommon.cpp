@@ -5393,6 +5393,10 @@ void CodeGen::genFnProlog()
         // allocating the local frame.
         //
         extraFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES;
+
+        // Simulate a return address being pushed by a call to get expected misalignment on entry.
+        GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_EAX);
+        m_compiler->unwindAllocStack(REGSIZE_BYTES);
 #endif
     }
 
@@ -7333,18 +7337,7 @@ void CodeGen::genPatchpoint(GenTreeOp* treeNode)
     // win-x64 unwinder detects as an epilog instruction, which would
     // incorrectly signal that callee saves / RSP have been restored.
 #ifdef TARGET_XARCH
-    // On x64, the OSR entry point expects RSP = Tier0_SP - 8, simulating
-    // the return-address push of a call instruction.  Since we transfer
-    // via jmp (not call), we adjust RSP manually.
-    //
-    // No-transition path: the helper returns the address of the add below,
-    // so the jmp lands there and RSP is restored.
-    //
-    // Encoding: sub rsp,8 (4 B) | jmp rax (2 B) | add rsp,8 (4 B)
-    //           <---- skip = 6 bytes ---->
-    GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, 8);
     GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
-    GetEmitter()->emitIns_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, 8);
 #elif defined(TARGET_ARM64)
     GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, REG_INTRET);
 #elif defined(TARGET_ARM)

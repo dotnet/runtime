@@ -595,6 +595,7 @@ inline bool OperIsControlFlow(genTreeOps oper)
         case GT_RETURN_SUSPEND:
         case GT_PATCHPOINT:
         case GT_PATCHPOINT_FORCED:
+        case GT_NONLOCAL_JMP:
 
         case GT_WASM_JEXCEPT:
             return true;
