@@ -617,6 +617,10 @@ namespace System.Reflection.Metadata.Ecma335
             WriteAligned(stringHeap, builder);
             WriteAligned(_userStringBuilder, builder);
             WriteAligned(_guidBuilder, builder);
+            // FinishWritingSegments will invalidate the segments in the dictionary,
+            // so we need to clear it first.
+            _blobs.Clear();
+            _blobBuilder.FinishWritingSegments();
             WriteAligned(_blobBuilder, builder);
         }
 

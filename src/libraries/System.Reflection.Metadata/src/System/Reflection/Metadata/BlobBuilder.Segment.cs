@@ -40,9 +40,9 @@ namespace System.Reflection.Metadata
                 // calling Expand() will move it to the last chunk, so we need to call it twice.
                 if (FreeBytes == 0)
                 {
-                    Expand(chunkSize, alwaysAppendBuffer: true);
+                    Expand(chunkSize, writingSegments: true);
                 }
-                Expand(chunkSize, alwaysAppendBuffer: true);
+                Expand(chunkSize, writingSegments: true);
                 Debug.Assert(CanWriteSegment && _nextOrPrevious.FreeBytes >= minimumSize);
             }
         }
@@ -111,7 +111,7 @@ namespace System.Reflection.Metadata
         private Segment FinishSegment(BlobBuilder startChunk, int startOffset, int size)
         {
             Debug.Assert(CanWriteSegment);
-            CheckInvariants();
+            CheckInvariants(writingSegments: true);
             return new Segment(startChunk, startOffset, size);
         }
 
@@ -152,6 +152,71 @@ namespace System.Reflection.Metadata
                 WriteForSegment(chunk.Span);
             }
             return FinishSegment(startChunk, startOffset, builder.Count);
+        }
+
+        /// <summary>
+        /// Performs necessary adjustments to the <see cref="BlobBuilder"/> after writing <see cref="Segment"/>-
+        /// addressable data to it.
+        /// </summary>
+        /// <remarks>
+        /// This method must be called before linking a <see cref="BlobBuilder"/> that has had <see cref="Segment"/>-
+        /// addressable data written to it, and invalidates previously returned <see cref="Segment"/>s.
+        /// </remarks>
+        internal void FinishWritingSegments()
+        {
+            Debug.Assert(IsHead);
+            if (_nextOrPrevious == this || Length > 0)
+            {
+                return;
+            }
+
+            BlobBuilder lastChunk = _nextOrPrevious;
+            BlobBuilder firstChunk = lastChunk._nextOrPrevious;
+            BlobBuilder penultimateChunk = firstChunk;
+            while (penultimateChunk._nextOrPrevious != lastChunk)
+            {
+                penultimateChunk = penultimateChunk._nextOrPrevious;
+            }
+            bool twoChunks = firstChunk == lastChunk;
+
+            // We have:
+            // [First]->[]->[Penultimate]->[Last] <- [this (empty)]
+            //    ^__________________________|
+            // And want to turn it into this:
+            // [First]->[]->[Penultimate] <- [Last]
+            //    ^_______________|
+            // Degenerate cases:
+            // [First == Penultimate == Last] <- [this (empty)]
+            //    ^______________________|
+            // [First == Penultimate] <- [Last] <- [this (empty)]
+            //   ^_________________________|
+
+            // Swap buffers of last and head chunks, and free the last chunk:
+            byte[] lastBuffer = lastChunk._buffer;
+            int lastLength = lastChunk.Length; // don't copy the frozen flag
+            lastChunk._buffer = _buffer;
+            lastChunk._length = _length;
+            _buffer = lastBuffer;
+            _length = (uint)lastLength;
+            lastChunk.ClearAndFreeChunk();
+            // Relink chunks:
+            if (twoChunks)
+            {
+                // If there are only two chunks, turn this into a single-chunk BlobBuilder.
+                _nextOrPrevious = this;
+                PreviousLength = 0;
+            }
+            else
+            {
+                // If there are more than two chunks, set the penultimate chunk as the new last chunk.
+                // This handles the case of First == Penultimate as well.
+                _nextOrPrevious = penultimateChunk;
+                penultimateChunk._nextOrPrevious = firstChunk;
+                PreviousLength = penultimateChunk.Count;
+            }
+
+            // The standard set of invariants should now hold.
+            CheckInvariants();
         }
 
         /// <summary>

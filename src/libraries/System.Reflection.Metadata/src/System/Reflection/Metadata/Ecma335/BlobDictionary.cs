@@ -102,5 +102,7 @@ namespace System.Reflection.Metadata.Ecma335
 #endif
 
         public int Count => _dictionary.Count;
+
+        public void Clear() => _dictionary.Clear();
     }
 }

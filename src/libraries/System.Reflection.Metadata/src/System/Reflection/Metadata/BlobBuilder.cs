@@ -129,7 +129,7 @@ namespace System.Reflection.Metadata
         }
 
         [Conditional("DEBUG")]
-        private void CheckInvariants()
+        private void CheckInvariants(bool writingSegments = false)
         {
             Debug.Assert(_buffer != null);
             Debug.Assert(Length >= 0 && Length <= _buffer.Length);
@@ -143,14 +143,14 @@ namespace System.Reflection.Metadata
                 int totalLength = 0;
                 foreach (var chunk in GetChunks())
                 {
-                    if (!chunk.IsHead && chunk == _nextOrPrevious)
+                    if (!writingSegments)
                     {
-                        // The last chunk can be empty if we are writing segments.
-                        Debug.Assert(chunk.Length >= 0);
+                        Debug.Assert(chunk.IsHead || chunk.Length > 0);
                     }
                     else
                     {
-                        Debug.Assert(chunk.IsHead || (chunk.Length > 0));
+                        // The last chunk can be empty if we are writing segments.
+                        Debug.Assert(chunk.IsHead || chunk.Length > 0 || chunk == _nextOrPrevious);
                     }
                     totalLength += chunk.Length;
                 }
@@ -539,7 +539,7 @@ namespace System.Reflection.Metadata
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void Expand(int newLength, bool alwaysAppendBuffer = false)
+        private void Expand(int newLength, bool writingSegments = false)
         {
             // TODO: consider converting the last chunk to a smaller one if there is too much empty space left
 
@@ -559,10 +559,10 @@ namespace System.Reflection.Metadata
 
             var newBuffer = newChunk._buffer;
 
-            if (_length == 0 && !alwaysAppendBuffer)
+            if (_length == 0 && !writingSegments)
             {
                 // If the first write into an empty buffer needs more space than the buffer provides, swap the buffers.
-                // We don't want this when writing a segment.
+                // We don't want this when writing segments.
                 newChunk._buffer = _buffer;
                 _buffer = newBuffer;
             }
@@ -593,7 +593,7 @@ namespace System.Reflection.Metadata
                 _length = 0;
             }
 
-            CheckInvariants();
+            CheckInvariants(writingSegments);
         }
 
         /// <summary>
