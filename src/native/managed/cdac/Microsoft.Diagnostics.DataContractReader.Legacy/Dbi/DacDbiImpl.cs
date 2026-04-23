@@ -338,12 +338,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             DACF controlFlags = debuggerInfoBits & ~(DACF.DACF_ALLOW_JIT_OPTS | DACF.DACF_ENC_ENABLED);
             controlFlags &= DACF.DACF_CONTROL_FLAGS_MASK;
 
-            if (fAllowJitOpts == Interop.BOOL.TRUE)
+            if (fAllowJitOpts != Interop.BOOL.FALSE)
             {
                 controlFlags |= DACF.DACF_ALLOW_JIT_OPTS;
             }
 
-            if (fEnableEnC == Interop.BOOL.TRUE)
+            if (fEnableEnC != Interop.BOOL.FALSE)
             {
                 bool fIgnorePdbs = (debuggerInfoBits & DACF.DACF_IGNORE_PDBS) != 0;
                 bool canSetEnC = (loader.GetFlags(handle) & Contracts.ModuleFlags.EncCapable) != 0 && !CORProfilerPresent() && fIgnorePdbs;
