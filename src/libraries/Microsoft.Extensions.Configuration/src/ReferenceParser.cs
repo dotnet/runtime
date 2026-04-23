@@ -19,15 +19,16 @@ namespace Microsoft.Extensions.Configuration
     // "ref(literal)" in sources that never opt in, untouched.
     //
     // Path expressions inside ref() and inside fmt() placeholders share the same grammar:
-    //   path ('?' path)*  ('!')?  ('|' literal-tail)?
+    //   path ('?' path)*  ('!')?  ('|' template-tail)?
     // where each path may have leading ".." segments meaning parent hops. A trailing '!' marks the
     // (single-item) reference as a strict section alias, i.e. the resulting section is exactly the
-    // aliased target with no merging from earlier providers. A '|' introduces an explicit literal
-    // fallback — if every reference in the chain misses, the expression resolves to the text after
-    // the '|'. A bare '|' with nothing after it makes the expression optional: the result is the
-    // empty string when no reference resolves.
+    // aliased target with no merging from earlier providers. A '|' introduces a fallback template
+    // — if every reference in the chain misses, the template after '|' is evaluated and returned.
+    // The template tail follows the same grammar as a fmt() body: literal text, '{{' / '}}' brace
+    // escapes, and '{path-expr}' placeholders that compose recursively. A bare '|' with an empty
+    // tail is equivalent to "empty string on miss".
     //
-    // Path segments and the literal tail may both be quoted with single or double quotes to embed
+    // Path segments and template literals may both be quoted with single or double quotes to embed
     // characters that would otherwise be interpreted as syntax ('?', '!', '|', ':', '(', ')', '{',
     // '}', and '..'). The quote character is doubled to represent itself inside the same quote
     // style — e.g. 'it''s' and "say ""hi""" yield the raw values "it's" and 'say "hi"'. Single
@@ -112,6 +113,15 @@ namespace Microsoft.Extensions.Configuration
             {
                 char c = template[i];
 
+                if (c == '\'' || c == '"')
+                {
+                    // Quoted run at template top level: contents are literal (including '{' and '}').
+                    int quoteEnd = SkipQuoted(template, i, outerStart + i);
+                    literal.Append(UnquoteSegment(template.Substring(i, quoteEnd - i)));
+                    i = quoteEnd;
+                    continue;
+                }
+
                 if (c == '{' && i + 1 < template.Length && template[i + 1] == '{')
                 {
                     literal.Append('{');
@@ -169,19 +179,52 @@ namespace Microsoft.Extensions.Configuration
 
         private static int FindPlaceholderEnd(string template, int start, int tokenStart)
         {
-            for (int j = start; j < template.Length; j++)
+            // Track brace depth so nested placeholders inside a default (e.g. {A|{B}}) balance
+            // correctly. Doubled-brace escapes ({{ and }}) and quoted regions do not participate.
+            int depth = 0;
+            int j = start;
+            while (j < template.Length)
             {
                 char ch = template[j];
+
                 if (ch == '\'' || ch == '"')
                 {
-                    j = SkipQuoted(template, j, tokenStart) - 1;
+                    j = SkipQuoted(template, j, tokenStart);
+                    continue;
+                }
+
+                if (ch == '{' && depth == 0 && j + 1 < template.Length && template[j + 1] == '{')
+                {
+                    j += 2;
+                    continue;
+                }
+
+                if (ch == '}' && depth == 0 && j + 1 < template.Length && template[j + 1] == '}')
+                {
+                    j += 2;
+                    continue;
+                }
+
+                if (ch == '{')
+                {
+                    depth++;
+                    j++;
                     continue;
                 }
 
                 if (ch == '}')
                 {
-                    return j;
+                    if (depth == 0)
+                    {
+                        return j;
+                    }
+
+                    depth--;
+                    j++;
+                    continue;
                 }
+
+                j++;
             }
 
             throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsUnclosed, tokenStart));
@@ -195,19 +238,16 @@ namespace Microsoft.Extensions.Configuration
                 throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsEmpty, tokenStart));
             }
 
-            // '|' introduces the literal fallback. Everything after the first unquoted '|' is the
-            // default value; an empty tail makes the expression optional (empty on miss). The tail
-            // may use the same '…' / "…" quoting that path segments use — quoting is the way to
-            // embed characters that would otherwise terminate the enclosing context (e.g. a '}'
-            // inside a fmt placeholder) or preserve explicit leading/trailing whitespace.
-            string? literalDefault = null;
+            // '|' introduces the literal fallback. The tail is parsed with the same grammar as a
+            // fmt template body: literal characters (with '{{' / '}}' brace escapes and '…' / "…"
+            // quoted runs), plus '{path-expr}' placeholders that resolve lazily when every
+            // reference in the chain misses.
+            IReadOnlyList<ValueToken>? literalDefault = null;
             int pipeIndex = IndexOfUnquoted(expression, '|', 0, tokenStart);
             if (pipeIndex >= 0)
             {
                 string rawTail = expression.Substring(pipeIndex + 1);
-                // Validate that any quotes in the literal tail are balanced (throws on unterminated).
-                IndexOfUnquoted(rawTail, '\0', 0, tokenStart);
-                literalDefault = UnquoteSegment(rawTail);
+                literalDefault = ParseFmtTemplate(rawTail, outerStart: tokenStart + pipeIndex + 1);
                 expression = expression.Substring(0, pipeIndex).TrimEnd();
                 if (expression.Length == 0)
                 {
@@ -510,7 +550,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private static readonly IReadOnlyList<ReferenceItem> s_noItems = Array.Empty<ReferenceItem>();
 
-        private ValueToken(ValueTokenKind kind, string value, IReadOnlyList<ReferenceItem> items, string? literalDefault, bool isStrict, bool isFromRef)
+        private ValueToken(ValueTokenKind kind, string value, IReadOnlyList<ReferenceItem> items, IReadOnlyList<ValueToken>? literalDefault, bool isStrict, bool isFromRef)
         {
             Kind = kind;
             Value = value;
@@ -523,7 +563,7 @@ namespace Microsoft.Extensions.Configuration
         internal static ValueToken Literal(string text) =>
             new(ValueTokenKind.Literal, text, s_noItems, literalDefault: null, isStrict: false, isFromRef: false);
 
-        internal static ValueToken Reference(IReadOnlyList<ReferenceItem> items, string? literalDefault, bool isStrict, bool isFromRef)
+        internal static ValueToken Reference(IReadOnlyList<ReferenceItem> items, IReadOnlyList<ValueToken>? literalDefault, bool isStrict, bool isFromRef)
         {
             string first = items.Count > 0 ? items[0].Value : string.Empty;
             return new ValueToken(ValueTokenKind.Reference, first, items, literalDefault, isStrict, isFromRef);
@@ -537,10 +577,12 @@ namespace Microsoft.Extensions.Configuration
 
         internal IReadOnlyList<ReferenceItem> Items { get; }
 
-        // Non-null iff the expression contained an explicit '|' literal-default tail. The empty
-        // string corresponds to a bare '|' (equivalent to the old "optional" marker — empty on miss).
-        // A non-empty value is emitted verbatim when every reference in Items misses.
-        internal string? LiteralDefault { get; }
+        // Non-null iff the expression contained an explicit '|' literal-default tail. The parsed
+        // template tokens are resolved lazily when every reference in Items misses: literal text
+        // is emitted verbatim, and nested placeholders run through the same resolution machinery.
+        // A bare '|' produces a single empty-literal token (equivalent to the old "optional"
+        // marker — empty string on miss).
+        internal IReadOnlyList<ValueToken>? LiteralDefault { get; }
 
         // True when LiteralDefault is non-null: the expression cannot be "unresolvable", it falls
         // back to LiteralDefault (possibly empty).

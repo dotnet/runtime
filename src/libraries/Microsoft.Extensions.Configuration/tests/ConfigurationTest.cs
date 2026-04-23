@@ -1197,6 +1197,80 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
+        public void EnableReferenceResolutionDefaultTailIsTemplateWithPlaceholder()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Host"] = "example.com",
+                    ["Value"] = "ref(Missing|{Host}/path)",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("example.com/path", config["Value"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionDefaultTailComposesCoalesceAndLiteral()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Backup"] = "bee",
+                    ["Value"] = "ref(Missing|{Unknown?Backup|fallback}-end)",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("bee-end", config["Value"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionDefaultTailFallsBackToInnerLiteralWhenAllMiss()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Value"] = "ref(Missing|{Unknown?AlsoUnknown|inner}-end)",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("inner-end", config["Value"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionFmtPlaceholderWithNestedDefault()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["B"] = "bee",
+                    ["Value"] = "fmt(prefix-{A|{B}}-suffix)",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("prefix-bee-suffix", config["Value"]);
+        }
+
+        [Fact]
+        public void EnableReferenceResolutionDefaultTailQuotedBraceIsLiteralNotPlaceholder()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Host"] = "should-not-appear",
+                    ["Value"] = "ref(Missing|\"{Host}\")",
+                })
+                .EnableReferenceResolution()
+                .Build();
+
+            Assert.Equal("{Host}", config["Value"]);
+        }
+
+        [Fact]
         public void EnableReferenceResolutionRelativeRefSiblingResolves()
         {
             var config = new ConfigurationBuilder()

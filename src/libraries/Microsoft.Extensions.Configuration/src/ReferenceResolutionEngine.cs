@@ -522,36 +522,43 @@ namespace Microsoft.Extensions.Configuration
                 try
                 {
                     IReadOnlyList<ValueToken> tokens = ReferenceParser.Parse(rawValue);
-                    if (tokens.Count == 1 && tokens[0].Kind == ValueTokenKind.Reference && tokens[0].IsFromRef)
-                    {
-                        return TryResolveToken(originKey, tokens[0], resolutionStack, depth + 1, upperIndex, out value);
-                    }
-
-                    var builder = new StringBuilder();
-                    foreach (ValueToken token in tokens)
-                    {
-                        if (token.Kind == ValueTokenKind.Literal)
-                        {
-                            builder.Append(token.Value);
-                            continue;
-                        }
-
-                        if (!TryResolveToken(originKey, token, resolutionStack, depth + 1, upperIndex, out string? resolvedTokenValue))
-                        {
-                            value = null;
-                            return false;
-                        }
-
-                        builder.Append(resolvedTokenValue ?? string.Empty);
-                    }
-
-                    value = builder.ToString();
-                    return true;
+                    return TryResolveTokens(originKey, tokens, resolutionStack, depth, upperIndex, out value);
                 }
                 finally
                 {
                     resolutionStack?.Remove(originKey);
                 }
+            }
+
+            // Resolves a pre-parsed token list as either a single ref-style token (preserving the
+            // reference's untransformed value) or a fmt-style template concatenation.
+            private bool TryResolveTokens(Path originKey, IReadOnlyList<ValueToken> tokens, HashSet<Path>? resolutionStack, int depth, int upperIndex, out string? value)
+            {
+                if (tokens.Count == 1 && tokens[0].Kind == ValueTokenKind.Reference && tokens[0].IsFromRef)
+                {
+                    return TryResolveToken(originKey, tokens[0], resolutionStack, depth + 1, upperIndex, out value);
+                }
+
+                var builder = new StringBuilder();
+                foreach (ValueToken token in tokens)
+                {
+                    if (token.Kind == ValueTokenKind.Literal)
+                    {
+                        builder.Append(token.Value);
+                        continue;
+                    }
+
+                    if (!TryResolveToken(originKey, token, resolutionStack, depth + 1, upperIndex, out string? resolvedTokenValue))
+                    {
+                        value = null;
+                        return false;
+                    }
+
+                    builder.Append(resolvedTokenValue ?? string.Empty);
+                }
+
+                value = builder.ToString();
+                return true;
             }
 
             private bool TryResolveToken(Path storageKey, ValueToken token, HashSet<Path>? resolutionStack, int depth, int upperIndex, out string? value)
@@ -589,8 +596,7 @@ namespace Microsoft.Extensions.Configuration
 
                 if (token.HasDefault)
                 {
-                    value = token.LiteralDefault!;
-                    return true;
+                    return TryResolveTokens(storageKey, token.LiteralDefault!, resolutionStack, depth, upperIndex, out value);
                 }
 
                 value = null;
