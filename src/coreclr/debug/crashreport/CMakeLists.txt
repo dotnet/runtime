@@ -6,3 +6,5 @@ set(CRASHREPORT_SOURCES
 )
 
 add_library(inproccrashreport OBJECT ${CRASHREPORT_SOURCES})
+
+target_sources(coreclrpal PRIVATE $<TARGET_OBJECTS:inproccrashreport>)

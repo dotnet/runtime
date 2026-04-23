@@ -228,7 +228,6 @@ add_library(coreclrpal_objects
 
 add_library(coreclrpal STATIC
   $<TARGET_OBJECTS:coreclrpal_objects>
-  $<$<BOOL:${FEATURE_INPROC_CRASHREPORT}>:$<TARGET_OBJECTS:inproccrashreport>>
   ${LIBUNWIND_OBJECTS}
 )
 
