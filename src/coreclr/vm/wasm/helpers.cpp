@@ -5,7 +5,7 @@
 #include <interpretershared.h>
 #include <interpexec.h>
 #include "callhelpers.hpp"
-#include "shash.h"
+#include "stringthunkhash.h"
 #include "callingconvention.h"
 #include "cgensys.h"
 #include "readytorun.h"
@@ -891,14 +891,7 @@ namespace
         return true;
     }
 
-    class StringThunkSHashTraits : public MapSHashTraits<const char*, void*>
-    {
-    public:
-        static BOOL Equals(const char* s1, const char* s2) { return strcmp(s1, s2) == 0; }
-        static count_t Hash(const char* key) { return HashStringA(key); }
-    };
-
-    typedef MapSHash<const char*, void*, NoRemoveSHashTraits<StringThunkSHashTraits>> StringToWasmSigThunkHash;
+    typedef StringToThunkHash StringToWasmSigThunkHash;
     static StringToWasmSigThunkHash* thunkCache = nullptr;
     static StringToWasmSigThunkHash* portableEntrypointThunkCache = nullptr;
 

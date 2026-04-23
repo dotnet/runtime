@@ -288,6 +288,7 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_Verify_IL_Body                 |  0x36 | Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. See[IL Body signatures](il-body-signatures) for details.
 | READYTORUN_FIXUP_ContinuationLayout             |  0x37 | Layout of an async method continuation type, followed by typespec signature
 | READYTORUN_FIXUP_ResumptionStubEntryPoint       |  0x38 | Entry point of an async method resumption stub
+| READYTORUN_FIXUP_InjectStringThunks             |  0x39 | Inject pregenerated string-to-code thunk mappings. See [InjectStringThunks signatures](#injectstringthunks-signatures) for details.
 | READYTORUN_FIXUP_ModuleOverride                 |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
 
 #### Method Signatures
@@ -332,6 +333,21 @@ ECMA 335 does not have a natural encoding for describing an overridden method. T
 #### IL Body signatures
 
 ECMA 335 does not define a format that can represent the exact implementation of a method by itself. This signature holds all of the IL of the method, the EH table, the locals table, and each token (other than type references) in those tables is replaced with an index into a local stream of signatures. Those signatures are simply verbatim copies of the needed metadata to describe MemberRefs, TypeSpecs, MethodSpecs, StandaloneSignatures and strings. All of that is bundled into a large byte array. In addition, a series of TypeSignatures follows which allow the type references to be resolved, as well as a methodreference to the uninstantiated method. Assuming all of this matches with the data that is present at runtime, the fixup is considered to be satisfied. See ReadyToRunStandaloneMetadata.cs for the exact details of the format.
+
+#### InjectStringThunks signatures
+
+The `READYTORUN_FIXUP_InjectStringThunks` fixup is placed in an eager import section and is processed at R2R module load time. There is at most one such fixup per compilation. It encodes a mapping from UTF-8 strings to pregenerated code thunks embedded in the R2R image.
+
+The signature following the fixup kind byte is a series of elements:
+
+| Field | Size | Description
+|:------|-----:|:-----------
+| LookupString | variable | A null-terminated UTF-8 string (the lookup key)
+| ThunkRVA | 4 bytes | An RVA into the module indicating the location of the thunk code. On WebAssembly platforms, this is an I32 function table index instead.
+
+The series terminates when the null-terminated string is the empty string (a single `0x00` byte). There is no trailing RVA after the terminal empty string.
+
+At runtime, the entries are merged into a global hash table. Strings already present in the table from previously loaded modules take precedence over new entries. The table can be queried via `LookupPregeneratedThunkByString`.
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
