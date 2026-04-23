@@ -259,7 +259,7 @@ InProcCrashReporter::CreateReport(
         return;
     }
 
-    char reportPath[256];
+    char reportPath[CRASHREPORT_STRING_BUFFER_SIZE];
     reportPath[0] = '\0';
 
     if (m_reportPath[0] == '\0' || !BuildReportPath(reportPath, sizeof(reportPath), m_reportPath))
@@ -275,7 +275,7 @@ InProcCrashReporter::CreateReport(
 
     (void)siginfo;
 
-    char exTypeBuf[256];
+    char exTypeBuf[CRASHREPORT_STRING_BUFFER_SIZE];
     uint32_t exHresult = 0;
     exTypeBuf[0] = '\0';
 
@@ -521,7 +521,7 @@ BuildReportPath(
         return false;
     }
 
-    char expanded[256];
+    char expanded[CRASHREPORT_STRING_BUFFER_SIZE];
     size_t expandedLen = ExpandDumpTemplate(expanded, sizeof(expanded), dumpPath);
     if (expandedLen == 0)
     {
@@ -722,9 +722,9 @@ WriteRegistersToJson(
     uint64_t ipValue = GetInstructionPointer(context);
     uint64_t spValue = GetStackPointer(context);
     uint64_t bpValue = GetFramePointer(context);
-    char ip[32] = "0x0";
-    char sp[32] = "0x0";
-    char bp[32] = "0x0";
+    char ip[CRASHREPORT_NUMBER_BUFFER_SIZE] = "0x0";
+    char sp[CRASHREPORT_NUMBER_BUFFER_SIZE] = "0x0";
+    char bp[CRASHREPORT_NUMBER_BUFFER_SIZE] = "0x0";
 
     FormatHexValue(ip, sizeof(ip), ipValue);
     FormatHexValue(sp, sizeof(sp), spValue);
@@ -807,8 +807,8 @@ WriteCrashSiteFrameToJson(
 {
     uint64_t ipValue = GetInstructionPointer(context);
     uint64_t spValue = GetStackPointer(context);
-    char ip[32] = "0x0";
-    char sp[32] = "0x0";
+    char ip[CRASHREPORT_NUMBER_BUFFER_SIZE] = "0x0";
+    char sp[CRASHREPORT_NUMBER_BUFFER_SIZE] = "0x0";
 
     FormatHexValue(ip, sizeof(ip), ipValue);
     FormatHexValue(sp, sizeof(sp), spValue);
@@ -910,7 +910,7 @@ TryGetProcessName(
     int fd = open("/proc/self/cmdline", O_RDONLY);
     if (fd != -1)
     {
-        char cmdline[256];
+        char cmdline[CRASHREPORT_STRING_BUFFER_SIZE];
         ssize_t bytesRead = read(fd, cmdline, sizeof(cmdline) - 1);
         close(fd);
 
@@ -925,7 +925,7 @@ TryGetProcessName(
         }
     }
 
-    char exePath[256];
+    char exePath[CRASHREPORT_STRING_BUFFER_SIZE];
     ssize_t pathLength = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
     if (pathLength > 0)
     {
@@ -958,7 +958,7 @@ JsonFrameCallback(
     // value into the writer's buffer before we format the next field, so we
     // don't need one scratch buffer per hex field. Keeps the signal-handler
     // stack footprint down.
-    char scratch[32];
+    char scratch[CRASHREPORT_NUMBER_BUFFER_SIZE];
 
     writer->OpenObject();
     FormatHexValue(scratch, sizeof(scratch), stackPointer);
@@ -970,7 +970,7 @@ JsonFrameCallback(
 
     if (methodName != nullptr)
     {
-        char fullName[256];
+        char fullName[CRASHREPORT_STRING_BUFFER_SIZE];
         BuildMethodName(fullName, sizeof(fullName), className, methodName);
         writer->WriteString("method_name", fullName);
         writer->WriteString("is_managed", "true");
@@ -1069,11 +1069,11 @@ ThreadEnumerationContext::OnThread(
     m_writer->WriteString("is_managed", "true");
     m_writer->WriteString("crashed", isCrashThread ? "true" : "false");
 
-    char nativeThreadId[32];
+    char nativeThreadId[CRASHREPORT_NUMBER_BUFFER_SIZE];
     FormatHexValue(nativeThreadId, sizeof(nativeThreadId), osThreadId);
     m_writer->WriteString("native_thread_id", nativeThreadId);
 
-    char hresultBuffer[32];
+    char hresultBuffer[CRASHREPORT_NUMBER_BUFFER_SIZE];
     if (isCrashThread && m_hasCrashException)
     {
         FormatHexValue(hresultBuffer, sizeof(hresultBuffer), m_crashExceptionHResult);
@@ -1144,13 +1144,13 @@ InProcCrashReporter::EmitSynthesizedCrashThread(
         m_isManagedThreadCallback != nullptr && m_isManagedThreadCallback() ? "true" : "false");
     m_jsonWriter.WriteString("crashed", "true");
 
-    char nativeThreadId[32];
+    char nativeThreadId[CRASHREPORT_NUMBER_BUFFER_SIZE];
     FormatHexValue(nativeThreadId, sizeof(nativeThreadId), crashingTid);
     m_jsonWriter.WriteString("native_thread_id", nativeThreadId);
 
     if (hasException)
     {
-        char hresultBuffer[32];
+        char hresultBuffer[CRASHREPORT_NUMBER_BUFFER_SIZE];
         FormatHexValue(hresultBuffer, sizeof(hresultBuffer), crashExceptionHResult);
 
         m_jsonWriter.WriteString("managed_exception_type", crashExceptionType);

@@ -54,7 +54,7 @@ FrameCallbackAdapter(
         }
     }
 
-    char classNameBuf[256] = { 0 };
+    char classNameBuf[CRASHREPORT_STRING_BUFFER_SIZE] = { 0 };
     size_t index = 0;
     if (namespaceName != nullptr)
     {
@@ -368,7 +368,7 @@ CrashReportEnumerateThreads(
         uint64_t crashOsId = static_cast<uint64_t>(pCrashThread->GetOSThreadId());
         if (crashOsId == crashingTid)
         {
-            char exceptionType[256];
+            char exceptionType[CRASHREPORT_STRING_BUFFER_SIZE];
             uint32_t hresult = 0;
             bool hasException = CrashReportGetExceptionForThread(pCrashThread, exceptionType, sizeof(exceptionType), &hresult);
 
@@ -429,7 +429,7 @@ CrashReportRegisterStackWalker()
 
     // If DbgMiniDumpName is just a filename (no directory component), write
     // the crash report under TMPDIR / /tmp so it lands somewhere writable.
-    char dumpPathBuf[256];
+    char dumpPathBuf[CRASHREPORT_STRING_BUFFER_SIZE];
     if (strchr(dumpName, '/') == nullptr)
     {
         const char* tmpDir = getenv("TMPDIR");

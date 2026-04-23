@@ -13,6 +13,13 @@
 
 #include "signalsafejsonwriter.h"
 
+// Scratch-buffer sizes used throughout the in-proc crash reporter. 256 is
+// sized for path-like and identifier-like strings (report paths, process
+// name, type/class names). 32 is sized for a single hex-or-decimal integer
+// formatted as a C string (addresses, thread IDs, hresults).
+static constexpr size_t CRASHREPORT_STRING_BUFFER_SIZE = 256;
+static constexpr size_t CRASHREPORT_NUMBER_BUFFER_SIZE = 32;
+
 using InProcCrashReportIsManagedThreadCallback = bool (*)();
 
 using InProcCrashReportFrameCallback = void (*)(
@@ -90,6 +97,6 @@ private:
     InProcCrashReportWalkStackCallback m_walkStackCallback = nullptr;
     InProcCrashReportGetExceptionCallback m_getExceptionCallback = nullptr;
     InProcCrashReportEnumerateThreadsCallback m_enumerateThreadsCallback = nullptr;
-    char m_reportPath[256] = {};
-    char m_processName[256] = {};
+    char m_reportPath[CRASHREPORT_STRING_BUFFER_SIZE] = {};
+    char m_processName[CRASHREPORT_STRING_BUFFER_SIZE] = {};
 };
