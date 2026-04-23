@@ -479,6 +479,35 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void ImportFromPem_AmbiguousImportWithPrivateKeyAndEncryptedPrivateKey_Throws()
+        {
+            string pem = $"""
+            {WritePem("PRIVATE KEY", AlicePkcs8)}
+            {WritePem("ENCRYPTED PRIVATE KEY", AliceEncryptedPkcs8)}
+            """;
+
+            AssertImportFromPem(importer =>
+            {
+                AssertExtensions.Throws<ArgumentException>("source", () => importer(pem));
+            });
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_PrivateKeyAndEncryptedPrivateKey_ImportsEncrypted()
+        {
+            string pem = $"""
+            {WritePem("PRIVATE KEY", AlicePkcs8)}
+            {WritePem("ENCRYPTED PRIVATE KEY", AliceEncryptedPkcs8)}
+            """;
+
+            AssertImportFromEncryptedPem(importer =>
+            {
+                using X25519DiffieHellman xdh = importer(pem, X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword);
+                AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKey, xdh.ExportPrivateKey());
+            });
+        }
+
+        [Fact]
         public static void ImportFromPem_EncryptedPrivateKey_Throws()
         {
             string pem = WritePem("ENCRYPTED PRIVATE KEY", AliceEncryptedPkcs8);
