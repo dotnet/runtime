@@ -978,11 +978,12 @@ DEFINE_FIELD(EXECUTIONCONTEXT,        DEFAULT_FLOW_SUPPRESSED,     DefaultFlowSu
 DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
 
 DEFINE_CLASS(THREAD,                Threading,              Thread)
-DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               SM_PtrThread_RetVoid)
+DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                        SM_PtrThread_RetVoid)
 DEFINE_METHOD(THREAD,               POLLGC,                                  PollGC,                               NoSig)
 DEFINE_METHOD(THREAD,               ON_THREAD_EXITING,                       OnThreadExited,                       SM_PtrThread_PtrException_RetVoid)
+DEFINE_METHOD(THREAD,               GET_CURRENTTHREAD,                       get_CurrentThread,                    NoSig)
 #ifdef FOR_ILLINK
-DEFINE_METHOD(THREAD,               CTOR,                   .ctor,           IM_RetVoid)
+DEFINE_METHOD(THREAD,               CTOR,                                    .ctor,                                IM_RetVoid)
 #endif // FOR_ILLINK
 
 #ifdef FEATURE_OBJCMARSHAL
