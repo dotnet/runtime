@@ -19,11 +19,13 @@ namespace Microsoft.Extensions.Configuration
     // "ref(literal)" in sources that never opt in, untouched.
     //
     // Path expressions inside ref() and inside fmt() placeholders share the same grammar:
-    //   path (? path)*  (!)? (?)?
+    //   path ('?' path)*  ('!')?  ('|' literal-tail)?
     // where each path may have leading ".." segments meaning parent hops. A trailing '!' marks the
     // (single-item) reference as a strict section alias, i.e. the resulting section is exactly the
-    // aliased target with no merging from earlier providers. A trailing '?' makes the whole chain
-    // optional — if every item misses, the expression resolves to the empty string.
+    // aliased target with no merging from earlier providers. A '|' introduces an explicit literal
+    // fallback — if every reference in the chain misses, the expression resolves to the text after
+    // the '|'. A bare '|' with nothing after it makes the expression optional: the result is the
+    // empty string when no reference resolves.
     internal static class ReferenceParser
     {
         private const string RefPrefix = "ref(";
@@ -179,22 +181,25 @@ namespace Microsoft.Extensions.Configuration
                 throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsEmpty, tokenStart));
             }
 
-            // Trailing '!' marks a section reference as strict: the resulting section is exactly the
-            // aliased target, with no merging of earlier providers' keys under the aliased path.
-            bool isStrict = expression[expression.Length - 1] == '!';
-            if (isStrict)
+            // '|' introduces the literal fallback. Everything after the first '|' (verbatim, including
+            // trailing/leading whitespace) is the default value; if it is empty, the expression is
+            // simply optional (empty on miss).
+            string? literalDefault = null;
+            int pipeIndex = expression.IndexOf('|');
+            if (pipeIndex >= 0)
             {
-                expression = expression.Substring(0, expression.Length - 1).TrimEnd();
+                literalDefault = expression.Substring(pipeIndex + 1);
+                expression = expression.Substring(0, pipeIndex).TrimEnd();
                 if (expression.Length == 0)
                 {
                     throw new FormatException(SR.Format(SR.ReferenceResolution_ExpressionIsEmpty, tokenStart));
                 }
             }
 
-            // Trailing '?' marks the chain as optional: if all references fail to resolve, the expression
-            // collapses to empty string instead of throwing. Only valid as a terminal marker.
-            bool isOptional = expression[expression.Length - 1] == '?';
-            if (isOptional)
+            // Trailing '!' marks a section reference as strict: the resulting section is exactly the
+            // aliased target, with no merging of earlier providers' keys under the aliased path.
+            bool isStrict = expression[expression.Length - 1] == '!';
+            if (isStrict)
             {
                 expression = expression.Substring(0, expression.Length - 1).TrimEnd();
                 if (expression.Length == 0)
@@ -237,7 +242,7 @@ namespace Microsoft.Extensions.Configuration
                 i++;
             }
 
-            return ValueToken.Reference(items, isOptional, isStrict, isFromRef);
+            return ValueToken.Reference(items, literalDefault, isStrict, isFromRef);
         }
 
         private static int ParseReferenceItem(string expression, int i, int tokenStart, List<ReferenceItem> items)
@@ -323,23 +328,23 @@ namespace Microsoft.Extensions.Configuration
     {
         private static readonly IReadOnlyList<ReferenceItem> s_noItems = Array.Empty<ReferenceItem>();
 
-        private ValueToken(ValueTokenKind kind, string value, IReadOnlyList<ReferenceItem> items, bool isOptional, bool isStrict, bool isFromRef)
+        private ValueToken(ValueTokenKind kind, string value, IReadOnlyList<ReferenceItem> items, string? literalDefault, bool isStrict, bool isFromRef)
         {
             Kind = kind;
             Value = value;
             Items = items;
-            IsOptional = isOptional;
+            LiteralDefault = literalDefault;
             IsStrict = isStrict;
             IsFromRef = isFromRef;
         }
 
         internal static ValueToken Literal(string text) =>
-            new(ValueTokenKind.Literal, text, s_noItems, isOptional: false, isStrict: false, isFromRef: false);
+            new(ValueTokenKind.Literal, text, s_noItems, literalDefault: null, isStrict: false, isFromRef: false);
 
-        internal static ValueToken Reference(IReadOnlyList<ReferenceItem> items, bool isOptional, bool isStrict, bool isFromRef)
+        internal static ValueToken Reference(IReadOnlyList<ReferenceItem> items, string? literalDefault, bool isStrict, bool isFromRef)
         {
             string first = items.Count > 0 ? items[0].Value : string.Empty;
-            return new ValueToken(ValueTokenKind.Reference, first, items, isOptional, isStrict, isFromRef);
+            return new ValueToken(ValueTokenKind.Reference, first, items, literalDefault, isStrict, isFromRef);
         }
 
         internal ValueTokenKind Kind { get; }
@@ -350,7 +355,14 @@ namespace Microsoft.Extensions.Configuration
 
         internal IReadOnlyList<ReferenceItem> Items { get; }
 
-        internal bool IsOptional { get; }
+        // Non-null iff the expression contained an explicit '|' literal-default tail. The empty
+        // string corresponds to a bare '|' (equivalent to the old "optional" marker — empty on miss).
+        // A non-empty value is emitted verbatim when every reference in Items misses.
+        internal string? LiteralDefault { get; }
+
+        // True when LiteralDefault is non-null: the expression cannot be "unresolvable", it falls
+        // back to LiteralDefault (possibly empty).
+        internal bool HasDefault => LiteralDefault is not null;
 
         internal bool IsStrict { get; }
 

@@ -1037,7 +1037,7 @@ IniKey1=IniValue2");
   },
   ""ConnectionString"": ""fmt({Services:Primary:Protocol}://{User}@{Services:Primary:Host}:{Services:Primary:Port}/{Database?Defaults:Database})"",
   ""Tracing"": {
-    ""Collector"": ""fmt({Tracing:Endpoint?})""
+    ""Collector"": ""fmt({Tracing:Endpoint|})""
   },
   ""Defaults"": {
     ""Database"": ""appdb""
@@ -1084,7 +1084,7 @@ Port = 6543");
             // default-value token — the single ConnectionString pulls from three providers at once.
             Assert.Equal("tcp://admin@primary.example.com:6543/appdb", config["ConnectionString"]);
 
-            // Optional fmt({Tracing:Endpoint?}) resolves to an empty string because the key is missing.
+            // Optional fmt({Tracing:Endpoint|}) resolves to an empty string because the key is missing.
             Assert.Equal(string.Empty, config["Tracing:Collector"]);
 
             // Excluded scan path: the literal reference text is returned as-is (not interpreted,

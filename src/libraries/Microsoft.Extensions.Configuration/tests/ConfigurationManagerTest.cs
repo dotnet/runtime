@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             builder.AddInMemoryCollection(new Dictionary<string, string>
             {
-                ["ServiceUrl"] = "fmt(https://{Host?}fallback)",
+                ["ServiceUrl"] = "fmt(https://{Host|}fallback)",
             });
             builder.EnableReferenceResolution();
 

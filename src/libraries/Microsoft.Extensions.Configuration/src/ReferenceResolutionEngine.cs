@@ -587,9 +587,9 @@ namespace Microsoft.Extensions.Configuration
                     return true;
                 }
 
-                if (token.IsOptional)
+                if (token.HasDefault)
                 {
-                    value = string.Empty;
+                    value = token.LiteralDefault!;
                     return true;
                 }
 

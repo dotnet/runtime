@@ -921,7 +921,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["ServiceUrl"] = "fmt(https://{Host?}fallback)",
+                    ["ServiceUrl"] = "fmt(https://{Host|}fallback)",
                 })
                 .EnableReferenceResolution()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -980,7 +980,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["ServiceUrl"] = "fmt(https://host{Suffix?})",
+                    ["ServiceUrl"] = "fmt(https://host{Suffix|})",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1032,7 +1032,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["Value"] = "ref(A?B?C?)",
+                    ["Value"] = "ref(A?B?C|)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1047,7 +1047,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Primary"] = "hit",
-                    ["Value"] = "ref(Missing?Primary?)",
+                    ["Value"] = "ref(Missing?Primary|)",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1061,6 +1061,9 @@ namespace Microsoft.Extensions.Configuration.Test
         [InlineData("ref(?A)")]
         [InlineData("ref(?)")]
         [InlineData("ref(A??)")]
+        [InlineData("ref(|)")]
+        [InlineData("ref(|literal)")]
+        [InlineData("ref( |literal)")]
         public void EnableReferenceResolutionMalformedExpressionThrows(string raw)
         {
             var config = new ConfigurationBuilder()
@@ -1151,7 +1154,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["TopLevel"] = "fmt(prefix-{..:..:Nothing?}-suffix)",
+                    ["TopLevel"] = "fmt(prefix-{..:..:Nothing|}-suffix)",
                 })
                 .EnableReferenceResolution()
                 .Build();

@@ -145,7 +145,7 @@
     <value>A reference expression at position '{0}' has an empty key.</value>
   </data>
   <data name="ReferenceResolution_KeyNotFound" xml:space="preserve">
-    <value>The reference key '{0}' referenced by '{1}' was not found. Add a fallback reference or mark the chain optional with a trailing '?' (for example 'ref(Key?)').</value>
+    <value>The reference key '{0}' referenced by '{1}' was not found. Add a fallback reference or an explicit default with '|' (for example 'ref(Key|default)' or bare 'ref(Key|)' for empty on miss).</value>
   </data>
   <data name="ReferenceResolution_MaxDepthExceeded" xml:space="preserve">
     <value>Maximum reference-resolution depth '{0}' was exceeded while resolving '{1}'.</value>
