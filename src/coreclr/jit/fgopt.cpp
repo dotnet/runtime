@@ -1040,10 +1040,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
         weight_t incomingLikelyWeight = 0;
         for (FlowEdge* const predEdge : block->PredEdges())
         {
-            if (predEdge->hasLikelihood())
-            {
-                incomingLikelyWeight += predEdge->getLikelyWeight();
-            }
+            incomingLikelyWeight += predEdge->getLikelyWeight();
         }
 
         if (!fgProfileWeightsConsistentOrSmall(block->bbWeight, incomingLikelyWeight))
