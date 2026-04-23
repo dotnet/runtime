@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Internal;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Reflection.Metadata.Ecma335
 {
@@ -556,7 +557,7 @@ namespace System.Reflection.Metadata.Ecma335
                 if (prev.EndsWith(entry.Key, StringComparison.Ordinal) && !char.IsLowSurrogate(entry.Key[0]))
                 {
                     // Map over the tail of prev string. Watch for null-terminator of prev string.
-                    stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position - (BlobUtilities.GetUTF8ByteCount(entry.Key) + 1);
+                    stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position - (Encoding.UTF8.GetByteCount(entry.Key) + 1);
                 }
                 else
                 {

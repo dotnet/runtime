@@ -134,14 +134,6 @@ namespace System.Reflection
             }
         }
 
-        internal static unsafe int GetUTF8ByteCount(string str)
-        {
-            fixed (char* ptr = str)
-            {
-                return GetUTF8ByteCount(ptr, str.Length);
-            }
-        }
-
         internal static unsafe int GetUTF8ByteCount(char* str, int charCount)
         {
             return GetUTF8ByteCount(str, charCount, int.MaxValue, out _);
