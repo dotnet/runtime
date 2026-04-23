@@ -28201,7 +28201,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
 
         if (simdBaseType == TYP_FLOAT)
         {
-            GenTree*       op1Shuffled  = fgMakeMultiUse(&op1);
+            GenTree*       op1Shuffled   = fgMakeMultiUse(&op1);
             NamedIntrinsic permIntrinsic = (simdSize == 64) ? NI_AVX512_Permute4x32 : NI_AVX_Permute;
 
             if ((simdSize > 16) || compOpportunisticallyDependsOn(InstructionSet_AVX))
@@ -28237,7 +28237,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
         }
         else
         {
-            GenTree*       op1Shuffled  = fgMakeMultiUse(&op1);
+            GenTree*       op1Shuffled   = fgMakeMultiUse(&op1);
             NamedIntrinsic permIntrinsic = (simdSize == 64) ? NI_AVX512_Permute2x64 : NI_AVX_Permute;
 
             if ((simdSize > 16) || compOpportunisticallyDependsOn(InstructionSet_AVX))
