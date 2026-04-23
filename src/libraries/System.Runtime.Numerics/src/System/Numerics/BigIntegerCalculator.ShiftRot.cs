@@ -68,7 +68,7 @@ namespace System.Numerics
             SwapUpperAndLower(bits, digitShift);
         }
 
-        private static void SwapUpperAndLower(Span<nuint> bits, int lowerLength)
+        public static void SwapUpperAndLower(Span<nuint> bits, int lowerLength)
         {
             Debug.Assert(lowerLength > 0);
             Debug.Assert(lowerLength < bits.Length);
@@ -99,10 +99,9 @@ namespace System.Numerics
             tmpBuffer.Dispose();
         }
 
-        // 32-bit word helpers for the partial-limb edge case on 64-bit.
-        // When the last nuint limb has only 32 significant bits, the rotation ring
-        // width is not a multiple of BitsPerLimb. Shift and swap must then operate
-        // at 32-bit word granularity because the swap point may fall mid-nuint.
+        // 32-bit word digit-swap for the partial-limb edge case on 64-bit.
+        // When the rotation ring has an odd number of 32-bit words, the digit-swap
+        // boundary may fall mid-nuint, so the swap must operate at uint granularity.
 
         public static void SwapUpperAndLower(Span<uint> bits, int lowerLength)
         {
@@ -136,127 +135,6 @@ namespace System.Numerics
             }
 
             tmpBuffer.Dispose();
-        }
-
-        /// <summary>
-        /// Left-shifts a span of 32-bit words, returning the bits that shifted out of the top word.
-        /// Delegates to the SIMD-accelerated <c>LeftShiftSelf(Span&lt;nuint&gt;, ...)</c>
-        /// overload where possible; the carry is always extracted at 32-bit word granularity.
-        /// </summary>
-        public static void LeftShiftSelf(Span<uint> bits, int shift, out uint carry)
-        {
-            Debug.Assert((uint)shift < 32);
-
-            carry = 0;
-            if (shift == 0 || bits.IsEmpty)
-            {
-                return;
-            }
-
-            int back = 32 - shift;
-            carry = bits[^1] >> back;
-
-            if (!Environment.Is64BitProcess)
-            {
-                // On 32-bit, nuint and uint are the same size; delegate directly.
-                Span<nuint> view = MemoryMarshal.Cast<uint, nuint>(bits);
-                LeftShiftSelf(view, shift, out _);
-                return;
-            }
-
-            if (BitConverter.IsLittleEndian && bits.Length >= 2)
-            {
-                // On 64-bit LE, shifting a Span<uint> produces identical bit-level
-                // results to shifting the same memory as Span<nuint>, because the
-                // carry propagation within each nuint matches the uint-to-uint carry.
-                int evenCount = bits.Length & ~1;
-                Span<nuint> nuintView = MemoryMarshal.Cast<uint, nuint>(bits.Slice(0, evenCount));
-                LeftShiftSelf(nuintView, shift, out nuint nuintCarry);
-
-                if ((bits.Length & 1) != 0)
-                {
-                    bits[^1] = (bits[^1] << shift) | (uint)nuintCarry;
-                }
-
-                return;
-            }
-
-            // Scalar fallback for big-endian 64-bit.
-            {
-                uint c = 0;
-                for (int i = 0; i < bits.Length; i++)
-                {
-                    uint value = c | bits[i] << shift;
-                    c = bits[i] >> back;
-                    bits[i] = value;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Right-shifts a span of 32-bit words, returning the bits that shifted out of the bottom word.
-        /// Delegates to the SIMD-accelerated <c>RightShiftSelf(Span&lt;nuint&gt;, ...)</c>
-        /// overload where possible; the carry is always extracted at 32-bit word granularity.
-        /// </summary>
-        public static void RightShiftSelf(Span<uint> bits, int shift, out uint carry)
-        {
-            Debug.Assert((uint)shift < 32);
-
-            carry = 0;
-            if (shift == 0 || bits.IsEmpty)
-            {
-                return;
-            }
-
-            int back = 32 - shift;
-            carry = bits[0] << back;
-
-            if (!Environment.Is64BitProcess)
-            {
-                // On 32-bit, nuint and uint are the same size; delegate directly.
-                Span<nuint> view = MemoryMarshal.Cast<uint, nuint>(bits);
-                RightShiftSelf(view, shift, out _);
-                return;
-            }
-
-            if (BitConverter.IsLittleEndian && bits.Length >= 2)
-            {
-                // On 64-bit LE, right-shifting Span<uint> produces identical bit-level
-                // results to right-shifting the same memory as Span<nuint>.
-                int evenCount = bits.Length & ~1;
-
-                if ((bits.Length & 1) != 0)
-                {
-                    // Handle the odd highest uint first, then shift the lower even portion.
-                    uint carryDown = bits[^1] << back;
-                    bits[^1] >>= shift;
-
-                    Span<nuint> nuintView = MemoryMarshal.Cast<uint, nuint>(bits.Slice(0, evenCount));
-                    RightShiftSelf(nuintView, shift, out _);
-
-                    // Inject carry from the odd top element into the upper half of the
-                    // highest nuint (which is bits[evenCount-1] on LE).
-                    bits[evenCount - 1] |= carryDown;
-                }
-                else
-                {
-                    Span<nuint> nuintView = MemoryMarshal.Cast<uint, nuint>(bits);
-                    RightShiftSelf(nuintView, shift, out _);
-                }
-
-                return;
-            }
-
-            // Scalar fallback for big-endian 64-bit.
-            {
-                uint c = 0;
-                for (int i = bits.Length - 1; i >= 0; i--)
-                {
-                    uint value = c | bits[i] >> shift;
-                    c = bits[i] << back;
-                    bits[i] = value;
-                }
-            }
         }
 
         public static void LeftShiftSelf(Span<nuint> bits, int shift, out nuint carry)
