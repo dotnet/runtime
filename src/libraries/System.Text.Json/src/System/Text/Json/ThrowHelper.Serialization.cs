@@ -950,6 +950,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(Type baseType, Type derivedType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_OpenGenericDerivedTypeNotSupported, derivedType, baseType));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_DerivedTypeIsAlreadySpecified(Type baseType, Type derivedType)
         {
             throw new InvalidOperationException(SR.Format(SR.Polymorphism_DerivedTypeIsAlreadySpecified, baseType, derivedType));

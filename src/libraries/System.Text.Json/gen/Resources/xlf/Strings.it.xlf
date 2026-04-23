@@ -132,6 +132,16 @@
         <target state="translated">Nel tipo sono presenti più membri annotati con JsonExtensionDataAttribute.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeNotSupportedMessageFormat">
+        <source>The open generic type '{0}' cannot be used as a derived type for the non-generic polymorphic type '{1}'. The base type must be generic to resolve open generic derived types.</source>
+        <target state="new">The open generic type '{0}' cannot be used as a derived type for the non-generic polymorphic type '{1}'. The base type must be generic to resolve open generic derived types.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeNotSupportedTitle">
+        <source>Open generic derived type is not supported on a non-generic base type.</source>
+        <target state="new">Open generic derived type is not supported on a non-generic base type.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">
         <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
         <target state="translated">Il tipo '{0}' include un riferimento come la proprietà, il campo o il parametro del costruttore '{1}'. Non verrà generato codice sorgente per la proprietà, il campo o il costruttore.</target>

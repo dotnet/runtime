@@ -847,7 +847,21 @@ namespace System.Text.Json.SourceGeneration
                     {
                         Debug.Assert(attributeData.ConstructorArguments.Length > 0);
                         var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
-                        EnqueueType(derivedType, typeToGenerate.Mode);
+
+                        // Open generic derived types (e.g. typeof(Derived<>)) are resolved at runtime
+                        // based on the constructed base type's type arguments.
+                        // Skip enqueueing them for source generation.
+                        if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true })
+                        {
+                            if (typeToGenerate.Type is not INamedTypeSymbol { IsGenericType: true })
+                            {
+                                ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeNotSupported, typeToGenerate.Location, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
+                            }
+                        }
+                        else
+                        {
+                            EnqueueType(derivedType, typeToGenerate.Mode);
+                        }
 
                         if (!isPolymorphic && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
                         {

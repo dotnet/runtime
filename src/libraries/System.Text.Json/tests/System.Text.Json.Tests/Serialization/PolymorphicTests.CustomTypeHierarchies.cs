@@ -2638,10 +2638,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task PolymorphicGenericClass_ThrowsInvalidOperationException()
+        public async Task PolymorphicGenericClass_SupportsOpenGenericDerivedType()
         {
             PolymorphicGenericClass<int> value = new PolymorphicGenericClass<int>.DerivedClass();
-            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("{}", json);
         }
 
         [JsonDerivedType(typeof(PolymorphicGenericClass<>.DerivedClass))]

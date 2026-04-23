@@ -207,4 +207,10 @@
   <data name="JsonIgnoreConditionAlwaysInvalidOnTypeFormat" xml:space="preserve">
     <value>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</value>
   </data>
+  <data name="OpenGenericDerivedTypeNotSupportedTitle" xml:space="preserve">
+    <value>Open generic derived type is not supported on a non-generic base type.</value>
+  </data>
+  <data name="OpenGenericDerivedTypeNotSupportedMessageFormat" xml:space="preserve">
+    <value>The open generic type '{0}' cannot be used as a derived type for the non-generic polymorphic type '{1}'. The base type must be generic to resolve open generic derived types.</value>
+  </data>
 </root>

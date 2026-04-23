@@ -132,6 +132,16 @@
         <target state="translated">型には、'JsonExtensionDataAttribute' に注釈が付けられた複数のメンバーが含まれます。</target>
         <note />
       </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeNotSupportedMessageFormat">
+        <source>The open generic type '{0}' cannot be used as a derived type for the non-generic polymorphic type '{1}'. The base type must be generic to resolve open generic derived types.</source>
+        <target state="new">The open generic type '{0}' cannot be used as a derived type for the non-generic polymorphic type '{1}'. The base type must be generic to resolve open generic derived types.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeNotSupportedTitle">
+        <source>Open generic derived type is not supported on a non-generic base type.</source>
+        <target state="new">Open generic derived type is not supported on a non-generic base type.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">
         <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
         <target state="translated">型 '{0}' には、プロパティ、フィールド、コンストラクター パラメーター '{1}' などの ref が含まれます。プロパティ、フィールド、またはコンストラクターのソース コードは生成されません。</target>
