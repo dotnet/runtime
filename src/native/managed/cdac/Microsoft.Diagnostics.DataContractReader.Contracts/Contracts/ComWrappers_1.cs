@@ -56,7 +56,7 @@ internal struct ComWrappers_1 : IComWrappers
         if (!GetComWrappersCCWVTableQIAddress(ccw, out _, out TargetPointer qiAddress))
             return false;
 
-        if (!_target.TryReadPointer(Constants.Globals.ComWrappersVtablePtrs, out TargetPointer? comWrappersVtablePtrs))
+        if (!_target.TryReadGlobalPointer(Constants.Globals.ComWrappersVtablePtrs, out TargetPointer? comWrappersVtablePtrs))
             return false;
         Data.ComWrappersVtablePtrs comWrappersVtableStruct = _target.ProcessedData.GetOrAdd<Data.ComWrappersVtablePtrs>(comWrappersVtablePtrs.Value);
         return comWrappersVtableStruct.ComWrappersInterfacePointers.Contains(CodePointerUtils.CodePointerFromAddress(qiAddress, _target));
