@@ -685,6 +685,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerReturnSuspend(node);
             break;
 
+        case GT_NONLOCAL_JMP:
+            ContainCheckNonLocalJmp(node->AsUnOp());
+            break;
+
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
         case GT_CNS_MSK:
             return LowerCnsMask(node->AsMskCon());
@@ -5941,11 +5945,28 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             if (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size())
             {
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
-                unsigned tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
-                m_compiler->lvaSetStruct(tmpNum, m_compiler->info.compMethodInfo->args.retTypeClass, false);
 
-                ReplaceWithLclVar(retValUse, tmpNum);
-                LowerRetSingleRegStructLclVar(ret);
+                // Ensure that the retval is actually a struct - otherwise the ReplaceWithLclVar below
+                // will fail due to assigning a non-struct to a struct local
+                if (retVal->TypeGet() == TYP_STRUCT)
+                {
+                    unsigned tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
+                    m_compiler->lvaSetStruct(tmpNum, m_compiler->info.compMethodInfo->args.retTypeClass, false);
+
+                    ReplaceWithLclVar(retValUse, tmpNum);
+                    LowerRetSingleRegStructLclVar(ret);
+                }
+                else
+                {
+                    // We have a non-struct return value that needs to be widened, but we can't widen the
+                    // indirection safely since that could cause the read to overrun the end of a buffer.
+                    // Instead, wrap the indirection in a cast to zero extend it.
+                    GenTreeCast* cast = m_compiler->gtNewCastNode(nativeReturnType, retVal, true, TypeGet(retVal));
+                    assert(cast->IsZeroExtending());
+                    BlockRange().InsertBefore(ret, cast);
+                    ContainCheckCast(cast);
+                    retValUse.ReplaceWith(cast);
+                }
                 break;
             }
 
@@ -9905,6 +9926,9 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckHWIntrinsic(node->AsHWIntrinsic());
             break;
 #endif // FEATURE_HW_INTRINSICS
+        case GT_NONLOCAL_JMP:
+            ContainCheckNonLocalJmp(node->AsUnOp());
+            break;
         default:
             break;
     }

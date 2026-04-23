@@ -8,6 +8,7 @@
 
 #include "fgwasm.h"
 #include "algorithm.h"
+#include "lower.h" // for LowerRange()
 
 //------------------------------------------------------------------------
 //  WasmSuccessorEnumerator: Construct an instance of the enumerator.
@@ -2226,14 +2227,13 @@ PhaseStatus Compiler::fgWasmEhFlow()
     }
 
     // Allocate an exposed int local to hold the catchret number.
-    // TODO-WASM: possibly share this with the "virtual IP"
-    // TODO-WASM: this will need to be at a known offset from $fp so runtime can set it
-    //   when control will not resume in this method.
     // We do not want any opts acting on this local (eg jump threading)
     //
-    unsigned const catchRetIndexLocalNum      = lvaGrabTemp(true DEBUGARG("Wasm EH catchret index"));
-    lvaGetDesc(catchRetIndexLocalNum)->lvType = TYP_INT;
-    lvaSetVarAddrExposed(catchRetIndexLocalNum DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
+    unsigned const resumeIPLocalNum      = lvaGrabTemp(true DEBUGARG("Wasm Resume IP"));
+    lvaGetDesc(resumeIPLocalNum)->lvType = TYP_INT;
+    lvaSetVarAddrExposed(resumeIPLocalNum DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
+
+    lvaWasmResumeIP = resumeIPLocalNum;
 
     // Now for each region with continuations, add a branch at region entry that
     // branches to a switch to transfer control to the continuations.
@@ -2243,7 +2243,7 @@ PhaseStatus Compiler::fgWasmEhFlow()
     {
         if (catchRetBlocks != nullptr)
         {
-            fgWasmEhTransformTry(catchRetBlocks, regionIndex, catchRetIndexLocalNum);
+            fgWasmEhTransformTry(catchRetBlocks, regionIndex, resumeIPLocalNum);
         }
 
         regionIndex++;
@@ -2260,10 +2260,10 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
         for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
         {
-            JITDUMP("Setting control variable V%02u to %u in " FMT_BB "\n", catchRetIndexLocalNum,
+            JITDUMP("Setting control variable V%02u to %u in " FMT_BB "\n", resumeIPLocalNum,
                     catchRetBlock->bbPreorderNum, catchRetBlock->bbNum);
             GenTree* const valueNode = gtNewIconNode(catchRetBlock->bbPreorderNum);
-            GenTree* const storeNode = gtNewStoreLclVarNode(catchRetIndexLocalNum, valueNode);
+            GenTree* const storeNode = gtNewStoreLclVarNode(resumeIPLocalNum, valueNode);
 
             LIR::Range range = LIR::SeqTree(this, storeNode);
             LIR::InsertBeforeTerminator(catchRetBlock, std::move(range));
@@ -2281,11 +2281,11 @@ PhaseStatus Compiler::fgWasmEhFlow()
 // Arguments:
 //    catchRetBlocks        - the catch-return blocks for this try region
 //    regionIndex           - the EH region index of the try
-//    catchRetIndexLocalNum - the local variable number holding the catchret index
+//    resumeIPLocalNum      - the local variable number holding the resume IP
 //
 void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
                                     unsigned                 regionIndex,
-                                    unsigned                 catchRetIndexLocalNum)
+                                    unsigned                 resumeIPLocalNum)
 {
     assert(catchRetBlocks->Height() > 0);
 
@@ -2446,7 +2446,7 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     // Build the IR for the switch
     //
     GenTree* const biasValue          = gtNewIconNode(caseBias);
-    GenTree* const controlVar2        = gtNewLclvNode(catchRetIndexLocalNum, TYP_INT);
+    GenTree* const controlVar2        = gtNewLclvNode(resumeIPLocalNum, TYP_INT);
     GenTree* const adjustedControlVar = gtNewOperNode(GT_SUB, TYP_INT, controlVar2, biasValue);
     GenTree* const switchNode         = gtNewOperNode(GT_SWITCH, TYP_VOID, adjustedControlVar);
     {
@@ -2461,4 +2461,238 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         LIR::Range range = LIR::SeqTree(this, rethrowNode);
         LIR::AsRange(rethrowBlock).InsertAtEnd(std::move(range));
     }
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmVirtualIP: set up virtual IP mapping for EH and calls
+//
+// Returns:
+//   suitable phase status
+//
+// Notes:
+//   We run this before fgWasmControlFlow, so that a linear walk of the
+//   blocks enumerates all the calls and regions in properly nested order.
+//
+PhaseStatus Compiler::fgWasmVirtualIP()
+{
+    unsigned virtualIP    = 0;
+    unsigned updatesAdded = 0;
+
+    // Prefill the EH data fields that are not dependent on
+    // the Virtual IP.
+    //
+    EHClauseInfo* clauses = nullptr;
+
+    if (compHndBBtabCount > 0)
+    {
+        clauses = new (this, CMK_WasmEH) EHClauseInfo[compHndBBtabCount];
+
+        for (EHblkDsc* const dsc : EHClauses(this))
+        {
+            const unsigned    index = ehGetIndex(dsc);
+            CORINFO_EH_CLAUSE clause;
+            clause.ClassToken    = dsc->HasFilter() ? 0 : dsc->ebdTyp;
+            clause.Flags         = ToCORINFO_EH_CLAUSE_FLAGS(dsc->ebdHandlerType);
+            clause.TryOffset     = 0;
+            clause.TryLength     = 0;
+            clause.HandlerOffset = 0;
+            clause.HandlerLength = 0;
+            clauses[index]       = {clause, dsc};
+        }
+    }
+
+    fgWasmEHInfo = clauses;
+
+    // Get the local num For the Virtual IP.
+    // Create it if needed.
+    //
+    auto getVirtualIPLclNum = [&]() {
+        if (lvaWasmVirtualIP != BAD_VAR_NUM)
+        {
+            return lvaWasmVirtualIP;
+        }
+
+        lvaWasmVirtualIP                                     = lvaGrabTemp(true DEBUGARG("Wasm Virtual IP"));
+        lvaGetDesc(lvaWasmVirtualIP)->lvType                 = TYP_INT;
+        lvaGetDesc(lvaWasmVirtualIP)->lvImplicitlyReferenced = true;
+        lvaSetVarAddrExposed(lvaWasmVirtualIP DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
+
+        // We'll also need a local for the function index, so create it now as well.
+        //
+        lvaWasmFunctionIndex                                     = lvaGrabTemp(true DEBUGARG("Wasm Function Index"));
+        lvaGetDesc(lvaWasmFunctionIndex)->lvType                 = TYP_INT;
+        lvaGetDesc(lvaWasmFunctionIndex)->lvImplicitlyReferenced = true;
+        lvaSetVarAddrExposed(lvaWasmFunctionIndex DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
+
+        return lvaWasmVirtualIP;
+    };
+
+    // Insert code to update the virtual IP on the stack frame before `beforeNode`.
+    // If `beforeNode` is null, insert at the start of the block.
+    //
+    // In funclet regions we update $sp[4] (on the funclet frame)
+    // by storing indirect through the SP local sym. This sym reference
+    // will be translated by RA to refer to the funclet's $sp.
+    //
+    // In the main method we update the VirtualIP local
+    // (which will end up at $fp[4]).
+    //
+    auto updateVirtualIPOnFrame = [&](FuncInfoDsc* func, BasicBlock* block, GenTree* beforeNode = nullptr) {
+        const unsigned virtualIPlclNum = getVirtualIPLclNum();
+        GenTree* const virtualIPValue  = gtNewIconNode(virtualIP);
+        GenTree*       setVirtualIP    = nullptr;
+
+        if (func->IsFunclet())
+        {
+            func->ensureUnwindableFrame(this);
+
+            GenTree* const spLocal = gtNewLclVarNode(lvaWasmSpArg, TYP_I_IMPL);
+            GenTree* const virtualIPslotAddr =
+                gtNewOperNode(GT_ADD, TYP_I_IMPL, spLocal, gtNewIconNode(TARGET_POINTER_SIZE));
+            GenTreeFlags indirFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
+            setVirtualIP            = gtNewStoreIndNode(TYP_INT, virtualIPslotAddr, virtualIPValue, indirFlags);
+        }
+        else
+        {
+            setVirtualIP = gtNewStoreLclVarNode(virtualIPlclNum, virtualIPValue);
+        }
+
+        LIR::Range     range     = LIR::SeqTree(this, setVirtualIP);
+        GenTree* const firstNode = range.FirstNode();
+        GenTree* const lastNode  = range.LastNode();
+
+        if (beforeNode != nullptr)
+        {
+            LIR::AsRange(block).InsertBefore(beforeNode, std::move(range));
+        }
+        else
+        {
+            LIR::AsRange(block).InsertAtBeginning(std::move(range));
+        }
+
+        LIR::ReadOnlyRange blockRange(firstNode, lastNode);
+        m_pLowering->LowerRange(block, blockRange);
+
+        updatesAdded++;
+    };
+
+    for (FuncInfoDsc* const func : Funcs())
+    {
+        for (BasicBlock* const block : func->Blocks(this))
+        {
+            EHblkDsc* const hndDsc = ehGetBlockHndDsc(block);
+            EHblkDsc* const tryDsc = ehGetBlockTryDsc(block);
+
+            // Bump the virtual IP each time we enter a new region.
+            //
+            if ((tryDsc != nullptr) && (block == tryDsc->ebdTryBeg))
+            {
+                virtualIP++;
+                clauses[block->getTryIndex()].clause.TryOffset = virtualIP;
+
+                // Multiple try regions can begin at the same block.
+                // Update all of their offsets here.
+                //
+                for (EHblkDsc* const enclosingDsc : EHClauses(this, tryDsc))
+                {
+                    if (enclosingDsc->ebdTryBeg == block)
+                    {
+                        // These should be mutual-protect trys.
+                        //
+                        assert(EHblkDsc::ebdIsSameTry(tryDsc, enclosingDsc));
+                        const unsigned enclosingIndex            = ehGetIndex(enclosingDsc);
+                        clauses[enclosingIndex].clause.TryOffset = virtualIP;
+                    }
+                }
+            }
+
+            if ((hndDsc != nullptr) && (block == hndDsc->ebdHndBeg))
+            {
+                virtualIP++;
+                clauses[block->getHndIndex()].clause.HandlerOffset = virtualIP;
+            }
+
+            if ((hndDsc != nullptr) && hndDsc->HasFilter() && (block == hndDsc->ebdFilter))
+            {
+                virtualIP++;
+                // For filters we store the offset in the class token field.
+                //
+                clauses[block->getHndIndex()].clause.ClassToken = virtualIP;
+            }
+
+            // For now, just refresh the stack Virtual IP at the start of each non-empty
+            // block (later we can refine this to something like: blocks that have calls
+            // or will inspire calls during codegen).
+            //
+            if (!block->isEmpty())
+            {
+                updateVirtualIPOnFrame(func, block);
+            }
+
+            // If this is the end of the region, update its extent.
+            // (note TryLength and HandlerLength are actually interpreted as the end offset).
+            //
+            if ((tryDsc != nullptr) && (block == tryDsc->ebdTryLast))
+            {
+                virtualIP++;
+                assert(virtualIP > clauses[block->getTryIndex()].clause.TryOffset);
+                clauses[block->getTryIndex()].clause.TryLength = virtualIP;
+
+                // Multiple try regions can end at the same block.
+                // Update all of their extents here.
+                //
+                // These do not have to be mutual-protect trys.
+                //
+                for (EHblkDsc* const enclosingDsc : EHClauses(this, tryDsc))
+                {
+                    if (enclosingDsc->ebdTryLast == block)
+                    {
+                        const unsigned enclosingIndex = ehGetIndex(enclosingDsc);
+                        assert(virtualIP > clauses[enclosingIndex].clause.TryOffset);
+                        clauses[enclosingIndex].clause.TryLength = virtualIP;
+                    }
+                }
+            }
+
+            if ((hndDsc != nullptr) && (block == hndDsc->ebdHndLast))
+            {
+                virtualIP++;
+                assert(virtualIP > clauses[block->getHndIndex()].clause.HandlerOffset);
+                clauses[block->getHndIndex()].clause.HandlerLength = virtualIP;
+            }
+
+            if ((hndDsc != nullptr) && hndDsc->HasFilter() && (block->Next() == hndDsc->ebdHndBeg))
+            {
+                // Filter length is implicit
+                virtualIP++;
+            }
+        }
+    }
+
+#ifdef DEBUG
+    if (compHndBBtabCount > 0)
+    {
+        // Describe the EH clause info...
+        //
+        JITDUMP("EH virtual IP ranges\n");
+        for (EHblkDsc* const dsc : EHClauses(this))
+        {
+            const unsigned index = ehGetIndex(dsc);
+
+            JITDUMP("EH#%02u: Try [%04u..%04u)", index, clauses[index].clause.TryOffset,
+                    clauses[index].clause.TryLength);
+
+            if (dsc->HasFilter())
+            {
+                JITDUMP(" Filter [%04u..%04u)\n", clauses[index].clause.ClassToken,
+                        clauses[index].clause.HandlerOffset);
+            }
+
+            JITDUMP(" Handler [%04u..%04u)\n", clauses[index].clause.HandlerOffset,
+                    clauses[index].clause.HandlerLength);
+        }
+    }
+#endif // DEBUG
+
+    return updatesAdded == 0 ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
 }

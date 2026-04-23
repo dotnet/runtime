@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
+using SourceGenerators.Tests;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
@@ -87,7 +88,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                     }));
             var analyzerOptions = new AnalyzerOptions(
                 additionalFiles: additionalFiles?.ToImmutableArray() ?? ImmutableArray<AdditionalText>.Empty,
-                new SimpleAnalyzerOptions(globalAnalyzerOptions));
+                new GlobalOptionsOnlyProvider(CreateGlobalOptions(globalAnalyzerOptions)));
 
             var exceptionDiagnostics = new List<Diagnostic>();
 
@@ -103,40 +104,16 @@ namespace ILLink.RoslynAnalyzer.Tests
             return (new CompilationWithAnalyzers(comp, SupportedDiagnosticAnalyzers, compWithAnalyzerOptions), comp.GetSemanticModel(src), exceptionDiagnostics);
         }
 
-        sealed class SimpleAnalyzerOptions : AnalyzerConfigOptionsProvider
+        private static DictionaryAnalyzerConfigOptions CreateGlobalOptions((string, string)[]? globalOptions)
         {
-            public SimpleAnalyzerOptions((string, string)[]? globalOptions)
+            if (globalOptions is null or { Length: 0 })
             {
-                globalOptions ??= Array.Empty<(string, string)>();
-                GlobalOptions = new SimpleAnalyzerConfigOptions(ImmutableDictionary.CreateRange(
-                    StringComparer.OrdinalIgnoreCase,
-                    globalOptions.Select(x => new KeyValuePair<string, string>(x.Item1, x.Item2))));
+                return DictionaryAnalyzerConfigOptions.Empty;
             }
 
-            public override AnalyzerConfigOptions GlobalOptions { get; }
-
-            public override AnalyzerConfigOptions GetOptions(SyntaxTree tree)
-                => SimpleAnalyzerConfigOptions.Empty;
-
-            public override AnalyzerConfigOptions GetOptions(AdditionalText textFile)
-                => SimpleAnalyzerConfigOptions.Empty;
-
-            sealed class SimpleAnalyzerConfigOptions : AnalyzerConfigOptions
-            {
-                public static readonly SimpleAnalyzerConfigOptions Empty = new SimpleAnalyzerConfigOptions(ImmutableDictionary<string, string>.Empty);
-
-                private readonly ImmutableDictionary<string, string> _dict;
-                public SimpleAnalyzerConfigOptions(ImmutableDictionary<string, string> dict)
-                {
-                    _dict = dict;
-                }
-
-                // Suppress warning about missing nullable attributes
-#pragma warning disable 8765
-                public override bool TryGetValue(string key, out string? value)
-                    => _dict.TryGetValue(key, out value);
-#pragma warning restore 8765
-            }
+            return new DictionaryAnalyzerConfigOptions(ImmutableDictionary.CreateRange(
+                StringComparer.OrdinalIgnoreCase,
+                globalOptions.Select(x => new KeyValuePair<string, string>(x.Item1, x.Item2))));
         }
     }
 }

@@ -1554,11 +1554,6 @@ BOOL TypeHandle::NotifyDebuggerLoad(BOOL attaching) const
         return FALSE;
     }
 
-    if (!GetModule()->IsVisibleToDebugger())
-    {
-        return FALSE;
-    }
-
     return g_pDebugInterface->LoadClass(
         *this, GetCl(), GetModule());
 }
@@ -1567,9 +1562,6 @@ BOOL TypeHandle::NotifyDebuggerLoad(BOOL attaching) const
 void TypeHandle::NotifyDebuggerUnload() const
 {
     LIMITED_METHOD_CONTRACT;
-
-    if (!GetModule()->IsVisibleToDebugger())
-        return;
 
     if (!AppDomain::GetCurrentDomain()->IsDebuggerAttached())
         return;

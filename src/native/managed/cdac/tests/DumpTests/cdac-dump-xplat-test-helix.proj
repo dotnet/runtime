@@ -18,6 +18,7 @@
       TestHostPayload    — Path to testhost shared framework directory
       DumpTestsPayload   — Path to payload directory (tests/ + dumps/)
       TargetOS           — Target OS (windows, linux, osx)
+      TargetArchitecture — Target architecture (x64, x86, arm64, arm)
       SourcePlatforms    — Semicolon-separated source platform names
                            (e.g. "windows_x64;linux_x64;osx_arm64")
   -->
@@ -97,7 +98,7 @@
     <WriteLinesToFile File="$(_HelixCommandFile)" Lines="@(_HelixCommandLines)" Overwrite="true" />
 
     <ItemGroup>
-      <HelixWorkItem Include="CdacXPlatDumpTests_%(_SourcePlatform.Identity)">
+      <HelixWorkItem Include="CdacXPlatDumpTests_host_$(TargetOS)_$(TargetArchitecture)_dumps_%(_SourcePlatform.Identity)">
         <PayloadDirectory>$(DumpTestsPayload)</PayloadDirectory>
         <Command>$([System.IO.File]::ReadAllText('$(_HelixCommandFile)'))</Command>
         <Timeout>$(WorkItemTimeout)</Timeout>
