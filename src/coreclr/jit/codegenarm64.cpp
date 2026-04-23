@@ -5663,6 +5663,14 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
     genRestoreRegPair(REG_FP, REG_LR, REG_FP, 0, 0, false, REG_IP1, nullptr,
                       /* reportUnwindData */ false);
 
+    if (JitConfig.JitPacEnabled() != 0)
+    {
+        // The Tier0 frame saved LR signed with its own SP. Strip it here so the
+        // OSR prolog can re-sign LR with the OSR frame's SP via PACIASP.
+        // TODO-PAC: Authenticate the LR instead of stripping. Need to calculate correct SP for it.
+        GetEmitter()->emitIns(INS_xpaclri);
+    }
+
     // Emit phantom unwind data for the tier0 frame.
     m_compiler->unwindAllocStack(patchpointInfo->TotalFrameSize());
     // Emit nops to make the prolog 1:1 in unwind codes to instructions. This
