@@ -25,6 +25,7 @@ namespace ILLink.Shared.TrimAnalysis
         private readonly ISymbol _owningSymbol;
         private readonly IOperation _operation;
         private readonly ReflectionAccessAnalyzer _reflectionAccessAnalyzer;
+        private readonly TypeNameResolver _typeNameResolver;
         private ValueSetLattice<SingleValue> _multiValueLattice;
 
         public HandleCallAction(
@@ -43,6 +44,7 @@ namespace ILLink.Shared.TrimAnalysis
             _diagnosticContext = new DiagnosticContext(location, reportDiagnostic);
             _annotations = FlowAnnotations.Instance;
             _reflectionAccessAnalyzer = new(reportDiagnostic, typeNameResolver, typeHierarchyType: null);
+            _typeNameResolver = typeNameResolver;
             _requireDynamicallyAccessedMembersAction = new(trimAnalyzer, featureContext, typeNameResolver, location, reportDiagnostic, _reflectionAccessAnalyzer, _owningSymbol);
             _multiValueLattice = multiValueLattice;
         }
@@ -282,6 +284,21 @@ namespace ILLink.Shared.TrimAnalysis
             // it typically only sees reference assemblies and thus just public API. It's not worth (at least for now) to try to resolve
             // the assembly name and type name as it should be rare this is actually ever used and even rarer to have problems (Warnings).
             // In any case the trimmer will process this correctly as it has a global view.
+            resolvedType = default;
+            return false;
+        }
+
+        private partial string GetAssemblyName(TypeProxy type)
+            => type.Type.ContainingAssembly?.Name ?? string.Empty;
+
+        private partial bool TryResolveTypeNameInAssemblyAndMark(string assemblyName, string typeName, out TypeProxy resolvedType)
+        {
+            if (_typeNameResolver.TryResolveTypeNameInAssembly(assemblyName, typeName, out ITypeSymbol? foundType))
+            {
+                resolvedType = new TypeProxy(foundType);
+                return true;
+            }
+
             resolvedType = default;
             return false;
         }

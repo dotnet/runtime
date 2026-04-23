@@ -304,6 +304,30 @@ namespace ILLink.Shared.TrimAnalysis
             return true;
         }
 
+        private partial string GetAssemblyName(TypeProxy type)
+            => type.Type.Module.Assembly.Name.Name;
+
+        private partial bool TryResolveTypeNameInAssemblyAndMark(string assemblyName, string typeName, out TypeProxy resolvedType)
+        {
+            var resolvedAssembly = _context.TryResolve(assemblyName);
+            if (resolvedAssembly is null)
+            {
+                resolvedType = default;
+                return false;
+            }
+
+            // Note: the underlying resolver falls back to corelib for unqualified type names.
+            // Assembly.GetType only searches the receiver assembly at runtime, so this may over-resolve.
+            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, out TypeReference? foundType))
+            {
+                resolvedType = default;
+                return false;
+            }
+
+            resolvedType = new TypeProxy(foundType, _context);
+            return true;
+        }
+
         private partial void MarkStaticConstructor(TypeProxy type)
             => _reflectionMarker.MarkStaticConstructor(_diagnosticContext.Origin, type.Type);
 
