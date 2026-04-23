@@ -647,6 +647,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// on the given type info. This uses <see cref="Type.MakeGenericType"/> and is only safe
         /// for the reflection-based resolver path (not source generator / AOT).
         /// </summary>
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static void ResolveOpenGenericDerivedTypes(JsonTypeInfo typeInfo)
         {
             Type baseType = typeInfo.Type;
@@ -701,12 +703,8 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-            Justification = "The types being constructed are derived types explicitly declared as polymorphic by the user.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The call to GetInterfaces is used to find the inheritance relationship between the derived type and the base type definition.")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "Open generic derived type resolution is only performed by the reflection-based DefaultJsonTypeInfoResolver. The source generator resolves these at compile time.")]
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static bool TryResolveOpenGenericDerivedType(
             Type openDerivedType,
             Type baseTypeDefinition,
