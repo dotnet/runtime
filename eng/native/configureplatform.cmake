@@ -507,6 +507,7 @@ else()
             add_link_options(-Wl,--error-limit=0)
 
             add_link_options(-nostdlib)
+            add_link_options(-lbulkmemory)
             add_link_options(-lstubs)
             add_link_options(-lc)
             add_link_options(-lmalloc)
