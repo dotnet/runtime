@@ -343,7 +343,8 @@ namespace Microsoft.Win32.SafeHandles
                             var (handle, tcs) = ((SafeProcessHandle, TaskCompletionSource<bool>))state!;
                             try
                             {
-                                handle.Canceled = handle.SignalCore(PosixSignal.SIGKILL);
+                                handle.Canceled = true;
+                                handle.SignalCore(PosixSignal.SIGKILL);
                             }
                             catch (Exception ex)
                             {

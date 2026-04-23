@@ -1714,6 +1714,15 @@ struct FuncInfoDsc
     regNumber funFramePointerReg;
 #endif
 
+    EHblkDsc*            GetEHDesc(Compiler* comp) const;
+    BasicBlock*          GetStartBlock(Compiler* comp) const;
+    BasicBlock*          GetLastBlock(Compiler* comp) const;
+    BasicBlockRangeList  Blocks(Compiler* comp) const;
+    unsigned             GetFuncletIdx(Compiler* comp) const;
+    bool                 IsFunclet() const { return funKind != FUNC_ROOT; }
+    bool                 IsMethod() const { return funKind == FUNC_ROOT; }
+
+
 #if defined(TARGET_WASM)
     struct WasmLocalsDecl
     {
@@ -1722,13 +1731,13 @@ struct FuncInfoDsc
     };
 
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
-#endif // defined(TARGET_WASM)
+    unsigned funWasmFrameSize;
+    bool needsUnwindableFrame;
+    emitLocation* startLoc;
+    emitLocation* endLoc;
 
-    EHblkDsc*            GetEHDesc(Compiler* comp) const;
-    BasicBlock*          GetStartBlock(Compiler* comp) const;
-    BasicBlock*          GetLastBlock(Compiler* comp) const;
-    BasicBlockRangeList  Blocks(Compiler* comp) const;
-    unsigned             GetFuncletIdx(Compiler* comp) const;
+    void ensureUnwindableFrame(Compiler* comp);
+#endif // defined(TARGET_WASM)
 
 #if defined(TARGET_AMD64)
 
@@ -4155,6 +4164,9 @@ public:
 
 #if defined(TARGET_WASM)
     unsigned lvaWasmSpArg = BAD_VAR_NUM; // lcl var index of Wasm stack pointer arg
+    unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
+    unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
+    unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -5467,6 +5479,7 @@ public:
     BasicBlock** fgIndexToBlockMap = nullptr;
     bool fgWasmHasCatchResumptions = false;
     FlowGraphTryRegions* fgTryRegions = nullptr;
+    EHClauseInfo* fgWasmEHInfo = nullptr;
 #endif
 
     FlowGraphDfsTree* m_dfsTree = nullptr;
@@ -6442,6 +6455,7 @@ public:
     void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
+    PhaseStatus fgWasmVirtualIP();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();
@@ -12420,6 +12434,7 @@ public:
             case GT_ASYNC_RESUME_INFO:
             case GT_LABEL:
             case GT_FTN_ADDR:
+            case GT_FTN_ENTRY:
             case GT_RET_EXPR:
             case GT_CNS_INT:
             case GT_CNS_LNG:
@@ -12492,6 +12507,7 @@ public:
             case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETURN_SUSPEND:
+            case GT_NONLOCAL_JMP:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
             case GT_ARR_ADDR:
@@ -12961,6 +12977,18 @@ inline unsigned FuncInfoDsc::GetFuncletIdx(Compiler* comp) const
     assert(this == &comp->compFuncInfos[funcletIdx]);
     return funcletIdx;
 }
+
+#if defined(TARGET_WASM)
+inline void FuncInfoDsc::ensureUnwindableFrame(Compiler* comp)
+{
+    if (!needsUnwindableFrame)
+    {
+        JITDUMP("%s (index %u) needs to be unwindable\n", IsFunclet() ? "Funclet" : "Main method", GetFuncletIdx(comp));
+
+        needsUnwindableFrame = true;
+    }
+}
+#endif // defined(TARGET_WASM)
 
 // FuncInfoRange: adapter class for forward or reverse iteration of a contiguous range of function/funclet
 // descriptors using range-based `for`, e.g.:
