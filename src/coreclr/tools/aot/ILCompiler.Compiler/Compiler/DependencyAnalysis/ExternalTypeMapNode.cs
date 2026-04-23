@@ -69,26 +69,16 @@ namespace ILCompiler.DependencyAnalysis
                                 "External type map array trim target with template-loadable element type");
                         }
 
-                        // Multidimensional arrays can be constructed at runtime from just the element type's
-                        // MethodTable (e.g. via shared generic code that creates T[,]). If the element type
-                        // is reachable, consider the MdArray type reachable as well.
-                        if (!arrayType.IsSzArray)
+                        // Array types that aren't eligible for templates (MdArrays, pointer/fnptr-element SzArrays)
+                        // can be constructed at runtime from just the element type's MethodTable using hardcoded
+                        // templates (typeof(object[,]) for MdArrays, typeof(char*[]) for pointer arrays).
+                        // If the element type is reachable, consider the array type reachable as well.
+                        if (!GenericTypesTemplateMap.IsArrayTypeEligibleForTemplate(arrayType))
                         {
                             yield return new CombinedDependencyListEntry(
                                 context.NecessaryTypeSymbol(effectiveTrimTargetType),
                                 context.NecessaryTypeSymbol(effectiveElementType),
-                                "MdArray can be constructed at runtime from element type");
-                        }
-
-                        // Pointer/function-pointer element SZ arrays can be constructed at runtime from
-                        // just the element type's MethodTable using the hardcoded typeof(char*[]) template.
-                        // If the (underlying) element type is reachable, consider the array reachable as well.
-                        if (arrayType.IsSzArray && (arrayType.ElementType.IsPointer || arrayType.ElementType.IsFunctionPointer))
-                        {
-                            yield return new CombinedDependencyListEntry(
-                                context.NecessaryTypeSymbol(effectiveTrimTargetType),
-                                context.NecessaryTypeSymbol(effectiveElementType),
-                                "Pointer-element SZ array can be constructed at runtime from element type");
+                                "Array without template can be constructed at runtime from element type");
                         }
                     }
                 }
