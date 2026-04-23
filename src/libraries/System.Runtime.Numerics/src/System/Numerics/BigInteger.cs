@@ -3374,7 +3374,7 @@ namespace System.Numerics
 
             Span<uint> zwSpan = allWords.Slice(0, zWordCount);
 
-            BigIntegerCalculator.RotateLeft32(zwSpan, rotateLeftAmount);
+            BigIntegerCalculator.RotateLeft(zwSpan, rotateLeftAmount);
 
             if (negative && (int)zwSpan[^1] < 0)
             {

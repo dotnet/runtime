@@ -11,9 +11,18 @@ namespace System.Numerics
     {
         /// <summary>
         /// Rotates a span of 32-bit words left by the specified amount.
-        /// This provides platform-independent 32-bit word rotation semantics.
         /// </summary>
-        public static void RotateLeft32(Span<uint> bits, long rotateLeftAmount)
+        /// <remarks>
+        /// The caller provides a <see cref="Span{T}"/> of <see cref="uint"/> words obtained via
+        /// <see cref="MemoryMarshal.Cast{TFrom, TTo}(Span{TFrom})"/> from the underlying <c>nuint[]</c> buffer.
+        /// On 64-bit, the last <c>nuint</c> limb may contain 32 extra zero bits compared to the
+        /// <c>uint[]</c> storage; the caller trims those before passing the word span. The shift
+        /// operations delegate to the SIMD-accelerated <c>LeftShiftSelf</c>/<c>RightShiftSelf</c>
+        /// <c>nuint</c> overloads internally, while carry extraction and digit swapping operate at
+        /// 32-bit word granularity (the swap point may fall mid-<c>nuint</c> when the word count
+        /// is odd on 64-bit).
+        /// </remarks>
+        public static void RotateLeft(Span<uint> bits, long rotateLeftAmount)
         {
             Debug.Assert(Math.Abs(rotateLeftAmount) <= 0x80000000);
 
@@ -30,7 +39,7 @@ namespace System.Numerics
                     (digitShift, smallShift) = Math.DivRem(-(int)rotateLeftAmount, BitsPerWord);
                 }
 
-                RotateRight32(bits, digitShift % bits.Length, smallShift);
+                RotateRight(bits, digitShift % bits.Length, smallShift);
             }
             else
             {
@@ -39,15 +48,15 @@ namespace System.Numerics
                     (digitShift, smallShift) = Math.DivRem((int)rotateLeftAmount, BitsPerWord);
                 }
 
-                RotateLeft32(bits, digitShift % bits.Length, smallShift);
+                RotateLeft(bits, digitShift % bits.Length, smallShift);
             }
         }
 
-        private static void RotateLeft32(Span<uint> bits, int digitShift, int smallShift)
+        private static void RotateLeft(Span<uint> bits, int digitShift, int smallShift)
         {
             Debug.Assert(bits.Length > 0);
 
-            LeftShiftSelf32(bits, smallShift, out uint carry);
+            LeftShiftSelf(bits, smallShift, out uint carry);
             bits[0] |= carry;
 
             if (digitShift == 0)
@@ -55,14 +64,14 @@ namespace System.Numerics
                 return;
             }
 
-            SwapUpperAndLower32(bits, bits.Length - digitShift);
+            SwapUpperAndLower(bits, bits.Length - digitShift);
         }
 
-        private static void RotateRight32(Span<uint> bits, int digitShift, int smallShift)
+        private static void RotateRight(Span<uint> bits, int digitShift, int smallShift)
         {
             Debug.Assert(bits.Length > 0);
 
-            RightShiftSelf32(bits, smallShift, out uint carry);
+            RightShiftSelf(bits, smallShift, out uint carry);
             bits[^1] |= carry;
 
             if (digitShift == 0)
@@ -70,10 +79,10 @@ namespace System.Numerics
                 return;
             }
 
-            SwapUpperAndLower32(bits, digitShift);
+            SwapUpperAndLower(bits, digitShift);
         }
 
-        private static void SwapUpperAndLower32(Span<uint> bits, int lowerLength)
+        private static void SwapUpperAndLower(Span<uint> bits, int lowerLength)
         {
             Debug.Assert(lowerLength > 0);
             Debug.Assert(lowerLength < bits.Length);
@@ -107,7 +116,12 @@ namespace System.Numerics
             tmpBuffer.Dispose();
         }
 
-        private static void LeftShiftSelf32(Span<uint> bits, int shift, out uint carry)
+        /// <summary>
+        /// Left-shifts a span of 32-bit words, returning the bits that shifted out of the top word.
+        /// Delegates to the SIMD-accelerated <c>LeftShiftSelf(Span&lt;nuint&gt;, ...)</c>
+        /// overload where possible; the carry is always extracted at 32-bit word granularity.
+        /// </summary>
+        private static void LeftShiftSelf(Span<uint> bits, int shift, out uint carry)
         {
             Debug.Assert((uint)shift < 32);
 
@@ -157,7 +171,12 @@ namespace System.Numerics
             }
         }
 
-        private static void RightShiftSelf32(Span<uint> bits, int shift, out uint carry)
+        /// <summary>
+        /// Right-shifts a span of 32-bit words, returning the bits that shifted out of the bottom word.
+        /// Delegates to the SIMD-accelerated <c>RightShiftSelf(Span&lt;nuint&gt;, ...)</c>
+        /// overload where possible; the carry is always extracted at 32-bit word granularity.
+        /// </summary>
+        private static void RightShiftSelf(Span<uint> bits, int shift, out uint carry)
         {
             Debug.Assert((uint)shift < 32);
 
