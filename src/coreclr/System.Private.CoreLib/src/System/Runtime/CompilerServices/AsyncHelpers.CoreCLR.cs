@@ -190,6 +190,8 @@ namespace System.Runtime.CompilerServices
             public ExecutionContext? RootExecutionContext;
             public SynchronizationContext? RootSynchronizationContext;
 
+            public unsafe RuntimeAsyncStackState* Next;
+
             public void Push(Thread thread)
             {
                 RootExecutionContext = thread._executionContext;
@@ -256,6 +258,7 @@ namespace System.Runtime.CompilerServices
             // is called
             public void Push(RuntimeAsyncStackState* stackState)
             {
+                stackState->Next = StackState;
                 StackState = stackState;
                 stackState->Push(CurrentThread ??= Thread.CurrentThread);
             }
@@ -264,7 +267,7 @@ namespace System.Runtime.CompilerServices
             public void Pop()
             {
                 StackState->Pop(CurrentThread);
-                StackState = null;
+                StackState = StackState->Next;
             }
         }
 
