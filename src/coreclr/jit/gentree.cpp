@@ -28193,21 +28193,16 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
         // reductions running in parallel with no duplicated work.
         //
         // After that, each 128-bit lane of op1 holds the sum of its elements
-        // broadcast across the lane. We then reduce the lanes to a single
-        // scalar by combining halves in Sum(lower) + Sum(upper) order, which
-        // is the order used by the managed software fallback. That order is
-        // preserved here because floating-point addition is not associative.
+        // broadcast across the lane. We then reduce the lanes by combining
+        // upper/lower halves step-by-step down to a single V128. Floating-
+        // point addition is not associative, so the exact IR shape of the
+        // half-combine is deliberately preserved and matches the integer
+        // path below.
 
         if (simdBaseType == TYP_FLOAT)
         {
-            GenTree* op1Shuffled = fgMakeMultiUse(&op1);
-
-            NamedIntrinsic permIntrinsic = NI_AVX_Permute;
-            if (simdSize == 64)
-            {
-                // vpermilps above 256-bit requires AVX-512 encoding
-                permIntrinsic = NI_AVX512_Permute4x32;
-            }
+            GenTree*       op1Shuffled  = fgMakeMultiUse(&op1);
+            NamedIntrinsic permIntrinsic = (simdSize == 64) ? NI_AVX512_Permute4x32 : NI_AVX_Permute;
 
             if ((simdSize > 16) || compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
@@ -28242,14 +28237,8 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
         }
         else
         {
-            GenTree* op1Shuffled = fgMakeMultiUse(&op1);
-
-            NamedIntrinsic permIntrinsic = NI_AVX_Permute;
-            if (simdSize == 64)
-            {
-                // vpermilpd above 256-bit requires AVX-512 encoding
-                permIntrinsic = NI_AVX512_Permute2x64;
-            }
+            GenTree*       op1Shuffled  = fgMakeMultiUse(&op1);
+            NamedIntrinsic permIntrinsic = (simdSize == 64) ? NI_AVX512_Permute2x64 : NI_AVX_Permute;
 
             if ((simdSize > 16) || compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
@@ -28271,38 +28260,35 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
 
         // At this point every 128-bit lane of op1 contains that lane's reduced
         // sum broadcast across the lane. Combine the lanes into a single V128
-        // while preserving the Sum(lower) + Sum(upper) order used by the
-        // managed fallback.
+        // by combining upper/lower halves step-by-step, mirroring the integer
+        // path below:
+        //     vector256 = vector512.GetLower() + vector512.GetUpper()
+        //     vector128 = vector256.GetLower() + vector256.GetUpper()
+        //     return    vector128.ToScalar()
 
         if (simdSize == 64)
         {
             GenTree* op1Dup = fgMakeMultiUse(&op1);
 
-            GenTree* lower = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseType, 64);
-            GenTree* upper = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseType, 64);
+            op1    = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseType, 64);
+            op1Dup = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseType, 64);
 
-            GenTree* lowerDup = fgMakeMultiUse(&lower);
-            GenTree* lowerLo  = gtNewSimdGetLowerNode(TYP_SIMD16, lower, simdBaseType, 32);
-            GenTree* lowerHi  = gtNewSimdGetUpperNode(TYP_SIMD16, lowerDup, simdBaseType, 32);
-            lower             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, lowerLo, lowerHi, simdBaseType, 16);
-
-            GenTree* upperDup = fgMakeMultiUse(&upper);
-            GenTree* upperLo  = gtNewSimdGetLowerNode(TYP_SIMD16, upper, simdBaseType, 32);
-            GenTree* upperHi  = gtNewSimdGetUpperNode(TYP_SIMD16, upperDup, simdBaseType, 32);
-            upper             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, upperLo, upperHi, simdBaseType, 16);
-
-            op1 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, lower, upper, simdBaseType, 16);
+            simdSize = 32;
+            op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1, op1Dup, simdBaseType, 32);
         }
-        else if (simdSize == 32)
+
+        if (simdSize == 32)
         {
             GenTree* op1Dup = fgMakeMultiUse(&op1);
 
-            GenTree* lower = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, 32);
-            GenTree* upper = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseType, 32);
+            op1    = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, 32);
+            op1Dup = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseType, 32);
 
-            op1 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, lower, upper, simdBaseType, 16);
+            simdSize = 16;
+            op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseType, 16);
         }
 
+        assert(simdSize == 16);
         return gtNewSimdToScalarNode(type, op1, simdBaseType, 16);
     }
 
