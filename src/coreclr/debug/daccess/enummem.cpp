@@ -1865,9 +1865,9 @@ HRESULT ClrDataAccess::EnumMemWriteDataSegment()
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// Custom Dump. Depending on the value of g_ECustomDumpFlavor, different dump
-// will be taken. You can set this global variable using hosting API
-// ICLRErrorReportingManager::BeginCustomDump.
+// Custom dumps enumerate the minimal CLR state needed for
+// MiniDumpWithFullAuxiliaryState: thread stacks, modules, CLR statics, and any
+// memory reached implicitly from those roots.
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 HRESULT ClrDataAccess::EnumMemoryRegionsWorkerCustom()
@@ -1879,24 +1879,37 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerCustom()
 
     // clear all of the previous cached memory
     Flush();
+
     // Iterating to all threads' stacks
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpAllThreadsStack(m_enumMemFlags); )
+    if (FAILED(status))
+    {
+        return status;
+    }
 
     // Iterating to module list.
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpModuleList(m_enumMemFlags); )
+    if (FAILED(status))
+    {
+        return status;
+    }
 
     //
     // iterating through static that we care
     //
     // collect CLR static
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemCLRStatic(m_enumMemFlags); )
+    if (FAILED(status))
+    {
+        return status;
+    }
 
     // we are done...
 
     // now dump the memory get dragged in implicitly
     m_dumpStats.m_cbImplicitly = m_instances.DumpAllInstances(m_enumMemCb);
 
-    return S_OK;
+    return status;
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
