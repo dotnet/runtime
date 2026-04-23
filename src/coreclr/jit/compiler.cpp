@@ -4571,6 +4571,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgStress64RsltMul();
 #endif // DEBUG
 
+    // Enable IR checks before global morph so the post-phase check runs on morphed IR.
+    activePhaseChecks |= PhaseChecks::CHECK_IR;
+
     // Morph the trees in all the blocks of the method
     //
     unsigned const preMorphBBCount = fgBBcount;
@@ -4590,9 +4593,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
         compCurBB = nullptr;
 #endif // DEBUG
-
-        // Enable IR checks
-        activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
     DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
 
