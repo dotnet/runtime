@@ -741,16 +741,6 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
 // allowCreate may be set to FALSE to enforce that the method searched
 // should already be in existence - thus preventing creation and GCs during
 // inappropriate times.
-//
-// EnC async variants
-// ------------------
-//
-// When EEClass::AddMethod adds a runtime-async method via EnC, it eagerly creates
-// both the primary thunk and the async variant MethodDescs. The variant signature
-// is computed from metadata (via ClassifyMethodReturnKind + BuildAsyncVariantSignature)
-// at AddMethod time, before any generic instantiation loop. For generic types, each
-// existing instantiation also gets both MethodDescs created eagerly.
-//
 /* static */
 MethodDesc*
 MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
@@ -841,10 +831,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         pMDescInCanonMT = pExactMT->GetCanonicalMethodTable()->GetParallelMethodDesc(pDefMD, asyncVariantLookup);
 
-        if (pMDescInCanonMT == NULL
-            || (!allowCreate && !pMDescInCanonMT->GetMethodTable()->IsFullyLoaded()))
+        if (!allowCreate && !pMDescInCanonMT->GetMethodTable()->IsFullyLoaded())
         {
-            _ASSERTE(pMDescInCanonMT != NULL || !allowCreate);
             RETURN(NULL);
         }
 

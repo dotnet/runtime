@@ -601,13 +601,40 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
             if (!IsMiAsync(dwImplFlags))
                 variantAsyncFlags |= AsyncMethodFlags::Thunk;
 
-            BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
-                                       nullptr, &cAsyncVariantSig);
+            // Build the async variant signature by stripping Task/ValueTask from the return type.
+            // NonGenericTask: "Task Method(args)" -> "void Method(args)"
+            // GenericTask:    "Task<T> Method(args)" -> "T Method(args)"
+            ULONG tokenLen = CorSigUncompressedDataSize(
+                &pMemberSignature[offsetOfAsyncDetails +
+                    (returnKind == MethodReturnKind::NonGenericTaskReturningMethod ? 1 : 2)]);
 
+            ULONG taskTypePrefixSize;
+            ULONG taskTypePrefixReplacementSize;
+            if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+            {
+                taskTypePrefixSize = 1 + tokenLen;     // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
+                taskTypePrefixReplacementSize = 1;     // ELEMENT_TYPE_VOID
+            }
+            else
+            {
+                taskTypePrefixSize = 2 + tokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
+                taskTypePrefixReplacementSize = 0;
+            }
+
+            cAsyncVariantSig = sigLen - taskTypePrefixSize + taskTypePrefixReplacementSize;
             LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
             pAsyncVariantSig = (BYTE*)(void*)pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cAsyncVariantSig));
-            BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
-                                       pAsyncVariantSig, &cAsyncVariantSig);
+
+            ULONG originalRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixSize;
+            ULONG newRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixReplacementSize;
+
+            memcpy(pAsyncVariantSig, pMemberSignature, offsetOfAsyncDetails);
+            memcpy(pAsyncVariantSig + newRemainingSigOffset,
+                   pMemberSignature + originalRemainingSigOffset,
+                   sigLen - originalRemainingSigOffset);
+
+            if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+                pAsyncVariantSig[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
         }
         else if (IsMiAsync(dwImplFlags))
         {
