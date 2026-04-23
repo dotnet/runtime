@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -146,6 +147,109 @@ namespace Tests.System.IO
             Assert.Equal("(89),(haha123blah)", sp.ExtractCurrent());
             Assert.Equal("fter brace", sp.MoveAndExtractNext());
             Assert.Equal("", sp.MoveAndExtractNext());
+        }
+
+        public static IEnumerable<object[]> CommonInvalidNumericInputs()
+        {
+            yield return new object[] { "+1" };
+            yield return new object[] { "abc" };
+            yield return new object[] { "12x3" };
+            yield return new object[] { " 123" };
+        }
+
+        [Theory]
+        [MemberData(nameof(CommonInvalidNumericInputs))]
+        [InlineData("-")]
+        public void ParseNextInt32_InvalidInput_ThrowsInvalidDataException(string value)
+        {
+            var sp = new StringParser(value, ',');
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextInt32());
+        }
+
+        [Theory]
+        [MemberData(nameof(CommonInvalidNumericInputs))]
+        [InlineData("-")]
+        public void ParseNextInt64_InvalidInput_ThrowsInvalidDataException(string value)
+        {
+            var sp = new StringParser(value, ',');
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextInt64());
+        }
+
+        [Theory]
+        [MemberData(nameof(CommonInvalidNumericInputs))]
+        [InlineData("-1")]
+        public void ParseNextUInt32_InvalidInput_ThrowsInvalidDataException(string value)
+        {
+            var sp = new StringParser(value, ',');
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextUInt32());
+        }
+
+        [Theory]
+        [MemberData(nameof(CommonInvalidNumericInputs))]
+        [InlineData("-1")]
+        public void ParseNextUInt64_InvalidInput_ThrowsInvalidDataException(string value)
+        {
+            var sp = new StringParser(value, ',');
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextUInt64());
+        }
+
+        [Fact]
+        public void ParseNext_EmptyComponent_ThrowsInvalidDataException()
+        {
+            var sp = new StringParser("a,,,,", ',');
+            sp.MoveNextOrFail(); // consume "a"
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextInt32());
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextInt64());
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextUInt32());
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextUInt64());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(42)]
+        [InlineData(-42)]
+        public void ParseNextInt32_ValidSignedValues(int expected)
+        {
+            var sp = new StringParser(expected.ToString(), ',');
+            Assert.Equal(expected, sp.ParseNextInt32());
+        }
+
+        [Theory]
+        [InlineData(0L)]
+        [InlineData(42L)]
+        [InlineData(-42L)]
+        public void ParseNextInt64_ValidSignedValues(long expected)
+        {
+            var sp = new StringParser(expected.ToString(), ',');
+            Assert.Equal(expected, sp.ParseNextInt64());
+        }
+
+        [Fact]
+        public void ParseNextInt32_Overflow_ThrowsOverflowException()
+        {
+            var sp = new StringParser(((long)int.MaxValue + 1).ToString(), ',');
+            Assert.Throws<OverflowException>(() => sp.ParseNextInt32());
+        }
+
+        [Fact]
+        public void ParseNextInt64_Overflow_ThrowsOverflowException()
+        {
+            var sp = new StringParser(((ulong)long.MaxValue + 1).ToString(), ',');
+            Assert.Throws<OverflowException>(() => sp.ParseNextInt64());
+        }
+
+        [Fact]
+        public void ParseNextUInt32_Overflow_ThrowsOverflowException()
+        {
+            var sp = new StringParser(((long)uint.MaxValue + 1).ToString(), ',');
+            Assert.Throws<OverflowException>(() => sp.ParseNextUInt32());
+        }
+
+        [Fact]
+        public void ParseNextUInt64_Overflow_ThrowsOverflowException()
+        {
+            var sp = new StringParser("18446744073709551616", ','); // ulong.MaxValue + 1
+            Assert.Throws<OverflowException>(() => sp.ParseNextUInt64());
         }
 
         [Fact]

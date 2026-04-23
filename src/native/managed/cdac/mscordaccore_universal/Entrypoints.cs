@@ -72,16 +72,15 @@ internal static class Entrypoints
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_sos_interface")]
     private static unsafe int CreateSosInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
     {
-        ComWrappers cw = new StrategyBasedComWrappers();
         Target? target = GCHandle.FromIntPtr(handle).Target as Target;
         if (target == null)
             return -1;
 
         object? legacyImpl = legacyImplPtr != IntPtr.Zero
-            ? cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None)
+            ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
             : null;
         Legacy.SOSDacImpl impl = new(target, legacyImpl);
-        nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
+        nint ptr = (nint)ComInterfaceMarshaller<ISOSDacInterface>.ConvertToUnmanaged(impl);
         *obj = ptr;
         return 0;
     }
@@ -110,11 +109,10 @@ internal static class Entrypoints
             return HResults.E_INVALIDARG;
         }
 
-        ComWrappers cw = new StrategyBasedComWrappers();
         object? legacyObj = null;
         if (legacyImplPtr != IntPtr.Zero)
         {
-            legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
+            legacyObj = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToManaged((void*)legacyImplPtr);
             if (legacyObj is not Legacy.IDacDbiInterface)
             {
                 *obj = IntPtr.Zero;
@@ -123,7 +121,7 @@ internal static class Entrypoints
         }
 
         Legacy.DacDbiImpl impl = new(target, legacyObj);
-        *obj = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
+        *obj = (nint)ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
         return HResults.S_OK;
     }
 
@@ -146,10 +144,9 @@ internal static class Entrypoints
             return HResults.E_INVALIDARG;
         *iface = null;
 
-        ComWrappers cw = new StrategyBasedComWrappers();
-        object legacyTarget = cw.GetOrCreateObjectForComInstance(pLegacyTarget, CreateObjectFlags.None);
+        object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
         object? legacyImpl = pLegacyImpl != IntPtr.Zero ?
-            cw.GetOrCreateObjectForComInstance(pLegacyImpl, CreateObjectFlags.None) : null;
+            ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)pLegacyImpl) : null;
 
         ICLRDataTarget dataTarget = legacyTarget as ICLRDataTarget ?? throw new ArgumentException(
             $"{nameof(pLegacyTarget)} does not implement {nameof(ICLRDataTarget)}", nameof(pLegacyTarget));
@@ -196,12 +193,12 @@ internal static class Entrypoints
         }
 
         Legacy.SOSDacImpl impl = new(target, legacyImpl);
-        nint ccw = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
-        Marshal.QueryInterface(ccw, *pIID, out nint ptrToIface);
+        void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
+        Marshal.QueryInterface((nint)ccw, *pIID, out nint ptrToIface);
         *iface = (void*)ptrToIface;
 
         // Decrement reference count on ccw because QI incremented it
-        Marshal.Release(ccw);
+        ComInterfaceMarshaller<IXCLRDataProcess>.Free(ccw);
 
         return 0;
     }
