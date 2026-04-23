@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Tests
         //      if they had been reduced modulo the field prime.  The non-canonical
         //      values are 2^255 - 19 through 2^255 - 1 for X25519
         //    Regardless, SymCrypt rejects these non-canonical keys anyway. There are only 20 possible keys that fall in to this category.
-        // 2. Public keys that are not in the prime-order subgroup. [GOrd] * P ≠ O.
+        // 2. Public keys that are not in the prime-order subgroup. [GOrd] * P != O.
         //    X25519DH doesn't strictly need this, but Windows enforces this property anyway.
         public static bool IsStrictKeyValidatingPlatform => OperatingSystem.IsWindows() || PlatformDetection.IsSymCryptOpenSsl;
 
