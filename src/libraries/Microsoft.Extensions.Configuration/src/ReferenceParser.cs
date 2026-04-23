@@ -9,18 +9,23 @@ namespace Microsoft.Extensions.Configuration
 {
     // Value syntax:
     //   {{ path-expression }}      — the whole value is a reference / template expression.
-    //                                Anything else (including values that don't start with "{{")
-    //                                is a verbatim literal.
+    //                                A value starting with "{{" is always parsed as a gate;
+    //                                if the braces cannot be balanced a FormatException is
+    //                                thrown. Values that don't start with "{{" are verbatim
+    //                                literals.
     //
-    // Brace rule (applied uniformly at value level and inside templates):
+    // Brace rule inside gate / template bodies:
     //   1 consecutive '{'  → literal '{'
-    //   2 consecutive '{{' → structural opener (gate/placeholder)
+    //   2 consecutive '{{' → structural opener (nested placeholder)
     //   n ≥ 3 consecutive  → escape; emits (n-1) literal '{' characters
-    //   Same symmetrically for '}'.
+    //   Same symmetrically for '}', with one exception: at the gate-close boundary
+    //   (depth 0) a run of n ≥ 2 '}' consumes the final two as the closing '}}' and
+    //   emits the preceding (n-2) as literal '}' content. That lets a template end with
+    //   a literal '}' immediately before the gate close — e.g. "{{|{Host}}}" yields the
+    //   literal "{Host}" without needing a quoted separator.
     //
-    // So "{{A}}" at the value level is processed; "{{{A}}}" is a literal "{{A}}";
-    // "{{{{A}}}}" is a literal "{{{A}}}"; and so on. A literal '{' or '}' in config data
-    // never needs escaping — only doubled occurrences do.
+    // A literal '{' or '}' in config data never needs escaping on its own — only runs
+    // that could be confused with structural markers do.
     //
     // Inside the gate, the expression grammar is:
     //   (path ('?' path)*)?  ('!')?  ('|' template-tail)?
@@ -54,48 +59,20 @@ namespace Microsoft.Extensions.Configuration
                 return new[] { ValueToken.Literal(value) };
             }
 
-            int leading = CountLeading(value, '{');
-            int trailing = CountTrailing(value, '}');
-
-            if (leading != trailing || value.Length < leading * 2)
+            // Value starts with "{{". Commit to gate parsing; any brace imbalance will throw.
+            int close = FindPlaceholderEnd(value, start: 2, tokenStart: 0);
+            if (close + 2 != value.Length)
             {
-                // Mismatched fence — treat as inert literal rather than error; matches how we
-                // handle values that merely look gated ("{{name}}" text, handlebars templates).
-                return new[] { ValueToken.Literal(value) };
+                throw new FormatException(
+                    SR.Format(SR.ReferenceResolution_TrailingContentAfterClose, close + 2));
             }
 
-            if (leading > 2)
-            {
-                // n+1 braces ⇒ literal n braces: strip a single layer from each end.
-                return new[] { ValueToken.Literal(value.Substring(1, value.Length - 2)) };
-            }
-
-            string content = value.Substring(2, value.Length - 4);
+            string content = value.Substring(2, close - 2);
             return new[] { ParseGateContent(content, tokenStart: 2) };
         }
 
         private static bool IsGated(string? value) =>
             value is not null && value.Length >= 4 && value[0] == '{' && value[1] == '{';
-
-        private static int CountLeading(string s, char c)
-        {
-            int n = 0;
-            while (n < s.Length && s[n] == c)
-            {
-                n++;
-            }
-            return n;
-        }
-
-        private static int CountTrailing(string s, char c)
-        {
-            int n = 0;
-            while (n < s.Length && s[s.Length - 1 - n] == c)
-            {
-                n++;
-            }
-            return n;
-        }
 
         // Parses the content between the outermost {{ and }} of a gated value. Produces a single
         // ValueToken whose Items is the coalesce chain (possibly empty) and whose LiteralDefault
@@ -367,19 +344,20 @@ namespace Microsoft.Extensions.Configuration
                         j++;
                         continue;
                     }
-                    if (run >= 3)
+
+                    // A run of n ≥ 2 '}' can close the current placeholder and, when long
+                    // enough, additionally close surrounding placeholders up to the outer
+                    // gate. A run of n ≥ 2(depth+1) closes everything including the outer
+                    // gate; the final two chars are the gate close, anything in between is
+                    // literal '}' content. A shorter run only closes inner levels.
+                    int needed = 2 * (depth + 1);
+                    if (run >= needed)
                     {
-                        j += run;
-                        continue;
+                        return j + (run - 2);
                     }
 
-                    if (depth == 0)
-                    {
-                        return j;
-                    }
-
-                    depth--;
-                    j += 2;
+                    depth -= run / 2;
+                    j += run;
                     continue;
                 }
 

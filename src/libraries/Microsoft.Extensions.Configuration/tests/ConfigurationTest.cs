@@ -686,13 +686,13 @@ namespace Microsoft.Extensions.Configuration.Test
 
         [Theory]
         // A single brace inside a template is a literal brace; only the structural {{…}} pair opens a placeholder.
-        [InlineData("{{|{Host}''}}", "{Host}")]
+        [InlineData("{{|{Host}}}", "{Host}")]
         [InlineData("{{|prefix-{Host}-suffix}}", "prefix-{Host}-suffix")]
-        [InlineData("{{|{A}-{{Host}}-{B}''}}", "{A}-my-host-{B}")]
+        [InlineData("{{|{A}-{{Host}}-{B}}}", "{A}-my-host-{B}")]
         // A `$` outside a placeholder is just a literal; only the {{…}} gate activates the parser.
-        [InlineData("{{|${{Host}}''}}", "$my-host")]
-        [InlineData("{{|It costs ${{Host}}''}}", "It costs $my-host")]
-        [InlineData("{{|{}''}}", "{}")]
+        [InlineData("{{|${{Host}}}}", "$my-host")]
+        [InlineData("{{|It costs ${{Host}}}}", "It costs $my-host")]
+        [InlineData("{{|{}}}", "{}")]
         public void EnableReferenceResolutionTreatsEscapeBlockAsLiteral(string raw, string expected)
         {
             var config = new ConfigurationBuilder()
@@ -791,7 +791,7 @@ namespace Microsoft.Extensions.Configuration.Test
                     ["Defaults:Service:Host"] = "primary.example.com",
                     ["Defaults:Service:Port"] = "5432",
                     ["Services:Primary"] = "{{Defaults:Service}}",
-                    ["ConnectionString"] = "{{|{{Services:Primary:Host}}:{{Services:Primary:Port}}''}}",
+                    ["ConnectionString"] = "{{|{{Services:Primary:Host}}:{{Services:Primary:Port}}}}",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -813,7 +813,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Services:Primary"] = "{{Defaults:Service}}",
-                    ["ConnectionString"] = "{{|host={{Services:Primary:Host}}''}}",
+                    ["ConnectionString"] = "{{|host={{Services:Primary:Host}}}}",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -924,12 +924,12 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["Defaults:Feature:Enabled"] = "true",
-                    ["Feature"] = "{{|prefix-{{Defaults:Feature}}''}}",
+                    ["Feature"] = "{{|prefix-{{Defaults:Feature}}}}",
                 })
                 .EnableReferenceResolution()
                 .Build();
 
-            Assert.Equal("{{|prefix-{{Defaults:Feature}}''}}", config["Feature"]);
+            Assert.Equal("{{|prefix-{{Defaults:Feature}}}}", config["Feature"]);
             Assert.Empty(config.GetSection("Feature").GetChildren());
         }
 
@@ -963,13 +963,13 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["name"] = "Alice",
-                    ["greeting"] = "{{|Hello {{name}}''}}",
+                    ["greeting"] = "{{|Hello {{name}}}}",
                 })
                 .EnableReferenceResolution()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["name"] = "Bob",
-                    ["farewell"] = "{{|Bye {{name}}''}}",
+                    ["farewell"] = "{{|Bye {{name}}}}",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -985,7 +985,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["Template"] = "{{|{hidden}''}}",
+                    ["Template"] = "{{|{hidden}}}",
                     ["hidden"] = "secret",
                 })
                 .EnableReferenceResolution()
@@ -1000,7 +1000,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    ["ServiceUrl"] = "{{|https://host{{Suffix|}}''}}",
+                    ["ServiceUrl"] = "{{|https://host{{Suffix|}}}}",
                 })
                 .EnableReferenceResolution()
                 .Build();
@@ -1264,7 +1264,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     ["B"] = "bee",
-                    ["Value"] = "{{|prefix-{{A|{{B}}''}}-suffix}}",
+                    ["Value"] = "{{|prefix-{{A|{{B}}}}-suffix}}",
                 })
                 .EnableReferenceResolution()
                 .Build();

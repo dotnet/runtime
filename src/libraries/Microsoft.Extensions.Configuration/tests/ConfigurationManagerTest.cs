@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Configuration.Test
             builder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["Host"] = "api.example.com",
-                ["ServiceUrl"] = "{{|https://{{Host}}''}}",
+                ["ServiceUrl"] = "{{|https://{{Host}}}}",
             });
 
             builder.EnableReferenceResolution();
@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var counter = new LoadCountingProvider(new Dictionary<string, string>
             {
                 ["Host"] = "api.example.com",
-                ["ServiceUrl"] = "{{|https://{{Host}}''}}",
+                ["ServiceUrl"] = "{{|https://{{Host}}}}",
             });
 
             builder.Add(new LoadCountingSource(counter));
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal(1, counter.LoadCount);
 
             // And the engine picked up the mode change for the existing provider.
-            Assert.Equal("{{|https://{{Host}}''}}", config["ServiceUrl"]);
+            Assert.Equal("{{|https://{{Host}}}}", config["ServiceUrl"]);
         }
 
         [Fact]

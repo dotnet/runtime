@@ -138,6 +138,9 @@
   <data name="ReferenceResolution_ExpressionIsUnclosed" xml:space="preserve">
     <value>An unclosed reference expression was found at position '{0}'.</value>
   </data>
+  <data name="ReferenceResolution_TrailingContentAfterClose" xml:space="preserve">
+    <value>Unexpected content at position '{0}' after the closing '}}}}' of a reference expression.</value>
+  </data>
   <data name="ReferenceResolution_InvalidExpression" xml:space="preserve">
     <value>A reference expression at position '{0}' is malformed. Expected '?' between items or end of expression.</value>
   </data>

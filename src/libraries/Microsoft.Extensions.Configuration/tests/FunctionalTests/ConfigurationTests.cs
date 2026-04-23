@@ -1035,9 +1035,9 @@ IniKey1=IniValue2");
   ""Services"": {
     ""Primary"": ""{{Defaults:Service}}""
   },
-  ""ConnectionString"": ""{{|{{Services:Primary:Protocol}}://{{User}}@{{Services:Primary:Host}}:{{Services:Primary:Port}}/{{Database?Defaults:Database}}''}}"",
+  ""ConnectionString"": ""{{|{{Services:Primary:Protocol}}://{{User}}@{{Services:Primary:Host}}:{{Services:Primary:Port}}/{{Database?Defaults:Database}}}}"",
   ""Tracing"": {
-    ""Collector"": ""{{|{{Tracing:Endpoint|}}''}}""
+    ""Collector"": ""{{|{{Tracing:Endpoint|}}}}""
   },
   ""Defaults"": {
     ""Database"": ""appdb""
