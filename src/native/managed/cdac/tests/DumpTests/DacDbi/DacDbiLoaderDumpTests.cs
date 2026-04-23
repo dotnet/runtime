@@ -104,6 +104,29 @@ public class DacDbiLoaderDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
+    public void GetModuleSimpleName_ReturnsNonEmpty(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        ILoader loader = Target.Contracts.Loader;
+
+        bool testedAtLeastOne = false;
+        foreach (ModuleHandle module in GetAllModules())
+        {
+            TargetPointer moduleAddr = loader.GetModule(module);
+
+            using var holder = new NativeStringHolder();
+            int hr = dbi.GetModuleSimpleName(moduleAddr.Value, holder.Ptr);
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.False(string.IsNullOrEmpty(holder.Value), "Module simple name should not be empty");
+
+            testedAtLeastOne = true;
+        }
+        Assert.True(testedAtLeastOne, "Expected at least one module in the dump");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
     public unsafe void IsModuleMapped_ReturnsValidResult(TestConfiguration config)
     {
         InitializeDumpTest(config);

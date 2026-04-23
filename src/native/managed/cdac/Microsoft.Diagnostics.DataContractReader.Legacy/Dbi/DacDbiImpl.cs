@@ -145,7 +145,30 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetModuleSimpleName(ulong vmModule, nint pStrFilename)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetModuleSimpleName(vmModule, pStrFilename) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+            if (loader.TryGetSimpleName(handle, out string simpleName))
+            {
+                hr = StringHolderAssignCopy(pStrFilename, simpleName);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.GetModuleSimpleName(vmModule, pStrFilename);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int GetAssemblyPath(ulong vmAssembly, nint pStrFilename, Interop.BOOL* pResult)
     {
