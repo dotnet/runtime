@@ -437,6 +437,21 @@ namespace System.Threading.Tasks.Tests
             return allEventIds;
         }
 
+        private static List<(AsyncEventID EventId, long Timestamp)> CollectAsyncEventIdsWithTimestamps(ConcurrentQueue<EventWrittenEventArgs> events)
+        {
+            var allEvents = new List<(AsyncEventID EventId, long Timestamp)>();
+            ForEachEventBufferPayload(events, buffer =>
+            {
+                ParseEventBuffer(buffer, (AsyncEventID eventId, long timestamp, ReadOnlySpan<byte> buf, ref int idx) =>
+                {
+                    allEvents.Add((eventId, timestamp));
+                    return SkipEventPayload(eventId, buf, ref idx);
+                });
+            });
+            allEvents.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
+            return allEvents;
+        }
+
         private static HashSet<ulong> CollectOsThreadIds(ConcurrentQueue<EventWrittenEventArgs> events)
         {
             var threadIds = new HashSet<ulong>();
@@ -802,13 +817,13 @@ namespace System.Threading.Tasks.Tests
 
             // DumpCollectedEvents(events);
 
-            var eventIds = CollectAsyncEventIds(events);
-            var coreEvents = eventIds.FindAll(id => id == AsyncEventID.ResumeAsyncContext || id == AsyncEventID.SuspendAsyncContext || id == AsyncEventID.CompleteAsyncContext);
+            var sortedEvents = CollectAsyncEventIdsWithTimestamps(events);
+            var coreEvents = sortedEvents.FindAll(e => e.EventId == AsyncEventID.ResumeAsyncContext || e.EventId == AsyncEventID.SuspendAsyncContext || e.EventId == AsyncEventID.CompleteAsyncContext);
 
-            Assert.Equal(AsyncEventID.ResumeAsyncContext, coreEvents[0]);
-            Assert.Equal(AsyncEventID.SuspendAsyncContext, coreEvents[1]);
-            Assert.Equal(AsyncEventID.ResumeAsyncContext, coreEvents[2]);
-            Assert.Equal(AsyncEventID.CompleteAsyncContext, coreEvents[3]);
+            Assert.Equal(AsyncEventID.ResumeAsyncContext, coreEvents[0].EventId);
+            Assert.Equal(AsyncEventID.SuspendAsyncContext, coreEvents[1].EventId);
+            Assert.Equal(AsyncEventID.ResumeAsyncContext, coreEvents[2].EventId);
+            Assert.Equal(AsyncEventID.CompleteAsyncContext, coreEvents[3].EventId);
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
@@ -999,21 +1014,22 @@ namespace System.Threading.Tasks.Tests
 
             // DumpCollectedEvents(events);
 
-            // Collect all callstack events with their task IDs in order.
-            var callstackEvents = new List<(AsyncEventID EventId, ulong TaskId)>();
+            // Collect all callstack events with their task IDs sorted by timestamp.
+            var callstackEvents = new List<(AsyncEventID EventId, ulong TaskId, long Timestamp)>();
             ForEachEventBufferPayload(events, buffer =>
             {
-                ParseEventBuffer(buffer, (AsyncEventID eventId, ReadOnlySpan<byte> buf, ref int idx) =>
+                ParseEventBuffer(buffer, (AsyncEventID eventId, long timestamp, ReadOnlySpan<byte> buf, ref int idx) =>
                 {
                     if (eventId is AsyncEventID.CreateAsyncCallstack or AsyncEventID.ResumeAsyncCallstack)
                     {
                         ReadCallstackPayload(buf, ref idx, out ulong taskId, out byte _, out _);
-                        callstackEvents.Add((eventId, taskId));
+                        callstackEvents.Add((eventId, taskId, timestamp));
                         return true;
                     }
                     return SkipEventPayload(eventId, buf, ref idx);
                 });
             });
+            callstackEvents.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
 
             // For each task that has both Create and Resume, verify Create comes first.
             var taskIds = callstackEvents.Where(e => e.EventId == AsyncEventID.CreateAsyncCallstack).Select(e => e.TaskId).ToHashSet();
