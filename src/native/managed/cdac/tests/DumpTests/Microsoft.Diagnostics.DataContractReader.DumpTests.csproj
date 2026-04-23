@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <NoWarn>$(NoWarn);xUnit1004</NoWarn>
   </PropertyGroup>
 
   <Import Project="..\..\..\subproject.props" />
@@ -51,7 +52,7 @@
       $(HelixPayloadDir)/
         tests/                    — test DLLs + xunit.console.dll + deps
         debuggees/{name}/         — built debuggee binaries
-        debuggee-metadata.props   — auto-generated _Debuggee items with DumpDir/MiniDumpType
+        debuggee-metadata.props   — auto-generated _Debuggee items with all metadata
 
     Usage:
       dotnet build /p:PrepareHelixPayload=true
@@ -94,13 +95,17 @@
     <ItemGroup Condition="'$(SkipDebuggeeCopy)' != 'true'">
       <_HeapDebuggee Include="@(_DebuggeeWithTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Heap'))" DumpDir="heap" MiniDumpType="2" />
       <_FullDebuggee Include="@(_DebuggeeWithTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Full'))" DumpDir="full" MiniDumpType="4" />
-      <_AllDebuggeeMetadata Include="@(_HeapDebuggee);@(_FullDebuggee)" />
+      <_DumpTypeDebuggee Include="@(_HeapDebuggee);@(_FullDebuggee)" />
+      <!-- Cross-product DumpType × R2RMode -->
+      <_R2RDebuggee Include="@(_DumpTypeDebuggee)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R'))" R2RDir="r2r" R2RValue="1" />
+      <_JitDebuggee Include="@(_DumpTypeDebuggee)" Condition="$([System.String]::new('%(R2RModes)').Contains('Jit'))" R2RDir="jit" R2RValue="0" />
+      <_AllDebuggeeMetadata Include="@(_R2RDebuggee);@(_JitDebuggee)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(SkipDebuggeeCopy)' != 'true'">
       <_MetadataLines Include="&lt;Project&gt;" />
       <_MetadataLines Include="  &lt;ItemGroup&gt;" />
-      <_MetadataLines Include="@(_AllDebuggeeMetadata->'    &lt;_Debuggee Include=&quot;%(Identity)&quot; DumpDir=&quot;%(DumpDir)&quot; MiniDumpType=&quot;%(MiniDumpType)&quot; /&gt;')" />
+      <_MetadataLines Include="@(_AllDebuggeeMetadata->'    &lt;_Debuggee Include=&quot;%(Identity)&quot; DumpDir=&quot;%(DumpDir)&quot; MiniDumpType=&quot;%(MiniDumpType)&quot; R2RDir=&quot;%(R2RDir)&quot; R2RValue=&quot;%(R2RValue)&quot; /&gt;')" />
       <_MetadataLines Include="  &lt;/ItemGroup&gt;" />
       <_MetadataLines Include="&lt;/Project&gt;" />
     </ItemGroup>

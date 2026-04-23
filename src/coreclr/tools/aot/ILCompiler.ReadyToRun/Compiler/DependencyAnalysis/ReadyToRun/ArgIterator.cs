@@ -687,15 +687,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // VaSig cookie is after this and retbuf arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
 
                 if (HasThis)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 return ret;
@@ -729,15 +730,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // The hidden arg is after this and retbuf arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
 
                 if (HasThis)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 return ret;
@@ -778,20 +780,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // The hidden arg is after this, retbuf and param type arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
 
                 if (HasThis)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasParamType)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 return ret;
@@ -868,7 +871,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         break;
 
                     case TargetArchitecture.Wasm32:
-                        _wasmOfsStack = numRegistersUsed * _transitionBlock.PointerSize;
+                        _wasmOfsStack = numRegistersUsed * _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
                         break;
 
                     case TargetArchitecture.ARM:
@@ -1107,8 +1110,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             break;
                         case WasmValueType.I32:
                         case WasmValueType.F32:
-                            cbArg = 4;
-                            align = 4;
+                            cbArg = 8;
+                            align = 8;
                             break;
                         case WasmValueType.V128:
                             cbArg = 16;
@@ -1704,7 +1707,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         stackElemSize = _transitionBlock.StackElemSize(GetArgSize(), IsValueType(), IsFloatHfa());
 
                         if (IsArgPassedByRef())
-                            stackElemSize = _transitionBlock.PointerSize;
+                            stackElemSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
                     }
 
                     int endOfs = ofs + stackElemSize;
@@ -1736,8 +1739,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            // arg stack size is rounded to the pointer size on all platforms.
-            nSizeOfArgStack = ALIGN_UP(nSizeOfArgStack, _transitionBlock.PointerSize);
+            // arg stack size is rounded to the stack slot size on all platforms.
+            nSizeOfArgStack = ALIGN_UP(nSizeOfArgStack, _transitionBlock.StackElemSize(_transitionBlock.PointerSize));
 
             // Cache the result
             _nSizeOfArgStack = nSizeOfArgStack;

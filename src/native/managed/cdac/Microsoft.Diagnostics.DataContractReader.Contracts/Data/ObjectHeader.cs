@@ -11,7 +11,7 @@ internal sealed class ObjectHeader : IData<ObjectHeader>
     public ObjectHeader(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ObjectHeader);
-        SyncBlockValue = target.Read<uint>(address + (ulong)type.Fields[nameof(SyncBlockValue)].Offset);
+        SyncBlockValue = target.ReadField<uint>(address, type, nameof(SyncBlockValue));
     }
 
     public uint SyncBlockValue { get; init; }

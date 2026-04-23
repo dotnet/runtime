@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -25,6 +26,26 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
     protected override string BundleDirName { get { return "wwwroot"; } }
 
+    /// <summary>
+    /// Discovers the single materialized framework directory produced by
+    /// UpdatePackageStaticWebAssets for a built (non-published) project:
+    /// <paramref name="objDir"/>/fx/&lt;source-id&gt;/_framework/.
+    ///
+    /// The per-project folder name under obj/.../fx/ is derived from static web assets
+    /// metadata (SourceId / PackageId), so tests should not assume it matches the
+    /// project directory name.
+    /// </summary>
+    public static string GetMaterializedFrameworkDir(string objDir)
+    {
+        string fxBaseDir = Path.Combine(objDir, "fx");
+        Assert.True(Directory.Exists(fxBaseDir), $"Expected materialized framework base directory: {fxBaseDir}");
+        string[] fxSubDirs = Directory.GetDirectories(fxBaseDir);
+        Assert.True(fxSubDirs.Length == 1, $"Expected exactly one subdirectory under {fxBaseDir}, found: {string.Join(", ", fxSubDirs.Select(Path.GetFileName))}");
+        string fxFrameworkDir = Path.Combine(fxSubDirs[0], "_framework");
+        Assert.True(Directory.Exists(fxFrameworkDir), $"Expected materialized framework dir: {fxFrameworkDir}");
+        return fxFrameworkDir;
+    }
+
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptions assertOptions)
     {
         var result = new SortedDictionary<string, bool>()
@@ -40,9 +61,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             { "dotnet.diagnostics.js", true },
             { "dotnet.diagnostics.js.map", false },
         };
-
-        if ((assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js")) ?? false)
-            result[assertOptions.BuildOptions.BootConfigFileName] = true;
 
         if (assertOptions.ExpectDotnetJsFingerprinting == false)
             result["dotnet.js"] = false;
@@ -79,9 +97,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             if (!assertOptions.BuildOptions.IsPublish)
                 res.Add("dotnet.diagnostics.js.map");
         }
-
-        if (assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js") ?? false)
-            res.Add(assertOptions.BuildOptions.BootConfigFileName);
 
         return res;
     }
@@ -184,7 +199,150 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             // In no-workload case, the path would be from a restored nuget
             ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? DefaultTargetFramework, buildOptions.RuntimeType);
         }
-        AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs);
+
+        if (buildOptions.IsPublish)
+        {
+            AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs);
+        }
+        else if (string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir))
+        {
+            AssertBuildBundle(config, buildOptions, isUsingWorkloads, isNativeBuild);
+        }
+        else
+        {
+            // When NonDefaultFrameworkDir is set (e.g. UseArtifactsOutput), the obj/ layout
+            // may not follow the standard path convention, so skip build bundle assertions.
+            _testOutput.WriteLine(
+                $"Skipping build bundle assertions: NonDefaultFrameworkDir='{buildOptions.NonDefaultFrameworkDir}' " +
+                "points to a non-standard obj/ layout. File-layout verification is not performed for this build.");
+        }
+    }
+
+    /// <summary>
+    /// Asserts that build-time framework assets are in their expected obj/ subdirectories
+    /// and NOT in the wrong directories. With CopyToOutputDirectory=Never, framework files
+    /// live in obj/ subdirectories instead of being collected in bin/_framework/:
+    ///
+    ///   obj/{config}/{tfm}/                          → dotnet.js (Computed, boot config entry point)
+    ///   obj/{config}/{tfm}/fx/{name}/_framework/     → all materialized framework files: dotnet.runtime.js, dotnet.native.*, ICU, maps
+    ///   obj/{config}/{tfm}/webcil/                   → assembly .wasm files (webcil-converted)
+    ///   obj/{config}/{tfm}/wasm/for-build/           → native assets only when native build (AOT/relink)
+    /// </summary>
+    private void AssertBuildBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild)
+    {
+        EnsureProjectDirIsSet();
+
+        string tfm = buildOptions.TargetFramework;
+        string objDir = Path.Combine(ProjectDir!, "obj", config.ToString(), tfm);
+        string webcilDir = Path.Combine(objDir, "webcil");
+
+        // Discover the materialized framework directory: obj/{config}/{tfm}/fx/{source-id}/_framework/
+        string fxFrameworkDir = GetMaterializedFrameworkDir(objDir);
+
+        // --- Computed assets: dotnet.js lives in objDir root ---
+        AssertFileExists(objDir, "dotnet.js");
+        AssertFileNotExists(fxFrameworkDir, "dotnet.js", "fx/_framework");
+
+        // --- Materialized framework assets: JS modules and source maps in fx/_framework/ ---
+        string[] materializedFiles = ["dotnet.runtime.js", "dotnet.runtime.js.map", "dotnet.js.map"];
+        if (buildOptions.EnableDiagnostics || EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        {
+            materializedFiles = [.. materializedFiles, "dotnet.diagnostics.js", "dotnet.diagnostics.js.map"];
+        }
+        foreach (string file in materializedFiles)
+        {
+            AssertFileExists(fxFrameworkDir, file);
+            AssertFileNotExists(objDir, file, "obj root");
+        }
+
+        // --- Native assets: dotnet.native.* ---
+        // For non-native builds, native files are materialized in fx/_framework/ from runtime pack.
+        // For native builds (AOT/relink), they are rebuilt and placed in wasm/for-build/.
+        string[] nativeFiles = ["dotnet.native.js", "dotnet.native.wasm"];
+        var expectedFileType = isUsingWorkloads
+            ? GetExpectedFileType(config, buildOptions.AOT, isPublish: false, isUsingWorkloads: isUsingWorkloads, isNativeBuild: isNativeBuild)
+            : NativeFilesType.FromRuntimePack;
+        bool isNativeRebuild = expectedFileType is NativeFilesType.Relinked or NativeFilesType.AOT;
+        string nativeDir = isNativeRebuild
+            ? Path.Combine(objDir, "wasm", "for-build")
+            : fxFrameworkDir;
+
+        foreach (string file in nativeFiles)
+        {
+            AssertFileExists(nativeDir, file);
+            AssertFileNotExists(objDir, file, "obj root");
+            if (!isNativeRebuild)
+                AssertFileNotExists(Path.Combine(objDir, "wasm", "for-build"), file, "wasm/for-build");
+        }
+
+        if (buildOptions.RuntimeType == RuntimeVariant.MultiThreaded)
+        {
+            // dotnet.native.worker.mjs is validated for location only and not compared against
+            // the runtime pack — the publish-path AssertBundle skips the runtime-pack comparison
+            // for the same reason (the runtime-pack file has the same size as the relinked file,
+            // so the check is not meaningful).
+            const string multiThreadedWorkerFile = "dotnet.native.worker.mjs";
+            AssertFileExists(nativeDir, multiThreadedWorkerFile);
+            AssertFileNotExists(objDir, multiThreadedWorkerFile, "obj root");
+            if (!isNativeRebuild)
+                AssertFileNotExists(Path.Combine(objDir, "wasm", "for-build"), multiThreadedWorkerFile, "wasm/for-build");
+        }
+
+        // --- Assembly files: webcil-converted in webcil/ or materialized DLLs in fx/_framework/ ---
+        if (BuildTestBase.UseWebcil)
+        {
+            Assert.True(Directory.Exists(webcilDir), $"Expected webcil directory: {webcilDir}");
+            AssertFileExists(webcilDir, "System.Private.CoreLib.wasm");
+            AssertFileNotExists(fxFrameworkDir, "System.Private.CoreLib.wasm", "fx/_framework");
+        }
+        else
+        {
+            // When webcil is disabled, assembly DLLs are framework pass-through candidates
+            // and get materialized alongside other framework files in fx/_framework/.
+            AssertFileExists(fxFrameworkDir, "System.Private.CoreLib.dll");
+        }
+
+        // --- Boot config: parse from obj/dotnet.js to validate boot JSON is well-formed ---
+        string bootConfigPath = GetBootConfigPath(objDir, "dotnet.js");
+        BootJsonData bootJson = GetBootJson(bootConfigPath);
+        Assert.NotNull(bootJson.resources);
+
+        // --- Framework files (native, runtime, assemblies) must NOT be in bin/_framework/ ---
+        // dotnet.js (boot config) IS expected in bin/_framework/ since it keeps CopyToOutputDirectory=PreserveNewest.
+        string binFrameworkDir = GetBinFrameworkDir(config, forPublish: false, tfm);
+        if (Directory.Exists(binFrameworkDir))
+        {
+            foreach (string file in nativeFiles.Concat(materializedFiles))
+            {
+                AssertFileNotExists(binFrameworkDir, file, "bin/_framework");
+            }
+        }
+
+        // --- Native file comparison against runtime pack ---
+        if (isUsingWorkloads)
+        {
+            string runtimeNativeDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(tfm, buildOptions.RuntimeType);
+            foreach (string nativeFilename in nativeFiles)
+            {
+                string actualPath = Path.Combine(nativeDir, nativeFilename);
+                if (expectedFileType == NativeFilesType.FromRuntimePack)
+                {
+                    TestUtils.AssertSameFile(Path.Combine(runtimeNativeDir, nativeFilename), actualPath, "build");
+                }
+            }
+        }
+    }
+
+    private static void AssertFileExists(string dir, string filename)
+    {
+        Assert.True(File.Exists(Path.Combine(dir, filename)),
+            $"Expected {filename} in {dir}");
+    }
+
+    private static void AssertFileNotExists(string dir, string filename, string dirLabel)
+    {
+        Assert.False(File.Exists(Path.Combine(dir, filename)),
+            $"Did not expect {filename} in {dirLabel} ({dir})");
     }
 
     public BuildPaths GetBuildPaths(Configuration configuration, bool forPublish, string? projectDir = null)
