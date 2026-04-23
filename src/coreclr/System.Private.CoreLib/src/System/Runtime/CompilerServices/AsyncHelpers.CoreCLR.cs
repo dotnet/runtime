@@ -245,7 +245,7 @@ namespace System.Runtime.CompilerServices
                 if (CurrentDispatcherInfo != null)
                     return CurrentDispatcherInfo;
 
-                // This relies on coreclr and NAOT runtimes always storing ThreadStatic pointer fields in a pinned fashion.
+                // This relies on coreclr and NativeAOT runtimes always storing ThreadStatic pointer fields in a pinned fashion.
                 fixed (AsyncDispatcherInfo** pCurrentDispatcherInfo = &AsyncDispatcherInfo.t_current)
                 {
                     return CurrentDispatcherInfo = pCurrentDispatcherInfo;
@@ -268,7 +268,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [ThreadStatic]
-        private static unsafe RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
+        private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
 
 #if !NATIVEAOT
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_AddContinuationToExInternal")]

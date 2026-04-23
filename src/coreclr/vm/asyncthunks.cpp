@@ -106,7 +106,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
     //     if (AsyncHelpers.AsyncCallContinuation() == null)
     //       return Task.FromResult(result);
     //
-    //     return FinalizeTaskReturningThunk();
+    //     return FinalizeTaskReturningThunk(ref awaitState);
     //   }
     //   catch (Exception ex)
     //   {
