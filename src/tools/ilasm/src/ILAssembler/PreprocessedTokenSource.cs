@@ -215,13 +215,22 @@ namespace ILAssembler
                 }
                 else if (tokens.Count > 1)
                 {
-                    // Multiple tokens: return the first, queue the rest
+                    // Multiple tokens: return the first, queue the rest.
+                    // Clone queued tokens to inherit the original macro identifier's source
+                    // location so diagnostics on expanded tokens map to the right file/span.
                     IWritableToken writableToken = (IWritableToken)nextToken;
                     writableToken.Type = tokens[0].Type;
                     writableToken.Text = tokens[0].Text;
                     for (int i = 1; i < tokens.Count; i++)
                     {
-                        _macroExpansionQueue.Enqueue(tokens[i]);
+                        var source = new Tuple<ITokenSource, ICharStream>(nextToken.TokenSource!, nextToken.TokenSource?.InputStream!);
+                        var expanded = new CommonToken(source, tokens[i].Type, Lexer.DefaultTokenChannel, nextToken.StartIndex, nextToken.StopIndex)
+                        {
+                            Line = nextToken.Line,
+                            Column = nextToken.Column,
+                            Text = tokens[i].Text,
+                        };
+                        _macroExpansionQueue.Enqueue(expanded);
                     }
                 }
                 // If tokens.Count == 0 (empty macro value), just return the original token as-is

@@ -372,17 +372,34 @@ namespace ILAssembler
                     catch (InvalidOperationException)
                     {
                         // Method has unresolved labels or other body errors.
-                        // Write raw IL bytes as a fallback so the PE can still be emitted
-                        // (error diagnostics are already recorded).
-                        bodyOffset = ilStream.Count;
-                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ilStream);
+                        // Emit a minimal valid method body containing the raw IL bytes so
+                        // the PE can still be emitted (error diagnostics are already recorded).
+                        var fallbackBody = bodyStreamEncoder.AddMethodBody(
+                            methodDef.MethodBody.CodeBuilder.Count,
+                            methodDef.MaxStack,
+                            exceptionRegionCount: 0,
+                            hasSmallExceptionRegions: true,
+                            localsSigHandle,
+                            methodDef.BodyAttributes);
+                        bodyOffset = fallbackBody.Offset;
+                        var writer1 = new BlobWriter(fallbackBody.Instructions);
+                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer1);
                     }
                     catch (ArgumentOutOfRangeException)
                     {
                         // Exception handler regions have invalid ranges (e.g., from parse
-                        // errors that produced malformed control flow).
-                        bodyOffset = ilStream.Count;
-                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ilStream);
+                        // errors that produced malformed control flow). Emit the IL in a
+                        // minimal valid method body and omit exception regions in fallback.
+                        var fallbackBody = bodyStreamEncoder.AddMethodBody(
+                            methodDef.MethodBody.CodeBuilder.Count,
+                            methodDef.MaxStack,
+                            exceptionRegionCount: 0,
+                            hasSmallExceptionRegions: true,
+                            localsSigHandle,
+                            methodDef.BodyAttributes);
+                        bodyOffset = fallbackBody.Offset;
+                        var writer2 = new BlobWriter(fallbackBody.Instructions);
+                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer2);
                     }
                 }
 
