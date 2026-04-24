@@ -46,7 +46,7 @@ public class DacDbiLoaderDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetModuleForAssembly(TestConfiguration config)
+    public unsafe void GetModuleForAssembly_ReturnsExpectedModule(TestConfiguration config)
     {
         InitializeDumpTest(config);
         DacDbiImpl dbi = CreateDacDbi();
