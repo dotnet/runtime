@@ -495,7 +495,7 @@ int32_t CryptoNative_EvpPKeyGetEcFieldDegree(const EVP_PKEY* pkey)
         return 0;
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (!API_EXISTS(EVP_PKEY_get_bn_param))
+    if (!API_EXISTS(EVP_PKEY_get_bn_param) || !API_EXISTS(EVP_PKEY_get_utf8_string_param))
     {
         return 0;
     }
@@ -558,7 +558,9 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     assert(cbD != NULL);
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (!API_EXISTS(EVP_PKEY_get_bn_param))
+    if (!API_EXISTS(EVP_PKEY_get_bn_param) ||
+        !API_EXISTS(EVP_PKEY_get_octet_string_param) ||
+        !API_EXISTS(EVP_PKEY_get_utf8_string_param))
     {
         *cbQx = *cbQy = 0;
         *qx = *qy = 0;
@@ -932,7 +934,9 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (!API_EXISTS(EC_GROUP_get_field_type) ||
-        !API_EXISTS(EVP_PKEY_get_octet_string_param))
+        !API_EXISTS(EVP_PKEY_get_octet_string_param) ||
+        !API_EXISTS(EVP_PKEY_get_utf8_string_param) ||
+        !API_EXISTS(EVP_PKEY_get_bn_param))
     {
         return 0;
     }
@@ -1153,11 +1157,14 @@ int32_t CryptoNative_EvpPKeyGenerateByEcKeyOid(
 
     ERR_clear_error();
 
-#ifdef NEED_OPENSSL_3_0
-    if (!API_EXISTS(EVP_PKEY_CTX_new_from_name))
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_CTX_new_from_name) || !API_EXISTS(EVP_PKEY_CTX_set_group_name))
     {
         return 0;
     }
+#endif
+
+#ifdef NEED_OPENSSL_3_0
 
     int nid = OBJ_txt2nid(oid);
     if (!nid)
@@ -1221,11 +1228,17 @@ int32_t CryptoNative_EvpPKeyCreateByEcKeyParameters(
 
     ERR_clear_error();
 
-#ifdef NEED_OPENSSL_3_0
-    if (!API_EXISTS(EVP_PKEY_fromdata) || !API_EXISTS(OSSL_PARAM_BLD_new))
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_fromdata) ||
+        !API_EXISTS(EVP_PKEY_fromdata_init) ||
+        !API_EXISTS(EVP_PKEY_CTX_new_from_name) ||
+        !API_EXISTS(OSSL_PARAM_BLD_new))
     {
         return 0;
     }
+#endif
+
+#ifdef NEED_OPENSSL_3_0
 
     // Verify the OID is recognized before doing any work.
     int nid = OBJ_txt2nid(oid);
@@ -1372,12 +1385,19 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
 
     ERR_clear_error();
 
-#ifdef NEED_OPENSSL_3_0
-    if (!API_EXISTS(EVP_PKEY_fromdata) || !API_EXISTS(OSSL_PARAM_BLD_new) ||
-        !API_EXISTS(EVP_PKEY_generate) || !API_EXISTS(EVP_PKEY_CTX_new_from_pkey))
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_fromdata) ||
+        !API_EXISTS(EVP_PKEY_fromdata_init) ||
+        !API_EXISTS(EVP_PKEY_CTX_new_from_name) ||
+        !API_EXISTS(EVP_PKEY_CTX_new_from_pkey) ||
+        !API_EXISTS(EVP_PKEY_generate) ||
+        !API_EXISTS(OSSL_PARAM_BLD_new))
     {
         return NULL;
     }
+#endif
+
+#ifdef NEED_OPENSSL_3_0
 
     EVP_PKEY* pkey = NULL;
     EVP_PKEY_CTX* ctx = NULL;
@@ -1507,7 +1527,8 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
         if (!EC_POINT_set_affine_coordinates(group, G, gxBn, gyBn, NULL))
             goto error;
 
-        EC_GROUP_set_generator(group, G, orderBn, cofactorBn);
+        if (!EC_GROUP_set_generator(group, G, orderBn, cofactorBn))
+            goto error;
 
         // Derive Q = d * G
         pubPoint = EC_POINT_new(group);

@@ -149,7 +149,13 @@ namespace System.Security.Cryptography
                 if (pkey is not null)
                 {
                     keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(pkey);
-                    return pkey;
+
+                    if (keySize != 0)
+                    {
+                        return pkey;
+                    }
+
+                    pkey.Dispose();
                 }
             }
             else if (curve.IsPrime || curve.IsCharacteristic2)
@@ -174,7 +180,13 @@ namespace System.Security.Cryptography
                 if (pkey is not null)
                 {
                     keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(pkey);
-                    return pkey;
+
+                    if (keySize != 0)
+                    {
+                        return pkey;
+                    }
+
+                    pkey.Dispose();
                 }
             }
 
@@ -200,7 +212,13 @@ namespace System.Security.Cryptography
                 if (pkey is not null)
                 {
                     keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(pkey);
-                    return pkey;
+
+                    if (keySize != 0)
+                    {
+                        return pkey;
+                    }
+
+                    pkey.Dispose();
                 }
             }
             else if (parameters.Curve.IsPrime || parameters.Curve.IsCharacteristic2)
@@ -224,7 +242,13 @@ namespace System.Security.Cryptography
                 if (pkey is not null)
                 {
                     keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(pkey);
-                    return pkey;
+
+                    if (keySize != 0)
+                    {
+                        return pkey;
+                    }
+
+                    pkey.Dispose();
                 }
             }
 

@@ -98,7 +98,8 @@ PALEXPORT int32_t CryptoNative_EvpPKeyGenerateByEcKeyOid(
     const char* oid);
 
 /*
-Returns 1 if the EVP_PKEY EC key uses explicit encoding, 0 otherwise.
+Returns 1 if the EVP_PKEY EC key uses explicit encoding, 0 if it uses named curve encoding,
+or -1 if the encoding could not be determined (e.g. pre-3.0 OpenSSL or unavailable API).
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(const EVP_PKEY* pkey);
 
