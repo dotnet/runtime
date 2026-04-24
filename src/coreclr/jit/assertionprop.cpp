@@ -1869,6 +1869,8 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         {
 #if defined(TARGET_XARCH)
             case NI_Vector128_op_Equality:
+            case NI_Vector256_op_Equality:
+            case NI_Vector512_op_Equality:
 #elif defined(TARGET_ARM64)
             case NI_Vector64_op_Equality:
             case NI_Vector128_op_Equality:
@@ -1876,6 +1878,8 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
                 break;
 #if defined(TARGET_XARCH)
             case NI_Vector128_op_Inequality:
+            case NI_Vector256_op_Inequality:
+            case NI_Vector512_op_Inequality:
 #elif defined(TARGET_ARM64)
             case NI_Vector64_op_Inequality:
             case NI_Vector128_op_Inequality:
@@ -1900,7 +1904,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
                 return NO_ASSERTION_INDEX;
             }
 
-            assert(op1->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16));
+            assert(varTypeIsSIMD(op1));
             assert(op1->TypeIs(op2->TypeGet()));
         }
         else
