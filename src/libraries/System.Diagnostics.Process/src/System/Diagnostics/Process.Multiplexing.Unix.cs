@@ -62,27 +62,10 @@ namespace System.Diagnostics
 
                 while (!outputDone || !errorDone)
                 {
-                    int numFds = PreparePollFds(pollFds, errorFd, outputFd, errorDone, outputDone, out int errorIndex, out int outputIndex);
-
-                    if (!TryGetRemainingTimeout(deadline, timeoutMs, out int pollTimeout))
+                    int numFds = PollForPipeActivity(pollFds, errorFd, outputFd, errorDone, outputDone, deadline, timeoutMs, out int errorIndex, out int outputIndex);
+                    if (numFds == 0)
                     {
-                        throw new TimeoutException();
-                    }
-
-                    Interop.Error pollError = PollPipes(pollFds, numFds, pollTimeout, out uint triggered);
-                    if (pollError != Interop.Error.SUCCESS)
-                    {
-                        if (pollError == Interop.Error.EINTR)
-                        {
-                            continue;
-                        }
-
-                        throw new Win32Exception(Interop.Sys.ConvertErrorPalToPlatform(pollError));
-                    }
-
-                    if (triggered == 0)
-                    {
-                        throw new TimeoutException();
+                        continue; // EINTR
                     }
 
                     // Process error pipe first (lower index) when both have data available.
@@ -176,6 +159,44 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Prepares the poll fd array, checks the remaining timeout, calls poll(2), and handles
+        /// errors. Returns the number of polled fds, or 0 if poll was interrupted (EINTR) and
+        /// the caller should retry.
+        /// </summary>
+        private static int PollForPipeActivity(
+            Interop.PollEvent[] pollFds,
+            int errorFd, int outputFd,
+            bool errorDone, bool outputDone,
+            long deadline, int timeoutMs,
+            out int errorIndex, out int outputIndex)
+        {
+            int numFds = PreparePollFds(pollFds, errorFd, outputFd, errorDone, outputDone, out errorIndex, out outputIndex);
+
+            if (!TryGetRemainingTimeout(deadline, timeoutMs, out int pollTimeout))
+            {
+                throw new TimeoutException();
+            }
+
+            Interop.Error pollError = PollPipes(pollFds, numFds, pollTimeout, out uint triggered);
+            if (pollError != Interop.Error.SUCCESS)
+            {
+                if (pollError == Interop.Error.EINTR)
+                {
+                    return 0;
+                }
+
+                throw new Win32Exception(Interop.Sys.ConvertErrorPalToPlatform(pollError));
+            }
+
+            if (triggered == 0)
+            {
+                throw new TimeoutException();
+            }
+
+            return numFds;
+        }
+
+        /// <summary>
         /// Handles a poll notification for a single pipe: reads bytes, decodes to chars,
         /// strips BOM on first decode, parses lines, compacts the char buffer, and sets
         /// <paramref name="done"/> to <see langword="true"/> on EOF.
@@ -259,27 +280,10 @@ namespace System.Diagnostics
             bool outputDone = false, errorDone = false;
             while (!outputDone || !errorDone)
             {
-                int numFds = PreparePollFds(pollFds, errorFd, outputFd, errorDone, outputDone, out int errorIndex, out int outputIndex);
-
-                if (!TryGetRemainingTimeout(deadline, timeoutMs, out int pollTimeout))
+                int numFds = PollForPipeActivity(pollFds, errorFd, outputFd, errorDone, outputDone, deadline, timeoutMs, out int errorIndex, out int outputIndex);
+                if (numFds == 0)
                 {
-                    throw new TimeoutException();
-                }
-
-                Interop.Error pollError = PollPipes(pollFds, numFds, pollTimeout, out uint triggered);
-                if (pollError != Interop.Error.SUCCESS)
-                {
-                    if (pollError == Interop.Error.EINTR)
-                    {
-                        continue;
-                    }
-
-                    throw new Win32Exception(Interop.Sys.ConvertErrorPalToPlatform(pollError));
-                }
-
-                if (triggered == 0)
-                {
-                    throw new TimeoutException();
+                    continue; // EINTR
                 }
 
                 for (int i = 0; i < numFds; i++)
