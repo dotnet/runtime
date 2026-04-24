@@ -90,8 +90,8 @@ public class DacDbiDebuggerDumpTests : DumpTestBase
         int hr = dbi.IsLeftSideInitialized(&dbiResult);
         Assert.Equal(System.HResults.S_OK, hr);
 
-        bool contractResult = Target.Contracts.Debugger.TryGetDebuggerData(out _);
-        Assert.Equal(contractResult, dbiResult != Interop.BOOL.FALSE);
+        bool contractResult = Target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data);
+        Assert.Equal(contractResult && data.IsLeftSideInitialized, dbiResult != Interop.BOOL.FALSE);
     }
 
     [ConditionalTheory]
