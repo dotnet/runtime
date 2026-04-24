@@ -177,17 +177,14 @@ namespace System.Diagnostics
                 return;
             }
 
-            // If there isn't enough room at the end but compacting the consumed space at the start
-            // would free enough room, compact to avoid unnecessary buffer growth.
+            // If there isn't enough room at the end, compact the consumed space at the start first
+            // so that if growth is still needed, RentLargerBuffer copies only the unconsumed data.
             if (charEndIndex + charCount > charBuffer.Length && charStartIndex > 0)
             {
                 int remaining = charEndIndex - charStartIndex;
-                if (remaining + charCount <= charBuffer.Length)
-                {
-                    Array.Copy(charBuffer, charStartIndex, charBuffer, 0, remaining);
-                    charStartIndex = 0;
-                    charEndIndex = remaining;
-                }
+                Array.Copy(charBuffer, charStartIndex, charBuffer, 0, remaining);
+                charStartIndex = 0;
+                charEndIndex = remaining;
             }
 
             while (charEndIndex + charCount > charBuffer.Length)
@@ -638,7 +635,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Rents a larger buffer from the array pool, copies existing data, and returns the old buffer.
+        /// Rents a larger buffer from the array pool, copies existing data, and returns the old buffer to the pool.
         /// </summary>
         private static void RentLargerBuffer<T>(ref T[] buffer, int dataLength)
         {
