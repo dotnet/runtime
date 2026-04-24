@@ -329,9 +329,9 @@ namespace System.Reflection.TypeLoading
 
         // Nullable methods
 #if NET11_0_OR_GREATER
-        public sealed override Type? GetNullableUnderlyingType()
+        public override Type? GetNullableUnderlyingType()
         {
-            if (IsConstructedGenericType)
+            if (IsGenericType)
             {
                 RoType? nullableOfT = Loader.TryGetCoreType(CoreType.NullableT);
                 if (nullableOfT is not null && GetGenericTypeDefinition() == nullableOfT)

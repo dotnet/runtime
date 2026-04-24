@@ -12,6 +12,9 @@ namespace System.Reflection.Emit
         {
         }
 
+        // A TypeBuilder represents a type being built; it cannot itself be a Nullable<T>.
+        public override Type? GetNullableUnderlyingType() => null;
+
         public const int UnspecifiedTypeSize = 0;
 
         public PackingSize PackingSize

@@ -18,6 +18,10 @@ namespace System.Reflection
     {
         public sealed override bool IsSignatureType => true;
 
+        // SignatureType subclasses represent signature-only types (used for custom modifier signatures, etc.).
+        // Only SignatureConstructedGenericType can represent a Nullable<T>; others override to no-op.
+        public override Type? GetNullableUnderlyingType() => null;
+
         // Type flavor predicates
         public abstract override bool IsTypeDefinition { get; }
         protected abstract override bool HasElementTypeImpl();
