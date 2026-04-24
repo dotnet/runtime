@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using DACF = Microsoft.Diagnostics.DataContractReader.Contracts.DebuggerAssemblyControlFlags;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -37,6 +38,17 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
     }
 
+    private bool CORProfilerPresent()
+    {
+        if (!_target.TryReadGlobalPointer(Constants.Globals.ProfilerControlBlock, out TargetPointer? profControlBlockAddress))
+            return false;
+
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.ProfControlBlock);
+        TargetPointer mainProfInterface = _target.ReadPointerField(profControlBlockAddress.Value, type, "MainProfilerProfInterface");
+        int notificationCount = _target.ReadField<int>(profControlBlockAddress.Value, type, "NotificationProfilerCount");
+        return mainProfInterface != TargetPointer.Null || notificationCount > 0;
+    }
+
     public DacDbiImpl(Target target, object? legacyObj)
     {
         _target = target;
@@ -61,7 +73,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            *pResult = _target.Contracts.Debugger.TryGetDebuggerData(out _) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            *pResult = _target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data) && data.IsLeftSideInitialized ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
@@ -315,7 +327,51 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int SetCompilerFlags(ulong vmAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.SetCompilerFlags(vmAssembly, fAllowJitOpts, fEnableEnC) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
+
+            DACF debuggerInfoBits = loader.GetDebuggerInfoBits(handle);
+            DACF controlFlags = debuggerInfoBits & ~(DACF.DACF_ALLOW_JIT_OPTS | DACF.DACF_ENC_ENABLED);
+            controlFlags &= DACF.DACF_CONTROL_FLAGS_MASK;
+
+            if (fAllowJitOpts != Interop.BOOL.FALSE)
+            {
+                controlFlags |= DACF.DACF_ALLOW_JIT_OPTS;
+            }
+
+            if (fEnableEnC != Interop.BOOL.FALSE)
+            {
+                bool fIgnorePdbs = (debuggerInfoBits & DACF.DACF_IGNORE_PDBS) != 0;
+                bool canSetEnC = (loader.GetFlags(handle) & Contracts.ModuleFlags.EncCapable) != 0 && !CORProfilerPresent() && fIgnorePdbs;
+                if (canSetEnC)
+                {
+                    controlFlags |= DACF.DACF_ENC_ENABLED;
+                }
+                else
+                {
+                    hr = CorDbgHResults.CORDBG_S_NOT_ALL_BITS_SET;
+                }
+            }
+
+            loader.SetDebuggerInfoBits(handle, controlFlags);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.SetCompilerFlags(vmAssembly, fAllowJitOpts, fEnableEnC);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
@@ -366,10 +422,66 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int MarkDebuggerAttachPending()
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.MarkDebuggerAttachPending() : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IDebugger debugger = _target.Contracts.Debugger;
+            if (debugger.TryGetDebuggerData(out _))
+            {
+                debugger.MarkDebuggerAttachPending();
+            }
+            else
+            {
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_NOTREADY)!;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.MarkDebuggerAttachPending();
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     public int MarkDebuggerAttached(Interop.BOOL fAttached)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.MarkDebuggerAttached(fAttached) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IDebugger debugger = _target.Contracts.Debugger;
+            if (debugger.TryGetDebuggerData(out _))
+            {
+                debugger.MarkDebuggerAttached(fAttached != Interop.BOOL.FALSE);
+            }
+            else if (fAttached != Interop.BOOL.FALSE)
+            {
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_NOTREADY)!;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.MarkDebuggerAttached(fAttached);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     public int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.Hijack(vmThread, dwThreadId, pRecord, pOriginalContext, cbSizeContext, reason, pUserData, pRemoteContextAddr) : HResults.E_NOTIMPL;

@@ -560,19 +560,136 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     }
 #endif // _DEBUG
 
+    // All task-returning methods need two MethodDescs: the task-returning variant and
+    // an async variant with Task/ValueTask stripped from the return type. This matches
+    // the normal type loading path in MethodTableBuilder::EnumerateClassMethods.
+    // For IsMiAsync methods the primary is a thunk and the async variant owns the IL;
+    // for non-IsMiAsync methods the primary owns the IL and the async variant is a thunk.
+    //
+    // The normal type loading path also creates a void-returning ReturnDroppingThunk
+    // for covariant virtual overrides (base returns Task, derived returns Task<T>).
+    // EnC-added methods cannot be METHOD_IMPL overrides, so that case does not apply here.
+    // Note: There are multiple corner-case bugs here we are choosing not to address:
+    // 1. The types might not be the well-known Task/ValueTask types from 
+    //    System.Private.CoreLib. We won't know the answer until after 
+    //    ClassifyMethodReturnKind returns.
+    // 2. Even if the types are the well-known types that alone doesn't guarantee this 
+    //    call won't trigger a GC.
+    // Accepted as Won't Fix given this requires an unlikely combination events during 
+    // an EnC operation while debugging.
+    AsyncMethodFlags primaryAsyncFlags = AsyncMethodFlags::None;
+    AsyncMethodFlags variantAsyncFlags = AsyncMethodFlags::None;
+    BYTE* pAsyncVariantSig = NULL;
+    ULONG cAsyncVariantSig = 0;
+
+    {
+        ULONG sigLen;
+        PCCOR_SIGNATURE pMemberSignature;
+        if (FAILED(pImport->GetSigOfMethodDef(methodDef, &sigLen, &pMemberSignature)))
+            return COR_E_BADIMAGEFORMAT;
+
+        ULONG offsetOfAsyncDetails = 0;
+        bool returnsValueTask = false;
+        MethodReturnKind returnKind;
+        {
+            // ClassifyMethodReturnKind calls IsTypeDefOrRefImplementedInSystemModule which
+            // does type resolution that may trigger GC. We suppress GC_NOTRIGGER here because
+            // we're only resolving well-known system types (Task/ValueTask) in practice.
+            CONTRACT_VIOLATION(GCViolation);
+            ULONG elementTypeLength = 0;
+            returnKind = ClassifyMethodReturnKind(
+                SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &elementTypeLength, &returnsValueTask);
+        }
+
+        if (IsTaskReturning(returnKind))
+        {
+            primaryAsyncFlags = AsyncMethodFlags::ReturnsTaskOrValueTask;
+            if (IsMiAsync(dwImplFlags))
+                primaryAsyncFlags |= AsyncMethodFlags::Thunk;
+
+            variantAsyncFlags = AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant;
+            if (returnsValueTask)
+                variantAsyncFlags |= AsyncMethodFlags::IsAsyncVariantForValueTask;
+            if (!IsMiAsync(dwImplFlags))
+                variantAsyncFlags |= AsyncMethodFlags::Thunk;
+
+            // Build the async variant signature by stripping Task/ValueTask from the return type.
+            // NonGenericTask: "Task Method(args)" -> "void Method(args)"
+            // GenericTask:    "Task<T> Method(args)" -> "T Method(args)"
+            ULONG tokenLen = CorSigUncompressedDataSize(
+                &pMemberSignature[offsetOfAsyncDetails +
+                    (returnKind == MethodReturnKind::NonGenericTaskReturningMethod ? 1 : 2)]);
+
+            ULONG taskTypePrefixSize;
+            ULONG taskTypePrefixReplacementSize;
+            if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+            {
+                taskTypePrefixSize = 1 + tokenLen;     // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
+                taskTypePrefixReplacementSize = 1;     // ELEMENT_TYPE_VOID
+            }
+            else
+            {
+                taskTypePrefixSize = 2 + tokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
+                taskTypePrefixReplacementSize = 0;
+            }
+
+            cAsyncVariantSig = sigLen - taskTypePrefixSize + taskTypePrefixReplacementSize;
+            LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
+            pAsyncVariantSig = (BYTE*)(void*)pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cAsyncVariantSig));
+
+            ULONG originalRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixSize;
+            ULONG newRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixReplacementSize;
+
+            memcpy(pAsyncVariantSig, pMemberSignature, offsetOfAsyncDetails);
+            memcpy(pAsyncVariantSig + newRemainingSigOffset,
+                   pMemberSignature + originalRemainingSigOffset,
+                   sigLen - originalRemainingSigOffset);
+
+            if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+                pAsyncVariantSig[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
+        }
+        else if (IsMiAsync(dwImplFlags))
+        {
+            // IsMiAsync but not task-returning (e.g. infrastructure Await helpers).
+            // Not supported for EnC.
+            LOG((LF_ENC, LL_INFO100,
+                "EEClass::AddMethod rejecting non-task-returning async method (methodDef: 0x%08x)\n",
+                methodDef));
+            return CORDBG_E_ENC_EDIT_NOT_SUPPORTED;
+        }
+    }
+
+    // Create the primary MethodDesc (task-returning for async methods, or the only MethodDesc for non-async).
     MethodDesc* pNewMD;
-    if (FAILED(hr = AddMethodDesc(pMT, methodDef, dwImplFlags, dwMemberAttrs, &pNewMD)))
+    if (FAILED(hr = AddMethodDesc(pMT, methodDef, dwImplFlags, dwMemberAttrs,
+                                  primaryAsyncFlags, NULL, 0, &pNewMD)))
     {
         LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod failed: 0x%08x\n", hr));
         return hr;
     }
 
-    // Store the new MethodDesc into the collection for this class
+    // Store the task-returning (or only) variant in the module's method lookup.
+    // The async variant is found via IntroducedMethodIterator, not stored here.
     pModule->EnsureMethodDefCanBeStored(methodDef);
     pModule->EnsuredStoreMethodDef(methodDef, pNewMD);
 
     LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Added pMD:%p for token 0x%08x\n",
         pNewMD, methodDef));
+
+    // Create the async variant eagerly alongside the primary.
+    if (pAsyncVariantSig != NULL)
+    {
+        MethodDesc* pAsyncVariant = NULL;
+        if (FAILED(hr = AddMethodDesc(pMT, methodDef, dwImplFlags, dwMemberAttrs,
+                                      variantAsyncFlags, pAsyncVariantSig, cAsyncVariantSig, &pAsyncVariant)))
+        {
+            LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod async variant failed: 0x%08x\n", hr));
+            return hr;
+        }
+
+        LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Added async variant pMD:%p for token 0x%08x\n",
+            pAsyncVariant, methodDef));
+    }
 
     // If the type is generic, then we need to update all existing instantiated types
     if (pMT->IsGenericTypeDefinition())
@@ -606,13 +723,29 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
                     continue;
                 }
 
+                // Create a primary MethodDesc on this instantiation.
                 MethodDesc* pNewMDUnused;
-                if (FAILED(AddMethodDesc(pMTMaybe, methodDef, dwImplFlags, dwMemberAttrs, &pNewMDUnused)))
+                if (FAILED(AddMethodDesc(pMTMaybe, methodDef, dwImplFlags, dwMemberAttrs,
+                                         primaryAsyncFlags, NULL, 0, &pNewMDUnused)))
                 {
                     LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod failed: 0x%08x\n", hr));
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
                         W("Failed to add method to existing instantiated type instance"));
                     return E_FAIL;
+                }
+
+                // Also create the async variant eagerly on this instantiation.
+                if (pAsyncVariantSig != NULL)
+                {
+                    MethodDesc* pInstVariant = NULL;
+                    if (FAILED(AddMethodDesc(pMTMaybe, methodDef, dwImplFlags, dwMemberAttrs,
+                                             variantAsyncFlags, pAsyncVariantSig, cAsyncVariantSig, &pInstVariant)))
+                    {
+                        LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod async variant failed on instantiation: 0x%08x\n", hr));
+                        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
+                            W("Failed to add async variant to existing instantiated type instance"));
+                        return E_FAIL;
+                    }
                 }
             }
         }
@@ -634,6 +767,9 @@ HRESULT EEClass::AddMethodDesc(
     mdMethodDef methodDef,
     DWORD dwImplFlags,
     DWORD dwMemberAttrs,
+    AsyncMethodFlags asyncFlags,
+    PCCOR_SIGNATURE pAsyncSig,
+    DWORD cbAsyncSig,
     MethodDesc** ppNewMD)
 {
     CONTRACTL
@@ -660,16 +796,12 @@ HRESULT EEClass::AddMethodDesc(
     if (FAILED(hr = pImport->GetSigOfMethodDef(methodDef, &sigLen, &sig)))
         return hr;
 
-    if (IsMiAsync(dwImplFlags))
-    {
-        LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
-        return E_FAIL;
-    }
-
     uint32_t callConv = CorSigUncompressData(sig);
     DWORD classification = (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
         ? mcInstantiated
         : mcIL;
+
+    bool hasAsyncData = (asyncFlags != AsyncMethodFlags::None);
 
     LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
 
@@ -684,7 +816,7 @@ HRESULT EEClass::AddMethodDesc(
                                                             classification,
                                                             TRUE, // fNonVtableSlot
                                                             TRUE, // fNativeCodeSlot
-                                                            FALSE, /* HasAsyncMethodData */
+                                                            hasAsyncData, /* HasAsyncMethodData */
                                                             pMT,
                                                             &dummyAmTracker);
 
@@ -733,8 +865,8 @@ HRESULT EEClass::AddMethodDesc(
                                 0,      // RVA - non-zero only for PInvoke
                                 pImport,
                                 NULL,
-                                Signature(),
-                                AsyncMethodFlags::None
+                                Signature(pAsyncSig, cbAsyncSig),
+                                asyncFlags
                                 COMMA_INDEBUG(debug_szMethodName)
                                 COMMA_INDEBUG(pMT->GetDebugClassName())
                                 COMMA_INDEBUG(NULL)
@@ -2947,7 +3079,9 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
 
     if (head == NULL)
     {
-        SetChunks(pNewChunk);
+        // Use VolatileStore to ensure the chunk's internal data (MethodDescs, flags, etc.)
+        // is fully visible to concurrent readers before the chunk becomes reachable.
+        VolatileStore(&m_pChunks, pNewChunk);
     }
     else
     {
@@ -2956,7 +3090,7 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
         while (head->GetNextChunk() != NULL)
             head = head->GetNextChunk();
 
-        head->SetNextChunk(pNewChunk);
+        head->SetNextChunkVolatile(pNewChunk);
     }
 }
 
