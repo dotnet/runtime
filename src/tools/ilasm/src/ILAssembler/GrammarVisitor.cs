@@ -5699,19 +5699,21 @@ namespace ILAssembler
                     case CILParser.ArrayModifierContext arr:
                         var bounds = VisitBounds(arr.bounds()).Value;
                         suffix.WriteCompressedInteger(bounds.Length);
-                        // Count contiguous sizes from the start
+                        // Count contiguous sizes from the start (stop at first null)
                         int numSizes = 0;
                         for (int bIdx = 0; bIdx < bounds.Length; bIdx++)
                         {
-                            if (bounds[bIdx].Upper is not null)
-                                numSizes = bIdx + 1;
+                            if (bounds[bIdx].Upper is null)
+                                break;
+                            numSizes++;
                         }
-                        // Count contiguous lower bounds from the start
+                        // Count contiguous lower bounds from the start (stop at first null)
                         int numLoBounds = 0;
                         for (int bIdx = 0; bIdx < bounds.Length; bIdx++)
                         {
-                            if (bounds[bIdx].Lower is not null)
-                                numLoBounds = bIdx + 1;
+                            if (bounds[bIdx].Lower is null)
+                                break;
+                            numLoBounds++;
                         }
                         suffix.WriteCompressedInteger(numSizes);
                         for (int bIdx = 0; bIdx < numSizes; bIdx++)

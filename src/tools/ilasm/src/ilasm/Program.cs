@@ -318,7 +318,7 @@ internal sealed class Program
 
             if (arg.StartsWith("-RESOURCES=", StringComparison.OrdinalIgnoreCase))
             {
-                continue;
+                throw new ArgumentException($"Unsupported native option '{arg}'. The managed ilasm implementation does not support -RESOURCES.");
             }
 
             if (arg.StartsWith('-') && !arg.StartsWith("--"))
