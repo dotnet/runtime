@@ -139,11 +139,15 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
         {
             int rc = Interop.Crypto.EvpPKeyGenerateByEcKeyOid(out SafeEvpPKeyHandle pkey, oid);
 
-            if (rc != 1 || pkey.IsInvalid)
+            if (!PlatformDetection.IsOpenSsl3)
             {
+                Assert.Equal(0, rc);
                 pkey.Dispose();
-                throw new SkipTestException("EVP_PKEY EC generation not supported");
+                return;
             }
+
+            Assert.Equal(1, rc);
+            Assert.False(pkey.IsInvalid);
 
             using (pkey)
             using (ECDsaOpenSsl e = new ECDsaOpenSsl(pkey))
@@ -333,18 +337,22 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             {
                 Assert.NotEqual(0, Interop.Crypto.EcKeyGenerateKey(ecKey));
 
-                using ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey);
-                Assert.Equal(expectedKeySize, ecKeyBacked.KeySize);
+                using (ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey))
+                {
+                    Assert.Equal(expectedKeySize, ecKeyBacked.KeySize);
 
-                ECParameters privateParams = ecKeyBacked.ExportParameters(true);
+                    ECParameters privateParams = ecKeyBacked.ExportParameters(true);
 
-                using ECDsa evpBacked = ECDsa.Create(privateParams);
-                Assert.Equal(expectedKeySize, evpBacked.KeySize);
+                    using (ECDsa evpBacked = ECDsa.Create(privateParams))
+                    {
+                        Assert.Equal(expectedKeySize, evpBacked.KeySize);
 
-                ECParameters evpPrivateParams = evpBacked.ExportParameters(true);
+                        ECParameters evpPrivateParams = evpBacked.ExportParameters(true);
 
-                ComparePublicKey(privateParams.Q, evpPrivateParams.Q);
-                ComparePrivateKey(privateParams, evpPrivateParams);
+                        ComparePublicKey(privateParams.Q, evpPrivateParams.Q);
+                        ComparePrivateKey(privateParams, evpPrivateParams);
+                    }
+                }
             }
             finally
             {
@@ -367,14 +375,15 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             {
                 Assert.NotEqual(0, Interop.Crypto.EcKeyGenerateKey(ecKey));
 
-                using ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey);
-                using ECDsa evpBacked = ECDsa.Create(ecKeyBacked.ExportParameters(true));
+                using (ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey))
+                using (ECDsa evpBacked = ECDsa.Create(ecKeyBacked.ExportParameters(true)))
+                {
+                    byte[] sig1 = ecKeyBacked.SignData(data, HashAlgorithmName.SHA256);
+                    Assert.True(evpBacked.VerifyData(data, sig1, HashAlgorithmName.SHA256));
 
-                byte[] sig1 = ecKeyBacked.SignData(data, HashAlgorithmName.SHA256);
-                Assert.True(evpBacked.VerifyData(data, sig1, HashAlgorithmName.SHA256));
-
-                byte[] sig2 = evpBacked.SignData(data, HashAlgorithmName.SHA256);
-                Assert.True(ecKeyBacked.VerifyData(data, sig2, HashAlgorithmName.SHA256));
+                    byte[] sig2 = evpBacked.SignData(data, HashAlgorithmName.SHA256);
+                    Assert.True(ecKeyBacked.VerifyData(data, sig2, HashAlgorithmName.SHA256));
+                }
             }
             finally
             {
@@ -387,14 +396,18 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
         {
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
 
-            using ECDsa ecKeyBacked = ECDsa.Create(explicitCurve);
-            ECParameters explicitParams = ecKeyBacked.ExportExplicitParameters(true);
+            using (ECDsa ecKeyBacked = ECDsa.Create(explicitCurve))
+            {
+                ECParameters explicitParams = ecKeyBacked.ExportExplicitParameters(true);
 
-            using ECDsa evpBacked = ECDsa.Create(explicitParams);
-            ECParameters evpExplicitParams = evpBacked.ExportExplicitParameters(true);
+                using (ECDsa evpBacked = ECDsa.Create(explicitParams))
+                {
+                    ECParameters evpExplicitParams = evpBacked.ExportExplicitParameters(true);
 
-            ComparePublicKey(explicitParams.Q, evpExplicitParams.Q);
-            ComparePrivateKey(explicitParams, evpExplicitParams);
+                    ComparePublicKey(explicitParams.Q, evpExplicitParams.Q);
+                    ComparePrivateKey(explicitParams, evpExplicitParams);
+                }
+            }
         }
 
         [Fact]
@@ -403,16 +416,19 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             byte[] data = ByteUtils.RepeatByte(0x42, 64);
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
 
-            using ECDsa key1 = ECDsa.Create(explicitCurve);
-            ECParameters explicitParams = key1.ExportExplicitParameters(true);
+            using (ECDsa key1 = ECDsa.Create(explicitCurve))
+            {
+                ECParameters explicitParams = key1.ExportExplicitParameters(true);
 
-            using ECDsa key2 = ECDsa.Create(explicitParams);
+                using (ECDsa key2 = ECDsa.Create(explicitParams))
+                {
+                    byte[] sig1 = key1.SignData(data, HashAlgorithmName.SHA256);
+                    Assert.True(key2.VerifyData(data, sig1, HashAlgorithmName.SHA256));
 
-            byte[] sig1 = key1.SignData(data, HashAlgorithmName.SHA256);
-            Assert.True(key2.VerifyData(data, sig1, HashAlgorithmName.SHA256));
-
-            byte[] sig2 = key2.SignData(data, HashAlgorithmName.SHA256);
-            Assert.True(key1.VerifyData(data, sig2, HashAlgorithmName.SHA256));
+                    byte[] sig2 = key2.SignData(data, HashAlgorithmName.SHA256);
+                    Assert.True(key1.VerifyData(data, sig2, HashAlgorithmName.SHA256));
+                }
+            }
         }
     }
 }

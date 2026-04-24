@@ -502,9 +502,29 @@ int32_t CryptoNative_EvpPKeyGetEcFieldDegree(const EVP_PKEY* pkey)
 #endif
 
 #ifdef NEED_OPENSSL_3_0
-    char fieldType[32] = {0};
-    if (!EVP_PKEY_get_utf8_string_param(pkey, OSSL_PKEY_PARAM_EC_FIELD_TYPE, fieldType, sizeof(fieldType), NULL))
-        return 0;
+    // Determine whether this is a binary field (GF(2^m)) for the degree adjustment.
+    // Some providers (e.g. TPM2) don't expose OSSL_PKEY_PARAM_EC_FIELD_TYPE,
+    // so try EC_GROUP from the curve name first, then fall back to the param.
+    int isChar2 = 0;
+
+    int nid = 0;
+    if (CryptoNative_EvpPKeyGetEcGroupNid(pkey, &nid) && nid != NID_undef)
+    {
+        EC_GROUP* group = EC_GROUP_new_by_curve_name(nid);
+        if (group)
+        {
+            isChar2 = (EC_GROUP_get_field_type(group) == NID_X9_62_characteristic_two_field);
+            EC_GROUP_free(group);
+        }
+    }
+    else
+    {
+        char fieldType[32] = {0};
+        if (EVP_PKEY_get_utf8_string_param(pkey, OSSL_PKEY_PARAM_EC_FIELD_TYPE, fieldType, sizeof(fieldType), NULL))
+        {
+            isChar2 = (strcmp(fieldType, SN_X9_62_characteristic_two_field) == 0);
+        }
+    }
 
     BIGNUM* p = NULL;
     if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_P, &p) || !p)
@@ -513,7 +533,7 @@ int32_t CryptoNative_EvpPKeyGetEcFieldDegree(const EVP_PKEY* pkey)
     // For GF(2^m): p is the irreducible polynomial, degree = BN_num_bits(p) - 1.
     // For GF(p): degree = BN_num_bits(p).
     int degree = BN_num_bits(p);
-    if (strcmp(fieldType, SN_X9_62_characteristic_two_field) == 0)
+    if (isChar2)
         degree--;
 
     BN_free(p);
@@ -962,10 +982,15 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     else
     {
         // Named curve: create group to get field type.
+        // curveTypeNID will be always NID_X9_62_characteristic_two_field or NID_X9_62_prime_field
         group = EC_GROUP_new_by_curve_name(curveTypeNID);
         if (!group)
             goto error;
 
+        // In some cases EVP_PKEY_get_field_type can return NID_undef
+        // and some providers seem to be ignoring OSSL_PKEY_PARAM_EC_FIELD_TYPE.
+        // This is specifically true for tpm2 provider.
+        // We can reliably get the field type from the EC_GROUP.
         fieldTypeNID = EC_GROUP_get_field_type(group);
     }
 

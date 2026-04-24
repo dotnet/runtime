@@ -187,7 +187,7 @@ namespace System.Security.Cryptography
             }
             catch (CryptographicException)
             {
-                // EVP_PKEY param extraction may fail for EC_KEY-backed keys.
+                // EVP_PKEY params API is unavailable on pre-3.0 OpenSSL.
                 // Fall back to EC_KEY export path.
             }
 
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography
             }
             catch (CryptographicException)
             {
-                // EVP_PKEY param extraction may fail for EC_KEY-backed keys.
+                // EVP_PKEY params API is unavailable on pre-3.0 OpenSSL.
                 // Fall back to EC_KEY export path.
             }
 

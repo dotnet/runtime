@@ -51,12 +51,16 @@ namespace System.Security.Cryptography
         {
             get
             {
-                bool? result = Interop.Crypto.EvpPKeyEcHasExplicitEncoding(GetKey());
-                if (result.HasValue)
-                    return result.Value;
+                ThrowIfDisposed();
 
-                // Pre-3.0 fallback: check via EC_KEY whether the key has a curve name.
-                // If it doesn't have a curve name, it's explicit.
+                bool? result = Interop.Crypto.EvpPKeyEcHasExplicitEncoding(GetKey());
+
+                if (result.HasValue)
+                {
+                    return result.Value;
+                }
+
+                // Fallback for EC_KEY-backed handles: check via EC_KEY.
                 using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(GetKey()))
                 {
                     return !Interop.Crypto.EcKeyHasCurveName(ecKey);
@@ -69,19 +73,22 @@ namespace System.Security.Cryptography
             get
             {
                 ThrowIfDisposed();
-                int keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(_key);
-                if (keySize != 0)
-                    return keySize;
 
-                // For EC_KEY-backed handles, get size through EC_KEY path.
+                int keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(_key);
+
+                if (keySize != 0)
+                {
+                    return keySize;
+                }
+
+                // Fallback for EC_KEY-backed handles: get size via EC_KEY.
                 using (SafeEcKeyHandle? ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key))
                 {
                     if (ecKey is not null && !ecKey.IsInvalid)
                         return Interop.Crypto.EcKeyGetSize(ecKey);
                 }
 
-                // TODO message
-                throw new CryptographicException();
+                throw new CryptographicException(SR.Cryptography_InvalidHandle);
             }
         }
 
