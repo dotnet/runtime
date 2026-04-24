@@ -199,14 +199,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (isIndirectArg[i])
                 {
                     // Indirect struct — zero-fill the transition block slot instead of copying the byref pointer.
-                    // The slot is pointer-aligned in the transition block, so we can safely zero in 4-byte chunks.
                     int structSize = paramType.GetElementSize().AsInt;
-                    for (int zeroOffset = 0; zeroOffset < structSize; zeroOffset += 4)
-                    {
-                        expressions.Add(Local.Get(0));
-                        expressions.Add(I32.Const(0));
-                        expressions.Add(I32.Store((ulong)(currentOffset + zeroOffset)));
-                    }
+                    int fillSize = AlignmentHelper.AlignUp(structSize, 8);
+
+                    // memory.fill: (dst, val, len) -> ()
+                    expressions.Add(Local.Get(0));
+                    expressions.Add(I32.Const(currentOffset));
+                    expressions.Add(I32.Add);
+                    expressions.Add(I32.Const(0));
+                    expressions.Add(I32.Const(fillSize));
+                    expressions.Add(Memory.Fill());
                     wasmLocalIndex++;
                 }
                 else

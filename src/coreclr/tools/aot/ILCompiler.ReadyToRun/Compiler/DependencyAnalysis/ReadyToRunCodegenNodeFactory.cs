@@ -305,6 +305,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new WasmImportThunkPortableEntrypoint(this, key.Import);
             });
 
+            _wasmR2RToInterpreterThunks = new NodeCache<WasmSignature, WasmR2RToInterpreterThunkNode>(key =>
+            {
+                return new WasmR2RToInterpreterThunkNode(this, key);
+            });
+
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
 
             _localMethodCache = new NodeCache<MethodDesc, MethodWithGCInfo>(key =>
@@ -833,6 +838,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             WasmImportThunkPortableEntrypointKey thunkKey = new WasmImportThunkPortableEntrypointKey(import);
             return _wasmImportThunkPortableEntrypoints.GetOrAdd(thunkKey);
+        }
+
+        private NodeCache<WasmSignature, WasmR2RToInterpreterThunkNode> _wasmR2RToInterpreterThunks;
+        public WasmR2RToInterpreterThunkNode WasmR2RToInterpreterThunk(WasmSignature wasmSignature)
+        {
+            return _wasmR2RToInterpreterThunks.GetOrAdd(wasmSignature);
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, ILProvider ilProvider)
