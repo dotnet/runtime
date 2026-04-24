@@ -4554,19 +4554,28 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
+    // Enable IR checks before implicit byref copy omission analysis.
+    activePhaseChecks |= PhaseChecks::CHECK_IR;
+
     // Expose candidates for implicit byref last-use copy elision.
     DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, &Compiler::fgMarkImplicitByRefCopyOmissionCandidates);
 
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
 
-    // Enable IR checks before implicit byref type update.
-    activePhaseChecks |= PhaseChecks::CHECK_IR;
+    // PHASE_MORPH_IMPBYREF retypes implicit byref args from TYP_STRUCT to TYP_BYREF
+    // but does not rewrite existing LCL_FLD/STORE_LCL_FLD references into those args;
+    // that rewrite happens later in fgMorphExpandImplicitByRefArg during PHASE_MORPH_GLOBAL.
+    // Suppress IR checks over this transient state.
+    PhaseChecks const savedChecks = activePhaseChecks;
+    activePhaseChecks &= ~PhaseChecks::CHECK_IR;
 
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
     //
     DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
+
+    activePhaseChecks = savedChecks;
 
 #ifdef DEBUG
     // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
