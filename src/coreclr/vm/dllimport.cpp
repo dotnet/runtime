@@ -5998,7 +5998,7 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
     }
     CONTRACTL_END;
 
-    m_pPInvokeTarget = pTarget;
+    VolatileStore(&m_pPInvokeTarget, pTarget);
 }
 
 //==========================================================================
@@ -6009,8 +6009,6 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
 // - Inlined non-SuppressGCTransition P/Invokes in jitted code at invoke time
 //   after we have already transitioned to unmanaged code.
 //   As far as the jitted code is concerned, we are in the unmanaged call right now.
-// - Non-inlined P/Invokes in jitted code at invoke time.
-//   In these cases the target is guaranteed to be resolved in the prestub.
 //==========================================================================
 EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 {
@@ -6022,40 +6020,22 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
     {
         THROWS;
         GC_TRIGGERS;
-        if (pMD->ShouldSuppressGCTransition())
-        {
-            MODE_COOPERATIVE;
-        }
-        else
-        {
-            MODE_PREEMPTIVE;
-        }
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
-    if (!pMD->PInvokeTargetIsImportThunk())
-    {
-        ret = pMD->GetPInvokeTarget();
-    }
-    else
-    {
-        // Inlined SuppressGCTransition P/Invokes should
-        // be resolved during jitting, not here.
-        _ASSERTE(!pMD->ShouldSuppressGCTransition());
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    // this function is called by CLR to native assembly stubs which are called by
+    // managed code as a result, we need an unwind and continue handler to translate
+    // any of our internal exceptions into managed exceptions.
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-        // this function is called by CLR to native assembly stubs which are called by
-        // managed code as a result, we need an unwind and continue handler to translate
-        // any of our internal exceptions into managed exceptions.
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    PInvoke::ResolvePInvokeTarget(pMD);
 
-        PInvoke::ResolvePInvokeTarget(pMD);
+    ret = pMD->GetPInvokeTarget();
 
-        ret = pMD->GetPInvokeTarget();
-
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    }
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
     return ret;
 }
