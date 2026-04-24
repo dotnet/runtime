@@ -45,7 +45,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 #pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
 
@@ -335,17 +334,17 @@ namespace System
                 {
                     case 1:
                         Debug.Assert(value.Length >= sizeof(int));
-                        Add(MemoryMarshal.Read<int>(value));
+                        Add(BitConverter.ToInt32(value));
                         value = value.Slice(sizeof(int));
                         goto case 2;
                     case 2:
                         Debug.Assert(value.Length >= sizeof(int));
-                        Add(MemoryMarshal.Read<int>(value));
+                        Add(BitConverter.ToInt32(value));
                         value = value.Slice(sizeof(int));
                         goto case 3;
                     case 3:
                         Debug.Assert(value.Length >= sizeof(int));
-                        Add(MemoryMarshal.Read<int>(value));
+                        Add(BitConverter.ToInt32(value));
                         value = value.Slice(sizeof(int));
                         break;
                 }
@@ -354,10 +353,10 @@ namespace System
             // With the queue clear, we add sixteen bytes at a time until the input has fewer than sixteen bytes remaining.
             while (value.Length >= sizeof(int) * 4)
             {
-                _v1 = Round(_v1, MemoryMarshal.Read<uint>(value));
-                _v2 = Round(_v2, MemoryMarshal.Read<uint>(value.Slice(sizeof(int) * 1)));
-                _v3 = Round(_v3, MemoryMarshal.Read<uint>(value.Slice(sizeof(int) * 2)));
-                _v4 = Round(_v4, MemoryMarshal.Read<uint>(value.Slice(sizeof(int) * 3)));
+                _v1 = Round(_v1, BitConverter.ToUInt32(value));
+                _v2 = Round(_v2, BitConverter.ToUInt32(value.Slice(sizeof(int) * 1)));
+                _v3 = Round(_v3, BitConverter.ToUInt32(value.Slice(sizeof(int) * 2)));
+                _v4 = Round(_v4, BitConverter.ToUInt32(value.Slice(sizeof(int) * 3)));
 
                 _length += 4;
                 value = value.Slice(sizeof(int) * 4);
@@ -367,7 +366,7 @@ namespace System
             // Add four bytes at a time until the input has fewer than four bytes remaining.
             while (value.Length >= sizeof(int))
             {
-                Add(MemoryMarshal.Read<int>(value));
+                Add(BitConverter.ToInt32(value));
                 value = value.Slice(sizeof(int));
             }
 
