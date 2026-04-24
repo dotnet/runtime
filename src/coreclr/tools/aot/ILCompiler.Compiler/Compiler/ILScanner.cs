@@ -331,7 +331,6 @@ namespace ILCompiler
                         // On the path, you'll find a node that exists in both graphs, but it's predecessor
                         // only exists in the compiler's graph. That's the place to focus the investigation on.
                         // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
-                        Debug.Assert(false);
                         string typeName = ExceptionTypeNameFormatter.Instance.FormatName(type);
                         throw new ScannerFailedException($"VTable of type '{typeName}' not computed by the IL scanner.");
                     }
@@ -433,7 +432,6 @@ namespace ILCompiler
                     // On the path, you'll find a node that exists in both graphs, but it's predecessor
                     // only exists in the compiler's graph. That's the place to focus the investigation on.
                     // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
-                    Debug.Assert(false);
                     throw new ScannerFailedException($"Dictionary layout of '{methodOrType}' was not computed by the IL scanner.");
                 }
                 return new PrecomputedDictionaryLayoutNode(methodOrType, layout.Slots, layout.DiscardedSlots);

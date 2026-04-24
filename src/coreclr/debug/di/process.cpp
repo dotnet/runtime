@@ -234,7 +234,6 @@ bool IsLegalFatalError(HRESULT hr)
 {
     return
         (hr == CORDBG_E_INCOMPATIBLE_PROTOCOL) ||
-        (hr == CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS) ||
         (hr == CORDBG_E_INCOMPATIBLE_PLATFORMS) ||
         (hr == CORDBG_E_MISMATCHED_CORWKS_AND_DACWKS_DLLS) ||
         // This should only happen in the case of a security attack on us.
@@ -7465,11 +7464,6 @@ void CordbProcess::VerifyControlBlock()
         ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
 #endif
 
-    if (GetDCB()->m_bHostingInFiber)
-    {
-        ThrowHR(CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS);
-    }
-
     _ASSERTE(!GetDCB()->m_rightSideShouldCreateHelperThread);
 } // CordbProcess::VerifyControlBlock
 
@@ -8377,7 +8371,7 @@ void CordbProcess::UnrecoverableError(HRESULT errorHR,
 
     CONSISTENCY_CHECK_MSGF(IsLegalFatalError(errorHR), ("Unrecoverable internal error: hr=0x%08x!", errorHR));
 
-    if (!IsLegalFatalError(errorHR) || (errorHR != CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS))
+    if (!IsLegalFatalError(errorHR))
     {
         // This will throw everything into a Zombie state. The ATT_ macros will check this and fail immediately.
         m_unrecoverableError = true;
