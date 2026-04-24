@@ -65,11 +65,6 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 return null;
             }
 
-            // Because this method is called on Notifier construction, the envvar is cleared when the Host is built
-            // (IHostLifetime depends on ISystemdNotifier). This prevents child processes from inheriting the socket
-            // and interfering with service manager notifications.
-            Environment.SetEnvironmentVariable(SystemdConstants.NotifySocket, null);
-
             // Support abstract socket paths.
             if (socketPath[0] == '@')
             {
