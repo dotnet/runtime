@@ -91,12 +91,14 @@ namespace Microsoft.Extensions.Options
                     return Get(Options.DefaultName);
                 }
 
-                // Read generation before value. If a mutation bumps the generation after we read it
-                // but before we read the cached value, we'll see a stale cached value at most once —
-                // the very next access will detect the generation mismatch and refresh.
                 int gen = fastCache.Generation;
+                // Read generation before value. RefreshCurrentValue writes _currentValue before
+                // _currentValueGeneration (release), so an acquire-load of _currentValueGeneration
+                // here guarantees the subsequent read of _currentValue sees the matching published
+                // value and not a stale one.
+                int cachedGen = Volatile.Read(ref _currentValueGeneration);
                 TOptions? value = Volatile.Read(ref _currentValue);
-                if (value is not null && _currentValueGeneration == gen)
+                if (value is not null && cachedGen == gen)
                 {
                     return value;
                 }
@@ -109,10 +111,12 @@ namespace Microsoft.Extensions.Options
         private TOptions RefreshCurrentValue(int gen)
         {
             TOptions value = Get(Options.DefaultName);
-            // Write generation before value so that a reader whose Volatile.Read of _currentValue
-            // sees the new value is guaranteed (via the acquire fence) to also see the updated generation.
-            Volatile.Write(ref _currentValueGeneration, gen);
+            // Write value before generation: the generation acts as a release signal that
+            // _currentValue is ready. A reader that acquire-loads _currentValueGeneration and
+            // sees gen is then guaranteed (via the release/acquire pairing) to observe the
+            // _currentValue written here.
             Volatile.Write(ref _currentValue, value);
+            Volatile.Write(ref _currentValueGeneration, gen);
             return value;
         }
 
