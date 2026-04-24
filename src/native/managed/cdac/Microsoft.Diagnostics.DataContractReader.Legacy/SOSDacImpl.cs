@@ -2937,6 +2937,8 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetMethodTableName(ClrDataAddress mt, uint count, char* mtName, uint* pNeeded)
     {
         int hr = HResults.S_OK;
+        char[] mtNametest = new char[4096];
+        int counttest = 4096;
         try
         {
             if (mt == 0)
@@ -2946,6 +2948,10 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.TypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt.ToTargetPointer(_target, overrideCheck: true));
             if (typeSystemContract.IsFreeObjectMethodTable(methodTableHandle))
             {
+                fixed (char* pMtNametest = mtNametest)
+                {
+                    OutputBufferHelpers.CopyStringToBuffer(pMtNametest, counttest, pNeeded, "Free");
+                }
                 OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, "Free");
             }
             else
@@ -2954,6 +2960,10 @@ public sealed unsafe partial class SOSDacImpl
                 Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
                 if (!loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _))
                 {
+                    fixed (char* pMtNametest = mtNametest)
+                    {
+                        OutputBufferHelpers.CopyStringToBuffer(pMtNametest, counttest, pNeeded, "<Unloaded Type>");
+                    }
                     OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, "<Unloaded Type>");
                 }
                 else
@@ -2972,6 +2982,10 @@ public sealed unsafe partial class SOSDacImpl
                             methodTableName.Append(fallbackName);
                         }
                     }
+                    fixed (char* pMtNametest = mtNametest)
+                    {
+                    OutputBufferHelpers.CopyStringToBuffer(pMtNametest, counttest, pNeeded, methodTableName.ToString());
+                    }
                     OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, methodTableName.ToString());
                 }
             }
@@ -2985,12 +2999,12 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            char[] mtNameLocal = new char[count];
+            char[] mtNameLocal = new char[counttest];
             uint neededLocal;
             int hrLocal;
             fixed (char* ptr = mtNameLocal)
             {
-                hrLocal = _legacyImpl.GetMethodTableName(mt, count, ptr, &neededLocal);
+                hrLocal = _legacyImpl.GetMethodTableName(mt, counttest, ptr, &neededLocal);
             }
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
