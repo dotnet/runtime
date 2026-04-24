@@ -378,9 +378,7 @@ namespace System.Net
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteIPv4Bytes(Span<byte> destination)
         {
-            uint address = PrivateAddress;
-            bool ok = BitConverter.TryWriteBytes(destination, address);
-            Debug.Assert(ok);
+            BinaryPrimitives.WriteUInt32LittleEndian(destination, PrivateAddress);
         }
 
         /// <devdoc>
