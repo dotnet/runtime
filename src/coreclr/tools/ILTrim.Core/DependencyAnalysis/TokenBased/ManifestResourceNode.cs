@@ -32,6 +32,8 @@ namespace ILCompiler.DependencyAnalysis
 
             _skipWritingResource = false;
 
+            DependencyList dependencies = null;
+
             if (resource.Implementation.IsNil)
             {
                 string resourceName = _module.MetadataReader.GetString(resource.Name);
@@ -53,20 +55,12 @@ namespace ILCompiler.DependencyAnalysis
                         ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                     }
 
-                    DependencyList descriptorDependencies = DescriptorMarker.GetDependencies(factory.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), factory.Settings.FeatureSettings);
-                    CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref descriptorDependencies, factory, _module, resource.GetCustomAttributes());
-                    return descriptorDependencies;
-                }
-                else
-                {
-                    DependencyList dependencies = null;
-                    CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, resource.GetCustomAttributes());
-                    return dependencies;
+                    dependencies = DescriptorMarker.GetDependencies(factory.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), factory.Settings.FeatureSettings);
                 }
             }
             else
             {
-                DependencyList dependencies = new();
+                dependencies = new();
                 switch (resource.Implementation.Kind)
                 {
                     case HandleKind.AssemblyReference:
@@ -77,9 +71,10 @@ namespace ILCompiler.DependencyAnalysis
                         // TODO: Handle AssemblyFile
                         throw new InvalidOperationException(resource.Implementation.Kind.ToString());
                 }
-                CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, resource.GetCustomAttributes());
-                return dependencies;
             }
+
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, resource.GetCustomAttributes());
+            return dependencies;
         }
 
         public override void BuildTokens(TokenMap.Builder builder)
