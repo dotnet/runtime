@@ -317,7 +317,7 @@ namespace ILAssembler
                     builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataOffset);
                 }
 
-                if (fieldDef.MarshallingDescriptor is not null)
+                if (fieldDef.MarshallingDescriptor is { Count: > 0 })
                 {
                     builder.AddMarshallingDescriptor(fieldDef.Handle, builder.GetOrAddBlob(fieldDef.MarshallingDescriptor));
                 }
