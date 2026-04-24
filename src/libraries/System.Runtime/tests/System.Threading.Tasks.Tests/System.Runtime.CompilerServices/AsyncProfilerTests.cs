@@ -36,11 +36,11 @@ namespace System.Threading.Tasks.Tests
     {
         private static bool IsRuntimeAsyncSupported => PlatformDetection.IsRuntimeAsyncSupported;
 
-        private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerBufferedEventSource";
+        private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerEventSource";
         private const int AsyncEventsId = 1;
         private const int HeaderSize = 1 + sizeof(uint) + sizeof(uint) + sizeof(ulong) + sizeof(uint) + sizeof(ulong) + sizeof(ulong);
 
-        // AsyncProfilerBufferedEventSource Keywords matching the event source definition
+        // AsyncProfilerEventSource Keywords matching the event source definition
         private const EventKeywords CreateAsyncContextKeyword = (EventKeywords)0x1;
         private const EventKeywords ResumeAsyncContextKeyword = (EventKeywords)0x2;
         private const EventKeywords SuspendAsyncContextKeyword = (EventKeywords)0x4;

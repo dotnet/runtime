@@ -4,7 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using static System.Runtime.CompilerServices.AsyncProfilerBufferedEventSource;
+using static System.Runtime.CompilerServices.AsyncProfilerEventSource;
 
 namespace System.Runtime.CompilerServices
 {
@@ -423,7 +423,7 @@ namespace System.Runtime.CompilerServices
                 public byte Count;
             }
 
-            public static bool CaptureRuntimeAsyncCallstack(Span<byte> buffer, ref int index, ref CaptureRuntimeAsyncCallstackState state)
+            public static bool CaptureRuntimeAsyncCallstack(byte[] buffer, ref int index, ref CaptureRuntimeAsyncCallstackState state)
             {
                 if (index > buffer.Length)
                 {
@@ -521,16 +521,20 @@ namespace System.Runtime.CompilerServices
                     {
                         EventBuffer.Serializer.CallstackHeader(ref eventBuffer, id, type, 0);
 
-                        Span<byte> inlineEventBuffer = eventBuffer.Data.AsSpan(eventBuffer.Index);
-                        int index = 0;
+                        byte[] buffer = eventBuffer.Data;
+                        int startIndex = eventBuffer.Index;
+                        int currentIndex = startIndex;
 
-                        if (!CaptureRuntimeAsyncCallstack(inlineEventBuffer, ref index, ref state))
+                        if (!CaptureRuntimeAsyncCallstack(buffer, ref currentIndex, ref state))
                         {
                             byte[]? rentedArray = RentArray(maxCallstackBytes);
                             if (rentedArray != null)
                             {
-                                inlineEventBuffer.Slice(0, index).CopyTo(rentedArray);
-                                CaptureRuntimeAsyncCallstack(rentedArray.AsSpan(0, maxCallstackBytes), ref index, ref state);
+                                int length = currentIndex - startIndex;
+                                int index = length;
+
+                                Buffer.BlockCopy(buffer, startIndex, rentedArray, 0, length);
+                                CaptureRuntimeAsyncCallstack(rentedArray, ref index, ref state);
 
                                 // Remove async event header from the event buffer before flushing.
                                 EventBuffer.Serializer.RemoveAsyncEventHeader(context, savedAsyncEventHeaderIndex);
@@ -556,7 +560,7 @@ namespace System.Runtime.CompilerServices
                         {
                             // Patch frame count in the event buffer.
                             eventBuffer.Data[eventBuffer.Index - 1] = state.Count;
-                            eventBuffer.Index += index;
+                            eventBuffer.Index += currentIndex - startIndex;
                         }
                     }
                 }

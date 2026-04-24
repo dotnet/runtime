@@ -79,37 +79,20 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public static void UpdateAsyncDebuggerFlags(Flags asyncDebuggerFlags)
-        {
-            if (asyncDebuggerFlags != Flags.Disabled)
-            {
-                asyncDebuggerFlags |= Flags.AsyncDebugger;
-            }
-
-            lock (s_lock)
-            {
-                s_asyncDebuggerActiveFlags = asyncDebuggerFlags;
-                s_activeFlags |= Flags.Synchronize;
-            }
-        }
-
         private static Flags SynchronizeFlags()
         {
             _ = TplEventSource.Log; // Touch TplEventSource to trigger static constructor which will initialize TPL flags if EventSource is supported.
-            _ = AsyncProfilerBufferedEventSource.Log; // Touch AsyncProfilerBufferedEventSource to trigger static constructor which will initialize async profiler flags if EventSource is supported.
+            _ = AsyncProfilerEventSource.Log; // Touch AsyncProfilerEventSource to trigger static constructor which will initialize async profiler flags if EventSource is supported.
 
             lock (s_lock)
             {
-                if (!IsEnabled.AsyncDebugger(s_internalAsyncDebuggerActiveFlags) && Task.s_asyncDebuggingEnabled)
+                Flags asyncDebuggerActiveFlags = Flags.Disabled;
+                if (Task.s_asyncDebuggingEnabled)
                 {
-                    s_internalAsyncDebuggerActiveFlags = DefaultFlags | Flags.AsyncDebugger;
-                }
-                else if (IsEnabled.AsyncDebugger(s_internalAsyncDebuggerActiveFlags) && !Task.s_asyncDebuggingEnabled)
-                {
-                    s_internalAsyncDebuggerActiveFlags = Flags.Disabled;
+                    asyncDebuggerActiveFlags = DefaultFlags | Flags.AsyncDebugger;
                 }
 
-                s_activeFlags = (s_asyncProfilerActiveFlags | s_asyncDebuggerActiveFlags | s_internalAsyncDebuggerActiveFlags) & ~Flags.Synchronize;
+                s_activeFlags = (s_asyncProfilerActiveFlags | asyncDebuggerActiveFlags) & ~Flags.Synchronize;
                 return s_activeFlags;
             }
         }
@@ -117,10 +100,6 @@ namespace System.Runtime.CompilerServices
         private static Flags s_activeFlags = Flags.Synchronize;
 
         private static Flags s_asyncProfilerActiveFlags;
-
-        private static Flags s_asyncDebuggerActiveFlags;
-
-        private static Flags s_internalAsyncDebuggerActiveFlags;
 
         private static readonly Lock s_lock = new();
     }
