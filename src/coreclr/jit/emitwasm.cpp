@@ -861,17 +861,32 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         CORINFO_SIG_INFO sigInfoLocal;
         
         CORINFO_SIG_INFO *sigInfoCall = id->idDebugOnlyInfo()->idCallSig;
+        CORINFO_METHOD_HANDLE methodHandle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
+
+        if (sigInfoCall == nullptr)
+        {
+            // For certain calls whose target is non-containable (e.g. tls access targets), `methodHandle`
+            // will be nullptr, because the target is present in a register.
+            if ((methodHandle != nullptr) && (Compiler::eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF))
+            {
+                m_compiler->eeGetMethodSig(methodHandle, &sigInfoLocal);
+                sigInfoCall = &sigInfoLocal;
+            }
+        }
+
         if (id->idDebugOnlyInfo()->idIsUnmanagedCall)
         {
             _ASSERTE(sigInfoCall != NULL);
-            sigInfoLocal = *sigInfoCall;
+            if (sigInfoCall != &sigInfoLocal)
+            {
+                sigInfoLocal = *sigInfoCall;
+            }
             // Unmanaged calls need to be reported with the unmanaged calling convention so that the R2R compiler can ignore this report
             // for the purpose of determining if a call site needs to have a R2R to interpreter thunk generated
             sigInfoLocal.callConv = CORINFO_CALLCONV_UNMANAGED;
             sigInfoCall = &sigInfoLocal;
         }
-        emitRecordCallSite(emitCurCodeOffs(*dp), sigInfoCall,
-                            (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+        emitRecordCallSite(emitCurCodeOffs(*dp), sigInfoCall, methodHandle);
     }
 
     *dp = dst;

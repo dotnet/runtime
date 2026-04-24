@@ -2482,7 +2482,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     // native call sites with the signatures they were generated from.
     if (!call->IsHelperCall())
     {
-        _ASSERTE(params.hasAsyncRet == call->callSig->isAsyncCall());
+        _ASSERTE(call->callSig == NULL || params.hasAsyncRet == call->callSig->isAsyncCall());
         params.sigInfo = call->callSig;
         params.isUnmanagedCall = call->IsUnmanaged();
     }
