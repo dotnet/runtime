@@ -306,6 +306,16 @@ namespace ILLink.Shared.TrimAnalysis
         private partial void MarkStaticConstructor(TypeProxy type)
             => _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForConstructorsOnType(_diagnosticContext.Location, type.Type, BindingFlags.Static, parameterCount: 0);
 
+        private partial void ReportRequiresUnreferencedCode(MethodProxy calledMethod)
+        {
+            if (calledMethod.Method.TryGetRequiresUnreferencedCodeAttribute(out var requiresAttribute))
+            {
+                var message = RequiresUnreferencedCodeUtils.GetMessageFromAttribute(requiresAttribute);
+                var url = RequiresAnalyzerBase.GetUrlFromAttribute(requiresAttribute);
+                _diagnosticContext.AddDiagnostic(DiagnosticId.RequiresUnreferencedCode, calledMethod.GetDisplayName(), message, url);
+            }
+        }
+
         private partial void MarkEventsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
             => _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForEventsOnTypeHierarchy(_diagnosticContext.Location, type.Type, name, bindingFlags);
 

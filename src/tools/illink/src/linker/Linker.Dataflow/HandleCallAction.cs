@@ -331,6 +331,12 @@ namespace ILLink.Shared.TrimAnalysis
         private partial void MarkStaticConstructor(TypeProxy type)
             => _reflectionMarker.MarkStaticConstructor(_diagnosticContext.Origin, type.Type);
 
+        private partial void ReportRequiresUnreferencedCode(MethodProxy calledMethod)
+        {
+            if (_context.Annotations.DoesMethodRequireUnreferencedCode(calledMethod.Definition, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
+                MarkStep.ReportRequiresUnreferencedCode(calledMethod.GetDisplayName(), requiresUnreferencedCode, _diagnosticContext);
+        }
+
         private partial void MarkEventsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
             => _reflectionMarker.MarkEventsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, e => e.Name == name, bindingFlags);
 

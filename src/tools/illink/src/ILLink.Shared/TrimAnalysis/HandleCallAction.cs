@@ -1551,51 +1551,51 @@ namespace ILLink.Shared.TrimAnalysis
                         break;
                     }
 
-                    if (calledMethod.HasMetadataParametersCount(3) && calledMethod.HasParameterOfType((ParameterIndex)3, "System.Boolean") && argumentValues[2].AsConstInt() != 0)
-                    {
-                        _diagnosticContext.AddDiagnostic(DiagnosticId.CaseInsensitiveTypeGetTypeCallIsNotSupported, calledMethod.GetDisplayName());
-                        returnValue = MultiValueLattice.Top;
-                        break;
-                    }
+                    bool triggersWarning =
+                        calledMethod.HasMetadataParametersCount(3) && calledMethod.HasParameterOfType((ParameterIndex)3, "System.Boolean") && argumentValues[2].AsConstInt() != 0;
 
-                    foreach (var assemblyValue in instanceValue.AsEnumerable())
+                    if (!triggersWarning)
                     {
-                        if (assemblyValue is not AssemblyValue knownAssembly)
+                        foreach (var assemblyValue in instanceValue.AsEnumerable())
                         {
-                            _diagnosticContext.AddDiagnostic(DiagnosticId.AssemblyGetTypeCannotBeAnalyzed, calledMethod.GetDisplayName());
-                            AddReturnValue(MultiValueLattice.Top);
-                            continue;
-                        }
-
-                        foreach (var typeNameValue in argumentValues[0].AsEnumerable())
-                        {
-                            if (typeNameValue is KnownStringValue knownStringValue)
+                            if (assemblyValue is not AssemblyValue knownAssembly)
                             {
-                                if (!TryResolveTypeNameInAssemblyAndMark(knownAssembly.AssemblyName, knownStringValue.Contents, out TypeProxy foundType))
+                                triggersWarning = true;
+                                continue;
+                            }
+
+                            foreach (var typeNameValue in argumentValues[0].AsEnumerable())
+                            {
+                                if (typeNameValue is KnownStringValue knownStringValue)
                                 {
-                                    // Intentionally ignore - it's not wrong for code to call Assembly.GetType on non-existing name, the code might expect null/exception back.
+                                    if (!TryResolveTypeNameInAssemblyAndMark(knownAssembly.AssemblyName, knownStringValue.Contents, out TypeProxy foundType))
+                                    {
+                                        // Intentionally ignore - it's not wrong for code to call Assembly.GetType on non-existing name, the code might expect null/exception back.
+                                        AddReturnValue(MultiValueLattice.Top);
+                                    }
+                                    else
+                                    {
+                                        AddReturnValue(new SystemTypeValue(foundType));
+                                    }
+                                }
+                                else if (typeNameValue == NullValue.Instance)
+                                {
+                                    // Nothing to do - this throws at runtime
                                     AddReturnValue(MultiValueLattice.Top);
                                 }
                                 else
                                 {
-                                    AddReturnValue(new SystemTypeValue(foundType));
+                                    // Unlike Type.GetType, we can't propagate DAM annotations from the string parameter because
+                                    // Assembly.GetType resolves within a specific assembly, while DAM enforcement at the call site
+                                    // uses global (Type.GetType-like) resolution. These can resolve to different types.
+                                    triggersWarning = true;
                                 }
-                            }
-                            else if (typeNameValue == NullValue.Instance)
-                            {
-                                // Nothing to do - this throws at runtime
-                                AddReturnValue(MultiValueLattice.Top);
-                            }
-                            else
-                            {
-                                // Unlike Type.GetType, we can't propagate DAM annotations from the string parameter because
-                                // Assembly.GetType resolves within a specific assembly, while DAM enforcement at the call site
-                                // uses global (Type.GetType-like) resolution. These can resolve to different types.
-                                _diagnosticContext.AddDiagnostic(DiagnosticId.UnrecognizedTypeNameInTypeGetType, calledMethod.GetDisplayName());
-                                AddReturnValue(MultiValueLattice.Top);
                             }
                         }
                     }
+
+                    if (triggersWarning)
+                        ReportRequiresUnreferencedCode(calledMethod);
                 }
                 break;
 
@@ -1894,6 +1894,8 @@ namespace ILLink.Shared.TrimAnalysis
         private partial string GetAssemblyName(TypeProxy type);
 
         private partial bool TryResolveTypeNameInAssemblyAndMark(string assemblyName, string typeName, out TypeProxy resolvedType);
+
+        private partial void ReportRequiresUnreferencedCode(MethodProxy calledMethod);
 
         private partial void MarkStaticConstructor(TypeProxy type);
 

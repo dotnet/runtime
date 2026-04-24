@@ -39,7 +39,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             type.RequiresNone();
         }
 
-        [ExpectedWarning("IL2057")]
+        [ExpectedWarning("IL2026")]
         static void TestUnknownType()
         {
             string typeName = GetUnknownString();
@@ -51,20 +51,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             typeof(AssemblyGetTypeDataFlow).Assembly.GetType(null).RequiresAll();
         }
 
-        [ExpectedWarning("IL2096")]
+        [ExpectedWarning("IL2026")]
         static void TestCaseInsensitive()
         {
             typeof(AssemblyGetTypeDataFlow).Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType", false, true);
         }
 
-        [ExpectedWarning("IL2128")]
+        [ExpectedWarning("IL2026")]
         static void TestUnknownAssembly()
         {
             Assembly assembly = GetUnknownAssembly();
             assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");
         }
 
-        [ExpectedWarning("IL2128")]
+        [ExpectedWarning("IL2026")]
         static void TestUnknownTypeAssemblyGetType(Type unknownType)
         {
             unknownType.Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");

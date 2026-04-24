@@ -751,6 +751,9 @@ namespace ILLink.Shared.TrimAnalysis
         private partial void MarkStaticConstructor(TypeProxy type)
             => _reflectionMarker.MarkStaticConstructor(_diagnosticContext.Origin, type.Type, _reason);
 
+        private partial void ReportRequiresUnreferencedCode(MethodProxy calledMethod)
+            => ReflectionMethodBodyScanner.CheckAndReportRequires(_diagnosticContext, calledMethod.Method, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
+
         private partial void MarkEventsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
             => _reflectionMarker.MarkEventsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, e => e.Name == name, _reason, bindingFlags);
 
