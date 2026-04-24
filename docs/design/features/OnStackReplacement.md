@@ -664,7 +664,7 @@ prolog and duplicates its saves, and then a subsequent "shrink wrapped" prolog
 
 #### Implementation
 
-Callee-saves are currently handled sightly differently on x64 than it is on other targets:
+Callee-saves are currently handled differently on x64 than it is on other targets:
 * on x64, all the integer callee saves are saved in space pre-reserved in the Tier0 frame.
   The Tier0 method saves whatever subset it uses, and the OSR method saves any additional callee saves it uses.
   The OSR method then restores this entire set on exit, with a single stack pointer adjustment.
@@ -673,7 +673,7 @@ Callee-saves are currently handled sightly differently on x64 than it is on othe
   Its used callee saves are then saved and restored from the OSR part of the stack frame, in the same way as any normal prolog.
 * For x64 we disallow the use of float callee-saves in the tier0 method.
   This avoids the need for special restore logic for float callee saves in the OSR method.
-  For other platforms the handling of callee saves falls out naturally from the integer register handling.
+  For other platforms the handling of callee saves falls out naturally together with the integer register handling.
 
 You might think the runtime helper would need to carefully save all the register state
 on entry, but that's not the case. Because the original method is un-optimized,
