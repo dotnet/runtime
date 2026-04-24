@@ -24602,6 +24602,7 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types type,
                     {
                         GenTree* op2Clone               = fgMakeMultiUse(&op2);
                         retNode->AsHWIntrinsic()->Op(2) = op2;
+                        retNode->gtFlags |= (op2->gtFlags & GTF_ALL_EFFECT);
 
                         GenTreeVecCon* tblVecCon = gtNewVconNode(type);
 

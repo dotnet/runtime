@@ -2154,7 +2154,6 @@ public:
         // Update the call
         //
         objUse->SetEarlyNode(storeCommaNode);
-        call->gtFlags |= storeCommaNode->gtFlags & GTF_ALL_EFFECT;
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);
@@ -2300,6 +2299,7 @@ public:
 
         *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,
                                              compiler->gtCloneExpr(lengthLocal));
+        node->gtFlags |= ((*lenArgRef)->gtFlags & GTF_ALL_EFFECT);
         m_instrCount++;
     }
 };
@@ -2424,7 +2424,15 @@ void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& sch
     HandleHistogramProbeVisitor<HandleHistogramProbeInserter> visitor(m_compiler, insertProbes);
     for (Statement* const stmt : block->Statements())
     {
+        unsigned const preInstrCount = m_instrCount;
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        if (m_instrCount != preInstrCount)
+        {
+            // The inserter wrapped call 'this' args in COMMA(store, COMMA(profile-helper, load)),
+            // which introduces GTF_ASG/GTF_CALL/GTF_EXCEPT on the updated call. Propagate those
+            // side-effect flags up the statement tree so ancestors also reflect them.
+            m_compiler->gtUpdateStmtSideEffects(stmt);
+        }
     }
 }
 
