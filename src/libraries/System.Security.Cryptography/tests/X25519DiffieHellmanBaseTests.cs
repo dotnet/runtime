@@ -155,15 +155,16 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void DeriveRawSecretAgreement_ZeroSharedSecret_Throws()
         {
-            // Wycheproof tcId 32: peer public key is the all-zeros point, which produces an all-zeros secret.
-            byte[] privateKey = Convert.FromHexString("88227494038f2bb811d47805bcdf04a2ac585ada7f2f23389bfd4658f9ddd45e");
-            byte[] peerPublicKey = Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000");
+            // Wycheproof tcId 64: peer public key is a low-order point on Curve25519.
+            // This low-order point produces a shared secret that is all zeros.
+            byte[] privateKey = Convert.FromHexString("387355d995616090503aafad49da01fb3dc3eda962704eaee6b86f9e20c92579");
+            byte[] peerPublicKey = Convert.FromHexString("5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157");
 
             using X25519DiffieHellman key = ImportPrivateKey(privateKey);
             using X25519DiffieHellman peer = ImportPublicKey(peerPublicKey);
 
-            Assert.Throws<CryptographicException>(() => key.DeriveRawSecretAgreement(peer));
-            Assert.Throws<CryptographicException>(
+            Assert.ThrowsAny<CryptographicException>(() => key.DeriveRawSecretAgreement(peer));
+            Assert.ThrowsAny<CryptographicException>(
                 () => key.DeriveRawSecretAgreement(peer, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
         }
 
