@@ -1134,6 +1134,7 @@ namespace System.Tests
         }
 
 
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Test field used only in conditional tests.")]
         private static readonly StringComparison[] StringComparisons = (StringComparison[])Enum.GetValues(typeof(StringComparison));
 
         [Fact]
@@ -1244,6 +1245,7 @@ namespace System.Tests
         [Theory]
         [InlineData("")] // empty string
         [InlineData("hello")] // non-empty string
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "DynamicMethod usage is guarded by IsReflectionEmitSupported runtime check.")]
         public static unsafe void GetPinnableReference_ReturnsSameAsGCHandleAndLegacyFixed(string input)
         {
             Assert.NotNull(input); // test shouldn't have null input
@@ -1303,6 +1305,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Test is skipped when reflection emit is not supported.")]
         public static unsafe void GetPinnableReference_WithNullInput_ThrowsNullRef()
         {
             // This test uses an explicit call instead of the normal callvirt that C# would emit.

@@ -2172,6 +2172,8 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(SystemTimeZonesTestData))]
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Test is skipped when BinaryFormatter is not supported.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Test is skipped when BinaryFormatter is not supported.")]
         public static void BinaryFormatter_RoundTrips(TimeZoneInfo timeZone)
         {
             BinaryFormatter formatter = new BinaryFormatter();
@@ -2187,6 +2189,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Test uses reflection to inspect internal properties for diagnostics.")]
         public static void TimeZoneInfo_DoesConvertTimeForOldDatesOfTimeZonesWithExceedingMaxRange()
         {
             // On some OSes this time zone contains old adjustment rules which have offset higher than 14h
