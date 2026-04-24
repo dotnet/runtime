@@ -234,7 +234,6 @@ bool IsLegalFatalError(HRESULT hr)
 {
     return
         (hr == CORDBG_E_INCOMPATIBLE_PROTOCOL) ||
-        (hr == CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS) ||
         (hr == CORDBG_E_INCOMPATIBLE_PLATFORMS) ||
         (hr == CORDBG_E_MISMATCHED_CORWKS_AND_DACWKS_DLLS) ||
         // This should only happen in the case of a security attack on us.
@@ -5826,71 +5825,6 @@ void CordbProcess::RawDispatchEvent(
             }
         }
         break;
-#ifdef TEST_DATA_CONSISTENCY
-    case DB_IPCE_TEST_CRST:
-        {
-            EX_TRY
-            {
-                // the left side has signaled that we should test whether pEvent->TestCrstData.vmCrst is held
-                IfFailThrow(GetDAC()->TestCrst(pEvent->TestCrstData.vmCrst));
-            }
-            EX_CATCH_HRESULT(hr);
-
-            if (pEvent->TestCrstData.fOkToTake)
-            {
-                _ASSERTE(hr == S_OK);
-                if (hr != S_OK)
-                {
-                    // we want to catch this in retail builds too
-                    ThrowHR(E_FAIL);
-                }
-            }
-            else // the lock was already held
-            {
-                // see if we threw because the lock was held
-                _ASSERTE(hr == CORDBG_E_PROCESS_NOT_SYNCHRONIZED);
-                if (hr != CORDBG_E_PROCESS_NOT_SYNCHRONIZED)
-                {
-                    // we want to catch this in retail builds too
-                    ThrowHR(E_FAIL);
-                }
-            }
-
-        }
-        break;
-
-    case DB_IPCE_TEST_RWLOCK:
-        {
-            EX_TRY
-            {
-                // the left side has signaled that we should test whether pEvent->TestRWLockData.vmRWLock is held
-                IfFailThrow(GetDAC()->TestRWLock(pEvent->TestRWLockData.vmRWLock));
-            }
-            EX_CATCH_HRESULT(hr);
-
-            if (pEvent->TestRWLockData.fOkToTake)
-            {
-                _ASSERTE(hr == S_OK);
-                if (hr != S_OK)
-                {
-                    // we want to catch this in retail builds too
-                    ThrowHR(E_FAIL);
-                }
-            }
-            else // the lock was already held
-            {
-                // see if we threw because the lock was held
-                _ASSERTE(hr == CORDBG_E_PROCESS_NOT_SYNCHRONIZED);
-                if (hr != CORDBG_E_PROCESS_NOT_SYNCHRONIZED)
-                {
-                    // we want to catch this in retail builds too
-                    ThrowHR(E_FAIL);
-                }
-            }
-        }
-        break;
-#endif
-
     default:
         _ASSERTE(!"Unknown event");
         LOG((LF_CORDB, LL_INFO1000,
@@ -6208,14 +6142,6 @@ HRESULT CordbProcess::IsTransitionStub(CORDB_ADDRESS address, BOOL *pfTransition
         // (See IMDArocess::SetThreadContext for details on that bug).
         // If we ever stop using IPC events here and only use DAC; we need to be aware of that.
 
-        // Check against DAC primitives
-        {
-            BOOL fIsStub2;
-            IfFailThrow(GetDAC()->IsTransitionStub(address, &fIsStub2));
-            (void)fIsStub2; //prevent "unused variable" error from GCC
-            CONSISTENCY_CHECK_MSGF(*pfTransitionStub == fIsStub2, ("IsStub2 failed, DAC2:%d, IPC:%d, addr:0x%p", (int) fIsStub2, (int) *pfTransitionStub, CORDB_ADDRESS_TO_PTR(address)));
-
-        }
     }
     EX_CATCH_HRESULT(hr);
     if(FAILED(hr))
@@ -7538,11 +7464,6 @@ void CordbProcess::VerifyControlBlock()
         ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
 #endif
 
-    if (GetDCB()->m_bHostingInFiber)
-    {
-        ThrowHR(CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS);
-    }
-
     _ASSERTE(!GetDCB()->m_rightSideShouldCreateHelperThread);
 } // CordbProcess::VerifyControlBlock
 
@@ -8450,7 +8371,7 @@ void CordbProcess::UnrecoverableError(HRESULT errorHR,
 
     CONSISTENCY_CHECK_MSGF(IsLegalFatalError(errorHR), ("Unrecoverable internal error: hr=0x%08x!", errorHR));
 
-    if (!IsLegalFatalError(errorHR) || (errorHR != CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS))
+    if (!IsLegalFatalError(errorHR))
     {
         // This will throw everything into a Zombie state. The ATT_ macros will check this and fail immediately.
         m_unrecoverableError = true;
