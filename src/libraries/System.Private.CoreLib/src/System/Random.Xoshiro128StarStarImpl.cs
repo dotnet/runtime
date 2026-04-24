@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -176,13 +175,15 @@ namespace System
 
             public override void NextBytes(byte[] buffer) => NextBytes((Span<byte>)buffer);
 
-            public override unsafe void NextBytes(Span<byte> buffer)
+            public override void NextBytes(Span<byte> buffer)
             {
                 uint s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;
 
                 while (buffer.Length >= sizeof(uint))
                 {
-                    MemoryMarshal.Write(buffer, BitOperations.RotateLeft(s1 * 5, 7) * 9);
+                    uint next = BitOperations.RotateLeft(s1 * 5, 7) * 9;
+                    bool success = BitConverter.TryWriteBytes(buffer, next);
+                    Debug.Assert(success);
 
                     // Update PRNG state.
                     uint t = s1 << 9;
@@ -199,12 +200,11 @@ namespace System
                 if (!buffer.IsEmpty)
                 {
                     uint next = BitOperations.RotateLeft(s1 * 5, 7) * 9;
-                    byte* remainingBytes = (byte*)&next;
                     Debug.Assert(buffer.Length < sizeof(uint));
-                    for (int i = 0; i < buffer.Length; i++)
-                    {
-                        buffer[i] = remainingBytes[i];
-                    }
+                    Span<byte> remainingBytes = [0, 0, 0, 0];
+                    bool success = BitConverter.TryWriteBytes(remainingBytes, next);
+                    Debug.Assert(success);
+                    remainingBytes.Slice(0, buffer.Length).CopyTo(buffer);
 
                     // Update PRNG state.
                     uint t = s1 << 9;
