@@ -29,6 +29,8 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using ILCompiler.ReadyToRun.TypeSystem;
 
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
 namespace Internal.JitInterface
 {
     class InfiniteCompileStress
@@ -491,6 +493,12 @@ namespace Internal.JitInterface
             _precodeFixups.Add(node);
         }
 
+        private void AddAdditionalDependency(ISymbolNode node, string reason)
+        {
+            _additionalDependencies ??= new DependencyList();
+            _additionalDependencies.Add(node, reason);
+        }
+
         private void AddResumptionStubFixup(MethodWithGCInfo compiledStubNode)
         {
             _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.ResumptionStubEntryPoint(compiledStubNode));
@@ -854,6 +862,16 @@ namespace Internal.JitInterface
                 }
                 var compilationResult = CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
                 codeGotPublished = true;
+
+                // For managed methods on Wasm, add an interpreter-to-R2R thunk so the
+                // interpreter can call into this R2R-compiled function.
+                if (_compilation.NodeFactory.Target.IsWasm && !MethodBeingCompiled.IsUnmanagedCallersOnly)
+                {
+                    WasmSignature wasmSig = WasmLowering.GetSignature(MethodBeingCompiled);
+                    AddAdditionalDependency(
+                        _compilation.NodeFactory.WasmInterpreterToR2RThunk(wasmSig),
+                        "Interpreter-to-R2R thunk for compiled method");
+                }
 
                 if (compilationResult == CompilationResult.CompilationRetryRequested && logger.IsVerbose)
                 {
@@ -3540,7 +3558,7 @@ namespace Internal.JitInterface
 
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
-                AddPrecodeFixup(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig));
+                AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
             }
         }
     }
