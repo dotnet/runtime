@@ -146,7 +146,7 @@ namespace System.Diagnostics
             ValidateReadAllState();
 
             int timeoutMs = timeout.HasValue
-                ? ToTimeoutMilliseconds(timeout.Value)
+                ? ProcessUtils.ToTimeoutMilliseconds(timeout.Value)
                 : Timeout.Infinite;
 
             Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();

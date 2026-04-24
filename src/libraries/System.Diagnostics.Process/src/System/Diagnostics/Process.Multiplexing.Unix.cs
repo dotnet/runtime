@@ -63,10 +63,6 @@ namespace System.Diagnostics
                 while (!outputDone || !errorDone)
                 {
                     int numFds = PollForPipeActivity(pollFds, errorFd, outputFd, errorDone, outputDone, deadline, timeoutMs, out int errorIndex, out int outputIndex);
-                    if (numFds == 0)
-                    {
-                        continue; // EINTR
-                    }
 
                     // Process error pipe first (lower index) when both have data available.
                     for (int i = 0; i < numFds; i++)
@@ -281,10 +277,6 @@ namespace System.Diagnostics
             while (!outputDone || !errorDone)
             {
                 int numFds = PollForPipeActivity(pollFds, errorFd, outputFd, errorDone, outputDone, deadline, timeoutMs, out int errorIndex, out int outputIndex);
-                if (numFds == 0)
-                {
-                    continue; // EINTR
-                }
 
                 for (int i = 0; i < numFds; i++)
                 {
