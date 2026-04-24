@@ -75,9 +75,10 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         InitializeDumpTest(config);
         DacDbiImpl dbi = CreateDacDbi();
 
-        ulong resultModule;
-        int hr = dbi.GetModuleForAssembly(0xDEAD, &resultModule);
+        ulong resultModule = ulong.MaxValue;
+        int hr = dbi.GetModuleForAssembly(0, &resultModule);
         Assert.NotEqual(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, resultModule);
     }
 
     [ConditionalTheory]

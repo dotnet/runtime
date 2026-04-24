@@ -304,7 +304,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             int hrLocal = _legacy.GetModuleForAssembly(vmAssembly, &moduleLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
-                Debug.Assert(*pModule == moduleLocal, $"cDAC: {*pModule}, DAC: {moduleLocal}");
+                Debug.Assert(*pModule == moduleLocal, $"cDAC: {*pModule:x}, DAC: {moduleLocal:x}");
         }
 #endif
         return hr;
