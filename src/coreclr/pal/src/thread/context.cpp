@@ -896,7 +896,11 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
         {
             //TODO-SVE: This only handles vector lengths of 128bits.
-            if (CONTEXT_GetSveLengthFromOS() == 16)
+            // Use sve->vl from the signal frame instead of CONTEXT_GetSveLengthFromOS()
+            // (which executes the SVE rdvl instruction) to avoid SIGILL on platforms
+            // that provide an SVE context record without supporting SVE instructions
+            // (e.g. Apple M4 with SME streaming SVE under Virtualization.Framework).
+            if (sve->vl == 16)
             {
                 _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_ARM64_SVE) == XSTATE_MASK_ARM64_SVE);
 
@@ -1255,7 +1259,11 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
         {
             //TODO-SVE: This only handles vector lengths of 128bits.
-            if (CONTEXT_GetSveLengthFromOS() == 16)
+            // Use sve->vl from the signal frame instead of CONTEXT_GetSveLengthFromOS()
+            // (which executes the SVE rdvl instruction) to avoid SIGILL on platforms
+            // that provide an SVE context record without supporting SVE instructions
+            // (e.g. Apple M4 with SME streaming SVE under Virtualization.Framework).
+            if (sve->vl == 16)
             {
                 _ASSERTE((sve->vl > 0) && (sve->vl % 16 == 0));
                 lpContext->Vl  = sve->vl;
