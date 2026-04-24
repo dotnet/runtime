@@ -223,7 +223,6 @@ namespace System.Runtime.CompilerServices
 
             // We cache the other TLS members here to avoid unnecessary repeated TLS lookups.
             public Thread CurrentThread;
-            public AsyncDispatcherInfo** CurrentDispatcherInfo;
 
             public RuntimeAsyncStackState* StackState;
 
@@ -240,18 +239,6 @@ namespace System.Runtime.CompilerServices
                 // Therefore we do not need to worry about IsFlowSuppressed
                 StackState->LeafExecutionContext = curThread._executionContext;
                 StackState->LeafSynchronizationContext = curThread._synchronizationContext;
-            }
-
-            public AsyncDispatcherInfo** GetOrInitDispatcherInfoPointer()
-            {
-                if (CurrentDispatcherInfo != null)
-                    return CurrentDispatcherInfo;
-
-                // This relies on coreclr and NativeAOT runtimes always storing ThreadStatic pointer fields in a pinned fashion.
-                fixed (AsyncDispatcherInfo** pCurrentDispatcherInfo = &AsyncDispatcherInfo.t_current)
-                {
-                    return CurrentDispatcherInfo = pCurrentDispatcherInfo;
-                }
             }
 
             // At the start of an async chain (task-returning thunk or DispatchContinuations) this function
@@ -550,12 +537,12 @@ namespace System.Runtime.CompilerServices
                 ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
                 awaitState.Push(&stackState);
 
-                AsyncDispatcherInfo** pDispatcherInfo = awaitState.GetOrInitDispatcherInfoPointer();
+                ref AsyncDispatcherInfo* refDispatcherInfo = ref AsyncDispatcherInfo.t_current;
 
                 AsyncDispatcherInfo asyncDispatcherInfo;
-                asyncDispatcherInfo.Next = *pDispatcherInfo;
+                asyncDispatcherInfo.Next = refDispatcherInfo;
                 asyncDispatcherInfo.NextContinuation = MoveContinuationState();
-                *pDispatcherInfo = &asyncDispatcherInfo;
+                refDispatcherInfo = &asyncDispatcherInfo;
 
                 while (true)
                 {
@@ -576,7 +563,7 @@ namespace System.Runtime.CompilerServices
                             HandleSuspended(ref awaitState);
 
                             awaitState.Pop();
-                            *pDispatcherInfo = asyncDispatcherInfo.Next;
+                            refDispatcherInfo = asyncDispatcherInfo.Next;
                             return;
                         }
                     }
@@ -592,7 +579,7 @@ namespace System.Runtime.CompilerServices
                                 TrySetException(ex);
 
                             awaitState.Pop();
-                            *pDispatcherInfo = asyncDispatcherInfo.Next;
+                            refDispatcherInfo = asyncDispatcherInfo.Next;
 
                             if (!successfullySet)
                             {
@@ -611,7 +598,7 @@ namespace System.Runtime.CompilerServices
                         bool successfullySet = TrySetResult(m_result);
 
                         awaitState.Pop();
-                        *pDispatcherInfo = asyncDispatcherInfo.Next;
+                        refDispatcherInfo = asyncDispatcherInfo.Next;
 
                         if (!successfullySet)
                         {
@@ -624,7 +611,7 @@ namespace System.Runtime.CompilerServices
                     if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation))
                     {
                         awaitState.Pop();
-                        *pDispatcherInfo = asyncDispatcherInfo.Next;
+                        refDispatcherInfo = asyncDispatcherInfo.Next;
                         return;
                     }
 
@@ -633,7 +620,7 @@ namespace System.Runtime.CompilerServices
                         SetContinuationState(asyncDispatcherInfo.NextContinuation);
 
                         awaitState.Pop();
-                        *pDispatcherInfo = asyncDispatcherInfo.Next;
+                        refDispatcherInfo = asyncDispatcherInfo.Next;
 
                         InstrumentedDispatchContinuations(AsyncInstrumentation.ActiveFlags);
                         return;
@@ -649,12 +636,12 @@ namespace System.Runtime.CompilerServices
                 ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
                 awaitState.Push(&stackState);
 
-                AsyncDispatcherInfo** pDispatcherInfo = awaitState.GetOrInitDispatcherInfoPointer();
+                ref AsyncDispatcherInfo* refDispatcherInfo = ref AsyncDispatcherInfo.t_current;
 
                 AsyncDispatcherInfo asyncDispatcherInfo;
-                asyncDispatcherInfo.Next = *pDispatcherInfo;
+                asyncDispatcherInfo.Next = refDispatcherInfo;
                 asyncDispatcherInfo.NextContinuation = MoveContinuationState();
-                *pDispatcherInfo = &asyncDispatcherInfo;
+                refDispatcherInfo = &asyncDispatcherInfo;
 
                 RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncContext(this, ref asyncDispatcherInfo, flags);
 
@@ -679,7 +666,7 @@ namespace System.Runtime.CompilerServices
                             InstrumentedHandleSuspended(flags, ref awaitState, newContinuation);
 
                             awaitState.Pop();
-                            *pDispatcherInfo = asyncDispatcherInfo.Next;
+                            refDispatcherInfo = asyncDispatcherInfo.Next;
                             return;
                         }
 
@@ -699,7 +686,7 @@ namespace System.Runtime.CompilerServices
                                 TrySetException(ex);
 
                             awaitState.Pop();
-                            *pDispatcherInfo = asyncDispatcherInfo.Next;
+                            refDispatcherInfo = asyncDispatcherInfo.Next;
 
                             if (!successfullySet)
                             {
@@ -722,7 +709,7 @@ namespace System.Runtime.CompilerServices
                         bool successfullySet = TrySetResult(m_result);
 
                         awaitState.Pop();
-                        *pDispatcherInfo = asyncDispatcherInfo.Next;
+                        refDispatcherInfo = asyncDispatcherInfo.Next;
 
                         if (!successfullySet)
                         {
@@ -737,7 +724,7 @@ namespace System.Runtime.CompilerServices
                         RuntimeAsyncInstrumentationHelpers.SuspendRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation);
 
                         awaitState.Pop();
-                        *pDispatcherInfo = asyncDispatcherInfo.Next;
+                        refDispatcherInfo = asyncDispatcherInfo.Next;
                         return;
                     }
 
