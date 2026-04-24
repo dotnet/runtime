@@ -1145,8 +1145,9 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
 #if defined(FEATURE_HW_INTRINSICS)
             case GT_CNS_VEC:
             {
-                // For now, only support SIMD constants up to 16 bytes (SIMD8/12/16).
-                if (!op1->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16) || (op1->TypeGet() != op2->TypeGet()))
+                // Support all SIMD constants. SIMD8/12/16 are stored inline in the assertion;
+                // SIMD32/64 are heap-allocated.
+                if (!varTypeIsSIMD(op1) || (op1->TypeGet() != op2->TypeGet()))
                 {
                     return NO_ASSERTION_INDEX;
                 }
@@ -1159,11 +1160,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
                     return NO_ASSERTION_INDEX;
                 }
 
-                simd16_t simdVal = {};
-                memcpy(&simdVal, &op2->AsVecCon()->gtSimdVal, genTypeSize(op2->TypeGet()));
-
                 AssertionDsc dsc =
-                    AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, simdVal, op2VN, equals);
+                    AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, op2->AsVecCon(), op2VN, equals);
                 return optAddAssertion(dsc);
             }
 #endif // FEATURE_HW_INTRINSICS
@@ -3263,15 +3261,15 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
         case O2K_CONST_VEC:
         {
             // The assertion was created from a LCL_VAR == CNS_VEC where types matched.
-            // For now, only support SIMD constants up to 16 bytes (SIMD8/12/16).
-            if (!tree->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16) || !tree->TypeIs(lvaGetDesc(lclNum)->TypeGet()))
+            if (!varTypeIsSIMD(tree) || !tree->TypeIs(lvaGetDesc(lclNum)->TypeGet()))
             {
                 return nullptr;
             }
+            assert(genTypeSize(tree->TypeGet()) == curAssertion.GetOp2().GetSimdSize());
 
             // We can't bash a LCL_VAR into a GenTreeVecCon (different node size), so allocate a fresh node.
             GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, &curAssertion.GetOp2().GetSimdConstant(), genTypeSize(tree->TypeGet()));
+            memcpy(&vecCon->gtSimdVal, curAssertion.GetOp2().GetSimdConstant(), genTypeSize(tree->TypeGet()));
             newTree = vecCon;
             break;
         }
