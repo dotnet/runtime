@@ -589,7 +589,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     const string OptionsVarName = "polymorphismOptions";
                     writer.WriteLine();
-                    writer.WriteLine($"var {OptionsVarName} = new {JsonPolymorphismOptionsTypeRef}();");
+                    writer.WriteLine($"var {OptionsVarName} = {JsonTypeInfoLocalVariableName}.{PolymorphismOptionsPropName} ?? new {JsonPolymorphismOptionsTypeRef}();");
 
                     foreach (PolymorphicDerivedTypeSpec derivedTypeSpec in openGenericDerivedTypes)
                     {

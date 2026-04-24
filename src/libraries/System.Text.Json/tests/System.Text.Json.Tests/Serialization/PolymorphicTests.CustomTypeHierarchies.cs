@@ -2912,6 +2912,42 @@ namespace System.Text.Json.Serialization.Tests
 
         public class OpenGenericDerived_Programmatic<T> : OpenGenericBase_Programmatic<T>;
 
+        [Fact]
+        public async Task OpenGenericDerivedType_MixedWithRegularDerivedType_Works()
+        {
+            // Validates that both regular and open generic derived types coexist.
+            OpenGenericBase_Mixed<int> openValue = new OpenGenericDerived_Mixed<int> { Value = 1 };
+            OpenGenericBase_Mixed<int> regularValue = new RegularDerived_Mixed { Value = 2, Extra = "extra" };
+
+            string openJson = await Serializer.SerializeWrapper(openValue);
+            string regularJson = await Serializer.SerializeWrapper(regularValue);
+
+            JsonTestHelper.AssertJsonEqual("""{"$type":"open","Value":1}""", openJson);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"regular","Value":2,"Extra":"extra"}""", regularJson);
+
+            var openResult = await Serializer.DeserializeWrapper<OpenGenericBase_Mixed<int>>(openJson);
+            var regularResult = await Serializer.DeserializeWrapper<OpenGenericBase_Mixed<int>>(regularJson);
+
+            Assert.IsType<OpenGenericDerived_Mixed<int>>(openResult);
+            Assert.IsType<RegularDerived_Mixed>(regularResult);
+            Assert.Equal(1, openResult.Value);
+            Assert.Equal("extra", ((RegularDerived_Mixed)regularResult).Extra);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_Mixed<>), "open")]
+        [JsonDerivedType(typeof(RegularDerived_Mixed), "regular")]
+        public class OpenGenericBase_Mixed<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericDerived_Mixed<T> : OpenGenericBase_Mixed<T>;
+
+        public class RegularDerived_Mixed : OpenGenericBase_Mixed<int>
+        {
+            public string? Extra { get; set; }
+        }
+
         #endregion
 
         [Fact]

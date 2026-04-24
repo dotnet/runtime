@@ -1235,9 +1235,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(!IsReadOnly);
 
-            // If polymorphism options have already been set by the source generator,
-            // skip attribute-based resolution. Preserve the attribute logic for
-            // binary compatibility with source generated code from earlier versions.
+            // If polymorphism options have already been set (e.g., programmatically
+            // or by a future source generator pattern), skip attribute-based resolution.
             if (_polymorphismOptions is not null)
             {
                 return;
