@@ -60,9 +60,21 @@ This contract depends on the following descriptors:
 | `StubDispatchFrame` | `MethodDescPtr` | Pointer to Frame's method desc |
 | `StubDispatchFrame` | `RepresentativeMTPtr` | Pointer to Frame's method table pointer |
 | `StubDispatchFrame` | `RepresentativeSlot` | Frame's method table slot |
+| `StubDispatchFrame` | `GCRefMap` | Cached pointer to GC reference map blob for caller stack promotion |
+| `StubDispatchFrame` | `ZapModule` | Module pointer for lazy GCRefMap resolution via import sections |
+| `StubDispatchFrame` | `Indirection` | Import slot pointer for lazy GCRefMap resolution |
+| `ExternalMethodFrame` | `GCRefMap` | Cached pointer to GC reference map blob for caller stack promotion |
+| `ExternalMethodFrame` | `Indirection` | Import slot pointer for lazy GCRefMap resolution |
+| `ExternalMethodFrame` | `ZapModule` | Module pointer for lazy GCRefMap resolution via import sections |
+| `DynamicHelperFrame` | `DynamicHelperFrameFlags` | Flags indicating which argument registers contain GC references |
 | `TransitionBlock` | `ReturnAddress` | Return address associated with the TransitionBlock |
 | `TransitionBlock` | `CalleeSavedRegisters` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
 | `TransitionBlock` (arm) | `ArgumentRegisters` | ARM specific `ArgumentRegisters` struct |
+| `TransitionBlock` | `OffsetOfArgs` | Byte offset of stack arguments (first arg after registers) = `sizeof(TransitionBlock)` |
+| `TransitionBlock` | `ArgumentRegistersOffset` | Byte offset of the ArgumentRegisters within the TransitionBlock |
+| `TransitionBlock` | `FirstGCRefMapSlot` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
+| `ReadyToRunInfo` | `ImportSections` | Pointer to array of `READYTORUN_IMPORT_SECTION` structs for GCRefMap resolution |
+| `ReadyToRunInfo` | `NumImportSections` | Count of import sections in the array |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
 | `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
 | `DebuggerEval` | `EvalDuringException` | Flag used in processing FuncEvalFrame |
@@ -85,6 +97,8 @@ This contract depends on the following descriptors:
 | `ExceptionInfo` | `CallerOfActualHandlerFrame` | Stack frame of the caller of the catch handler |
 | `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested ExInfo |
 | `ExceptionInfo` | `PassNumber` | Exception handling pass (1 or 2) |
+| `ExceptionInfo` | `ClauseForCatchHandlerStartPC` | Start PC offset of the catch handler clause, used for interruptible offset override |
+| `ExceptionInfo` | `ClauseForCatchHandlerEndPC` | End PC offset of the catch handler clause, used for interruptible offset override |
 
 Global variables used:
 | Global Name | Type | Purpose |

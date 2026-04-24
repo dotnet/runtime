@@ -68,8 +68,6 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         GC_SPBASE_LAST = GC_FRAMEREG_REL,
     }
 
-    public readonly record struct InterruptibleRange(uint StartOffset, uint EndOffset);
-
     public readonly record struct GcSlotDesc
     {
         /* Register Slot */
@@ -569,7 +567,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
         uint numTracked = NumTrackedSlots;
         if (numTracked == 0)
-            goto ReportUntracked;
+            return ReportUntrackedAndSucceed();
 
         uint normBreakOffset = TTraits.NormalizeCodeOffset(instructionOffset);
 
@@ -655,7 +653,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                             fReport = !fReport;
                         }
                         Debug.Assert(readSlots == numTracked);
-                        goto ReportUntracked;
+                        return ReportUntrackedAndSucceed();
                     }
                     // Normal 1-bit-per-slot encoding follows
                 }
@@ -669,7 +667,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                     if (_reader.ReadBits(1, ref bitOffset) != 0)
                         ReportSlot(slotIndex, reportScratchSlots, reportFpBasedSlotsOnly, reportSlot);
                 }
-                goto ReportUntracked;
+                return ReportUntrackedAndSucceed();
             }
             else
             {
@@ -682,7 +680,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                 bitOffset += (int)(_numSafePoints * numTracked);
 
                 if (_numInterruptibleRanges == 0)
-                    goto ReportUntracked;
+                    return ReportUntrackedAndSucceed();
             }
 
             // ---- Fully-interruptible path ----
@@ -695,7 +693,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
             uint numBitsPerPointer = (uint)_reader.DecodeVarLengthUnsigned(TTraits.POINTER_SIZE_ENCBASE, ref bitOffset);
             if (numBitsPerPointer == 0)
-                goto ReportUntracked;
+                return ReportUntrackedAndSucceed();
 
             int pointerTablePos = bitOffset;
 
@@ -709,7 +707,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                 if (chunkPointer != 0)
                     break;
                 if (chunk-- == 0)
-                    goto ReportUntracked;
+                    return ReportUntrackedAndSucceed();
             }
 
             int chunksStartPos = (int)(((uint)pointerTablePos + numChunks * numBitsPerPointer + 7) & (~7u));
@@ -815,14 +813,22 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             }
         }
 
-    ReportUntracked:
-        if (_numUntrackedSlots > 0 && (flags & (CodeManagerFlags.ParentOfFuncletStackFrame | CodeManagerFlags.NoReportUntracked)) == 0)
-        {
-            for (uint slotIndex = numTracked; slotIndex < _numSlots; slotIndex++)
-                ReportSlot(slotIndex, reportScratchSlots, reportFpBasedSlotsOnly, reportSlot);
-        }
+        return ReportUntrackedAndSucceed();
 
-        return true;
+        bool ReportUntrackedAndSucceed()
+        {
+            if (_numUntrackedSlots > 0 && (flags & (CodeManagerFlags.ParentOfFuncletStackFrame | CodeManagerFlags.NoReportUntracked)) == 0)
+            {
+                // Native passes reportScratchSlots=true for untracked slots (see native
+                // ReportUntrackedSlots: "Report everything (although there should *never*
+                // be any scratch slots that are untracked)"). In practice the JIT can
+                // produce untracked scratch register slots for interior pointers, so they
+                // must be reported regardless of whether this is a leaf frame.
+                for (uint slotIndex = numTracked; slotIndex < _numSlots; slotIndex++)
+                    ReportSlot(slotIndex, reportScratchSlots: true, reportFpBasedSlotsOnly, reportSlot);
+            }
+            return true;
+        }
     }
 
     private void ReportSlot(uint slotIndex, bool reportScratchSlots, bool reportFpBasedSlotsOnly, Action<uint, GcSlotDesc, uint> reportSlot)

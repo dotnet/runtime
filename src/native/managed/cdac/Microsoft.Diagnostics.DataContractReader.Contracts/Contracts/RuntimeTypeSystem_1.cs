@@ -155,6 +155,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     internal enum AsyncMethodFlags : uint
     {
         None = 0,
+        AsyncCall = 0x1,
         Thunk = 16,
     }
 
@@ -1324,6 +1325,99 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return default;
 
         return AsInstantiatedMethodDesc(methodDesc).Instantiation;
+    }
+
+    /// <summary>
+    /// Returns true if the method requires a hidden instantiation argument (generic context parameter).
+    /// Matches native MethodDesc::RequiresInstArg().
+    /// </summary>
+    public bool RequiresInstArg(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        // RequiresInstArg = IsSharedByGenericInstantiations && (HasMethodInstantiation || IsStatic || IsValueType || IsInterface)
+        if (!IsSharedByGenericInstantiations(methodDesc))
+            return false;
+
+        if (HasMethodInstantiation(methodDesc))
+            return true;
+
+        MethodTable mt = _methodTables[methodDesc.MethodTable];
+        if (mt.Flags.IsInterface)
+            return true;
+
+        if (mt.Flags.IsValueType)
+            return true;
+
+        if (IsStaticMethod(methodDesc))
+            return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Matches native MethodDesc::IsStatic().
+    /// </summary>
+    private bool IsStaticMethod(MethodDesc methodDesc)
+    {
+        try
+        {
+            uint token = methodDesc.Token;
+            if (token != 0x06000000)
+            {
+                TypeHandle typeHandle = GetTypeHandle(methodDesc.MethodTable);
+                TargetPointer modulePtr = GetModule(typeHandle);
+                ILoader loader = _target.Contracts.Loader;
+                ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+                MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+                if (mdReader is not null)
+                {
+                    MethodDefinitionHandle methodDefHandle =
+                        MetadataTokens.MethodDefinitionHandle((int)(token & 0x00FFFFFF));
+                    MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+                    return (methodDef.Attributes & MethodAttributes.Static) != 0;
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return false;
+    }
+
+    private bool IsSharedByGenericInstantiations(MethodDesc methodDesc)
+    {
+        // Check method-level sharing: InstantiatedMethodDesc with SharedMethodInstantiation
+        if (methodDesc.Classification == MethodClassification.Instantiated)
+        {
+            InstantiatedMethodDesc imd = AsInstantiatedMethodDesc(methodDesc);
+            if (imd.IsWrapperStubWithInstantiations)
+                return false;
+
+            // Check SharedMethodInstantiation flag
+            Data.InstantiatedMethodDesc imdData = _target.ProcessedData.GetOrAdd<Data.InstantiatedMethodDesc>(methodDesc.Address);
+            if ((imdData.Flags2 & (ushort)InstantiatedMethodDescFlags2.KindMask)
+                == (ushort)InstantiatedMethodDescFlags2.SharedMethodInstantiation)
+                return true;
+        }
+
+        // Check class-level sharing: canonical MethodTable with generic instantiation
+        MethodTable mt = _methodTables[methodDesc.MethodTable];
+        return mt.IsCanonMT && mt.Flags.HasInstantiation;
+    }
+
+    public bool IsAsyncMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (!methodDesc.HasAsyncMethodData)
+            return false;
+
+        // AsyncMethodData is the last optional slot, placed after NativeCodeSlot.
+        // Read the AsyncMethodFlags (first field) and check for AsyncCall.
+        TargetPointer asyncDataAddr = methodDesc.GetAddressOfAsyncMethodData();
+        uint asyncFlags = _target.Read<uint>(asyncDataAddr);
+        return (asyncFlags & (uint)AsyncMethodFlags.AsyncCall) != 0;
     }
 
     public uint GetMethodToken(MethodDescHandle methodDescHandle)

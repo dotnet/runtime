@@ -19,6 +19,9 @@ IGCInfoHandle DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersio
 
 // Fetches length of code as reported in GCInfo
 uint GetCodeLength(IGCInfoHandle handle);
+
+// Returns the list of interruptible code offset ranges from the GCInfo
+IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle);
 ```
 
 ## Version 1

@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 public interface IGCInfoHandle { }
+public readonly record struct InterruptibleRange(uint StartOffset, uint EndOffset);
 
 public interface IGCInfo : IContract
 {
@@ -14,6 +16,7 @@ public interface IGCInfo : IContract
     IGCInfoHandle DecodePlatformSpecificGCInfo(TargetPointer gcInfoAddress, uint gcVersion) => throw new NotImplementedException();
     IGCInfoHandle DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersion) => throw new NotImplementedException();
     uint GetCodeLength(IGCInfoHandle handle) => throw new NotImplementedException();
+    IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle) => throw new NotImplementedException();
 }
 
 public readonly struct GCInfo : IGCInfo
