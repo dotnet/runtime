@@ -70,34 +70,6 @@ Thread* ThreadExceptionState::GetMyThread()
 }
 
 
-void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowableErrorChecking stecFlags))
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        if (throwable == NULL) MODE_ANY; else MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (throwable != NULL)
-    {
-        _ASSERTE(IsException(throwable->GetMethodTable()));
-
-#ifdef _DEBUG
-        if (stecFlags != STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow)
-        {
-            CONSISTENCY_CHECK(CheckPointer(m_pCurrentTracker));
-        }
-#endif
-    }
-
-    // The exception object is stored directly in ExInfo::m_exception by managed EH code.
-    // SetThrowable is now a no-op for the ExInfo field — the m_exception is already set.
-    // We keep this method so that SafeSetThrowables can still call it for the assertion
-    // and debug checks above.
-}
-
 DWORD ThreadExceptionState::GetExceptionCode()
 {
     LIMITED_METHOD_CONTRACT;

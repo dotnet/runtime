@@ -3221,12 +3221,12 @@ OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable)
 }
 
 //
-// This is a nice wrapper for SetThrowable and SetLastThrownObject, which catches any exceptions caused by not
+// This is a nice wrapper for SetLastThrownObject, which catches any exceptions caused by not
 // being able to create the handle for the throwable, and sets the throwable to the preallocated out of memory
 // exception instead. It also updates the last thrown object, which is always updated when the throwable is
 // updated.
 //
-OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags),
+OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable,
                                     BOOL isUnhandled)
 {
     CONTRACTL
@@ -3242,11 +3242,8 @@ OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptio
 
     EX_TRY
     {
-        // Try to set the throwable.
-        SetThrowable(throwable DEBUG_ARG(stecFlags));
-
-        // Now, if the last thrown object is different, go ahead and update it. This makes sure that we re-throw
-        // the right object when we rethrow.
+        // The exception object is stored directly in ExInfo::m_exception by managed EH code,
+        // so we only need to update the last thrown object handle here.
         if (LastThrownObject() != throwable)
         {
             SetLastThrownObject(throwable);
@@ -3259,12 +3256,9 @@ OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptio
     }
     EX_CATCH
     {
-        // If either set didn't work, then set both throwables to the preallocated OOM exception, and return that
-        // object instead of the original throwable.
+        // If we can't create a handle, set the last thrown object to the preallocated OOM exception.
         ret = CLRException::GetPreallocatedOutOfMemoryException();
 
-        // Neither of these will throw because we're setting with a preallocated exception.
-        SetThrowable(ret DEBUG_ARG(stecFlags));
         SetLastThrownObject(ret, isUnhandled);
     }
     EX_END_CATCH

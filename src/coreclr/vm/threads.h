@@ -1433,8 +1433,6 @@ public:
     //---------------------------------------------------------------
     // Last exception to be thrown
     //---------------------------------------------------------------
-    inline void SetThrowable(OBJECTREF pThrowable
-                             DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags = ThreadExceptionState::STEC_All));
 
     OBJECTREF GetThrowable()
     {
@@ -2667,8 +2665,7 @@ public:
     }
 
     void SafeUpdateLastThrownObject(void);
-    OBJECTREF SafeSetThrowables(OBJECTREF pThrowable
-                                DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags = ThreadExceptionState::STEC_All),
+    OBJECTREF SafeSetThrowables(OBJECTREF pThrowable,
                                 BOOL isUnhandled = FALSE);
 
     bool IsLastThrownObjectStackOverflowException()

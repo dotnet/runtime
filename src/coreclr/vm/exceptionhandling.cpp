@@ -1447,7 +1447,9 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             exInfo.TakeExceptionPointersOwnership(ex);
         }
 
-        GCPROTECT_BEGIN(exInfo.m_exception);
+        // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
+        // Do NOT also GCPROTECT it — reporting the same location twice corrupts
+        // the GC's relocation logic (see clr-code-guide.md §2.1.5).
         UnmanagedCallersOnlyCaller throwHwEx(METHOD__EH__RH_THROWHW_EX);
 
         pThread->IncPreventAbort();
@@ -1456,8 +1458,6 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
         DispatchExSecondPass(&exInfo);
-
-        GCPROTECT_END();
 
         UNREACHABLE();
     }
@@ -1620,8 +1620,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
         }
     }
 
-    GCPROTECT_BEGIN(exInfo.m_exception);
-
+    // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
+    // Do NOT also GCPROTECT it — reporting the same location twice corrupts
+    // the GC's relocation logic (see clr-code-guide.md §2.1.5).
     UnmanagedCallersOnlyCaller throwEx(METHOD__EH__RH_THROW_EX);
 
     pThread->IncPreventAbort();
@@ -1631,7 +1632,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     DispatchExSecondPass(&exInfo);
 
-    GCPROTECT_END();
     GCPROTECT_END();
 
     UNREACHABLE();
@@ -1674,7 +1674,9 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
 
     ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pExceptionContext, ExKind::None);
 
-    GCPROTECT_BEGIN(exInfo.m_exception);
+    // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
+    // Do NOT also GCPROTECT it — reporting the same location twice corrupts
+    // the GC's relocation logic (see clr-code-guide.md §2.1.5).
     UnmanagedCallersOnlyCaller rethrow(METHOD__EH__RH_RETHROW);
 
     pThread->IncPreventAbort();
@@ -1682,8 +1684,6 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
     //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
     rethrow.InvokeDirect(pActiveExInfo, &exInfo);
     DispatchExSecondPass(&exInfo);
-
-    GCPROTECT_END();
 
     UNREACHABLE();
 }
