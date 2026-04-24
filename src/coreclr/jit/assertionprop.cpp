@@ -3330,29 +3330,29 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
             const simd16_t& simdVal = curAssertion.GetOp2().GetSimdConstant();
 
 #if defined(TARGET_XARCH)
-                // TYP_SIMD32/64 constants are too large to track without a heap allocation.
-                //
-                // However, we support them anyways by only allowing through the cases which
-                // are effectively broadcasting the lowest v128 across the entire vector.
+            // TYP_SIMD32/64 constants are too large to track without a heap allocation.
+            //
+            // However, we support them anyways by only allowing through the cases which
+            // are effectively broadcasting the lowest v128 across the entire vector.
 
-                if (simdType == TYP_SIMD64)
-                {
-                    memcpy(&vecCon->gtSimdVal.v128[1], &simdVal, sizeof(simd16_t));
-                    memcpy(&vecCon->gtSimdVal.v128[2], &simdVal, sizeof(simd16_t));
-                    memcpy(&vecCon->gtSimdVal.v128[3], &simdVal, sizeof(simd16_t));
-                    simdType = TYP_SIMD16;
-                }
-                else if (simdType == TYP_SIMD32)
-                {
-                    memcpy(&vecCon->gtSimdVal.v128[1], &simdVal, sizeof(simd16_t));
-                    simdType = TYP_SIMD16;
-                }
+            if (simdType == TYP_SIMD64)
+            {
+                memcpy(&vecCon->gtSimdVal.v128[1], &simdVal, sizeof(simd16_t));
+                memcpy(&vecCon->gtSimdVal.v128[2], &simdVal, sizeof(simd16_t));
+                memcpy(&vecCon->gtSimdVal.v128[3], &simdVal, sizeof(simd16_t));
+                simdType = TYP_SIMD16;
+            }
+            else if (simdType == TYP_SIMD32)
+            {
+                memcpy(&vecCon->gtSimdVal.v128[1], &simdVal, sizeof(simd16_t));
+                simdType = TYP_SIMD16;
+            }
 #elif defined(TARGET_ARM64)
-                if (simdType == TYP_SIMD)
-                {
-                    // TODO-SVE: Handle SVE constants
-                    unreached();
-                }
+            if (simdType == TYP_SIMD)
+            {
+                // TODO-SVE: Handle SVE constants
+                unreached();
+            }
 #endif
 
             // Assert we've fixed up the value to account for one of the supported storage sizes
