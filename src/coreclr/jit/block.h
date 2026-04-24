@@ -434,7 +434,7 @@ enum BasicBlockFlags : uint64_t
     BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(23), // BB is surrounded by a backward jump/switch arc
     BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(24), // Block is a source of a backward jump
     BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(25), // Block is a target of a backward jump
-    BBF_PATCHPOINT                     = MAKE_BBFLAG(26), // Block is a patchpoint
+    BBF_OSR_PATCHPOINT                 = MAKE_BBFLAG(26), // Block is a patchpoint
     BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(27), // Block is a partial compilation patchpoint
     BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(28), // BB contains a call needing a histogram profile
     BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(29), // BB has pred that has potential tail call
@@ -445,7 +445,8 @@ enum BasicBlockFlags : uint64_t
     BBF_HAS_NEWARR                     = MAKE_BBFLAG(34), // BB contains 'new' of an array type.
     BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(35), // BB *likely* has a bounds check (after rangecheck phase).
     BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(36), // Block is a resumption block in an async method
-    BBF_THROW_HELPER                   = MAKE_BBFLAG(37), // Block is a call to a throw helper
+    BBF_CATCH_RESUMPTION               = MAKE_BBFLAG(37), // Block is a resumption from a catch
+    BBF_THROW_HELPER                   = MAKE_BBFLAG(38), // Block is a call to a throw helper
 
     // The following are sets of flags.
 
@@ -1766,6 +1767,10 @@ public:
     {
         return StatementList(FirstNonPhiDef());
     }
+
+    // True if any non-phi statement/node in the block has side effects.
+    //
+    bool hasSideEffects() const;
 
     // Simple "size" estimates
     //

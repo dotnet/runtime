@@ -6,11 +6,10 @@ import type { EmscriptenModule, NativePointer } from "./emscripten";
 export interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: MonoConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
+     * @deprecated This method is no longer supported and will be removed in a future version.
      */
     withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
@@ -476,7 +475,6 @@ export const enum GlobalizationMode {
 
 export type DotnetModuleConfig = {
     config?: MonoConfig,
-    configSrc?: string,
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
@@ -510,9 +508,7 @@ export type RunAPIType = {
      */
     exit: (code: number, reason?: any) => void;
     /**
-     * Sets the environment variable for the "process"
-     * @param name
-     * @param value
+     * @deprecated use withEnvironmentVariable() on the host builder instead.
      */
     setEnvironmentVariable: (name: string, value: string) => void;
     /**
@@ -707,7 +703,7 @@ export type DiagnosticsAPIType = {
 export type DiagnosticCommandProviderV2 = {
     keywords: [ number, number ],
     logLevel: number,
-    provider_name: string,
+    providerName: string,
     arguments: string|null
 }
 

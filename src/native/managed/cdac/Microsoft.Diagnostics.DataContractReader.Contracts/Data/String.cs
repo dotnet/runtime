@@ -13,7 +13,7 @@ internal sealed class String : IData<String>
         Target.TypeInfo type = target.GetTypeInfo(DataType.String);
 
         FirstChar = address + (ulong)type.Fields["m_FirstChar"].Offset;
-        StringLength = target.Read<uint>(address + (ulong)type.Fields["m_StringLength"].Offset);
+        StringLength = target.ReadField<uint>(address, type, "m_StringLength");
     }
 
     public TargetPointer FirstChar { get; init; }

@@ -685,10 +685,20 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerReturnSuspend(node);
             break;
 
+        case GT_NONLOCAL_JMP:
+            ContainCheckNonLocalJmp(node->AsUnOp());
+            break;
+
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
         case GT_CNS_MSK:
             return LowerCnsMask(node->AsMskCon());
 #endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
+
+#if defined(TARGET_WASM)
+        case GT_INDEX_ADDR:
+            LowerIndexAddr(node->AsIndexAddr());
+            break;
+#endif // defined(TARGET_WASM)
 
         default:
             break;
@@ -2309,7 +2319,7 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
 {
     assert(call->IsSpecialIntrinsic(m_compiler, NI_System_SpanHelpers_Fill) ||
            call->IsSpecialIntrinsic(m_compiler, NI_System_SpanHelpers_ClearWithoutReferences) ||
-           call->IsHelperCall(m_compiler, CORINFO_HELP_MEMSET));
+           call->IsHelperCall(CORINFO_HELP_MEMSET));
 
     JITDUMP("Considering Memset-like call [%06d] for unrolling.. ", m_compiler->dspTreeID(call))
 
@@ -2340,7 +2350,7 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
         // NOTE: structs and TYP_REF will be ignored by the "Value is not a constant" check
         // Some of those cases can be enabled in future, e.g. s
     }
-    else if (call->IsHelperCall(m_compiler, CORINFO_HELP_MEMSET))
+    else if (call->IsHelperCall(CORINFO_HELP_MEMSET))
     {
         // void CORINFO_HELP_MEMSET(ref T refData, byte value, nuint numElements)
         //
@@ -2456,7 +2466,7 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
 bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 {
     JITDUMP("Considering Memmove [%06d] for unrolling.. ", m_compiler->dspTreeID(call))
-    assert(call->IsHelperCall(m_compiler, CORINFO_HELP_MEMCPY) ||
+    assert(call->IsHelperCall(CORINFO_HELP_MEMCPY) ||
            (m_compiler->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_SpanHelpers_Memmove));
 
     assert(call->gtArgs.CountUserArgs() == 3);
@@ -2562,7 +2572,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
         JITDUMP("Size=%ld.. ", (LONG)cnsSize);
-        // TODO-CQ: drop the whole thing in case of 0
+        // The case of 0 has been handled earlier with VN
         if (cnsSize > 0)
         {
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
@@ -2855,13 +2865,13 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 
     // Try to lower CORINFO_HELP_MEMCPY to unrollable STORE_BLK
-    if (call->IsHelperCall(m_compiler, CORINFO_HELP_MEMCPY) && LowerCallMemmove(call, &nextNode))
+    if (call->IsHelperCall(CORINFO_HELP_MEMCPY) && LowerCallMemmove(call, &nextNode))
     {
         return nextNode;
     }
 
     // Try to lower CORINFO_HELP_MEMSET to unrollable STORE_BLK
-    if (call->IsHelperCall(m_compiler, CORINFO_HELP_MEMSET) && LowerCallMemset(call, &nextNode))
+    if (call->IsHelperCall(CORINFO_HELP_MEMSET) && LowerCallMemset(call, &nextNode))
     {
         return nextNode;
     }
@@ -2936,13 +2946,12 @@ GenTree* Lowering::LowerCall(GenTree* node)
         }
     }
 
-    // Indirect calls should always go through GenTreeCall::gtCallAddr and
-    // should never have a control expression as well.
+    // We shouldn't be trying to assign a new control target to indirect calls.
     assert((call->gtCallType != CT_INDIRECT) || (controlExpr == nullptr));
 
     if (call->IsTailCallViaJitHelper())
     {
-        // Either controlExpr or gtCallAddr must contain real call target.
+        // Either controlExpr or "gtControlExpr" must contain real call target.
         if (controlExpr != nullptr)
         {
             // Link controlExpr into the IR before the call.
@@ -2953,10 +2962,10 @@ GenTree* Lowering::LowerCall(GenTree* node)
         }
         else
         {
-            // gtCallAddr is already sequenced and just before the call.
+            // "gtControlExpr" is already sequenced and just before the call.
             assert(call->gtCallType == CT_INDIRECT);
-            assert(call->gtCallAddr != nullptr);
-            controlExpr = call->gtCallAddr;
+            assert(call->gtControlExpr != nullptr);
+            controlExpr = call->gtControlExpr;
         }
 
         // LowerTailCallViaJitHelper will turn the control expr
@@ -3007,7 +3016,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
     else
     {
-        if (!call->IsHelperCall(m_compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
+        if (!call->IsHelperCall(CORINFO_HELP_VALIDATE_INDIRECT_CALL))
         {
             RequireOutgoingArgSpace(call, call->gtArgs.OutgoingArgsStackSize());
         }
@@ -3606,6 +3615,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 
     // Transform this call node into a call to Jit tail call helper.
     call->gtCallType    = CT_HELPER;
+    call->gtControlExpr = nullptr;
     call->gtCallMethHnd = m_compiler->eeFindHelper(CORINFO_HELP_TAILCALL);
     call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
 
@@ -3638,8 +3648,8 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 //
 void Lowering::LowerCFGCall(GenTreeCall* call)
 {
-    assert(!call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL));
-    if (call->IsHelperCall(m_compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
+    assert(!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL));
+    if (call->IsHelperCall(CORINFO_HELP_VALIDATE_INDIRECT_CALL))
     {
         return;
     }
@@ -3661,7 +3671,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
         }
     };
 
-    GenTree* callTarget = call->gtCallType == CT_INDIRECT ? call->gtCallAddr : call->gtControlExpr;
+    GenTree* callTarget = call->gtControlExpr;
 
     if (call->IsVirtualStub())
     {
@@ -3719,10 +3729,11 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
         MovePutArgNodesUpToCall(call);
 
         // Finally update the call target
-        call->gtCallType = CT_INDIRECT;
+        call->gtCallType    = CT_INDIRECT;
+        call->gtCallMethHnd = NO_METHOD_HANDLE;
         call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-        call->gtCallAddr   = resolve;
-        call->gtCallCookie = nullptr;
+        call->gtControlExpr = resolve;
+        call->gtCallCookie  = nullptr;
 #ifdef FEATURE_READYTORUN
         call->gtEntryPoint.addr       = nullptr;
         call->gtEntryPoint.accessType = IAT_VALUE;
@@ -3889,6 +3900,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 
             // Finally update the call to be a helper call
             call->gtCallType    = CT_HELPER;
+            call->gtControlExpr = nullptr;
             call->gtCallMethHnd = Compiler::eeFindHelper(CORINFO_HELP_DISPATCH_INDIRECT_CALL);
             call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
 #ifdef FEATURE_READYTORUN
@@ -5933,11 +5945,28 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             if (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size())
             {
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
-                unsigned tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
-                m_compiler->lvaSetStruct(tmpNum, m_compiler->info.compMethodInfo->args.retTypeClass, false);
 
-                ReplaceWithLclVar(retValUse, tmpNum);
-                LowerRetSingleRegStructLclVar(ret);
+                // Ensure that the retval is actually a struct - otherwise the ReplaceWithLclVar below
+                // will fail due to assigning a non-struct to a struct local
+                if (retVal->TypeGet() == TYP_STRUCT)
+                {
+                    unsigned tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
+                    m_compiler->lvaSetStruct(tmpNum, m_compiler->info.compMethodInfo->args.retTypeClass, false);
+
+                    ReplaceWithLclVar(retValUse, tmpNum);
+                    LowerRetSingleRegStructLclVar(ret);
+                }
+                else
+                {
+                    // We have a non-struct return value that needs to be widened, but we can't widen the
+                    // indirection safely since that could cause the read to overrun the end of a buffer.
+                    // Instead, wrap the indirection in a cast to zero extend it.
+                    GenTreeCast* cast = m_compiler->gtNewCastNode(nativeReturnType, retVal, true, TypeGet(retVal));
+                    assert(cast->IsZeroExtending());
+                    BlockRange().InsertBefore(ret, cast);
+                    ContainCheckCast(cast);
+                    retValUse.ReplaceWith(cast);
+                }
                 break;
             }
 
@@ -6324,7 +6353,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
     void*           addr;
     InfoAccessType  accessType;
-    CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+    CorInfoHelpFunc helperNum = call->GetHelperNum();
 
 #ifdef FEATURE_READYTORUN
     if (call->gtEntryPoint.addr != nullptr)
@@ -6551,9 +6580,9 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 //
 void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
 {
-    assert((call->gtCallType == CT_INDIRECT) && (call->gtCallAddr != nullptr));
+    assert((call->gtCallType == CT_INDIRECT) && (call->gtControlExpr != nullptr));
 
-    if (!call->gtCallAddr->IsCall())
+    if (!call->gtControlExpr->IsCall())
     {
         return;
     }
@@ -6599,7 +6628,7 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
         cur->gtLIRFlags &= ~LIR::Flags::Mark;
         numMarked--;
 
-        if (cur == call->gtCallAddr)
+        if (cur == call->gtControlExpr)
         {
             // Start moving this range.
             movingRange = LIR::ReadOnlyRange(cur, cur);
@@ -6979,7 +7008,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     if (call->gtCallType == CT_INDIRECT)
     {
         bool isClosed;
-        insertBefore = BlockRange().GetTreeRange(call->gtCallAddr, &isClosed).FirstNode();
+        insertBefore = BlockRange().GetTreeRange(call->gtControlExpr, &isClosed).FirstNode();
         assert(isClosed);
     }
 
@@ -7262,13 +7291,6 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 
     GenTree* result = nullptr;
 
-    // All code generated by this function must not contain the randomly-inserted NOPs
-    // that we insert to inhibit JIT spraying in partial trust scenarios.
-    // The PINVOKE_PROLOG op signals this to the code generator/emitter.
-
-    GenTree* prolog = new (m_compiler, GT_NOP) GenTree(GT_PINVOKE_PROLOG, TYP_VOID);
-    BlockRange().InsertBefore(call, prolog);
-
     bool addPInvokePrologEpilog = !call->IsSuppressGCTransition();
     if (addPInvokePrologEpilog)
     {
@@ -7546,9 +7568,9 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         // fgMorphArgs will have created trees to pass the address in VirtualStubParam.reg.
         // All we have to do here is add an indirection to generate the actual call target.
 
-        GenTree* ind = m_compiler->gtNewIndir(TYP_I_IMPL, call->gtCallAddr, GTF_IND_NONFAULTING);
-        BlockRange().InsertAfter(call->gtCallAddr, ind);
-        call->gtCallAddr = ind;
+        GenTree* ind = m_compiler->gtNewIndir(TYP_I_IMPL, call->gtControlExpr, GTF_IND_NONFAULTING);
+        BlockRange().InsertAfter(call->gtControlExpr, ind);
+        call->gtControlExpr = ind;
 
         ind->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
 
@@ -9904,6 +9926,9 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckHWIntrinsic(node->AsHWIntrinsic());
             break;
 #endif // FEATURE_HW_INTRINSICS
+        case GT_NONLOCAL_JMP:
+            ContainCheckNonLocalJmp(node->AsUnOp());
+            break;
         default:
             break;
     }
@@ -12009,9 +12034,9 @@ bool Lowering::TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode)
     if (!op2->IsIntegralConst(-1))
         return false;
 
-#ifndef TARGET_64BIT
+#if LOWER_DECOMPOSE_LONGS
     assert(op2->TypeIs(TYP_INT));
-#endif // !TARGET_64BIT
+#endif // LOWER_DECOMPOSE_LONGS
 
     GenTree* op1 = node->gtGetOp1();
 

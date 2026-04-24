@@ -14,18 +14,20 @@ internal sealed class Module : IData<Module>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Module);
 
-        Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        Assembly = target.ReadPointer(address + (ulong)type.Fields[nameof(Assembly)].Offset);
-        PEAssembly = target.ReadPointer(address + (ulong)type.Fields[nameof(PEAssembly)].Offset);
-        Base = target.ReadPointer(address + (ulong)type.Fields[nameof(Base)].Offset);
-        LoaderAllocator = target.ReadPointer(address + (ulong)type.Fields[nameof(LoaderAllocator)].Offset);
-        DynamicMetadata = target.ReadPointer(address + (ulong)type.Fields[nameof(DynamicMetadata)].Offset);
-        Path = target.ReadPointer(address + (ulong)type.Fields[nameof(Path)].Offset);
-        FileName = target.ReadPointer(address + (ulong)type.Fields[nameof(FileName)].Offset);
-        ReadyToRunInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(ReadyToRunInfo)].Offset);
-        GrowableSymbolStream = target.ReadPointer(address + (ulong)type.Fields[nameof(GrowableSymbolStream)].Offset);
-        AvailableTypeParams = target.ReadPointer(address + (ulong)type.Fields[nameof(AvailableTypeParams)].Offset);
-        InstMethodHashTable = target.ReadPointer(address + (ulong)type.Fields[nameof(InstMethodHashTable)].Offset);
+        _address = address;
+        Flags = target.ReadField<uint>(address, type, nameof(Flags));
+        Assembly = target.ReadPointerField(address, type, nameof(Assembly));
+        PEAssembly = target.ReadPointerField(address, type, nameof(PEAssembly));
+        Base = target.ReadPointerField(address, type, nameof(Base));
+        LoaderAllocator = target.ReadPointerField(address, type, nameof(LoaderAllocator));
+        DynamicMetadata = target.ReadPointerField(address, type, nameof(DynamicMetadata));
+        SimpleName = target.ReadPointerField(address, type, nameof(SimpleName));
+        Path = target.ReadPointerField(address, type, nameof(Path));
+        FileName = target.ReadPointerField(address, type, nameof(FileName));
+        ReadyToRunInfo = target.ReadPointerField(address, type, nameof(ReadyToRunInfo));
+        GrowableSymbolStream = target.ReadPointerField(address, type, nameof(GrowableSymbolStream));
+        AvailableTypeParams = target.ReadPointerField(address, type, nameof(AvailableTypeParams));
+        InstMethodHashTable = target.ReadPointerField(address, type, nameof(InstMethodHashTable));
 
         FieldDefToDescMap = address + (ulong)type.Fields[nameof(FieldDefToDescMap)].Offset;
         ManifestModuleReferencesMap = address + (ulong)type.Fields[nameof(ManifestModuleReferencesMap)].Offset;
@@ -34,15 +36,26 @@ internal sealed class Module : IData<Module>
         TypeDefToMethodTableMap = address + (ulong)type.Fields[nameof(TypeDefToMethodTableMap)].Offset;
         TypeRefToMethodTableMap = address + (ulong)type.Fields[nameof(TypeRefToMethodTableMap)].Offset;
         MethodDefToILCodeVersioningStateMap = address + (ulong)type.Fields[nameof(MethodDefToILCodeVersioningStateMap)].Offset;
-        DynamicILBlobTable = target.ReadPointer(address + (ulong)type.Fields[nameof(DynamicILBlobTable)].Offset);
+        DynamicILBlobTable = target.ReadPointerField(address, type, nameof(DynamicILBlobTable));
+    }
+
+    private readonly TargetPointer _address;
+
+    public void WriteFlags(Target target, uint flags)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.Module);
+        ulong flagsAddr = _address + (ulong)type.Fields[nameof(Flags)].Offset;
+        target.Write<uint>(flagsAddr, flags);
+        Flags = flags;
     }
 
     public TargetPointer Assembly { get; init; }
     public TargetPointer PEAssembly { get; init; }
-    public uint Flags { get; init; }
+    public uint Flags { get; private set; }
     public TargetPointer Base { get; init; }
     public TargetPointer LoaderAllocator { get; init; }
     public TargetPointer DynamicMetadata { get; init; }
+    public TargetPointer SimpleName { get; init; }
     public TargetPointer Path { get; init; }
     public TargetPointer FileName { get; init; }
     public TargetPointer ReadyToRunInfo { get; init; }

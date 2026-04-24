@@ -11,19 +11,18 @@ internal sealed class RealCodeHeader : IData<RealCodeHeader>
     public RealCodeHeader(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RealCodeHeader);
-        MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
-        DebugInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(DebugInfo)].Offset);
-        GCInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCInfo)].Offset);
-        NumUnwindInfos = target.Read<uint>(address + (ulong)type.Fields[nameof(NumUnwindInfos)].Offset);
+        MethodDesc = target.ReadPointerField(address, type, nameof(MethodDesc));
+        DebugInfo = target.ReadPointerField(address, type, nameof(DebugInfo));
+        GCInfo = target.ReadPointerField(address, type, nameof(GCInfo));
+        NumUnwindInfos = target.ReadField<uint>(address, type, nameof(NumUnwindInfos));
         UnwindInfos = address + (ulong)type.Fields[nameof(UnwindInfos)].Offset;
-        TargetPointer jitEHInfoAddr = target.ReadPointer(address + (ulong)type.Fields[nameof(JitEHInfo)].Offset);
-        JitEHInfo = jitEHInfoAddr != TargetPointer.Null ? target.ProcessedData.GetOrAdd<EEILException>(jitEHInfoAddr) : null;
+        EHInfo = target.ReadPointerField(address, type, nameof(EHInfo));
     }
 
-    public TargetPointer MethodDesc { get; init; }
-    public TargetPointer DebugInfo { get; init; }
-    public TargetPointer GCInfo { get; init; }
-    public uint NumUnwindInfos { get; init; }
-    public TargetPointer UnwindInfos { get; init; }
-    public EEILException? JitEHInfo { get; init; }
+    public TargetPointer MethodDesc { get; }
+    public TargetPointer DebugInfo { get; }
+    public TargetPointer EHInfo { get; }
+    public TargetPointer GCInfo { get; }
+    public uint NumUnwindInfos { get; }
+    public TargetPointer UnwindInfos { get; }
 }

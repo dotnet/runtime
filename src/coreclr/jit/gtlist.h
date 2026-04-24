@@ -39,6 +39,7 @@ GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Addre
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
 GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)
 GTNODE(ASYNC_RESUME_INFO, GenTreeVal         ,0,0,GTK_LEAF)             // Address of async resume info for a state
+GTNODE(FTN_ENTRY        , GenTree            ,0,0,GTK_LEAF)             // Address of this function's entry point
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -103,6 +104,8 @@ GTNODE(BSWAP            , GenTreeOp          ,0,0,GTK_UNOP)               // Byt
 GTNODE(BSWAP16          , GenTreeOp          ,0,0,GTK_UNOP)               // Byte swap lower 16-bits and zero upper 16 bits
 
 GTNODE(LZCNT            , GenTreeOp          ,0,0,GTK_UNOP)               // Leading Zero Count - Only used for SIMD VN evaluation today
+
+GTNODE(NONLOCAL_JMP     , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE)   // Non-local jump to specified address
 
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
@@ -358,9 +361,6 @@ GTNODE(SWITCH_TABLE     , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 //-----------------------------------------------------------------------------
 
 GTNODE(PHYSREG          , GenTreePhysReg     ,0,0,GTK_LEAF|DBK_NOTHIR)              // read from a physical register
-GTNODE(EMITNOP          , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // emitter-placed nop
-GTNODE(PINVOKE_PROLOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // pinvoke prolog seq
-GTNODE(PINVOKE_EPILOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // pinvoke epilog seq
 GTNODE(RETURNTRAP       , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // a conditional call to wait on gc
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in register
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // operator that places outgoing arg in stack

@@ -1,0 +1,453 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+/*****************************************************************************
+ **                                                                         **
+ ** dacdbi.idl - The interface used for DAC to DBI communication in the     **
+ **              .NET runtime debugger.                                      **
+ **                                                                         **
+ *****************************************************************************/
+import "unknwn.idl";
+
+//
+// Forward-declared structs defined in other headers.
+//
+struct DbiVersion;
+struct TypeRefData;
+struct TargetBuffer;
+struct ModuleInfo;
+struct AssemblyInfo;
+struct DacThreadAllocInfo;
+struct NativeVarData;
+struct SequencePoints;
+struct DebuggerIPCE_STRData;
+struct DebuggerREGDISPLAY;
+struct NativeCodeFunctionData;
+struct ClassInfo;
+struct FieldData;
+struct DebuggerIPCE_ExpandedTypeData;
+struct DebuggerIPCE_BasicTypeData;
+struct EnCHangingFieldInfo;
+struct DacExceptionCallStackData;
+struct DebuggerIPCE_ObjectData;
+struct MonitorLockInfo;
+struct DacGcReference;
+struct DacSharedReJitInfo;
+struct AsyncLocalData;
+
+//
+// Types MIDL cannot handle natively. These dummy definitions satisfy the MIDL
+// parser; the real definitions come from C++ headers at compile time.
+//
+cpp_quote("#if 0")
+
+// FramePointer - wrapper around a single pointer (LPVOID m_sp in native code)
+// Passed by value in IsMatchingParentFrame, GetFramePointer, and the internal frame callback.
+typedef struct { UINT_PTR m_sp; } FramePointer;
+
+// VMPTR types - opaque pointer-sized wrappers
+typedef ULONG64 VMPTR_AppDomain;
+typedef ULONG64 VMPTR_OBJECTHANDLE;
+typedef ULONG64 VMPTR_Assembly;
+typedef ULONG64 VMPTR_Module;
+typedef ULONG64 VMPTR_Thread;
+typedef ULONG64 VMPTR_MethodDesc;
+typedef ULONG64 VMPTR_CONTEXT;
+typedef ULONG64 VMPTR_TypeHandle;
+typedef ULONG64 VMPTR_FieldDesc;
+typedef ULONG64 VMPTR_Object;
+typedef ULONG64 VMPTR_PEAssembly;
+typedef ULONG64 VMPTR_Crst;
+typedef ULONG64 VMPTR_SimpleRWLock;
+typedef ULONG64 VMPTR_ReJitInfo;
+typedef ULONG64 VMPTR_SharedReJitInfo;
+typedef ULONG64 VMPTR_ILCodeVersionNode;
+typedef ULONG64 VMPTR_NativeCodeVersionNode;
+
+// Address and token types
+typedef ULONG64 CORDB_ADDRESS;
+typedef ULONG64 GENERICS_TYPE_TOKEN;
+typedef ULONG64 PCODE;
+typedef ULONG64 TADDR;
+typedef int CONNID;
+typedef ULONG64 TASKID;
+typedef int mdToken;
+typedef int mdTypeDef;
+typedef int mdMethodDef;
+
+// Context types
+typedef int T_CONTEXT;
+typedef int DT_CONTEXT;
+typedef int EXCEPTION_RECORD;
+
+// Metadata interface
+typedef int IMDInternalImport;
+
+// Enum types
+typedef int CorDebugThreadState;
+typedef int CorDebugUserState;
+typedef int CorDebugSetContextFlag;
+typedef int CorDebugNGENPolicy;
+typedef int CorElementType;
+typedef int AddressType;
+typedef int SymbolFormat;
+typedef int AreValueTypesBoxed;
+typedef int DelegateType;
+typedef int DynamicMethodType;
+typedef int FrameType;
+typedef int EHijackReason;
+typedef int CLR_DEBUGGING_PROCESS_FLAGS;
+
+// Size type
+typedef unsigned int SIZE_T;
+
+// HANDLE type (void* in native header)
+typedef UINT_PTR HANDLE;
+
+// Handle types (void** in native header, use UINT_PTR for pointer-sized IDL compatibility)
+typedef UINT_PTR StackWalkHandle;
+typedef UINT_PTR HeapWalkHandle;
+typedef UINT_PTR RefWalkHandle;
+
+// Callback data
+typedef LPVOID CALLBACK_DATA;
+
+// Cordebug types
+typedef int COR_HEAPOBJECT;
+typedef int COR_SEGMENT;
+typedef int COR_TYPEID;
+typedef int COR_FIELD;
+typedef int COR_TYPE_LAYOUT;
+typedef int COR_ARRAY_LAYOUT;
+typedef int COR_HEAPINFO;
+typedef int COR_MEMORY_RANGE;
+
+// DacDbiArrayList type params
+typedef int TypeInfoList;
+typedef int ArgInfoList;
+typedef int TypeParamsList;
+
+// DacDbiArrayList instantiations
+typedef struct { void *pList; int nEntries; } DacDbiArrayList_FieldData;
+typedef struct { void *pList; int nEntries; } DacDbiArrayList_DacExceptionCallStackData;
+typedef struct { void *pList; int nEntries; } DacDbiArrayList_ExpandedTypeData;
+typedef struct { void *pList; int nEntries; } DacDbiArrayList_CORDB_ADDRESS;
+typedef struct { void *pList; int nEntries; } DacDbiArrayList_GUID;
+typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_SEGMENT;
+typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_MEMORY_RANGE;
+typedef struct { void *pList; int nEntries; } DacDbiArrayList_AsyncLocalData;
+
+cpp_quote("#endif")
+
+//
+// Callback function pointer typedefs
+//
+typedef void (*FP_ASSEMBLY_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
+typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
+typedef void (*FP_THREAD_ENUMERATION_CALLBACK)(VMPTR_Thread vmThread, CALLBACK_DATA pUserData);
+typedef BOOL (*FP_INTERNAL_FRAME_ENUMERATION_CALLBACK)(FramePointer fpFrame, CALLBACK_DATA pUserData);
+
+
+//
+// Inner callback interfaces
+//
+
+// IStringHolder - utility for passing strings out of DAC to DBI.
+// Not a COM interface — it is a plain C++ abstract class that may be stack-allocated.
+// Represented as an opaque pointer in the IDL.
+typedef void * IDacDbiStringHolder;
+
+// IAllocator - utility for DAC to allocate buffers in DBI memory space.
+[
+    object,
+    local,
+    uuid(97441D33-C82F-4106-B025-A912CB507526)
+]
+interface IDacDbiAllocator : IUnknown
+{
+    void * Alloc([in] SIZE_T lenBytes);
+    void Free([in] void * p);
+};
+
+// IMetaDataLookup - callback for DAC to obtain metadata importers from DBI.
+[
+    object,
+    local,
+    uuid(EF037312-925C-4A13-A9B5-3C1BB07B56FD)
+]
+interface IDacDbiMetaDataLookup : IUnknown
+{
+    IMDInternalImport * LookupMetaData([in] VMPTR_PEAssembly addressPEAssembly);
+};
+
+
+//
+// IDacDbiInterface - The main DAC to DBI communication interface.
+//
+// This interface provides the contract between the debugger's right-side (DBI)
+// and the data access component (DAC). All methods return HRESULT.
+//
+[
+    object,
+    local,
+    uuid(DB505C1B-A327-4A46-8C32-AF55A56F8E09)
+]
+interface IDacDbiInterface : IUnknown
+{
+    // Initialization
+    HRESULT CheckDbiVersion([in] const struct DbiVersion * pVersion);
+    HRESULT FlushCache();
+    HRESULT DacSetTargetConsistencyChecks([in] BOOL fEnableAsserts);
+
+    // Process State
+    HRESULT IsLeftSideInitialized([out] BOOL * pResult);
+
+    // App Domains
+    HRESULT GetAppDomainId([in] VMPTR_AppDomain vmAppDomain, [out] ULONG * pRetVal);
+    HRESULT GetAppDomainObject([in] VMPTR_AppDomain vmAppDomain, [out] VMPTR_OBJECTHANDLE * pRetVal);
+    HRESULT GetAppDomainFullName([in] VMPTR_AppDomain vmAppDomain, [in] IDacDbiStringHolder pStrName);
+    HRESULT GetModuleSimpleName([in] VMPTR_Module vmModule, [in] IDacDbiStringHolder pStrFilename);
+    HRESULT GetAssemblyPath([in] VMPTR_Assembly vmAssembly, [in] IDacDbiStringHolder pStrFilename, [out] BOOL * pResult);
+
+    // Module
+    HRESULT ResolveTypeReference([in] const struct TypeRefData * pTypeRefInfo, [out] struct TypeRefData * pTargetRefInfo);
+    HRESULT GetModulePath([in] VMPTR_Module vmModule, [in] IDacDbiStringHolder pStrFilename, [out] BOOL * pResult);
+    HRESULT GetMetadata([in] VMPTR_Module vmModule, [out] struct TargetBuffer * pTargetBuffer);
+    HRESULT GetSymbolsBuffer([in] VMPTR_Module vmModule, [out] struct TargetBuffer * pTargetBuffer, [out] SymbolFormat * pSymbolFormat);
+    HRESULT GetModuleData([in] VMPTR_Module vmModule, [out] struct ModuleInfo * pData);
+    HRESULT GetAssemblyInfo([in] VMPTR_Assembly vmAssembly, [out] struct AssemblyInfo * pData);
+    HRESULT GetModuleForAssembly([in] VMPTR_Assembly vmAssembly, [out] VMPTR_Module * pModule);
+
+    // Address
+    HRESULT GetAddressType([in] CORDB_ADDRESS address, [out] AddressType * pRetVal);
+
+    // Compiler
+    HRESULT GetCompilerFlags([in] VMPTR_Assembly vmAssembly, [out] BOOL * pfAllowJITOpts, [out] BOOL * pfEnableEnC);
+    HRESULT SetCompilerFlags([in] VMPTR_Assembly vmAssembly, [in] BOOL fAllowJitOpts, [in] BOOL fEnableEnC);
+
+    // Enumeration
+    HRESULT EnumerateAssembliesInAppDomain([in] VMPTR_AppDomain vmAppDomain, [in] FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
+    HRESULT EnumerateModulesInAssembly([in] VMPTR_Assembly vmAssembly, [in] FP_MODULE_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
+
+    // Debug Events
+    HRESULT RequestSyncAtEvent();
+    HRESULT SetSendExceptionsOutsideOfJMC([in] BOOL sendExceptionsOutsideOfJMC);
+    HRESULT MarkDebuggerAttachPending();
+    HRESULT MarkDebuggerAttached([in] BOOL fAttached);
+    HRESULT Hijack(
+        [in] VMPTR_Thread vmThread,
+        [in] ULONG32 dwThreadId,
+        [in] const EXCEPTION_RECORD * pRecord,
+        [in] T_CONTEXT * pOriginalContext,
+        [in] ULONG32 cbSizeContext,
+        [in] EHijackReason reason,
+        [in] void * pUserData,
+        [out] CORDB_ADDRESS * pRemoteContextAddr);
+
+    // Thread
+    HRESULT EnumerateThreads([in] FP_THREAD_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
+    HRESULT IsThreadMarkedDead([in] VMPTR_Thread vmThread, [out] BOOL * pResult);
+    HRESULT GetThreadHandle([in] VMPTR_Thread vmThread, [out] HANDLE * pRetVal);
+    HRESULT GetThreadObject([in] VMPTR_Thread vmThread, [out] VMPTR_OBJECTHANDLE * pRetVal);
+    HRESULT GetThreadAllocInfo([in] VMPTR_Thread vmThread, [out] struct DacThreadAllocInfo * threadAllocInfo);
+    HRESULT SetDebugState([in] VMPTR_Thread vmThread, [in] CorDebugThreadState debugState);
+    HRESULT HasUnhandledException([in] VMPTR_Thread vmThread, [out] BOOL * pResult);
+    HRESULT GetUserState([in] VMPTR_Thread vmThread, [out] CorDebugUserState * pRetVal);
+    HRESULT GetPartialUserState([in] VMPTR_Thread vmThread, [out] CorDebugUserState * pRetVal);
+    HRESULT GetConnectionID([in] VMPTR_Thread vmThread, [out] CONNID * pRetVal);
+    HRESULT GetTaskID([in] VMPTR_Thread vmThread, [out] TASKID * pRetVal);
+    HRESULT TryGetVolatileOSThreadID([in] VMPTR_Thread vmThread, [out] DWORD * pRetVal);
+    HRESULT GetUniqueThreadID([in] VMPTR_Thread vmThread, [out] DWORD * pRetVal);
+    HRESULT GetCurrentException([in] VMPTR_Thread vmThread, [out] VMPTR_OBJECTHANDLE * pRetVal);
+    HRESULT GetObjectForCCW([in] CORDB_ADDRESS ccwPtr, [out] VMPTR_OBJECTHANDLE * pRetVal);
+    HRESULT GetCurrentCustomDebuggerNotification([in] VMPTR_Thread vmThread, [out] VMPTR_OBJECTHANDLE * pRetVal);
+    HRESULT GetCurrentAppDomain([out] VMPTR_AppDomain * pRetVal);
+
+    // Assembly
+    HRESULT ResolveAssembly([in] VMPTR_Assembly vmScope, [in] mdToken tkAssemblyRef, [out] VMPTR_Assembly * pRetVal);
+
+    // Code and Debugging Info
+    HRESULT GetNativeCodeSequencePointsAndVarInfo(
+        [in] VMPTR_MethodDesc vmMethodDesc,
+        [in] CORDB_ADDRESS startAddress,
+        [in] BOOL fCodeAvailable,
+        [out] struct NativeVarData * pNativeVarData,
+        [out] struct SequencePoints * pSequencePoints);
+
+    // Context and Stack Walking
+    HRESULT GetManagedStoppedContext([in] VMPTR_Thread vmThread, [out] VMPTR_CONTEXT * pRetVal);
+    HRESULT CreateStackWalk([in] VMPTR_Thread vmThread, [in, out] DT_CONTEXT * pInternalContextBuffer, [out] StackWalkHandle * ppSFIHandle);
+    HRESULT DeleteStackWalk([in] StackWalkHandle ppSFIHandle);
+    HRESULT GetStackWalkCurrentContext([in] StackWalkHandle pSFIHandle, [out] DT_CONTEXT * pContext);
+    HRESULT SetStackWalkCurrentContext([in] VMPTR_Thread vmThread, [in] StackWalkHandle pSFIHandle, [in] CorDebugSetContextFlag flag, [in] DT_CONTEXT * pContext);
+    HRESULT UnwindStackWalkFrame([in] StackWalkHandle pSFIHandle, [out] BOOL * pResult);
+    HRESULT CheckContext([in] VMPTR_Thread vmThread, [in] const DT_CONTEXT * pContext);
+    HRESULT GetStackWalkCurrentFrameInfo([in] StackWalkHandle pSFIHandle, [out] struct DebuggerIPCE_STRData * pFrameData, [out] FrameType * pRetVal);
+    HRESULT GetCountOfInternalFrames([in] VMPTR_Thread vmThread, [out] ULONG32 * pRetVal);
+    HRESULT EnumerateInternalFrames([in] VMPTR_Thread vmThread, [in] FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
+    HRESULT GetStackParameterSize([in] CORDB_ADDRESS controlPC, [out] ULONG32 * pRetVal);
+    HRESULT GetFramePointer([in] StackWalkHandle pSFIHandle, [out] FramePointer * pRetVal);
+    HRESULT IsLeafFrame([in] VMPTR_Thread vmThread, [in] const DT_CONTEXT * pContext, [out] BOOL * pResult);
+    HRESULT GetContext([in] VMPTR_Thread vmThread, [out] DT_CONTEXT * pContextBuffer);
+    HRESULT ConvertContextToDebuggerRegDisplay([in] const DT_CONTEXT * pInContext, [out] struct DebuggerREGDISPLAY * pOutDRD, [in] BOOL fActive);
+
+    // Method
+    HRESULT IsDiagnosticsHiddenOrLCGMethod([in] VMPTR_MethodDesc vmMethodDesc, [out] DynamicMethodType * pRetVal);
+    HRESULT GetVarArgSig([in] CORDB_ADDRESS VASigCookieAddr, [out] CORDB_ADDRESS * pArgBase, [out] struct TargetBuffer * pRetVal);
+    HRESULT RequiresAlign8([in] VMPTR_TypeHandle thExact, [out] BOOL * pResult);
+    HRESULT ResolveExactGenericArgsToken([in] DWORD dwExactGenericArgsTokenIndex, [in] GENERICS_TYPE_TOKEN rawToken, [out] GENERICS_TYPE_TOKEN * pRetVal);
+    HRESULT GetILCodeAndSig([in] VMPTR_Assembly vmAssembly, [in] mdToken functionToken, [out] struct TargetBuffer * pCodeInfo, [out] mdToken * pLocalSigToken);
+    HRESULT GetNativeCodeInfo([in] VMPTR_Assembly vmAssembly, [in] mdToken functionToken, [out] struct NativeCodeFunctionData * pCodeInfo);
+    HRESULT GetNativeCodeInfoForAddr(
+        [in] CORDB_ADDRESS codeAddress,
+        [out] struct NativeCodeFunctionData * pCodeInfo,
+        [out] VMPTR_Module * pVmModule,
+        [out] mdToken * pFunctionToken);
+
+    // Type
+    HRESULT IsValueType([in] VMPTR_TypeHandle th, [out] BOOL * pResult);
+    HRESULT HasTypeParams([in] VMPTR_TypeHandle th, [out] BOOL * pResult);
+    HRESULT GetClassInfo([in] VMPTR_TypeHandle thExact, [out] struct ClassInfo * pData);
+    HRESULT GetInstantiationFieldInfo(
+        [in] VMPTR_Assembly vmAssembly,
+        [in] VMPTR_TypeHandle vmThExact,
+        [in] VMPTR_TypeHandle vmThApprox,
+        [out] DacDbiArrayList_FieldData * pFieldList,
+        [out] SIZE_T * pObjectSize);
+    HRESULT TypeHandleToExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] VMPTR_TypeHandle vmTypeHandle, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT GetObjectExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] CORDB_ADDRESS addr, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT GetObjectExpandedTypeInfoFromID([in] AreValueTypesBoxed boxed, [in] COR_TYPEID id, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT GetTypeHandle([in] VMPTR_Module vmModule, [in] mdTypeDef metadataToken, [out] VMPTR_TypeHandle * pRetVal);
+    HRESULT GetApproxTypeHandle([in] TypeInfoList * pTypeData, [out] VMPTR_TypeHandle * pRetVal);
+    HRESULT GetExactTypeHandle([in] struct DebuggerIPCE_ExpandedTypeData * pTypeData, [in] ArgInfoList * pArgInfo, [out] VMPTR_TypeHandle * pVmTypeHandle);
+    HRESULT GetMethodDescParams(
+        [in] VMPTR_MethodDesc vmMethodDesc,
+        [in] GENERICS_TYPE_TOKEN genericsToken,
+        [out] UINT32 * pcGenericClassTypeParams,
+        [out] TypeParamsList * pGenericTypeParams);
+
+    // Field
+    HRESULT GetThreadStaticAddress([in] VMPTR_FieldDesc vmField, [in] VMPTR_Thread vmRuntimeThread, [out] CORDB_ADDRESS * pRetVal);
+    HRESULT GetCollectibleTypeStaticAddress([in] VMPTR_FieldDesc vmField, [out] CORDB_ADDRESS * pRetVal);
+    HRESULT GetEnCHangingFieldInfo([in] const struct EnCHangingFieldInfo * pEnCFieldInfo, [out] struct FieldData * pFieldData, [out] BOOL * pfStatic);
+    HRESULT GetTypeHandleParams([in] VMPTR_TypeHandle vmTypeHandle, [out] TypeParamsList * pParams);
+    HRESULT GetSimpleType(
+        [in] CorElementType simpleType,
+        [out] mdTypeDef * pMetadataToken,
+        [out] VMPTR_Module * pVmModule);
+
+    // Exception and COM Interop
+    HRESULT IsExceptionObject([in] VMPTR_Object vmObject, [out] BOOL * pResult);
+    HRESULT GetStackFramesFromException([in] VMPTR_Object vmObject, [out] DacDbiArrayList_DacExceptionCallStackData * pDacStackFrames);
+    HRESULT IsRcw([in] VMPTR_Object vmObject, [out] BOOL * pResult);
+    HRESULT GetRcwCachedInterfacePointers([in] VMPTR_Object vmObject, [in] BOOL bIInspectableOnly, [out] DacDbiArrayList_CORDB_ADDRESS * pDacItfPtrs);
+
+    // Object Data
+    HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [out] struct DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT GetStringData([in] CORDB_ADDRESS objectAddress, [out] struct DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT GetArrayData([in] CORDB_ADDRESS objectAddress, [out] struct DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [in] CorElementType type, [out] struct DebuggerIPCE_ObjectData * pObjectData);
+
+    // Debugger Control Block
+    HRESULT GetDebuggerControlBlockAddress([out] CORDB_ADDRESS * pRetVal);
+
+    // Object Handles
+    HRESULT GetObjectFromRefPtr([in] CORDB_ADDRESS ptr, [out] VMPTR_Object * pRetVal);
+    HRESULT GetObject([in] CORDB_ADDRESS ptr, [out] VMPTR_Object * pRetVal);
+
+    // VM Object Handle
+    HRESULT GetVmObjectHandle([in] CORDB_ADDRESS handleAddress, [out] VMPTR_OBJECTHANDLE * pRetVal);
+    HRESULT IsVmObjectHandleValid([in] VMPTR_OBJECTHANDLE vmHandle, [out] BOOL * pResult);
+    HRESULT IsWinRTModule([in] VMPTR_Module vmModule, [out] BOOL * pIsWinRT);
+    HRESULT GetHandleAddressFromVmHandle([in] VMPTR_OBJECTHANDLE vmHandle, [out] CORDB_ADDRESS * pRetVal);
+
+    // Object Contents and Monitor
+    HRESULT GetObjectContents([in] VMPTR_Object obj, [out] struct TargetBuffer * pRetVal);
+    HRESULT GetThreadOwningMonitorLock([in] VMPTR_Object vmObject, [out] struct MonitorLockInfo * pRetVal);
+    HRESULT EnumerateMonitorEventWaitList([in] VMPTR_Object vmObject, [in] FP_THREAD_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
+
+    // Attach State
+    HRESULT GetAttachStateFlags([out] CLR_DEBUGGING_PROCESS_FLAGS * pRetVal);
+
+    // Metadata
+    HRESULT GetMetaDataFileInfoFromPEFile(
+        [in] VMPTR_PEAssembly vmPEAssembly,
+        [out] DWORD * pTimeStamp,
+        [out] DWORD * pImageSize,
+        [in] IDacDbiStringHolder pStrFilename,
+        [out] BOOL * pResult);
+
+    // Thread State
+    HRESULT IsThreadSuspendedOrHijacked([in] VMPTR_Thread vmThread, [out] BOOL * pResult);
+
+    // GC
+    HRESULT AreGCStructuresValid([out] BOOL * pResult);
+    HRESULT CreateHeapWalk([out] HeapWalkHandle * pHandle);
+    HRESULT DeleteHeapWalk([in] HeapWalkHandle handle);
+    HRESULT WalkHeap([in] HeapWalkHandle handle, [in] ULONG count, [out] COR_HEAPOBJECT * objects, [out] ULONG * pFetched);
+    HRESULT GetHeapSegments([out] DacDbiArrayList_COR_SEGMENT * pSegments);
+    HRESULT IsValidObject([in] CORDB_ADDRESS obj, [out] BOOL * pResult);
+
+    // Reference Walking
+    HRESULT CreateRefWalk([out] RefWalkHandle * pHandle, [in] BOOL walkStacks, [in] BOOL walkFQ, [in] UINT32 handleWalkMask);
+    HRESULT DeleteRefWalk([in] RefWalkHandle handle);
+    HRESULT WalkRefs([in] RefWalkHandle handle, [in] ULONG count, [out] struct DacGcReference * refs, [out] ULONG * pFetched);
+
+    // Type ID
+    HRESULT GetTypeID([in] CORDB_ADDRESS obj, [out] COR_TYPEID * pType);
+    HRESULT GetTypeIDForType([in] VMPTR_TypeHandle vmTypeHandle, [out] COR_TYPEID * pId);
+    HRESULT GetObjectFields([in] COR_TYPEID id, [in] ULONG32 celt, [out] COR_FIELD * layout, [out] ULONG32 * pceltFetched);
+    HRESULT GetTypeLayout([in] COR_TYPEID id, [out] COR_TYPE_LAYOUT * pLayout);
+    HRESULT GetArrayLayout([in] COR_TYPEID id, [out] COR_ARRAY_LAYOUT * pLayout);
+    HRESULT GetGCHeapInformation([out] COR_HEAPINFO * pHeapInfo);
+
+    // PE File
+    HRESULT GetPEFileMDInternalRW([in] VMPTR_PEAssembly vmPEAssembly, [out] TADDR * pAddrMDInternalRW);
+
+    HRESULT AreOptimizationsDisabled([in] VMPTR_Module vmModule, [in] mdMethodDef methodTk, [out] BOOL * pOptimizationsDisabled);
+
+    // Defines
+    HRESULT GetDefinesBitField([out] ULONG32 * pDefines);
+    HRESULT GetMDStructuresVersion([out] ULONG32 * pMDStructuresVersion);
+
+    // Code Versioning (FEATURE_CODE_VERSIONING only)
+    HRESULT GetActiveRejitILCodeVersionNode([in] VMPTR_Module vmModule, [in] mdMethodDef methodTk, [out] VMPTR_ILCodeVersionNode * pVmILCodeVersionNode);
+    HRESULT GetNativeCodeVersionNode([in] VMPTR_MethodDesc vmMethod, [in] CORDB_ADDRESS codeStartAddress, [out] VMPTR_NativeCodeVersionNode * pVmNativeCodeVersionNode);
+    HRESULT GetILCodeVersionNode([in] VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode, [out] VMPTR_ILCodeVersionNode * pVmILCodeVersionNode);
+    HRESULT GetILCodeVersionNodeData([in] VMPTR_ILCodeVersionNode ilCodeVersionNode, [out] struct DacSharedReJitInfo * pData);
+
+    // Miscellaneous
+    HRESULT EnableGCNotificationEvents([in] BOOL fEnable);
+
+    // Delegate
+    HRESULT IsDelegate([in] VMPTR_Object vmObject, [out] BOOL * pResult);
+    HRESULT GetDelegateType([in] VMPTR_Object delegateObject, [out] DelegateType * delegateType);
+    HRESULT GetDelegateFunctionData(
+        [in] DelegateType delegateType,
+        [in] VMPTR_Object delegateObject,
+        [out] VMPTR_Assembly * ppFunctionAssembly,
+        [out] mdMethodDef * pMethodDef);
+    HRESULT GetDelegateTargetObject(
+        [in] DelegateType delegateType,
+        [in] VMPTR_Object delegateObject,
+        [out] VMPTR_Object * ppTargetObj,
+        [out] VMPTR_AppDomain * ppTargetAppDomain);
+
+    // Loader Heap
+    HRESULT GetLoaderHeapMemoryRanges([out] DacDbiArrayList_COR_MEMORY_RANGE * pRanges);
+
+    // Module Mapping
+    HRESULT IsModuleMapped([in] VMPTR_Module pModule, [out] BOOL * isModuleMapped);
+    HRESULT MetadataUpdatesApplied([out] BOOL * pResult);
+    HRESULT GetAssemblyFromModule([in] VMPTR_Module vmModule, [out] VMPTR_Assembly * pvmAssembly);
+
+    // Async and Continuations
+    HRESULT ParseContinuation(
+        [in] CORDB_ADDRESS continuationAddress,
+        [out] PCODE * pDiagnosticIP,
+        [out] CORDB_ADDRESS * pNextContinuation,
+        [out] UINT32 * pState);
+    HRESULT GetAsyncLocals([in] VMPTR_MethodDesc vmMethod, [in] CORDB_ADDRESS codeAddr, [in] UINT32 state, [out] DacDbiArrayList_AsyncLocalData * pAsyncLocals);
+
+    // Generic Arg Token
+    HRESULT GetGenericArgTokenIndex([in] VMPTR_MethodDesc vmMethod, [out] UINT32 * pTokenIndex);
+};

@@ -346,6 +346,19 @@ namespace NetClient
             Assert.Equal("True", dispatchCoerceTesting.BoolToString());
         }
 
+        static void Validate_GetDispId_Methods()
+        {
+            var dispatchTesting = new DispatchTesting();
+
+            Console.WriteLine($"Calling {nameof(DispatchTesting.GetDispIdAsString)} ...");
+            string result1 = dispatchTesting.GetDispIdAsString();
+            Assert.Equal("1000", result1);
+
+            Console.WriteLine($"Calling {nameof(DispatchTesting.GetDispIdAsString2)} ...");
+            string result2 = dispatchTesting.GetDispIdAsString2();
+            Assert.Equal("1001", result2);
+        }
+
         [Fact]
         public static int TestEntryPoint()
         {
@@ -365,6 +378,7 @@ namespace NetClient
                 Validate_LCID_Marshaled();
                 Validate_Enumerator();
                 Validate_ValueCoerce_ReturnToManaged();
+                Validate_GetDispId_Methods();
             }
             catch (Exception e)
             {

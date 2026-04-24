@@ -106,6 +106,7 @@ private:
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
     void ContainCheckStoreIndir(GenTreeStoreInd* indirNode);
+    void ContainCheckNonLocalJmp(GenTreeUnOp* node);
     void ContainCheckMul(GenTreeOp* node);
     void ContainCheckShiftRotate(GenTreeOp* node);
     void ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const;
@@ -416,6 +417,7 @@ private:
 
 #ifdef TARGET_WASM
     GenTree* LowerNeg(GenTreeOp* node);
+    void     LowerIndexAddr(GenTreeIndexAddr* indexAddr);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
@@ -466,6 +468,7 @@ private:
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void     LowerBswapOp(GenTreeOp* node);
+    GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_ARM64)
     bool     IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
