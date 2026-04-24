@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] jsonBytes = BuildJsonDescriptor(factory);
 
-            // Header layout: magic(8) + flags(4) + desc_size(4) + desc_ptr(ptr) + count(4) + pad(4) + data_ptr(ptr)
+            // Header layout: magic(8) + flags(4) + desc_size(4) + desc_ptr(ptr) + pointer_data_count(4) + pad(4) + pointer_data(ptr)
             int headerSize = 8 + 4 + 4 + factory.Target.PointerSize + 4 + 4 + factory.Target.PointerSize;
 
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);

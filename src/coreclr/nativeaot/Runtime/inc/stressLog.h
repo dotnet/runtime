@@ -796,6 +796,7 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
 #endif // !STRESS_LOG || DACCESS_COMPILE
 #endif // !__GCENV_BASE_INCLUDED__
 
+#if defined(STRESS_LOG)
 template<> struct cdac_data<ThreadStressLog>
 {
     static constexpr size_t Next = offsetof(ThreadStressLog, next);
@@ -806,5 +807,6 @@ template<> struct cdac_data<ThreadStressLog>
     static constexpr size_t ChunkListTail = offsetof(ThreadStressLog, chunkListTail);
     static constexpr size_t CurrentWriteChunk = offsetof(ThreadStressLog, curWriteChunk);
 };
+#endif // STRESS_LOG
 
 #endif // StressLog_h
