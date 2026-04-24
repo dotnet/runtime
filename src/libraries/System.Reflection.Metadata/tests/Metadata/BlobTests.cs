@@ -36,7 +36,6 @@ namespace System.Reflection.Metadata.Tests
         public void Ctor_Errors()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilder(-1));
-            Assert.Throws<ArgumentException>(() => new BlobBuilderWithEvents(new byte[BlobBuilder.MinChunkSize - 1]));
             Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilderWithEvents(new byte[1024], BlobBuilder.MinChunkSize - 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilderWithEvents(new byte[1024], -1));
         }
@@ -1149,6 +1148,7 @@ namespace System.Reflection.Metadata.Tests
             const int TestSize = 1024;
 
             var b = new FixedChunkBlobBuilder(ChunkSize);
+            b.Buffer = []; // Test that setting an empty buffer works.
             b.WriteBytes(Enumerable.Repeat(TestValue, TestSize).ToArray().AsSpan());
             AssertIsChunked();
 

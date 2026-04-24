@@ -75,7 +75,6 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <param name="buffer">The array that underpins the <see cref="BlobBuilder"/>.</param>
         /// <param name="maxChunkSize">The size of chunks to split large writes into.</param>
-        /// <exception cref="ArgumentException"><paramref name="buffer"/> is less than 16 bytes long.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxChunkSize"/> is less than 16.</exception>
         protected BlobBuilder(byte[] buffer, int maxChunkSize = 0)
         {
@@ -90,10 +89,6 @@ namespace System.Reflection.Metadata
             if (maxChunkSize < MinChunkSize)
             {
                 Throw.ArgumentOutOfRange(nameof(maxChunkSize));
-            }
-            if (buffer.Length < MinChunkSize)
-            {
-                Throw.InvalidArgument(SR.BuilderBufferTooSmall, nameof(buffer));
             }
 
             _nextOrPrevious = this;
