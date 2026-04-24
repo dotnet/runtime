@@ -3540,7 +3540,7 @@ namespace Internal.JitInterface
 
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
-                AddPrecodeFixup(null); // TODO! fix this to require the generation of a R2R to interp stub
+                AddPrecodeFixup(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig));
             }
         }
     }

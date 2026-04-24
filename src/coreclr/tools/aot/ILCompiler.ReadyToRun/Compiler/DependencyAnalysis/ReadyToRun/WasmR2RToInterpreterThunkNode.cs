@@ -95,7 +95,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
             (ArgIterator argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
 
-            bool hasRetBuffArg = argit.HasRetBuffArg();
+            bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
             bool hasThis = !methodSignature.IsStatic;
 
             int[] offsets = new int[methodSignature.Length];
@@ -265,10 +265,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //   arg4: return buffer pointer
             if (hasRetBuffArg)
             {
-                // Load the return buffer pointer from the transition block where we stashed it
-                int retBuffArgOffset = transitionBlock.GetRetBuffArgOffset(hasThis) + argOffsetAdjustment;
-                expressions.Add(Local.Get(0));
-                expressions.Add(I32.Load((ulong)retBuffArgOffset));
+                // The retbuf is a wasm parameter — pass it through directly.
+                // For managed calls: local 0 = $sp, local 1 = this (if present), then retbuf.
+                int retBufLocalIndex = 1 + (hasThis ? 1 : 0);
+                expressions.Add(Local.Get(retBufLocalIndex));
             }
             else
             {
