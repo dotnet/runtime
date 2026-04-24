@@ -687,7 +687,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_PATCHPOINT:
         case GT_PATCHPOINT_FORCED:
-            // Patchpoint nodes don't need special lowering
+            // This will generate a call in codegen
+            RequireOutgoingArgSpace(node, MIN_ARG_AREA_FOR_CALL);
             break;
 
         case GT_NONLOCAL_JMP:
