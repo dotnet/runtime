@@ -15,7 +15,11 @@
 extern "C" {
 #endif
 
+#ifdef _WIN32
+typedef void (__cdecl *trace_error_writer_fn)(const pal_char_t* message);
+#else
 typedef void (*trace_error_writer_fn)(const pal_char_t* message);
+#endif
 
 void trace_setup(void);
 bool trace_enable(void);
