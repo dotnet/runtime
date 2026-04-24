@@ -26,7 +26,9 @@ namespace System.IO.Compression
         private readonly byte[] _passwordVerifier;
         private bool _headerWritten;
         private bool _disposed;
-        private bool _authCodeValidated;
+        // During decryption: set to true after the stored auth code is read and verified.
+        // During encryption: set to true after the computed auth code has been written.
+        private bool _authCodeFinalized;
         private readonly long _totalStreamSize;
         private readonly bool _leaveOpen;
         private readonly long _encryptedDataSize;
@@ -130,6 +132,9 @@ namespace System.IO.Compression
         private WinZipAesStream(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen)
         {
             _baseStream = baseStream;
+
+            Debug.Assert((totalStreamSize >= 0) == !encrypting, "Total stream size must be known when decrypting");
+
             _encrypting = encrypting;
             _totalStreamSize = totalStreamSize;
             _leaveOpen = leaveOpen;
@@ -164,30 +169,12 @@ namespace System.IO.Compression
             _aes.SetKey(keyMaterial.EncryptionKey);
         }
 
-        private async Task ValidateAuthCodeCoreAsync(bool isAsync, CancellationToken cancellationToken)
-        {
-            Debug.Assert(!_encrypting, "ValidateAuthCode should only be called during decryption.");
+        private void FinalizeAndCompareHMAC(byte[] storedAuth) {
+
             Debug.Assert(_hmac is not null, "HMAC should have been initialized");
 
-            if (_authCodeValidated)
-            {
-                return;
-            }
-
-            // Read the 10-byte stored authentication code from the stream
-            byte[] storedAuth = new byte[10];
-
-            if (isAsync)
-            {
-                await _baseStream.ReadExactlyAsync(storedAuth, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                _baseStream.ReadExactly(storedAuth);
-            }
-
             // Finalize HMAC computation after reading, so we can use stackalloc
-            Span<byte> expectedAuth = stackalloc byte[20]; // SHA1 hash size
+            Span<byte> expectedAuth = stackalloc byte[SHA1.HashSizeInBytes];
             if (!_hmac.TryGetHashAndReset(expectedAuth, out int bytesWritten) || bytesWritten < 10)
             {
                 throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
@@ -198,48 +185,63 @@ namespace System.IO.Compression
             {
                 throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
             }
-
-            _authCodeValidated = true;
         }
+
         private void ValidateAuthCode()
         {
-            ValidateAuthCodeCoreAsync(isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
+            Debug.Assert(!_encrypting, "ValidateAuthCode should only be called during decryption.");
+
+            if (_authCodeFinalized)
+            {
+                return;
+            }
+
+            // Read the 10-byte stored authentication code from the stream
+            byte[] storedAuth = new byte[10];
+            _baseStream.ReadExactly(storedAuth);
+            FinalizeAndCompareHMAC(storedAuth);
+            _authCodeFinalized = true;
         }
 
-        private Task ValidateAuthCodeAsync(CancellationToken cancellationToken)
+        private async Task ValidateAuthCodeAsync(CancellationToken cancellationToken)
         {
-            return ValidateAuthCodeCoreAsync(isAsync: true, cancellationToken);
+            Debug.Assert(!_encrypting, "ValidateAuthCode should only be called during decryption.");
+
+            if (_authCodeFinalized)
+            {
+                return;
+            }
+
+            // Read the 10-byte stored authentication code from the stream
+            byte[] storedAuth = new byte[10];
+            await _baseStream.ReadExactlyAsync(storedAuth, cancellationToken).ConfigureAwait(false);
+            FinalizeAndCompareHMAC(storedAuth);
+            _authCodeFinalized = true;
         }
 
-        private async Task WriteHeaderCoreAsync(bool isAsync, CancellationToken cancellationToken)
+        private async Task WriteHeaderAsync(CancellationToken cancellationToken)
         {
             if (_headerWritten)
             {
                 return;
             }
 
-            if (isAsync)
-            {
-                await _baseStream.WriteAsync(_salt, cancellationToken).ConfigureAwait(false);
-                await _baseStream.WriteAsync(_passwordVerifier, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                _baseStream.Write(_salt);
-                _baseStream.Write(_passwordVerifier);
-            }
+            await _baseStream.WriteAsync(_salt, cancellationToken).ConfigureAwait(false);
+            await _baseStream.WriteAsync(_passwordVerifier, cancellationToken).ConfigureAwait(false);
 
             _headerWritten = true;
         }
 
         private void WriteHeader()
         {
-            WriteHeaderCoreAsync(isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
-        }
+            if (_headerWritten)
+            {
+                return;
+            }
 
-        private Task WriteHeaderAsync(CancellationToken cancellationToken)
-        {
-            return WriteHeaderCoreAsync(isAsync: true, cancellationToken);
+            _baseStream.Write(_salt);
+            _baseStream.Write(_passwordVerifier);
+            _headerWritten = true;
         }
 
         private void ProcessBlock(Span<byte> buffer)
@@ -312,7 +314,7 @@ namespace System.IO.Compression
             Debug.Assert(_encrypting, "WriteAuthCode should only be called during encryption.");
             Debug.Assert(_hmac is not null, "HMAC should have been initialized");
 
-            if (_authCodeValidated)
+            if (_authCodeFinalized)
             {
                 return;
             }
@@ -336,7 +338,7 @@ namespace System.IO.Compression
                 _baseStream.Write(authCode.Slice(0, 10));
             }
 
-            _authCodeValidated = true;
+            _authCodeFinalized = true;
         }
 
         private void ThrowIfNotReadable()
@@ -475,11 +477,9 @@ namespace System.IO.Compression
                 }
             }
 
-            // Process full blocks
-            while (inputCount >= BlockSize)
+            while (inputCount > 0)
             {
                 int bytesToProcess = Math.Min(inputCount, workBuffer.Length);
-                bytesToProcess = (bytesToProcess / BlockSize) * BlockSize;
 
                 buffer.Slice(inputOffset, bytesToProcess).CopyTo(workBuffer);
                 ProcessBlock(workBuffer.AsSpan(0, bytesToProcess));
@@ -622,7 +622,7 @@ namespace System.IO.Compression
             {
                 try
                 {
-                    if (_encrypting && !_authCodeValidated)
+                    if (_encrypting && !_authCodeFinalized)
                     {
                         // Ensure header is written even for empty files
                         if (!_headerWritten)
@@ -666,7 +666,7 @@ namespace System.IO.Compression
 
             try
             {
-                if (_encrypting && !_authCodeValidated)
+                if (_encrypting && !_authCodeFinalized)
                 {
                     // Ensure header is written even for empty files
                     if (!_headerWritten)

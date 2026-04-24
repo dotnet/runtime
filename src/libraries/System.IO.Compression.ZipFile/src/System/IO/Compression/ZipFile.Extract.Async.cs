@@ -273,10 +273,7 @@ public static partial class ZipFile
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!password.IsEmpty)
-                    await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, password, cancellationToken).ConfigureAwait(false);
-                else
-                    await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, cancellationToken).ConfigureAwait(false);
+                await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, password, cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -494,10 +491,7 @@ public static partial class ZipFile
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!password.IsEmpty)
-                    await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, password, cancellationToken).ConfigureAwait(false);
-                else
-                    await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, cancellationToken).ConfigureAwait(false);
+                await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, password, cancellationToken).ConfigureAwait(false);
             }
         }
     }

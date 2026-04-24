@@ -334,6 +334,11 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Returns the relative path of the entry in the Zip archive, equivalent to <see cref="FullName"/>.
+        /// </summary>
+        public override string ToString() => FullName;
+
+        /// <summary>
         /// The last write time of the entry as stored in the Zip archive. When setting this property, the DateTime will be converted to the
         /// Zip timestamp format, which supports a resolution of two seconds. If the data in the last write time field is not a valid Zip timestamp,
         /// an indicator value of 1980 January 1 at midnight will be returned.
@@ -423,18 +428,7 @@ namespace System.IO.Compression
         public Stream Open()
         {
             ThrowIfInvalidArchive();
-
-            switch (_archive.Mode)
-            {
-                case ZipArchiveMode.Read:
-                    return OpenInReadMode(checkOpenable: true);
-                case ZipArchiveMode.Create:
-                    return OpenInWriteMode();
-                case ZipArchiveMode.Update:
-                default:
-                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                    return OpenInUpdateMode();
-            }
+            return OpenCore(InferAccessFromMode());
         }
 
 
@@ -455,21 +449,7 @@ namespace System.IO.Compression
             if (IsEncrypted && password.IsEmpty)
                 throw new ArgumentException(SR.PasswordRequired, nameof(password));
 
-            switch (_archive.Mode)
-            {
-                case ZipArchiveMode.Read:
-                    return IsEncrypted && !password.IsEmpty
-                        ? OpenInReadMode(checkOpenable: true, password)
-                        : OpenInReadMode(checkOpenable: true);
-                case ZipArchiveMode.Create:
-                    return OpenInWriteMode();
-                case ZipArchiveMode.Update:
-                default:
-                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                    return IsEncrypted && !password.IsEmpty
-                        ? OpenInUpdateMode(loadExistingContent: true, password)
-                        : OpenInUpdateMode();
-            }
+            return OpenCore(InferAccessFromMode(), password);
         }
 
         /// <summary>
@@ -493,94 +473,64 @@ namespace System.IO.Compression
         public Stream Open(FileAccess access)
         {
             ThrowIfInvalidArchive();
-
-            if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
-                throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
-
-            // Validate that the requested access is compatible with the archive's mode
-            switch (_archive.Mode)
-            {
-                case ZipArchiveMode.Read:
-                    if (access != FileAccess.Read)
-                        throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
-                    return OpenInReadMode(checkOpenable: true);
-
-                case ZipArchiveMode.Create:
-                    if (access == FileAccess.Read)
-                        throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
-                    return OpenInWriteMode();
-
-                case ZipArchiveMode.Update:
-                default:
-                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                    switch (access)
-                    {
-                        case FileAccess.Read:
-                            return OpenInReadMode(checkOpenable: true);
-                        case FileAccess.Write:
-                            return OpenInUpdateMode(loadExistingContent: false);
-                        case FileAccess.ReadWrite:
-                        default:
-                            return OpenInUpdateMode(loadExistingContent: true);
-                    }
-            }
+            ValidateAccessForMode(access);
+            return OpenCore(access);
         }
 
         public Stream Open(FileAccess access, ReadOnlySpan<char> password)
         {
             ThrowIfInvalidArchive();
-
-            if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
-                throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+            ValidateAccessForMode(access);
 
             if (IsEncrypted && password.IsEmpty)
                 throw new ArgumentException(SR.PasswordRequired, nameof(password));
 
-            bool usePassword = IsEncrypted && !password.IsEmpty;
+            return OpenCore(access, password);
+        }
+
+        private FileAccess InferAccessFromMode()=> _archive.Mode switch
+        {
+            ZipArchiveMode.Read => FileAccess.Read,
+            ZipArchiveMode.Create => FileAccess.Write,
+            _ => FileAccess.ReadWrite
+        };
+
+        private void ValidateAccessForMode(FileAccess access)
+        {
+            if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
+                throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
 
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
                     if (access != FileAccess.Read)
                         throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
-                    return usePassword
-                        ? OpenInReadMode(checkOpenable: true, password)
-                        : OpenInReadMode(checkOpenable: true);
-
+                    break;
                 case ZipArchiveMode.Create:
                     if (access == FileAccess.Read)
                         throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
-                    return OpenInWriteMode();
-
-                case ZipArchiveMode.Update:
-                default:
-                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                    switch (access)
-                    {
-                        case FileAccess.Read:
-                            return usePassword
-                                ? OpenInReadMode(checkOpenable: true, password)
-                                : OpenInReadMode(checkOpenable: true);
-                        case FileAccess.Write:
-                            return usePassword
-                                ? OpenInUpdateMode(loadExistingContent: false, password)
-                                : OpenInUpdateMode(loadExistingContent: false);
-                        case FileAccess.ReadWrite:
-                        default:
-                            return usePassword
-                                ? OpenInUpdateMode(loadExistingContent: true, password)
-                                : OpenInUpdateMode(loadExistingContent: true);
-                    }
+                    break;
             }
         }
 
-        /// <summary>
-        /// Returns the FullName of the entry.
-        /// </summary>
-        /// <returns>FullName of the entry</returns>
-        public override string ToString()
+        private Stream OpenCore(FileAccess access, ReadOnlySpan<char> password = default)
         {
-            return FullName;
+            switch (_archive.Mode)
+            {
+                case ZipArchiveMode.Read:
+                    return OpenInReadMode(checkOpenable: true, password);
+                case ZipArchiveMode.Create:
+                    return OpenInWriteMode();
+                case ZipArchiveMode.Update:
+                default:
+                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                    return access switch
+                    {
+                        FileAccess.Read => OpenInReadMode(checkOpenable: true, password),
+                        FileAccess.Write => OpenInUpdateMode(loadExistingContent: false, password),
+                        _ => OpenInUpdateMode(loadExistingContent: true, password),
+                    };
+            }
         }
 
         private string DecodeEntryString(byte[] entryStringBytes)

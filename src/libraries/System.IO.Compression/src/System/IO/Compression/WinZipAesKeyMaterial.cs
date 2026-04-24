@@ -90,7 +90,7 @@ namespace System.IO.Compression
 
             int maxPasswordByteCount = Encoding.UTF8.GetMaxByteCount(password.Length);
             byte[] rentedPasswordBytes = System.Buffers.ArrayPool<byte>.Shared.Rent(maxPasswordByteCount);
-            // totalKeySize is at most 66 bytes (AES-256: 32 + 32 + 2), safe for stackalloc
+            Debug.Assert(totalKeySize <= 66, "totalKeySize should be at most 66 bytes (AES-256: 32 + 32 + 2)");
             Span<byte> derivedKey = stackalloc byte[totalKeySize];
 
             try
@@ -102,7 +102,7 @@ namespace System.IO.Compression
                     passwordSpan,
                     saltBytes,
                     derivedKey,
-                    1000,
+                    1000, // iteration count specified by the WinZip AE-1/AE-2 specification
                     HashAlgorithmName.SHA1);
 
                 // Slice the derived key directly into its components instead of

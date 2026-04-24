@@ -79,7 +79,7 @@ public static partial class ZipFileExtensions
 
         foreach (ZipArchiveEntry entry in source.Entries)
         {
-            await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, cancellationToken).ConfigureAwait(false);
+            await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
     }
 

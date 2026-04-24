@@ -495,7 +495,7 @@ public static partial class ZipFile
         ZipArchive archive = await OpenAsync(destinationArchiveFileName, ZipArchiveMode.Create, entryNameEncoding, cancellationToken).ConfigureAwait(false);
         await using (archive)
         {
-            await CreateZipArchiveFromDirectoryAsync(sourceDirectoryName, archive, compressionLevel, includeBaseDirectory, cancellationToken).ConfigureAwait(false);
+            await CreateZipArchiveFromDirectoryAsync(sourceDirectoryName, archive, compressionLevel, includeBaseDirectory, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -509,12 +509,13 @@ public static partial class ZipFile
         ZipArchive archive = await ZipArchive.CreateAsync(destination, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding, cancellationToken).ConfigureAwait(false);
         await using (archive)
         {
-            await CreateZipArchiveFromDirectoryAsync(sourceDirectoryName, archive, compressionLevel, includeBaseDirectory, cancellationToken).ConfigureAwait(false);
+            await CreateZipArchiveFromDirectoryAsync(sourceDirectoryName, archive, compressionLevel, includeBaseDirectory, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
     }
 
     private static async Task CreateZipArchiveFromDirectoryAsync(string sourceDirectoryName, ZipArchive archive,
-                                                      CompressionLevel? compressionLevel, bool includeBaseDirectory, CancellationToken cancellationToken)
+                                                      CompressionLevel? compressionLevel, bool includeBaseDirectory,
+                                                      ReadOnlyMemory<char> password = default, ZipEncryptionMethod encryptionMethod = ZipEncryptionMethod.None, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -529,53 +530,8 @@ public static partial class ZipFile
             {
                 case CreateEntryType.File:
                 {
-                    // Create entry for file:
                     string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length));
-                    await ZipFileExtensions.DoCreateEntryFromFileAsync(archive, fullPath, entryName, compressionLevel, cancellationToken).ConfigureAwait(false);
-                }
-                break;
-                case CreateEntryType.Directory:
-                    if (ArchivingUtils.IsDirEmpty(fullPath))
-                    {
-                        // Create entry marking an empty dir:
-                        // FullName never returns a directory separator character on the end,
-                        // but Zip archives require it to specify an explicit directory:
-                        string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length), appendPathSeparator: true);
-                        archive.CreateEntry(entryName);
-                    }
-                    break;
-                default:
-                    throw new IOException(SR.Format(SR.ZipUnsupportedFile, fullPath));
-            }
-        }
-
-        FinalizeCreateZipArchiveFromDirectory(archive, di, includeBaseDirectory, directoryIsEmpty);
-    }
-
-    private static async Task CreateZipArchiveFromDirectoryAsync(string sourceDirectoryName, ZipArchive archive,
-                                                      CompressionLevel compressionLevel, bool includeBaseDirectory,
-                                                      ReadOnlyMemory<char> password, ZipEncryptionMethod encryptionMethod, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        (bool directoryIsEmpty, string basePath, DirectoryInfo di, FileSystemEnumerable<(string, CreateEntryType)> fse) =
-            InitializeCreateZipArchiveFromDirectory(sourceDirectoryName, includeBaseDirectory);
-
-        bool hasEncryption = !password.IsEmpty && encryptionMethod != ZipEncryptionMethod.None;
-
-        foreach ((string fullPath, CreateEntryType type) in fse)
-        {
-            directoryIsEmpty = false;
-
-            switch (type)
-            {
-                case CreateEntryType.File:
-                {
-                    string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length));
-                    if (hasEncryption)
-                        await ZipFileExtensions.DoCreateEntryFromFileAsync(archive, fullPath, entryName, compressionLevel, password, encryptionMethod, cancellationToken).ConfigureAwait(false);
-                    else
-                        await ZipFileExtensions.DoCreateEntryFromFileAsync(archive, fullPath, entryName, compressionLevel, cancellationToken).ConfigureAwait(false);
+                    await ZipFileExtensions.DoCreateEntryFromFileAsync(archive, fullPath, entryName, compressionLevel, password, encryptionMethod, cancellationToken).ConfigureAwait(false);
                 }
                 break;
                 case CreateEntryType.Directory:

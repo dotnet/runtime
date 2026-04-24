@@ -128,24 +128,8 @@ namespace System.IO.Compression
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, password, encryption);
 
         internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
-                                                              string sourceFileName, string entryName, CompressionLevel? compressionLevel)
-        {
-            (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: true);
-
-            using (fs)
-            {
-                using (Stream es = entry.Open())
-                {
-                    fs.CopyTo(es);
-                }
-            }
-
-            return entry;
-        }
-
-        internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
                                                               string sourceFileName, string entryName, CompressionLevel? compressionLevel,
-                                                              ReadOnlySpan<char> password, ZipEncryptionMethod encryption)
+                                                              ReadOnlySpan<char> password = default, ZipEncryptionMethod encryption = ZipEncryptionMethod.None)
         {
 
             (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: false, password, encryption);

@@ -94,7 +94,7 @@ namespace System.IO.Compression.Tests
 
             var encryptStream = (Stream)s_createMethod.Invoke(null, new object[]
             {
-                ms, keyMaterial, 0L, true, false
+                ms, keyMaterial, -1L, true, false
             })!;
 
             if (initialData != null && initialData.Length > 0)
@@ -116,7 +116,7 @@ namespace System.IO.Compression.Tests
             using var encryptedMs = new MemoryStream();
             using (var encryptStream = (Stream)s_createMethod.Invoke(null, new object[]
             {
-                encryptedMs, encryptKeyMaterial, 0L, true, true
+                encryptedMs, encryptKeyMaterial, -1L, true, true
             })!)
             {
                 encryptStream.Write(plaintext);

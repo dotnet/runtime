@@ -464,7 +464,8 @@ namespace System.IO.Compression
         }
 
         private static void CreateZipArchiveFromDirectory(string sourceDirectoryName, ZipArchive archive,
-                                                          CompressionLevel? compressionLevel, bool includeBaseDirectory)
+                                                          CompressionLevel? compressionLevel, bool includeBaseDirectory,
+                                                          ReadOnlySpan<char> password = default, ZipEncryptionMethod encryptionMethod = ZipEncryptionMethod.None)
         {
             (bool directoryIsEmpty, string basePath, DirectoryInfo di, FileSystemEnumerable<(string, CreateEntryType)> fse) =
                 InitializeCreateZipArchiveFromDirectory(sourceDirectoryName, includeBaseDirectory);
@@ -477,52 +478,8 @@ namespace System.IO.Compression
                 {
                     case CreateEntryType.File:
                         {
-                            // Create entry for file:
                             string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length));
-                            ZipFileExtensions.DoCreateEntryFromFile(archive, fullPath, entryName, compressionLevel);
-                        }
-                        break;
-                    case CreateEntryType.Directory:
-                        if (ArchivingUtils.IsDirEmpty(fullPath))
-                        {
-                            // Create entry marking an empty dir:
-                            // FullName never returns a directory separator character on the end,
-                            // but Zip archives require it to specify an explicit directory:
-                            string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length), appendPathSeparator: true);
-                            archive.CreateEntry(entryName);
-                        }
-                        break;
-                    case CreateEntryType.Unsupported:
-                    default:
-                        throw new IOException(SR.Format(SR.ZipUnsupportedFile, fullPath));
-                }
-            }
-
-            FinalizeCreateZipArchiveFromDirectory(archive, di, includeBaseDirectory, directoryIsEmpty);
-        }
-
-        private static void CreateZipArchiveFromDirectory(string sourceDirectoryName, ZipArchive archive,
-                                                          CompressionLevel compressionLevel, bool includeBaseDirectory,
-                                                          ReadOnlySpan<char> password, ZipEncryptionMethod encryptionMethod)
-        {
-            (bool directoryIsEmpty, string basePath, DirectoryInfo di, FileSystemEnumerable<(string, CreateEntryType)> fse) =
-                InitializeCreateZipArchiveFromDirectory(sourceDirectoryName, includeBaseDirectory);
-
-            bool hasEncryption = !password.IsEmpty && encryptionMethod != ZipEncryptionMethod.None;
-
-            foreach ((string fullPath, CreateEntryType type) in fse)
-            {
-                directoryIsEmpty = false;
-
-                switch (type)
-                {
-                    case CreateEntryType.File:
-                        {
-                            string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length));
-                            if (hasEncryption)
-                                ZipFileExtensions.DoCreateEntryFromFile(archive, fullPath, entryName, compressionLevel, password, encryptionMethod);
-                            else
-                                ZipFileExtensions.DoCreateEntryFromFile(archive, fullPath, entryName, compressionLevel);
+                            ZipFileExtensions.DoCreateEntryFromFile(archive, fullPath, entryName, compressionLevel, password, encryptionMethod);
                         }
                         break;
                     case CreateEntryType.Directory:

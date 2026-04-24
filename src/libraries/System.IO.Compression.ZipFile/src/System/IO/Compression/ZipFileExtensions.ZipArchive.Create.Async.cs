@@ -44,7 +44,7 @@ public static partial class ZipFileExtensions
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The value of the task is the newly created entry.</returns>
     public static Task<ZipArchiveEntry> CreateEntryFromFileAsync(this ZipArchive destination, string sourceFileName, string entryName, CancellationToken cancellationToken = default) =>
-        DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, null, cancellationToken);
+        DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, null, cancellationToken: cancellationToken);
 
     /// <summary>
     /// <p>Asynchronously adds a file from the file system to the archive under the specified entry name using encryption.</p>
@@ -107,7 +107,7 @@ public static partial class ZipFileExtensions
     /// <returns>A task that represents the asynchronous operation. The value of the task is the newly created entry.</returns>
     public static Task<ZipArchiveEntry> CreateEntryFromFileAsync(this ZipArchive destination,
                                                       string sourceFileName, string entryName, CompressionLevel compressionLevel, CancellationToken cancellationToken = default) =>
-        DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, compressionLevel, cancellationToken);
+        DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, compressionLevel, cancellationToken: cancellationToken);
 
     /// <summary>
     /// <p>Asynchronously adds a file from the file system to the archive under the specified entry name using the specified compression level and encryption.</p>
@@ -140,26 +140,7 @@ public static partial class ZipFileExtensions
         DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, compressionLevel, password, encryption, cancellationToken);
 
     internal static async Task<ZipArchiveEntry> DoCreateEntryFromFileAsync(this ZipArchive destination, string sourceFileName, string entryName,
-                                                    CompressionLevel? compressionLevel, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: true);
-
-        await using (fs)
-        {
-            Stream es = await entry.OpenAsync(cancellationToken).ConfigureAwait(false);
-            await using (es)
-            {
-                await fs.CopyToAsync(es, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        return entry;
-    }
-
-    internal static async Task<ZipArchiveEntry> DoCreateEntryFromFileAsync(this ZipArchive destination, string sourceFileName, string entryName,
-        CompressionLevel? compressionLevel, ReadOnlyMemory<char> password, ZipEncryptionMethod encryption, CancellationToken cancellationToken)
+        CompressionLevel? compressionLevel, ReadOnlyMemory<char> password = default, ZipEncryptionMethod encryption = ZipEncryptionMethod.None, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
