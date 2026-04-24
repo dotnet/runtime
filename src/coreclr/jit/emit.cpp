@@ -7137,7 +7137,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                 continue;
             }
 
-            if (m_compiler->lvaIsUnknownSizeLocal(num))
+            if (m_compiler->lvaLocalIsOnUnknownSizeFrame(num))
             {
                 continue;
             }
