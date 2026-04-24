@@ -5046,13 +5046,17 @@ void CodeGen::genUnknownSizeFrame()
     {
         // Generate `sp = sp - totalVectorCount * VL`
         assert(totalVectorCount != 0);
-        regNumber rsvd = rsGetRsvdReg();
+        regNumber vectorCountReg          = rsGetRsvdReg();
+        regNumber vectorFrameSizeBytesReg = REG_SCRATCH;
         // mov   rsvd, #totalVectorCount
         // rdvl  scratch, #1
-        // msub  sp, rsvd, scratch, sp
-        instGen_Set_Reg_To_Imm(EA_8BYTE, rsvd, totalVectorCount);
-        GetEmitter()->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, REG_SCRATCH, 1);
-        GetEmitter()->emitIns_R_R_R_R(INS_msub, EA_8BYTE, REG_SP, rsvd, REG_SCRATCH, REG_SP);
+        // mul   scratch, rsvd, scratch
+        // sub   sp, sp, scratch
+        instGen_Set_Reg_To_Imm(EA_8BYTE, vectorCountReg, totalVectorCount);
+        GetEmitter()->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, vectorFrameSizeBytesReg, 1);
+        GetEmitter()->emitIns_R_R_R(INS_mul, EA_8BYTE, vectorFrameSizeBytesReg, vectorCountReg,
+                                    vectorFrameSizeBytesReg);
+        GetEmitter()->emitIns_R_R_R(INS_sub, EA_8BYTE, REG_SP, REG_SP, vectorFrameSizeBytesReg);
     }
 }
 
