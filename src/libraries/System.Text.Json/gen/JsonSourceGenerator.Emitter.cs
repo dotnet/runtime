@@ -585,13 +585,14 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                if (typeMetadata.OpenGenericDerivedTypes is { Count: > 0 } openGenericDerivedTypes)
+                if (typeMetadata.ResolvedDerivedTypes is { Count: > 0 } resolvedDerivedTypes)
                 {
                     const string OptionsVarName = "polymorphismOptions";
                     writer.WriteLine();
                     writer.WriteLine($"var {OptionsVarName} = {JsonTypeInfoLocalVariableName}.{PolymorphismOptionsPropName} ?? new {JsonPolymorphismOptionsTypeRef}();");
+                    writer.WriteLine($"{OptionsVarName}.DerivedTypes.Clear();");
 
-                    foreach (PolymorphicDerivedTypeSpec derivedTypeSpec in openGenericDerivedTypes)
+                    foreach (PolymorphicDerivedTypeSpec derivedTypeSpec in resolvedDerivedTypes)
                     {
                         string discriminatorArg = derivedTypeSpec.TypeDiscriminator switch
                         {

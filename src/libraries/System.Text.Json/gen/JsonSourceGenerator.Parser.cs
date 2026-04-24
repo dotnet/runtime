@@ -601,8 +601,7 @@ namespace System.Text.Json.SourceGeneration
                     out JsonIgnoreCondition? typeIgnoreCondition,
                     out bool foundJsonConverterAttribute,
                     out TypeRef? customConverterType,
-                    out bool isPolymorphic,
-                    out List<PolymorphicDerivedTypeSpec>? openGenericDerivedTypes);
+                    out List<PolymorphicDerivedTypeSpec>? resolvedDerivedTypes);
 
                 if (type is { IsRefLikeType: true } or INamedTypeSymbol { IsUnboundGenericType: true } or IErrorTypeSymbol)
                 {
@@ -732,8 +731,7 @@ namespace System.Text.Json.SourceGeneration
                     GenerationMode = typeToGenerate.Mode ?? options?.GenerationMode ?? JsonSourceGenerationMode.Default,
                     ClassType = classType,
                     PrimitiveTypeKind = primitiveTypeKind,
-                    IsPolymorphic = isPolymorphic,
-                    OpenGenericDerivedTypes = openGenericDerivedTypes?.OrderBy(d => d.DerivedType.FullyQualifiedName).ToImmutableEquatableArray(),
+                    ResolvedDerivedTypes = resolvedDerivedTypes?.OrderBy(d => d.DerivedType.FullyQualifiedName).ToImmutableEquatableArray(),
                     NumberHandling = numberHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
                     PreferredPropertyObjectCreationHandling = preferredPropertyObjectCreationHandling,
@@ -772,8 +770,7 @@ namespace System.Text.Json.SourceGeneration
                 out JsonIgnoreCondition? typeIgnoreCondition,
                 out bool foundJsonConverterAttribute,
                 out TypeRef? customConverterType,
-                out bool isPolymorphic,
-                out List<PolymorphicDerivedTypeSpec>? openGenericDerivedTypes)
+                out List<PolymorphicDerivedTypeSpec>? resolvedDerivedTypes)
             {
                 numberHandling = null;
                 unmappedMemberHandling = null;
@@ -782,8 +779,7 @@ namespace System.Text.Json.SourceGeneration
                 typeIgnoreCondition = null;
                 customConverterType = null;
                 foundJsonConverterAttribute = false;
-                isPolymorphic = false;
-                openGenericDerivedTypes = null;
+                resolvedDerivedTypes = null;
 
                 foreach (AttributeData attributeData in typeToGenerate.Type.GetAttributes())
                 {
@@ -852,25 +848,21 @@ namespace System.Text.Json.SourceGeneration
                         Debug.Assert(attributeData.ConstructorArguments.Length > 0);
                         var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
 
+                        object? discriminator = attributeData.ConstructorArguments.Length > 1
+                            ? attributeData.ConstructorArguments[1].Value
+                            : null;
+
                         if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
                         {
                             if (TryResolveOpenGenericDerivedType(unboundDerived, typeToGenerate.Type, out INamedTypeSymbol? resolvedType))
                             {
                                 EnqueueType(resolvedType, typeToGenerate.Mode);
-
-                                object? discriminator = attributeData.ConstructorArguments.Length > 1
-                                    ? attributeData.ConstructorArguments[1].Value
-                                    : null;
-
-                                (openGenericDerivedTypes ??= new()).Add(new PolymorphicDerivedTypeSpec
-                                {
-                                    DerivedType = new TypeRef(resolvedType),
-                                    TypeDiscriminator = discriminator,
-                                });
+                                derivedType = resolvedType;
                             }
                             else
                             {
                                 ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeNotSupported, typeToGenerate.Location, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
+                                continue;
                             }
                         }
                         else
@@ -878,12 +870,16 @@ namespace System.Text.Json.SourceGeneration
                             EnqueueType(derivedType, typeToGenerate.Mode);
                         }
 
-                        if (!isPolymorphic && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
+                        if (resolvedDerivedTypes is null && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
                         {
                             ReportDiagnostic(DiagnosticDescriptors.PolymorphismNotSupported, typeToGenerate.Location, typeToGenerate.Type.ToDisplayString());
                         }
 
-                        isPolymorphic = true;
+                        (resolvedDerivedTypes ??= new()).Add(new PolymorphicDerivedTypeSpec
+                        {
+                            DerivedType = new TypeRef(derivedType),
+                            TypeDiscriminator = discriminator,
+                        });
                     }
                 }
             }

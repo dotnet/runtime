@@ -6,7 +6,7 @@ using SourceGenerators;
 namespace System.Text.Json.SourceGeneration
 {
     /// <summary>
-    /// Models a resolved open generic derived type for polymorphic serialization.
+    /// Models a resolved derived type for polymorphic serialization.
     /// </summary>
     public sealed record PolymorphicDerivedTypeSpec
     {

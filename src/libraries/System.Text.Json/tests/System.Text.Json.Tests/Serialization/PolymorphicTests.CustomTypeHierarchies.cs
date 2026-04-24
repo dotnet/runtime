@@ -2948,6 +2948,58 @@ namespace System.Text.Json.Serialization.Tests
             public string? Extra { get; set; }
         }
 
+        [Fact]
+        public async Task OpenGenericDerivedType_InterfaceHierarchy_Works()
+        {
+            // Tests unification through a chain of generic interfaces:
+            // IDerived<T> extends IBase<T>, and we serialize through IBase<int>.
+            IOpenGenericBase_InterfaceHierarchy<int> value = new OpenGenericImpl_InterfaceHierarchy<int> { Value = 42, Extra = "extra" };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","Value":42,"Extra":"extra"}""", json);
+
+            var result = await Serializer.DeserializeWrapper<IOpenGenericBase_InterfaceHierarchy<int>>(json);
+            Assert.IsType<OpenGenericImpl_InterfaceHierarchy<int>>(result);
+            Assert.Equal(42, result.Value);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericImpl_InterfaceHierarchy<>), "impl")]
+        public interface IOpenGenericBase_InterfaceHierarchy<T>
+        {
+            T? Value { get; set; }
+        }
+
+        public interface IOpenGenericDerived_InterfaceHierarchy<T> : IOpenGenericBase_InterfaceHierarchy<T>;
+
+        public class OpenGenericImpl_InterfaceHierarchy<T> : IOpenGenericDerived_InterfaceHierarchy<T>
+        {
+            public T? Value { get; set; }
+            public string? Extra { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_InterfaceBaseWithWrappedTypeArg_Works()
+        {
+            // Tests unification through an interface with wrapped type args:
+            // Impl<T> implements IBase<List<T>>.
+            IOpenGenericBase_InterfaceWrapped<List<string>> value = new OpenGenericImpl_InterfaceWrapped<string> { Data = ["a", "b"] };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","Data":["a","b"]}""", json);
+
+            var result = await Serializer.DeserializeWrapper<IOpenGenericBase_InterfaceWrapped<List<string>>>(json);
+            Assert.IsType<OpenGenericImpl_InterfaceWrapped<string>>(result);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericImpl_InterfaceWrapped<>), "impl")]
+        public interface IOpenGenericBase_InterfaceWrapped<T>
+        {
+            T? Data { get; set; }
+        }
+
+        public class OpenGenericImpl_InterfaceWrapped<T> : IOpenGenericBase_InterfaceWrapped<List<T>>
+        {
+            public List<T>? Data { get; set; }
+        }
+
         #endregion
 
         [Fact]

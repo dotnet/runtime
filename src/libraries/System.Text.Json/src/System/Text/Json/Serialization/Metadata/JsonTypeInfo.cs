@@ -1250,6 +1250,17 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        /// <summary>
+        /// Sets polymorphism options from the internal resolver, bypassing
+        /// the public setter's Kind validation.
+        /// </summary>
+        internal void SetPolymorphismOptions(JsonPolymorphismOptions options)
+        {
+            Debug.Assert(!IsReadOnly);
+            options.DeclaringTypeInfo = this;
+            _polymorphismOptions = options;
+        }
+
         internal void MapInterfaceTypesToCallbacks()
         {
             Debug.Assert(!IsReadOnly);

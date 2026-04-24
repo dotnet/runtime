@@ -63,8 +63,7 @@ namespace System.Text.Json.Serialization.Metadata
                 typeInfo.UnmappedMemberHandling = unmappedMemberHandling;
             }
 
-            typeInfo.PopulatePolymorphismMetadata();
-            ResolveOpenGenericDerivedTypes(typeInfo);
+            PopulatePolymorphismFromAttributes(typeInfo);
             typeInfo.MapInterfaceTypesToCallbacks();
 
             Func<object>? createObject = DetermineCreateObjectDelegate(type, converter);
@@ -644,57 +643,51 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static void ResolveOpenGenericDerivedTypes(JsonTypeInfo typeInfo)
+        private static void PopulatePolymorphismFromAttributes(JsonTypeInfo typeInfo)
         {
+            Debug.Assert(!typeInfo.IsReadOnly);
+
             Type baseType = typeInfo.Type;
+            JsonPolymorphismOptions? options = null;
 
-            bool hasOpenGenericDerivedTypes = false;
-            foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
+            if (baseType.GetCustomAttribute<JsonPolymorphicAttribute>(inherit: false) is JsonPolymorphicAttribute polymorphicAttribute)
             {
-                if (attr.DerivedType is { IsGenericTypeDefinition: true })
+                options = new()
                 {
-                    hasOpenGenericDerivedTypes = true;
-                    break;
-                }
+                    IgnoreUnrecognizedTypeDiscriminators = polymorphicAttribute.IgnoreUnrecognizedTypeDiscriminators,
+                    UnknownDerivedTypeHandling = polymorphicAttribute.UnknownDerivedTypeHandling,
+                    TypeDiscriminatorPropertyName = polymorphicAttribute.TypeDiscriminatorPropertyName,
+                };
             }
 
-            if (!hasOpenGenericDerivedTypes)
-            {
-                return;
-            }
-
-            if (!baseType.IsGenericType)
-            {
-                // Non-generic base with open generic derived types — always an error.
-                foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
-                {
-                    if (attr.DerivedType is { IsGenericTypeDefinition: true })
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(baseType, attr.DerivedType);
-                    }
-                }
-
-                return;
-            }
-
-            Type baseTypeDefinition = baseType.GetGenericTypeDefinition();
-            Type[] baseTypeArgs = baseType.GetGenericArguments();
+            Type? baseTypeDefinition = baseType.IsGenericType ? baseType.GetGenericTypeDefinition() : null;
+            Type[]? baseTypeArgs = baseType.IsGenericType ? baseType.GetGenericArguments() : null;
 
             foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
             {
-                if (attr.DerivedType is not { IsGenericTypeDefinition: true })
-                {
-                    continue;
-                }
-
                 Type derivedType = attr.DerivedType;
-                if (!TryResolveOpenGenericDerivedType(derivedType, baseTypeDefinition, baseTypeArgs, out Type? resolvedType))
+
+                if (derivedType is { IsGenericTypeDefinition: true })
                 {
-                    ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(baseType, derivedType);
+                    if (baseTypeDefinition is null || baseTypeArgs is null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(baseType, derivedType);
+                    }
+
+                    if (!TryResolveOpenGenericDerivedType(derivedType, baseTypeDefinition, baseTypeArgs, out Type? resolvedType))
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(baseType, derivedType);
+                    }
+
+                    derivedType = resolvedType;
                 }
 
-                JsonPolymorphismOptions options = typeInfo.PolymorphismOptions ??= new();
-                options.DerivedTypes.Add(new JsonDerivedType(resolvedType, attr.TypeDiscriminator));
+                (options ??= new()).DerivedTypes.Add(new JsonDerivedType(derivedType, attr.TypeDiscriminator));
+            }
+
+            if (options != null)
+            {
+                typeInfo.SetPolymorphismOptions(options);
             }
         }
 
