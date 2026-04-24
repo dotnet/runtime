@@ -466,7 +466,7 @@ namespace BINDER_SPACE
                 }
             }
 
-            hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr, &pBindResult->GetDiagnosticInfo());
+            hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr, pBindResult->GetDiagnosticInfo());
         }
 
     LogExit:

@@ -34,7 +34,7 @@ namespace BINDER_SPACE
 
     HRESULT FailureCache::Add(SString &assemblyNameorPath,
                               HRESULT hrBindingResult,
-                              SString *pDiagnosticInfo)
+                              const SString &diagnosticInfo)
     {
         HRESULT hr = S_OK;
 
@@ -46,9 +46,9 @@ namespace BINDER_SPACE
 
         pFailureCacheEntry->GetAssemblyNameOrPath().Set(assemblyNameorPath);
         pFailureCacheEntry->SetBindingResult(hrBindingResult);
-        if (pDiagnosticInfo != NULL && !pDiagnosticInfo->IsEmpty())
+        if (!diagnosticInfo.IsEmpty())
         {
-            pFailureCacheEntry->SetDiagnosticInfo(*pDiagnosticInfo);
+            pFailureCacheEntry->SetDiagnosticInfo(diagnosticInfo);
         }
 
         Hash::Add(pFailureCacheEntry);

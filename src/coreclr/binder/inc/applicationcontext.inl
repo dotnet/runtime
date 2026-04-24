@@ -42,9 +42,9 @@ FailureCache *ApplicationContext::GetFailureCache()
 
 HRESULT ApplicationContext::AddToFailureCache(SString &assemblyNameOrPath,
                                               HRESULT  hrBindResult,
-                                              SString *pDiagnosticInfo)
+                                              const SString &diagnosticInfo)
 {
-    HRESULT hr = GetFailureCache()->Add(assemblyNameOrPath, hrBindResult, pDiagnosticInfo);
+    HRESULT hr = GetFailureCache()->Add(assemblyNameOrPath, hrBindResult, diagnosticInfo);
     IncrementVersion();
     return hr;
 }
