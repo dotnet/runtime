@@ -1298,7 +1298,7 @@ public:
 
     void MarshalArgument(MarshalInfo* pInfo, int argOffset)
     {
-        LIMITED_METHOD_CONTRACT;
+        STANDARD_VM_CONTRACT;
         pInfo->SetupArgumentSizes();
     }
 
@@ -6012,8 +6012,6 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
 //==========================================================================
 EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 {
-    LPVOID ret = NULL;
-
     PreserveLastErrorHolder preserveLastError;
 
     CONTRACTL
@@ -6032,12 +6030,10 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 
     PInvoke::ResolvePInvokeTarget(pMD);
 
-    ret = pMD->GetPInvokeTarget();
-
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
-    return ret;
+    return pMD->GetPInvokeTarget();
 }
 
 //===========================================================================
