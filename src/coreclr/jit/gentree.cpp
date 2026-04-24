@@ -21449,7 +21449,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 assert(op2->OperIsHWIntrinsic(NI_Vector128_CreateScalar));
 
                 GenTree* shiftCountDup = fgMakeMultiUse(&op2->AsHWIntrinsic()->Op(1));
-                op2->gtFlags |= (op2->AsHWIntrinsic()->Op(1)->gtFlags & GTF_ALL_EFFECT);
                 if (op == GT_RSH)
                 {
                     // For arithmetic shift, we will be using ConditionalSelect to mask in the sign bits, which means
@@ -21457,6 +21456,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     // operand here in order to preserve correct evaluation order for the masked shift count.
                     std::swap(shiftCountDup, op2->AsHWIntrinsic()->Op(1));
                 }
+                op2->gtFlags |= (op2->AsHWIntrinsic()->Op(1)->gtFlags & GTF_ALL_EFFECT);
 
                 maskAmountOp = gtNewOperNode(instrOp, genActualType(simdBaseType), gtNewAllBitsSetConNode(simdBaseType),
                                              shiftCountDup);
