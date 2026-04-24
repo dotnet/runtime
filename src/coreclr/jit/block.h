@@ -453,7 +453,8 @@ enum BasicBlockFlags : uint64_t
     // Flags to update when two blocks are compacted
 
     BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
+                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS | \
+                      BBF_RECURSIVE_TAILCALL,
 
     // Flags a block should not have had before it is split.
 
