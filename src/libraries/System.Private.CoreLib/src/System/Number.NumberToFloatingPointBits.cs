@@ -703,15 +703,24 @@ namespace System
 
             ReadOnlySpan<byte> src = new ReadOnlySpan<byte>(number.DigitsPtr + firstIndex, (int)(lastIndex - firstIndex));
 
-            while (!src.IsEmpty)
+            // Process whole chunks of 9 digits.
+            while (src.Length >= 9)
             {
-                int count = Math.Min(src.Length, 9);
-                uint value = DigitsToUInt32(src.Slice(0, count));
+                uint value = DigitsToUInt32(src.Slice(0, 9));
 
-                result.MultiplyPow10((uint)count);
+                result.MultiplyPow10(9);
                 result.Add(value);
 
-                src = src.Slice(count);
+                src = src.Slice(9);
+            }
+
+            // Handle the remaining 1..8 digit tail (if any).
+            if (!src.IsEmpty)
+            {
+                uint value = DigitsToUInt32(src);
+
+                result.MultiplyPow10((uint)src.Length);
+                result.Add(value);
             }
         }
 
