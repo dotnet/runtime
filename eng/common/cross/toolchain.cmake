@@ -225,13 +225,16 @@ elseif(ILLUMOS)
     locate_toolchain_exec(g++ CMAKE_CXX_COMPILER)
 elseif(HAIKU)
     set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
-    set(CMAKE_PROGRAM_PATH "${CMAKE_PROGRAM_PATH};${CROSS_ROOTFS}/cross-tools-x86_64/bin")
     set(CMAKE_SYSTEM_PREFIX_PATH "${CROSS_ROOTFS}")
     set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
     set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
 
-    locate_toolchain_exec(gcc CMAKE_C_COMPILER)
-    locate_toolchain_exec(g++ CMAKE_CXX_COMPILER)
+    # Tell clang (if used instead of gcc) where the Haiku GCC cross-toolchain lives
+    # so it can find crtbegin/crtend objects and libgcc under
+    # cross-tools-x86_64/lib/gcc/x86_64-unknown-haiku/<version>/
+    set(CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN "${CROSS_ROOTFS}/cross-tools-x86_64")
+    set(CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN "${CROSS_ROOTFS}/cross-tools-x86_64")
+    set(CMAKE_ASM_COMPILER_EXTERNAL_TOOLCHAIN "${CROSS_ROOTFS}/cross-tools-x86_64")
 
     # let CMake set up the correct search paths
     include(Platform/Haiku)
