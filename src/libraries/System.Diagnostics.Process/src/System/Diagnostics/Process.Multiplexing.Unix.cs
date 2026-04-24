@@ -173,7 +173,19 @@ namespace System.Diagnostics
                 throw new TimeoutException();
             }
 
-            Interop.Error pollError = PollPipes(pollFds, numFds, pollTimeout, out uint triggered);
+            uint triggered;
+            Interop.Error pollError;
+            unsafe
+            {
+                uint localTriggered = 0;
+                fixed (Interop.PollEvent* pPollFds = pollFds)
+                {
+                    pollError = Interop.Sys.Poll(pPollFds, (uint)numFds, pollTimeout, &localTriggered);
+                }
+
+                triggered = localTriggered;
+            }
+
             if (pollError != Interop.Error.SUCCESS)
             {
                 if (pollError == Interop.Error.EINTR)
@@ -228,22 +240,6 @@ namespace System.Diagnostics
                 done = true;
             }
             // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.
-        }
-
-        /// <summary>
-        /// Calls poll(2) on the provided array of poll events.
-        /// </summary>
-        private static unsafe Interop.Error PollPipes(Interop.PollEvent[] pollFds, int numFds, int timeoutMs, out uint triggered)
-        {
-            uint localTriggered = 0;
-            Interop.Error result;
-            fixed (Interop.PollEvent* pPollFds = pollFds)
-            {
-                result = Interop.Sys.Poll(pPollFds, (uint)numFds, timeoutMs, &localTriggered);
-            }
-
-            triggered = localTriggered;
-            return result;
         }
 
         /// <summary>

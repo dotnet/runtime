@@ -33,7 +33,6 @@ namespace System.Diagnostics
             byte[] errorByteBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
             char[] outputCharBuffer = ArrayPool<char>.Shared.Rent(InitialReadAllBufferSize);
             char[] errorCharBuffer = ArrayPool<char>.Shared.Rent(InitialReadAllBufferSize);
-            bool outputRefAdded = false, errorRefAdded = false;
             PinnedGCHandle<byte[]> outputPin = default, errorPin = default;
             // NativeOverlapped* can't be used as iterator state machine fields (pointers aren't
             // allowed in managed types). Store as nint and cast back inside scoped unsafe blocks.
@@ -43,9 +42,6 @@ namespace System.Diagnostics
 
             try
             {
-                outputHandle.DangerousAddRef(ref outputRefAdded);
-                errorHandle.DangerousAddRef(ref errorRefAdded);
-
                 outputPin = new PinnedGCHandle<byte[]>(outputByteBuffer);
                 errorPin = new PinnedGCHandle<byte[]>(errorByteBuffer);
 
@@ -210,16 +206,6 @@ namespace System.Diagnostics
                 errorEvent?.Dispose();
                 outputPin.Dispose();
                 errorPin.Dispose();
-
-                if (outputRefAdded)
-                {
-                    outputHandle.DangerousRelease();
-                }
-
-                if (errorRefAdded)
-                {
-                    errorHandle.DangerousRelease();
-                }
 
                 ArrayPool<byte>.Shared.Return(outputByteBuffer);
                 ArrayPool<byte>.Shared.Return(errorByteBuffer);

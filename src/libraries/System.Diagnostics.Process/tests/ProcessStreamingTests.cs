@@ -318,6 +318,47 @@ namespace System.Diagnostics.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
+        public async Task ReadAllLines_ReadsVeryLongLines(bool useAsync)
+        {
+            const int lineLength = 8192;
+            const int lineCount = 3;
+            using Process process = CreateProcess(() =>
+            {
+                for (int i = 0; i < lineCount; i++)
+                {
+                    Console.Out.WriteLine(new string((char)('A' + i), lineLength));
+                    Console.Out.Flush();
+                    Console.Error.WriteLine(new string((char)('a' + i), lineLength));
+                    Console.Error.Flush();
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            List<string> capturedOutput = new();
+            List<string> capturedError = new();
+
+            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
+
+            Assert.Equal(lineCount, capturedOutput.Count);
+            Assert.Equal(lineCount, capturedError.Count);
+
+            for (int i = 0; i < lineCount; i++)
+            {
+                Assert.Equal(new string((char)('A' + i), lineLength), capturedOutput[i]);
+                Assert.Equal(new string((char)('a' + i), lineLength), capturedError[i]);
+            }
+
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
         public async Task ReadAllLines_ThrowsOnCancellationOrTimeout(bool useAsync)
         {
             Process process = CreateProcess(RemotelyInvokable.ReadLine);
