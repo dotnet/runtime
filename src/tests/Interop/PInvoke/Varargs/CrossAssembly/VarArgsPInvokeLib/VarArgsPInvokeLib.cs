@@ -9,6 +9,6 @@ namespace VarArgsPInvokeLib
     public static class VarArgsWrapper
     {
         [DllImport("VarargsNative", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void TestVarArgs(StringBuilder builder, IntPtr bufferSize, string formatString, __arglist);
+        public static extern void TestVarArgs(StringBuilder builder, nint bufferSize, string formatString, __arglist);
     }
 }
