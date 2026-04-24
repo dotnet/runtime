@@ -921,6 +921,14 @@ public:
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
 
+        if (m_stmtModified)
+        {
+            // Rewrites such as IND(FIELD_ADDR(LCL_VAR)) -> LCL_FLD can remove
+            // side effects (e.g. GTF_EXCEPT) from a subtree; refresh the
+            // ancestor effect flags so CHECK_IR invariants hold.
+            m_compiler->gtUpdateStmtSideEffects(stmt);
+        }
+
         if (m_sequencer != nullptr)
         {
             if (m_stmtModified)
