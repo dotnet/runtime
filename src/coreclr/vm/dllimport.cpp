@@ -6033,11 +6033,7 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
     }
     CONTRACTL_END;
 
-    if (!pMD->PInvokeTargetIsImportThunk())
-    {
-        ret = pMD->GetPInvokeTarget();
-    }
-    else
+    if (pMD->PInvokeTargetIsImportThunk())
     {
         // Inlined SuppressGCTransition P/Invokes should
         // be resolved during jitting, not here.
@@ -6051,13 +6047,11 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 
         PInvoke::ResolvePInvokeTarget(pMD);
 
-        ret = pMD->GetPInvokeTarget();
-
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     }
 
-    return ret;
+    return pMD->GetPInvokeTarget();
 }
 
 //===========================================================================
