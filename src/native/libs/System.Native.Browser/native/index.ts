@@ -9,8 +9,10 @@ import GitHash from "consts:gitHash";
 
 export { SystemJS_RandomBytes } from "./crypto";
 export { SystemJS_GetLocaleInfo } from "./globalization-locale";
-export { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise, SystemJS_ConsoleClear } from "./main";
-export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob, SystemJS_ScheduleFinalization } from "./scheduling";
+export { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise, SystemJS_MarkAsyncMain, SystemJS_ConsoleClear } from "./main";
+export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob, SystemJS_ScheduleFinalization, SystemJS_ScheduleDiagnosticServer } from "./scheduling";
+export { ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send } from "./diagnostics";
+
 
 export const gitHash = GitHash;
 export function dotnetInitializeModule(internals: InternalExchange): void {
@@ -24,6 +26,9 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     }
 
     internals[InternalExchangeIndex.NativeBrowserExportsTable] = nativeBrowserExportsToTable({
+        getWasmMemory,
+        getWasmTable,
+        SystemJS_ScheduleDiagnosticServer: _ems_._SystemJS_ScheduleDiagnosticServer,
     });
     _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
@@ -33,7 +38,18 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     function nativeBrowserExportsToTable(map: NativeBrowserExports): NativeBrowserExportsTable {
         // keep in sync with nativeBrowserExportsFromTable()
         return [
+            map.getWasmMemory,
+            map.getWasmTable,
+            map.SystemJS_ScheduleDiagnosticServer,
         ];
+    }
+
+    function getWasmMemory(): WebAssembly.Memory {
+        return _ems_.wasmMemory;
+    }
+
+    function getWasmTable(): WebAssembly.Table {
+        return _ems_.wasmTable;
     }
 
     function setupEmscripten() {
@@ -46,13 +62,18 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
 
             const orig_funcs_on_exit = _ems_.___funcs_on_exit;
             // it would be better to use addOnExit(), but it's called too late.
+            // this can't be async
             _ems_.___funcs_on_exit = () => {
-                // this will prevent more timers (like finalizer) to get scheduled during thread destructor
-                if (_ems_.dotnetBrowserUtilsExports.abortBackgroundTimers) {
-                    _ems_.dotnetBrowserUtilsExports.abortBackgroundTimers();
+                try {
+                    // this will prevent more timers (like finalizer) to get scheduled during thread destructor
+                    if (_ems_.dotnetBrowserUtilsExports.abortBackgroundTimers) {
+                        _ems_.dotnetBrowserUtilsExports.abortBackgroundTimers();
+                    }
+                    _ems_.EXITSTATUS = _ems_._BrowserHost_ShutdownDotnet(_ems_.EXITSTATUS || 0);
+                    orig_funcs_on_exit();
+                } catch (err) {
+                    // silently ignore any error during shutdown
                 }
-                _ems_.EXITSTATUS = _ems_._BrowserHost_ShutdownDotnet(_ems_.EXITSTATUS || 0);
-                orig_funcs_on_exit();
             };
 
         }, ...(_ems_.Module.preInit || [])];

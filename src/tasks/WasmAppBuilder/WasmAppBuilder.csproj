@@ -1,19 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <!-- Ignore nullable warnings on net4* -->
+    <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn),CA1050,CS8604,CS8602</NoWarn>
+    <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETFramework'">$(NoWarn),CA1050,CA1850</NoWarn>
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
-    <Compile Remove="mono/*.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <Compile Remove="coreclr/*.cs" />
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="..\Common\IsExternalInit.cs" />
+    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/NullableAttributes.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,17 +30,27 @@
 
     <!-- Reference Microsoft.Build.Tasks.Core directly to avoid bringing in it's package closure.
          This assembly is provided by MSBuild.  -->
-    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net8.0" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks\$(NetCoreAppToolCurrent)" />
-      <FilesToPackage Include="$(OutputPath)Microsoft.NET.WebAssembly.Webcil.dll" TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <!-- .NETCoreApp -->
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\Microsoft.NET.WebAssembly.Webcil.dll"
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+
+      <!-- For .NETFramework we need all the dependent assemblies too, so copy from the publish folder -->
+      <FilesToPackage Include="$(OutputPath)$(NetFrameworkToolCurrent)\*"
+                      TargetPath="tasks\$(NetFrameworkToolCurrent)" />
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="ManagedToNativeGenerator" Runtime="NET" TaskFactory="TaskHostFactory" AssemblyFile="$(TargetPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'Mono'" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
+
   <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
       <ItemGroup>
         <WasmPInvokeAssembly Include="$(AssembliesScanPath)*.dll" />

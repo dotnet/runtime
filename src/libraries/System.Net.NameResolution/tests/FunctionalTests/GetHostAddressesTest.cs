@@ -249,6 +249,7 @@ namespace System.Net.NameResolution.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124751", TestPlatforms.Android)]
         public async Task DnsGetHostAddresses_LocalhostSubdomain_RespectsAddressFamily(AddressFamily addressFamily)
         {
             // Skip IPv6 test if OS doesn't support it.
@@ -283,6 +284,7 @@ namespace System.Net.NameResolution.Tests
         // 3. Different systems configure localhost differently
         // The key requirement is that localhost subdomains return loopback addresses.
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126456", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst | TestPlatforms.Android)]
         public async Task DnsGetHostAddresses_LocalhostAndSubdomain_BothReturnLoopback()
         {
             IPAddress[] localhostAddresses = Dns.GetHostAddresses("localhost");

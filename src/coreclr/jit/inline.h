@@ -636,7 +636,7 @@ struct LateDevirtualizationInfo
 {
     CORINFO_METHOD_HANDLE  methodHnd;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
-    InlineContext*         inlinersContext;
+    ILLocation             ilLocation;
 };
 
 // InlArgInfo describes inline candidate argument properties.

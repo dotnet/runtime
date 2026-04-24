@@ -181,6 +181,7 @@ namespace System.Text.Json
         public static System.Text.Json.JsonNamingPolicy CamelCase { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy KebabCaseLower { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy KebabCaseUpper { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy PascalCase { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy SnakeCaseLower { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy SnakeCaseUpper { get { throw null; } }
         public abstract string ConvertName(string name);
@@ -586,7 +587,9 @@ namespace System.Text.Json
         public System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Reset() { }
         public void Reset(System.Buffers.IBufferWriter<byte> bufferWriter) { }
+        public void Reset(System.Buffers.IBufferWriter<byte> bufferWriter, System.Text.Json.JsonWriterOptions options) { }
         public void Reset(System.IO.Stream utf8Json) { }
+        public void Reset(System.IO.Stream utf8Json, System.Text.Json.JsonWriterOptions options) { }
         public void WriteBase64String(System.ReadOnlySpan<byte> utf8PropertyName, System.ReadOnlySpan<byte> bytes) { }
         public void WriteBase64String(System.ReadOnlySpan<char> propertyName, System.ReadOnlySpan<byte> bytes) { }
         public void WriteBase64String(string propertyName, System.ReadOnlySpan<byte> bytes) { }
@@ -1050,7 +1053,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonExtensionDataAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Interface | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonIgnoreAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonIgnoreAttribute() { }
@@ -1078,6 +1081,14 @@ namespace System.Text.Json.Serialization
         SnakeCaseUpper = 3,
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
+        PascalCase = 6,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=false)]
+    public partial class JsonNamingPolicyAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonNamingPolicyAttribute(System.Text.Json.Serialization.JsonKnownNamingPolicy namingPolicy) { }
+        protected JsonNamingPolicyAttribute(System.Text.Json.JsonNamingPolicy namingPolicy) { }
+        public System.Text.Json.JsonNamingPolicy NamingPolicy { get { throw null; } }
     }
     public enum JsonKnownReferenceHandler
     {

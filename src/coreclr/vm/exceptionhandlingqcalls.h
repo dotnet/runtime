@@ -18,3 +18,4 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, unsigned int* u
 #endif // DACCESS_COMPILE
 
 #endif // EXCEPTION_HANDLING_QCALLS_H
+

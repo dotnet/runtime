@@ -40,12 +40,6 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task CanCompileReferencesWithResourcesWithMcs()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
         public Task CanCompileTestCaseWithCsc()
         {
             return RunTest(allowMissingWarnings: true);
@@ -53,12 +47,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 
         [Fact]
         public Task CanCompileTestCaseWithDebugPdbs()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task CanCompileTestCaseWithMcs()
         {
             return RunTest(allowMissingWarnings: true);
         }
@@ -101,6 +89,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 
         [Fact]
         public Task VerifyDefineAttributeBehavior()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
+        public Task VerifyKeptAttributeAttributeWorks()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
+        public Task VerifyLocalsAreChanged()
         {
             return RunTest(allowMissingWarnings: true);
         }

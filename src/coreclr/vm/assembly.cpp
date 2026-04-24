@@ -440,7 +440,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
     AppDomain* pDomain = ::GetAppDomain();
 
-    NewHolder<DomainAssembly> pDomainAssembly;
     Assembly* pAssem;
     BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
 
@@ -484,15 +483,14 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
             pLoaderAllocator.SuppressRelease();
         }
 
-        // Create a domain assembly
-        pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator, pamTracker);
-        pAssem = pDomainAssembly->GetAssembly();
+        // Create the assembly
+        pAssem = Assembly::Create(pPEAssembly, pamTracker, pLoaderAllocator);
         pAssem->m_isDynamic = true;
         if (pAssem->IsCollectible())
         {
             // We add the assembly to the LoaderAllocator only when we are sure that it can be added
             // and won't be deleted in case of a concurrent load from the same ALC
-            ((AssemblyLoaderAllocator *)(LoaderAllocator *)pLoaderAllocator)->AddDomainAssembly(pDomainAssembly);
+            ((AssemblyLoaderAllocator *)(LoaderAllocator *)pLoaderAllocator)->AddAssembly(pAssem);
         }
     }
 
@@ -525,7 +523,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
         // Cannot fail after this point
 
-        pDomainAssembly.SuppressRelease();
         pamTracker->SuppressRelease();
 
         // Once we reach this point, the loader allocator lifetime is controlled by the Assembly object.
@@ -544,25 +541,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     RETURN pRetVal;
 } // Assembly::CreateDynamic
 
-void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pDomainAssembly));
-    }
-    CONTRACTL_END;
-
-    GetModule()->SetDomainAssembly(pDomainAssembly);
-} // Assembly::SetDomainAssembly
-
 #endif // #ifndef DACCESS_COMPILE
-
-DomainAssembly *Assembly::GetDomainAssembly()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetModule()->GetDomainAssembly();
-}
 
 PTR_LoaderHeap Assembly::GetLowFrequencyHeap()
 {
@@ -1063,8 +1042,6 @@ enum CorEntryPointType
 {
     EntryManagedMain,                   // void/int/uint Main(string[])
     EntryCrtMain,                       // void/int/uint Main(void)
-    EntryManagedMainAsync,              // Task<int> Main(String[])
-    EntryManagedMainAsyncVoid,          // Task Main(String[])
 };
 
 void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
@@ -1130,29 +1107,6 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
     if (FAILED(sig.GetElemType(&nReturnType)))
         ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
 
-#if defined(TARGET_BROWSER)
-    // WASM-TODO: this validation is too trivial, but that's OK for now because we plan to remove browser specific hack later.
-    // https://github.com/dotnet/runtime/issues/121064
-    if (nReturnType == ELEMENT_TYPE_GENERICINST)
-    {
-        if (nParamCount > 1)
-            ThrowMainMethodException(pFD, IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN);
-
-        // this is Task<int> Main(String[] args)
-        *pType = EntryManagedMainAsync;
-        return;
-    }
-    if (nReturnType == ELEMENT_TYPE_CLASS)
-    {
-        if (nParamCount > 1)
-            ThrowMainMethodException(pFD, IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN);
-
-        // this is Task Main(String[] args)
-        *pType = EntryManagedMainAsyncVoid;
-        return;
-    }
-#endif // TARGET_BROWSER
-
     if ((nReturnType != ELEMENT_TYPE_VOID) && (nReturnType != ELEMENT_TYPE_I4) && (nReturnType != ELEMENT_TYPE_U4))
          ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
 
@@ -1182,12 +1136,12 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
 struct Param
 {
     MethodDesc *pFD;
-    short numSkipArgs;
     INT32 *piRetVal;
     PTRARRAYREF *stringArgs;
     CorEntryPointType EntryType;
     DWORD cCommandArgs;
     LPWSTR *wzArgs;
+    bool captureException;
 } param;
 
 #if defined(TARGET_BROWSER)
@@ -1196,78 +1150,46 @@ extern "C" void SystemJS_ResolveMainPromise(int exitCode);
 
 static void RunMainInternal(Param* pParam)
 {
-    MethodDescCallSite  threadStart(pParam->pFD);
-
     PTRARRAYREF StrArgArray = NULL;
     GCPROTECT_BEGIN(StrArgArray);
 
-    // Build the parameter array and invoke the method.
-    if (pParam->EntryType == EntryManagedMain
-        || pParam->EntryType == EntryManagedMainAsync
-        || pParam->EntryType == EntryManagedMainAsyncVoid)
-    {
-        if (pParam->stringArgs == NULL) {
-            // Allocate a COM Array object with enough slots for cCommandArgs - 1
-            StrArgArray = (PTRARRAYREF) AllocateObjectArray((pParam->cCommandArgs - pParam->numSkipArgs), g_pStringClass);
+    StrArgArray = *pParam->stringArgs;
 
-            // Create Stringrefs for each of the args
-            for (DWORD arg = pParam->numSkipArgs; arg < pParam->cCommandArgs; arg++) {
-                STRINGREF sref = StringObject::NewString(pParam->wzArgs[arg]);
-                StrArgArray->SetAt(arg - pParam->numSkipArgs, (OBJECTREF) sref);
-            }
-        }
-        else
-            StrArgArray = *pParam->stringArgs;
-    }
+    pParam->pFD->EnsureActive();
+    PCODE entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
 
-    ARG_SLOT stackVar = ObjToArgSlot(StrArgArray);
+    BOOL hasReturnValue = !pParam->pFD->IsVoid();
+    PTRARRAYREF* pArgument = (pParam->EntryType == EntryManagedMain) ? &StrArgArray : NULL;
+    INT32* pReturnValue = hasReturnValue ? pParam->piRetVal : NULL;
 
-    if (pParam->pFD->IsVoid())
+    if (!hasReturnValue)
     {
         // Set the return value to 0 instead of returning random junk
         *pParam->piRetVal = 0;
-        threadStart.Call(&stackVar);
-#if defined(TARGET_BROWSER)
-        SystemJS_ResolveMainPromise(*pParam->piRetVal);
-#endif // TARGET_BROWSER
     }
-// WASM-TODO: remove this
-// https://github.com/dotnet/runtime/issues/121064
-#if defined(TARGET_BROWSER)
-    else if (pParam->EntryType == EntryManagedMainAsync)
+
+    if (g_pEnvironmentCallEntryPointMethodDesc == nullptr)
     {
-        *pParam->piRetVal = 0;
-        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
-        
-        OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
-        ARG_SLOT stackVarWrapper[] =
-        {
-            ObjToArgSlot(exitCodeTask)
-        };
-        mainWrapper.Call(stackVarWrapper);
+        g_pEnvironmentCallEntryPointMethodDesc = CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
     }
-    else if (pParam->EntryType == EntryManagedMainAsyncVoid)
+
+    UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
+    callEntryPoint.InvokeThrowing(
+        static_cast<INT_PTR>(entryPoint),
+        pArgument,
+        pReturnValue,
+        CLR_BOOL_ARG(pParam->captureException));
+
+    if (hasReturnValue)
     {
-        *pParam->piRetVal = 0;
-        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT_VOID);
-        
-        OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
-        ARG_SLOT stackVarWrapper[] =
-        {
-            ObjToArgSlot(exitCodeTask)
-        };
-        mainWrapper.Call(stackVarWrapper);
-    }
-#endif // TARGET_BROWSER
-    else
-    {
-        // Call the main method
-        *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
         SetLatchedExitCode(*pParam->piRetVal);
-#if defined(TARGET_BROWSER)
-        SystemJS_ResolveMainPromise(*pParam->piRetVal);
-#endif // TARGET_BROWSER
     }
+
+#if defined(TARGET_BROWSER)
+    // if the managed main was async, the first call to SystemJS_ResolveMainPromise will be ignored
+    // and the second call will come from AsyncHelpers.HandleAsyncEntryPoint
+    SystemJS_ResolveMainPromise(*pParam->piRetVal);
+#endif // TARGET_BROWSER
 
     GCPROTECT_END();
 
@@ -1276,9 +1198,9 @@ static void RunMainInternal(Param* pParam)
 
 /* static */
 HRESULT RunMain(MethodDesc *pFD ,
-                short numSkipArgs,
                 INT32 *piRetVal,
-                PTRARRAYREF *stringArgs /*=NULL*/)
+                PTRARRAYREF *stringArgs,
+                bool captureException)
 {
     STATIC_CONTRACT_THROWS;
     _ASSERTE(piRetVal);
@@ -1321,12 +1243,12 @@ HRESULT RunMain(MethodDesc *pFD ,
     Param param;
 
     param.pFD = pFD;
-    param.numSkipArgs = numSkipArgs;
     param.piRetVal = piRetVal;
     param.stringArgs = stringArgs;
     param.EntryType = EntryType;
     param.cCommandArgs = cCommandArgs;
     param.wzArgs = wzArgs;
+    param.captureException = captureException;
 
     EX_TRY_NOCATCH(Param *, pParam, &param)
     {
@@ -1386,15 +1308,11 @@ void RunManagedStartup()
     }
     CONTRACTL_END;
 
-    MethodDescCallSite managedStartup(METHOD__STARTUP_HOOK_PROVIDER__MANAGED_STARTUP);
-
-    ARG_SLOT args[1];
-    args[0] = PtrToArgSlot(s_wszDiagnosticStartupHookPaths);
-
-    managedStartup.Call(args);
+    UnmanagedCallersOnlyCaller managedStartup(METHOD__STARTUP_HOOK_PROVIDER__MANAGED_STARTUP);
+    managedStartup.InvokeThrowing(s_wszDiagnosticStartupHookPaths);
 }
 
-INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads)
+INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, bool captureException)
 {
     CONTRACTL
     {
@@ -1458,7 +1376,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
             RunManagedStartup();
 
-            hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
+            hr = RunMain(pMeth, &iRetVal, stringArgs, captureException);
 
             Thread::CleanUpForManagedThreadInNative(pThread);
         }
@@ -1470,8 +1388,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
     // AppDomain.ExecuteAssembly()
     if (pMeth) {
 #if !defined(TARGET_BROWSER)
-        if (waitForOtherThreads)
-            RunMainPost();
+        RunMainPost();
 #endif // !TARGET_BROWSER
     }
     else {
@@ -1572,36 +1489,6 @@ MethodDesc* Assembly::GetEntryPoint()
     {
         m_pEntryPoint = pModule->FindMethod(mdEntry);
     }
-
-#if defined(TARGET_BROWSER)
-    // WASM-TODO: this lookup by name is too trivial, but that's OK for now because we plan to remove browser specific hack later.
-    // https://github.com/dotnet/runtime/issues/121064
-    if (m_pEntryPoint)
-    {
-        // if this is async method we need to find the original method, instead of the roslyn generated wrapper
-        LPCUTF8 szName = m_pEntryPoint->GetName();
-        size_t nameLength = strlen(szName);
-        LPCUTF8 szEnd = szName + nameLength - 1;
-        DWORD dwAttrs = m_pEntryPoint->GetAttrs();
-        if (IsMdSpecialName(dwAttrs) && (*szName == '<') && (*szEnd == '>'))
-        {
-            // look for "<Name>$"
-            LPUTF8 pszAsyncName = (LPUTF8)new char[nameLength + 2];
-            snprintf (pszAsyncName, nameLength + 2, "%s$", szName);
-            m_pEntryPoint = MemberLoader::FindMethodByName(pInitialMT, pszAsyncName);
-
-            if (m_pEntryPoint == NULL)
-            {
-                // look for "Name" by trimming the first and last character of "<Name>"
-                pszAsyncName [nameLength - 1] = '\0';
-                m_pEntryPoint = MemberLoader::FindMethodByName(pInitialMT, pszAsyncName + 1);
-            }
-
-            delete[] pszAsyncName;
-        }
-    }
-#endif // TARGET_BROWSER
-
     RETURN m_pEntryPoint;
 }
 
@@ -1994,21 +1881,6 @@ Assembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
-    else
-    {
-        if (m_pClassLoader.IsValid())
-        {
-            m_pClassLoader->EnumMemoryRegions(flags);
-        }
-        if (m_pModule.IsValid())
-        {
-            m_pModule->EnumMemoryRegions(flags, true);
-        }
-        if (m_pPEAssembly.IsValid())
-        {
-            m_pPEAssembly->EnumMemoryRegions(flags);
-        }
-    }
 }
 
 #else // DACCESS_COMPILE
@@ -2371,9 +2243,9 @@ void Assembly::Begin()
 
     {
         AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
-        AppDomain::GetCurrentDomain()->AddAssembly(GetDomainAssembly());
+        AppDomain::GetCurrentDomain()->AddAssembly(this);
     }
-    // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
+    // Make it possible to find this Assembly object from associated BINDER_SPACE::Assembly.
     RegisterWithHostAssembly();
 }
 
@@ -2576,12 +2448,12 @@ BOOL Assembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     if(this->ShouldNotifyDebugger() && !(flags & ATTACH_MODULE_LOAD))
     {
         result = result ||
-            this->GetModule()->NotifyDebuggerLoad(GetDomainAssembly(), flags, attaching);
+            this->GetModule()->NotifyDebuggerLoad(this, flags, attaching);
     }
 
     if( ShouldNotifyDebugger())
     {
-           result |= m_pModule->NotifyDebuggerLoad(GetDomainAssembly(), ATTACH_MODULE_LOAD, attaching);
+           result |= m_pModule->NotifyDebuggerLoad(this, ATTACH_MODULE_LOAD, attaching);
            SetDebuggerNotified();
     }
 
@@ -2599,7 +2471,7 @@ void Assembly::NotifyDebuggerUnload()
     // a previous load event (such as if debugger attached after the modules was loaded).
     this->GetModule()->NotifyDebuggerUnload();
 
-    g_pDebugInterface->UnloadAssembly(GetDomainAssembly());
+    g_pDebugInterface->UnloadAssembly(this);
 }
 
 FriendAssemblyDescriptor::FriendAssemblyDescriptor()

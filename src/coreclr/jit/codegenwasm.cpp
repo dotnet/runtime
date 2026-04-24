@@ -10,17 +10,27 @@
 #include "regallocwasm.h"
 #include "fgwasm.h"
 
+static const int LINEAR_MEMORY_INDEX = 0;
+
 #ifdef TARGET_64BIT
+static const instruction INS_I_load  = INS_i64_load;
+static const instruction INS_I_store = INS_i64_store;
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
+static const instruction INS_I_and   = INS_i64_and;
+static const instruction INS_I_eqz   = INS_i64_eqz;
 static const instruction INS_I_mul   = INS_i64_mul;
 static const instruction INS_I_sub   = INS_i64_sub;
 static const instruction INS_I_le_u  = INS_i64_le_u;
 static const instruction INS_I_ge_u  = INS_i64_ge_u;
 static const instruction INS_I_gt_u  = INS_i64_gt_u;
 #else  // !TARGET_64BIT
+static const instruction INS_I_load  = INS_i32_load;
+static const instruction INS_I_store = INS_i32_store;
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
+static const instruction INS_I_and   = INS_i32_and;
+static const instruction INS_I_eqz   = INS_i32_eqz;
 static const instruction INS_I_mul   = INS_i32_mul;
 static const instruction INS_I_sub   = INS_i32_sub;
 static const instruction INS_I_le_u  = INS_i32_le_u;
@@ -28,10 +38,62 @@ static const instruction INS_I_ge_u  = INS_i32_ge_u;
 static const instruction INS_I_gt_u  = INS_i32_gt_u;
 #endif // !TARGET_64BIT
 
+//------------------------------------------------------------------------
+// ensureCurrentFuncIsUnwindable: ensure we set up an unwindable frame
+//    for the current function or funclet.
+//
+void CodeGen::ensureCurrentFuncIsUnwindable()
+{
+    FuncInfoDsc* const func = m_compiler->funCurrentFunc();
+    func->ensureUnwindableFrame(m_compiler);
+}
+
+//------------------------------------------------------------------------
+// GetStackPointerRegIndex: get the Wasm local index for the stack pointer
+//
+unsigned CodeGen::GetStackPointerRegIndex() const
+{
+    regNumber spReg = GetStackPointerReg(m_compiler->funCurrentFuncIdx());
+    assert(spReg != REG_NA);
+    return WasmRegToIndex(spReg);
+}
+
+//------------------------------------------------------------------------
+// GetFramePointerRegIndex: get the Wasm local index for the frame pointer
+//
+unsigned CodeGen::GetFramePointerRegIndex() const
+{
+    regNumber fpReg = GetFramePointerReg(m_compiler->funCurrentFuncIdx());
+    assert(fpReg != REG_NA);
+    return WasmRegToIndex(fpReg);
+}
+
+//------------------------------------------------------------------------
+// genMarkLabelsForCodegen: mark labels for codegen
+//
 void CodeGen::genMarkLabelsForCodegen()
 {
-    // No work needed here for now.
-    // We mark labels as needed in genEmitStartBlock.
+    assert(!m_compiler->fgSafeBasicBlockCreation);
+
+    JITDUMP("Mark labels for codegen\n");
+
+#ifdef DEBUG
+    // No label flags should be set before this.
+    for (BasicBlock* const block : m_compiler->Blocks())
+    {
+        assert(!block->HasFlag(BBF_HAS_LABEL));
+    }
+#endif // DEBUG
+
+    // Mark all the funclet boundaries.
+    //
+    for (FuncInfoDsc* const func : m_compiler->Funcs())
+    {
+        BasicBlock* const firstBlock = func->GetStartBlock(m_compiler);
+        firstBlock->SetFlags(BBF_HAS_LABEL);
+
+        JITDUMP("  " FMT_BB " : %s begin\n", firstBlock->bbNum, (func->funKind == FUNC_ROOT) ? "method" : "funclet");
+    }
 }
 
 //------------------------------------------------------------------------
@@ -39,9 +101,13 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
+    FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
+    assert(func->funWasmLocalDecls != nullptr);
+
     unsigned localsCount = 0;
-    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, WasmLocalsDecls.size());
-    for (WasmLocalsDecl& decl : WasmLocalsDecls)
+    assert(m_compiler->funCurrentFuncIdx() == 0);
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, func->funWasmLocalDecls->size());
+    for (FuncInfoDsc::WasmLocalsDecl& decl : *func->funWasmLocalDecls)
     {
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
@@ -51,7 +117,7 @@ void CodeGen::genBeginFnProlog()
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: no-op since we don't need to save anything.
 //
-void CodeGen::genPushCalleeSavedRegisters()
+void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
 }
 
@@ -67,12 +133,14 @@ void CodeGen::genPushCalleeSavedRegisters()
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
     assert(m_compiler->compGeneratingProlog);
-    regNumber spReg = GetStackPointerReg();
+    regNumber spReg = GetStackPointerReg(m_compiler->funCurrentFuncIdx());
     if (spReg == REG_NA)
     {
         assert(!isFramePointerUsed());
         return;
     }
+
+    m_compiler->unwindAllocStack(frameSize);
 
     // TODO-WASM: reverse pinvoke frame allocation
     //
@@ -92,24 +160,65 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns(INS_I_sub);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, spLclIndex);
     }
-    regNumber fpReg = GetFramePointerReg();
+    regNumber fpReg = GetFramePointerReg(m_compiler->funCurrentFuncIdx());
     if ((fpReg != REG_NA) && (fpReg != spReg))
     {
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, spLclIndex);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, WasmRegToIndex(fpReg));
+    }
+
+    FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
+
+    if (func->needsUnwindableFrame)
+    {
+        assert(m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM);
+        assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
+
+        // fp[0] == functionIndex
+        //
+        // TODO-WASM: Save the actual function index. For now we save a fixed constant
+        //
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xBBBB);
+        GetEmitter()->emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaWasmFunctionIndex, 0);
     }
 }
 
 //------------------------------------------------------------------------
 // genEnregisterOSRArgsAndLocals: enregister OSR args and locals.
 //
-void CodeGen::genEnregisterOSRArgsAndLocals()
+void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
 {
     unreached(); // OSR not supported on WASM.
 }
 
 //------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Not called for WASM without OSR support.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
+}
+
+//------------------------------------------------------------------------
 // genHomeRegisterParams: place register arguments into their RA-assigned locations.
+//
+// We can't actually do this task here because the prolog will overflow. Instead, we
+// do this later on and inject all the relevant code into the first basic block.
+// See genHomeRegisterParamsOutsideProlog, below.
+//
+// Arguments:
+//    initReg            - Unused
+//    initRegStillZeroed - Unused
+//
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
+{
+    // Intentionally empty
+}
+
+//------------------------------------------------------------------------
+// genHomeRegisterParamsOutsideProlog: place register arguments into their RA-assigned locations.
 //
 // For the WASM RA, we have a much simplified (compared to LSRA) contract of:
 // - If an argument is live on entry in a set of registers, then the RA will
@@ -119,14 +228,9 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 // The main motivation for this (along with the obvious CQ implications) is
 // obviating the need to adapt the general "RegGraph"-based algorithm to
 // !HAS_FIXED_REGISTER_SET constraints (no reg masks).
-//
-// Arguments:
-//    initReg            - Unused
-//    initRegStillZeroed - Unused
-//
-void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
+void CodeGen::genHomeRegisterParamsOutsideProlog()
 {
-    JITDUMP("*************** In genHomeRegisterParams()\n");
+    JITDUMP("*************** In genHomeRegisterParamsOutsideProlog()\n");
 
     auto spillParam = [this](unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment) {
         assert(segment.IsPassedInRegister());
@@ -147,7 +251,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                 storeType = genActualType(varDsc);
             }
 
-            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(storeType),
                                     WasmRegToIndex(segment.GetRegister()));
             GetEmitter()->emitIns_S(ins_Store(storeType), emitActualTypeSize(storeType), lclNum, offset);
@@ -234,28 +338,79 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 {
 }
 
+//------------------------------------------------------------------------
+// genFuncletProlog: codegen for funclet prologs.
+//
+// Arguments:
+//   block - the funclet entry block
+//
 void CodeGen::genFuncletProlog(BasicBlock* block)
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In genFuncletProlog()\n");
-    }
-#endif
+    assert(m_compiler->bbIsFuncletBeg(block));
+    JITDUMP("*************** In genFuncletProlog()\n");
 
-    NYI_WASM("genFuncletProlog");
+    // Local sig for the funclet
+    //
+    unsigned           localsCount  = 0;
+    unsigned           funcletIndex = m_compiler->funCurrentFuncIdx();
+    FuncInfoDsc* const func         = m_compiler->funGetFunc(funcletIndex);
+    assert(funcletIndex > 0);
+    assert(func->funWasmLocalDecls != nullptr);
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, func->funWasmLocalDecls->size());
+    for (FuncInfoDsc::WasmLocalsDecl& decl : *func->funWasmLocalDecls)
+    {
+        GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
+        localsCount += decl.Count;
+    }
+
+    // All the funclet params are used from their home registers, so nothing
+    // needs homing here.
+    //
+    // If the funclet needs to be unwindable (contains any calls), set up
+    // what we need.
+    //
+    if (func->needsUnwindableFrame)
+    {
+        // We need two stack slots for the function index and for the funclet virtual IP.
+        // We also need to keep SP aligned.
+        //
+        size_t slotSize  = 2 * TARGET_POINTER_SIZE;
+        size_t frameSize = AlignUp(slotSize, STACK_ALIGN);
+        m_compiler->unwindAllocStack((unsigned)frameSize);
+
+        // Move SP
+        //
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, frameSize);
+        GetEmitter()->emitIns(INS_I_sub);
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
+
+        // TODO-WASM: Save the funclet index. For now we save a fixed constant
+        //
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xAAAA);
+        GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+    }
 }
 
-void CodeGen::genFuncletEpilog()
+//------------------------------------------------------------------------
+// genFuncletEpilog: codegen for funclet epilogs.
+//
+// Arguments:
+//   block - funclet epilog block
+//
+void CodeGen::genFuncletEpilog(BasicBlock* block)
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In genFuncletEpilog()\n");
-    }
-#endif
+    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
-    NYI_WASM("genFuncletEpilog");
+    if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+    {
+        instGen(INS_end);
+    }
+    else
+    {
+        instGen(INS_return);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -304,7 +459,7 @@ unsigned CodeGen::findTargetDepth(BasicBlock* targetBlock)
         }
         else
         {
-            // blocks bind to end
+            // blocks and trys bind to end
             match = ii->End();
         }
 
@@ -314,8 +469,18 @@ unsigned CodeGen::findTargetDepth(BasicBlock* targetBlock)
         }
     }
 
+#ifdef DEBUG
     JITDUMP("Could not find " FMT_BB "[%u]%s in active control stack\n", targetBlock->bbNum, targetIndex,
             isBackedge ? " (backedge)" : "");
+    JITDUMP("Current stack is\n");
+
+    for (int i = 0; i < h; i++)
+    {
+        WasmInterval* const ii = wasmControlFlowStack->Top(i);
+        JITDUMPEXEC(ii->Dump());
+    }
+#endif
+
     assert(!"Can't find target in control stack");
 
     return ~0;
@@ -355,11 +520,70 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
         {
             if (interval->IsLoop())
             {
-                instGen(INS_loop);
+                GetEmitter()->emitIns_BlockTy(INS_loop);
+            }
+            else if (interval->IsTry())
+            {
+                // Handle try_table emission here, since there may be blocks nested inside.
+                // (that is, we can't wait until we do codegen the block IR)
+                //
+                LIR::Range&    blockRange = LIR::AsRange(block);
+                GenTree* const jTrue      = blockRange.LastNode();
+                assert(jTrue->OperIs(GT_WASM_JEXCEPT));
+
+                // Empty stack sig, one catch clause
+                //
+                GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
+
+                // Post-catch continuation dispatch block is the true target.
+                // False target should be the next block.
+                //
+                assert(block->GetFalseTarget() == block->Next());
+                BasicBlock* const target = block->GetTrueTarget();
+                unsigned          depth  = findTargetDepth(target);
+                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, depth, target);
             }
             else
             {
-                instGen(INS_block);
+                assert(interval->IsBlock());
+
+                bool isTryWrapper = false;
+
+#if FALSE
+                // TODO-WASM: block sig when we emit catch_ref
+
+                // If this interval exactly wraps a try, it represents the branch to the
+                // catch handlers. We need to emit an exnref block sig
+                //
+                // (TODO, perhaps ... detect this earlier and make it an interval property)
+                if ((wasmCursor + 1) < m_compiler->fgWasmIntervals->size())
+                {
+                    WasmInterval* nextInterval = m_compiler->fgWasmIntervals->at(wasmCursor + 1);
+                    if (nextInterval->IsTry())
+                    {
+                        // we should always see a wrapping block because of the
+                        // control flow added by fgWasmEhFlow
+                        //
+                        if ((nextInterval->Start() == interval->Start()) && (nextInterval->End() == interval->End()))
+                        {
+                            isTryWrapper = true;
+                        }
+                        else
+                        {
+                            assert(!"Expected block to wrap the try");
+                        }
+                    }
+                }
+#endif
+
+                if (isTryWrapper)
+                {
+                    GetEmitter()->emitIns_BlockTy(INS_block, WasmValueType::ExnRef);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_BlockTy(INS_block);
+                }
             }
 
             wasmCursor++;
@@ -425,7 +649,9 @@ void CodeGen::WasmProduceReg(GenTree* node)
 //
 // If the operand is a candidate, we use that candidate's current register.
 // Otherwise it must have been allocated into a temporary register initialized
-// in 'WasmProduceReg'.
+// in 'WasmProduceReg'. To do this, call SetMultiplyUsed(treeNode) during
+// lowering and ensure that regalloc is updated to call 'ConsumeTemporaryRegForOperand'
+// on the node(s) that need to be used multiple times.
 //
 // Arguments:
 //    operand - The operand node
@@ -522,6 +748,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForStoreLclVar(treeNode->AsLclVar());
             break;
 
+        case GT_PHYSREG:
+            genCodeForPhysReg(treeNode->AsPhysReg());
+            break;
+
         case GT_JTRUE:
             genCodeForJTrue(treeNode->AsOp());
             break;
@@ -591,12 +821,20 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             GetEmitter()->emitIns(INS_drop);
             break;
 
+        case GT_LCLHEAP:
+            genLclHeap(treeNode);
+            break;
+
         case GT_INDEX_ADDR:
             genCodeForIndexAddr(treeNode->AsIndexAddr());
             break;
 
         case GT_LEA:
             genLeaInstruction(treeNode->AsAddrMode());
+            break;
+
+        case GT_STORE_BLK:
+            genCodeForStoreBlk(treeNode->AsBlk());
             break;
 
         case GT_MEMORYBARRIER:
@@ -609,8 +847,27 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genIntrinsic(treeNode->AsIntrinsic());
             break;
 
+        case GT_WASM_JEXCEPT:
+            // no codegen needed here.
+            break;
+
+        case GT_WASM_THROW_REF:
+            // TODO-WASM: enable when we emit catch_ref instead of catch_all
+            // GetEmitter()->emitIns(INS_throw_ref);
+            GetEmitter()->emitIns(INS_unreachable);
+            break;
+
+        case GT_CATCH_ARG:
+            genCatchArg(treeNode);
+            break;
+
         default:
 #ifdef DEBUG
+            if (JitConfig.JitWasmNyiToR2RUnsupported())
+            {
+                NYI_WASM("Opcode not implemented");
+            }
+
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
 #else
             NYI_WASM("Opcode not implemented");
@@ -691,6 +948,20 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 
         GetEmitter()->emitIns_J(INS_label, EA_4BYTE, depth, caseTarget);
     }
+}
+
+//------------------------------------------------------------------------
+// genCatchArg: emit code for GT_CATCH_ARG
+//
+// Arguments:
+//    treeNode - catch arg node
+//
+void CodeGen::genCatchArg(GenTree* treeNode)
+{
+    assert(treeNode->OperIs(GT_CATCH_ARG));
+    // The catch arg is passed as the 3rd parameter, so has Wasm local index 2.
+    GetEmitter()->emitIns_I(INS_local_get, EA_GCREF, 2);
+    WasmProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -974,11 +1245,39 @@ void CodeGen::genFloatToIntCast(GenTree* tree)
 //
 // Notes:
 //    Handles casts from TYP_INT/TYP_LONG to TYP_FLOAT/TYP_DOUBLE.
-//    Currently not implemented (NYI_WASM).
 //
 void CodeGen::genIntToFloatCast(GenTree* tree)
 {
-    NYI_WASM("genIntToFloatCast");
+    assert(tree->OperIs(GT_CAST));
+    assert(!tree->gtOverflow());
+
+    GenTreeCast* cast     = tree->AsCast();
+    var_types    toType   = tree->TypeGet();
+    var_types    fromType = genActualType(cast->CastOp()->TypeGet());
+    instruction  ins      = INS_none;
+
+    genConsumeOperands(cast);
+
+    switch (PackTypes(toType, fromType))
+    {
+        case PackTypes(TYP_FLOAT, TYP_INT):
+            ins = cast->IsUnsigned() ? INS_f32_convert_u_i32 : INS_f32_convert_s_i32;
+            break;
+        case PackTypes(TYP_DOUBLE, TYP_INT):
+            ins = cast->IsUnsigned() ? INS_f64_convert_u_i32 : INS_f64_convert_s_i32;
+            break;
+        case PackTypes(TYP_FLOAT, TYP_LONG):
+            ins = cast->IsUnsigned() ? INS_f32_convert_u_i64 : INS_f32_convert_s_i64;
+            break;
+        case PackTypes(TYP_DOUBLE, TYP_LONG):
+            ins = cast->IsUnsigned() ? INS_f64_convert_u_i64 : INS_f64_convert_s_i64;
+            break;
+        default:
+            unreached();
+    }
+
+    GetEmitter()->emitIns(ins);
+    WasmProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -1026,19 +1325,21 @@ void CodeGen::genFloatToFloatCast(GenTree* tree)
 //
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
+    if (treeNode->gtOverflowEx())
+    {
+        genCodeForBinaryOverflow(treeNode);
+        return;
+    }
+
     genConsumeOperands(treeNode);
 
     instruction ins;
     switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
     {
         case PackOperAndType(GT_ADD, TYP_INT):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i32_add;
             break;
         case PackOperAndType(GT_ADD, TYP_LONG):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i64_add;
             break;
         case PackOperAndType(GT_ADD, TYP_FLOAT):
@@ -1049,13 +1350,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         case PackOperAndType(GT_SUB, TYP_INT):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i32_sub;
             break;
         case PackOperAndType(GT_SUB, TYP_LONG):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i64_sub;
             break;
         case PackOperAndType(GT_SUB, TYP_FLOAT):
@@ -1066,13 +1363,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         case PackOperAndType(GT_MUL, TYP_INT):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i32_mul;
             break;
         case PackOperAndType(GT_MUL, TYP_LONG):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i64_mul;
             break;
         case PackOperAndType(GT_MUL, TYP_FLOAT):
@@ -1110,6 +1403,152 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     }
 
     GetEmitter()->emitIns(ins);
+    WasmProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForBinaryOverflow: Generate code for a binary arithmetic operator
+//   with overflow checking
+//
+// Arguments:
+//    treeNode - The binary operation for which we are generating code.
+//
+void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
+{
+    assert(treeNode->gtOverflow());
+    assert(varTypeIsIntegral(treeNode->TypeGet()));
+
+    // TODO-WASM-CQ: consider using helper calls for all these cases
+
+    genConsumeOperands(treeNode);
+
+    const bool    is64BitOp = treeNode->TypeIs(TYP_LONG);
+    InternalRegs* regs      = internalRegisters.GetAll(treeNode);
+    regNumber     op1Reg    = GetMultiUseOperandReg(treeNode->gtGetOp1());
+    regNumber     op2Reg    = GetMultiUseOperandReg(treeNode->gtGetOp2());
+
+    switch (treeNode->OperGet())
+    {
+        case GT_ADD:
+        {
+            // We require an internal register.
+            assert(regs->Count() == 1);
+            regNumber resultReg = regs->Extract();
+            assert(WasmRegToType(resultReg) == TypeToWasmValueType(treeNode->TypeGet()));
+
+            // Add and save the sum
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_add : INS_i32_add);
+            GetEmitter()->emitIns_I(INS_local_set, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+            // See if addends had the same sign. XOR leaves a non-negative result if they had the same sign.
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+
+            // TODO-WASM-CQ: consider branchless alternative here (and for sub)
+            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_ge_s : INS_i32_ge_s);
+            GetEmitter()->emitIns(INS_if);
+            {
+                // Operands have the same sign. If the sum has a different sign, then the add overflowed.
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+                GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
+                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            }
+            GetEmitter()->emitIns(INS_end);
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+            break;
+        }
+
+        case GT_SUB:
+        {
+            // We require an internal register.
+            assert(regs->Count() == 1);
+            regNumber resultReg = regs->Extract();
+            assert(WasmRegToType(resultReg) == TypeToWasmValueType(treeNode->TypeGet()));
+
+            // Subtract and save the difference
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_sub : INS_i32_sub);
+            GetEmitter()->emitIns_I(INS_local_set, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+            // See if operands had a different sign. XOR leaves a negative result if they had different signs.
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
+            GetEmitter()->emitIns(INS_if);
+            {
+                // Operands have different signs. If the difference has a different sign than op1, then the subtraction
+                // overflowed.
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+                GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
+                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            }
+            GetEmitter()->emitIns(INS_end);
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+            break;
+        }
+
+        case GT_MUL:
+        {
+            if (is64BitOp)
+            {
+                assert(!"64 bit multiply with overflow should have been transformed into a helper call by morph");
+            }
+
+            // We require an I64 internal register
+            assert(regs->Count() == 1);
+            regNumber wideReg = regs->Extract();
+            assert(WasmRegToType(wideReg) == WasmValueType::I64);
+
+            // 32 bit multiply... check by doing a 64 bit multiply and then range-checking the result
+            const bool isUnsigned = treeNode->IsUnsigned();
+            // Both operands are on the stack as I32. Drop the second, extend the first, then extend the second.
+            //
+            // TODO-WASM-CQ: consider transforming this to a (u)long multiply plus a checked cast, either in morph or
+            // lower.
+            GetEmitter()->emitIns(INS_drop);
+            GetEmitter()->emitIns(isUnsigned ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32);
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+            GetEmitter()->emitIns(isUnsigned ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32);
+            GetEmitter()->emitIns(INS_i64_mul);
+
+            // Save the wide result, and then overflow check it.
+            GetEmitter()->emitIns_I(INS_local_tee, EA_8BYTE, WasmRegToIndex(wideReg));
+
+            if (isUnsigned)
+            {
+                // For unsigned multiply, we just need to check if the result is greater than UINT32_MAX.
+                GetEmitter()->emitIns_I(INS_i64_const, EA_8BYTE, UINT32_MAX);
+                GetEmitter()->emitIns(INS_i64_gt_u);
+                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            }
+            else
+            {
+                GetEmitter()->emitIns(INS_i64_extend32_s);
+                GetEmitter()->emitIns_I(INS_local_get, EA_8BYTE, WasmRegToIndex(wideReg));
+                GetEmitter()->emitIns(INS_i64_ne);
+                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            }
+
+            // If the check succeeds, the multiplication result is in range for a 32-bit int.
+            // We just need to return the low 32 bits of the result.
+            GetEmitter()->emitIns_I(INS_local_get, EA_8BYTE, WasmRegToIndex(wideReg));
+            GetEmitter()->emitIns(INS_i32_wrap_i64);
+
+            break;
+        }
+
+        default:
+            unreached();
+            break;
+    }
+
     WasmProduceReg(treeNode);
 }
 
@@ -1156,7 +1595,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, size, is64BitOp ? INT64_MIN : INT32_MIN);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_eq : INS_i32_eq);
 
-            GetEmitter()->emitIns(is64BitOp ? INS_i64_and : INS_i32_and);
+            // Wasm relops always produce i32 results
+            //
+            GetEmitter()->emitIns(INS_i32_and);
             genJumpToThrowHlpBlk(SCK_ARITH_EXCPN);
         }
     }
@@ -1225,9 +1666,9 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->ImmedValNeedsReloc(m_compiler))
         {
-            // WASM-TODO: Generate reloc for this handle
-            ins  = INS_I_const;
-            bits = 0;
+            GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
+            WasmProduceReg(treeNode);
+            return;
         }
         else
         {
@@ -1293,6 +1734,14 @@ void CodeGen::genCodeForShift(GenTree* tree)
     // different types. The shift operand width in IR is always TYP_INT; the WASM operations have the same widths
     // for both the shift and shiftee. So the shift may need to be extended (zero-extended) for TYP_LONG.
 
+    if (treeNode->TypeIs(TYP_LONG))
+    {
+        assert(treeNode->gtGetOp2()->TypeIs(TYP_INT));
+        // Zero-extend the shift amount to 64 bits for long shifts/rotates.
+        // Wasteful if the amount was a constant, perhaps we should contain it if so.
+        GetEmitter()->emitIns(INS_i64_extend_u_i32);
+    }
+
     instruction ins;
     switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
     {
@@ -1351,6 +1800,11 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_BITCAST));
     genConsumeOperands(tree);
+
+    if (tree->gtGetOp1()->isContained())
+    {
+        NYI_WASM("Contained bitcast operands");
+    }
 
     var_types toType   = tree->TypeGet();
     var_types fromType = genActualType(tree->gtGetOp1()->TypeGet());
@@ -1449,10 +1903,9 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
     }
     else
     {
-        GetEmitter()->emitIns(INS_if);
-        // Throw helper arity is (i (sp)) -> (void).
-        // Push SP here as the arg for the call.
-        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+        GetEmitter()->emitIns_BlockTy(INS_if);
+        // Throw helpers are managed so we need to push the stack pointer before genEmitHelperCall.
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
         genEmitHelperCall(m_compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
         GetEmitter()->emitIns(INS_end);
     }
@@ -1467,7 +1920,18 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     genConsumeAddress(tree->Addr());
-    genEmitNullCheck(REG_NA);
+
+    // In some cases the indir may not fault.
+    // Tolerate these.
+    //
+    if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        genEmitNullCheck(REG_NA);
+    }
+    else
+    {
+        GetEmitter()->emitIns(INS_drop);
+    }
 }
 
 //---------------------------------------------------------------------
@@ -1519,18 +1983,37 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GenTree* const index = node->Index();
 
     assert(varTypeIsIntegral(index->TypeGet()));
+    var_types indexType = genActualType(index->TypeGet());
 
     // Generate the bounds check if necessary.
+    //
     if (node->IsBoundsChecked())
     {
-        // We need internal registers for this case.
-        NYI_WASM("GT_INDEX_ADDR with bounds check");
+        regNumber baseReg  = GetMultiUseOperandReg(base);
+        regNumber indexReg = GetMultiUseOperandReg(index);
+
+        // fetch index
+        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(index), WasmRegToIndex(indexReg));
+
+        // fetch array length
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(baseReg));
+        GetEmitter()->emitIns_I(ins_Load(TYP_INT), EA_4BYTE, node->gtLenOffset);
+
+        // If index type is long, extend array length
+        if (indexType == TYP_LONG)
+        {
+            GetEmitter()->emitIns(INS_i64_extend_u_i32);
+        }
+
+        // compare
+        GetEmitter()->emitIns(indexType == TYP_LONG ? INS_i64_ge_u : INS_i32_ge_u);
+
+        genJumpToThrowHlpBlk(SCK_RNGCHK_FAIL);
     }
 
     // Zero extend index if necessary.
-    if (genTypeSize(index->TypeGet()) < TARGET_POINTER_SIZE)
+    if (indexType != TYP_I_IMPL)
     {
-        assert(TARGET_POINTER_SIZE == 8);
         GetEmitter()->emitIns(INS_i64_extend_u_i32);
     }
 
@@ -1622,6 +2105,8 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     // Handle intrinsics that can be implemented by target-specific instructions
     instruction ins = INS_invalid;
 
+    bool canHaveMixedTypes = false;
+
     switch (PackIntrinsicAndType(treeNode->gtIntrinsicName, treeNode->TypeGet()))
     {
         case PackIntrinsicAndType(NI_System_Math_Abs, TYP_FLOAT):
@@ -1685,24 +2170,12 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             break;
 
         case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_INT):
-            ins = INS_i32_clz;
-            break;
         case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG):
-            ins = INS_i64_clz;
-            break;
-
         case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_INT):
-            ins = INS_i32_ctz;
-            break;
         case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG):
-            ins = INS_i64_ctz;
-            break;
-
         case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_INT):
-            ins = INS_i32_popcnt;
-            break;
         case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_LONG):
-            ins = INS_i64_popcnt;
+            canHaveMixedTypes = true;
             break;
 
         default:
@@ -1710,7 +2183,58 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             unreached();
     }
 
+    bool needsTruncation = false;
+    bool needsExtension  = false;
+
+    if (canHaveMixedTypes)
+    {
+        var_types treeType    = treeNode->TypeGet();
+        var_types operandType = genActualType(treeNode->gtGetOp1()->TypeGet());
+
+        needsTruncation = (operandType == TYP_LONG) && (treeType == TYP_INT);
+        needsExtension  = (operandType == TYP_INT) && (treeType == TYP_LONG);
+
+        switch (PackIntrinsicAndType(treeNode->gtIntrinsicName, operandType))
+        {
+            case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_INT):
+                ins = INS_i32_clz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG):
+                ins = INS_i64_clz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_INT):
+                ins = INS_i32_ctz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG):
+                ins = INS_i64_ctz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_INT):
+                ins = INS_i32_popcnt;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_LONG):
+                ins = INS_i64_popcnt;
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
     GetEmitter()->emitIns(ins);
+
+    if (needsTruncation)
+    {
+        GetEmitter()->emitIns(INS_i32_wrap_i64);
+    }
+    else if (needsExtension)
+    {
+        GetEmitter()->emitIns(INS_i64_extend_u_i32);
+    }
 
     WasmProduceReg(treeNode);
 }
@@ -1728,7 +2252,7 @@ void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
     unsigned lclNum    = lclAddrNode->GetLclNum();
     unsigned lclOffset = lclAddrNode->GetLclOffs();
 
-    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
     if ((lclOffset != 0) || (m_compiler->lvaFrameAddress(lclNum, &FPBased) != 0))
     {
         GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
@@ -1748,7 +2272,7 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     assert(tree->OperIs(GT_LCL_FLD));
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree);
 
-    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
     GetEmitter()->emitIns_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->GetLclNum(), tree->GetLclOffs());
     WasmProduceReg(tree);
 }
@@ -1771,8 +2295,8 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!varDsc->lvIsRegCandidate())
     {
         var_types type = varDsc->GetRegisterType(tree);
-        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
-        GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(tree), tree->GetLclNum(), 0);
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+        GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
         WasmProduceReg(tree);
     }
     else
@@ -1808,10 +2332,24 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     // enregistered locals need to be handled.
     LclVarDsc* varDsc    = m_compiler->lvaGetDesc(tree);
     regNumber  targetReg = tree->GetRegNum();
+    var_types  type      = varDsc->GetRegisterType(tree);
     assert(genIsValidReg(targetReg) && varDsc->lvIsRegCandidate());
 
-    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), WasmRegToIndex(targetReg));
+    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg));
     genUpdateLifeStore(tree, targetReg, varDsc);
+}
+
+//------------------------------------------------------------------------
+// genCodeForPhysReg: Produce code for a PHYSREG node.
+//
+// Arguments:
+//    tree - the GT_PHYSREG node
+//
+void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
+{
+    assert(genIsValidReg(tree->gtSrcReg));
+    GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(tree), WasmRegToIndex(tree->gtSrcReg));
+    WasmProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -1847,10 +2385,18 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree* data = tree->Data();
     GenTree* addr = tree->Addr();
 
+    assert(!addr->isContained());
+
     // We must consume the operands in the proper execution order,
     // so that liveness is updated appropriately.
     genConsumeAddress(addr);
     genConsumeRegs(data);
+
+    if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        regNumber addrReg = GetMultiUseOperandReg(addr);
+        genEmitNullCheck(addrReg);
+    }
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
@@ -1914,6 +2460,8 @@ void CodeGen::genCall(GenTreeCall* call)
 //
 void CodeGen::genCallInstruction(GenTreeCall* call)
 {
+    ensureCurrentFuncIsUnwindable();
+
     EmitCallParams params;
     params.isJump      = call->IsFastTailCall();
     params.hasAsyncRet = call->IsAsync();
@@ -1939,6 +2487,34 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #endif // DEBUG
     GenTree* target = getCallTarget(call, &params.methHnd);
 
+    ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
+
+    if (call->TypeIs(TYP_STRUCT))
+    {
+        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
+    }
+    else if (call->TypeIs(TYP_VOID))
+    {
+        typeStack.Push(CORINFO_WASM_TYPE_VOID);
+    }
+    else
+    {
+        typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(TypeToWasmValueType(call->TypeGet())));
+    }
+
+    for (const CallArg& arg : call->gtArgs.Args())
+    {
+        for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
+        {
+            assert(seg.IsPassedInRegister());
+            WasmValueType wvt = WasmRegToType(seg.GetRegister());
+            assert(wvt < WasmValueType::Count);
+            typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
+        }
+    }
+
+    params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
+
     if (target != nullptr)
     {
         // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
@@ -1958,7 +2534,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
         // indirection cell but we should not try to optimize.
         WellKnownArg indirectionCellArgKind = WellKnownArg::None;
-        if (!call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
         {
             indirectionCellArgKind = call->GetIndirectionCellArgKind();
         }
@@ -2009,11 +2585,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 //   callTargetReg -- ignored
 //
 // Notes:
-//   Wasm helper calls use the managed calling convention.
-//   SP arg must be first, on the stack below any arguments.
+//   Wasm helper calls typically use the managed calling convention.
+//   SP arg must be first if obligatory, on the stack below any arguments.
+//   To see whether a given helper uses the managed calling convention, check the _SIG entry for it below.
 //
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
+    ensureCurrentFuncIsUnwindable();
+
     EmitCallParams params;
 
     CORINFO_CONST_LOOKUP helperFunction = m_compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
@@ -2028,10 +2607,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     {
         params.addr = nullptr;
         assert(helperFunction.accessType == IAT_PVALUE);
-        void* pAddr = helperFunction.addr;
-
-        // Push indirection cell address onto stack for genEmitCall to dereference
-        GetEmitter()->emitIns_I(INS_i32_const_address, EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)pAddr);
 
         params.callType = EC_INDIR_R;
     }
@@ -2039,6 +2614,79 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     params.methHnd = m_compiler->eeFindHelper(helper);
     params.argSize = argSize;
     params.retSize = retSize;
+
+    CorInfoWasmType* types           = nullptr;
+    size_t           typeCount       = 0;
+    bool             helperIsManaged = false;
+
+    const bool MANAGED = true, UNMANAGED = false;
+#ifdef TARGET_64BIT
+    const CorInfoWasmType CORINFO_WASM_TYPE_I = CORINFO_WASM_TYPE_I64;
+#else
+    const CorInfoWasmType CORINFO_WASM_TYPE_I = CORINFO_WASM_TYPE_I32;
+#endif // TARGET_64BIT
+
+#define HELPER_SIG(helper_id, is_managed, ...)                                                                         \
+    case helper_id:                                                                                                    \
+    {                                                                                                                  \
+        static CorInfoWasmType helper_id##_types[] = {__VA_ARGS__};                                                    \
+        types                                      = helper_id##_types;                                                \
+        typeCount                                  = ArrLen(helper_id##_types);                                        \
+        helperIsManaged                            = is_managed;                                                       \
+        break;                                                                                                         \
+    }
+
+    switch (helper)
+    {
+        // Managed throw helpers with no args
+        HELPER_SIG(CORINFO_HELP_RNGCHKFAIL, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I /* sp */,
+                   CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_OVERFLOW, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I /* sp */,
+                   CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_THROWDIVZERO, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_THROWNULLREF, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
+        // RhpAssignRef
+        HELPER_SIG(CORINFO_HELP_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I);
+        // RhpCheckedAssignRef
+        HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I);
+        // JIT_WriteBarrierEnsureNonHeapTarget
+        HELPER_SIG(CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+        // RhpByRefAssignRef
+        HELPER_SIG(CORINFO_HELP_ASSIGN_BYREF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I);
+        // RhBulkMoveWithWriteBarrier
+        HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+
+        default:
+            JITDUMP("Helper '%s' has no hard-coded signature\n", m_compiler->eeGetMethodFullName(params.methHnd));
+            NYI_WASM("Missing signature for helper in genEmitHelperCall");
+            unreached();
+    }
+
+#undef HELPER_SIG
+
+    params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(types, typeCount);
+
+    if (helperIsManaged)
+    {
+        // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
+        assert(helperFunction.accessType == IAT_PVALUE);
+        GetEmitter()->emitAddressConstant(helperFunction.addr);
+    }
+
+    if (params.callType == EC_INDIR_R)
+    {
+        // Push the call target onto the wasm evaluation stack by dereferencing the PEP.
+        assert(helperFunction.accessType == IAT_PVALUE);
+        GetEmitter()->emitAddressConstant(helperFunction.addr);
+        GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
+    }
 
     genEmitCallWithCurrentGC(params);
 }
@@ -2218,21 +2866,455 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
     WasmProduceReg(treeNode);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+//------------------------------------------------------------------------
+// genLclHeap: Generate code for LCLHEAP
+//
+// Arguments:
+//    tree -- LCLHEAP tree
+//
+// Notes:
+//   Codegen varies depending on:
+//   * whether the size operand is a constant or not
+//   * whether the allocated memory needs to be zeroed or not (info.compInitMem)
+//
+//   If the sp is changed, the value at sp[0] must be set to zero and
+//   the frame pointer stored at sp[TARGET_POINTER_SIZE] so that the runtime unwinder
+//   can locate the base of the fixed area in the shadow stack.
+//
+void CodeGen::genLclHeap(GenTree* tree)
+{
+    assert(tree->OperIs(GT_LCLHEAP));
+    assert(m_compiler->compLocallocUsed);
+    assert(isFramePointerUsed());
+
+    bool const     needsZeroing = m_compiler->info.compInitMem;
+    GenTree* const size         = tree->AsOp()->gtOp1;
+
+    // We reserve this amount of space below any allocation for
+    // establishing unwind invariants.
+    //
+    size_t const reservedSpace = STACK_ALIGN;
+
+    // Constant LCLHEAP size operands are contained by lower.
+    //
+    if (size->isContainedIntOrIImmed())
+    {
+        size_t amount = size->AsIntCon()->gtIconVal;
+
+        // Handle zero
+        //
+        if (amount == 0)
+        {
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+        }
+        else
+        {
+            // Add in the reserved space and round up.
+            //
+            amount = AlignUp(amount + reservedSpace, STACK_ALIGN);
+
+            // Decrease the stack pointer by amount
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, amount);
+            GetEmitter()->emitIns(INS_I_sub);
+            GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
+
+            // Zero the newly allocated space if needed
+            //
+            if (needsZeroing)
+            {
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, amount);
+
+                // TODO-WASM-CQ: possibly do small fills directly
+                //
+                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+            }
+
+            // SP now points at the reserved space just below the allocation.
+            // Save the frame pointer at sp[TARGET_POINTER_SIZE].
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TARGET_POINTER_SIZE);
+
+            // Set sp[0] zero.
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+
+            // Leave the base address of the allocated region on the stack.
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace);
+            GetEmitter()->emitIns(INS_I_add);
+        }
+    }
+    else
+    {
+        bool const is64Bit = (TARGET_POINTER_SIZE == 8);
+        genConsumeReg(size);
+
+        // Extend size to pointer size, if necessary
+        if (genTypeSize(genActualType(size->TypeGet())) < TARGET_POINTER_SIZE)
+        {
+            assert(TARGET_POINTER_SIZE == 8);
+            GetEmitter()->emitIns(INS_i64_extend_u_i32);
+        }
+
+        // Fetch the internal register we reserved during RA
+        InternalRegs* regs = internalRegisters.GetAll(tree);
+        assert(regs->Count() == 1);
+        regNumber sizeReg = regs->Extract();
+        assert(WasmRegToType(sizeReg) == TypeToWasmValueType(TYP_I_IMPL));
+
+        // Save the size
+        GetEmitter()->emitIns_I(INS_local_tee, EA_PTRSIZE, WasmRegToIndex(sizeReg));
+
+        // Check for zero-sized requests
+        GetEmitter()->emitIns(INS_I_eqz);
+        GetEmitter()->emitIns_BlockTy(INS_if, is64Bit ? WasmValueType::I64 : WasmValueType::I32);
+        {
+            // If size is zero, leave a zero on the stack
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+        }
+        // Else ... nonzero size case.
+        GetEmitter()->emitIns(INS_else);
+        {
+            // Prepare to subtract from SP
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+
+            // Add reserved space and round up request size to a multiple of STACK_ALIGN
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(sizeReg));
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace + STACK_ALIGN - 1);
+            GetEmitter()->emitIns(INS_I_add);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, ~cnsval_ssize_t(STACK_ALIGN - 1));
+            GetEmitter()->emitIns(INS_I_and);
+
+            // Save the aligned size for the zeroing call below if needed.
+            if (needsZeroing)
+            {
+                GetEmitter()->emitIns_I(INS_local_tee, EA_PTRSIZE, WasmRegToIndex(sizeReg));
+            }
+
+            // Subtract rounded-up size from SP value, and save back to SP
+            GetEmitter()->emitIns(INS_I_sub);
+            GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
+
+            if (needsZeroing)
+            {
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(sizeReg));
+                // TODO-WASM-CQ: possibly do small fills directly
+                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+            }
+
+            // SP now points at the reserved space just below the allocation.
+            // Save the frame pointer at sp[TARGET_POINTER_SIZE].
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TARGET_POINTER_SIZE);
+
+            // Set sp[0] zero.
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+
+            // Return value
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace);
+            GetEmitter()->emitIns(INS_I_add);
+        }
+
+        // end if
+        GetEmitter()->emitIns(INS_end);
+    }
+
+    WasmProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreBlk: Produce code for a GT_STORE_BLK node.
+//
+// Arguments:
+//    blkOp - the node
+//
+void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
+{
+    assert(blkOp->OperIs(GT_STORE_BLK));
+
+    bool isCopyBlk  = blkOp->OperIsCopyBlkOp();
+    bool isNativeOp = blkOp->gtBlkOpKind == GenTreeBlk::BlkOpKindNativeOpcode;
+    // If the destination is on the stack we don't need a write barrier.
+    bool dstOnStack = blkOp->IsAddressNotOnHeap(m_compiler);
+
+    if (blkOp->gtBlkOpKind == GenTreeBlk::BlkOpKindLoop)
+    {
+        assert(!isCopyBlk);
+        genCodeForInitBlkLoop(blkOp);
+        genUpdateLife(blkOp);
+        return;
+    }
+
+    // If our destination is on the stack we should be handling it with a native memory.copy/fill,
+    // lowering should only select cpobj for cases where a write barrier is potentially necessary.
+    assert(!dstOnStack || isNativeOp);
+
+#ifdef DEBUG
+    // If we're not using the native memory.copy/fill opcodes and are doing cpobj, we should only
+    // see types that have GC pointers in them.
+    assert(isNativeOp || blkOp->GetLayout()->HasGCPtr());
+#endif // DEBUG
+
+    bool      nullCheckDest = (blkOp->gtFlags & GTF_IND_NONFAULTING) == 0;
+    bool      nullCheckSrc  = false;
+    GenTree*  dest          = blkOp->Addr();
+    GenTree*  src           = blkOp->Data();
+    regNumber destReg       = REG_NA;
+    regNumber srcReg        = REG_NA;
+    unsigned  destOffset    = 0;
+    unsigned  srcOffset     = 0;
+
+    genConsumeOperands(blkOp);
+
+    // If the source is a byref or pointer it will be a GT_IND that we need to unwrap to extract the
+    //  actual address we're loading from. Note that this does not apply to the destination.
+    if (src->OperIs(GT_IND))
+    {
+        nullCheckSrc = (src->gtFlags & GTF_IND_NONFAULTING) == 0;
+        src          = src->gtGetOp1();
+        // We need to match lowering and only fetch a register for src when we're expected to.
+        if (!isNativeOp || nullCheckSrc)
+        {
+            srcReg = GetMultiUseOperandReg(src);
+        }
+        assert(!src->isContained());
+    }
+    else if (src->OperIs(GT_CNS_INT, GT_INIT_VAL))
+    {
+        if (src->OperIs(GT_INIT_VAL))
+        {
+            src = src->gtGetOp1();
+        }
+        assert(!src->isContained());
+        assert(!isCopyBlk);
+        assert(isNativeOp);
+    }
+    else
+    {
+        assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+        GenTreeLclVarCommon* lclVar = src->AsLclVarCommon();
+        bool                 fpBased;
+        srcReg    = GetFramePointerReg(m_compiler->funCurrentFuncIdx());
+        srcOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
+        assert(fpBased);
+    }
+
+    if (dest->OperIs(GT_LCL_ADDR))
+    {
+        GenTreeLclVarCommon* lclVar = dest->AsLclVarCommon();
+        bool                 fpBased;
+        destReg    = GetFramePointerReg(m_compiler->funCurrentFuncIdx());
+        destOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
+        assert(fpBased);
+    }
+    else if (isNativeOp && !nullCheckDest)
+    {
+        // We need to match lowering in this specific case by not fetching a register for dest.
+    }
+    else if (isCopyBlk || nullCheckDest)
+    {
+        destReg = GetMultiUseOperandReg(dest);
+    }
+    else
+    {
+        // This should be a native memory.fill for an initblk, where
+        // the destination is not being null checked so we didn't flag
+        // dest as multiply-used and can't allocate a reg for it.
+        assert(isNativeOp);
+    }
+
+    if (nullCheckDest)
+    {
+        genEmitNullCheck(destReg);
+    }
+    if (nullCheckSrc)
+    {
+        genEmitNullCheck(srcReg);
+    }
+
+    emitter* emit = GetEmitter();
+
+    if (isNativeOp)
+    {
+        // The destination should already be on the stack.
+        // The src may not be on the evaluation stack if it was contained, in which case we need to manufacture it
+        if (src->isContained())
+        {
+            assert(isCopyBlk);
+            assert(srcReg != REG_NA);
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
+            if (srcOffset != 0)
+            {
+                emit->emitIns_I(INS_I_const, EA_PTRSIZE, srcOffset);
+                emit->emitIns(INS_I_add);
+            }
+        }
+        GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
+        GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+        genUpdateLife(blkOp);
+        return;
+    }
+
+    // TODO-WASM: Remove the need to do this somehow
+    // The dst and src may be on the evaluation stack, but we can't reliably use them, so drop them.
+    assert(!dest->isContained());
+    emit->emitIns(INS_drop);
+    if (!src->isContained())
+    {
+        emit->emitIns(INS_drop);
+    }
+
+    if (blkOp->IsVolatile())
+    {
+        // TODO-WASM: Memory barrier
+    }
+
+    ClassLayout* layout = blkOp->GetLayout();
+    unsigned     slots  = layout->GetSlotCount();
+
+    unsigned gcPtrCount = blkOp->GetLayout()->GetGCPtrCount();
+
+    unsigned i = 0;
+    while (i < slots)
+    {
+        // Copy the pointer-sized non-gc-pointer slots one at a time using regular I-sized load/store pairs,
+        //  and gc-pointer slots using a write barrier.
+        if (!layout->IsGCPtr(i))
+        {
+            // Do a pointer-sized load+store pair at the appropriate offset relative to dest and source
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(destReg));
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
+            emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
+            emit->emitIns_I(INS_I_store, EA_PTRSIZE, destOffset);
+        }
+        else
+        {
+            // Compute the actual dest/src of the slot being copied to pass to the helper.
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(destReg));
+            emit->emitIns_I(INS_I_const, EA_PTRSIZE, destOffset);
+            emit->emitIns(INS_I_add);
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
+            emit->emitIns_I(INS_I_const, EA_PTRSIZE, srcOffset);
+            emit->emitIns(INS_I_add);
+            // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and src.
+            // TODO-WASM-CQ: add a version of CORINFO_HELP_ASSIGN_BYREF that returns the updated dest/src
+            // pointers as a multi-value tuple and use it here.
+            genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+            gcPtrCount--;
+        }
+        ++i;
+        destOffset += TARGET_POINTER_SIZE;
+        srcOffset += TARGET_POINTER_SIZE;
+    }
+
+    assert(gcPtrCount == 0);
+
+    if (blkOp->IsVolatile())
+    {
+        // TODO-WASM: Memory barrier
+    }
+
+    genUpdateLife(blkOp);
+}
+
+//------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
+//
+// Arguments:
+//    blkOp - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
+{
+    // TODO-WASM: In multi-threaded wasm we will need to generate a for loop that atomically zeroes one GC ref
+    //  at a time. Right now we're single-threaded, so we can just use memory.fill.
+    assert(!WASM_THREAD_SUPPORT);
+
+    // FIXME-WASM: We're missing a null check here.
+
+    genConsumeOperands(blkOp);
+    // Emit the value constant expected by the memory.fill opcode (zero)
+    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, 0);
+    // Emit the size constant expected by the memory.copy and memory.fill opcodes
+    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
+    GetEmitter()->emitIns_I(INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
+}
+
+//------------------------------------------------------------------------
+// genCallFinally: Generate a call to a finally.
+//
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
     NYI_WASM("genCallFinally");
-    return nullptr;
 }
 
+//------------------------------------------------------------------------
+// genEHCatchRet - Generate code for an EH catch return.
+//
+// Arguments:
+//    block -- the block with BBJ_EHCATCHRET that we need to generate code for
+//
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    NYI_WASM("genEHCatchRet");
+    // TODO-WASM: return the actual ResumeIP here?
+    // The runtime expects a return value from a catch funclet,
+    // but nothing will depend on it.
+    //
+    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, 0);
 }
 
 void CodeGen::genStructReturn(GenTree* treeNode)
 {
-    NYI_WASM("genStructReturn");
+    assert(treeNode->OperIs(GT_RETURN));
+
+    GenTree* op1       = treeNode->AsOp()->GetReturnValue();
+    GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+
+    const ReturnTypeDesc& retTypeDesc = m_compiler->compRetTypeDesc;
+    const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+
+    assert(regCount <= MAX_RET_REG_COUNT);
+
+    if (actualOp1->OperIsFieldList())
+    {
+        // Go through and consume the fields in the field list so liveness is correct.
+        unsigned regIndex = 0;
+        for (GenTreeFieldList::Use& use : actualOp1->AsFieldList()->Uses())
+        {
+            genConsumeReg(use.GetNode());
+            regIndex++;
+        }
+
+        // We should only have one field in the field list, and MAX_RET_REG_COUNT is 1 on Wasm.
+        assert(regIndex == regCount);
+        assert(regIndex == 1);
+
+        return;
+    }
+
+    NYI_WASM("genStructReturn non-fieldlist cases");
 }
 
 void CodeGen::genEmitGSCookieCheck(bool tailCall)
@@ -2263,7 +3345,7 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 {
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
     var_types  type   = varDsc->GetRegisterType();
-    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
     GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), lclNum, 0);
     GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg));
 }
@@ -2287,9 +3369,23 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
     // GCInfo not captured/created by codegen.
 }
 
+//---------------------------------------------------------------------
+// genReportEH - report EH info to the VM
+//
 void CodeGen::genReportEH()
 {
-    // EHInfo not captured/created by codegen.
+    // We created the EH info earlier, during fgWasmVirtualIP.
+    //
+    EHClauseInfo* const info = m_compiler->fgWasmEHInfo;
+    if (info != nullptr)
+    {
+
+        // Tell the VM how many EH clauses to expect.
+        m_compiler->eeSetEHcount(m_compiler->compHndBBtabCount);
+        m_compiler->Metrics.EHClauseCount = (int)m_compiler->compHndBBtabCount;
+
+        genReportEHClauses(info);
+    }
 }
 
 //---------------------------------------------------------------------

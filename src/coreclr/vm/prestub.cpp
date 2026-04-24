@@ -305,29 +305,15 @@ PCODE MethodDesc::PrepareInitialCode(CallerGCMode callerGCMode)
     return PrepareCode(&config);
 }
 
-PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
-{
-    STANDARD_VM_CONTRACT;
-
-    // If other kinds of code need multi-versioning we could add more cases here,
-    // but for now generation of all other code/stubs occurs in other code paths
-    _ASSERTE(IsIL() || IsNoMetadata());
-    PCODE pCode = PrepareILBasedCode(pConfig);
-
-#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
-    NotifyGdb::MethodPrepared(this);
-#endif
-
-    return pCode;
-}
-
-bool MayUsePrecompiledILStub()
+static bool MayUsePrecompiledILStub()
 {
     if (g_pConfig->InteropValidatePinnedObjects())
         return false;
 
+#ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackTransitions())
         return false;
+#endif // PROFILING_SUPPORTED
 
     if (g_pConfig->InteropLogArguments())
         return false;
@@ -335,9 +321,13 @@ bool MayUsePrecompiledILStub()
     return true;
 }
 
-PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
+PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
+
+    // Only IL-backed methods should come through here.
+    // Other kinds of methods (e.g. FCalls, CLR-to-COM methods, should go down a different path)
+    _ASSERTE(IsIL() || IsNoMetadata() || IsPInvoke());
     PCODE pCode = (PCODE)NULL;
 
     bool shouldTier = false;
@@ -353,16 +343,10 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
                 && HasUnmanagedCallersOnlyAttribute())))
     {
         NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
-        if (codeVersion.IsDefaultVersion())
-        {
-            pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
-            _ASSERTE(codeVersion.IsFinalTier());
-        }
-        else if (!codeVersion.IsFinalTier())
+        if (!codeVersion.IsFinalTier())
         {
             codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
         }
-        pConfig->SetWasTieringDisabledBeforeJitting();
         shouldTier = false;
     }
 #endif // FEATURE_TIERED_COMPILATION
@@ -379,8 +363,9 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     }
 #endif // FEATURE_CODE_VERSIONING
 
-    if (pConfig->MayUsePrecompiledCode())
+    if (pConfig->MayUsePrecompiledCode() && (!IsPInvoke() || MayUsePrecompiledILStub()))
     {
+        _ASSERTE(!IsPInvoke() || (!GetModule()->IsReadyToRun() || GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs()));
         if (pCode == (PCODE)NULL)
         {
             pCode = GetPrecompiledCode(pConfig, shouldTier);
@@ -407,6 +392,10 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     else
     {
         DACNotifyCompilationFinished(this, pCode);
+
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
+        NotifyGdb::MethodPrepared(this);
+#endif
     }
 
     return pCode;
@@ -730,7 +719,7 @@ namespace
             return pResolver->GetILHeader();
         }
 
-        _ASSERTE(pMD->IsNoMetadata());
+        _ASSERTE(pMD->IsNoMetadata() || pMD->IsPInvoke());
         return NULL;
     }
 }
@@ -888,6 +877,10 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 
     // The notification will only occur if someone has registered for this method.
     DACNotifyCompilationFinished(this, pCode);
+
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
+    NotifyGdb::MethodPrepared(this);
+#endif
 
     return pCode;
 }
@@ -1061,6 +1054,12 @@ bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver
     // When adding new methods implemented by Transient IL, consider if MethodDesc::IsDiagnosticsHidden() needs to be
     // updated as well.
 
+    if (IsPInvoke())
+    {
+        *methodILDecoder = PInvoke::CreatePInvokeMethodIL(static_cast<PInvokeMethodDesc*>(this), resolver);
+        return true;
+    }
+
     if (TryGenerateAsyncThunk(resolver, methodILDecoder))
     {
         return true;
@@ -1092,7 +1091,6 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_generatedOrLoadedNewCode(false),
 #endif
 #ifdef FEATURE_TIERED_COMPILATION
-    m_wasTieringDisabledBeforeJitting(false),
     m_shouldCountCalls(false),
 #endif
     m_jitSwitchedToMinOpt(false),
@@ -1265,17 +1263,42 @@ const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *conf
 // This function should be called before SetNativeCode() for consistency with usage of FinalizeOptimizationTierForTier0Jit
 bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Load()
 {
+    STANDARD_VM_CONTRACT;
+
     _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
     _ASSERTE(!JitSwitchedToOptimized());
+    bool shouldTier = true;
+
+    switch (GetCodeVersion().GetOptimizationTier())
+    {
+        case NativeCodeVersion::OptimizationTier0: // This is the default when we may tier up further
+            break;
+
+        case NativeCodeVersion::OptimizationTierOptimized: // If we've decided for some reason that the R2R code is the final tier
+            shouldTier = false;
+            break;
+
+        case NativeCodeVersion::OptimizationTier0Instrumented:
+            // We should adjust the tier back to regular Tier 0, since the R2R code is not instrumented.
+            GetCodeVersion().SetOptimizationTier(NativeCodeVersion::OptimizationTier0);
+            break;
+
+        default:
+            _ASSERTE(!"Unexpected optimization tier for a method loaded via R2R");
+            UNREACHABLE();
+    }
 
     if (!IsForMulticoreJit())
     {
-        return true; // should count calls if SetNativeCode() succeeds
+        return shouldTier; // should count calls if SetNativeCode() succeeds
     }
 
     // When using multi-core JIT, the loaded code would not be used until the method is called. Record some information that may
     // be used later when the method is called.
-    ((MulticoreJitPrepareCodeConfig *)this)->SetWasTier0();
+    if (shouldTier)
+    {
+        ((MulticoreJitPrepareCodeConfig *)this)->SetWasTier0();
+    }
     return false; // don't count calls
 }
 
@@ -1284,6 +1307,8 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Load()
 // version, and it should have already been finalized.
 bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
 {
+    STANDARD_VM_CONTRACT;
+
     _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
 
     if (IsForMulticoreJit())
@@ -1311,10 +1336,6 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
         // Update the tier in the code version. The JIT may have decided to switch from tier 0 to optimized, in which case
         // call counting would have to be disabled for the method.
         NativeCodeVersion codeVersion = GetCodeVersion();
-        if (codeVersion.IsDefaultVersion())
-        {
-            GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
-        }
         codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
         return false; // don't count calls
     }
@@ -1498,6 +1519,11 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
+    if (pTargetMD->IsAsyncMethod())
+    {
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+    }
+
     // Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
@@ -1586,6 +1612,11 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+
+    if (pTargetMD->IsAsyncMethod())
+    {
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+    }
 
     // Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + (msig.HasThis() ? 1 : 0), msig.IsReturnTypeVoid() ? 0 : 1);
@@ -2011,7 +2042,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_ARM)
         pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-    #elif defined(TARGET_RISCV64)
+    #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_WASM)
         // We do not yet have an ABI for WebAssembly native code to handle here.
@@ -2049,6 +2080,115 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
     block.m_ReturnAddress = (TADDR)callerIp;
     (void)ExecuteInterpretedMethod(&block, (TADDR)targetIp, retBuff);
 }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+// In this case, we're using this entrypoint like the prestub.
+// We need to run DoPrestub to have the runtime either compile the interpreter code, or find the R2R implementation
+// then we need to dispatch onwards to the correct target.
+// Continuing on from here for interpreter targets is straightforward, but for R2R targets we need to dispatch back
+// to WebAssembly code. To avoid needing all of the R2R to interpreter thunks have logic for tail-calling onto more
+// R2R functions, we utilize the InvokeManagedMethod path which will utilize an Interpreter to R2R thunk for this call.
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
+
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff)
+{
+    int8_t* args = (int8_t*)(block + 1);
+    MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(portableEntrypoint);
+    InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
+    if (targetIp == NULL)
+    {
+        MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThread());
+
+        PrestubMethodFrame frame(block, pMethod);
+        PrestubMethodFrame* pPFrame = &frame;
+
+        bool finishedPrestubPortion = false;
+
+        pPFrame->Push(CURRENT_THREAD);
+
+        EX_TRY
+        {
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+            {
+                GCX_PREEMP();
+                (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+                targetIp = pMethod->GetInterpreterCode();
+            }
+
+            finishedPrestubPortion = true;
+            if (targetIp == NULL)
+            {
+                _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
+                ManagedMethodParam param = { pMethod, args, retBuff, (PCODE)targetIp, nullptr /* WASM-TODO, handle RuntimeAsync */};
+                InvokeManagedMethod(&param);
+            }
+
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        }
+        EX_CATCH
+        {
+            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            _ASSERTE(ohThrowable);
+            if (finishedPrestubPortion)
+            {
+                StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)block, pMethod, NULL);
+            }
+            EX_RETHROW;
+        }
+        EX_END_CATCH
+
+        pPFrame->Pop(CURRENT_THREAD);
+
+        if (targetIp == NULL)
+            return; // We found R2R code during the Prestub, so there's no interpreter code to execute, and the R2R code has already been invoked, so we're done.
+    }
+
+    _ASSERTE((PCODE)targetIp == (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint));
+
+    // Copy arguments to the stack
+    if (argsSize > 0)
+    {
+        _ASSERTE(args != NULL);
+        InterpThreadContext *threadContext = GetInterpThreadContext();
+        int8_t* sp = threadContext->pStackPointer;
+        memcpy(sp, args, argsSize);
+    }
+
+    (void)ExecuteInterpretedMethod(block, (TADDR)targetIp, retBuff);
+    return;
+}
+
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff)
+{
+    PCODE targetIp;
+
+    if (!PortableEntryPoint::HasInterpreterData(portableEntrypoint))
+    {
+        // In this case, we're using this entrypoint like the prestub.
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(portableEntrypoint, block, argsSize, retBuff);
+    }
+    else
+    {
+        targetIp = (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint);
+        int8_t* args = (int8_t*)(block + 1);
+
+        // Copy arguments to the stack
+        if (argsSize > 0)
+        {
+            _ASSERTE(args != NULL);
+            InterpThreadContext *threadContext = GetInterpThreadContext();
+            int8_t* sp = threadContext->pStackPointer;
+            memcpy(sp, args, argsSize);
+        }
+
+        (void)ExecuteInterpretedMethod(block, (TADDR)targetIp, retBuff);
+        return;
+    }
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp)
 {
@@ -2185,7 +2325,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 #ifdef FEATURE_COMINTEROP
     /**************************   INTEROP   *************************/
     /*-----------------------------------------------------------------
-    // Some method descriptors are COMPLUS-to-COM call descriptors
+    // Some method descriptors are CLR-to-COM call descriptors
     // they are not your every day method descriptors, for example
     // they don't have an IL or code.
     */
@@ -2253,7 +2393,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         pStub = MakeInstantiatingStubWorker(this);
     }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
-    else if (IsIL() || IsNoMetadata())
+    else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()))
     {
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
         if (!IsNativeCodeStableAfterInit())
@@ -2262,34 +2402,23 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
         pCode = PrepareInitialCode(callerGCMode);
-    } // end else if (IsIL() || IsNoMetadata())
+
+        // We need to resolve the P/Invoke target in the prestub in the following cases:
+        // - SuppressGCTransition
+        //  - The logic to resolve the P/Invoke target does not meet the requirements for SuppressGCTransition usage.
+        // - No P/Invoke import thunk
+        //  - If there's no P/Invoke import thunk, then there's no later time to resolve the P/Invoke target.
+        //
+        // For simplicity, we will resolve all P/Invoke targets here for non-inlined P/Invokes.
+        if (IsPInvoke())
+        {
+            PInvoke::ResolvePInvokeTarget(static_cast<PInvokeMethodDesc*>(this));
+        }
+    } // end else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()))
     else if (IsPInvoke())
     {
-        if (GetModule()->IsReadyToRun() && MayUsePrecompiledILStub())
-        {
-            _ASSERTE(GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs());
-            // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such
-            // a stub, we'll use it directly instead and avoid emitting an IL stub.
-            PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
-            pCode = GetPrecompiledR2RCode(&config);
-            if (pCode != (PCODE)NULL)
-            {
-                LOG_USING_R2R_CODE(this);
-            }
-        }
-
-        if (pCode == (PCODE)NULL)
-        {
-            pCode = GetStubForInteropMethod(this);
-        }
-
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        // Store the IL Stub interpreter data on the actual
-        // P/Invoke MethodDesc.
-        void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
-        _ASSERTE(ilStubInterpData != NULL);
-        SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
+        pCode = GetStubForInteropMethod(this);
+        _ASSERTE(static_cast<PInvokeMethodDesc*>(this)->IsVarArgs());
     }
     else if (IsFCall())
     {
@@ -2314,7 +2443,15 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             if (helperMD->ShouldCallPrestub())
                 (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
             void* ilStubInterpData = helperMD->GetInterpreterCode();
+            // WASM-TODO: update this when we will have codegen
+            _ASSERTE(ilStubInterpData != NULL);
             SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+
+            // Use this method's own PortableEntryPoint rather than the helper's.
+            // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
+            PCODE entryPoint = GetPortableEntryPoint();
+            PortableEntryPoint::SetInterpreterData(entryPoint, (PCODE)(TADDR)ilStubInterpData);
+            pCode = entryPoint;
         }
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         // FCalls are always wrapped in a precode to enable mapping of the entrypoint back to MethodDesc
@@ -2371,6 +2508,11 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
         _ASSERTE(ilStubInterpData != NULL);
         SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+
+        // Use this method's own PortableEntryPoint rather than the stub's.
+        // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
+        pCode = GetPortableEntryPoint();
+        PortableEntryPoint::SetInterpreterData(pCode, (PCODE)(TADDR)ilStubInterpData);
         SetCodeEntryPoint(pCode);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))

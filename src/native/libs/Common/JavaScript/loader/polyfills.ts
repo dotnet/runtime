@@ -53,7 +53,6 @@ export async function initPolyfillsAsync(): Promise<void> {
             globalThis.performance = (await import(/*! webpackIgnore: true */"perf_hooks")).performance;
         }
     }
-    // WASM-TODO: performance polyfill for V8
 }
 
 let _nodeFs: any | undefined = undefined;
@@ -100,7 +99,7 @@ export async function fetchLike(url: string, init?: RequestInit, expectedContent
         } else if (hasFetch) {
             return globalThis.fetch(url, init || { credentials: "same-origin" });
         } else if (typeof (read) === "function") {
-            const isText = expectedContentType === "application/json" || expectedContentType === "text/plain";
+            const isText = expectedContentType && (expectedContentType.startsWith("application/json") || expectedContentType.startsWith("text/plain"));
             const arrayBuffer = read(url, isText ? "utf8" : "binary");
             return responseLike(url, arrayBuffer, {
                 status: 200,

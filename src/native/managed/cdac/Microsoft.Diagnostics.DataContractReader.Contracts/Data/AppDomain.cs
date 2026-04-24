@@ -12,12 +12,12 @@ internal sealed class AppDomain : IData<AppDomain>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.AppDomain);
 
-        RootAssembly = target.ReadPointer(address + (ulong)type.Fields[nameof(RootAssembly)].Offset);
-        DomainAssemblyList = address + (ulong)type.Fields[nameof(DomainAssemblyList)].Offset;
-        FriendlyName = target.ReadPointer(address + (ulong)type.Fields[nameof(FriendlyName)].Offset);
+        RootAssembly = target.ReadPointerField(address, type, nameof(RootAssembly));
+        AssemblyList = address + (ulong)type.Fields[nameof(AssemblyList)].Offset;
+        FriendlyName = target.ReadPointerField(address, type, nameof(FriendlyName));
     }
 
     public TargetPointer RootAssembly { get; init; }
-    public TargetPointer DomainAssemblyList { get; init; }
+    public TargetPointer AssemblyList { get; init; }
     public TargetPointer FriendlyName { get; init; }
 }

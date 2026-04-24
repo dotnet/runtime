@@ -102,7 +102,7 @@ namespace System.Formats.Tar.Tests
                         Assert.NotNull(entry);
                         Assert.Equal(format, entry.Format);
                         Assert.Equal(fileName, entry.Name);
-                        TarEntryType expectedEntryType = format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+                        TarEntryType expectedEntryType = GetRegularFileEntryTypeForFormat(format);
                         Assert.Equal(expectedEntryType, entry.EntryType);
                         Assert.True(entry.Length > 0);
                         Assert.NotNull(entry.DataStream);

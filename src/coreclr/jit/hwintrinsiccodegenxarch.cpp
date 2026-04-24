@@ -902,6 +902,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         case NI_AVXVNNI_MultiplyWideningAndAdd:
                         case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+                        case NI_AVX512BMM_BitMultiplyMatrix16x16WithOrReduction:
+                        case NI_AVX512BMM_BitMultiplyMatrix16x16WithXorReduction:
                         {
                             assert(targetReg != REG_NA);
                             assert(op1Reg != REG_NA);
@@ -2543,6 +2545,9 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
             // emit the DIV/IDIV instruction
             emit->emitInsBinary(ins, attr, node, op3);
+
+            assert(node->GetRegNumByIdx(0) == REG_EAX);
+            assert(node->GetRegNumByIdx(1) == REG_EDX);
 
             break;
         }

@@ -104,9 +104,8 @@ namespace TestLibrary
         public static bool IsBrowser => OperatingSystem.IsBrowser();
         public static bool IsWasi => OperatingSystem.IsWasi();
         public static bool IsWasm => IsBrowser || IsWasi;
-        public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
-        public static bool IsMultithreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
+        public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
 
         private static bool IsEnvironmentVariableTrue(string variableName)
         {

@@ -951,7 +951,7 @@ namespace System.ComponentModel
         internal void OnINotifyPropertyChanged(object? component, PropertyChangedEventArgs e)
         {
             if (string.IsNullOrEmpty(e.PropertyName) ||
-                string.Compare(e.PropertyName, Name, true, CultureInfo.InvariantCulture) == 0)
+                string.Equals(e.PropertyName, Name, StringComparison.InvariantCultureIgnoreCase))
             {
                 OnValueChanged(component, e);
             }

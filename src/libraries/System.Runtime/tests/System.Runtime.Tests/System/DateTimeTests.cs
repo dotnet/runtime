@@ -1277,7 +1277,7 @@ namespace System.Tests
 
         private static bool IsNotOSXOrBrowser => !PlatformDetection.IsApplePlatform && !PlatformDetection.IsBrowser;
 
-        [ConditionalTheory(nameof(IsNotOSXOrBrowser))]
+        [ConditionalTheory(typeof(DateTimeTests), nameof(IsNotOSXOrBrowser))]
         [InlineData("ar")]
         [InlineData("ar-EG")]
         [InlineData("ar-IQ")]

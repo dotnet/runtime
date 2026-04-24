@@ -120,7 +120,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             }
         }
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(typeof(FileSystemTests), nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void CopyDirectory_SourceDirectoryName_DestinationDirectoryName_SkipFile()
         {
@@ -210,7 +210,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             Assert.True(HasExpectedData(testFileDest, SourceData));
         }
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(typeof(FileSystemTests), nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void CopyFile_SourceFileName_DestinationFileName_UIOptionTestOverWriteFalse()
         {
@@ -226,7 +226,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             Assert.True(HasExpectedData(testFileDest, DestData));
         }
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(typeof(FileSystemTests), nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void CopyFile_SourceFileName_DestinationFileName_UIOptionTestOverWriteTrue()
         {
@@ -286,6 +286,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void CurrentDirectoryGet()
         {
             var CurrentDirectory = System.IO.Directory.GetCurrentDirectory();
@@ -294,6 +295,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void CurrentDirectorySet()
         {
             var SavedCurrentDirectory = System.IO.Directory.GetCurrentDirectory();
@@ -334,7 +336,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             Assert.True(System.IO.File.Exists(testFileSource));
         }
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(typeof(FileSystemTests), nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void DeleteDirectory_Directory_UIOption_Delete()
         {
@@ -349,7 +351,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             Assert.False(System.IO.File.Exists(testFileSource));
         }
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(typeof(FileSystemTests), nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void DeleteDirectory_Directory_UIOption_DoNotDelete()
         {
@@ -609,7 +611,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             System.IO.File.Delete(TempFile);
         }
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(typeof(FileSystemTests), nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MoveDirectory_Source_DirectoryName_DestinationDirectoryName_UIOptionOverwriteFalse()
         {
@@ -770,7 +772,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             Assert.True(HasExpectedData(SourceFileNameWithPath, SourceData));
         }
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(typeof(FileSystemTests), nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MoveFile_SourceFileName_DestinationFileName_UIOptionOverWriteFalse()
         {

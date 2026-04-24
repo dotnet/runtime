@@ -21,11 +21,29 @@ namespace System.Threading
         [ThreadStatic]
         private static Waiter? t_waiterForCurrentThread;
 
+        // Takes the cached Waiter for this thread (or allocates a new one) and removes the
+        // current wait's cached Waiter from the thread-static so that any reentrant
+        // Monitor.Wait (for example, from a SynchronizationContext message pump) gets its own Waiter with a distinct AutoResetEvent.
         private static Waiter GetWaiterForCurrentThread()
         {
-            Waiter waiter = t_waiterForCurrentThread ??= new Waiter();
+            Waiter? waiter = t_waiterForCurrentThread;
+            if (waiter is not null)
+            {
+                t_waiterForCurrentThread = null;
+            }
+            else
+            {
+                waiter = new Waiter();
+            }
+
             waiter.signalled = false;
             return waiter;
+        }
+
+        private static void ReleaseWaiterForCurrentThread(Waiter waiter)
+        {
+            // Return the waiter to the thread-static cache for reuse.
+            t_waiterForCurrentThread = waiter;
         }
 
         private readonly Lock _lock;
@@ -139,6 +157,7 @@ namespace System.Threading
                 }
 
                 AssertIsNotInList(waiter);
+                ReleaseWaiterForCurrentThread(waiter);
             }
 
             return waiter.signalled;

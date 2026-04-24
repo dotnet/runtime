@@ -67,17 +67,17 @@ public:
     MethodContext();
 
 private:
-    void MethodInitHelper(unsigned char* buff, unsigned int totalLen);
-    void MethodInitHelperFile(HANDLE hFile);
+    void MethodInitHelper(unsigned char* buff, unsigned int totalLen, bool readCompileResults);
+    void MethodInitHelperFile(HANDLE hFile, bool readCompileResults);
 
-    bool Initialize(int mcIndex, unsigned char* buff, DWORD size);
-    bool Initialize(int mcIndex, HANDLE hFile);
+    bool Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults);
+    bool Initialize(int mcIndex, HANDLE hFile, bool readCompileResults);
 
     int dumpHashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
 
 public:
-    static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
-    static bool Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, HANDLE hFile, bool readCompileResults, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
 
@@ -458,6 +458,10 @@ public:
     CORINFO_METHOD_HANDLE repGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn,
                                                   CORINFO_METHOD_HANDLE* methodHandle,
                                                   CORINFO_CLASS_HANDLE* classHandle);
+
+    void recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool variantIsThunk, CORINFO_METHOD_HANDLE result);
+    void dmpGetAsyncOtherVariant(DWORDLONG key, DLD value);
+    CORINFO_METHOD_HANDLE repGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk);
 
     void recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
     void dmpGetDefaultComparerClass(DWORDLONG key, DWORDLONG value);
@@ -1217,6 +1221,7 @@ enum mcPackets
     Packet_GetContinuationType = 234,
     Packet_GetWasmTypeSymbol = 235,
     Packet_GetWasmLowering = 236,
+    Packet_GetAsyncOtherVariant = 237,
 };
 
 void SetDebugDumpVariables();

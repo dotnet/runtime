@@ -9,12 +9,15 @@
       <TestAssemblyDir Condition="'$(TestAssemblyDir)' == ''">$(BaseOutputPathWithConfig)\tests\</TestAssemblyDir>
       <__TestRunHtmlLog Condition="'$(__TestRunHtmlLog)' == ''">$(__LogsDir)\TestRun.html</__TestRunHtmlLog>
       <__TestRunXmlLog Condition="'$(__TestRunXmlLog)' == ''">$(__LogsDir)\TestRun.xml</__TestRunXmlLog>
+      <!-- When TestSubtree is set, only run tests under that subtree (e.g. JIT/Regression). -->
+      <_TestSearchRoot Condition="'$(TestSubtree)' == ''">$(BaseOutputPathWithConfig)\**</_TestSearchRoot>
+      <_TestSearchRoot Condition="'$(TestSubtree)' != ''">$(BaseOutputPathWithConfig)\$(TestSubtree)\**</_TestSearchRoot>
   </PropertyGroup>
 
 
   <Target Name="FindBuildAllTestsAsStandaloneRunnerScripts">
     <ItemGroup>
-      <_StandaloneRunnerMarker Include="$(BaseOutputPathWithConfig)\**\*.StandaloneTestRunner" />
+      <_StandaloneRunnerMarker Include="$(_TestSearchRoot)\*.StandaloneTestRunner" />
       <StandaloneRunnerScripts Include="$([System.IO.Path]::ChangeExtension('%(_StandaloneRunnerMarker.Identity)', '.$(TestScriptExtension)'))" />
       <MergedTestWrapperScripts Update="@(MergedTestWrapperScripts)">
         <RedirectOutputToFile>$([System.IO.Path]::ChangeExtension('%(MergedTestWrapperScripts.Identity)', '.log'))</RedirectOutputToFile>
@@ -24,7 +27,7 @@
 
   <Target Name="FindMergedTestDirectories">
     <ItemGroup>
-      <_MergedTestAssemblyMarkers Include="$(BaseOutputPathWithConfig)\**\*.MergedTestAssembly" />
+      <_MergedTestAssemblyMarkers Include="$(_TestSearchRoot)\*.MergedTestAssembly" />
       <MergedTestWrapperScripts Include="$([System.IO.Path]::ChangeExtension('%(_MergedTestAssemblyMarkers.Identity)', '.$(TestScriptExtension)'))" />
       <MergedTestWrapperScripts Update="@(MergedTestWrapperScripts)">
         <RedirectOutputToFile>$([System.IO.Path]::ChangeExtension('%(MergedTestWrapperScripts.Identity)', '.log'))</RedirectOutputToFile>
@@ -40,18 +43,19 @@
   <Target Name="PrepareTestsToRun"
           DependsOnTargets="FindBuildAllTestsAsStandaloneRunnerScripts;FindMergedTestDirectories">
     <Error  Text="Tests must be built to do a test run."
-            Condition="'@(StandaloneRunnerScripts)' == '' and '@(MergedTestWrapperScripts)' == ''" />
+            Condition="'$(TestSubtree)' == '' and '@(StandaloneRunnerScripts)' == '' and '@(MergedTestWrapperScripts)' == ''" />
+    <Error  Text="No tests found under subtree '$(TestSubtree)'. Ensure tests have been built for this configuration/subtree and verify the subtree path is relative to the test output directory (e.g. JIT/Regression)."
+            Condition="'$(TestSubtree)' != '' and '@(StandaloneRunnerScripts)' == '' and '@(MergedTestWrapperScripts)' == ''" />
     <Error  Text="Cannot run tests when both StandaloneRunnerScripts and MergedTestWrapperScripts are present. Either build the test tree as normal (merged runner) or with BuildAllTestsAsStandalone=true."
             Condition="'@(StandaloneRunnerScripts)' != '' and '@(MergedTestWrapperScripts)' != ''" />
   </Target>
 
   <Target Name="RunSingleMergedTest">
-    <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(TargetOS)' != 'windows'" />
-    <Exec Command="$(TestWrapperScript) &gt;$(RedirectOutputToFile) 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" IgnoreExitCode="true">
+    <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(OS)' != 'Windows_NT'" />
+    <Exec Command="$(TestWrapperScript) &gt; $(RedirectOutputToFile) 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" ContinueOnError="ErrorAndContinue">
       <Output TaskParameter="ExitCode" PropertyName="MergedTestExitCode" />
     </Exec>
     <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" Condition="'$(MergedTestExitCode)' == '0'" />
-    <Message Importance="High" Text="Error running test group '$(TestWrapperScript)' - exit code $(MergedTestExitCode)" Condition="'$(MergedTestExitCode)' != '0'" />
   </Target>
 
   <Target Name="RunMergedTests" DependsOnTargets="PrepareTestsToRun">
@@ -70,9 +74,9 @@
   -->
   <Target Name="RunOneStandaloneRunnerTest" Returns="@(StandaloneRunnerResult)">
 
-    <Exec Command="chmod +x $(StandaloneRunnerScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(TargetOS)' != 'windows'" />
+    <Exec Command="chmod +x $(StandaloneRunnerScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(OS)' != 'Windows_NT'" />
 
-    <Exec Command="$(StandaloneRunnerScript) -usewatcher &gt;$(StandaloneRunnerScript).log 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" IgnoreExitCode="true">
+    <Exec Command="$(StandaloneRunnerScript) -usewatcher &gt; $(StandaloneRunnerScript).log 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" ContinueOnError="ErrorAndContinue">
       <Output TaskParameter="ExitCode" PropertyName="StandaloneRunnerExitCode" />
     </Exec>
 
@@ -100,7 +104,132 @@
                       Overwrite="true" />
   </Target>
 
-  <Target Name="RunTests" DependsOnTargets="RunMergedTests;RunStandaloneRunnerTests" Condition="'$(SkipTests)' != 'True'">
+  <!-- ============================================================================
+       Core_Root Freshness Check
+       Warns when Core_Root binaries are stale compared to build output.
+       Runs before any tests execute. Two-phase design:
+         _ComputeCoreRootFileMappings: uses the shared CoreRootArtifacts.targets
+           to forward-map CoreCLR artifacts to Core_Root destinations, then
+           reverse-maps remaining root files to libraries source paths.
+         CheckCoreRootFreshness: incremental target (Inputs/Outputs) that
+           warns about stale files without failing the build.
+       A separate target handles IL-CG2 R2R cache staleness.
+       ========================================================================= -->
+
+  <!-- Needed here because build.proj imports tests.targets without Common/Directory.Build.targets,
+       so _ComputeCoreRootArtifactSources would not be available otherwise.
+       MSBuild silently ignores the duplicate when both importers are active (MSB4011). -->
+  <Import Project="$(MSBuildThisFileDirectory)CoreRootArtifacts.targets"
+          Condition="'$(_CoreRootArtifactsImported)' != 'true'" />
+
+  <Target Name="_ComputeCoreRootFileMappings"
+          DependsOnTargets="_ComputeCoreRootArtifactSources"
+          Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and
+                     '$(ContinuousIntegrationBuild)' != 'true' and
+                     Exists('$(CORE_ROOT)')">
+
+    <PropertyGroup>
+      <_CoreRootDir>$([MSBuild]::NormalizeDirectory('$(CORE_ROOT)'))</_CoreRootDir>
+    </PropertyGroup>
+
+    <!-- CoreCLR artifacts: forward mapping from shared target.
+         _CoreRootArtifactSource items have Identity=source path, TargetDir=dest subdir.
+         We only include mappings whose dest file actually exists in Core_Root
+         (a missing file means Core_Root hasn't been built yet for that artifact). -->
+    <ItemGroup>
+      <_CoreRootFileMapping Include="@(_CoreRootArtifactSource)"
+          Condition="Exists('$(_CoreRootDir)%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')">
+        <CoreRootFile>$(_CoreRootDir)%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)</CoreRootFile>
+      </_CoreRootFileMapping>
+    </ItemGroup>
+
+    <!-- Libraries: reverse-map remaining root-level Core_Root files to their source.
+         These come from NuGet resolution during copy but we can check the known paths directly. -->
+    <ItemGroup>
+      <_CoreRootRootFile Include="$(_CoreRootDir)*" />
+      <_UnmappedRootFile Include="@(_CoreRootRootFile)"
+          Exclude="@(_CoreRootFileMapping->'%(CoreRootFile)')" />
+    </ItemGroup>
+
+    <!-- Libraries managed (shared framework DLLs) -->
+    <ItemGroup Condition="Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')">
+      <_CoreRootFileMapping Include="$(LibrariesSharedFrameworkBinArtifactsPath)%(_UnmappedRootFile.Filename)%(_UnmappedRootFile.Extension)"
+          Condition="Exists('$(LibrariesSharedFrameworkBinArtifactsPath)%(_UnmappedRootFile.Filename)%(_UnmappedRootFile.Extension)')">
+        <CoreRootFile>%(_UnmappedRootFile.Identity)</CoreRootFile>
+      </_CoreRootFileMapping>
+    </ItemGroup>
+
+    <!-- Update unmapped list after libraries managed -->
+    <ItemGroup>
+      <_UnmappedRootFile Remove="@(_CoreRootFileMapping->'%(CoreRootFile)')" />
+    </ItemGroup>
+
+    <!-- Libraries native -->
+    <ItemGroup Condition="Exists('$(LibrariesNativeArtifactsPath)')">
+      <_CoreRootFileMapping Include="$(LibrariesNativeArtifactsPath)%(_UnmappedRootFile.Filename)%(_UnmappedRootFile.Extension)"
+          Condition="Exists('$(LibrariesNativeArtifactsPath)%(_UnmappedRootFile.Filename)%(_UnmappedRootFile.Extension)')">
+        <CoreRootFile>%(_UnmappedRootFile.Identity)</CoreRootFile>
+      </_CoreRootFileMapping>
+    </ItemGroup>
+  </Target>
+
+  <!-- Incremental target: skipped entirely when all Core_Root files are up to date.
+       _CoreRootFileMapping Identity = source file path, CoreRootFile metadata = dest path.
+       Condition cannot reference @(_CoreRootFileMapping) because MSBuild evaluates Condition
+       before DependsOnTargets; we guard with Exists('$(CORE_ROOT)') instead. -->
+  <Target Name="CheckCoreRootFreshness"
+          DependsOnTargets="_ComputeCoreRootFileMappings"
+          Inputs="@(_CoreRootFileMapping)"
+          Outputs="@(_CoreRootFileMapping->'%(CoreRootFile)')"
+          Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and
+                     '$(ContinuousIntegrationBuild)' != 'true' and
+                     Exists('$(CORE_ROOT)')">
+
+    <!-- Compare timestamps to find which specific files are stale -->
+    <ItemGroup>
+      <_StaleFile Include="@(_CoreRootFileMapping)"
+          Condition="$([System.IO.File]::GetLastWriteTime('%(Identity)').Ticks) &gt;
+                     $([System.IO.File]::GetLastWriteTime('%(CoreRootFile)').Ticks)" />
+    </ItemGroup>
+
+    <Warning Condition="'%(_StaleFile.CoreRootFile)' != ''"
+             Text="STALE Core_Root: %(_StaleFile.Filename)%(_StaleFile.Extension) in Core_Root is older than build output at %(_StaleFile.Identity)" />
+
+    <Warning Condition="@(_StaleFile->Count()) &gt; 0"
+             Text="Core_Root has @(_StaleFile->Count()) stale file(s). Run: `src/tests/build.[cmd|sh] $(TargetArchitecture) $(Configuration) -generatelayoutonly`. To suppress, set `/p:SkipCoreRootFreshnessCheck=true`" />
+  </Target>
+
+  <!-- IL-CG2 R2R cache staleness (separate concern, runs independently) -->
+  <Target Name="_CheckIlCg2CacheFreshness"
+          Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and
+                     '$(ContinuousIntegrationBuild)' != 'true' and
+                     '$(RunCrossGen2)' == '1' and
+                     Exists('$(CORE_ROOT)')">
+
+    <PropertyGroup>
+      <_CoreRootDir>$([MSBuild]::NormalizeDirectory('$(CORE_ROOT)'))</_CoreRootDir>
+      <_Crossgen2DstPath>$(_CoreRootDir)crossgen2\crossgen2.exe</_Crossgen2DstPath>
+      <_Crossgen2DstPath Condition="'$(OS)' != 'Windows_NT'">$(_CoreRootDir)crossgen2/crossgen2</_Crossgen2DstPath>
+    </PropertyGroup>
+
+    <ItemGroup Condition="Exists('$(_Crossgen2DstPath)')">
+      <_IlCg2DoneFiles Include="$(BaseOutputPathWithConfig)**\IL-CG2\done" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'@(_IlCg2DoneFiles)' != ''">
+      <_Crossgen2InCoreRootTime>$([System.IO.File]::GetLastWriteTime('$(_Crossgen2DstPath)').Ticks)</_Crossgen2InCoreRootTime>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_StaleIlCg2DoneFile Include="@(_IlCg2DoneFiles)"
+          Condition="$([System.IO.File]::GetLastWriteTime('%(Identity)').Ticks) &lt; $(_Crossgen2InCoreRootTime)" />
+    </ItemGroup>
+
+    <Warning Text="STALE IL-CG2: One or more IL-CG2 R2R caches may be stale (crossgen2 is newer than cached compilations)."
+             Condition="'@(_StaleIlCg2DoneFile)' != ''" />
+  </Target>
+
+  <Target Name="RunTests" DependsOnTargets="CheckCoreRootFreshness;_CheckIlCg2CacheFreshness;RunMergedTests;RunStandaloneRunnerTests" Condition="'$(SkipTests)' != 'True'">
     <!-- TODO - merged reporting? -->
   </Target>
 </Project>

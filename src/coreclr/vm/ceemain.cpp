@@ -176,6 +176,9 @@
 
 #include "stringarraylist.h"
 #include "stubhelpers.h"
+#ifdef TARGET_WASM
+#include "wasm/helpers.hpp"
+#endif
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -208,6 +211,10 @@
 #endif // FEATURE_GDBJIT
 
 #include "genanalysis.h"
+
+#ifdef HAVE_GCCOVER
+#include "cdacstress.h"
+#endif
 
 HRESULT EEStartup();
 
@@ -664,11 +671,15 @@ void EEStartupHelper()
 
 #ifdef FEATURE_TIERED_COMPILATION
         TieredCompilationManager::StaticInitialize();
-        CallCountingManager::StaticInitialize();
+        CallCountingStub::StaticInitialize();
 #endif // FEATURE_TIERED_COMPILATION
 
         OnStackReplacementManager::StaticInitialize();
         MethodTable::InitMethodDataCache();
+
+#ifdef TARGET_WASM
+        InitializeWasmThunkCaches();
+#endif // TARGET_WASM
 
 #ifdef TARGET_UNIX
         ExecutableAllocator::InitPreferredRange();
@@ -705,7 +716,7 @@ void EEStartupHelper()
             unsigned level = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
             unsigned bytesPerThread = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
             unsigned totalBytes = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-            CLRConfigStringHolder logFilename = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogFilename);
+            CLRConfigStringHolder logFilename(CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogFilename));
             StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase(), logFilename);
             g_pStressLog = &StressLog::theLog;
         }
@@ -791,9 +802,9 @@ void EEStartupHelper()
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
 
-        // Initialize EBR (Epoch-Based Reclamation) for HashMap's async mode.
+        // Initialize EBR (Epoch-Based Reclamation) for safe deferred deletion.
         // This must be done before any HashMap is initialized with fAsyncMode=TRUE.
-        g_HashMapEbr.Init();
+        g_EbrCollector.Init();
 
         StubManager::InitializeStubManagers();
 
@@ -963,6 +974,10 @@ void EEStartupHelper()
 
 #ifdef HAVE_GCCOVER
         MethodDesc::Init();
+        if (CdacStress::IsEnabled())
+        {
+            CdacStress::Initialize();
+        }
 #endif
 
         Assembly::Initialize();
@@ -1085,7 +1100,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 
 // EEStartup is responsible for all the one time initialization of the runtime.  Some of the highlights of
 // what it does include
-//     * Creates the default and shared, appdomains.
+//     * Creates the global AppDomain
 //     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)
 //
 // see code:EEStartup#TableOfContents for more on the runtime in general.
@@ -1242,7 +1257,11 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         }
 
         // Indicate the EE is the shut down phase.
-        g_fEEShutDown |= ShutDown_Start;
+        InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Start);
+
+#ifdef HAVE_GCCOVER
+        CdacStress::Shutdown();
+#endif
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)
         {
@@ -1367,7 +1386,7 @@ part2:
             // lock -- after the OS has stopped all other threads.
             if (fIsDllUnloading && (g_fEEShutDown & ShutDown_Phase2) == 0)
             {
-                g_fEEShutDown |= ShutDown_Phase2;
+                InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Phase2);
 
                 if (!g_fFastExitProcess)
                 {
@@ -1601,7 +1620,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 {
                     if (GCHeapUtilities::IsGCInProgress())
                     {
-                        g_fEEShutDown |= ShutDown_Phase2;
+                        InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Phase2);
                         break;
                     }
 

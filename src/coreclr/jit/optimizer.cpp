@@ -358,7 +358,7 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
 
     // Check if last two statements in the loop body are the increment of the iterator
     // and the loop termination test.
-    noway_assert(cond->bbStmtList != nullptr);
+    noway_assert(cond->firstStmt() != nullptr);
     Statement* testStmt = cond->lastStmt();
     noway_assert(testStmt != nullptr && testStmt->GetNextStmt() == nullptr);
 
@@ -1934,9 +1934,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     unsigned estDupCostSz = 0;
 
-    for (int i = 0; i < duplicatedBlocks.Height(); i++)
+    for (BasicBlock* const block : duplicatedBlocks.BottomUpOrder())
     {
-        BasicBlock* block = duplicatedBlocks.Bottom(i);
         for (Statement* stmt : block->Statements())
         {
             GenTree* tree = stmt->GetRootNode();
@@ -2058,9 +2057,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     fgRedirectEdge(newPreheader->TargetEdgeRef(), stayInLoopSucc);
 
     // Duplicate all the code now
-    for (int i = 0; i < duplicatedBlocks.Height(); i++)
+    for (BasicBlock* const block : duplicatedBlocks.BottomUpOrder())
     {
-        BasicBlock* block = duplicatedBlocks.Bottom(i);
         for (Statement* stmt : block->Statements())
         {
             GenTree*   clonedTree = gtCloneExpr(stmt->GetRootNode());
@@ -2684,6 +2682,11 @@ bool Compiler::optSplitHeaderIfNecessary(FlowGraphNaturalLoop* loop)
         }
     }
     assert(outermostHBtab != nullptr);
+
+    // header is no longer a try entry, so update its flags
+    //
+    assert(!bbIsTryBeg(header));
+    header->RemoveFlags(BBF_DONT_REMOVE);
 
     // Recompute preheader placement
     //
@@ -4363,8 +4366,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                         if (op1->OperIs(GT_CALL))
                         {
                             GenTreeCall* call = op1->AsCall();
-                            if (call->IsHelperCall() &&
-                                s_helperCallProperties.MayRunCctor(eeGetHelperNum(call->gtCallMethHnd)))
+                            if (call->IsHelperCall() && s_helperCallProperties.MayRunCctor(call->GetHelperNum()))
                             {
                                 // Hoisting the comma is ok because it would hoist the initialization along
                                 // with the static field reference.
@@ -4416,7 +4418,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     }
                     else
                     {
-                        CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+                        CorInfoHelpFunc helpFunc = call->GetHelperNum();
                         if (!s_helperCallProperties.IsPure(helpFunc))
                         {
                             INDEBUG(failReason = "impure helper call";)
@@ -4497,7 +4499,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     }
                     else
                     {
-                        CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+                        CorInfoHelpFunc helpFunc = call->GetHelperNum();
                         if (s_helperCallProperties.MutatesHeap(helpFunc))
                         {
                             m_canHoistSideEffects = false;
@@ -4583,10 +4585,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 bool visitedCurr = false;
                 bool isCommaTree = tree->OperIs(GT_COMMA);
                 bool hasExcep    = false;
-                for (int i = 0; i < m_valueStack.Height(); i++)
+                for (Value& value : m_valueStack.BottomUpOrder())
                 {
-                    Value& value = m_valueStack.BottomRef(i);
-
                     if (value.m_hoistable)
                     {
                         assert(value.Node() != tree);
@@ -5182,7 +5182,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
 
                     if (call->IsHelperCall())
                     {
-                        CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+                        CorInfoHelpFunc helpFunc = call->GetHelperNum();
                         if (s_helperCallProperties.MutatesHeap(helpFunc))
                         {
                             memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);

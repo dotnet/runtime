@@ -14,7 +14,7 @@ internal sealed class PatchpointInfo : IData<PatchpointInfo>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.PatchpointInfo);
 
-        LocalCount = target.Read<uint>(address + (ulong)type.Fields[nameof(LocalCount)].Offset);
+        LocalCount = target.ReadField<uint>(address, type, nameof(LocalCount));
     }
 
     public uint LocalCount { get; }

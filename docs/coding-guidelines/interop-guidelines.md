@@ -34,7 +34,7 @@ internal static partial class Interop
 ...
 internal static partial class Interop
 {
-    internal static partial class Mincore { ... }
+    internal static partial class mincore { ... }
 }
 ```
 - With few exceptions, the only methods that should be defined in these interop types are DllImports.
@@ -49,9 +49,7 @@ internal static partial class Interop
 ```
 \Common\src\Interop
     \Windows
-        \Kernel32
-            ... interop files
-        \Mincore
+        \mincore
             ... interop files
     \Unix
         \libc
@@ -73,8 +71,8 @@ As shown above, platforms may be additive, in that an assembly may use functiona
         \libc
             \Interop.strerror.cs
     \Windows
-        \Mincore
-            \Interop.WaitOnAddress.cs    <-- Also contains WakeByAddressSingle
+        \mincore
+            \Interop.OutputDebugString.cs
 ```
 
 - If structs/constants will be used on their own without an associated DllImport, or if they may be used with multiple DllImports not in the same file, they should be declared in a separate file.
@@ -83,9 +81,9 @@ As shown above, platforms may be additive, in that an assembly may use functiona
 ```
 \Common\src\Interop
     \Windows
-        \Kernel32
-            \Interop.DuplicateHandle_SafeFileHandle.cs
-            \Interop.DuplicateHandle_SafePipeHandle.cs
+        \mincore
+            \Interop.DuplicateHandle_SafeTokenHandle.cs
+            \Interop.DuplicateHandle_IntPtr.cs
 ```
 
 - The library names used per-platform are stored in internal constants in the Interop class in a private Libraries class in a per-platform file named Interop.Libraries.cs. These constants are then used for all DllImports to that library, rather than having the string duplicated each time, e.g.
@@ -96,9 +94,12 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
     private static class Libraries
     {
         internal const string Kernel32 = "kernel32.dll";
-        internal const string OleAut32 = "oleaut32.dll";
         internal const string Localization = "api-ms-win-core-localization-l1-2-0.dll";
-        internal const string Synch = "api-ms-win-core-synch-l1-2-0.dll";
+        internal const string Handle = "api-ms-win-core-handle-l1-1-0.dll";
+        internal const string ProcessThreads = "api-ms-win-core-processthreads-l1-1-0.dll";
+        internal const string File = "api-ms-win-core-file-l1-1-0.dll";
+        internal const string NamedPipe = "api-ms-win-core-namedpipe-l1-1-0.dll";
+        internal const string IO = "api-ms-win-core-io-l1-1-0.dll";
         ...
     }
 }

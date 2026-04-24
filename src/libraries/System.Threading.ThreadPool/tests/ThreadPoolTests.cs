@@ -102,7 +102,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.True(c <= maxc);
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         [ActiveIssue("https://github.com/mono/mono/issues/15164", TestRuntimes.Mono)]
         public static void SetMinMaxThreadsTest()
         {
@@ -166,7 +166,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {
             RemoteExecutor.Invoke(() =>
@@ -227,7 +227,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(expectedMaxc, maxc);
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SetMinThreadsTo0Test()
         {
             RemoteExecutor.Invoke(() =>
@@ -438,7 +438,7 @@ namespace System.Threading.ThreadPools.Tests
 
         public static bool IsMetricsTestSupported => Environment.ProcessorCount >= 3 && IsThreadingAndRemoteExecutorSupported;
 
-        [ConditionalFact(nameof(IsMetricsTestSupported))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsMetricsTestSupported))]
         public void MetricsTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -707,7 +707,7 @@ namespace System.Threading.ThreadPools.Tests
             done.CheckedWait();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void WorkerThreadStateResetTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -791,7 +791,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SettingMinWorkerThreadsWillCreateThreadsUpToMinimum()
         {
             RemoteExecutor.Invoke(() =>
@@ -866,7 +866,7 @@ namespace System.Threading.ThreadPools.Tests
         [ThreadStatic]
         private static int t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect;
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported))]
         public static void ThreadPoolThreadCreationDoesNotTransferExecutionContext()
         {
             // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
@@ -913,7 +913,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported))]
         public static void CooperativeBlockingCanCreateThreadsFaster()
         {
             // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
@@ -979,7 +979,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported))]
         public static void CooperativeBlockingWithProcessingThreadsAndGoalThreadsAndAddWorkerRaceTest()
         {
             // Avoid contaminating the main process' environment
@@ -1030,7 +1030,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported))]
         public void FileStreamFlushAsyncThreadPoolDeadlockTest()
         {
             // This test was occasionally causing the deadlock described in https://github.com/dotnet/runtime/pull/68171. Run it
@@ -1111,7 +1111,7 @@ namespace System.Threading.ThreadPools.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public void ThreadPoolMinMaxThreadsEventTest()
         {
             // The ThreadPoolMinMaxThreads event is fired when the ThreadPool is created
@@ -1197,7 +1197,7 @@ namespace System.Threading.ThreadPools.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UseWindowsThreadPool))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported), nameof(UseWindowsThreadPool))]
         public void ReadWriteAsyncTest()
         {
             RemoteExecutor.Invoke(async () =>
@@ -1251,7 +1251,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported))]
         public static void PrioritizationExperimentConfigVarTest()
         {
             // Avoid contaminating the main process' environment
@@ -1361,7 +1361,7 @@ namespace System.Threading.ThreadPools.Tests
             select new object[] { x };
 
         // Just verifies that some basic IO operations work with different IOCP counts
-        [ConditionalTheory(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        [ConditionalTheory(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         [MemberData(nameof(IOCompletionPortCountConfigVarTest_Args))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/106371")]
@@ -1463,7 +1463,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static unsafe void ThreadPoolCompletedWorkItemCountTest()
         {
