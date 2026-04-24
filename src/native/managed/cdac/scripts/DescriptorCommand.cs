@@ -63,14 +63,14 @@ internal sealed class DescriptorCommand : Command
             Console.WriteLine($"=== {pd.Name} Descriptor (0x{pd.Address:x}) ===");
             Console.WriteLine($"Version: {pd.Descriptor.Version}");
             Console.WriteLine($"Baseline: {pd.Descriptor.Baseline}");
-            PrintDescriptorContents(pd, dt);
+            PrintDescriptorContents(pd);
         }
 
         if (descriptors.Count > 1)
             PrintMergeConflicts(descriptors);
     }
 
-    private static void PrintDescriptorContents(ParsedDescriptor pd, DataTarget dt)
+    private static void PrintDescriptorContents(ParsedDescriptor pd)
     {
         var descriptor = pd.Descriptor;
 
@@ -101,39 +101,21 @@ internal sealed class DescriptorCommand : Command
         {
             Console.WriteLine($"\n  Globals ({descriptor.Globals.Count}):");
             foreach (var kvp in descriptor.Globals.OrderBy(g => g.Key))
-                PrintGlobalEntry(kvp.Key, kvp.Value, pd.PointerData, dt);
+                PrintGlobalEntry(kvp.Key, kvp.Value, pd.PointerData);
         }
 
         if (descriptor.SubDescriptors is { Count: > 0 })
         {
             Console.WriteLine($"\n  Sub-descriptor references ({descriptor.SubDescriptors.Count}):");
             foreach (var kvp in descriptor.SubDescriptors.OrderBy(s => s.Key))
-                PrintGlobalEntry(kvp.Key, kvp.Value, pd.PointerData, dt);
+                PrintGlobalEntry(kvp.Key, kvp.Value, pd.PointerData);
         }
     }
 
-    private static void PrintGlobalEntry(string name, ContractDescriptorParser.GlobalDescriptor g, ulong[] pointerData, DataTarget dt)
+    private static void PrintGlobalEntry(string name, ContractDescriptorParser.GlobalDescriptor g, ulong[] pointerData)
     {
         string val = ResolveGlobalValue(g, pointerData);
         string prefix = g.Type is not null ? $"type={g.Type}, " : "";
-
-        if (g.Indirect && g.NumericValue.HasValue)
-        {
-            ulong index = g.NumericValue.Value;
-            if (index < (ulong)pointerData.Length)
-            {
-                ulong addr = pointerData[index];
-                int ptrSize = dt.DataReader.PointerSize;
-                Span<byte> buf = stackalloc byte[ptrSize];
-                if (addr != 0 && dt.DataReader.Read(addr, buf) == buf.Length)
-                {
-                    ulong pointedValue = ptrSize == 8 ? BitConverter.ToUInt64(buf) : BitConverter.ToUInt32(buf);
-                    Console.WriteLine($"    {name}: {prefix}indirect={g.Indirect}, value={val} -> *0x{pointedValue:x}");
-                    return;
-                }
-            }
-        }
-
         Console.WriteLine($"    {name}: {prefix}indirect={g.Indirect}, value={val}");
     }
 
@@ -214,6 +196,10 @@ internal sealed class DescriptorCommand : Command
         byte[] magic = new byte[8];
         if (dt.DataReader.Read(addr, magic) != magic.Length)
             return false;
+        ReadOnlySpan<byte> magicLE = "DNCCDAC\0"u8;
+        ReadOnlySpan<byte> magicBE = "\0CADCCND"u8;
+        if (!magic.AsSpan().SequenceEqual(magicLE) && !magic.AsSpan().SequenceEqual(magicBE))
+            return false;
         addr += 8;
 
         // Flags
@@ -243,6 +229,8 @@ internal sealed class DescriptorCommand : Command
         if (dt.DataReader.Read(addr, buf4) != buf4.Length)
             return false;
         uint pointerDataCount = BitConverter.ToUInt32(buf4);
+        if (pointerDataCount > 1024)
+            return false;
         addr += 4;
 
         // Padding
@@ -252,12 +240,14 @@ internal sealed class DescriptorCommand : Command
         if (dt.DataReader.Read(addr, bufPtr) != bufPtr.Length)
             return false;
         ulong pointerDataAddr = ptrSize == 8 ? BitConverter.ToUInt64(bufPtr) : BitConverter.ToUInt32(bufPtr);
+        if (pointerDataCount > 0 && pointerDataAddr == 0)
+            return false;
 
         // Read pointer data entries
         pointerData = new ulong[pointerDataCount];
         for (uint i = 0; i < pointerDataCount; i++)
         {
-            if (dt.DataReader.Read(pointerDataAddr + i * (uint)ptrSize, bufPtr) != bufPtr.Length)
+            if (dt.DataReader.Read(pointerDataAddr + (ulong)i * (ulong)ptrSize, bufPtr) != bufPtr.Length)
                 return false;
             pointerData[i] = ptrSize == 8 ? BitConverter.ToUInt64(bufPtr) : BitConverter.ToUInt32(bufPtr);
         }
@@ -265,7 +255,17 @@ internal sealed class DescriptorCommand : Command
         // Read and parse JSON
         byte[] jsonBytes = new byte[descriptorSize];
         int jsonRead = dt.DataReader.Read(descriptorPtr, jsonBytes);
-        descriptor = ContractDescriptorParser.ParseCompact(jsonBytes.AsSpan(0, jsonRead))!;
+        if (jsonRead != (int)descriptorSize)
+            return false;
+
+        try
+        {
+            descriptor = ContractDescriptorParser.ParseCompact(jsonBytes)!;
+        }
+        catch
+        {
+            return false;
+        }
 
         return descriptor is not null;
     }

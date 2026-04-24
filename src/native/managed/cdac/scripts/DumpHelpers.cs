@@ -18,10 +18,6 @@ internal static class DumpHelpers
         ulong fallback = 0;
         foreach (ModuleInfo module in dt.DataReader.EnumerateModules())
         {
-            string? fileName = module.FileName;
-            if (fileName is null)
-                continue;
-
             ulong addr = module.GetExportSymbolAddress("DotNetRuntimeContractDescriptor");
             if (addr == 0)
                 continue;
@@ -29,10 +25,14 @@ internal static class DumpHelpers
             if (dt.DataReader.PointerSize == 4)
                 addr &= 0xFFFF_FFFF;
 
-            int lastSep = Math.Max(fileName.LastIndexOf('/'), fileName.LastIndexOf('\\'));
-            string name = lastSep >= 0 ? fileName[(lastSep + 1)..] : fileName;
-            if (s_coreClrModuleNames.Contains(name, StringComparer.OrdinalIgnoreCase))
-                return addr;
+            string? fileName = module.FileName;
+            if (fileName is not null)
+            {
+                int lastSep = Math.Max(fileName.LastIndexOf('/'), fileName.LastIndexOf('\\'));
+                string name = lastSep >= 0 ? fileName[(lastSep + 1)..] : fileName;
+                if (s_coreClrModuleNames.Contains(name, StringComparer.OrdinalIgnoreCase))
+                    return addr;
+            }
 
             if (fallback == 0)
                 fallback = addr;
