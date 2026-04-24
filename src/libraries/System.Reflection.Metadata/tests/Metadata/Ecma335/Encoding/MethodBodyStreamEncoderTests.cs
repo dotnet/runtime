@@ -625,10 +625,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public unsafe void AddMethodBody_ShortBranchOperandAtChunkBoundary()
         {
             // Force a short-branch operand to land at the very last byte of the first
-            // BlobBuilder chunk (offset 255 in a 256-byte chunk).  The removed special-case
-            // in CopyCodeAndFixupBranches would have advanced srcBlobOffset by operandSize
-            // BEFORE breaking out of the inner loop, causing it to skip the first byte of the
-            // next chunk (offset 256) after resuming.
+            // BlobBuilder chunk (offset 255 in a 256-byte chunk).
 
             // Use an explicit 256-byte chunk capacity so the boundary is deterministic.
             const int chunkCapacity = 256;
