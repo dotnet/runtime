@@ -9108,7 +9108,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     emitTotalIGjmps++;
 #endif
 
-    // Set reloc flags for AOT purposes
+    // Set reloc flags for AOT purposes. This also affects emitInsSizeAM below.
     id->idSetRelocFlags(attr);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
@@ -9167,7 +9167,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumb
     emitTotalIGjmps++;
 #endif
 
-    // Set reloc flags for AOT purposes
+    // Set reloc flags for AOT purposes. This also affects emitInsSizeAM below.
     id->idSetRelocFlags(attr);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
