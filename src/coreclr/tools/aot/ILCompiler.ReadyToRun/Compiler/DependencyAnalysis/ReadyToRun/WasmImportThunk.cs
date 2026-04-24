@@ -19,6 +19,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly TypeSystemContext _context;
         private readonly Import _helperCell;
         private readonly WasmTypeNode _typeNode;
+        private readonly WasmSignature _wasmSignature;
 
         private readonly ImportThunkKind _thunkKind;
 
@@ -33,10 +34,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Import thunks are used to call a runtime-provided helper which fixes up an indirection cell in a particular
         /// import section. Optionally they may also contain a relocation for a specific indirection cell to fix up.
         /// </summary>
-        public WasmImportThunk(NodeFactory factory, WasmTypeNode typeNode, ReadyToRunHelper helperId, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+        public WasmImportThunk(NodeFactory factory, WasmSignature wasmSignature, ReadyToRunHelper helperId, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
         {
             _context = factory.TypeSystemContext;
-            _typeNode = typeNode;
+            _wasmSignature = wasmSignature;
+            _typeNode = factory.WasmTypeNode(wasmSignature);
             _helperCell = factory.GetReadyToRunHelperCell(helperId);
             _containingImportSection = containingImportSection;
 
@@ -72,8 +74,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             sb.Append("WasmDelayLoadHelper->"u8);
             _helperCell.AppendMangledName(nameMangler, sb);
-            sb.Append($"(ImportSection:{_containingImportSection.Name},Kind:{_thunkKind})");
-            _typeNode.AppendMangledName(nameMangler, sb);
+            sb.Append($"(ImportSection:{_containingImportSection.Name},Kind:{_thunkKind},Sig:{_wasmSignature.SignatureString})");
         }
 
         protected override string GetName(NodeFactory factory)
@@ -85,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 948271336;
 
-        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_typeNode.Type, _context);
+        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
 
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => false;
@@ -98,7 +99,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            result = _typeNode.CompareToImpl(otherNode._typeNode, comparer);
+            result = _wasmSignature.CompareTo(otherNode._wasmSignature);
             if (result != 0)
                 return result;
 
@@ -122,7 +123,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
 
-            MethodSignature methodSignature = WasmLowering.RaiseSignature(_typeNode.Type, _context);
+            MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
             (ArgIterator argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
 
             int[] offsets = new int[methodSignature.Length];

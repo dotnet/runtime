@@ -297,7 +297,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _wasmImportThunks = new NodeCache<WasmImportThunkKey, ISymbolDefinitionNode>(key =>
             {
-                return new WasmImportThunk(this, key.TypeNode, key.Helper, key.ContainingImportSection, key.UseVirtualCall, key.UseJumpableStub);
+                return new WasmImportThunk(this, key.Signature, key.Helper, key.ContainingImportSection, key.UseVirtualCall, key.UseJumpableStub);
             });
 
             _wasmImportThunkPortableEntrypoints = new NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode>(key =>
@@ -755,15 +755,15 @@ namespace ILCompiler.DependencyAnalysis
         }
         private struct WasmImportThunkKey : IEquatable<WasmImportThunkKey>
         {
-            public readonly WasmTypeNode TypeNode;
+            public readonly WasmSignature Signature;
             public readonly ReadyToRunHelper Helper;
             public readonly ImportSectionNode ContainingImportSection;
             public readonly bool UseVirtualCall;
             public readonly bool UseJumpableStub;
 
-            public WasmImportThunkKey(WasmTypeNode typeNode, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+            public WasmImportThunkKey(WasmSignature signature, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
             {
-                TypeNode = typeNode;
+                Signature = signature;
                 Helper = helper;
                 ContainingImportSection = containingImportSection;
                 UseVirtualCall = useVirtualCall;
@@ -772,7 +772,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public bool Equals(WasmImportThunkKey other)
             {
-                return TypeNode == other.TypeNode &&
+                return Signature.Equals(other.Signature) &&
                     Helper == other.Helper &&
                     ContainingImportSection == other.ContainingImportSection &&
                     UseVirtualCall == other.UseVirtualCall &&
@@ -787,7 +787,7 @@ namespace ILCompiler.DependencyAnalysis
             public override int GetHashCode()
             {
                 return HashCode.Combine(Helper.GetHashCode(),
-                    TypeNode.GetHashCode(),
+                    Signature.GetHashCode(),
                     ContainingImportSection.GetHashCode(),
                     UseVirtualCall.GetHashCode(),
                     UseJumpableStub.GetHashCode());
@@ -796,9 +796,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<WasmImportThunkKey, ISymbolDefinitionNode> _wasmImportThunks;
 
-        public ISymbolDefinitionNode WasmImportThunk(WasmTypeNode typeNode, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+        public ISymbolDefinitionNode WasmImportThunk(WasmSignature signature, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
         {
-            WasmImportThunkKey thunkKey = new WasmImportThunkKey(typeNode, helper, containingImportSection, useVirtualCall, useJumpableStub);
+            WasmImportThunkKey thunkKey = new WasmImportThunkKey(signature, helper, containingImportSection, useVirtualCall, useJumpableStub);
             return _wasmImportThunks.GetOrAdd(thunkKey);
         }
 
@@ -1242,6 +1242,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             WasmFuncType funcType = WasmFuncType.FromCorInfoSignature(types);
             return _wasmTypeNodes.GetOrAdd(funcType);
+        }
+
+        public WasmTypeNode WasmTypeNode(WasmSignature signature)
+        {
+            return _wasmTypeNodes.GetOrAdd(signature.FuncType);
         }
 
         // TODO-Wasm: Do not use WasmFuncType directly as the key for better

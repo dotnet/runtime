@@ -144,28 +144,90 @@ namespace Internal.JitInterface
             _ => throw new NotSupportedException($"Unknown WasmValueType: {vt}")
         };
 
-        private static TypeDesc RaiseType(WasmValueType valueType, TypeSystemContext context)
+        private static TypeDesc RaiseSigChar(char c, TypeSystemContext context) => c switch
         {
-            return valueType switch
+            'i' => context.GetWellKnownType(WellKnownType.Int32),
+            'l' => context.GetWellKnownType(WellKnownType.Int64),
+            'f' => context.GetWellKnownType(WellKnownType.Single),
+            'd' => context.GetWellKnownType(WellKnownType.Double),
+            'V' => throw new NotSupportedException("SIMD types are not supported in this version of the compiler"),
+            _ => throw new InvalidOperationException($"Unknown signature char: {c}")
+        };
+
+        private static int ParseStructSize(string sig, ref int pos)
+        {
+            Debug.Assert(sig[pos] == 'S');
+            pos++; // skip 'S'
+            int start = pos;
+            while (pos < sig.Length && char.IsDigit(sig[pos]))
             {
-                WasmValueType.I32 => context.GetWellKnownType(WellKnownType.Int32),
-                WasmValueType.I64 => context.GetWellKnownType(WellKnownType.Int64),
-                WasmValueType.F32 => context.GetWellKnownType(WellKnownType.Single),
-                WasmValueType.F64 => context.GetWellKnownType(WellKnownType.Double),
-                WasmValueType.V128 => throw new NotSupportedException("SIMD types are not supported in this version of the compiler"),
-                _ => throw new InvalidOperationException("Unknown WasmValueType: " + valueType),
-            };
+                pos++;
+            }
+            return int.Parse(sig.AsSpan(start, pos - start));
         }
 
-        public static MethodSignature RaiseSignature(WasmFuncType funcType, TypeSystemContext context)
+        public static MethodSignature RaiseSignature(WasmSignature wasmSignature, TypeSystemContext context)
         {
-            List<TypeDesc> parameters = new List<TypeDesc>();
-            for (int i = 1; i < funcType.Params.Types.Length - 1; i++)
+            string sig = wasmSignature.SignatureString;
+            int pos = 0;
+
+            // Parse return type
+            TypeDesc returnType;
+            if (sig[pos] == 'v')
             {
-                parameters.Add(RaiseType(funcType.Params.Types[i], context));
+                returnType = context.GetWellKnownType(WellKnownType.Void);
+                pos++;
             }
-            TypeDesc returnType = funcType.Returns.Types.Length > 0 ? RaiseType(funcType.Returns.Types[0], context) : context.GetWellKnownType(WellKnownType.Void);
-            return new MethodSignature(MethodSignatureFlags.Static, 0, returnType, parameters.ToArray());
+            else if (sig[pos] == 'S')
+            {
+                int structSize = ParseStructSize(sig, ref pos);
+                returnType = ((CompilerTypeSystemContext)context).GetValueTupleStructOfSize(structSize);
+            }
+            else
+            {
+                returnType = RaiseSigChar(sig[pos], context);
+                pos++;
+            }
+
+            // Parse parameters (everything until 'p' suffix or end of string)
+            List<TypeDesc> parameters = new List<TypeDesc>();
+            while (pos < sig.Length && sig[pos] != 'p')
+            {
+                char c = sig[pos];
+                if (c == 'e')
+                {
+                    // Empty struct — include the cached empty struct type for roundtrip fidelity
+                    TypeDesc emptyStruct = ((CompilerTypeSystemContext)context).CachedEmptyStruct;
+                    Debug.Assert(emptyStruct is not null, "Encountered 'e' in signature but no empty struct was cached during lowering");
+                    parameters.Add(emptyStruct);
+                    pos++;
+                }
+                else if (c == 'S')
+                {
+                    int structSize = ParseStructSize(sig, ref pos);
+                    parameters.Add(((CompilerTypeSystemContext)context).GetValueTupleStructOfSize(structSize));
+                }
+                else
+                {
+                    parameters.Add(RaiseSigChar(c, context));
+                    pos++;
+                }
+            }
+
+            bool isManaged = pos < sig.Length && sig[pos] == 'p';
+            MethodSignatureFlags flags = MethodSignatureFlags.Static;
+            if (!isManaged)
+            {
+                flags |= MethodSignatureFlags.UnmanagedCallingConvention;
+            }
+
+            MethodSignature result = new MethodSignature(flags, 0, returnType, parameters.ToArray());
+
+            LoweringFlags relowerFlags = isManaged ? LoweringFlags.None : LoweringFlags.IsUnmanagedCallersOnly;
+            Debug.Assert(GetSignature(result, relowerFlags).Equals(wasmSignature),
+                "RaiseSignature produced a signature that does not roundtrip back to the same WasmSignature");
+
+            return result;
         }
 
         /// <summary>
@@ -316,6 +378,7 @@ namespace Internal.JitInterface
                     {
                         // Empty struct — not emitted as a WebAssembly argument
                         sigBuilder.Append('e');
+                        ((CompilerTypeSystemContext)signature.ReturnType.Context).CacheEmptyStruct(paramType);
                         continue;
                     }
 

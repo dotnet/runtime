@@ -161,7 +161,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
             bool result = SignatureString.Equals(other.SignatureString, StringComparison.Ordinal);
             Debug.Assert(!result || FuncType.Equals(other.FuncType),
                 "WasmSignature strings match but FuncTypes differ");
-            
+
             return result;
         }
 
