@@ -155,14 +155,19 @@ namespace System
         {
             return Cache.s_methodCache.TryGetValue(this, out MethodInfo? cachedValue) ? cachedValue : GetMethodImplUncached();
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             MethodInfo GetMethodImplUncached()
             {
                 Debug.Assert(this is MulticastDelegate);
-                return Unsafe.As<MulticastDelegate>(this).GetMethodImplMulticast();
+                MethodInfo method = Unsafe.As<MulticastDelegate>(this).GetMethodImplMulticast();
+
+                Debug.Assert(method is not null);
+                Cache.s_methodCache.AddOrUpdate(this, method);
+                return method;
             }
         }
 
-        internal MethodInfo GetMethodImplNormal()
+        internal MethodInfo GetMethodImplSimple()
         {
             IRuntimeMethodInfo method = CreateMethodInfo(MethodDesc);
             RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
@@ -214,15 +219,7 @@ namespace System
                     }
                 }
             }
-            MethodInfo methodInfo = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
-            SetCachedMethod(methodInfo);
-            return methodInfo;
-        }
-
-        internal void SetCachedMethod(MethodInfo methodInfo)
-        {
-            Debug.Assert(methodInfo is not null);
-            Cache.s_methodCache.AddOrUpdate(this, methodInfo);
+            return (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
         }
 
         public object? Target => GetTarget();

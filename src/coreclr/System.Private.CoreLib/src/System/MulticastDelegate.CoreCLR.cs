@@ -31,7 +31,7 @@ namespace System
 
         internal bool InvocationListLogicallyNull()
         {
-            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is DynamicResolver) || (_invocationList is DynamicMethod);
+            return _invocationList is null or LoaderAllocator or DynamicResolver or DynamicMethod;
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -535,13 +535,11 @@ namespace System
                     declaringType = reflectedType;
                 }
 
-                MethodInfo methodInfo = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
-                SetCachedMethod(methodInfo);
-                return methodInfo;
+                return (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
             }
 
-            // Otherwise, must be an inner delegate of a wrapper delegate of an open virtual method. In that case, call base implementation
-            return GetMethodImplNormal();
+            // Otherwise, must be a non multicast delegate.
+            return GetMethodImplSimple();
         }
 
         // this should help inlining
