@@ -33,6 +33,7 @@ public enum DebuggerAssemblyControlFlags : uint
     DACF_NONE = 0x00,
     DACF_ALLOW_JIT_OPTS = 0x02,
     DACF_ENC_ENABLED = 0x08,
+    DACF_IGNORE_PDBS = 0x20,
     DACF_CONTROL_FLAGS_MASK = 0x2E,
 }
 
@@ -72,6 +73,13 @@ public record struct ModuleLookupTables(
     TargetPointer TypeDefToMethodTable,
     TargetPointer TypeRefToMethodTable,
     TargetPointer MethodDefToILCodeVersioningState);
+
+public readonly struct LoaderHeapBlockData
+{
+    public TargetPointer Address { get; init; }
+    public TargetNUInt Size { get; init; }
+    public TargetPointer NextBlock { get; init; }
+}
 
 public interface ILoader : IContract
 {
@@ -117,6 +125,11 @@ public interface ILoader : IContract
     TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
     TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
+
+    // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
+    TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap) => throw new NotImplementedException();
+    // Returns the data for the given loader heap block (address, size, and next block pointer).
+    LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block) => throw new NotImplementedException();
     IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 
     DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle) => throw new NotImplementedException();

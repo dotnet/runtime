@@ -72,6 +72,7 @@ CompMemKindMacro(Async)
 CompMemKindMacro(RangeCheckCloning)
 CompMemKindMacro(WasmSccTransform)
 CompMemKindMacro(WasmCfgLowering)
+CompMemKindMacro(WasmEH)
 //clang-format on
 
 #undef CompMemKindMacro

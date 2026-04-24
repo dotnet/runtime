@@ -59,14 +59,18 @@ namespace System.Diagnostics
                 _state = ProcessWaitState.AddRef(processId, isNewChild, usesTerminal);
             }
 
+            private Holder(ProcessWaitState source) => _state = source;
+
+            /// <summary>Creates an additional holder for the same wait state, incrementing the ref count.</summary>
+            internal Holder IncrementRefCount()
+            {
+                _state.IncrementRefCount();
+                return new(_state);
+            }
+
             ~Holder()
             {
-                // Don't try to Dispose resources (like ManualResetEvents) if
-                // the process is shutting down.
-                if (_state != null && !Environment.HasShutdownStarted)
-                {
-                    _state.ReleaseRef();
-                }
+                _state?.ReleaseRef();
             }
 
             public void Dispose()
@@ -154,6 +158,16 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Increments the ref count for this wait state object.</summary>
+        internal void IncrementRefCount()
+        {
+            Dictionary<int, ProcessWaitState> waitStates = _isChild ? s_childProcessWaitStates : s_processWaitStates;
+            lock (waitStates)
+            {
+                _outstandingRefCount++;
+            }
+        }
+
         /// <summary>
         /// Decrements the ref count on the wait state object, and if it's the last one,
         /// removes it from the table.
@@ -165,7 +179,6 @@ namespace System.Diagnostics
             lock (waitStates)
             {
                 bool foundState = waitStates.TryGetValue(_processId, out pws);
-                Debug.Assert(foundState);
                 if (foundState)
                 {
                     --_outstandingRefCount;
@@ -194,11 +207,13 @@ namespace System.Diagnostics
         /// </summary>
         private readonly object _gate = new object();
         /// <summary>ID of the associated process.</summary>
-        private readonly int _processId;
+        internal readonly int _processId;
         /// <summary>Associated process is a child process.</summary>
-        private readonly bool _isChild;
+        internal readonly bool _isChild;
         /// <summary>Associated process is a child that can use the terminal.</summary>
         private readonly bool _usesTerminal;
+        /// <summary>A value indicating whether the process has been terminated due to timeout or cancellation.</summary>
+        internal bool _canceled;
 
         /// <summary>An in-progress or completed wait operation.</summary>
         /// <remarks>A completed task does not mean the process has exited.</remarks>
@@ -208,8 +223,8 @@ namespace System.Diagnostics
 
         /// <summary>Whether the associated process exited.</summary>
         private bool _exited;
-        /// <summary>If the process exited, it's exit code, or null if we were unable to determine one.</summary>
-        private int? _exitCode;
+        /// <summary>If the process exited, its exit status, or null if we were unable to determine one.</summary>
+        private ProcessExitStatus? _exitStatus;
         /// <summary>
         /// The approximate time the process exited.  We do not have the ability to know exact time a process
         /// exited, so we approximate it by storing the time that we discovered it exited.
@@ -310,14 +325,14 @@ namespace System.Diagnostics
             }
         }
 
-        internal bool GetExited(out int? exitCode, bool refresh)
+        internal bool GetExited(out ProcessExitStatus? exitStatus, bool refresh)
         {
             lock (_gate)
             {
                 // Have we already exited?  If so, return the cached results.
                 if (_exited)
                 {
-                    exitCode = _exitCode;
+                    exitStatus = _exitStatus;
                     return true;
                 }
 
@@ -325,7 +340,7 @@ namespace System.Diagnostics
                 // and that task owns the right to call CheckForNonChildExit.
                 if (!_waitInProgress.IsCompleted)
                 {
-                    exitCode = null;
+                    exitStatus = null;
                     return false;
                 }
 
@@ -337,8 +352,8 @@ namespace System.Diagnostics
                 }
 
                 // We now have an up-to-date snapshot for whether we've exited,
-                // and if we have, what the exit code is (if we were able to find out).
-                exitCode = _exitCode;
+                // and if we have, what the exit status is (if we were able to find out).
+                exitStatus = _exitStatus;
                 return _exited;
             }
         }
@@ -539,13 +554,14 @@ namespace System.Diagnostics
             }
         }
 
-        private void ChildReaped(int exitCode, bool configureConsole)
+        private void ChildReaped(int exitCode, int terminatingSignal, bool configureConsole)
         {
             lock (_gate)
             {
                 Debug.Assert(!_exited);
 
-                _exitCode = exitCode;
+                PosixSignal? signal = terminatingSignal != 0 ? (PosixSignal)terminatingSignal : null;
+                _exitStatus = new ProcessExitStatus(exitCode, canceled: _canceled && signal is PosixSignal.SIGKILL, signal);
 
                 if (_usesTerminal)
                 {
@@ -568,11 +584,12 @@ namespace System.Diagnostics
 
                 // Try to get the state of the child process
                 int exitCode;
-                int waitResult = Interop.Sys.WaitPidExitedNoHang(_processId, out exitCode);
+                int terminatingSignal;
+                int waitResult = Interop.Sys.WaitPidExitedNoHang(_processId, out exitCode, out terminatingSignal);
 
                 if (waitResult == _processId)
                 {
-                    ChildReaped(exitCode, configureConsole);
+                    ChildReaped(exitCode, terminatingSignal, configureConsole);
                     return true;
                 }
                 else if (waitResult == 0)
@@ -673,7 +690,8 @@ namespace System.Diagnostics
                     do
                     {
                         int exitCode;
-                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out exitCode);
+                        int terminatingSignal;
+                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out exitCode, out terminatingSignal);
                         if (pid <= 0)
                         {
                             break;
@@ -682,7 +700,7 @@ namespace System.Diagnostics
                         // Check if the process is a child that has just terminated.
                         if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
                         {
-                            pws.ChildReaped(exitCode, configureConsole);
+                            pws.ChildReaped(exitCode, terminatingSignal, configureConsole);
                             pws.ReleaseRef();
                         }
                     } while (true);
