@@ -216,10 +216,10 @@ public class WasmTemplateTestsBase : BuildTestBase
                 UseShellExecute = false
             };
             // Isolate the template cache so the install doesn't touch the default user profile
-            // and can't collide across Helix jobs/agents (or fail if the profile is not writable).
-            string dotnetCliHome = s_buildEnv.EnvVars.TryGetValue("NUGET_PACKAGES", out string? nugetPackagesPath) && !string.IsNullOrWhiteSpace(nugetPackagesPath)
-                ? Path.Combine(Path.GetDirectoryName(nugetPackagesPath)!, ".dotnet-cli-home")
-                : Path.Combine(Path.GetDirectoryName(templateNupkg)!, ".dotnet-cli-home");
+            // and can't collide across Helix jobs/agents. Always place it in TmpPath — the
+            // test harness's writable scratch dir — because the nupkg can live under the
+            // Helix correlation payload, which is read-only on Linux agents.
+            string dotnetCliHome = Path.Combine(BuildEnvironment.TmpPath, ".dotnet-cli-home");
             Directory.CreateDirectory(dotnetCliHome);
 
             // Use the same isolated environment as the rest of the test suite
