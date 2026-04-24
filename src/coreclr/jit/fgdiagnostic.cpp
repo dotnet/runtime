@@ -3433,7 +3433,19 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
             assert((tree->gtFlags & GTF_VAR_DEF) != 0);
-            assert(((tree->gtFlags & GTF_VAR_USEASG) != 0) == tree->IsPartialLclFld(this));
+            // See fgImplicitByRefLclFldsStale: during the window between
+            // PHASE_MORPH_IMPBYREF and the end of PHASE_MORPH_GLOBAL, an implicit
+            // byref arg has been retyped from TYP_STRUCT to TYP_BYREF, but existing
+            // LCL_FLD/STORE_LCL_FLD references to it have not yet been rewritten to
+            // indirections. For those nodes GTF_VAR_USEASG was set against the
+            // original struct size and so may not match IsPartialLclFld against the
+            // new TYP_BYREF size; skip the check.
+            if (!fgImplicitByRefLclFldsStale || !tree->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) ||
+                !lvaGetDesc(tree->AsLclFld())->TypeIs(TYP_BYREF) ||
+                !lvaIsImplicitByRefLocal(tree->AsLclFld()->GetLclNum()))
+            {
+                assert(((tree->gtFlags & GTF_VAR_USEASG) != 0) == tree->IsPartialLclFld(this));
+            }
             break;
 
         case GT_CATCH_ARG:

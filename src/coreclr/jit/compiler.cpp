@@ -4563,19 +4563,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
 
-    // PHASE_MORPH_IMPBYREF retypes implicit byref args from TYP_STRUCT to TYP_BYREF
-    // but does not rewrite existing LCL_FLD/STORE_LCL_FLD references into those args;
-    // that rewrite happens later in fgMorphExpandImplicitByRefArg during PHASE_MORPH_GLOBAL.
-    // Suppress IR checks over this transient state.
-    PhaseChecks const savedChecks = activePhaseChecks;
-    activePhaseChecks &= ~PhaseChecks::CHECK_IR;
-
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
     //
+    // This phase retypes implicit byref args from TYP_STRUCT to TYP_BYREF but does not rewrite
+    // existing LCL_FLD/STORE_LCL_FLD references into those args; that rewrite happens later in
+    // fgMorphExpandImplicitByRefArg during PHASE_MORPH_GLOBAL. The window in which those
+    // references are stale is scoped by fgImplicitByRefLclFldsStale (debug-only) so that
+    // fgDebugCheckFlags can relax its USEASG/IsPartialLclFld invariant just for the affected
+    // nodes during the window.
+    //
+    INDEBUG(fgImplicitByRefLclFldsStale = true);
     DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
-
-    activePhaseChecks = savedChecks;
 
 #ifdef DEBUG
     // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
@@ -4587,6 +4586,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     unsigned const preMorphBBCount = fgBBcount;
     DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
+    INDEBUG(fgImplicitByRefLclFldsStale = false);
 
     auto postMorphPhase = [this]() {
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
