@@ -30,6 +30,7 @@ namespace System.Security.Cryptography.Tests
         // CNG enforces both, but the Windows X25519DiffieHellmanImplementation canonicalizes
         // non-canonical public keys before import and passes BCRYPT_NO_KEY_VALIDATION.
         public static bool IsStrictKeyValidatingPlatform => PlatformDetection.IsSymCryptOpenSsl;
+        public static bool IsNotStrictKeyValidatingPlatform => !IsStrictKeyValidatingPlatform;
 
         [Fact]
         public void ExportPrivateKey_Roundtrip()
@@ -152,7 +153,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(vector.SharedSecret, secretBuffer);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNotStrictKeyValidatingPlatform))]
         public void DeriveRawSecretAgreement_ZeroSharedSecret_Throws()
         {
             // Wycheproof tcId 64: peer public key is a low-order point on Curve25519.
