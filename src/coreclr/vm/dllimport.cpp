@@ -1298,7 +1298,7 @@ public:
 
     void MarshalArgument(MarshalInfo* pInfo, int argOffset)
     {
-        LIMITED_METHOD_CONTRACT;
+        STANDARD_VM_CONTRACT;
         pInfo->SetupArgumentSizes();
     }
 
