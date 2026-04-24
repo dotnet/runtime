@@ -3524,18 +3524,18 @@ namespace Internal.JitInterface
             {
                 var sig = HandleToObject(callSig->methodSignature);
 
-                LoweringFlags flags = 0;
+                WasmLowering.LoweringFlags flags = 0;
                 if (callSig->hasTypeArg())
                 {
-                    flags |= LoweringFlags.HasGenericContextArg;
+                    flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
                 }
                 if (callSig->isAsyncCall())
                 {
-                    flags |= LoweringFlags.IsAsyncCall;
+                    flags |= WasmLowering.LoweringFlags.IsAsyncCall;
                 }
-                if ((callSig->getCallConv() & 0xF) != 0)
+                if (((int)callSig->getCallConv() & 0xF) != 0)
                 {
-                    flags |= LoweringFlags.IsUnmanagedCallersOnly;
+                    flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
                 }
 
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);

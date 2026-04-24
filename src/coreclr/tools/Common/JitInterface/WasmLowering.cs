@@ -191,10 +191,17 @@ namespace Internal.JitInterface
 
             // Parse parameters (everything until 'p' suffix or end of string)
             List<TypeDesc> parameters = new List<TypeDesc>();
+            bool hasThis = false;
             while (pos < sig.Length && sig[pos] != 'p')
             {
                 char c = sig[pos];
-                if (c == 'e')
+                if (c == 'T')
+                {
+                    // 'this' parameter — not added as explicit param, sets hasThis flag
+                    hasThis = true;
+                    pos++;
+                }
+                else if (c == 'e')
                 {
                     // Empty struct — include the cached empty struct type for roundtrip fidelity
                     TypeDesc emptyStruct = ((CompilerTypeSystemContext)context).CachedEmptyStruct;
@@ -215,7 +222,7 @@ namespace Internal.JitInterface
             }
 
             bool isManaged = pos < sig.Length && sig[pos] == 'p';
-            MethodSignatureFlags flags = MethodSignatureFlags.Static;
+            MethodSignatureFlags flags = hasThis ? MethodSignatureFlags.None : MethodSignatureFlags.Static;
             if (!isManaged)
             {
                 flags |= MethodSignatureFlags.UnmanagedCallingConvention;
@@ -345,7 +352,7 @@ namespace Internal.JitInterface
                 if (hasThis)
                 {
                     result.Add(pointerType);
-                    sigBuilder.Append(hiddenParamChar);
+                    sigBuilder.Append('T');
                 }
 
                 if (hasReturnBuffer)
