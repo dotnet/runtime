@@ -12,7 +12,7 @@ internal sealed class SystemDomain : IData<SystemDomain>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.SystemDomain);
         GlobalLoaderAllocator = address + (ulong)type.Fields[nameof(GlobalLoaderAllocator)].Offset;
-        SystemAssembly = target.ReadPointer(address + (ulong)type.Fields[nameof(SystemAssembly)].Offset);
+        SystemAssembly = target.ReadPointerField(address, type, nameof(SystemAssembly));
     }
 
     public TargetPointer GlobalLoaderAllocator { get; init; }

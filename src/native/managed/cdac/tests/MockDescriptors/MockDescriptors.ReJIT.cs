@@ -2,98 +2,108 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-internal partial class MockDescriptors
+internal sealed class MockProfControlBlock : TypedView
 {
-    public class ReJIT
+    private const string GlobalEventMaskFieldName = "GlobalEventMask";
+    private const string RejitOnAttachEnabledFieldName = "RejitOnAttachEnabled";
+    private const string MainProfilerProfInterfaceFieldName = "MainProfilerProfInterface";
+    private const string NotificationProfilerCountFieldName = "NotificationProfilerCount";
+
+    public static Layout<MockProfControlBlock> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("ProfControlBlock", architecture)
+            .AddUInt64Field(GlobalEventMaskFieldName)
+            .AddField(RejitOnAttachEnabledFieldName, sizeof(byte))
+            .AddPointerField(MainProfilerProfInterfaceFieldName)
+            .AddUInt32Field(NotificationProfilerCountFieldName)
+            .Build<MockProfControlBlock>();
+
+    public ulong GlobalEventMask
     {
-        private const ulong DefaultAllocationRangeStart = 0x0010_1000;
-        private const ulong DefaultAllocationRangeEnd = 0x00011_0000;
+        get => ReadUInt64Field(GlobalEventMaskFieldName);
+        set => WriteUInt64Field(GlobalEventMaskFieldName, value);
+    }
 
-        // see src/coreclr/vm/codeversion.h
-        [Flags]
-        public enum RejitFlags : uint
-        {
-            kStateRequested = 0x00000000,
+    public byte RejitOnAttachEnabled
+    {
+        get => ReadByteField(RejitOnAttachEnabledFieldName);
+        set => WriteByteField(RejitOnAttachEnabledFieldName, value);
+    }
 
-            kStateActive = 0x00000002,
+    public ulong MainProfilerProfInterface
+    {
+        get => ReadPointerField(MainProfilerProfInterfaceFieldName);
+        set => WritePointerField(MainProfilerProfInterfaceFieldName, value);
+    }
 
-            kStateMask = 0x0000000F
-        }
+    public int NotificationProfilerCount
+    {
+        get => (int)ReadUInt32Field(NotificationProfilerCountFieldName);
+        set => WriteUInt32Field(NotificationProfilerCountFieldName, (uint)value);
+    }
+}
 
-        private static readonly TypeFields ProfControlBlockFields = new TypeFields()
-        {
-            DataType = DataType.ProfControlBlock,
-            Fields =
-            [
-                new(nameof(Data.ProfControlBlock.GlobalEventMask), DataType.uint64),
-                new(nameof(Data.ProfControlBlock.RejitOnAttachEnabled), DataType.uint8),
-            ]
-        };
+internal sealed class MockReJITBuilder
+{
+    private const ulong DefaultAllocationRangeStart = 0x0010_1000;
+    private const ulong DefaultAllocationRangeEnd = 0x00011_0000;
+    private const string ProfilerControlBlockGlobalName = "ProfilerControlBlock";
 
-        internal readonly MockMemorySpace.Builder Builder;
+    // see src/coreclr/vm/codeversion.h
+    [Flags]
+    public enum RejitFlags : uint
+    {
+        kStateRequested = 0x00000000,
+        kStateActive = 0x00000002,
+        kStateMask = 0x0000000F
+    }
 
-        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
-        internal (string Name, ulong Value)[] Globals { get; }
+    internal MockMemorySpace.Builder Builder { get; }
+    internal Layout<MockProfControlBlock> ProfControlBlockLayout { get; }
+    public ulong ProfilerControlBlockGlobalAddress { get; }
 
-        private CodeVersions _codeVersions { get; }
+    private readonly MockCodeVersionsBuilder _codeVersions;
+    private readonly MockMemorySpace.BumpAllocator _rejitAllocator;
 
-        private readonly MockMemorySpace.BumpAllocator _rejitAllocator;
+    public MockReJITBuilder(MockTarget.Architecture arch, bool rejitOnAttachEnabled = true)
+        : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), rejitOnAttachEnabled)
+    {
+    }
 
-        public ReJIT(MockTarget.Architecture arch, bool rejitOnAttachEnabled = true)
-            : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), rejitOnAttachEnabled)
-        { }
+    public MockReJITBuilder(MockMemorySpace.Builder builder, bool rejitOnAttachEnabled = true)
+        : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), rejitOnAttachEnabled)
+    {
+    }
 
-        public ReJIT(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool rejitOnAttachEnabled = true)
-        {
-            Builder = builder;
-            _rejitAllocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
+    public MockReJITBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool rejitOnAttachEnabled = true)
+    {
+        Builder = builder;
+        _rejitAllocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
 
-            _codeVersions = new CodeVersions(Builder);
+        _codeVersions = new MockCodeVersionsBuilder(Builder);
+        ProfControlBlockLayout = MockProfControlBlock.CreateLayout(builder.TargetTestHelpers.Arch);
+        ProfilerControlBlockGlobalAddress = AddProfControlBlock(rejitOnAttachEnabled);
+    }
 
-            Types = GetTypes(builder.TargetTestHelpers);
+    internal Layout<MockMethodDescVersioningState> MethodDescVersioningStateLayout => _codeVersions.MethodDescVersioningStateLayout;
+    internal Layout<MockNativeCodeVersionNode> NativeCodeVersionNodeLayout => _codeVersions.NativeCodeVersionNodeLayout;
+    internal Layout<MockILCodeVersioningState> ILCodeVersioningStateLayout => _codeVersions.ILCodeVersioningStateLayout;
+    internal Layout<MockILCodeVersionNode> ILCodeVersionNodeLayout => _codeVersions.ILCodeVersionNodeLayout;
+    internal Layout<MockGCCoverageInfo> GCCoverageInfoLayout => _codeVersions.GCCoverageInfoLayout;
 
-            Globals =
-            [
-                (nameof(Constants.Globals.ProfilerControlBlock), AddProfControlBlock(rejitOnAttachEnabled)),
-            ];
-        }
+    public MockILCodeVersionNode AddExplicitILCodeVersionNode(ulong rejitId, RejitFlags rejitFlags)
+        => _codeVersions.AddILCodeVersionNode(rejitId, (uint)rejitFlags);
 
-        public ILCodeVersionHandle AddExplicitILCodeVersion(TargetNUInt rejitId, RejitFlags rejitFlags)
-        {
-            TargetPointer codeVersionNode = _codeVersions.AddILCodeVersionNode(TargetPointer.Null, rejitId, (uint)rejitFlags);
-
-            return ILCodeVersionHandle.CreateExplicit(codeVersionNode);
-        }
-
-        internal static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
-        {
-            Dictionary<DataType, Target.TypeInfo> cvTypes = CodeVersions.GetTypes(helpers);
-            Dictionary<DataType, Target.TypeInfo> types = GetTypesForTypeFields(
-                helpers,
-                [
-                    ProfControlBlockFields
-                ]);
-            foreach(var (dataType, typeInfo) in cvTypes)
-            {
-                types.Add(dataType, typeInfo);
-            }
-            return types;
-        }
-
-        private ulong AddProfControlBlock(bool rejitOnAttachEnabled)
-        {
-            Target.TypeInfo info = Types[DataType.ProfControlBlock];
-            MockMemorySpace.HeapFragment fragment = _rejitAllocator.Allocate((ulong)Types[DataType.ProfControlBlock].Size, "ProfControlBlock");
-            Builder.AddHeapFragment(fragment);
-            Span<byte> pcb = Builder.BorrowAddressRange(fragment.Address, fragment.Data.Length);
-            Builder.TargetTestHelpers.Write(pcb.Slice(info.Fields[nameof(Data.ProfControlBlock.GlobalEventMask)].Offset, sizeof(ulong)), 0ul);
-            Builder.TargetTestHelpers.Write(pcb.Slice(info.Fields[nameof(Data.ProfControlBlock.RejitOnAttachEnabled)].Offset, sizeof(byte)), rejitOnAttachEnabled ? (byte)1 : (byte)0);
-            return fragment.Address;
-        }
+    private ulong AddProfControlBlock(bool rejitOnAttachEnabled)
+    {
+        MockMemorySpace.HeapFragment fragment = _rejitAllocator.Allocate((ulong)ProfControlBlockLayout.Size, "ProfControlBlock");
+        MockProfControlBlock profControlBlock = ProfControlBlockLayout.Create(fragment);
+        profControlBlock.GlobalEventMask = 0;
+        profControlBlock.RejitOnAttachEnabled = rejitOnAttachEnabled ? (byte)1 : (byte)0;
+        profControlBlock.MainProfilerProfInterface = 0;
+        profControlBlock.NotificationProfilerCount = 0;
+        return fragment.Address;
     }
 }

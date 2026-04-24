@@ -112,19 +112,20 @@ namespace System.Threading
         [RequiresUnsafe]
         private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception);
 
-        // Called from the runtime
-        private void StartCallback()
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void StartCallback(Thread* pThread)
         {
-            StartHelper? startHelper = _startHelper;
+            StartHelper? startHelper = pThread->_startHelper;
             Debug.Assert(startHelper != null);
-            _startHelper = null;
+            pThread->_startHelper = null;
 
             startHelper.Run();
 
             // When this thread is about to exit, inform any subsystems that need to know.
             // For external threads that have been attached to the runtime, we'll call this
             // after the thread has been detached as it won't come through this path.
-            OnThreadExited();
+            pThread->OnThreadExited();
         }
 
         // Max iterations to be done in SpinWait without switching GC modes.

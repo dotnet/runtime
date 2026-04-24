@@ -17,7 +17,7 @@ internal sealed class UnwindInfo : IData<UnwindInfo>
         if (type.Fields.ContainsKey(nameof(FunctionLength)))
         {
             // The unwind info contains the function length on some platforms (x86)
-            FunctionLength = target.Read<uint>(address + (ulong)type.Fields[nameof(FunctionLength)].Offset);
+            FunctionLength = target.ReadField<uint>(address, type, nameof(FunctionLength));
         }
         else
         {
