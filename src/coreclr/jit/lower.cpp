@@ -3669,7 +3669,8 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
     JITDUMP("Begin lowering PEP call\n");
     DISPTREERANGE(BlockRange(), call);
 
-    assert(call->gtControlExpr != nullptr, "PEP call must always have a control expression");
+    // PEP call must always have a control expression
+    assert(call->gtControlExpr != nullptr);
     LIR::Use callTargetUse(BlockRange(), &call->gtControlExpr, call);
 
     JITDUMP("Creating new local variable for PEP");
