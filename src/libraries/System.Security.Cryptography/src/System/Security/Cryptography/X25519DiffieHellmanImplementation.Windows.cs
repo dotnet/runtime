@@ -86,14 +86,13 @@ namespace System.Security.Cryptography
 
             // CNG with BCRYPT_NO_KEY_VALIDATION permits low-order public keys, which produce
             // an all-zero shared secret. Other platforms reject these at
-            // derive time per RFC 7748 6.1. Mirror that behavior on Windows so that callers
-            // observe a uniform CryptographicException across platforms.
+            // derive time per RFC 7748 6.1.
             // We still need BCRYPT_NO_KEY_VALIDATION though because there are small subgroup keys that work, which do
             // not produce all zero shared secrets.
             ReadOnlySpan<byte> zeros = [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             ];
+
             Debug.Assert(zeros.Length == SecretAgreementSizeInBytes);
 
             if (CryptographicOperations.FixedTimeEquals(destination, zeros))

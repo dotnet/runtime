@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -124,11 +123,9 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(DeriveSecretAgreementVectorNamesForCurrentPlatform))]
-        public void DeriveRawSecretAgreement_Vectors(string vectorName)
+        [MemberData(nameof(DeriveSecretAgreementVectorsForCurrentPlatform))]
+        public void DeriveRawSecretAgreement_Vectors(DeriveSecretAgreementVector vector)
         {
-            DeriveSecretAgreementVector vector = DeriveSecretAgreementVectorMap[vectorName];
-
             using X25519DiffieHellman key = ImportPrivateKey(vector.PrivateKey);
             using X25519DiffieHellman peer = ImportPublicKey(vector.PeerPublicKey);
 
@@ -141,11 +138,9 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(DeriveSecretAgreementVectorNamesForCurrentPlatform))]
-        public void DeriveRawSecretAgreement_CrossImplementation(string vectorName)
+        [MemberData(nameof(DeriveSecretAgreementVectorsForCurrentPlatform))]
+        public void DeriveRawSecretAgreement_CrossImplementation(DeriveSecretAgreementVector vector)
         {
-            DeriveSecretAgreementVector vector = DeriveSecretAgreementVectorMap[vectorName];
-
             using X25519DiffieHellman key = ImportPrivateKey(vector.PrivateKey);
             using X25519DiffieHellmanWrapper wrapper = new(ImportPublicKey(vector.PeerPublicKey));
 
@@ -155,6 +150,21 @@ namespace System.Security.Cryptography.Tests
             byte[] secretBuffer = new byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
             key.DeriveRawSecretAgreement(wrapper, secretBuffer);
             AssertExtensions.SequenceEqual(vector.SharedSecret, secretBuffer);
+        }
+
+        [Fact]
+        public void DeriveRawSecretAgreement_ZeroSharedSecret_Throws()
+        {
+            // Wycheproof tcId 32: peer public key is the all-zeros point, which produces an all-zeros secret.
+            byte[] privateKey = Convert.FromHexString("88227494038f2bb811d47805bcdf04a2ac585ada7f2f23389bfd4658f9ddd45e");
+            byte[] peerPublicKey = Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000");
+
+            using X25519DiffieHellman key = ImportPrivateKey(privateKey);
+            using X25519DiffieHellman peer = ImportPublicKey(peerPublicKey);
+
+            Assert.Throws<CryptographicException>(() => key.DeriveRawSecretAgreement(peer));
+            Assert.Throws<CryptographicException>(
+                () => key.DeriveRawSecretAgreement(peer, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
         }
 
         [Theory]
@@ -519,15 +529,12 @@ namespace System.Security.Cryptography.Tests
             byte[] PrivateKey,
             byte[] PeerPublicKey,
             byte[] SharedSecret,
-            bool RequiresLenientValidation = false,
-            bool ZeroSharedSecret = false);
+            bool RequiresLenientValidation = false)
+        {
+            public override string ToString() => Name;
+        }
 
-        private static Dictionary<string, DeriveSecretAgreementVector> s_deriveSecretAgreementVectorMap;
-
-        private static Dictionary<string, DeriveSecretAgreementVector> DeriveSecretAgreementVectorMap =>
-            s_deriveSecretAgreementVectorMap ??= DeriveSecretAgreementVectors.ToDictionary(v => v.Name);
-
-        public static IEnumerable<object[]> DeriveSecretAgreementVectorNamesForCurrentPlatform()
+        public static IEnumerable<object[]> DeriveSecretAgreementVectorsForCurrentPlatform()
         {
             foreach (DeriveSecretAgreementVector vector in DeriveSecretAgreementVectors)
             {
@@ -536,18 +543,7 @@ namespace System.Security.Cryptography.Tests
                     continue;
                 }
 
-                // All X25519 implementations reject derivations that would produce an all-zero
-                // shared secret, per RFC 7748 §6.1. OpenSSL and Apple CryptoKit reject during
-                // derivation; SymCryptOpenSsl rejects at import; Windows CNG performs the
-                // zero-check explicitly in the managed implementation. These vectors are
-                // filtered out of the positive derive tests because there is no expected
-                // non-throwing output to compare.
-                if (vector.ZeroSharedSecret)
-                {
-                    continue;
-                }
-
-                yield return new object[] { vector.Name };
+                yield return new object[] { vector };
             }
         }
 
@@ -621,13 +617,7 @@ namespace System.Security.Cryptography.Tests
                     Convert.FromHexString("2b55d3aa4a8f80c8c0b2ae5f933e85af49beac36c2fa7394bab76c8933f8f81d"),
                     Convert.FromHexString("1000000000000000000000000000000000000000000000000000000000000000"));
 
-                // Wycheproof X25519 test vectors. Selected representatives from
-                // https://github.com/C2SP/wycheproof testvectors_v1/x25519_test.json (67 of 518 upstream vectors,
-                // sampled across each upstream flag combination; all LowOrderPublic+ZeroSharedSecret vectors
-                // are kept since each corresponds to a distinct low-order point on Curve25519).
-                // Vectors marked RequiresLenientValidation carry upstream tags that strict-validating
-                // platforms reject at import or derive time: Twist, LowOrderPublic, NonCanonicalPublic,
-                // SmallPublicKey, ZeroSharedSecret.
+                // Select Wycheproof X25519 test vectors for edge cases.
                 yield return new("WycheproofTcId_1", // Normal
                     Convert.FromHexString("c8a9d5a91091ad851c668b0736c1c9a02936c0d3ad62670858088047ba057475"),
                     Convert.FromHexString("504a36999f489cd2fdbc08baff3d88fa00569ba986cba22548ffde80f9806829"),
@@ -652,14 +642,6 @@ namespace System.Security.Cryptography.Tests
                     Convert.FromHexString("d02456e456911d3c6cd054933199807732dfdc958642ad1aebe900c793bef24a"),
                     Convert.FromHexString("eaffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
                     Convert.FromHexString("07ba5fcbda21a9a17845c401492b10e6de0a168d5c94b606694c11bac39bea41"), RequiresLenientValidation: true);
-                yield return new("WycheproofTcId_32", // LowOrderPublic,SmallPublicKey,SpecialPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("88227494038f2bb811d47805bcdf04a2ac585ada7f2f23389bfd4658f9ddd45e"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_33", // LowOrderPublic,SmallPublicKey,SpecialPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("48232e8972b61c7e61930eb9450b5070eae1c670475685541f0476217e48184f"),
-                    Convert.FromHexString("0100000000000000000000000000000000000000000000000000000000000000"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
                 yield return new("WycheproofTcId_34", // SpecialPublicKey
                     Convert.FromHexString("a8386f7f16c50731d64f82e6a170b142a4e34f31fd7768fcb8902925e7d1e25a"),
                     Convert.FromHexString("0400000000000000000000000000000000000000000000000000000000000000"),
@@ -672,102 +654,6 @@ namespace System.Security.Cryptography.Tests
                     Convert.FromHexString("40bd4e1caf39d9def7663823502dad3e7d30eb6eb01e9b89516d4f2f45b7cd7f"),
                     Convert.FromHexString("ebffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
                     Convert.FromHexString("2cf6974b0c070e3707bf92e721d3ea9de3db6f61ed810e0a23d72d433365f631"));
-                yield return new("WycheproofTcId_63", // LowOrderPublic,SpecialPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("e0f978dfcd3a8f1a5093418de54136a584c20b7b349afdf6c0520886f95b1272"),
-                    Convert.FromHexString("e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_64", // LowOrderPublic,SpecialPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("387355d995616090503aafad49da01fb3dc3eda962704eaee6b86f9e20c92579"),
-                    Convert.FromHexString("5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_65", // LowOrderPublic,SpecialPublicKey,Twist,ZeroSharedSecret
-                    Convert.FromHexString("c8fe0df92ae68a03023fc0c9adb9557d31be7feed0d3ab36c558143daf4dbb40"),
-                    Convert.FromHexString("ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_66", // LowOrderPublic,NonCanonicalPublic,SpecialPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("c8d74acde5934e64b9895d5ff7afbffd7f704f7dfccff7ac28fa62a1e6410347"),
-                    Convert.FromHexString("e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b880"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_67", // LowOrderPublic,NonCanonicalPublic,SpecialPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("b85649d5120e01e8ccaf7b2fb8d81b62e8ad6f3d5c0553fdde1906cb9d79c050"),
-                    Convert.FromHexString("5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f11d7"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_68", // LowOrderPublic,NonCanonicalPublic,SpecialPublicKey,Twist,ZeroSharedSecret
-                    Convert.FromHexString("2064b2f4c9dc97ec7cf58932fdfa3265ba6ea4d11f0259b8efc8afb35db88c48"),
-                    Convert.FromHexString("ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_69", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_70", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("0100000000000000000000000000000000000000000000000000000000000000"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_71", // LowOrderPublic,Twist,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_72", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_73", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_74", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_75", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_76", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000080"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_77", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("0100000000000000000000000000000000000000000000000000000000000080"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_78", // LowOrderPublic,Twist,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_79", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f11d7"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_80", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b880"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_81", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_82", // LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("786a33a4f7af297a20e7642925932bf509e7070fa1bc36986af1eb13f4f50b55"),
-                    Convert.FromHexString("eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_83", // LowOrderPublic,SmallPublicKey,SpecialPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("40ff586e73d61f0960dc2d763ac19e98225f1194f6fe43d5dd97ad55b3d35961"),
-                    Convert.FromHexString("edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_84", // LowOrderPublic,NonCanonicalPublic,SmallPublicKey,SpecialPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("7887889bac4c629a101d3724f2ed8b98d936fde79e1a1f77d86779626bf8f263"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000080"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_85", // LowOrderPublic,NonCanonicalPublic,SmallPublicKey,SpecialPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("584fceaebae944bfe93b2e0d0a575f706ce5ada1da2b1311c3b421f9186c7a6f"),
-                    Convert.FromHexString("eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_86", // LowOrderPublic,NonCanonicalPublic,SmallPublicKey,SpecialPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("e07971ee820e48b0b266d8be3cdbbb5e900a43f59ee8535c6572418615de4962"),
-                    Convert.FromHexString("0100000000000000000000000000000000000000000000000000000000000080"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
                 yield return new("WycheproofTcId_87", // NonCanonicalPublic,SpecialPublicKey,Twist
                     Convert.FromHexString("0016b62af5cabde8c40938ebf2108e05d27fa0533ed85d70015ad4ad39762d54"),
                     Convert.FromHexString("efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
@@ -828,14 +714,6 @@ namespace System.Security.Cryptography.Tests
                     Convert.FromHexString("60a3a4f130b98a5be4b1cedb7cb85584a3520e142d474dc9ccb909a073a9767f"),
                     Convert.FromHexString("8e41f05ea3c76572be104ad8788e970863c6e2ca3daae64d1c2f46decfffa571"),
                     Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000008000"), RequiresLenientValidation: true);
-                yield return new("WycheproofTcId_117", // EdgeCaseMultiplication,LowOrderPublic,SmallPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("c8d07c46bbfb827753b92c70e49583ce8bfa44641a7382258ea903d6a832c96b"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_118", // EdgeCaseMultiplication,LowOrderPublic,SmallPublicKey,ZeroSharedSecret
-                    Convert.FromHexString("90b7ef237a055f348dcb4c4364a59d7d31edc7ab78f2ca254e2c810975c3f543"),
-                    Convert.FromHexString("0100000000000000000000000000000000000000000000000000000000000000"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
                 yield return new("WycheproofTcId_119", // EdgeCaseMultiplication,Twist
                     Convert.FromHexString("e0a8be63315c4f0f0a3fee607f44d30a55be63f09561d9af93e0a1c9cf0ed751"),
                     Convert.FromHexString("0200000000000000000000000000000000000000000000000000000000000000"),
@@ -844,18 +722,6 @@ namespace System.Security.Cryptography.Tests
                     Convert.FromHexString("0840a8af5bc4c48da8850e973d7e14220f45c192cea4020d377eecd25c7c3643"),
                     Convert.FromHexString("1200000000000000000000000000000000000000000000000000000000000000"),
                     Convert.FromHexString("77557137a2a2a651c49627a9b239ac1f2bf78b8a3e72168ccecc10a51fc5ae66"));
-                yield return new("WycheproofTcId_154", // EdgeCaseMultiplication,LowOrderPublic,Twist,ZeroSharedSecret
-                    Convert.FromHexString("18630f93598637c35da623a74559cf944374a559114c7937811041fc8605564a"),
-                    Convert.FromHexString("ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_165", // EdgeCaseMultiplication,LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("5891c9272cf9a197735b701e5715268d36d7436b7e351a3e997a0862e4807d4d"),
-                    Convert.FromHexString("e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
-                yield return new("WycheproofTcId_166", // EdgeCaseMultiplication,LowOrderPublic,ZeroSharedSecret
-                    Convert.FromHexString("c0f9c60aea73731d92ab5ed9f4cea122f9a6eb2577bda72f94948fea4d4cc65d"),
-                    Convert.FromHexString("5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true, ZeroSharedSecret: true);
                 yield return new("WycheproofTcId_249", // EdgeCaseMultiplication
                     Convert.FromHexString("4028802030d8a8221a7160eebbf1846116c1c253abc467d6e43cb850f1459860"),
                     Convert.FromHexString("0f13955978b93d7b9f9a2e70d96df922850a8ffd8412e236fb074aef99d37d54"),
