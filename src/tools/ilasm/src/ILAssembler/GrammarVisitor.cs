@@ -1132,10 +1132,20 @@ namespace ILAssembler
                 if (currentType is not null)
                 {
                     currentType.Properties.Add(property);
-                    var accessors = VisitPropDecls(context.propDecls()).Value;
-                    foreach (var accessor in accessors)
+                    foreach (var propDecl in context.propDecls().propDecl())
                     {
-                        property.Accessors.Add(accessor);
+                        if (propDecl.customAttrDecl() is { } customAttrDecl)
+                        {
+                            var customAttr = VisitCustomAttrDecl(customAttrDecl).Value;
+                            if (customAttr is not null)
+                            {
+                                customAttr.Owner = property;
+                            }
+                        }
+                        else if (VisitPropDecl(propDecl).Value is { } accessor)
+                        {
+                            property.Accessors.Add(accessor);
+                        }
                     }
                 }
             }
@@ -1146,10 +1156,20 @@ namespace ILAssembler
                 if (currentType is not null)
                 {
                     currentType.Events.Add(evt);
-                    var accessors = VisitEventDecls(context.eventDecls()).Value;
-                    foreach (var accessor in accessors)
+                    foreach (var eventDecl in context.eventDecls().eventDecl())
                     {
-                        evt.Accessors.Add(accessor);
+                        if (eventDecl.customAttrDecl() is { } customAttrDecl)
+                        {
+                            var customAttr = VisitCustomAttrDecl(customAttrDecl).Value;
+                            if (customAttr is not null)
+                            {
+                                customAttr.Owner = evt;
+                            }
+                        }
+                        else if (VisitEventDecl(eventDecl).Value is { } accessor)
+                        {
+                            evt.Accessors.Add(accessor);
+                        }
                     }
                 }
             }
