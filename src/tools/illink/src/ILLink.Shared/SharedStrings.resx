@@ -657,6 +657,12 @@
   <data name="DynamicallyAccessedMembersIsNotAllowedOnExtensionPropertiesMessage" xml:space="preserve">
     <value>'DynamicallyAccessedMembersAttribute' on extension property '{0}' is not supported and has no effect. Apply the attribute to the accessor return value or value parameter instead.</value>
   </data>
+  <data name="AssemblyGetTypeCannotBeAnalyzedTitle" xml:space="preserve">
+    <value>Call to 'Assembly.GetType' cannot be statically analyzed. The assembly is not known.</value>
+  </data>
+  <data name="AssemblyGetTypeCannotBeAnalyzedMessage" xml:space="preserve">
+    <value>Call to '{0}' cannot be statically analyzed. The assembly on which it is called is not known.</value>
+  </data>
   <data name="XmlCouldNotFindAnyTypeInNamespaceTitle" xml:space="preserve">
     <value>The XML descriptor specifies a namespace but there are no types found in such namespace.</value>
   </data>

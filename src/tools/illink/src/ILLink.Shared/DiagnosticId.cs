@@ -193,6 +193,7 @@ namespace ILLink.Shared
         ReferenceNotMarkedIsTrimmable = 2125,
         DataflowAnalysisDidNotConverge = 2126,
         DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties = 2127,
+        AssemblyGetTypeCannotBeAnalyzed = 2128,
         _EndTrimAnalysisWarningsSentinel,
 
         // Single-file diagnostic ids.

@@ -196,7 +196,7 @@ namespace ILLink.Shared.TrimAnalysis
                         if (value is SystemTypeValue systemType)
                             AddReturnValue(new AssemblyValue(GetAssemblyName(systemType.RepresentedType)));
                         else
-                            AddReturnValue(MultiValueLattice.Top);
+                            AddReturnValue(annotatedMethodReturnValue);
                     }
                     break;
 
@@ -1562,7 +1562,7 @@ namespace ILLink.Shared.TrimAnalysis
                     {
                         if (assemblyValue is not AssemblyValue knownAssembly)
                         {
-                            _diagnosticContext.AddDiagnostic(DiagnosticId.UnrecognizedTypeNameInTypeGetType, calledMethod.GetDisplayName());
+                            _diagnosticContext.AddDiagnostic(DiagnosticId.AssemblyGetTypeCannotBeAnalyzed, calledMethod.GetDisplayName());
                             AddReturnValue(MultiValueLattice.Top);
                             continue;
                         }

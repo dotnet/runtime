@@ -56,7 +56,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             typeof(AssemblyGetTypeDataFlow).Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType", false, true);
         }
 
-        [ExpectedWarning("IL2057")]
+        [ExpectedWarning("IL2128")]
         static void TestUnknownAssembly()
         {
             Assembly assembly = GetUnknownAssembly();
