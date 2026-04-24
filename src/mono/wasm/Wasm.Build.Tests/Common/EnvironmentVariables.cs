@@ -28,5 +28,9 @@ namespace Wasm.Build.Tests
         internal static readonly string? WasiSdkPath               = Environment.GetEnvironmentVariable("WASI_SDK_PATH");
         internal static readonly bool WorkloadsTestPreviousVersions = Environment.GetEnvironmentVariable("WORKLOADS_TEST_PREVIOUS_VERSIONS") is "true";
         internal static readonly string? RuntimeFlavor = Environment.GetEnvironmentVariable("RUNTIME_FLAVOR_FOR_TESTS");
+        internal static readonly string? RepositoryEngineeringDir      = Environment.GetEnvironmentVariable("REPOSITORY_ENGINEERING_DIR");
+        internal static readonly string? BrowserBuildTargetsDir        = Environment.GetEnvironmentVariable("BROWSER_BUILD_TARGETS_DIR");
+        internal static readonly string? WasmAppBuilderTasksAssemblyPath = Environment.GetEnvironmentVariable("WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH");
+        internal static readonly string? EmsdkPath                     = Environment.GetEnvironmentVariable("EMSDK_PATH");
     }
 }
