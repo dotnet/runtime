@@ -1169,7 +1169,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
                 //
                 // However, there are many common constants that are effectively broadcasting
                 // the lowest v128 across the entire vector. By checking for and allowing this
-                // case through, we can provide pay for play support without for core scenarios
+                // case through, we can provide pay-for-play support for core scenarios
                 // without allocating.
 
                 if (simdType == TYP_SIMD64)
@@ -1195,7 +1195,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
 #elif defined(TARGET_ARM64)
                 if (simdType == TYP_SIMD)
                 {
-                    // TODO-SVE: Handle sve constants
+                    // TODO-SVE: Handle SVE constants
                     return NO_ASSERTION_INDEX;
                 }
 #endif
@@ -3350,7 +3350,7 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
 #elif defined(TARGET_ARM64)
                 if (simdType == TYP_SIMD)
                 {
-                    // TODO-SVE: Handle sve constants
+                    // TODO-SVE: Handle SVE constants
                     unreached();
                 }
 #endif
