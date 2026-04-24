@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Threading;
-using static System.Runtime.CompilerServices.AsyncProfilerBufferedEventSource;
+using static System.Runtime.CompilerServices.AsyncProfilerEventSource;
 
 namespace System.Runtime.CompilerServices
 {
@@ -73,7 +73,7 @@ namespace System.Runtime.CompilerServices
                         ActiveEventKeywords = eventKeywords;
                     }
 
-                    string? eventBufferSizeEnv = System.Environment.GetEnvironmentVariable("DOTNET_AsyncProfilerBufferedEventSource_EventBufferSize");
+                    string? eventBufferSizeEnv = System.Environment.GetEnvironmentVariable("DOTNET_AsyncProfilerEventSource_EventBufferSize");
                     if (eventBufferSizeEnv != null && uint.TryParse(eventBufferSizeEnv, out uint eventBufferSize))
                     {
                         eventBufferSize = Math.Max(eventBufferSize, 1024);
@@ -271,11 +271,6 @@ namespace System.Runtime.CompilerServices
                 public const int MaxCompressedInt64Size = 10;
                 public const int HeaderSize = 37;
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static void WriteInt32(Span<byte> buffer, ref int index, int value)
-                {
-                    WriteUInt32(buffer, ref index, (uint)value);
-                }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static void WriteInt32(byte[] buffer, ref int index, int value)
@@ -284,22 +279,9 @@ namespace System.Runtime.CompilerServices
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static void WriteCompressedInt32(Span<byte> buffer, ref int index, int value)
-                {
-                    WriteCompressedUInt32(buffer, ref index, ZigzagEncodeInt32(value));
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static void WriteCompressedInt32(byte[] buffer, ref int index, int value)
                 {
                     WriteCompressedUInt32(buffer, ref index, ZigzagEncodeInt32(value));
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static void WriteUInt32(Span<byte> buffer, ref int index, uint value)
-                {
-                    Debug.Assert((uint)index <= (uint)(buffer.Length - sizeof(uint)));
-                    WriteUInt32(ref MemoryMarshal.GetReference(buffer), ref index, value);
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -317,13 +299,6 @@ namespace System.Runtime.CompilerServices
 
                     Unsafe.WriteUnaligned(ref Unsafe.Add(ref buffer, index), value);
                     index += 4;
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static void WriteCompressedUInt32(Span<byte> buffer, ref int index, uint value)
-                {
-                    Debug.Assert((uint)index <= (uint)(buffer.Length - MaxCompressedUInt32Size));
-                    WriteCompressedUInt32(ref MemoryMarshal.GetReference(buffer), ref index, value);
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -345,34 +320,15 @@ namespace System.Runtime.CompilerServices
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static void WriteInt64(Span<byte> buffer, ref int index, long value)
-                {
-                    WriteUInt64(buffer, ref index, (ulong)value);
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static void WriteInt64(byte[] buffer, ref int index, long value)
                 {
                     WriteUInt64(buffer, ref index, (ulong)value);
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static void WriteCompressedInt64(Span<byte> buffer, ref int index, long value)
-                {
-                    WriteCompressedUInt64(buffer, ref index, ZigzagEncodeInt64(value));
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static void WriteCompressedInt64(byte[] buffer, ref int index, long value)
                 {
                     WriteCompressedUInt64(buffer, ref index, ZigzagEncodeInt64(value));
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static void WriteUInt64(Span<byte> buffer, ref int index, ulong value)
-                {
-                    Debug.Assert((uint)index <= (uint)(buffer.Length - sizeof(ulong)));
-                    WriteUInt64(ref MemoryMarshal.GetReference(buffer), ref index, value);
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -390,13 +346,6 @@ namespace System.Runtime.CompilerServices
 
                     Unsafe.WriteUnaligned(ref Unsafe.Add(ref buffer, index), value);
                     index += sizeof(ulong);
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static void WriteCompressedUInt64(Span<byte> buffer, ref int index, ulong value)
-                {
-                    Debug.Assert((uint)index <= (uint)(buffer.Length - MaxCompressedUInt64Size));
-                    WriteCompressedUInt64(ref MemoryMarshal.GetReference(buffer), ref index, value);
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -521,10 +470,10 @@ namespace System.Runtime.CompilerServices
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static void CallstackData(ref EventBuffer eventBuffer, ReadOnlySpan<byte> callstackData, int callstackDataByteCount)
+                public static void CallstackData(ref EventBuffer eventBuffer, byte[] callstackData, int callstackDataByteCount)
                 {
                     ref int index = ref eventBuffer.Index;
-                    Unsafe.CopyBlockUnaligned(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(eventBuffer.Data), index), ref MemoryMarshal.GetReference(callstackData), (uint)callstackDataByteCount);
+                    Buffer.BlockCopy(callstackData, 0, eventBuffer.Data, index, callstackDataByteCount);
                     index += callstackDataByteCount;
                 }
             }
