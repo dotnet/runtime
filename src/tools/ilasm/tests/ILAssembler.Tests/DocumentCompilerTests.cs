@@ -5779,5 +5779,90 @@ namespace ILAssembler.Tests
             var catchRegion = ehRegions.First(r => r.Kind == ExceptionRegionKind.Catch);
             Assert.Equal(HandleKind.TypeDefinition, catchRegion.CatchType.Kind);
         }
+
+        [Fact]
+        public void CustomAttribute_OnProperty_NotDropped()
+        {
+            // Custom attributes inside property declarations (e.g., DispIdAttribute)
+            // must be emitted and owned by the property, not silently dropped.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi IFoo extends [mscorlib]System.Object
+                {
+                    .method public specialname instance int32 get_Value() cil managed
+                    {
+                        ldc.i4.0
+                        ret
+                    }
+                    .property instance int32 Value()
+                    {
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = ( 01 00 00 00 )
+                        .get instance int32 IFoo::get_Value()
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // Find the property
+            var propHandle = reader.PropertyDefinitions.Single();
+            var prop = reader.GetPropertyDefinition(propHandle);
+            Assert.Equal("Value", reader.GetString(prop.Name));
+
+            // The property should have a custom attribute (ObsoleteAttribute)
+            var attrs = reader.GetCustomAttributes(propHandle);
+            Assert.True(attrs.Count >= 1, $"Property should have at least 1 custom attribute, got {attrs.Count}");
+        }
+
+        [Fact]
+        public void CustomAttribute_OnEvent_NotDropped()
+        {
+            // Custom attributes inside event declarations must be emitted
+            // and owned by the event, not silently dropped.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi MyDelegate extends [mscorlib]System.MulticastDelegate
+                {
+                    .method public specialname rtspecialname instance void .ctor(object 'object', native int 'method') runtime managed
+                    {
+                    }
+                    .method public virtual instance void Invoke() runtime managed
+                    {
+                    }
+                }
+                .class public auto ansi MyClass extends [mscorlib]System.Object
+                {
+                    .method public specialname instance void add_MyEvent(class MyDelegate) cil managed
+                    {
+                        ret
+                    }
+                    .method public specialname instance void remove_MyEvent(class MyDelegate) cil managed
+                    {
+                        ret
+                    }
+                    .event MyDelegate MyEvent
+                    {
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = ( 01 00 00 00 )
+                        .addon instance void MyClass::add_MyEvent(class MyDelegate)
+                        .removeon instance void MyClass::remove_MyEvent(class MyDelegate)
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // Find the event
+            var eventHandle = reader.EventDefinitions.Single();
+            var evt = reader.GetEventDefinition(eventHandle);
+            Assert.Equal("MyEvent", reader.GetString(evt.Name));
+
+            // The event should have a custom attribute (ObsoleteAttribute)
+            var attrs = reader.GetCustomAttributes(eventHandle);
+            Assert.True(attrs.Count >= 1, $"Event should have at least 1 custom attribute, got {attrs.Count}");
+        }
     }
 }
