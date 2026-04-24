@@ -170,6 +170,11 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         private static void TailAwait() => throw new UnreachableException();
 
+        // This is state used by suspension/resumption machinery and stored in
+        // the two places that initiate runtime async chains: either a
+        // task-returning thunk, or DispatchContinuations. A pointer to this
+        // state is kept in the runtime async TLS. This storage method avoids
+        // costly write barriers on the hot path of suspension/resumption.
         private ref struct RuntimeAsyncStackState
         {
             // The following are the possible introducers of asynchrony into a chain of awaits.
@@ -221,7 +226,7 @@ namespace System.Runtime.CompilerServices
         {
             public Continuation? SentinelContinuation;
 
-            // We cache the other TLS members here to avoid unnecessary repeated TLS lookups.
+            // We cache the thread here to avoid unnecessary repeated TLS lookups.
             public Thread CurrentThread;
 
             public RuntimeAsyncStackState* StackState;
@@ -230,7 +235,7 @@ namespace System.Runtime.CompilerServices
             {
                 // CaptureContext is called from leaf await helpers. We either just started a runtime async chain
                 // (from a thunk), or we came from DispatchContinuations (on resumption).
-                // Both cases have already initialized Thread.t_currentThread.
+                // Both cases have already initialized CurrentThread.
                 Thread curThread = CurrentThread;
                 Debug.Assert(curThread != null);
                 Debug.Assert(StackState != null);
@@ -253,6 +258,7 @@ namespace System.Runtime.CompilerServices
             // This function is called at the end of an async chain
             public void Pop()
             {
+                Debug.Assert(CurrentThread != null);
                 StackState->Pop(CurrentThread);
                 StackState = StackState->Next;
             }
@@ -391,8 +397,9 @@ namespace System.Runtime.CompilerServices
                 Thread currentThread = state.CurrentThread;
                 Debug.Assert(currentThread != null);
 
-                ExecutionContext? suspendingExecutionContext = state.StackState->LeafExecutionContext;
-                SynchronizationContext? suspendingSyncContext = state.StackState->LeafSynchronizationContext;
+                RuntimeAsyncStackState* stackState = state.StackState;
+                ExecutionContext? suspendingExecutionContext = stackState->LeafExecutionContext;
+                SynchronizationContext? suspendingSyncContext = stackState->LeafSynchronizationContext;
                 if (suspendingExecutionContext != currentThread._executionContext)
                 {
                     currentThread._executionContext = suspendingExecutionContext;
@@ -402,11 +409,6 @@ namespace System.Runtime.CompilerServices
                 {
                     currentThread._synchronizationContext = suspendingSyncContext;
                 }
-
-                ICriticalNotifyCompletion? critNotifier = state.StackState->CriticalNotifier;
-                INotifyCompletion? notifier = state.StackState->Notifier;
-                ValueTaskSourceNotifier? vtsNotifier = state.StackState->ValueTaskSourceNotifier;
-                Task? taskNotifier = state.StackState->TaskNotifier;
 
                 Continuation sentinelContinuation = state.SentinelContinuation!;
                 Continuation headContinuation = sentinelContinuation.Next!;
@@ -425,21 +427,21 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    if (critNotifier != null)
+                    if (stackState->CriticalNotifier != null)
                     {
-                        critNotifier.UnsafeOnCompleted(GetContinuationAction());
+                        stackState->CriticalNotifier!.UnsafeOnCompleted(GetContinuationAction());
                     }
-                    else if (taskNotifier != null)
+                    else if (stackState->TaskNotifier != null)
                     {
                         // Runtime async callable wrapper for task returning
                         // method. This implements the context transparent
                         // forwarding and makes these wrappers minimal cost.
-                        if (!taskNotifier.TryAddCompletionAction(this))
+                        if (!stackState->TaskNotifier!.TryAddCompletionAction(this))
                         {
                             ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
                         }
                     }
-                    else if (vtsNotifier != null)
+                    else if (stackState->ValueTaskSourceNotifier != null)
                     {
                         // The awaiter must inform the ValueTaskSource on whether the continuation
                         // wants to run on a context, although the source may decide to ignore the suggestion.
@@ -474,12 +476,12 @@ namespace System.Runtime.CompilerServices
 
                         // Clear continuation flags, so that continuation runs transparently
                         nextUserContinuation.Flags &= ~continueFlags;
-                        vtsNotifier.OnCompleted(s_runContinuationAction, this, configFlags);
+                        stackState->ValueTaskSourceNotifier!.OnCompleted(s_runContinuationAction, this, configFlags);
                     }
                     else
                     {
-                        Debug.Assert(notifier != null);
-                        notifier.OnCompleted(GetContinuationAction());
+                        Debug.Assert(stackState->Notifier != null);
+                        stackState->Notifier!.OnCompleted(GetContinuationAction());
                     }
 
                     return true;
