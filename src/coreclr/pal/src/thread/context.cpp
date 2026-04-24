@@ -904,7 +904,10 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
             {
                 _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_ARM64_SVE) == XSTATE_MASK_ARM64_SVE);
 
-                uint16_t vq = sve_vq_from_vl(lpContext->Vl);
+                // Derive vq from the signal frame's vl (the authoritative layout)
+                // rather than lpContext->Vl, to ensure offset calculations always
+                // match the actual frame even in non-debug builds.
+                uint16_t vq = sve_vq_from_vl(sve->vl);
 
                 // Vector length should not have changed.
                 _ASSERTE(lpContext->Vl == sve->vl);
@@ -1265,7 +1268,6 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             // (e.g. Apple M4 with SME streaming SVE under Virtualization.Framework).
             if (sve->vl == 16)
             {
-                _ASSERTE((sve->vl > 0) && (sve->vl % 16 == 0));
                 lpContext->Vl  = sve->vl;
 
                 uint16_t vq = sve_vq_from_vl(sve->vl);
