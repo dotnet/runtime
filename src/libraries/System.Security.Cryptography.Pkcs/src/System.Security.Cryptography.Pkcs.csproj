@@ -712,7 +712,7 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' and '$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
   </ItemGroup>
 

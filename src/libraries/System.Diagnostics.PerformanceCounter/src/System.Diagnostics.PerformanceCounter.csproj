@@ -137,7 +137,7 @@ System.Diagnostics.PerformanceCounter</PackageDescription>
              Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' and '$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
   </ItemGroup>
 
