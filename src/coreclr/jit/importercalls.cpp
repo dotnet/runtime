@@ -330,7 +330,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                     call = gtNewIndCallNode(stubAddr, callRetTyp, di);
 
-                    call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_GLOB_EFFECT);
+                    call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_ALL_EFFECT);
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
 
 #ifdef TARGET_X86
@@ -444,7 +444,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 // Now make an indirect call through the function pointer
                 call->AsCall()->gtControlExpr = fptr;
-                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_ALL_EFFECT);
 
                 if (needsFatPointerHandling)
                 {
@@ -517,7 +517,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call = gtNewIndCallNode(fptr, callRetTyp, di);
-                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_ALL_EFFECT);
                 if (callInfo->nullInstanceCheck)
                 {
                     call->gtFlags |= GTF_CALL_NULLCHECK;
@@ -963,7 +963,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 
         // Store the "this" value in the call
-        call->gtFlags |= obj->gtFlags & GTF_GLOB_EFFECT;
+        call->gtFlags |= obj->gtFlags & GTF_ALL_EFFECT;
         call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(obj).WellKnown(WellKnownArg::ThisPointer));
 
         if (impIsThis(obj))
@@ -1989,7 +1989,7 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
     GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, di);
 
-    call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+    call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_ALL_EFFECT);
 #ifdef UNIX_X86_ABI
     call->gtFlags &= ~GTF_CALL_POP_ARGS;
 #endif
@@ -3670,6 +3670,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     // op1 is not a known constant, we'll do the expansion in morph
                     retNode = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, op1, ni, method R2RARG(*entryPoint));
+                    retNode->gtFlags |= GTF_CALL;
                     JITDUMP("\nConverting RuntimeHelpers.IsKnownConstant to:\n");
                     DISPTREE(retNode);
                 }
@@ -6566,7 +6567,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         }
 
         call->gtArgs.PushFront(this, arg);
-        call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;
+        call->gtFlags |= argNode->gtFlags & GTF_ALL_EFFECT;
     }
 }
 
