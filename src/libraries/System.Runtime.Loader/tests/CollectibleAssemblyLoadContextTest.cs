@@ -33,7 +33,6 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void Unload_CollectibleWithNoAssemblyLoaded()
         {
             // Use a collectible ALC + Unload
@@ -46,7 +45,6 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void DoubleUnload_CollectibleWithNoAssemblyLoaded()
         {
             // Use a collectible ALC + Unload
@@ -129,7 +127,6 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void Unload_CollectibleWithOneAssemblyLoaded()
         {
             // Use a collectible ALC + Load an assembly by path + Unload
@@ -157,7 +154,6 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void Unload_CollectibleWithOneAssemblyLoadedWithStatic()
         {
             // Use a collectible ALC + Load an assembly by path + New Instance + Static reference + Unload
@@ -190,7 +186,6 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void Unload_CollectibleWithOneAssemblyLoadedWithWeakReferenceToType()
         {
             // Use a collectible ALC + Load an assembly by path + WeakReference on the Type + Unload
@@ -225,7 +220,6 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void Unload_CollectibleWithOneAssemblyLoadedWithWeakReferenceToInstance()
         {
             // Use a collectible ALC + Load an assembly by path + WeakReference on an instance of a Type + Unload
@@ -278,7 +272,6 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void Unload_CollectibleWithOneAssemblyLoadedWithStrongReferenceToType()
         {
             // Use a collectible ALC + Load an assembly by path + Strong reference on the Type + Unload
@@ -340,7 +333,6 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void Unload_CollectibleWithOneAssemblyLoadedWithStrongReferenceToInstance()
         {
             // Use a collectible ALC + Load an assembly by path + Strong reference on an instance of a Type + Unload
@@ -375,7 +367,6 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void Unload_CollectibleWithTwoAssemblies()
         {
             // Use a collectible ALC + Load two assemblies (path + stream) + Unload
@@ -437,7 +428,6 @@ namespace System.Runtime.Loader.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void Unload_TwoCollectibleWithOneAssemblyAndOneInstanceReferencingAnother()
         {
             // We create 2 collectible ALC, load one assembly in each, create one instance in each, reference one instance from ALC1 to ALC2
@@ -507,7 +497,6 @@ namespace System.Runtime.Loader.Tests
         // Test may fail when running on a different runtime
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void Unload_TwoCollectibleWithOneAssemblyAndOneInstanceReferencingAnotherThroughGenericStatic()
         {
             // We create 2 collectible ALC, load one assembly in each, create one instance in the ALC2,
