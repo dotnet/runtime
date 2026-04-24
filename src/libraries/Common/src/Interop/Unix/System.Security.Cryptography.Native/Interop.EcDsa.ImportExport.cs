@@ -245,7 +245,8 @@ internal static partial class Interop
         private static partial int CryptoNative_EvpPKeyEcHasExplicitEncoding(SafeEvpPKeyHandle pkey);
 
         /// <summary>
-        /// Returns true if the key has explicit encoding, false if named, null if indeterminate (pre-3.0).
+        /// Returns true if the key has explicit encoding, false if named (or encoding unavailable),
+        /// null if the API is unavailable (pre-3.0) and the caller should use an alternative method.
         /// </summary>
         internal static bool? EvpPKeyEcHasExplicitEncoding(SafeEvpPKeyHandle pkey)
         {

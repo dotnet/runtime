@@ -12,9 +12,11 @@
 static uint8_t* EncodeEcPointFromCoordinates(
     const uint8_t* x, int32_t xLength,
     const uint8_t* y, int32_t yLength,
+    int32_t fieldSize,
     int32_t* outLength)
 {
-    int32_t coordLen = xLength > yLength ? xLength : yLength;
+    int32_t coordLen = fieldSize;
+    assert(xLength <= coordLen && yLength <= coordLen);
     int32_t len = 1 + 2 * coordLen;
     uint8_t* buf = (uint8_t*)OPENSSL_zalloc((size_t)len);
     if (buf == NULL)
@@ -534,7 +536,7 @@ int32_t CryptoNative_EvpPKeyGetEcFieldDegree(const EVP_PKEY* pkey)
     // For GF(p): degree = BN_num_bits(p).
     int degree = BN_num_bits(p);
     if (isChar2)
-        degree--;
+        degree = degree > 0 ? degree - 1 : 0;
 
     BN_free(p);
     return degree;
@@ -1283,7 +1285,9 @@ int32_t CryptoNative_EvpPKeyCreateByEcKeyParameters(
     if (hasPublicKey)
     {
         int32_t pubKeyLen;
-        pubKeyBuf = EncodeEcPointFromCoordinates(qx, qxLength, qy, qyLength, &pubKeyLen);
+
+        // Coordinates are padded to field size (qxLength) by managed caller.
+        pubKeyBuf = EncodeEcPointFromCoordinates(qx, qxLength, qy, qyLength, qxLength, &pubKeyLen);
         if (pubKeyBuf == NULL)
             goto error;
 
@@ -1449,9 +1453,9 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
     if (!OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_EC_B, bBn))
         goto error;
 
-    // Generator as uncompressed point: 0x04 || gx || gy
+    // Generator as uncompressed point: 0x04 || gx || gy, padded to field size (pLength).
     int32_t genLen;
-    generatorBuf = EncodeEcPointFromCoordinates(gx, gxLength, gy, gyLength, &genLen);
+    generatorBuf = EncodeEcPointFromCoordinates(gx, gxLength, gy, gyLength, pLength, &genLen);
     if (generatorBuf == NULL)
         goto error;
 
@@ -1490,7 +1494,9 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
     if (hasPublicKey)
     {
         int32_t pubKeyLen;
-        pubKeyBuf = EncodeEcPointFromCoordinates(qx, qxLength, qy, qyLength, &pubKeyLen);
+
+        // Coordinates are padded to field size (pLength) by managed caller.
+        pubKeyBuf = EncodeEcPointFromCoordinates(qx, qxLength, qy, qyLength, pLength, &pubKeyLen);
         if (pubKeyBuf == NULL)
             goto error;
 
