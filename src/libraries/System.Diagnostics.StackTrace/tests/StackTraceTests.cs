@@ -652,6 +652,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         [MemberData(nameof(Ctor_Async_TestData))]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         public async Task ToString_Async(Func<Task> asyncMethod, string[] expectedPatterns)
