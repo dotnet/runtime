@@ -2995,11 +2995,23 @@ public sealed unsafe partial class SOSDacImpl
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
-                int localNameLength = neededLocal == 0 ? 0 : (int)Math.Min(neededLocal - 1, count);
-                int nameLength = 0;
-                if (mtName is not null && pNeeded is not null && *pNeeded != 0)
+                int maxComparableLength = count == 0 ? 0 : (int)count - 1;
+                ReadOnlySpan<char> localComparableSpan = mtNameLocal.AsSpan(0, maxComparableLength);
+                int localNameLength = localComparableSpan.IndexOf('\0');
+                if (localNameLength < 0)
                 {
-                    nameLength = (int)Math.Min(Math.Min(*pNeeded - 1, count), count);
+                    localNameLength = maxComparableLength;
+                }
+
+                int nameLength = 0;
+                if (mtName is not null)
+                {
+                    ReadOnlySpan<char> comparableSpan = new(mtName, maxComparableLength);
+                    nameLength = comparableSpan.IndexOf('\0');
+                    if (nameLength < 0)
+                    {
+                        nameLength = maxComparableLength;
+                    }
                 }
 
                 if (!(pNeeded is null || *pNeeded == neededLocal))
