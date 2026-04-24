@@ -28,8 +28,7 @@ internal sealed class LoaderAllocator : IData<LoaderAllocator>
 
         VirtualCallStubManager = target.ReadPointerField(address, type, nameof(VirtualCallStubManager));
 
-        ObjectHandle = target.ProcessedData.GetOrAdd<ObjectHandle>(
-            target.ReadPointerField(address, type, nameof(ObjectHandle)));
+        ObjectHandle = target.ReadDataField<ObjectHandle>(address, type, nameof(ObjectHandle));
     }
 
     public uint ReferenceCount { get; init; }
