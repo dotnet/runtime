@@ -680,7 +680,8 @@ namespace System.Numerics.Tests
 
             // Single can only accurately represent integers between -16777216 and 16777216 exclusive.
             // ToString starts to become inaccurate at this point.
-            if (expectedValue < 16777216 && -16777216 < expectedValue)
+            // Skip negative zero: (-0f).ToString("G9") is "-0" but BigInteger has no negative zero.
+            if (expectedValue < 16777216 && -16777216 < expectedValue && !(float.IsNegative(expectedValue) && expectedValue == 0f))
             {
                 Assert.Equal(expectedValue.ToString("G9"), bigInteger.ToString());
             }
@@ -718,7 +719,8 @@ namespace System.Numerics.Tests
 
             // Double can only accurately represent integers between -9007199254740992 and 9007199254740992 exclusive.
             // ToString starts to become inaccurate at this point.
-            if (expectedValue < 9007199254740992 && -9007199254740992 < expectedValue)
+            // Skip negative zero: (-0.0).ToString() is "-0" but BigInteger has no negative zero.
+            if (expectedValue < 9007199254740992 && -9007199254740992 < expectedValue && !(double.IsNegative(expectedValue) && expectedValue == 0d))
             {
                 Assert.Equal(expectedValue.ToString(), bigInteger.ToString());
             }
