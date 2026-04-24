@@ -4874,13 +4874,13 @@ public sealed unsafe partial class SOSDacImpl
             TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
             IReadOnlyDictionary<string, TargetPointer> heaps = loader.GetLoaderAllocatorHeaps(globalLoaderAllocator);
 
-            if (!heaps.ContainsKey(nameof(VCSHeapType.IndcellHeap)))
+            if (!heaps.ContainsKey("IndcellHeap"))
                 throw new NullReferenceException();
 
             string? heapName = heaptype switch
             {
-                VCSHeapType.IndcellHeap => nameof(VCSHeapType.IndcellHeap),
-                VCSHeapType.CacheEntryHeap => nameof(VCSHeapType.CacheEntryHeap),
+                VCSHeapType.IndcellHeap => "IndcellHeap",
+                VCSHeapType.CacheEntryHeap => "CacheEntryHeap",
                 _ => throw new ArgumentException(),
             };
 
