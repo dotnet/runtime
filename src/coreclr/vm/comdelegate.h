@@ -34,8 +34,8 @@ public:
     static void Init();
 
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
-    static FCDECL1(PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
-    static FCDECL1(MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
+    FCDECL1(static PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
+    FCDECL1(static MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
     static PCODE GetWrapperInvoke(MethodDesc* pMD);
     // determines where the delegate needs to be wrapped for non-security reason
     static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);

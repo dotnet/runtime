@@ -9,28 +9,32 @@
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
               /* id */ NI_##isa##_##name, \
              /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
              /* isa */ InstructionSet_##isa, \
-        /* simdSize */ size, \
-         /* numArgs */ numarg, \
+        /* simdSize */ simdSize, \
+         /* numArgs */ numArgs, \
+         /* intCost */ intCost, \
+         /* fltCost */ fltCost, \
         /* category */ category \
     },
 #include "hwintrinsiclistxarch.h"
 #elif defined (TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
               /* id */ NI_##isa##_##name, \
              /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
              /* isa */ InstructionSet_##isa, \
-        /* simdSize */ size, \
-         /* numArgs */ numarg, \
+        /* simdSize */ simdSize, \
+         /* numArgs */ numArgs, \
+         /* intCost */ -1, \
+         /* fltCost */ -1, \
         /* category */ category \
     },
 #include "hwintrinsiclistarm64.h"
@@ -1000,13 +1004,18 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      Atomics
     { FIRST_NI_Vector64, LAST_NI_Vector64 },                    // Vector64
     { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
-    { NI_Illegal, NI_Illegal },                                 // VectorT
+    { FIRST_NI_VectorT, LAST_NI_VectorT },                      // VectorT
     { NI_Illegal, NI_Illegal },                                 //      Dczva
     { NI_Illegal, NI_Illegal },                                 //      Rcpc
     { NI_Illegal, NI_Illegal },                                 //      VectorT128
     { NI_Illegal, NI_Illegal },                                 //      Rcpc2
     { FIRST_NI_Sve, LAST_NI_Sve },                              // Sve
     { FIRST_NI_Sve2, LAST_NI_Sve2 },                            // Sve2
+    { NI_Illegal, NI_Illegal },                                 //      Sha3
+    { NI_Illegal, NI_Illegal },                                 //      Sm4
+    { NI_Illegal, NI_Illegal },                                 //      SveAes
+    { NI_Illegal, NI_Illegal },                                 //      SveSha3
+    { NI_Illegal, NI_Illegal },                                 //      SveSm4
     { FIRST_NI_ArmBase_Arm64, LAST_NI_ArmBase_Arm64 },          // ArmBase_Arm64
     { FIRST_NI_AdvSimd_Arm64, LAST_NI_AdvSimd_Arm64 },          // AdvSimd_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Aes_Arm64
@@ -1017,6 +1026,11 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      Sha256_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Sve_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Sve2_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      Sha3_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      Sm4_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      SveAes_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      SveSha3_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      SveSm4_Arm64
 #else
 #error Unsupported platform
 #endif
@@ -1365,6 +1379,15 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     else if (isa == InstructionSet_Vector64)
     {
         if (!isHWIntrinsicEnabled)
+        {
+            return NI_Illegal;
+        }
+    }
+    else if (isa == InstructionSet_VectorT)
+    {
+        // This instruction set should only be set when SVE is enabled.
+        // Baseline Vector<T> will use InstructionSet_VectorT128.
+        if (!comp->compOpportunisticallyDependsOn(InstructionSet_Sve))
         {
             return NI_Illegal;
         }
@@ -2234,7 +2257,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
 #if defined(TARGET_ARM64)
-            if ((simdSize != 8) && (simdSize != 16))
+            if ((simdSize != 8) && (simdSize != 16) && (simdSize != SIZE_UNKNOWN))
 #elif defined(TARGET_XARCH)
             if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
 #endif // TARGET_*
@@ -2404,14 +2427,26 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         }
                         break;
 
-                    case NI_Sve_CreateWhileLessThanMask8Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
-                    case NI_Sve_CreateWhileLessThanMask16Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
-                    case NI_Sve_CreateWhileLessThanMask32Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
-                    case NI_Sve_CreateWhileLessThanMask64Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+                    case NI_Sve_CreateWhileLessThanMaskByte:
+                    case NI_Sve_CreateWhileLessThanMaskDouble:
+                    case NI_Sve_CreateWhileLessThanMaskInt16:
+                    case NI_Sve_CreateWhileLessThanMaskInt32:
+                    case NI_Sve_CreateWhileLessThanMaskInt64:
+                    case NI_Sve_CreateWhileLessThanMaskSByte:
+                    case NI_Sve_CreateWhileLessThanMaskSingle:
+                    case NI_Sve_CreateWhileLessThanMaskUInt16:
+                    case NI_Sve_CreateWhileLessThanMaskUInt32:
+                    case NI_Sve_CreateWhileLessThanMaskUInt64:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskByte:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskDouble:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskInt16:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskInt32:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskInt64:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskSByte:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskSingle:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskUInt16:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskUInt32:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskUInt64:
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op1JitType);
                         break;
 

@@ -10,11 +10,12 @@ endif()
 if (FEATURE_DYNAMIC_CODE_COMPILED)
   set(FEATURE_TIERED_COMPILATION 1)
   set(FEATURE_REJIT 1)
+  set(FEATURE_PGO 1)
 endif()
 
 # On desktop, if dynamic code compiled is false, we still enable static linking so we don't have to add platform manifest entries
 # for interpreter library, which is required for the packs build
-if (CLR_CMAKE_TARGET_ARCH_WASM OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_TARGET_MACCATALYST OR NOT FEATURE_DYNAMIC_CODE_COMPILED)
+if (CLR_CMAKE_TARGET_ARCH_WASM OR CLR_CMAKE_TARGET_APPLE_MOBILE OR NOT FEATURE_DYNAMIC_CODE_COMPILED)
   set(FEATURE_STATICALLY_LINKED 1)
 endif()
 
@@ -45,6 +46,16 @@ if(NOT DEFINED FEATURE_DBGIPC)
     set(FEATURE_DBGIPC 1)
   endif()
 endif(NOT DEFINED FEATURE_DBGIPC)
+
+if(NOT DEFINED FEATURE_CORPROFILER)
+  # ICorProfiler isn't supported on non-desktop targets or WASM scenarios
+  if(NOT CLR_CMAKE_TARGET_ARCH_WASM
+    # AND NOT CLR_CMAKE_TARGET_ANDROID
+    # AND NOT CLR_CMAKE_TARGET_APPLE_MOBILE
+    )
+    set(FEATURE_CORPROFILER 1)
+  endif()
+endif()
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
   # FEATURE_INTERPRETER is already enabled by default

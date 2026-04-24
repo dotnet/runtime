@@ -685,7 +685,8 @@ struct RangeOps
         const Limit& yUpper = y.UpperLimit();
 
         // For unsigned comparisons, we only support non-negative ranges.
-        if (isUnsigned)
+        // NOTE: it's not applicable for EQ and NE.
+        if (isUnsigned && (relop != GT_EQ) && (relop != GT_NE))
         {
             if (!xLower.IsConstant() || !yLower.IsConstant() || (xLower.GetConstant() < 0) ||
                 (yLower.GetConstant() < 0))
@@ -774,6 +775,13 @@ private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
+
+    // Cheaper version of TryGetRange that is based only on incoming assertions.
+    static Range GetRangeFromAssertionsWorker(Compiler*                        comp,
+                                              ValueNum                         num,
+                                              ASSERT_VALARG_TP                 assertions,
+                                              int                              budget,
+                                              ValueNumStore::SmallValueNumSet* visited);
 
     int GetArrLength(ValueNum vn);
 

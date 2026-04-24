@@ -1232,13 +1232,16 @@ void emitter::emitIns_R_R_R_R(
 /*****************************************************************************
  *
  *  Add an instruction with a register + static member operands.
- *  Constant is stored into JIT data which is adjacent to code.
+ *  Usually constants are stored into JIT data adjacent to code, in which case no
+ *  relocation is needed. PC-relative offset will be encoded directly into instruction.
  *
  */
 void emitter::emitIns_R_C(
     instruction ins, emitAttr attr, regNumber destReg, regNumber addrReg, CORINFO_FIELD_HANDLE fldHnd)
 {
     instrDesc* id = emitNewInstr(attr);
+    id->idSetRelocFlags(attr);
+
     id->idIns(ins);
     assert(destReg != REG_R0); // for special. reg Must not be R0.
     id->idReg1(destReg);
@@ -1370,6 +1373,39 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 #endif // DEBUG
 
     dispIns(id);
+    appendToCurIG(id);
+}
+
+//--------------------------------------------------------------------
+// emitIns_R_L: Emit an instruction with a label operand.
+//
+// Arguments:
+//   ins - The instruction
+//   attr - Size of the instruction
+//   dst - Instruction group
+//   reg - Register destination
+//
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(dst != nullptr);
+
+    // 2-ins:
+    //   auipc reg, offset-hi20
+    //   addi  reg, reg, offset-lo12
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsOpt(INS_OPTS_RL);
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound(); // Mark as bound since we already have the target insGroup directly
+
+    if (m_compiler->opts.compReloc)
+        id->idSetIsDspReloc();
+
+    id->idCodeSize(2 * sizeof(code_t));
+    id->idReg1(reg);
+
     appendToCurIG(id);
 }
 
@@ -3271,24 +3307,41 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     assert(offset >= 0);
     assert((UNATIVE_OFFSET)offset < emitDataSize());
 
+    BYTE* const dstBase  = dst;
     *ins                 = id->idIns();
     const regNumber reg1 = id->idReg1();
     assert(reg1 != REG_ZERO);
     assert(id->idCodeSize() == 2 * sizeof(code_t));
-    const ssize_t immediate = emitDataOffsetToPtr(offset) - dst;
-    assert((immediate > 0) && ((immediate & 0x01) == 0));
-    assert(isValidSimm32(immediate));
+
+    const ssize_t immediate = id->idIsReloc() ? 0 : (emitDataOffsetToPtr(offset) - dst);
+    if (!id->idIsReloc())
+    {
+        assert((immediate > 0) && ((immediate & 0x01) == 0));
+        assert(isValidSimm32(immediate));
+    }
 
     const regNumber tempReg = isFloatReg(reg1) ? codeGen->rsGetRsvdReg() : reg1;
     dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
     dst += emitOutput_ITypeInstr(dst, *ins, reg1, tempReg, LowerNBitsOfWord<12>(immediate));
+
+    if (id->idIsReloc())
+    {
+        emitRecordRelocation(dstBase, emitDataOffsetToPtr(offset), CorInfoReloc::RISCV64_PCREL_I);
+    }
+
     return dst;
 }
 
 BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins)
 {
-    insGroup* targetInsGroup = static_cast<insGroup*>(emitCodeGetCookie(id->idAddr()->iiaBBlabel));
-    id->idAddr()->iiaIGlabel = targetInsGroup;
+    if (!id->idIsBound())
+    {
+        insGroup* targetInsGroup = static_cast<insGroup*>(emitCodeGetCookie(id->idAddr()->iiaBBlabel));
+        id->idAddr()->iiaIGlabel = targetInsGroup;
+        id->idSetIsBound();
+    }
+
+    insGroup* targetInsGroup = id->idAddr()->iiaIGlabel;
 
     const regNumber reg1   = id->idReg1();
     const ssize_t   igOffs = targetInsGroup->igOffs;

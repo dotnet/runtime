@@ -360,7 +360,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_OffsetOf)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
-    DllImportEntry(MarshalNative_TryGetStructMarshalStub)
+    DllImportEntry(MarshalNative_HasLayout)
     DllImportEntry(MarshalNative_SizeOfHelper)
     DllImportEntry(MarshalNative_GetDelegateForFunctionPointerInternal)
     DllImportEntry(MarshalNative_GetFunctionPointerForDelegateInternal)
@@ -503,6 +503,7 @@ static const Entry s_QCall[] =
     DllImportEntry(X86Base_CpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
+    DllImportEntry(StubHelpers_CreateLayoutClassMarshalStubs)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
     DllImportEntry(StubHelpers_MarshalToManagedVaList)
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
@@ -519,6 +520,8 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler_ConvertToNative)
     DllImportEntry(InterfaceMarshaler_ConvertToManaged)
+    DllImportEntry(InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown)
+    DllImportEntry(InterfaceMarshaler_ValidateComVisibilityForIUnknown)
 #endif
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(ComWeakRefToObject)
