@@ -1012,8 +1012,12 @@ namespace System.Reflection.Metadata.Tests
             builder2.WriteByte(2);
             builder3.WriteByte(3);
 
+            builder1.LinkPrefix(builder2);
+
+            AssertEx.Equal((byte[])[2, 1], builder1.ToArray());
+
             // mix pooled with non-pooled
-            builder1.LinkPrefix(builder3);
+            Assert.Throws<InvalidOperationException>(() => builder1.LinkSuffix(builder3));
 
             builder1.Free();
             builder2.Free();
