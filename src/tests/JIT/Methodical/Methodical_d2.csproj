@@ -10,6 +10,11 @@
     <MergedWrapperProjectReference Remove="c*/**/*_d.??proj" />
     <MergedWrapperProjectReference Remove="d*/**/*_d.??proj" />
     <MergedWrapperProjectReference Remove="e*/**/*_d.??proj" />
+    <!-- https://github.com/dotnet/runtime/issues/127426 - TypeLoadException on WASM interpreter, regression from #126901 -->
+    <MergedWrapperProjectReference Condition="'$(TargetOS)' == 'browser'" Remove="VT/callconv/aa_d.ilproj" />
+    <MergedWrapperProjectReference Condition="'$(TargetOS)' == 'browser'" Remove="VT/callconv/calli_d.ilproj" />
+    <MergedWrapperProjectReference Condition="'$(TargetOS)' == 'browser'" Remove="VT/callconv/dd_d.ilproj" />
+    <MergedWrapperProjectReference Condition="'$(TargetOS)' == 'browser'" Remove="VT/callconv/ee_d.ilproj" />
     <ProjectReference Include="../common/localloc_common.ilproj" />
     <ProjectReference Include="../common/eh_common.csproj" />
     <ProjectReference Include="int64/unsigned/implicit_promotion_il.ilproj" />
@@ -123,7 +128,9 @@
     <Compile Include="unsafecsharp\unsafe-4.cs" />
     <Compile Include="unsafecsharp\unsafe-5.cs" />
     <Compile Include="unsafecsharp\unsafe-6.cs" />
-    <Compile Include="VT\callconv\call.cs" />
+
+    <!-- https://github.com/dotnet/runtime/issues/127426 - TypeLoadException on WASM interpreter, regression from #126901 -->
+    <Compile Include="VT\callconv\call.cs" Condition="'$(TargetOS)' != 'browser'" />
     <Compile Include="VT\callconv\jumper.cs" />
     <Compile Include="VT\callconv\jumps.cs" />
     <Compile Include="VT\callconv\vtret.cs" />
