@@ -73,6 +73,15 @@ namespace Xunit
         private readonly Type? _conditionType;
         private readonly string[] _conditionMemberNames;
 
+        public ActiveIssueAttribute()
+        {
+            _issue = string.Empty;
+            _platforms = TestPlatforms.Any;
+            _frameworks = TargetFrameworkMonikers.Any;
+            _runtimes = TestRuntimes.CoreCLR | TestRuntimes.Mono;
+            _conditionMemberNames = [];
+        }
+
         public ActiveIssueAttribute(string issue)
         {
             _issue = issue;
