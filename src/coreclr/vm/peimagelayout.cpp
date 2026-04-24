@@ -922,10 +922,9 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
 
     CopyMemory(base, (void*)GetBase(), sizeOfHeaders);
 
-    DWORD oldProtection;
+    DWORD oldProtection; // PAL layer doesn't properly set the previous protection, so we don't try to validate it here.
     if (!ClrVirtualProtect((void*)base, sizeOfHeaders, PAGE_READONLY, &oldProtection))
         ThrowLastError();
-    _ASSERTE(oldProtection == PAGE_READWRITE);
 
     // Commit and copy each section with its desired protection.
     for (IMAGE_SECTION_HEADER* section = sectionStart; section < sectionEnd; section++)
