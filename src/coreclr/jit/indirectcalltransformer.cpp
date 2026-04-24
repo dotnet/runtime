@@ -1401,11 +1401,13 @@ private:
 
                 GenTree* m_unclonableNode;
                 unsigned m_nodeCount;
+                bool     m_substitutedRetExpr;
 
                 ClonabilityVisitor(Compiler* compiler)
                     : GenTreeVisitor(compiler)
                     , m_unclonableNode(nullptr)
                     , m_nodeCount(0)
+                    , m_substitutedRetExpr(false)
                 {
                 }
 
@@ -1431,7 +1433,8 @@ private:
                         if (node->AsRetExpr()->gtSubstExpr != nullptr)
                         {
                             assert(node->AsRetExpr()->gtInlineCandidate->IsGuarded());
-                            *use = node->AsRetExpr()->gtSubstExpr;
+                            *use                 = node->AsRetExpr()->gtSubstExpr;
+                            m_substitutedRetExpr = true;
                             return fgWalkResult::WALK_CONTINUE;
                         }
 
@@ -1482,6 +1485,11 @@ private:
                 //
                 ClonabilityVisitor clonabilityVisitor(compiler);
                 clonabilityVisitor.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
+
+                if (clonabilityVisitor.m_substitutedRetExpr)
+                {
+                    compiler->gtUpdateStmtSideEffects(nextStmt);
+                }
 
                 if (clonabilityVisitor.m_unclonableNode != nullptr)
                 {

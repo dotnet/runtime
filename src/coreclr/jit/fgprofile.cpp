@@ -2154,6 +2154,7 @@ public:
         // Update the call
         //
         objUse->SetEarlyNode(storeCommaNode);
+        call->gtFlags |= storeCommaNode->gtFlags & GTF_ALL_EFFECT;
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);

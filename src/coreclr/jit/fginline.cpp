@@ -649,6 +649,9 @@ private:
                             {
                                 m_firstNewStmt = newStmt;
                             }
+                            // gtSplitTree may leave stale side-effect flags on the
+                            // ancestors of the split point in m_curStmt.
+                            m_substitutedRetExpr = true;
                         }
 
                         // If the call is the root expression in a statement, and it returns void,
