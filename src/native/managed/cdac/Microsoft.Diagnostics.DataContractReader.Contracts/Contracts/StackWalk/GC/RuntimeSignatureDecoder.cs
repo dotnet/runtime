@@ -136,6 +136,7 @@ internal ref struct RuntimeSignatureDecoder<TType, TGenericContext, TReader>
     private const byte ELEMENT_TYPE_PINNED = 0x45;
 
     private readonly IRuntimeSignatureTypeProvider<TType, TGenericContext> _provider;
+    private readonly MetadataReader? _metadataReader;
     private readonly Target _target;
     private readonly TGenericContext _genericContext;
     private TReader _reader;
@@ -144,9 +145,11 @@ internal ref struct RuntimeSignatureDecoder<TType, TGenericContext, TReader>
         IRuntimeSignatureTypeProvider<TType, TGenericContext> provider,
         Target target,
         TGenericContext genericContext,
-        TReader reader)
+        TReader reader,
+        MetadataReader? metadataReader = null)
     {
         _provider = provider;
+        _metadataReader = metadataReader;
         _target = target;
         _genericContext = genericContext;
         _reader = reader;
@@ -342,9 +345,9 @@ internal ref struct RuntimeSignatureDecoder<TType, TGenericContext, TReader>
 
         return tag switch
         {
-            0 => _provider.GetTypeFromDefinition(null!, MetadataTokens.TypeDefinitionHandle(rid), rawTypeKind),
-            1 => _provider.GetTypeFromReference(null!, MetadataTokens.TypeReferenceHandle(rid), rawTypeKind),
-            2 => _provider.GetTypeFromSpecification(null!, _genericContext, MetadataTokens.TypeSpecificationHandle(rid), rawTypeKind),
+            0 => _provider.GetTypeFromDefinition(_metadataReader!, MetadataTokens.TypeDefinitionHandle(rid), rawTypeKind),
+            1 => _provider.GetTypeFromReference(_metadataReader!, MetadataTokens.TypeReferenceHandle(rid), rawTypeKind),
+            2 => _provider.GetTypeFromSpecification(_metadataReader!, _genericContext, MetadataTokens.TypeSpecificationHandle(rid), rawTypeKind),
             _ => _provider.GetPrimitiveType(PrimitiveTypeCode.Object), // tag=3 is BaseType in native
         };
     }

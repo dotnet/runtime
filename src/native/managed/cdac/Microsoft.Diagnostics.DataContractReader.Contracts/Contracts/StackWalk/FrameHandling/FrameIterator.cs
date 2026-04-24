@@ -585,9 +585,10 @@ internal sealed class FrameIterator
             return;
 
         ReadOnlySpan<byte> signature;
+        MetadataReader? metadataReader;
         try
         {
-            signature = GetMethodSignatureBytes(methodDescPtr);
+            signature = GetMethodSignatureBytes(methodDescPtr, out metadataReader);
         }
         catch (System.Exception)
         {
@@ -601,7 +602,8 @@ internal sealed class FrameIterator
         try
         {
             RuntimeSignatureDecoder<GcTypeKind, object?, SpanSignatureReader> decoder = new(
-                GcSignatureTypeProvider.Instance, target, genericContext: null, new SpanSignatureReader(signature, target.IsLittleEndian));
+                GcSignatureTypeProvider.Instance, target, genericContext: null,
+                new SpanSignatureReader(signature, target.IsLittleEndian), metadataReader);
             methodSig = decoder.DecodeMethodSignature();
         }
         catch (System.Exception)
@@ -749,8 +751,9 @@ internal sealed class FrameIterator
         };
     }
 
-    private ReadOnlySpan<byte> GetMethodSignatureBytes(TargetPointer methodDescPtr)
+    private ReadOnlySpan<byte> GetMethodSignatureBytes(TargetPointer methodDescPtr, out MetadataReader? metadataReader)
     {
+        metadataReader = null;
         IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
         MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
@@ -769,13 +772,13 @@ internal sealed class FrameIterator
         ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
 
         IEcmaMetadata ecmaMetadata = target.Contracts.EcmaMetadata;
-        MetadataReader? mdReader = ecmaMetadata.GetMetadata(moduleHandle);
-        if (mdReader is null)
+        metadataReader = ecmaMetadata.GetMetadata(moduleHandle);
+        if (metadataReader is null)
             return default;
 
         MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)(methodToken & 0x00FFFFFF));
-        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-        BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
+        MethodDefinition methodDef = metadataReader.GetMethodDefinition(methodDefHandle);
+        BlobReader blobReader = metadataReader.GetBlobReader(methodDef.Signature);
         return blobReader.ReadBytes(blobReader.Length);
     }
 
