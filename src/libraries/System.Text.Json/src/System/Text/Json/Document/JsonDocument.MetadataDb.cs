@@ -269,7 +269,7 @@ namespace System.Text.Json
                 AssertValidIndex(index);
                 Debug.Assert(length >= 0);
                 Span<byte> destination = _data.AsSpan(index + SizeOrLengthOffset);
-                MemoryMarshal.Write(destination, in length);
+                MemoryMarshal.Write(destination, ref length);
             }
 
             internal void SetNumberOfRows(int index, int numberOfRows)
@@ -282,7 +282,7 @@ namespace System.Text.Json
 
                 // Persist the most significant nybble
                 int value = (current & unchecked((int)0xF0000000)) | numberOfRows;
-                MemoryMarshal.Write(dataPos, in value);
+                MemoryMarshal.Write(dataPos, ref value);
             }
 
             internal void SetHasComplexChildren(int index)
@@ -294,7 +294,7 @@ namespace System.Text.Json
                 int current = MemoryMarshal.Read<int>(dataPos);
 
                 int value = current | unchecked((int)0x80000000);
-                MemoryMarshal.Write(dataPos, in value);
+                MemoryMarshal.Write(dataPos, ref value);
             }
 
             internal int FindIndexOfFirstUnsetSizeOrLength(JsonTokenType lookupType)
