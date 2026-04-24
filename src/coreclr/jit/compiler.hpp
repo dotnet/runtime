@@ -1511,12 +1511,15 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 
     if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
     {
-        result->gtFlags |= GTF_EXCEPT;
-
         if (s_helperCallProperties.AlwaysThrow((CorInfoHelpFunc)helper))
         {
             setCallDoesNotReturn(result);
         }
+    }
+    else
+    {
+        // gtNewCallNode defaults GTF_EXCEPT on; clear for helpers that can't throw.
+        result->gtFlags &= ~GTF_EXCEPT;
     }
 #if DEBUG
     // Helper calls are never candidates.
@@ -1574,12 +1577,15 @@ inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
 
     if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
     {
-        result->gtFlags |= GTF_EXCEPT;
-
         if (s_helperCallProperties.AlwaysThrow((CorInfoHelpFunc)helper))
         {
             setCallDoesNotReturn(result);
         }
+    }
+    else
+    {
+        // gtNewCallNode defaults GTF_EXCEPT on; clear for helpers that can't throw.
+        result->gtFlags &= ~GTF_EXCEPT;
     }
 #if DEBUG
     // Helper calls are never candidates.

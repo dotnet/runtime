@@ -4560,6 +4560,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
 
+    // Enable IR checks before implicit byref type update.
+    activePhaseChecks |= PhaseChecks::CHECK_IR;
+
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
     //
@@ -4570,9 +4573,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     lvaStressLclFld();
     fgStress64RsltMul();
 #endif // DEBUG
-
-    // Enable IR checks before global morph so the post-phase check runs on morphed IR.
-    activePhaseChecks |= PhaseChecks::CHECK_IR;
 
     // Morph the trees in all the blocks of the method
     //

@@ -8577,7 +8577,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
 {
     GenTreeCall* node = new (this, GT_CALL) GenTreeCall(genActualType(type));
 
-    node->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+    node->gtFlags |= (GTF_CALL | GTF_EXCEPT | GTF_GLOB_REF);
 #ifdef UNIX_X86_ABI
     if (callType == CT_INDIRECT || callType == CT_HELPER)
         node->gtFlags |= GTF_CALL_POP_ARGS;
