@@ -4417,7 +4417,20 @@ TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pN
         return 0;
     }
 
-    return GetInterpreterCodeFromInterpreterPrecodeIfPresent(start);
+    start = GetInterpreterCodeFromInterpreterPrecodeIfPresent(start);
+
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    if (pNativeCodeStartAddress == (PCODE)0)
+    {
+        PTR_InterpByteCodeStart pInterpCode = pMethodDesc->GetInterpreterCode();
+        if (pInterpCode != NULL)
+        {
+            return dac_cast<TADDR>(pInterpCode);
+        }
+    }
+#endif
+
+    return start;
 }
 
 /****************************************************************************/
