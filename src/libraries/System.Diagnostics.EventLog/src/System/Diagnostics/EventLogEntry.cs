@@ -475,6 +475,5 @@ namespace System.Diagnostics
             internal const int DATAOFFSET = 52;
             internal const int RAWDATA = 56;
         }
-
     }
 }
