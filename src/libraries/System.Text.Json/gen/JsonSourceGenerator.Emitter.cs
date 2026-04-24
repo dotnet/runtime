@@ -596,7 +596,7 @@ namespace System.Text.Json.SourceGeneration
                     {
                         string discriminatorArg = derivedTypeSpec.TypeDiscriminator switch
                         {
-                            string s => $", \"{s}\"",
+                            string s => $", {FormatStringLiteral(s)}",
                             int i => $", {i}",
                             _ => "",
                         };
