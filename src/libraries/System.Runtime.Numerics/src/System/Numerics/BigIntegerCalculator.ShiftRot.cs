@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics
@@ -115,46 +114,48 @@ namespace System.Numerics
             {
                 carry = bits[^1] >> back;
 
-                ref nuint start = ref MemoryMarshal.GetReference(bits);
-                int offset = bits.Length;
+                Span<nuint> remaining = bits;
 
                 // Each vector load needs one extra element below it to source the carry bits
                 // that shift in from the lower limbs, hence the +1 minimum.
-                while (Vector512.IsHardwareAccelerated && offset >= Vector512<nuint>.Count + 1)
+                while (Vector512.IsHardwareAccelerated && remaining.Length >= Vector512<nuint>.Count + 1)
                 {
-                    Vector512<nuint> current = Vector512.LoadUnsafe(ref start, (nuint)(offset - Vector512<nuint>.Count)) << shift;
-                    Vector512<nuint> carries = Vector512.LoadUnsafe(ref start, (nuint)(offset - (Vector512<nuint>.Count + 1))) >> back;
+                    int offset = remaining.Length - Vector512<nuint>.Count;
+                    Vector512<nuint> current = Vector512.Create(remaining.Slice(offset)) << shift;
+                    Vector512<nuint> carries = Vector512.Create(remaining.Slice(offset - 1)) >> back;
 
                     Vector512<nuint> newValue = current | carries;
 
-                    Vector512.StoreUnsafe(newValue, ref start, (nuint)(offset - Vector512<nuint>.Count));
-                    offset -= Vector512<nuint>.Count;
+                    newValue.CopyTo(remaining.Slice(offset));
+                    remaining = remaining.Slice(0, offset);
                 }
 
-                while (Vector256.IsHardwareAccelerated && offset >= Vector256<nuint>.Count + 1)
+                while (Vector256.IsHardwareAccelerated && remaining.Length >= Vector256<nuint>.Count + 1)
                 {
-                    Vector256<nuint> current = Vector256.LoadUnsafe(ref start, (nuint)(offset - Vector256<nuint>.Count)) << shift;
-                    Vector256<nuint> carries = Vector256.LoadUnsafe(ref start, (nuint)(offset - (Vector256<nuint>.Count + 1))) >> back;
+                    int offset = remaining.Length - Vector256<nuint>.Count;
+                    Vector256<nuint> current = Vector256.Create(remaining.Slice(offset)) << shift;
+                    Vector256<nuint> carries = Vector256.Create(remaining.Slice(offset - 1)) >> back;
 
                     Vector256<nuint> newValue = current | carries;
 
-                    Vector256.StoreUnsafe(newValue, ref start, (nuint)(offset - Vector256<nuint>.Count));
-                    offset -= Vector256<nuint>.Count;
+                    newValue.CopyTo(remaining.Slice(offset));
+                    remaining = remaining.Slice(0, offset);
                 }
 
-                while (Vector128.IsHardwareAccelerated && offset >= Vector128<nuint>.Count + 1)
+                while (Vector128.IsHardwareAccelerated && remaining.Length >= Vector128<nuint>.Count + 1)
                 {
-                    Vector128<nuint> current = Vector128.LoadUnsafe(ref start, (nuint)(offset - Vector128<nuint>.Count)) << shift;
-                    Vector128<nuint> carries = Vector128.LoadUnsafe(ref start, (nuint)(offset - (Vector128<nuint>.Count + 1))) >> back;
+                    int offset = remaining.Length - Vector128<nuint>.Count;
+                    Vector128<nuint> current = Vector128.Create(remaining.Slice(offset)) << shift;
+                    Vector128<nuint> carries = Vector128.Create(remaining.Slice(offset - 1)) >> back;
 
                     Vector128<nuint> newValue = current | carries;
 
-                    Vector128.StoreUnsafe(newValue, ref start, (nuint)(offset - Vector128<nuint>.Count));
-                    offset -= Vector128<nuint>.Count;
+                    newValue.CopyTo(remaining.Slice(offset));
+                    remaining = remaining.Slice(0, offset);
                 }
 
                 nuint carry2 = 0;
-                for (int i = 0; i < offset; i++)
+                for (int i = 0; i < remaining.Length; i++)
                 {
                     nuint value = carry2 | bits[i] << shift;
                     carry2 = bits[i] >> back;
@@ -189,43 +190,43 @@ namespace System.Numerics
             {
                 carry = bits[0] << back;
 
-                ref nuint start = ref MemoryMarshal.GetReference(bits);
-                int offset = 0;
+                Span<nuint> remaining = bits;
 
-                while (Vector512.IsHardwareAccelerated && bits.Length - offset >= Vector512<nuint>.Count + 1)
+                while (Vector512.IsHardwareAccelerated && remaining.Length >= Vector512<nuint>.Count + 1)
                 {
-                    Vector512<nuint> current = Vector512.LoadUnsafe(ref start, (nuint)offset) >> shift;
-                    Vector512<nuint> carries = Vector512.LoadUnsafe(ref start, (nuint)(offset + 1)) << back;
+                    Vector512<nuint> current = Vector512.Create(remaining) >> shift;
+                    Vector512<nuint> carries = Vector512.Create(remaining.Slice(1)) << back;
 
                     Vector512<nuint> newValue = current | carries;
 
-                    Vector512.StoreUnsafe(newValue, ref start, (nuint)offset);
-                    offset += Vector512<nuint>.Count;
+                    newValue.CopyTo(remaining);
+                    remaining = remaining.Slice(Vector512<nuint>.Count);
                 }
 
-                while (Vector256.IsHardwareAccelerated && bits.Length - offset >= Vector256<nuint>.Count + 1)
+                while (Vector256.IsHardwareAccelerated && remaining.Length >= Vector256<nuint>.Count + 1)
                 {
-                    Vector256<nuint> current = Vector256.LoadUnsafe(ref start, (nuint)offset) >> shift;
-                    Vector256<nuint> carries = Vector256.LoadUnsafe(ref start, (nuint)(offset + 1)) << back;
+                    Vector256<nuint> current = Vector256.Create(remaining) >> shift;
+                    Vector256<nuint> carries = Vector256.Create(remaining.Slice(1)) << back;
 
                     Vector256<nuint> newValue = current | carries;
 
-                    Vector256.StoreUnsafe(newValue, ref start, (nuint)offset);
-                    offset += Vector256<nuint>.Count;
+                    newValue.CopyTo(remaining);
+                    remaining = remaining.Slice(Vector256<nuint>.Count);
                 }
 
-                while (Vector128.IsHardwareAccelerated && bits.Length - offset >= Vector128<nuint>.Count + 1)
+                while (Vector128.IsHardwareAccelerated && remaining.Length >= Vector128<nuint>.Count + 1)
                 {
-                    Vector128<nuint> current = Vector128.LoadUnsafe(ref start, (nuint)offset) >> shift;
-                    Vector128<nuint> carries = Vector128.LoadUnsafe(ref start, (nuint)(offset + 1)) << back;
+                    Vector128<nuint> current = Vector128.Create(remaining) >> shift;
+                    Vector128<nuint> carries = Vector128.Create(remaining.Slice(1)) << back;
 
                     Vector128<nuint> newValue = current | carries;
 
-                    Vector128.StoreUnsafe(newValue, ref start, (nuint)offset);
-                    offset += Vector128<nuint>.Count;
+                    newValue.CopyTo(remaining);
+                    remaining = remaining.Slice(Vector128<nuint>.Count);
                 }
 
                 nuint carry2 = 0;
+                int offset = bits.Length - remaining.Length;
                 for (int i = bits.Length - 1; i >= offset; i--)
                 {
                     nuint value = carry2 | bits[i] >> shift;
