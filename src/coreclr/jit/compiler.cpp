@@ -4584,9 +4584,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Morph the trees in all the blocks of the method
     //
+    INDEBUG(fgImplicitByRefLclFldsStale = false);
     unsigned const preMorphBBCount = fgBBcount;
     DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
-    INDEBUG(fgImplicitByRefLclFldsStale = false);
 
     auto postMorphPhase = [this]() {
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
