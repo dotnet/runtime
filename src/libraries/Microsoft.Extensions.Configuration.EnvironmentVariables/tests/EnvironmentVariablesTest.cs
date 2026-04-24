@@ -382,5 +382,124 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             Assert.Equal("Endpoint=sb://servicebus1.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=key1;", envConfigSrc.Get("ConnectionStrings:servicebus1"));
             Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:servicebus1_ProviderName"));
         }
+
+        [Theory]
+        [InlineData("data__ConnectionString", "data:ConnectionString")]
+        [InlineData("App___Config", "App:_Config")]
+        [InlineData("A____B", "A::B")]
+        [InlineData("NoUnderscores", "NoUnderscores")]
+        public void DefaultTransformationReplacesDoubleUnderscore(string input, string expected)
+        {
+            var result = EnvironmentVariablesConfigurationSource.DefaultTransformation(input);
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("Logging__LogLevel__Microsoft___Hosting", "Logging:LogLevel:Microsoft.Hosting")]
+        [InlineData("App___Config", "App.Config")]
+        [InlineData("App__Config", "App:Config")]
+        [InlineData("App____Config", "App._Config")]
+        [InlineData("App_____Config", "App.:Config")]
+        [InlineData("App______Config", "App..Config")]
+        [InlineData("NoUnderscores", "NoUnderscores")]
+        [InlineData("_X_Y", "_X_Y")]
+        [InlineData("___", ".")]
+        [InlineData("__", ":")]
+        public void ColonAndDotTransformationReplacesTripleUnderscoreWithDotAndDoubleUnderscoreWithColon(string input, string expected)
+        {
+            var result = EnvironmentVariablesConfigurationSource.ColonAndDotTransformation(input);
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void ColonAndDotTransformationIsNotTheDefault()
+        {
+            // Sanity check: the two built-in transformations produce different results for triple underscores.
+            // If they ever agree, this test no longer demonstrates that the default isn't ColonAndDot.
+            var dict = new Hashtable()
+            {
+                { "App___Config", "value" }
+            };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider();
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("value", envConfigSrc.Get("App:_Config"));
+            Assert.False(envConfigSrc.TryGet("App.Config", out _));
+        }
+
+        [Fact]
+        public void VariableNameTransformationReplacesDefaultBehavior()
+        {
+            var dict = new Hashtable()
+            {
+                {"Logging__LogLevel__Microsoft___Hosting", "Debug"}
+            };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider(null,
+                EnvironmentVariablesConfigurationSource.ColonAndDotTransformation);
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("Debug", envConfigSrc.Get("Logging:LogLevel:Microsoft.Hosting"));
+        }
+
+        [Fact]
+        public void CustomTransformationIsUsedInsteadOfDefault()
+        {
+            var dict = new Hashtable()
+            {
+                {"test__section-key", "value"}
+            };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider(null,
+                name => name.Replace("-", ":"));
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("value", envConfigSrc.Get("test__section:key"));
+        }
+
+        [Fact]
+        public void NullTransformationUsesDefault()
+        {
+            var dict = new Hashtable()
+            {
+                {"data__Connection___String", "connection"}
+            };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider(null, null);
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("connection", envConfigSrc.Get("data:Connection___String"));
+        }
+
+        [Fact]
+        public void TransformationIsAppliedToPrefix()
+        {
+            var dict = new Hashtable()
+            {
+                {"App___Config__Key", "value"}
+            };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider(
+                prefix: "App___Config__",
+                EnvironmentVariablesConfigurationSource.ColonAndDotTransformation);
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("value", envConfigSrc.Get("Key"));
+        }
+
+        [Fact]
+        public void IdentityTransformationDisablesDoubleUnderscoreReplacement()
+        {
+            var dict = new Hashtable()
+            {
+                {"data__key", "value"}
+            };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider(null,
+                static name => name);
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("value", envConfigSrc.Get("data__key"));
+        }
     }
 }
