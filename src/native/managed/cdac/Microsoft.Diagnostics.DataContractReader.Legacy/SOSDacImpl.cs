@@ -2995,6 +2995,13 @@ public sealed unsafe partial class SOSDacImpl
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
+                if (pNeeded != null && *pNeeded != neededLocal)
+                {
+                    string cdacStr = mtName is not null && count > 0 ? new string(mtName, 0, (int)System.Math.Min(*pNeeded, count) - 1) : "<null>";
+                    string dacStr = neededLocal > 0 ? new string(mtNameLocal, 0, (int)neededLocal - 1) : "<empty>";
+                    System.Console.Error.WriteLine($"CDAC_MISMATCH GetMethodTableName MT=0x{(ulong)mt:X} pNeeded: cDAC={*pNeeded} DAC={neededLocal} cDAC_name=\"{cdacStr}\" DAC_name=\"{dacStr}\"");
+                    System.Console.Error.Flush();
+                }
                 Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
                 Debug.Assert(mtName == null || new ReadOnlySpan<char>(mtNameLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(mtName)));
             }
