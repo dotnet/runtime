@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace System.Net.Http.Headers
 {
@@ -54,19 +55,39 @@ namespace System.Net.Http.Headers
                     return calculatedLength;
                 }
 
-                if (storedValue == null)
+                if (storedValue is null)
                 {
                     return null;
                 }
-                else
-                {
-                    return (long)storedValue;
-                }
+
+                // Per RFC 9112 Section 6.3, if a message has multiple Content-Length values,
+                // all values must be the same. Otherwise, it's a protocol violation.
+                CheckForConflictingContentLengthValues((long)storedValue);
+
+                return (long)storedValue;
             }
             set
             {
                 SetOrRemoveParsedValue(KnownHeaders.ContentLength.Descriptor, value); // box long value
                 _contentLengthSet = true;
+            }
+        }
+
+        private void CheckForConflictingContentLengthValues(long parsedContentLength)
+        {
+            object? allValues = GetParsedAndInvalidValues(KnownHeaders.ContentLength.Descriptor);
+
+            if (allValues is List<object> valueList)
+            {
+                foreach (object item in valueList)
+                {
+                    if (item is InvalidValue invalidValue &&
+                        long.TryParse(invalidValue.ToString().AsSpan().Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out long otherLength) &&
+                        otherLength != parsedContentLength)
+                    {
+                        throw new FormatException(SR.net_http_headers_conflicting_content_length);
+                    }
+                }
             }
         }
 
