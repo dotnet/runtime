@@ -59,8 +59,8 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(tablesAndHeaps));
             }
 
-            metadataVersion ??= DefaultMetadataVersionString;
-            int metadataVersionByteCount = Encoding.UTF8.GetByteCount(metadataVersion);
+            Debug.Assert(Encoding.UTF8.GetByteCount(DefaultMetadataVersionString) == DefaultMetadataVersionString.Length);
+            int metadataVersionByteCount = metadataVersion != null ? Encoding.UTF8.GetByteCount(metadataVersion) : DefaultMetadataVersionString.Length;
 
             if (metadataVersionByteCount > MetadataSizes.MaxMetadataVersionByteCount)
             {
