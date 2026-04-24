@@ -3016,6 +3016,14 @@ GenTree* Lowering::LowerCall(GenTree* node)
         {
             RequireOutgoingArgSpace(call, call->gtArgs.OutgoingArgsStackSize());
         }
+
+        // For non-helper, managed calls, if we have portable entry points enabled, we need to lower
+        // the call according to the portable entrypoint abi
+        if (!call->IsUnmanaged() && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
+        {
+            // Inform the VM that we used are calling a portable entrypoint of a particular signature.
+            m_compiler->info.compCallPortableEntryPoint(call->gtCallMethHnd, call->gtCallSig);
+        }
     }
 
     if (varTypeIsStruct(call))

@@ -464,7 +464,7 @@ struct EmitCallParams
 {
     EmitCallType          callType = EC_COUNT;
     CORINFO_METHOD_HANDLE methHnd  = NO_METHOD_HANDLE;
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TARGET_WASM)
     // Used to report call sites to the EE
     CORINFO_SIG_INFO* sigInfo = nullptr;
 #endif
@@ -484,6 +484,9 @@ struct EmitCallParams
     ssize_t   disp        = 0;
     bool      isJump      = false;
     bool      noSafePoint = false;
+#ifdef TARGET_WASM
+    bool      isUnmanagedCall = false;
+#endif
 #ifdef TARGET_WASM
     CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
 #endif
@@ -639,6 +642,9 @@ protected:
         GenTreeFlags      idFlags       = GTF_EMPTY; // for determining type of handle in idMemCookie
         bool              idFinallyCall = false;     // Branch instruction is a call to finally
         bool              idCatchRet    = false;     // Instruction is for a catch 'return'
+#ifdef TARGET_WASM
+        bool              idIsUnmanagedCall = false; // Instruction is for an unmanaged call
+#endif
         CORINFO_SIG_INFO* idCallSig     = nullptr;   // Used to report native call site signatures to the EE
         BasicBlock*       idTargetBlock = nullptr;   // Target block for branches
 

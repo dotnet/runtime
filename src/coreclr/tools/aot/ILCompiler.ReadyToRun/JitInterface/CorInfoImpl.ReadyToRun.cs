@@ -3515,5 +3515,33 @@ namespace Internal.JitInterface
             // Implemented for NativeAOT only for now.
         }
 #pragma warning restore CA1822 // Mark members as static
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            if ((callSig != null) && _compilation.NodeFactory.Target.IsWasm)
+            {
+                var sig = HandleToObject(callSig->methodSignature);
+
+                LoweringFlags flags = 0;
+                if (callSig->hasTypeArg())
+                {
+                    flags |= LoweringFlags.HasGenericContextArg;
+                }
+                if (callSig->isAsyncCall())
+                {
+                    flags |= LoweringFlags.IsAsyncCall;
+                }
+                if ((callSig->getCallConv() & 0xF) != 0)
+                {
+                    flags |= LoweringFlags.IsUnmanagedCallersOnly;
+                }
+
+                WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
+
+                AddPrecodeFixup(null); // TODO! fix this to require the generation of a R2R to interp stub
+            }
+        }
     }
 }
