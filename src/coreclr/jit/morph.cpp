@@ -11456,6 +11456,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     innerOp = fgMorphHWIntrinsicOptional(innerOp->AsHWIntrinsic());
                 }
+                innerOp->SetMorphed(this);
 
                 tree->Op(opIndex) = innerOp;
             }
@@ -11600,6 +11601,12 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                         if (op1Type != retType)
                         {
                             newNode = fgMorphHWIntrinsicRequired(newNode->AsHWIntrinsic());
+
+                            if (newNode->OperIsHWIntrinsic())
+                            {
+                                newNode = fgMorphHWIntrinsicOptional(newNode->AsHWIntrinsic());
+                            }
+                            newNode->SetMorphed(this);
 
                             if (retType == TYP_MASK)
                             {
@@ -11774,9 +11781,14 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     tree->ChangeHWIntrinsicId(addIntrinsic, op2, op1);
 
                     op2 = fgMorphHWIntrinsicRequired(op2->AsHWIntrinsic());
-                    op2->SetMorphed(this);
-                    tree->Op(1) = op2;
 
+                    if (op2->OperIsHWIntrinsic())
+                    {
+                        op2 = fgMorphHWIntrinsicOptional(op2->AsHWIntrinsic());
+                    }
+                    op2->SetMorphed(this);
+
+                    tree->Op(1) = op2;
                     return fgMorphHWIntrinsicRequired(tree);
                 }
             }

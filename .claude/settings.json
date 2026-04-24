@@ -11,5 +11,16 @@
         "description": "Remind about AI disclosure when posting to GitHub via gh CLI or MCP tools"
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "dotnet-arcade-skills": {
+      "source": {
+        "source": "github",
+        "repo": "dotnet/arcade-skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "dotnet-dnceng@dotnet-arcade-skills": true
   }
 }

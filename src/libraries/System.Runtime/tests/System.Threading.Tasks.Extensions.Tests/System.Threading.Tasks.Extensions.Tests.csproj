@@ -3,6 +3,8 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TestRuntime>true</TestRuntime>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncMethodBuilderAttributeTests.cs" />

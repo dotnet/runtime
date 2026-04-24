@@ -4174,6 +4174,83 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |       | downward      |
  *              V
  *
+ *    Wasm leaf frame, no localloc
+ *
+ * 
+ *      |     caller frame      |
+ *      +=======================+ <---- Virtual '0'
+ *      |                       |
+ *      ~      Variables        ~
+ *      |                       |
+ *      |-----------------------| <---- $sp (== $fp)
+ *      |                       |
+ *      |       |               |
+ *      |       | Stack grows   |
+ *              | downward
+ *              V
+ *
+ *   Wasm, leaf frame, localloc
+ * 
+ *      |     caller frame      |
+ *      +=======================+ <---- Virtual '0'
+ *      |                       |
+ *      ~      Variables        ~
+ *      |                       |
+ *      ~-----------------------| <---- $fp
+ *      |       localloc        |
+ *      |-----------------------| <---- $sp
+ *      |                       |
+ *      |       |               |
+ *      |       | Stack grows   |
+ *              | downward
+ *              V
+ *
+ *   Wasm, non-leaf frame, no localloc
+ *
+ *
+ *      |     caller frame      |
+ *      +=======================+ <---- Virtual '0'
+ *      |                       |
+ *      ~      Variables        ~
+ *      |                       |
+ *      |-----------------------|
+ *      |      Resume IP        |
+ *      |-----------------------|
+ *      |     Virtual IP        |
+ *      |-----------------------|
+ *      |     Function Index    |
+ *      |-----------------------| <---- $sp (== $fp)
+ *      |                       |
+ *      |       |               |
+ *      |       | Stack grows   |
+ *              | downward
+ *              V
+ * 
+ *   Wasm, non-leaf frame, localloc
+ * 
+ *      |     caller frame      |
+ *      +=======================+ <---- Virtual '0'
+ *      |                       |
+ *      ~      Variables        ~
+ *      |                       |
+ *      |-----------------------|
+ *      |      Resume IP        |
+ *      |-----------------------|
+ *      |     Virtual IP        |
+ *      |-----------------------|
+ *      |     Function Index    |
+ *      |-----------------------| <---- $fp
+ *      |       localloc        |
+ *      |-----------------------|
+ *      |        $fp            |
+ *      |-----------------------|
+ *      |          0            |
+ *      |-----------------------| <---- $sp
+ *      |                       |
+ *      |       |               |
+ *      |       | Stack grows   |
+ *              | downward
+ *              V
  *
  *  Doing this all in one pass is 'hard'.  So instead we do it in 2 basic passes:
  *    1. Assign all the offsets relative to the Virtual '0'. Offsets above (the
@@ -4828,7 +4905,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     //
     // Currently this is x64 only.
     //
-    if (doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints())
+    if (doesMethodHavePatchpoints())
     {
         const unsigned regsPushed    = compCalleeRegsPushed + (codeGen->isFramePointerUsed() ? 1 : 0);
         const unsigned extraSlots    = genCountBits(RBM_OSR_INT_CALLEE_SAVED) - regsPushed;
@@ -5105,6 +5182,14 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #if FEATURE_FIXED_OUT_ARGS
             // The scratch mem is used for the outgoing arguments, and it must be absolutely last
             if (lclNum == lvaOutgoingArgSpaceVar)
+            {
+                continue;
+            }
+#endif
+
+#if defined(TARGET_WASM)
+            // These Wasm locals must be allocated last.
+            if ((lclNum == lvaWasmVirtualIP) || (lclNum == lvaWasmResumeIP) || (lclNum == lvaWasmFunctionIndex))
             {
                 continue;
             }
@@ -5435,6 +5520,25 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                                                    stkOffs);
     }
 #endif // FEATURE_FIXED_OUT_ARGS
+
+#if defined(TARGET_WASM)
+    // These Wasm locals must be allocated last
+    //
+    if (lvaWasmResumeIP != BAD_VAR_NUM)
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaWasmResumeIP, TARGET_POINTER_SIZE, stkOffs);
+    }
+
+    if (lvaWasmVirtualIP != BAD_VAR_NUM)
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaWasmVirtualIP, TARGET_POINTER_SIZE, stkOffs);
+    }
+
+    if (lvaWasmFunctionIndex != BAD_VAR_NUM)
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaWasmFunctionIndex, TARGET_POINTER_SIZE, stkOffs);
+    }
+#endif
 
 #if HAS_FIXED_REGISTER_SET
     // compLclFrameSize equals our negated virtual stack offset minus the pushed registers and return address
@@ -6732,7 +6836,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // Likewise for Tier0 methods with patchpoints --
         // if we modify them we'll misreport their locations in the patchpoint info.
         //
-        if (pComp->doesMethodHavePatchpoints() || pComp->doesMethodHavePartialCompilationPatchpoints())
+        if (pComp->doesMethodHavePatchpoints())
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;
