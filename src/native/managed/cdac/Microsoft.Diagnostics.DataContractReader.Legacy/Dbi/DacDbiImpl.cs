@@ -151,10 +151,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
-            if (loader.TryGetSimpleName(handle, out string simpleName))
-            {
-                hr = StringHolderAssignCopy(pStrFilename, simpleName);
-            }
+            loader.TryGetSimpleName(handle, out string simpleName);
+            hr = StringHolderAssignCopy(pStrFilename, simpleName ?? string.Empty);
         }
         catch (System.Exception ex)
         {
