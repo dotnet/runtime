@@ -534,6 +534,29 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public void LinkSuffix_EmptyDestination_SuffixThreeChunkChain()
+        {
+            var emptyPrefix = new BlobBuilder(16);
+            var first = new BlobBuilder(16);
+            var second = new BlobBuilder(16);
+            var third = new BlobBuilder(16);
+
+            first.WriteByte(0x11);
+            second.WriteByte(0x22);
+            third.WriteByte(0x33);
+
+            first.LinkSuffix(second);
+            first.LinkSuffix(third);
+            emptyPrefix.LinkSuffix(first);
+
+            AssertEx.Equal(new byte[] { 0x11, 0x22, 0x33 }, emptyPrefix.ToArray());
+            Assert.Equal(3, emptyPrefix.Count);
+            Assert.Equal(3, first.Count);
+            Assert.Equal(1, second.Count);
+            Assert.Equal(1, third.Count);
+        }
+
+        [Fact]
         public void LinkPrefix1()
         {
             var builder1 = new BlobBuilder(16);
