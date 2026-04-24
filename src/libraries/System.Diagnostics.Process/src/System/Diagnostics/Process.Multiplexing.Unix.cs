@@ -173,17 +173,14 @@ namespace System.Diagnostics
                 throw new TimeoutException();
             }
 
-            uint triggered;
+            uint triggered = 0;
             Interop.Error pollError;
             unsafe
             {
-                uint localTriggered = 0;
                 fixed (Interop.PollEvent* pPollFds = pollFds)
                 {
-                    pollError = Interop.Sys.Poll(pPollFds, (uint)numFds, pollTimeout, &localTriggered);
+                    pollError = Interop.Sys.Poll(pPollFds, (uint)numFds, pollTimeout, &triggered);
                 }
-
-                triggered = localTriggered;
             }
 
             if (pollError != Interop.Error.SUCCESS)
