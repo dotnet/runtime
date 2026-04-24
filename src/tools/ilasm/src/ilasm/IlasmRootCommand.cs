@@ -13,7 +13,7 @@ internal sealed class IlasmRootCommand : RootCommand
         new("input-file-paths") { Description = "Input IL source file(s)", Arity = ArgumentArity.OneOrMore };
 
     public Option<string> OutputFilePath { get; } =
-        new("--output", "-OUTPUT") { Description = "Compile to file with specified name (user must provide extension, if any)" };
+        new("--output", "-o", "-OUTPUT") { Description = "Compile to file with specified name (user must provide extension, if any)" };
 
     public Option<bool> BuildDll { get; } =
         new("--dll", "-DLL") { Description = "Compile to .dll" };
@@ -28,7 +28,7 @@ internal sealed class IlasmRootCommand : RootCommand
         new("--debug-mode") { Description = "Debug mode: 'impl' (implicit sequence points) or 'opt' (enable JIT optimization)" };
 
     public Option<bool> Optimize { get; } =
-        new("--optimize", "-OPTIMIZE") { Description = "Optimize long instructions to short" };
+        new("--optimize", "-O", "-OPTIMIZE") { Description = "Optimize long instructions to short" };
 
     public Option<bool> Fold { get; } =
         new("--fold", "-FOLD") { Description = "Fold identical method bodies into one" };
