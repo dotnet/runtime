@@ -8044,13 +8044,19 @@ public:
                 unsigned      m_lclNum;
                 double        m_dconVal;
                 IntegralRange m_range;
-                simd16_t m_simdVal; // for O2K_CONST_VEC (TYP_SIMD8/12/16 only). TODO-CQ: support wider SIMD via heap
-                                    // allocation.
                 struct
                 {
                     ssize_t   m_iconVal;
                     FieldSeq* m_fieldSeq;
                 } m_icon;
+
+                // O2K_CONST_VEC: This only allows storing TYP_SIMD8/12/16 but
+                // we still support common cases for TYP_SIMD32/64 by presuming
+                // that the value is a broadcast. We could fully support other
+                // sizes in the future by adding m_encodedVconFlags and tracking
+                // whether a different heap allocated value was used or other
+                // special cases like Indices or Sequences
+                simd16_t m_simdVal;
             };
         public:
 

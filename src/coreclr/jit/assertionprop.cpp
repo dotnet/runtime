@@ -1145,22 +1145,66 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
 #if defined(FEATURE_HW_INTRINSICS)
             case GT_CNS_VEC:
             {
-                // For now, only support SIMD constants up to 16 bytes (SIMD8/12/16).
-                if (!op1->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16) || (op1->TypeGet() != op2->TypeGet()))
+                assert(varTypeIsSIMD(op1));
+                var_types simdType = op1->TypeGet();
+
+                if (op2->TypeGet() != simdType)
                 {
                     return NO_ASSERTION_INDEX;
                 }
 
                 ValueNum op1VN = optConservativeNormalVN(op1);
                 ValueNum op2VN = optConservativeNormalVN(op2);
+
                 if (!optLocalAssertionProp && (op1VN == ValueNumStore::NoVN || op2VN == ValueNumStore::NoVN))
                 {
                     // GlobalAP requires valid VNs.
                     return NO_ASSERTION_INDEX;
                 }
 
+                GenTreeVecCon* vecCon = op2->AsVecCon();
+
+#if defined(TARGET_XARCH)
+                // TYP_SIMD32/64 constants are too large to track without a heap allocation.
+                //
+                // However, there are many common constants that are effectively broadcasting
+                // the lowest v128 across the entire vector. By checking for and allowing this
+                // case through, we can provide pay for play support without for core scenarios
+                // without allocating.
+
+                if (simdType == TYP_SIMD64)
+                {
+                    if (memcmp(&vecCon->gtSimdVal.v128[0], &vecCon->gtSimdVal.v128[1], sizeof(simd16_t)) != 0)
+                    {
+                        return NO_ASSERTION_INDEX;
+                    }
+                    else if (memcmp(&vecCon->gtSimdVal.v256[0], &vecCon->gtSimdVal.v256[1], sizeof(simd32_t)) != 0)
+                    {
+                        return NO_ASSERTION_INDEX;
+                    }
+                    simdType = TYP_SIMD16;
+                }
+                else if (simdType == TYP_SIMD32)
+                {
+                    if (memcmp(&vecCon->gtSimdVal.v128[0], &vecCon->gtSimdVal.v128[1], sizeof(simd16_t)) != 0)
+                    {
+                        return NO_ASSERTION_INDEX;
+                    }
+                    simdType = TYP_SIMD16;
+                }
+#elif defined(TARGET_ARM64)
+                if (simdType == TYP_SIMD)
+                {
+                    // TODO-SVE: Handle sve constants
+                    return NO_ASSERTION_INDEX;
+                }
+#endif
+
+                // Assert we've fixed up the value to fit one of the supported storage sizes
+                assert((simdType == TYP_SIMD8) || (simdType == TYP_SIMD12) || (simdType == TYP_SIMD16));
+
                 simd16_t simdVal = {};
-                memcpy(&simdVal, &op2->AsVecCon()->gtSimdVal, genTypeSize(op2->TypeGet()));
+                memcpy(&simdVal, &vecCon->gtSimdVal, genTypeSize(simdType));
 
                 AssertionDsc dsc =
                     AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, simdVal, op2VN, equals);
@@ -1871,19 +1915,28 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         {
 #if defined(TARGET_XARCH)
             case NI_Vector128_op_Equality:
+            case NI_Vector256_op_Equality:
+            case NI_Vector512_op_Equality:
 #elif defined(TARGET_ARM64)
             case NI_Vector64_op_Equality:
             case NI_Vector128_op_Equality:
 #endif
+            {
                 break;
+            }
+
 #if defined(TARGET_XARCH)
             case NI_Vector128_op_Inequality:
+            case NI_Vector256_op_Inequality:
+            case NI_Vector512_op_Inequality:
 #elif defined(TARGET_ARM64)
             case NI_Vector64_op_Inequality:
             case NI_Vector128_op_Inequality:
 #endif
+            {
                 equals = !equals;
                 break;
+            }
 
             default:
                 return NO_ASSERTION_INDEX;
@@ -1902,7 +1955,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
                 return NO_ASSERTION_INDEX;
             }
 
-            assert(op1->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16));
+            assert(varTypeIsSIMD(op1));
             assert(op1->TypeIs(op2->TypeGet()));
         }
         else
@@ -3262,16 +3315,50 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
 #if defined(FEATURE_HW_INTRINSICS)
         case O2K_CONST_VEC:
         {
+            assert(varTypeIsSIMD(tree));
+            var_types simdType = tree->TypeGet();
+
             // The assertion was created from a LCL_VAR == CNS_VEC where types matched.
-            // For now, only support SIMD constants up to 16 bytes (SIMD8/12/16).
-            if (!tree->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16) || !tree->TypeIs(lvaGetDesc(lclNum)->TypeGet()))
+            if (lvaGetDesc(lclNum)->TypeGet() != simdType)
             {
                 return nullptr;
             }
 
             // We can't bash a LCL_VAR into a GenTreeVecCon (different node size), so allocate a fresh node.
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, &curAssertion.GetOp2().GetSimdConstant(), genTypeSize(tree->TypeGet()));
+
+            GenTreeVecCon*  vecCon  = gtNewVconNode(simdType);
+            const simd16_t& simdVal = curAssertion.GetOp2().GetSimdConstant();
+
+#if defined(TARGET_XARCH)
+                // TYP_SIMD32/64 constants are too large to track without a heap allocation.
+                //
+                // However, we support them anyways by only allowing through the cases which
+                // are effectively broadcasting the lowest v128 across the entire vector.
+
+                if (simdType == TYP_SIMD64)
+                {
+                    memcpy(&vecCon->gtSimdVal.v128[1], &simdVal, sizeof(simd16_t));
+                    memcpy(&vecCon->gtSimdVal.v128[2], &simdVal, sizeof(simd16_t));
+                    memcpy(&vecCon->gtSimdVal.v128[3], &simdVal, sizeof(simd16_t));
+                    simdType = TYP_SIMD16;
+                }
+                else if (simdType == TYP_SIMD32)
+                {
+                    memcpy(&vecCon->gtSimdVal.v128[1], &simdVal, sizeof(simd16_t));
+                    simdType = TYP_SIMD16;
+                }
+#elif defined(TARGET_ARM64)
+                if (simdType == TYP_SIMD)
+                {
+                    // TODO-SVE: Handle sve constants
+                    unreached();
+                }
+#endif
+
+            // Assert we've fixed up the value to account for one of the supported storage sizes
+            assert((simdType == TYP_SIMD8) || (simdType == TYP_SIMD12) || (simdType == TYP_SIMD16));
+
+            memcpy(&vecCon->gtSimdVal, &simdVal, genTypeSize(simdType));
             newTree = vecCon;
             break;
         }
