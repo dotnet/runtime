@@ -418,14 +418,14 @@ namespace System.Runtime.CompilerServices
         {
             public struct CaptureRuntimeAsyncCallstackState
             {
-                public Continuation Continuation;
+                public Continuation? Continuation;
                 public ulong LastNativeIP;
                 public byte Count;
             }
 
             public static bool CaptureRuntimeAsyncCallstack(byte[] buffer, ref int index, ref CaptureRuntimeAsyncCallstackState state)
             {
-                if (index > buffer.Length)
+                if (index > buffer.Length || state.Continuation == null)
                 {
                     return false;
                 }
@@ -459,7 +459,7 @@ namespace System.Runtime.CompilerServices
                 EventBuffer.Serializer.WriteCompressedInt32(buffer, ref index, state.Continuation.State);
                 state.Count++;
 
-                state.Continuation = state.Continuation.Next!;
+                state.Continuation = state.Continuation.Next;
                 while (state.Count < maxAsyncCallstackLength && state.Continuation != null)
                 {
                     previousNativeIP = currentNativeIP;
@@ -473,7 +473,7 @@ namespace System.Runtime.CompilerServices
                     EventBuffer.Serializer.WriteCompressedInt32(buffer, ref index, state.Continuation.State);
 
                     state.Count++;
-                    state.Continuation = state.Continuation.Next!;
+                    state.Continuation = state.Continuation.Next;
                 }
 
                 state.LastNativeIP = currentNativeIP;
