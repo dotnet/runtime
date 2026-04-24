@@ -582,7 +582,7 @@ void Lowering::AfterLowerBlocks()
             // to (in normal linear order - before) the node we last stackified.
             m_stack.Push(&root);
 
-            PendingReleaseTemporariesDefinedBy(root);
+            AddTemporariesForPendingRelease(root);
 
             GenTree* lastStackified = root->gtNext;
             while (m_stack.Height() != initialDepth)
@@ -729,12 +729,16 @@ void Lowering::AfterLowerBlocks()
             return tmpNum + m_minimumTempLclNum;
         }
 
-        void PendingReleaseTemporariesDefinedBy(GenTree* node)
+        void AddTemporariesForPendingRelease(GenTree* node)
         {
             // We rely in this function on the lifetime of temporaries beginning (recall this is backwards traversal)
-            // at exactly "node"'s position, and not shrinking or extending after this call. This is currently true
-            // because we never move dataflow roots, and we only begin processing them after all subsequent nodes
-            // have already been stackified and thus won't move either.
+            // at exactly "node"'s position. This is a safe assumption, since we will already have stackified all
+            // subsequent nodes, and so any further new use of this temporary will be before this one's lifetime begins.
+            // However, we don't know precisely where the liftime ends here, because uses of locals happen at their position 
+            // in tree order, and not the LIR stream. So conservatively, we wait until we've processed an entire root gentree   
+            // before reusing any temporaries to avoid the possibility of reusing a temporary before its last
+            // live use in the tree order.
+
             assert(IsDataFlowRoot(node));
             if (!node->OperIs(GT_STORE_LCL_VAR))
             {
@@ -748,7 +752,7 @@ void Lowering::AfterLowerBlocks()
             }
 
             JITDUMP("Stackifier pending release of lclNum: %d temporary defined by [%06u]\n", lclNum, Compiler::dspTreeID(node));
-            EnsureTempBitVecCapacity(lvaToTempNum(lclNum));
+            EnsurePendingReleaseCapacity(lvaToTempNum(lclNum));
             BitVecOps::AddElemD(&m_pendingReleaseTempTraits, m_pendingReleaseTemps, lvaToTempNum(lclNum));
         }
 
@@ -793,7 +797,7 @@ void Lowering::AfterLowerBlocks()
             *pTemps     = local;
         }
 
-        void EnsureTempBitVecCapacity(unsigned needed)
+        void EnsurePendingReleaseCapacity(unsigned needed)
         {
             if (needed < BitVecTraits::GetSize(&m_pendingReleaseTempTraits))
             {
