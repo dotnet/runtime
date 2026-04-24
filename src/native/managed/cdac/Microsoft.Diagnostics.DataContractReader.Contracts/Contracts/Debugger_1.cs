@@ -5,6 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Debugger_1 : IDebugger
 {
+    private enum DebuggerControlFlag_1 : uint
+    {
+        PendingAttach = 0x0100,
+        Attached = 0x0200,
+    }
+
     private readonly Target _target;
 
     internal Debugger_1(Target target)
@@ -31,10 +37,7 @@ internal readonly struct Debugger_1 : IDebugger
             return false;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
-        if (debugger.LeftSideInitialized == 0)
-            return false;
-
-        data = new DebuggerData(debugger.Defines, debugger.MDStructuresVersion);
+        data = new DebuggerData(debugger.LeftSideInitialized != 0, debugger.Defines, debugger.MDStructuresVersion);
         return true;
     }
 
@@ -42,6 +45,27 @@ internal readonly struct Debugger_1 : IDebugger
     {
         TargetPointer addr = _target.ReadGlobalPointer(Constants.Globals.CLRJitAttachState);
         return (int)_target.Read<uint>(addr.Value);
+    }
+
+    void IDebugger.MarkDebuggerAttachPending()
+    {
+        TargetPointer addr = _target.ReadGlobalPointer(Constants.Globals.CORDebuggerControlFlags);
+        uint currentFlags = _target.Read<uint>(addr.Value);
+        _target.Write<uint>(addr.Value, currentFlags | (uint)DebuggerControlFlag_1.PendingAttach);
+    }
+
+    void IDebugger.MarkDebuggerAttached(bool fAttached)
+    {
+        TargetPointer addr = _target.ReadGlobalPointer(Constants.Globals.CORDebuggerControlFlags);
+        uint currentFlags = _target.Read<uint>(addr.Value);
+        if (fAttached)
+        {
+            _target.Write<uint>(addr.Value, currentFlags | (uint)DebuggerControlFlag_1.Attached);
+        }
+        else
+        {
+            _target.Write<uint>(addr.Value, currentFlags & ~((uint)DebuggerControlFlag_1.Attached | (uint)DebuggerControlFlag_1.PendingAttach));
+        }
     }
 
     bool IDebugger.MetadataUpdatesApplied()

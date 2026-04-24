@@ -16,9 +16,9 @@ internal sealed class SyncBlock : IData<SyncBlock>
         TargetPointer interopInfoPointer = target.ReadPointerField(address, type, nameof(InteropInfo));
         if (interopInfoPointer != TargetPointer.Null)
             InteropInfo = target.ProcessedData.GetOrAdd<InteropSyncBlockInfo>(interopInfoPointer);
-        TargetPointer lockPointer = target.ReadPointerField(address, type, nameof(Lock));
-        if (lockPointer != TargetPointer.Null)
-            Lock = target.ProcessedData.GetOrAdd<ObjectHandle>(lockPointer);
+        ObjectHandle lockHandle = target.ReadDataField<ObjectHandle>(address, type, nameof(Lock));
+        if (lockHandle.Handle != TargetPointer.Null)
+            Lock = lockHandle;
 
         ThinLock = target.ReadField<uint>(address, type, nameof(ThinLock));
         LinkNext = target.ReadPointerField(address, type, nameof(LinkNext));

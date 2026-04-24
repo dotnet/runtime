@@ -50,7 +50,7 @@ public:
         int count = 0;
         for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->Next()))
         {
-            if (block->HasFlag(BBF_PATCHPOINT))
+            if (block->HasFlag(BBF_OSR_PATCHPOINT))
             {
                 // We can't OSR from funclets.
                 //
@@ -58,7 +58,7 @@ public:
 
                 // Clear the patchpoint flag.
                 //
-                block->RemoveFlags(BBF_PATCHPOINT);
+                block->RemoveFlags(BBF_OSR_PATCHPOINT);
 
                 JITDUMP("Patchpoint: regular patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformBlock(block);
@@ -257,7 +257,7 @@ private:
 //
 PhaseStatus Compiler::fgTransformPatchpoints()
 {
-    if (!doesMethodHavePatchpoints() && !doesMethodHavePartialCompilationPatchpoints())
+    if (!doesMethodHavePatchpoints())
     {
         JITDUMP("\n -- no patchpoints to transform\n");
         return PhaseStatus::MODIFIED_NOTHING;

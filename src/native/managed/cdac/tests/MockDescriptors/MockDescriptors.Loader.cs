@@ -7,6 +7,54 @@ using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
+internal sealed class MockLoaderHeap : TypedView
+{
+    private const string FirstBlockFieldName = "FirstBlock";
+
+    public static Layout<MockLoaderHeap> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("LoaderHeap", architecture)
+            .AddPointerField(FirstBlockFieldName)
+            .Build<MockLoaderHeap>();
+
+    public ulong FirstBlock
+    {
+        get => ReadPointerField(FirstBlockFieldName);
+        set => WritePointerField(FirstBlockFieldName, value);
+    }
+}
+
+internal sealed class MockLoaderHeapBlock : TypedView
+{
+    private const string NextFieldName = "Next";
+    private const string VirtualAddressFieldName = "VirtualAddress";
+    private const string VirtualSizeFieldName = "VirtualSize";
+
+    public static Layout<MockLoaderHeapBlock> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("LoaderHeapBlock", architecture)
+            .AddPointerField(NextFieldName)
+            .AddPointerField(VirtualAddressFieldName)
+            .AddNUIntField(VirtualSizeFieldName)
+            .Build<MockLoaderHeapBlock>();
+
+    public ulong Next
+    {
+        get => ReadPointerField(NextFieldName);
+        set => WritePointerField(NextFieldName, value);
+    }
+
+    public ulong VirtualAddress
+    {
+        get => ReadPointerField(VirtualAddressFieldName);
+        set => WritePointerField(VirtualAddressFieldName, value);
+    }
+
+    public ulong VirtualSize
+    {
+        get => ReadPointerField(VirtualSizeFieldName);
+        set => WritePointerField(VirtualSizeFieldName, value);
+    }
+}
+
 internal sealed class MockLoaderModule : TypedView
 {
     private const string AssemblyFieldName = "Assembly";
@@ -60,6 +108,12 @@ internal sealed class MockLoaderModule : TypedView
     {
         get => ReadPointerField(AssemblyFieldName);
         set => WritePointerField(AssemblyFieldName, value);
+    }
+
+    public ulong PEAssembly
+    {
+        get => ReadPointerField(PEAssemblyFieldName);
+        set => WritePointerField(PEAssemblyFieldName, value);
     }
 
     public ulong SimpleName
@@ -144,6 +198,8 @@ internal sealed class MockLoaderBuilder
     internal Layout<MockLoaderModule> ModuleLayout { get; }
     internal Layout<MockLoaderAssembly> AssemblyLayout { get; }
     internal Layout<MockEEConfig> EEConfigLayout { get; }
+    internal Layout<MockLoaderHeap> LoaderHeapLayout { get; }
+    internal Layout<MockLoaderHeapBlock> LoaderHeapBlockLayout { get; }
 
     private readonly MockMemorySpace.BumpAllocator _allocator;
 
@@ -162,6 +218,24 @@ internal sealed class MockLoaderBuilder
         ModuleLayout = MockLoaderModule.CreateLayout(builder.TargetTestHelpers.Arch);
         AssemblyLayout = MockLoaderAssembly.CreateLayout(builder.TargetTestHelpers.Arch);
         EEConfigLayout = MockEEConfig.CreateLayout(builder.TargetTestHelpers.Arch);
+        LoaderHeapLayout = MockLoaderHeap.CreateLayout(builder.TargetTestHelpers.Arch);
+        LoaderHeapBlockLayout = MockLoaderHeapBlock.CreateLayout(builder.TargetTestHelpers.Arch);
+    }
+
+    internal MockLoaderHeap AddLoaderHeap(ulong firstBlockAddress = 0)
+    {
+        MockLoaderHeap heap = LoaderHeapLayout.Create(_allocator.Allocate((ulong)LoaderHeapLayout.Size, "LoaderHeap"));
+        heap.FirstBlock = firstBlockAddress;
+        return heap;
+    }
+
+    internal MockLoaderHeapBlock AddLoaderHeapBlock(ulong virtualAddress, ulong virtualSize, ulong nextBlockAddress = 0)
+    {
+        MockLoaderHeapBlock block = LoaderHeapBlockLayout.Create(_allocator.Allocate((ulong)LoaderHeapBlockLayout.Size, "LoaderHeapBlock"));
+        block.VirtualAddress = virtualAddress;
+        block.VirtualSize = virtualSize;
+        block.Next = nextBlockAddress;
+        return block;
     }
 
     internal MockLoaderModule AddModule(
