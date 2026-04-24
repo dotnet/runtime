@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System;
 
@@ -28,95 +28,13 @@ internal static class BitConverterPolyfills
 
         // ---- ReadOnlySpan<byte> read overloads (host-endian, semantics match BCL net5+) ----
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static short ToInt16(ReadOnlySpan<byte> value)
-        {
-            if (value.Length < sizeof(short))
-                ThrowHelper_ArgumentOutOfRange(nameof(value));
-            unsafe
-            {
-                fixed (byte* p = value) return *(short*)p;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ushort ToUInt16(ReadOnlySpan<byte> value)
-        {
-            if (value.Length < sizeof(ushort))
-                ThrowHelper_ArgumentOutOfRange(nameof(value));
-            unsafe
-            {
-                fixed (byte* p = value) return *(ushort*)p;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ToInt32(ReadOnlySpan<byte> value)
-        {
-            if (value.Length < sizeof(int))
-                ThrowHelper_ArgumentOutOfRange(nameof(value));
-            unsafe
-            {
-                fixed (byte* p = value) return *(int*)p;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint ToUInt32(ReadOnlySpan<byte> value)
-        {
-            if (value.Length < sizeof(uint))
-                ThrowHelper_ArgumentOutOfRange(nameof(value));
-            unsafe
-            {
-                fixed (byte* p = value) return *(uint*)p;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static long ToInt64(ReadOnlySpan<byte> value)
-        {
-            if (value.Length < sizeof(long))
-                ThrowHelper_ArgumentOutOfRange(nameof(value));
-            unsafe
-            {
-                fixed (byte* p = value) return *(long*)p;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong ToUInt64(ReadOnlySpan<byte> value)
-        {
-            if (value.Length < sizeof(ulong))
-                ThrowHelper_ArgumentOutOfRange(nameof(value));
-            unsafe
-            {
-                fixed (byte* p = value) return *(ulong*)p;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float ToSingle(ReadOnlySpan<byte> value)
-        {
-            if (value.Length < sizeof(float))
-                ThrowHelper_ArgumentOutOfRange(nameof(value));
-            unsafe
-            {
-                fixed (byte* p = value) return *(float*)p;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double ToDouble(ReadOnlySpan<byte> value)
-        {
-            if (value.Length < sizeof(double))
-                ThrowHelper_ArgumentOutOfRange(nameof(value));
-            unsafe
-            {
-                fixed (byte* p = value) return *(double*)p;
-            }
-        }
+        public static short ToInt16(ReadOnlySpan<byte> value) => MemoryMarshal.Read<short>(value);
+        public static ushort ToUInt16(ReadOnlySpan<byte> value) => MemoryMarshal.Read<ushort>(value);
+        public static int ToInt32(ReadOnlySpan<byte> value) => MemoryMarshal.Read<int>(value);
+        public static uint ToUInt32(ReadOnlySpan<byte> value) => MemoryMarshal.Read<uint>(value);
+        public static long ToInt64(ReadOnlySpan<byte> value) => MemoryMarshal.Read<long>(value);
+        public static ulong ToUInt64(ReadOnlySpan<byte> value) => MemoryMarshal.Read<ulong>(value);
+        public static float ToSingle(ReadOnlySpan<byte> value) => MemoryMarshal.Read<float>(value);
+        public static double ToDouble(ReadOnlySpan<byte> value) => MemoryMarshal.Read<double>(value);
     }
-
-    private static void ThrowHelper_ArgumentOutOfRange(string paramName) =>
-        throw new ArgumentOutOfRangeException(paramName);
 }
