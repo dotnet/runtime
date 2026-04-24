@@ -7168,14 +7168,15 @@ VNFunc ValueNumStore::SwapRelop(VNFunc vnf)
 // VNRelopToGenTreeOp: return genTreeOps for a relop VNFunc
 //
 // Arguments:
-//    vnf - vnf for original relop
+//    vnf        - vnf for original relop
+//    isUnsigned - [out] set to true if vnf is an unsigned integer relop, false otherwise
 //
 // Returns:
 //    GenTreeOps for the relop, or GT_NONE if the original VNFunc was not a relop.
 //
-genTreeOps ValueNumStore::VNRelopToGenTreeOp(VNFunc vnf, bool& isUnsigned)
+genTreeOps ValueNumStore::VNRelopToGenTreeOp(VNFunc vnf, bool* isUnsigned)
 {
-    isUnsigned = false;
+    *isUnsigned = false;
     switch (vnf)
     {
         case VNF_LT:
@@ -7191,16 +7192,16 @@ genTreeOps ValueNumStore::VNRelopToGenTreeOp(VNFunc vnf, bool& isUnsigned)
         case VNF_NE:
             return GT_NE;
         case VNF_LT_UN:
-            isUnsigned = true;
+            *isUnsigned = true;
             return GT_LT;
         case VNF_LE_UN:
-            isUnsigned = true;
+            *isUnsigned = true;
             return GT_LE;
         case VNF_GE_UN:
-            isUnsigned = true;
+            *isUnsigned = true;
             return GT_GE;
         case VNF_GT_UN:
-            isUnsigned = true;
+            *isUnsigned = true;
             return GT_GT;
         default:
             return GT_NONE;

@@ -1143,7 +1143,7 @@ public:
     // (see `GetVNFuncForNode`). Callers that propagate `isUnsigned` into a
     // GTF_UNSIGNED flag must ensure the operands are integral; this helper
     // cannot distinguish the two cases from a VNFunc alone.
-    genTreeOps VNRelopToGenTreeOp(VNFunc vnf, bool& isUnsigned);
+    genTreeOps VNRelopToGenTreeOp(VNFunc vnf, bool* isUnsigned);
 
     enum class VN_RELATION_KIND
     {

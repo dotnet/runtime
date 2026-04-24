@@ -800,7 +800,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
     // Exclude floating point compares.
     //
     VNFuncApp treeApp;
-    if (!vnStore->GetVNFunc(treeNormVN, &treeApp))
+    if (!vnStore->GetVNFunc(treeNormVN, &treeApp) || !ValueNumStore::VNFuncIsComparison(treeApp.m_func))
     {
         return false;
     }
@@ -1034,7 +1034,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
 
             if (newRelopFunc != VNF_NONE)
             {
-                newRelop = vnStore->VNRelopToGenTreeOp(newRelopFunc, isUnsigned);
+                newRelop = vnStore->VNRelopToGenTreeOp(newRelopFunc, &isUnsigned);
 
                 if (newRelop != GT_NONE)
                 {
@@ -1095,11 +1095,11 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             //
             if (isUnsigned)
             {
-                tree->gtFlags |= GTF_UNSIGNED;
+                tree->SetUnsigned();
             }
             else
             {
-                tree->gtFlags &= ~GTF_UNSIGNED;
+                tree->ClearUnsigned();
             }
 
             fgValueNumberTree(tree);
