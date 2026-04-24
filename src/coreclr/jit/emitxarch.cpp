@@ -9108,10 +9108,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     emitTotalIGjmps++;
 #endif
 
-    // Set the relocation flags - these give hint to zap to perform
-    // relocation of the specified 32bit address.
-    //
-    // Note the relocation flags influence the size estimate.
+    // Set reloc flags for AOT purposes
     id->idSetRelocFlags(attr);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
@@ -9170,10 +9167,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumb
     emitTotalIGjmps++;
 #endif
 
-    // Set the relocation flags - these give hint to zap to perform
-    // relocation of the specified 32bit address.
-    //
-    // Note the relocation flags influence the size estimate.
+    // Set reloc flags for AOT purposes
     id->idSetRelocFlags(attr);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
