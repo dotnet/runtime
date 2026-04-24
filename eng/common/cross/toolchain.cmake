@@ -229,9 +229,6 @@ elseif(HAIKU)
     set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
     set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
 
-    # Tell clang (if used instead of gcc) where the Haiku GCC cross-toolchain lives
-    # so it can find crtbegin/crtend objects and libgcc under
-    # cross-tools-x86_64/lib/gcc/x86_64-unknown-haiku/<version>/
     set(CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN "${CROSS_ROOTFS}/cross-tools-x86_64")
     set(CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN "${CROSS_ROOTFS}/cross-tools-x86_64")
     set(CMAKE_ASM_COMPILER_EXTERNAL_TOOLCHAIN "${CROSS_ROOTFS}/cross-tools-x86_64")
