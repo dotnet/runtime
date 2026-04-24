@@ -2299,7 +2299,6 @@ public:
 
         *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,
                                              compiler->gtCloneExpr(lengthLocal));
-        node->gtFlags |= ((*lenArgRef)->gtFlags & GTF_ALL_EFFECT);
         m_instrCount++;
     }
 };
@@ -2507,7 +2506,15 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
     ValueHistogramProbeVisitor<ValueHistogramProbeInserter> visitor(m_compiler, insertProbes);
     for (Statement* const stmt : block->Statements())
     {
+        unsigned const preInstrCount = m_instrCount;
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        if (m_instrCount != preInstrCount)
+        {
+            // The inserter wrapped the length arg in COMMA(profile-helper, load), which introduces
+            // GTF_ASG/GTF_CALL/GTF_EXCEPT on the enclosing call. Propagate those side-effect flags
+            // up the statement tree so ancestors also reflect them.
+            m_compiler->gtUpdateStmtSideEffects(stmt);
+        }
     }
 }
 
