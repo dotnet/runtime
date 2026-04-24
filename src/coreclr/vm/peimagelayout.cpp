@@ -929,9 +929,12 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     // Commit and copy each section with its desired protection.
     for (IMAGE_SECTION_HEADER* section = sectionStart; section < sectionEnd; section++)
     {
+        DWORD virtualSize = VAL32(section->Misc.VirtualSize);
+        if (virtualSize == 0)
+            continue;
+
         bool isExec = (section->Characteristics & IMAGE_SCN_MEM_EXECUTE) != 0;
         BYTE* sectionBase = (BYTE*)base + VAL32(section->VirtualAddress);
-        DWORD virtualSize = VAL32(section->Misc.VirtualSize);
         DWORD copySize = min(VAL32(section->SizeOfRawData), virtualSize);
 
         if (ClrVirtualAlloc(sectionBase, virtualSize, MEM_COMMIT, isExec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE) == NULL)
