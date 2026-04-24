@@ -281,12 +281,15 @@ But often much of the Tier0 frame is effectively dead after the transition and e
 
 The OSR prolog is conceptually similar to a normal method prolog, with a few key difference.
 
-An OSR method is entered via a jump from the tier0 method. At this point callee save registers used by the tier0 method may require handling:
-- On x64, the OSR method keeps the original values of the callee saves in the tier0 frame. They will be restored directly by the epilog.
+An OSR method is entered via a jump from the tier0 method.
+This means callee save registers used by the tier0 method may require special handling:
+- On x64, the OSR method keeps the original values of the callee saves in the tier0 frame.
+  They will be restored directly by the epilog, meaning that no instructions are needed.
 - For other targets the callee saves used by tier0 are restored in the prolog, and they are then saved again in the OSR frame as normal.
-The above happens in `genOSRHandleTier0CalleeSavedRegistersAndFrame`.
+  The above happens in `genOSRHandleTier0CalleeSavedRegistersAndFrame`.
 
-The OSR method must also initialize any live-in enregistered args or locals from the corresponding slots on the Tier0 frame. This happens in `genEnregisterOSRArgsAndLocals`.
+The OSR method must also initialize any live-in enregistered args or locals from the corresponding slots on the Tier0 frame.
+This happens in `genEnregisterOSRArgsAndLocals`.
 
 If the OSR method needs to report a generics context it uses the Tier0 frame slot; we ensure this is possible by forcing a Tier0 method with patchpoints to always report its generics context.
 

@@ -488,7 +488,7 @@ this is to just leave the original frame in place, and have the OSR frame
 The original method conditionally calls to the patchpoint helper at patchpoints.
 The helper returns a continuation address.
 If transition is desired, this is the address of the alternative version.
-Otherwise, it is the address in the tier0 code that follows the patchpoint helper call and jump instruction after.
+Otherwise, it is the address in the tier0 code that follows the patchpoint helper call and jump instruction.
 
 After transitioning the OSR method will incorporate the original method frame as part of its frame.
 This incorporation is slightly different between x64 and other targets. See below for more details.
@@ -664,13 +664,16 @@ prolog and duplicates its saves, and then a subsequent "shrink wrapped" prolog
 
 #### Implementation
 
-Callee-saves are currently handled sightly differently on x64
-than it is on other targets:
-* on x64, all the integer callee saves are saved in space pre-reserved in the Tier0 frame. The Tier0 method saves whatever subset it uses, and the OSR method saves any additional callee saves it uses. The OSR method then restores this entire set on exit, with a single stack pointer adjustment. See [OSR x64 Epilog Redesign](https://github.com/dotnet/runtime/blob/main/docs/design/features/OSRX64EpilogRedesign.md) and the pull request [revise approach for x64 OSR epilogs](https://github.com/dotnet/runtime/pull/65609) for details.
+Callee-saves are currently handled sightly differently on x64 than it is on other targets:
+* on x64, all the integer callee saves are saved in space pre-reserved in the Tier0 frame.
+  The Tier0 method saves whatever subset it uses, and the OSR method saves any additional callee saves it uses.
+  The OSR method then restores this entire set on exit, with a single stack pointer adjustment.
+  See [OSR x64 Epilog Redesign](https://github.com/dotnet/runtime/blob/main/docs/design/features/OSRX64EpilogRedesign.md) and the pull request [revise approach for x64 OSR epilogs](https://github.com/dotnet/runtime/pull/65609) for details.
 * for other targets the OSR method first restores the full set of callee saves saved by the tier0 version.
-  Its used callee saves are then saved and restored from the OSR part of the stack frame.
+  Its used callee saves are then saved and restored from the OSR part of the stack frame, in the same way as any normal prolog.
 * For x64 we disallow the use of float callee-saves in the tier0 method.
   This avoids the need for special restore logic for float callee saves in the OSR method.
+  For other platforms the handling of callee saves falls out naturally from the integer register handling.
 
 You might think the runtime helper would need to carefully save all the register state
 on entry, but that's not the case. Because the original method is un-optimized,
