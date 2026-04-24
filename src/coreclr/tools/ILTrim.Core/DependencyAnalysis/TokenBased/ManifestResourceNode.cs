@@ -53,11 +53,15 @@ namespace ILCompiler.DependencyAnalysis
                         ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                     }
 
-                    return DescriptorMarker.GetDependencies(factory.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), factory.Settings.FeatureSettings);
+                    DependencyList descriptorDependencies = DescriptorMarker.GetDependencies(factory.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), factory.Settings.FeatureSettings);
+                    CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref descriptorDependencies, factory, _module, resource.GetCustomAttributes());
+                    return descriptorDependencies;
                 }
                 else
                 {
-                    return null;
+                    DependencyList dependencies = null;
+                    CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, resource.GetCustomAttributes());
+                    return dependencies;
                 }
             }
             else
@@ -73,6 +77,7 @@ namespace ILCompiler.DependencyAnalysis
                         // TODO: Handle AssemblyFile
                         throw new InvalidOperationException(resource.Implementation.Kind.ToString());
                 }
+                CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, resource.GetCustomAttributes());
                 return dependencies;
             }
         }
