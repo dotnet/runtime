@@ -731,7 +731,7 @@ namespace System.Text.Json.SourceGeneration
                     GenerationMode = typeToGenerate.Mode ?? options?.GenerationMode ?? JsonSourceGenerationMode.Default,
                     ClassType = classType,
                     PrimitiveTypeKind = primitiveTypeKind,
-                    ResolvedDerivedTypes = resolvedDerivedTypes?.OrderBy(d => d.DerivedType.FullyQualifiedName).ToImmutableEquatableArray(),
+                    ResolvedDerivedTypes = resolvedDerivedTypes?.ToImmutableEquatableArray(),
                     NumberHandling = numberHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
                     PreferredPropertyObjectCreationHandling = preferredPropertyObjectCreationHandling,
@@ -889,7 +889,7 @@ namespace System.Text.Json.SourceGeneration
             /// type arguments from the constructed base type at compile time.
             /// Returns null if the type arguments cannot be resolved.
             /// </summary>
-            private bool TryResolveOpenGenericDerivedType(
+            private static bool TryResolveOpenGenericDerivedType(
                 INamedTypeSymbol unboundDerived,
                 ITypeSymbol baseType,
                 [NotNullWhen(true)] out INamedTypeSymbol? resolvedType)
@@ -925,40 +925,12 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                // Verify all type parameters were resolved and satisfy constraints.
-                Compilation compilation = _knownSymbols.Compilation;
-                for (int i = 0; i < derivedTypeParams.Length; i++)
+                // Verify all type parameters were resolved.
+                for (int i = 0; i < resolved.Length; i++)
                 {
-                    ITypeSymbol? resolvedArg = resolved[i];
-                    if (resolvedArg is null)
+                    if (resolved[i] is null)
                     {
                         return false;
-                    }
-
-                    ITypeParameterSymbol typeParam = derivedTypeParams[i];
-
-                    if (typeParam.HasReferenceTypeConstraint && !resolvedArg.IsReferenceType)
-                    {
-                        return false;
-                    }
-
-                    if (typeParam.HasValueTypeConstraint && !resolvedArg.IsValueType)
-                    {
-                        return false;
-                    }
-
-                    if (typeParam.HasUnmanagedTypeConstraint && !resolvedArg.IsUnmanagedType)
-                    {
-                        return false;
-                    }
-
-                    foreach (ITypeSymbol constraintType in typeParam.ConstraintTypes)
-                    {
-                        Conversion conversion = compilation.ClassifyConversion(resolvedArg, constraintType);
-                        if (!(conversion.IsImplicit || conversion.IsIdentity))
-                        {
-                            return false;
-                        }
                     }
                 }
 

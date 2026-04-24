@@ -28,7 +28,7 @@ namespace System.Text.Json.SourceGeneration
             private const string NumberHandlingPropName = "NumberHandling";
             private const string UnmappedMemberHandlingPropName = "UnmappedMemberHandling";
             private const string PreferredPropertyObjectCreationHandlingPropName = "PreferredPropertyObjectCreationHandling";
-            private const string PolymorphismOptionsPropName = "PolymorphismOptions";
+
             private const string ObjectCreatorPropName = "ObjectCreator";
             private const string OptionsInstanceVariableName = "Options";
             private const string JsonTypeInfoLocalVariableName = "jsonTypeInfo";
@@ -77,7 +77,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonPropertyInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPropertyInfo";
             private const string JsonPropertyInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPropertyInfoValues";
             private const string JsonDerivedTypeTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonDerivedType";
-            private const string JsonPolymorphismOptionsTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPolymorphismOptions";
+
             private const string JsonTypeInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonTypeInfo";
             private const string JsonTypeInfoResolverTypeRef = "global::System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver";
             private const string ReferenceHandlerTypeRef = "global::System.Text.Json.Serialization.ReferenceHandler";
@@ -552,6 +552,24 @@ namespace System.Text.Json.SourceGeneration
 
                 const string ObjectInfoVarName = "objectInfo";
                 string genericArg = typeMetadata.TypeRef.FullyQualifiedName;
+                string? derivedTypesArrayExpr = null;
+
+                if (typeMetadata.ResolvedDerivedTypes is { Count: > 0 } resolvedDerivedTypes)
+                {
+                    var entries = new List<string>();
+                    foreach (PolymorphicDerivedTypeSpec derivedTypeSpec in resolvedDerivedTypes)
+                    {
+                        string discriminatorArg = derivedTypeSpec.TypeDiscriminator switch
+                        {
+                            string s => $", {FormatStringLiteral(s)}",
+                            int i => $", {i}",
+                            _ => "",
+                        };
+                        entries.Add($"new {JsonDerivedTypeTypeRef}(typeof({derivedTypeSpec.DerivedType.FullyQualifiedName}){discriminatorArg})");
+                    }
+
+                    derivedTypesArrayExpr = $"new {JsonDerivedTypeTypeRef}[] {{ {string.Join(", ", entries)} }}";
+                }
 
                 GenerateTypeInfoFactoryHeader(writer, typeMetadata);
 
@@ -564,6 +582,7 @@ namespace System.Text.Json.SourceGeneration
                         ConstructorParameterMetadataInitializer = {{ctorParamMetadataInitMethodName ?? "null"}},
                         ConstructorAttributeProviderFactory = {{constructorInfoFactoryFunc ?? "null"}},
                         {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}},
+                        DerivedTypes = {{derivedTypesArrayExpr ?? "null"}},
                     };
 
                     {{JsonTypeInfoLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.CreateObjectInfo<{{typeMetadata.TypeRef.FullyQualifiedName}}>({{OptionsLocalVariableName}}, {{ObjectInfoVarName}});
@@ -583,27 +602,6 @@ namespace System.Text.Json.SourceGeneration
                     {
                         writer.WriteLine($"{JsonTypeInfoLocalVariableName}.{PreferredPropertyObjectCreationHandlingPropName} = {FormatObjectCreationHandling(typeMetadata.PreferredPropertyObjectCreationHandling.Value)};");
                     }
-                }
-
-                if (typeMetadata.ResolvedDerivedTypes is { Count: > 0 } resolvedDerivedTypes)
-                {
-                    const string OptionsVarName = "polymorphismOptions";
-                    writer.WriteLine();
-                    writer.WriteLine($"var {OptionsVarName} = {JsonTypeInfoLocalVariableName}.{PolymorphismOptionsPropName} ?? new {JsonPolymorphismOptionsTypeRef}();");
-                    writer.WriteLine($"{OptionsVarName}.DerivedTypes.Clear();");
-
-                    foreach (PolymorphicDerivedTypeSpec derivedTypeSpec in resolvedDerivedTypes)
-                    {
-                        string discriminatorArg = derivedTypeSpec.TypeDiscriminator switch
-                        {
-                            string s => $", {FormatStringLiteral(s)}",
-                            int i => $", {i}",
-                            _ => "",
-                        };
-                        writer.WriteLine($"{OptionsVarName}.DerivedTypes.Add(new {JsonDerivedTypeTypeRef}(typeof({derivedTypeSpec.DerivedType.FullyQualifiedName}){discriminatorArg}));");
-                    }
-
-                    writer.WriteLine($"{JsonTypeInfoLocalVariableName}.{PolymorphismOptionsPropName} = {OptionsVarName};");
                 }
 
                 GenerateTypeInfoFactoryFooter(writer);

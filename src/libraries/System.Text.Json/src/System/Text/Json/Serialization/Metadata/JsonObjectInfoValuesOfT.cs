@@ -54,5 +54,11 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public Action<Utf8JsonWriter, T>? SerializeHandler { get; init; }
+
+        /// <summary>
+        /// Provides the resolved polymorphic derived types for the class or struct.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public JsonDerivedType[]? DerivedTypes { get; init; }
     }
 }

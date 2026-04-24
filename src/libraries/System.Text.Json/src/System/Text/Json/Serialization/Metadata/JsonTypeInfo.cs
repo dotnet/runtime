@@ -1251,8 +1251,9 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Sets polymorphism options from the internal resolver, bypassing
-        /// the public setter's Kind validation.
+        /// Sets polymorphism options bypassing the public setter's Kind validation.
+        /// Used by the reflection resolver, which reads [JsonDerivedType] attributes on all types
+        /// regardless of Kind and defers validation to PolymorphicTypeResolver during configuration.
         /// </summary>
         internal void SetPolymorphismOptions(JsonPolymorphismOptions options)
         {

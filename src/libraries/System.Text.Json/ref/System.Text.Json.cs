@@ -1388,6 +1388,7 @@ namespace System.Text.Json.Serialization.Metadata
         public System.Func<object[], T>? ObjectWithParameterizedConstructorCreator { get { throw null; } init { } }
         public System.Func<System.Text.Json.Serialization.JsonSerializerContext, System.Text.Json.Serialization.Metadata.JsonPropertyInfo[]>? PropertyMetadataInitializer { get { throw null; } init { } }
         public System.Action<System.Text.Json.Utf8JsonWriter, T>? SerializeHandler { get { throw null; } init { } }
+        public System.Text.Json.Serialization.Metadata.JsonDerivedType[]? DerivedTypes { get { throw null; } init { } }
     }
     public abstract partial class JsonParameterInfo
     {
