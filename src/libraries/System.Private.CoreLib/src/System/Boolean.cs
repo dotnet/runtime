@@ -189,19 +189,29 @@ namespace System
         internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
         {
             // "true" as a ulong, each char |'d with 0x0020 for case-insensitivity
-            ulong true_val = BitConverter.IsLittleEndian ? 0x65007500720074ul : 0x74007200750065ul;
+            const ulong true_val = 0x65007500720074ul;
             return value.Length == 4 &&
-                   (MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == true_val;
+                   (FourCharsAsUInt64(value) | 0x0020002000200020) == true_val;
         }
 
         internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
         {
             // "fals" as a ulong, each char |'d with 0x0020 for case-insensitivity
-            ulong fals_val = BitConverter.IsLittleEndian ? 0x73006C00610066ul : 0x660061006C0073ul;
+            const ulong fals_val = 0x73006C00610066ul;
             return value.Length == 5 &&
-                   (((MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == fals_val) &
+                   (((FourCharsAsUInt64(value) | 0x0020002000200020) == fals_val) &
                     ((value[4] | 0x20) == 'e'));
         }
+
+        // Composes the first four chars of `value` into a ulong with the same byte layout as
+        // a host-endian read of those 8 bytes on a little-endian system. Endian-independent by
+        // construction (each char read returns the host-language char value, which is then
+        // shifted into a fixed bit position).
+        private static ulong FourCharsAsUInt64(ReadOnlySpan<char> value) =>
+            value[0] |
+            ((ulong)value[1] << 16) |
+            ((ulong)value[2] << 32) |
+            ((ulong)value[3] << 48);
 #else
         internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
         {

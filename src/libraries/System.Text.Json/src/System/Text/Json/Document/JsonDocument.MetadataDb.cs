@@ -269,7 +269,8 @@ namespace System.Text.Json
                 AssertValidIndex(index);
                 Debug.Assert(length >= 0);
                 Span<byte> destination = _data.AsSpan(index + SizeOrLengthOffset);
-                MemoryMarshal.Write(destination, ref length);
+                bool ok = BitConverter.TryWriteBytes(destination, length);
+                Debug.Assert(ok);
             }
 
             internal void SetNumberOfRows(int index, int numberOfRows)
@@ -278,11 +279,12 @@ namespace System.Text.Json
                 Debug.Assert(numberOfRows >= 1 && numberOfRows <= 0x0FFFFFFF);
 
                 Span<byte> dataPos = _data.AsSpan(index + NumberOfRowsOffset);
-                int current = MemoryMarshal.Read<int>(dataPos);
+                int current = BitConverter.ToInt32(dataPos);
 
                 // Persist the most significant nybble
                 int value = (current & unchecked((int)0xF0000000)) | numberOfRows;
-                MemoryMarshal.Write(dataPos, ref value);
+                bool ok = BitConverter.TryWriteBytes(dataPos, value);
+                Debug.Assert(ok);
             }
 
             internal void SetHasComplexChildren(int index)
@@ -291,10 +293,11 @@ namespace System.Text.Json
 
                 // The HasComplexChildren bit is the most significant bit of "SizeOrLength"
                 Span<byte> dataPos = _data.AsSpan(index + SizeOrLengthOffset);
-                int current = MemoryMarshal.Read<int>(dataPos);
+                int current = BitConverter.ToInt32(dataPos);
 
                 int value = current | unchecked((int)0x80000000);
-                MemoryMarshal.Write(dataPos, ref value);
+                bool ok = BitConverter.TryWriteBytes(dataPos, value);
+                Debug.Assert(ok);
             }
 
             internal int FindIndexOfFirstUnsetSizeOrLength(JsonTokenType lookupType)
@@ -331,7 +334,7 @@ namespace System.Text.Json
             internal JsonTokenType GetJsonTokenType(int index)
             {
                 AssertValidIndex(index);
-                uint union = MemoryMarshal.Read<uint>(_data.AsSpan(index + NumberOfRowsOffset));
+                uint union = BitConverter.ToUInt32(_data.AsSpan(index + NumberOfRowsOffset));
 
                 return (JsonTokenType)(union >> 28);
             }

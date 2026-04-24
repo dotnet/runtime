@@ -139,7 +139,8 @@ namespace System
 
                 while (buffer.Length >= sizeof(ulong))
                 {
-                    MemoryMarshal.Write(buffer, BitOperations.RotateLeft(s1 * 5, 7) * 9);
+                    bool ok = BitConverter.TryWriteBytes(buffer, BitOperations.RotateLeft(s1 * 5, 7) * 9);
+                    Debug.Assert(ok);
 
                     // Update PRNG state.
                     ulong t = s1 << 17;

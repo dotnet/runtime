@@ -183,7 +183,7 @@ namespace System.Net
         {
             if (address.Length == IPAddressParserStatics.IPv4AddressBytes)
             {
-                PrivateAddress = MemoryMarshal.Read<uint>(address);
+                PrivateAddress = BitConverter.ToUInt32(address);
             }
             else if (address.Length == IPAddressParserStatics.IPv6AddressBytes)
             {
@@ -379,7 +379,8 @@ namespace System.Net
         private void WriteIPv4Bytes(Span<byte> destination)
         {
             uint address = PrivateAddress;
-            MemoryMarshal.Write(destination, in address);
+            bool ok = BitConverter.TryWriteBytes(destination, address);
+            Debug.Assert(ok);
         }
 
         /// <devdoc>
@@ -721,10 +722,10 @@ namespace System.Net
                 {
                     ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers).Slice(0, 16);
                     _hashCode = HashCode.Combine(
-                        MemoryMarshal.Read<uint>(numbers),
-                        MemoryMarshal.Read<uint>(numbers.Slice(4)),
-                        MemoryMarshal.Read<uint>(numbers.Slice(8)),
-                        MemoryMarshal.Read<uint>(numbers.Slice(12)),
+                        BitConverter.ToUInt32(numbers),
+                        BitConverter.ToUInt32(numbers.Slice(4)),
+                        BitConverter.ToUInt32(numbers.Slice(8)),
+                        BitConverter.ToUInt32(numbers.Slice(12)),
                         _addressOrScopeId);
                 }
                 else

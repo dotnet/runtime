@@ -93,8 +93,8 @@ namespace System.Formats.Cbor
         public static ushort ReadHalfBigEndian(ReadOnlySpan<byte> source)
         {
             ushort value = BitConverter.IsLittleEndian ?
-                BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<ushort>(source)) :
-                MemoryMarshal.Read<ushort>(source);
+                BinaryPrimitives.ReverseEndianness(BitConverter.ToUInt16(source)) :
+                BitConverter.ToUInt16(source);
 
             return value;
         }
@@ -102,59 +102,57 @@ namespace System.Formats.Cbor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteHalfBigEndian(Span<byte> destination, ushort value)
         {
-            if (BitConverter.IsLittleEndian)
-            {
-                ushort tmp = BinaryPrimitives.ReverseEndianness(value);
-                MemoryMarshal.Write(destination, ref tmp);
-            }
-            else
-            {
-                MemoryMarshal.Write(destination, ref value);
-            }
+            ushort tmp = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value;
+            bool ok = BitConverter.TryWriteBytes(destination, tmp);
+            Debug.Assert(ok);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ReadSingleBigEndian(ReadOnlySpan<byte> source)
         {
             return BitConverter.IsLittleEndian ?
-                Int32BitsToSingle(BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<int>(source))) :
-                MemoryMarshal.Read<float>(source);
+                Int32BitsToSingle(BinaryPrimitives.ReverseEndianness(BitConverter.ToInt32(source))) :
+                BitConverter.ToSingle(source);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSingleBigEndian(Span<byte> destination, float value)
         {
+            bool ok;
             if (BitConverter.IsLittleEndian)
             {
                 int tmp = BinaryPrimitives.ReverseEndianness(SingleToInt32Bits(value));
-                MemoryMarshal.Write(destination, ref tmp);
+                ok = BitConverter.TryWriteBytes(destination, tmp);
             }
             else
             {
-                MemoryMarshal.Write(destination, ref value);
+                ok = BitConverter.TryWriteBytes(destination, value);
             }
+            Debug.Assert(ok);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReadDoubleBigEndian(ReadOnlySpan<byte> source)
         {
             return BitConverter.IsLittleEndian ?
-                BitConverter.Int64BitsToDouble(BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<long>(source))) :
-                MemoryMarshal.Read<double>(source);
+                BitConverter.Int64BitsToDouble(BinaryPrimitives.ReverseEndianness(BitConverter.ToInt64(source))) :
+                BitConverter.ToDouble(source);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDoubleBigEndian(Span<byte> destination, double value)
         {
+            bool ok;
             if (BitConverter.IsLittleEndian)
             {
                 long tmp = BinaryPrimitives.ReverseEndianness(BitConverter.DoubleToInt64Bits(value));
-                MemoryMarshal.Write(destination, ref tmp);
+                ok = BitConverter.TryWriteBytes(destination, tmp);
             }
             else
             {
-                MemoryMarshal.Write(destination, ref value);
+                ok = BitConverter.TryWriteBytes(destination, value);
             }
+            Debug.Assert(ok);
         }
 
         internal static uint SingleToUInt32Bits(float value)
