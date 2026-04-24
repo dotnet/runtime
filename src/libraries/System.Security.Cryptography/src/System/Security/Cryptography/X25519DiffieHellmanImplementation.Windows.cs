@@ -17,16 +17,26 @@ namespace System.Security.Cryptography
         private const string BCRYPT_ECC_CURVE_25519 = "curve25519";
         private static readonly SafeBCryptAlgorithmHandle? s_algHandle = OpenAlgorithmHandle();
 
+        // p = 2^255 - 19 in little-endian
+        private static ReadOnlySpan<byte> FieldPrime =>
+        [
+            0xed, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f,
+        ];
+
         private readonly SafeBCryptKeyHandle _key;
         private readonly bool _hasPrivate;
         private readonly byte _privatePreservation;
+        private readonly byte[]? _originalPublicKey;
 
-        private X25519DiffieHellmanImplementation(SafeBCryptKeyHandle key, bool hasPrivate, byte privatePreservation)
+        private X25519DiffieHellmanImplementation(SafeBCryptKeyHandle key, bool hasPrivate, byte privatePreservation, byte[]? originalPublicKey = null)
         {
             _key = key;
             _hasPrivate = hasPrivate;
             _privatePreservation = privatePreservation;
+            _originalPublicKey = originalPublicKey;
             Debug.Assert(_hasPrivate || _privatePreservation == 0);
+            Debug.Assert(!_hasPrivate || _originalPublicKey is null);
         }
 
         [MemberNotNullWhen(true, nameof(s_algHandle))]
@@ -55,8 +65,8 @@ namespace System.Security.Cryptography
                 Span<byte> publicKeyBytes = stackalloc byte[PublicKeySizeInBytes];
                 otherParty.ExportPublicKey(publicKeyBytes);
 
-                using (SafeBCryptKeyHandle otherPartyHandle = ImportKey(false, publicKeyBytes, out _))
-                using (SafeBCryptSecretHandle secret = Interop.BCrypt.BCryptSecretAgreement(_key, otherPartyHandle))
+                using (X25519DiffieHellmanImplementation otherPartyImplementation = X25519DiffieHellmanImplementation.ImportPublicKeyImpl(publicKeyBytes))
+                using (SafeBCryptSecretHandle secret = Interop.BCrypt.BCryptSecretAgreement(_key, otherPartyImplementation._key))
                 {
                     Interop.BCrypt.BCryptDeriveKey(
                         secret,
@@ -88,7 +98,14 @@ namespace System.Security.Cryptography
 
         protected override void ExportPublicKeyCore(Span<byte> destination)
         {
-            ExportKey(false, destination);
+            if (_originalPublicKey is not null)
+            {
+                _originalPublicKey.CopyTo(destination);
+            }
+            else
+            {
+                ExportKey(false, destination);
+            }
         }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
@@ -134,9 +151,35 @@ namespace System.Security.Cryptography
 
         internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
         {
-            SafeBCryptKeyHandle key = ImportKey(false, source, out _);
+            // RFC 7748 Section 5: "implementations of X25519 MUST mask the most significant
+            // bit in the final byte" and "Implementations MUST accept non-canonical values and
+            // process them as if they had been reduced modulo the field prime."
+            //
+            // CNG rejects non-canonical u-coordinates (values >= p = 2^255 - 19) and does not
+            // mask the high bit. We handle both by masking the high bit then if the value is
+            // non-canonical, subtract p to reduce it. Since all values are < 2^255 after
+            // masking and p = 2^255 - 19, a single subtraction suffices.
+            Span<byte> reduced = stackalloc byte[PublicKeySizeInBytes];
+            source.CopyTo(reduced);
+            reduced[^1] &= 0x7F;
+
+            byte[]? originalPublicKey = null;
+
+            if (IsNonCanonicalPublicKey(reduced))
+            {
+                originalPublicKey = source.ToArray();
+                ReducePublicKey(reduced);
+            }
+            else if ((source[^1] & 0x80) != 0)
+            {
+                // The value is canonical but has the high bit set. CNG doesn't mask it,
+                // so we need to clear it before import and preserve the original for export.
+                originalPublicKey = source.ToArray();
+            }
+
+            SafeBCryptKeyHandle key = ImportKey(false, reduced, out _);
             Debug.Assert(!key.IsInvalid);
-            return new X25519DiffieHellmanImplementation(key, hasPrivate: false, privatePreservation: 0);
+            return new X25519DiffieHellmanImplementation(key, hasPrivate: false, privatePreservation: 0, originalPublicKey);
         }
 
         private void ExportKey(bool privateKey, Span<byte> destination)
@@ -252,7 +295,11 @@ namespace System.Security.Cryptography
                         preservation = 0;
                     }
 
-                    return Interop.BCrypt.BCryptImportKeyPair(s_algHandle, blobType, buffer);
+                    return Interop.BCrypt.BCryptImportKeyPair(
+                        s_algHandle,
+                        blobType,
+                        buffer,
+                        Interop.BCrypt.BCryptImportKeyPairFlags.BCRYPT_NO_KEY_VALIDATION);
                 }
                 finally
                 {
@@ -295,6 +342,44 @@ namespace System.Security.Cryptography
         {
             bytes[0] = (byte)((preservation & 0b111) | (bytes[0] & 0b11111000));
             bytes[^1] = (byte)((preservation & 0b11000000) | (bytes[^1] & 0b00111111));
+        }
+
+        private static bool IsNonCanonicalPublicKey(ReadOnlySpan<byte> key)
+        {
+            Debug.Assert(key.Length == PublicKeySizeInBytes);
+            Debug.Assert((key[^1] & 0x80) == 0);
+
+            // Compare key >= p (little-endian). Since key < 2^255 (high bit masked)
+            // and p = 2^255 - 19, a non-canonical value is in [p, 2^255 - 1].
+            // Compare from most significant byte to least significant.
+            for (int i = PublicKeySizeInBytes - 1; i >= 0; i--)
+            {
+                if (key[i] > FieldPrime[i])
+                    return true;
+                if (key[i] < FieldPrime[i])
+                    return false;
+            }
+
+            // key == p, which is also non-canonical (reduces to 0)
+            return true;
+        }
+
+        private static void ReducePublicKey(Span<byte> key)
+        {
+            Debug.Assert(key.Length == PublicKeySizeInBytes);
+
+            // Subtract p from key. Since we only call this when key >= p and key < 2^255,
+            // a single subtraction is sufficient: key = key - p.
+            int borrow = 0;
+
+            for (int i = 0; i < PublicKeySizeInBytes; i++)
+            {
+                int diff = key[i] - FieldPrime[i] - borrow;
+                key[i] = (byte)diff;
+                borrow = (diff < 0) ? 1 : 0;
+            }
+
+            Debug.Assert(borrow == 0);
         }
 
         private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()

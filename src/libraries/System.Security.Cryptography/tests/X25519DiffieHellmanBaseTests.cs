@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Tests
         public abstract X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source);
         public abstract X25519DiffieHellman ImportPublicKey(ReadOnlySpan<byte> source);
 
-        // SymCrypt, thus SCOSSL and CNG, are stricter about keys they are willing to import. These keys fall in to
+        // SymCrypt, thus SCOSSL, is stricter about keys it is willing to import. These keys fall in to
         // two buckets.
         // 1. Public keys that are non-canonical. RFC 7748 says:
         //      Implementations MUST accept non-canonical values and process them as
@@ -26,8 +26,10 @@ namespace System.Security.Cryptography.Tests
         //      values are 2^255 - 19 through 2^255 - 1 for X25519
         //    Regardless, SymCrypt rejects these non-canonical keys anyway. There are only 20 possible keys that fall in to this category.
         // 2. Public keys that are not in the prime-order subgroup. [GOrd] * P != O.
-        //    X25519DH doesn't strictly need this, but Windows enforces this property anyway.
-        public static bool IsStrictKeyValidatingPlatform => OperatingSystem.IsWindows() || PlatformDetection.IsSymCryptOpenSsl;
+        //    X25519DH doesn't strictly need this, but SymCrypt enforces this property anyway.
+        // CNG enforces both, but the Windows X25519DiffieHellmanImplementation canonicalizes
+        // non-canonical public keys before import and passes BCRYPT_NO_KEY_VALIDATION.
+        public static bool IsStrictKeyValidatingPlatform => PlatformDetection.IsSymCryptOpenSsl;
 
         [Fact]
         public void ExportPrivateKey_Roundtrip()

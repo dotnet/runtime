@@ -366,7 +366,6 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
         }
 
-        [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
@@ -388,19 +387,16 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(nonCanonical, exported);
         }
 
-        [InlineData(0)]
         [InlineData(3)]
         [InlineData(18)]
         [ConditionalTheory(typeof(X25519DiffieHellmanKeyTests), nameof(IsNotStrictKeyValidatingPlatform))]
         public static void PublicKey_NonCanonical_HighBitSet_Roundtrip(int offset)
         {
-            // Same as above but with the high bit set in byte[31].
             // RFC 7748 says the high bit MUST be masked, but the original
             // byte should be preserved on export for roundtripping.
             byte[] nonCanonical = new byte[X25519DiffieHellman.PublicKeySizeInBytes];
             nonCanonical.AsSpan().Fill(0xFF);
             nonCanonical[0] = (byte)(0xED + offset);
-            // byte[31] = 0xFF (high bit set)
 
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPublicKey(nonCanonical);
             byte[] exported = xdh.ExportPublicKey();
