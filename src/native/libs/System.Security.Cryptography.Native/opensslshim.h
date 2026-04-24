@@ -413,7 +413,7 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EC_GROUP_get_field_type) \
     REQUIRED_FUNCTION(EC_GROUP_method_of) \
     REQUIRED_FUNCTION(EC_GROUP_new) \
-    LIGHTUP_FUNCTION(EC_GROUP_new_by_curve_name) \
+    REQUIRED_FUNCTION(EC_GROUP_new_by_curve_name) \
     REQUIRED_FUNCTION(EC_GROUP_new_curve_GFp) \
     REQUIRED_FUNCTION(EC_GROUP_set_curve_GFp) \
     REQUIRED_FUNCTION(EC_GROUP_set_curve) \
@@ -441,7 +441,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EC_POINT_point2oct) \
     REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates_GFp) \
     REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates) \
-    LIGHTUP_FUNCTION(EC_POINT_oct2point) \
+    REQUIRED_FUNCTION(EC_POINT_oct2point) \
     LIGHTUP_FUNCTION(ENGINE_by_id) \
     LIGHTUP_FUNCTION(ENGINE_finish) \
     LIGHTUP_FUNCTION(ENGINE_free) \

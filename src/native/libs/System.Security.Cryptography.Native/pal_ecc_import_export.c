@@ -5,13 +5,11 @@
 #include "pal_utilities.h"
 
 #ifdef NEED_OPENSSL_3_0
-static const char FieldTypeChar2[] = "characteristic-two-field";
-static const char FieldTypePrime[] = "prime-field";
 
 // Encode two coordinates as an uncompressed EC point: 0x04 || x || y.
 // Coordinates are zero-padded on the left to the larger of the two lengths.
 // Returns an OPENSSL_zalloc'd buffer (caller must OPENSSL_free), or NULL on failure.
-static uint8_t* EncodeUncompressedPoint(
+static uint8_t* EncodeEcPointFromCoordinates(
     const uint8_t* x, int32_t xLength,
     const uint8_t* y, int32_t yLength,
     int32_t* outLength)
@@ -27,6 +25,28 @@ static uint8_t* EncodeUncompressedPoint(
     memcpy(buf + 1 + coordLen + (coordLen - yLength), y, (size_t)yLength);
     *outLength = len;
 
+    return buf;
+}
+
+// Serialize an EC_POINT to uncompressed octet format.
+// Returns an OPENSSL_zalloc'd buffer (caller must OPENSSL_free), or NULL on failure.
+static uint8_t* EncodeEcPointFromPoint(const EC_GROUP* group, const EC_POINT* point, size_t* outLength)
+{
+    size_t len = EC_POINT_point2oct(group, point, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+    if (len == 0)
+        return NULL;
+
+    uint8_t* buf = (uint8_t*)OPENSSL_zalloc(len);
+    if (buf == NULL)
+        return NULL;
+
+    if (EC_POINT_point2oct(group, point, POINT_CONVERSION_UNCOMPRESSED, buf, len, NULL) != len)
+    {
+        OPENSSL_free(buf);
+        return NULL;
+    }
+
+    *outLength = len;
     return buf;
 }
 #endif
@@ -493,7 +513,7 @@ int32_t CryptoNative_EvpPKeyGetEcFieldDegree(const EVP_PKEY* pkey)
     // For GF(2^m): p is the irreducible polynomial, degree = BN_num_bits(p) - 1.
     // For GF(p): degree = BN_num_bits(p).
     int degree = BN_num_bits(p);
-    if (strcmp(fieldType, FieldTypeChar2) == 0)
+    if (strcmp(fieldType, SN_X9_62_characteristic_two_field) == 0)
         degree--;
 
     BN_free(p);
@@ -564,7 +584,7 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     if (EVP_PKEY_get_utf8_string_param(pkey, OSSL_PKEY_PARAM_GROUP_NAME, curveName, sizeof(curveName), NULL))
     {
         int nid = OBJ_txt2nid(curveName);
-        if (nid != NID_undef && API_EXISTS(EC_GROUP_new_by_curve_name))
+        if (nid != NID_undef)
         {
             group = EC_GROUP_new_by_curve_name(nid);
         }
@@ -594,7 +614,7 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
 
         if (EVP_PKEY_get_utf8_string_param(pkey, OSSL_PKEY_PARAM_EC_FIELD_TYPE, fieldType, sizeof(fieldType), NULL))
         {
-            isChar2 = (strcmp(fieldType, FieldTypeChar2) == 0);
+            isChar2 = (strcmp(fieldType, SN_X9_62_characteristic_two_field) == 0);
         }
 
 #if HAVE_OPENSSL_EC2M
@@ -604,6 +624,7 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
         }
         else
 #endif
+        if (!isChar2)
         {
             group = EC_GROUP_new_curve_GFp(ecP, ecA, ecB, NULL);
         }
@@ -618,7 +639,6 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
 
     EC_POINT* point = EC_POINT_new(group);
     if (point == NULL ||
-        !API_EXISTS(EC_POINT_oct2point) ||
         !EC_POINT_oct2point(group, point, pubKeyBuf, pubKeyLen, NULL))
     {
         EC_POINT_free(point);
@@ -666,7 +686,7 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     }
 
     // success
-    OPENSSL_free(pubKeyBuf);
+    if (pubKeyBuf) OPENSSL_free(pubKeyBuf);
     return 1;
 
 error:
@@ -891,10 +911,8 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     assert(cbSeed != NULL);
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (!API_EXISTS(EC_GROUP_new_by_curve_name) ||
-        !API_EXISTS(EC_GROUP_get_field_type) ||
-        !API_EXISTS(EVP_PKEY_get_octet_string_param) ||
-        !API_EXISTS(EC_POINT_oct2point))
+    if (!API_EXISTS(EC_GROUP_get_field_type) ||
+        !API_EXISTS(EVP_PKEY_get_octet_string_param))
     {
         return 0;
     }
@@ -969,10 +987,17 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     // build it from the field parameters to decode the generator point.
     if (!group)
     {
+#if HAVE_OPENSSL_EC2M
         if (fieldTypeNID == NID_X9_62_characteristic_two_field)
+        {
             group = EC_GROUP_new_curve_GF2m(pBn, aBn, bBn, NULL);
+        }
         else
+#endif
+        if (fieldTypeNID == NID_X9_62_prime_field)
+        {
             group = EC_GROUP_new_curve_GFp(pBn, aBn, bBn, NULL);
+        }
     }
 
     if (!group)
@@ -1191,11 +1216,17 @@ int32_t CryptoNative_EvpPKeyCreateByEcKeyParameters(
         return -1;
     }
 
+    int ret = 0;
     EVP_PKEY_CTX* ctx = NULL;
     uint8_t* pubKeyBuf = NULL;
     OSSL_PARAM_BLD* bld = NULL;
     OSSL_PARAM* params = NULL;
     BIGNUM* dBn = NULL;
+    EC_GROUP* group = NULL;
+    EC_POINT* pubPoint = NULL;
+
+    const int hasPublicKey = (qx != NULL && qy != NULL);
+    const int hasPrivateKey = (d != NULL && dLength > 0);
 
     bld = OSSL_PARAM_BLD_new();
     if (bld == NULL)
@@ -1204,73 +1235,47 @@ int32_t CryptoNative_EvpPKeyCreateByEcKeyParameters(
     if (!OSSL_PARAM_BLD_push_utf8_string(bld, OSSL_PKEY_PARAM_GROUP_NAME, groupName, 0))
         goto error;
 
-    if (qx && qy)
+    if (hasPrivateKey)
+    {
+        dBn = BN_bin2bn(d, dLength, NULL);
+        if (dBn == NULL)
+            goto error;
+    }
+
+    // Push public key, deriving it from the private key if unavailable.
+    if (hasPublicKey)
     {
         int32_t pubKeyLen;
-        pubKeyBuf = EncodeUncompressedPoint(qx, qxLength, qy, qyLength, &pubKeyLen);
+        pubKeyBuf = EncodeEcPointFromCoordinates(qx, qxLength, qy, qyLength, &pubKeyLen);
         if (pubKeyBuf == NULL)
             goto error;
 
         if (!OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_PUB_KEY, pubKeyBuf, (size_t)pubKeyLen))
             goto error;
     }
-    else if (d && dLength > 0)
+    else if (hasPrivateKey)
     {
         // No public key provided, derive Q = d * G using EC_GROUP/EC_POINT (not deprecated).
-        EC_GROUP* group = EC_GROUP_new_by_curve_name(nid);
+        group = EC_GROUP_new_by_curve_name(nid);
         if (group == NULL)
             goto error;
 
-        EC_POINT* pubPoint = EC_POINT_new(group);
-        BIGNUM* dBnTmp = BN_bin2bn(d, dLength, NULL);
-
-        if (pubPoint == NULL || dBnTmp == NULL ||
-            !EC_POINT_mul(group, pubPoint, dBnTmp, NULL, NULL, NULL))
-        {
-            BN_clear_free(dBnTmp);
-            EC_POINT_free(pubPoint);
-            EC_GROUP_free(group);
+        pubPoint = EC_POINT_new(group);
+        if (pubPoint == NULL ||
+            !EC_POINT_mul(group, pubPoint, dBn, NULL, NULL, NULL))
             goto error;
-        }
 
-        BN_clear_free(dBnTmp);
-
-        size_t pubKeyLen = EC_POINT_point2oct(group, pubPoint, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
-        if (pubKeyLen == 0)
-        {
-            EC_POINT_free(pubPoint);
-            EC_GROUP_free(group);
-            goto error;
-        }
-
-        pubKeyBuf = (uint8_t*)OPENSSL_zalloc(pubKeyLen);
+        size_t pubKeyLen;
+        pubKeyBuf = EncodeEcPointFromPoint(group, pubPoint, &pubKeyLen);
         if (pubKeyBuf == NULL)
-        {
-            EC_POINT_free(pubPoint);
-            EC_GROUP_free(group);
             goto error;
-        }
-
-        if (EC_POINT_point2oct(group, pubPoint, POINT_CONVERSION_UNCOMPRESSED, pubKeyBuf, pubKeyLen, NULL) != pubKeyLen)
-        {
-            EC_POINT_free(pubPoint);
-            EC_GROUP_free(group);
-            goto error;
-        }
-
-        EC_POINT_free(pubPoint);
-        EC_GROUP_free(group);
 
         if (!OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_PUB_KEY, pubKeyBuf, pubKeyLen))
             goto error;
     }
 
-    if (d && dLength > 0)
+    if (hasPrivateKey)
     {
-        dBn = BN_bin2bn(d, dLength, NULL);
-        if (dBn == NULL)
-            goto error;
-
         if (!OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_PRIV_KEY, dBn))
             goto error;
     }
@@ -1287,31 +1292,30 @@ int32_t CryptoNative_EvpPKeyCreateByEcKeyParameters(
         goto error;
 
     {
-        int selection = (d && dLength > 0) ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY;
+        int selection = hasPrivateKey ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY;
         if (EVP_PKEY_fromdata(ctx, pkey, selection, params) != 1)
             goto error;
     }
 
-    OSSL_PARAM_free(params);
-    OSSL_PARAM_BLD_free(bld);
-    EVP_PKEY_CTX_free(ctx);
-    BN_clear_free(dBn);
-    OPENSSL_free(pubKeyBuf);
-    return 1;
+    ret = 1;
+    goto exit;
 
 error:
-    OSSL_PARAM_free(params);
-    OSSL_PARAM_BLD_free(bld);
-    EVP_PKEY_CTX_free(ctx);
-    BN_clear_free(dBn);
-    if (pubKeyBuf) OPENSSL_free(pubKeyBuf);
-
     if (*pkey)
     {
         EVP_PKEY_free(*pkey);
         *pkey = NULL;
     }
-    return 0;
+
+exit:
+    if (params) OSSL_PARAM_free(params);
+    if (bld) OSSL_PARAM_BLD_free(bld);
+    if (ctx) EVP_PKEY_CTX_free(ctx);
+    if (dBn) BN_clear_free(dBn);
+    if (pubPoint) EC_POINT_free(pubPoint);
+    if (group) EC_GROUP_free(group);
+    if (pubKeyBuf) OPENSSL_free(pubKeyBuf);
+    return ret;
 #else
     (void)oid;
     (void)qx; (void)qxLength;
@@ -1362,14 +1366,22 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
     BIGNUM* orderBn = NULL;
     BIGNUM* cofactorBn = NULL;
     BIGNUM* dBn = NULL;
+    BIGNUM* gxBn = NULL;
+    BIGNUM* gyBn = NULL;
+    EC_GROUP* group = NULL;
+    EC_POINT* G = NULL;
+    EC_POINT* pubPoint = NULL;
+
+    const int hasPublicKey = (qx != NULL && qy != NULL);
+    const int hasPrivateKey = (d != NULL && dLength > 0);
 
     bld = OSSL_PARAM_BLD_new();
     if (bld == NULL)
         goto error;
 
     const char* fieldType = (curveType == Characteristic2)
-        ? FieldTypeChar2
-        : FieldTypePrime;
+        ? SN_X9_62_characteristic_two_field
+        : SN_X9_62_prime_field;
 
     if (!OSSL_PARAM_BLD_push_utf8_string(bld, OSSL_PKEY_PARAM_EC_FIELD_TYPE, fieldType, 0))
         goto error;
@@ -1394,15 +1406,13 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
         goto error;
 
     // Generator as uncompressed point: 0x04 || gx || gy
-    {
-        int32_t genLen;
-        generatorBuf = EncodeUncompressedPoint(gx, gxLength, gy, gyLength, &genLen);
-        if (generatorBuf == NULL)
-            goto error;
+    int32_t genLen;
+    generatorBuf = EncodeEcPointFromCoordinates(gx, gxLength, gy, gyLength, &genLen);
+    if (generatorBuf == NULL)
+        goto error;
 
-        if (!OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_EC_GENERATOR, generatorBuf, (size_t)genLen))
-            goto error;
-    }
+    if (!OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_EC_GENERATOR, generatorBuf, (size_t)genLen))
+        goto error;
 
     orderBn = BN_bin2bn(order, orderLength, NULL);
     cofactorBn = BN_bin2bn(cofactor, cofactorLength, NULL);
@@ -1422,7 +1432,7 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
             goto error;
     }
 
-    if (d && dLength > 0)
+    if (hasPrivateKey)
     {
         dBn = BN_bin2bn(d, dLength, NULL);
         if (dBn == NULL)
@@ -1432,97 +1442,58 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
             goto error;
     }
 
-    if (qx && qy)
+    // Push public key, deriving it from the private key if unavailable.
+    if (hasPublicKey)
     {
         int32_t pubKeyLen;
-        pubKeyBuf = EncodeUncompressedPoint(qx, qxLength, qy, qyLength, &pubKeyLen);
+        pubKeyBuf = EncodeEcPointFromCoordinates(qx, qxLength, qy, qyLength, &pubKeyLen);
         if (pubKeyBuf == NULL)
             goto error;
 
         if (!OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_PUB_KEY, pubKeyBuf, (size_t)pubKeyLen))
             goto error;
     }
-    else if (d && dLength > 0)
+    else if (hasPrivateKey)
     {
         // No public key provided, derive Q = d * G from the explicit curve parameters.
-        const EC_METHOD* curveMethod = CurveTypeToMethod(curveType);
-        if (!curveMethod)
-            goto error;
+#if HAVE_OPENSSL_EC2M
+        if (curveType == Characteristic2)
+        {
+            group = EC_GROUP_new_curve_GF2m(pBn, aBn, bBn, NULL);
+        }
+        else
+#endif
+        if (curveType != Characteristic2)
+        {
+            group = EC_GROUP_new_curve_GFp(pBn, aBn, bBn, NULL);
+        }
 
-        EC_GROUP* group = EC_GROUP_new(curveMethod);
         if (group == NULL)
             goto error;
 
-        if (!EC_GROUP_set_curve(group, pBn, aBn, bBn, NULL))
-        {
-            EC_GROUP_free(group);
-            goto error;
-        }
-
         // Set the generator
-        EC_POINT* G = EC_POINT_new(group);
-        BIGNUM* gxBn = BN_bin2bn(gx, gxLength, NULL);
-        BIGNUM* gyBn = BN_bin2bn(gy, gyLength, NULL);
+        G = EC_POINT_new(group);
+        gxBn = BN_bin2bn(gx, gxLength, NULL);
+        gyBn = BN_bin2bn(gy, gyLength, NULL);
 
         if (G == NULL || gxBn == NULL || gyBn == NULL)
-        {
-            BN_free(gxBn);
-            BN_free(gyBn);
-            EC_POINT_free(G);
-            EC_GROUP_free(group);
             goto error;
-        }
 
         if (!EC_POINT_set_affine_coordinates(group, G, gxBn, gyBn, NULL))
-        {
-            BN_free(gxBn);
-            BN_free(gyBn);
-            EC_POINT_free(G);
-            EC_GROUP_free(group);
             goto error;
-        }
-
-        BN_free(gxBn);
-        BN_free(gyBn);
 
         EC_GROUP_set_generator(group, G, orderBn, cofactorBn);
-        EC_POINT_free(G);
 
         // Derive Q = d * G
-        EC_POINT* pubPoint = EC_POINT_new(group);
+        pubPoint = EC_POINT_new(group);
         if (pubPoint == NULL ||
             !EC_POINT_mul(group, pubPoint, dBn, NULL, NULL, NULL))
-        {
-            EC_POINT_free(pubPoint);
-            EC_GROUP_free(group);
             goto error;
-        }
 
-        size_t pubKeyLen = EC_POINT_point2oct(group, pubPoint, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
-        if (pubKeyLen == 0)
-        {
-            EC_POINT_free(pubPoint);
-            EC_GROUP_free(group);
-            goto error;
-        }
-
-        pubKeyBuf = (uint8_t*)OPENSSL_zalloc(pubKeyLen);
+        size_t pubKeyLen;
+        pubKeyBuf = EncodeEcPointFromPoint(group, pubPoint, &pubKeyLen);
         if (pubKeyBuf == NULL)
-        {
-            EC_POINT_free(pubPoint);
-            EC_GROUP_free(group);
             goto error;
-        }
-
-        if (EC_POINT_point2oct(group, pubPoint, POINT_CONVERSION_UNCOMPRESSED, pubKeyBuf, pubKeyLen, NULL) != pubKeyLen)
-        {
-            EC_POINT_free(pubPoint);
-            EC_GROUP_free(group);
-            goto error;
-        }
-
-        EC_POINT_free(pubPoint);
-        EC_GROUP_free(group);
 
         if (!OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_PUB_KEY, pubKeyBuf, pubKeyLen))
             goto error;
@@ -1536,7 +1507,7 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
     if (ctx == NULL)
         goto error;
 
-    if ((!qx || !qy) && (!d || dLength <= 0))
+    if (!hasPublicKey && !hasPrivateKey)
     {
         // No key material — generate a new key from the domain parameters.
         EVP_PKEY* templateKey = NULL;
@@ -1565,38 +1536,35 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
         if (EVP_PKEY_fromdata_init(ctx) != 1)
             goto error;
 
-        int selection = (d && dLength > 0) ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY;
+        int selection = hasPrivateKey ? EVP_PKEY_KEYPAIR : EVP_PKEY_PUBLIC_KEY;
         if (EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1)
             goto error;
     }
 
-    OSSL_PARAM_free(params);
-    OSSL_PARAM_BLD_free(bld);
-    EVP_PKEY_CTX_free(ctx);
-    OPENSSL_free(generatorBuf);
-    OPENSSL_free(pubKeyBuf);
-    BN_free(pBn);
-    BN_free(aBn);
-    BN_free(bBn);
-    BN_free(orderBn);
-    BN_free(cofactorBn);
-    BN_clear_free(dBn);
-    return pkey;
+    goto exit;
 
 error:
-    OSSL_PARAM_free(params);
-    OSSL_PARAM_BLD_free(bld);
-    EVP_PKEY_CTX_free(ctx);
-    OPENSSL_free(generatorBuf);
-    OPENSSL_free(pubKeyBuf);
-    BN_free(pBn);
-    BN_free(aBn);
-    BN_free(bBn);
-    BN_free(orderBn);
-    BN_free(cofactorBn);
-    BN_clear_free(dBn);
     if (pkey) EVP_PKEY_free(pkey);
-    return NULL;
+    pkey = NULL;
+
+exit:
+    if (params) OSSL_PARAM_free(params);
+    if (bld) OSSL_PARAM_BLD_free(bld);
+    if (ctx) EVP_PKEY_CTX_free(ctx);
+    if (generatorBuf) OPENSSL_free(generatorBuf);
+    if (pubKeyBuf) OPENSSL_free(pubKeyBuf);
+    if (pBn) BN_free(pBn);
+    if (aBn) BN_free(aBn);
+    if (bBn) BN_free(bBn);
+    if (orderBn) BN_free(orderBn);
+    if (cofactorBn) BN_free(cofactorBn);
+    if (dBn) BN_clear_free(dBn);
+    if (gxBn) BN_free(gxBn);
+    if (gyBn) BN_free(gyBn);
+    if (G) EC_POINT_free(G);
+    if (pubPoint) EC_POINT_free(pubPoint);
+    if (group) EC_GROUP_free(group);
+    return pkey;
 #else
     (void)curveType;
     (void)qx; (void)qxLength; (void)qy; (void)qyLength;
