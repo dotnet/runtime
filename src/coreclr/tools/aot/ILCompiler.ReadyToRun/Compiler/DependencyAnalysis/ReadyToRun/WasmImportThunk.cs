@@ -127,13 +127,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             (ArgIterator argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
 
             int[] offsets = new int[methodSignature.Length];
-            Debug.Assert(offsets.Length == _typeNode.Type.Params.Types.Length - 2);
+            bool[] isIndirectArg = new bool[methodSignature.Length];
 
             int argIndex = 0;
             int argOffset;
             while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
             {
                 offsets[argIndex] = argOffset;
+                isIndirectArg[argIndex] = argit.IsArgPassedByRef();
                 argIndex++;
             }
 
@@ -178,32 +179,63 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // }
 
             // In the calling convention, the first arg is the sp arg, and the last is the portable entrypoint arg. Each of those are treated specially
-            for (int i = 1; i < _typeNode.Type.Params.Types.Length - 1; i++)
+            // Iterate over the raised MethodSignature params rather than wasm-level types.
+            // This allows us to:
+            //   - Skip empty struct params (no wasm local exists)
+            //   - Zero-fill indirect struct params instead of copying the byref pointer
+            int wasmLocalIndex = 1; // local 0 is $sp
+            for (int i = 0; i < methodSignature.Length; i++)
             {
-                expressions.Add(Local.Get(0));
-                expressions.Add(Local.Get(i));
-                WasmValueType type = _typeNode.Type.Params.Types[i];
-                int currentOffset = offsets[i - 1];
-                switch (type)
-                {
-                    case WasmValueType.I32:
-                        expressions.Add(I32.Store((ulong)currentOffset));
-                        break;
-                    case WasmValueType.F32:
-                        expressions.Add(F32.Store((ulong)currentOffset));
-                        break;
-                    case WasmValueType.I64:
-                        expressions.Add(I64.Store((ulong)currentOffset));
-                        break;
-                    case WasmValueType.F64:
-                        expressions.Add(F64.Store((ulong)currentOffset));
-                        break;
-                    case WasmValueType.V128:
-                        expressions.Add(V128.Store((ulong)currentOffset));
-                        break;
+                TypeDesc paramType = methodSignature[i];
 
-                    default:
-                        throw new System.Exception("Unexpected wasm type arg");
+                if (WasmLowering.IsEmptyStruct(paramType))
+                {
+                    // Empty struct — no wasm local, nothing to store
+                    continue;
+                }
+
+                int currentOffset = offsets[i];
+
+                if (isIndirectArg[i])
+                {
+                    // Indirect struct — zero-fill the transition block slot instead of copying the byref pointer.
+                    // The slot is pointer-aligned in the transition block, so we can safely zero in 4-byte chunks.
+                    int structSize = paramType.GetElementSize().AsInt;
+                    for (int zeroOffset = 0; zeroOffset < structSize; zeroOffset += 4)
+                    {
+                        expressions.Add(Local.Get(0));
+                        expressions.Add(I32.Const(0));
+                        expressions.Add(I32.Store((ulong)(currentOffset + zeroOffset)));
+                    }
+                    wasmLocalIndex++;
+                }
+                else
+                {
+                    expressions.Add(Local.Get(0));
+                    expressions.Add(Local.Get(wasmLocalIndex));
+                    WasmValueType type = _typeNode.Type.Params.Types[wasmLocalIndex];
+                    switch (type)
+                    {
+                        case WasmValueType.I32:
+                            expressions.Add(I32.Store((ulong)currentOffset));
+                            break;
+                        case WasmValueType.F32:
+                            expressions.Add(F32.Store((ulong)currentOffset));
+                            break;
+                        case WasmValueType.I64:
+                            expressions.Add(I64.Store((ulong)currentOffset));
+                            break;
+                        case WasmValueType.F64:
+                            expressions.Add(F64.Store((ulong)currentOffset));
+                            break;
+                        case WasmValueType.V128:
+                            expressions.Add(V128.Store((ulong)currentOffset));
+                            break;
+
+                        default:
+                            throw new System.Exception("Unexpected wasm type arg");
+                    }
+                    wasmLocalIndex++;
                 }
             }
             //
@@ -246,31 +278,51 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //   local.set (i+1)
             // }
             // In the calling convention, the first arg is the sp arg, and the last is the portable entrypoint arg. Each of those are treated specially
-            for (int i = 1; i < _typeNode.Type.Params.Types.Length - 1; i++)
+            // Iterate over the raised MethodSignature params to handle indirect/empty structs correctly
+            wasmLocalIndex = 1;
+            for (int i = 0; i < methodSignature.Length; i++)
             {
-                expressions.Add(Local.Get(0));
-                WasmValueType type = _typeNode.Type.Params.Types[i];
-                int currentOffset = offsets[i - 1];
-                switch (type)
-                {
-                    case WasmValueType.I32:
-                        expressions.Add(I32.Load((ulong)currentOffset));
-                        break;
-                    case WasmValueType.F32:
-                        expressions.Add(F32.Load((ulong)currentOffset));
-                        break;
-                    case WasmValueType.I64:
-                        expressions.Add(I64.Load((ulong)currentOffset));
-                        break;
-                    case WasmValueType.F64:
-                        expressions.Add(F64.Load((ulong)currentOffset));
-                        break;
-                    case WasmValueType.V128:
-                        expressions.Add(V128.Load((ulong)currentOffset));
-                        break;
+                TypeDesc paramType = methodSignature[i];
 
-                    default:
-                        throw new System.Exception("Unexpected wasm type arg");
+                if (WasmLowering.IsEmptyStruct(paramType))
+                {
+                    // Empty struct — no wasm local, nothing to restore
+                    continue;
+                }
+
+                if (isIndirectArg[i])
+                {
+                    // Indirect struct — pass the original byref pointer from the caller
+                    expressions.Add(Local.Get(wasmLocalIndex));
+                    wasmLocalIndex++;
+                }
+                else
+                {
+                    expressions.Add(Local.Get(0));
+                    WasmValueType type = _typeNode.Type.Params.Types[wasmLocalIndex];
+                    int currentOffset = offsets[i];
+                    switch (type)
+                    {
+                        case WasmValueType.I32:
+                            expressions.Add(I32.Load((ulong)currentOffset));
+                            break;
+                        case WasmValueType.F32:
+                            expressions.Add(F32.Load((ulong)currentOffset));
+                            break;
+                        case WasmValueType.I64:
+                            expressions.Add(I64.Load((ulong)currentOffset));
+                            break;
+                        case WasmValueType.F64:
+                            expressions.Add(F64.Load((ulong)currentOffset));
+                            break;
+                        case WasmValueType.V128:
+                            expressions.Add(V128.Load((ulong)currentOffset));
+                            break;
+
+                        default:
+                            throw new System.Exception("Unexpected wasm type arg");
+                    }
+                    wasmLocalIndex++;
                 }
             }
             // ; Add the portable entrypoint arg

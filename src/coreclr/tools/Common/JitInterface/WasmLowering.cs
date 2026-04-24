@@ -129,7 +129,7 @@ namespace Internal.JitInterface
         // WASM-TODO: This currently always returns false because .NET pads empty structs
         // to size 1. A proper implementation should check for 0 non-static fields.
         // See https://github.com/dotnet/runtime/issues/127361
-        private static bool IsEmptyStruct(TypeDesc type) => false;
+        public static bool IsEmptyStruct(TypeDesc type) => false;
 
         /// <summary>
         /// Maps a WasmValueType to its single-character signature encoding.
