@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Options
 
         public ValidateOptionsResult Validate(string? name, TOptions options)
         {
-            if (name == _name)
+            if (name is null || name == _name)
             {
                 return _inner.Validate(name, options);
             }
