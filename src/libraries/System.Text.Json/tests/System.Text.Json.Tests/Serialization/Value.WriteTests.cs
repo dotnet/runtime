@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Text.Encodings.Web;
+using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -35,19 +36,26 @@ namespace System.Text.Json.Serialization.Tests
             const char InputCharacter = '\u007F';
             const string EscapedCharacter = "\\u007F";
 
-            string value = new string(InputCharacter, strLength);
-            string json = JsonSerializer.Serialize(value, JsonSerializerOptions.Default);
+            try
+            {
+                string value = new string(InputCharacter, strLength);
+                string json = JsonSerializer.Serialize(value, JsonSerializerOptions.Default);
 
-            int expectedJsonLength = 2 + (strLength * EscapedCharacter.Length);
-            int middleSegmentStart = 1 + ((strLength / 2) * EscapedCharacter.Length);
-            int lastSegmentStart = 1 + ((strLength - 1) * EscapedCharacter.Length);
+                int expectedJsonLength = 2 + (strLength * EscapedCharacter.Length);
+                int middleSegmentStart = 1 + ((strLength / 2) * EscapedCharacter.Length);
+                int lastSegmentStart = 1 + ((strLength - 1) * EscapedCharacter.Length);
 
-            Assert.Equal(expectedJsonLength, json.Length);
-            Assert.Equal('"', json[0]);
-            Assert.Equal(EscapedCharacter, json.AsSpan(1, EscapedCharacter.Length).ToString());
-            Assert.Equal(EscapedCharacter, json.AsSpan(middleSegmentStart, EscapedCharacter.Length).ToString());
-            Assert.Equal(EscapedCharacter, json.AsSpan(lastSegmentStart, EscapedCharacter.Length).ToString());
-            Assert.Equal('"', json[^1]);
+                Assert.Equal(expectedJsonLength, json.Length);
+                Assert.Equal('"', json[0]);
+                Assert.Equal(EscapedCharacter, json.AsSpan(1, EscapedCharacter.Length).ToString());
+                Assert.Equal(EscapedCharacter, json.AsSpan(middleSegmentStart, EscapedCharacter.Length).ToString());
+                Assert.Equal(EscapedCharacter, json.AsSpan(lastSegmentStart, EscapedCharacter.Length).ToString());
+                Assert.Equal('"', json[^1]);
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException($"Insufficient memory to run {nameof(WriteExtremelyLargeStrings)} with length {strLength}.");
+            }
         }
 
         [Fact]

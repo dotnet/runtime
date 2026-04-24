@@ -8288,13 +8288,13 @@ namespace System.Text.Json.Tests
                 char[] value = new char[MaxUnescapedTokenSize];
                 value.AsSpan().Fill(InputCharacter);
 
-                var output = new ArrayBufferWriter<byte>();
+                int expectedByteLength = 2 + MaxUnescapedTokenSize * EscapedCharacterByteLength;
+                var output = new ArrayBufferWriter<byte>(expectedByteLength);
                 using var writer = new Utf8JsonWriter(output);
                 writer.WriteStringValue(value.AsSpan());
                 writer.Flush();
 
                 ReadOnlySpan<byte> written = output.WrittenSpan;
-                int expectedByteLength = 2 + MaxUnescapedTokenSize * EscapedCharacterByteLength;
                 Assert.Equal(expectedByteLength, written.Length);
                 Assert.Equal((byte)'"', written[0]);
                 Assert.Equal((byte)'"', written[^1]);
@@ -8324,8 +8324,11 @@ namespace System.Text.Json.Tests
                 char[] value = new char[MaxUnescapedTokenSize];
                 value.AsSpan().Fill(InputCharacter);
 
+                int escapedStrByteLength = 2 + MaxUnescapedTokenSize * EscapedCharacterByteLength;
+                int expectedByteLength = 1 + NewLine.Length + IndentSize + escapedStrByteLength + NewLine.Length + 1;
+
                 var options = new JsonWriterOptions { Indented = true, IndentSize = IndentSize, NewLine = NewLine };
-                var output = new ArrayBufferWriter<byte>();
+                var output = new ArrayBufferWriter<byte>(expectedByteLength);
                 using var writer = new Utf8JsonWriter(output, options);
                 writer.WriteStartArray();
                 writer.WriteStringValue(value.AsSpan());
@@ -8334,8 +8337,6 @@ namespace System.Text.Json.Tests
 
                 // Layout: [ \n <IndentSize spaces> "escapedStr" \n ]
                 ReadOnlySpan<byte> written = output.WrittenSpan;
-                int escapedStrByteLength = 2 + MaxUnescapedTokenSize * EscapedCharacterByteLength;
-                int expectedByteLength = 1 + NewLine.Length + IndentSize + escapedStrByteLength + NewLine.Length + 1;
                 Assert.Equal(expectedByteLength, written.Length);
                 Assert.Equal((byte)'[', written[0]);
                 Assert.Equal((byte)']', written[^1]);
