@@ -9776,6 +9776,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     if (callType == CT_INDIRECT)
     {
         node->gtCallCookie  = nullptr;
+        node->gtCallMethHnd = NO_METHOD_HANDLE;
         node->gtControlExpr = (GenTree*)callHnd;
     }
     else
@@ -11383,7 +11384,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     /* Copy the union */
     if (tree->gtCallType == CT_INDIRECT)
     {
-        copy->gtCallCookie = tree->gtCallCookie;
+        copy->gtCallCookie  = tree->gtCallCookie;
+        copy->gtCallMethHnd = NO_METHOD_HANDLE;
     }
     else
     {
