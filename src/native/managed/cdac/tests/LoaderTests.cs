@@ -239,7 +239,7 @@ public unsafe class LoaderTests
         TargetPointer firstBlock = new(0x8100);
         var heaps = new Dictionary<string, TargetPointer>
         {
-            ["IndcellHeap"] = indcellHeap,
+            [nameof(VCSHeapType.IndcellHeap)] = indcellHeap,
         };
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
             .Returns((IReadOnlyDictionary<string, TargetPointer>)heaps);
@@ -315,7 +315,7 @@ public unsafe class LoaderTests
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
             .Returns((IReadOnlyDictionary<string, TargetPointer>)new Dictionary<string, TargetPointer>
             {
-                ["IndcellHeap"] = indcellHeap,
+                [nameof(VCSHeapType.IndcellHeap)] = indcellHeap,
             });
 
         delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
@@ -334,7 +334,7 @@ public unsafe class LoaderTests
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
             .Returns((IReadOnlyDictionary<string, TargetPointer>)new Dictionary<string, TargetPointer>
             {
-                ["IndcellHeap"] = new TargetPointer(0x8000),
+                [nameof(VCSHeapType.IndcellHeap)] = new TargetPointer(0x8000),
             });
 
         delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
@@ -352,7 +352,7 @@ public unsafe class LoaderTests
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
             .Returns((IReadOnlyDictionary<string, TargetPointer>)new Dictionary<string, TargetPointer>
             {
-                ["IndcellHeap"] = new TargetPointer(0x8000),
+                [nameof(VCSHeapType.IndcellHeap)] = new TargetPointer(0x8000),
             });
 
         delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
@@ -370,7 +370,7 @@ public unsafe class LoaderTests
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
             .Returns((IReadOnlyDictionary<string, TargetPointer>)new Dictionary<string, TargetPointer>
             {
-                ["IndcellHeap"] = new TargetPointer(0x8000),
+                [nameof(VCSHeapType.IndcellHeap)] = new TargetPointer(0x8000),
             });
 
         int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeIndcell, null);
