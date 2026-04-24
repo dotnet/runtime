@@ -8046,7 +8046,7 @@ public:
                 uint16_t m_encodedIconFlags; // encoded icon gtFlags; only meaningful for O2K_CONST_INT.
                 uint8_t  m_simdSize;         // SIMD constant size in bytes; only meaningful for O2K_CONST_VEC.
             };
-            ValueNum   m_vn;
+            ValueNum m_vn;
             union
             {
                 unsigned      m_lclNum;
@@ -8555,6 +8555,7 @@ public:
                 assert(iconFlags == GTF_EMPTY); // no flags expected for double constants
                 assert(fldSeq == nullptr);      // no fieldSeq expected for double constants
             }
+#if defined(FEATURE_SIMD)
             else if constexpr (std::is_same_v<T, GenTreeVecCon*>)
             {
                 dsc.m_op2.m_kind = O2K_CONST_VEC;
@@ -8580,6 +8581,7 @@ public:
                 assert(iconFlags == GTF_EMPTY); // no flags expected for vector constants
                 assert(fldSeq == nullptr);      // no fieldSeq expected for vector constants
             }
+#endif // FEATURE_SIMD
             else if constexpr (std::is_same_v<T, optOp2Kind>)
             {
                 dsc.m_op2.m_kind           = static_cast<optOp2Kind>(cns);
