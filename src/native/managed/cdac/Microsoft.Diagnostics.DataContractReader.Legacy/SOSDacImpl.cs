@@ -2995,7 +2995,7 @@ public sealed unsafe partial class SOSDacImpl
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
-                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal, $"local name = {new string(mtNameLocal, 0, (int)neededLocal - 1)}, name = {new string(mtName, 0, (int)*pNeeded - 1)}");
                 Debug.Assert(mtName == null || new ReadOnlySpan<char>(mtNameLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(mtName)));
             }
         }
