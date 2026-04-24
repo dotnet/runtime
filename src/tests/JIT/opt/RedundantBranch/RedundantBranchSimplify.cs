@@ -131,8 +131,17 @@ public class RedundantBranchSimplify
     [InlineData(-1.0, 3)]
     [InlineData(0.0, 1)]
     [InlineData(1.0, 2)]
-    [InlineData(double.NaN, 3)]
-    [InlineData(double.PositiveInfinity, 2)]
-    [InlineData(double.NegativeInfinity, 3)]
     public static void TestFloatGeLe(double a, int expected) => Assert.Equal(expected, FloatGeLe(a));
+
+    // Special FP values are passed via separate Fact methods because the
+    // XUnitWrapperGenerator that emits the merged test runner does not
+    // qualify identifiers like `NaN` in InlineData arguments.
+    [Fact]
+    public static void TestFloatGeLeNaN() => Assert.Equal(3, FloatGeLe(double.NaN));
+
+    [Fact]
+    public static void TestFloatGeLePositiveInfinity() => Assert.Equal(2, FloatGeLe(double.PositiveInfinity));
+
+    [Fact]
+    public static void TestFloatGeLeNegativeInfinity() => Assert.Equal(3, FloatGeLe(double.NegativeInfinity));
 }
