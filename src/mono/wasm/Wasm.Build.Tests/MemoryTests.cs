@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests;
 
-[TestCategory("native")]
+[TestCategory("native-coreclr")]
 public class MemoryTests : WasmTemplateTestsBase
 {
     public MemoryTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
