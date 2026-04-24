@@ -6378,10 +6378,8 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            IReadOnlyDictionary<string, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
-
-            var filteredEntries = GetFilteredHeapNameEntries();
-            int loaderHeapCount = filteredEntries.Length;
+            IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
+            int loaderHeapCount = heaps.Count;
 
             if (pNeeded != null)
                 *pNeeded = loaderHeapCount;
@@ -6394,12 +6392,15 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 else
                 {
-                    for (int i = 0; i < loaderHeapCount; i++)
+                    int i = 0;
+                    foreach (LoaderAllocatorHeapType heapType in Enum.GetValues<LoaderAllocatorHeapType>())
                     {
-                        pLoaderHeaps[i] = heaps.TryGetValue(filteredEntries[i].Name, out TargetPointer heapAddr)
-                            ? heapAddr.ToClrDataAddress(_target)
-                            : 0;
-                        pKinds[i] = 0; // LoaderHeapKindNormal
+                        if (heaps.TryGetValue(heapType, out TargetPointer heapAddr))
+                        {
+                            pLoaderHeaps[i] = heapAddr.ToClrDataAddress(_target);
+                            pKinds[i] = 0; // LoaderHeapKindNormal
+                            i++;
+                        }
                     }
                 }
             }
