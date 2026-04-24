@@ -701,19 +701,17 @@ namespace System
         {
             BigInteger.SetZero(out result);
 
-            byte* src = number.DigitsPtr + firstIndex;
-            uint remaining = lastIndex - firstIndex;
+            ReadOnlySpan<byte> src = new ReadOnlySpan<byte>(number.DigitsPtr + firstIndex, (int)(lastIndex - firstIndex));
 
-            while (remaining != 0)
+            while (!src.IsEmpty)
             {
-                uint count = Math.Min(remaining, 9);
-                uint value = DigitsToUInt32(src, (int)(count));
+                int count = Math.Min(src.Length, 9);
+                uint value = DigitsToUInt32(src.Slice(0, count));
 
-                result.MultiplyPow10(count);
+                result.MultiplyPow10((uint)count);
                 result.Add(value);
 
-                src += count;
-                remaining -= count;
+                src = src.Slice(count);
             }
         }
 
@@ -891,50 +889,44 @@ namespace System
         }
 
         // get 32-bit integer from at most 9 digits
-        [RequiresUnsafe]
-        private static uint DigitsToUInt32(byte* p, int count)
+        private static uint DigitsToUInt32(ReadOnlySpan<byte> digits)
         {
-            Debug.Assert((1 <= count) && (count <= 9));
+            Debug.Assert((1 <= digits.Length) && (digits.Length <= 9));
 
-            byte* end = (p + count);
             uint res = 0;
 
             // parse batches of 8 digits with SWAR
-            while (p <= end - 8)
+            while (digits.Length >= 8)
             {
-                res = (res * 100000000) + ParseEightDigitsUnrolled(p);
-                p += 8;
+                res = (res * 100000000) + ParseEightDigitsUnrolled(digits);
+                digits = digits.Slice(8);
             }
 
-            while (p != end)
+            foreach (byte b in digits)
             {
-                res = (10 * res) + p[0] - '0';
-                ++p;
+                res = (10 * res) + b - '0';
             }
 
             return res;
         }
 
         // get 64-bit integer from at most 19 digits
-        [RequiresUnsafe]
-        private static ulong DigitsToUInt64(byte* p, int count)
+        private static ulong DigitsToUInt64(ReadOnlySpan<byte> digits)
         {
-            Debug.Assert((1 <= count) && (count <= 19));
+            Debug.Assert((1 <= digits.Length) && (digits.Length <= 19));
 
-            byte* end = (p + count);
             ulong res = 0;
 
             // parse batches of 8 digits with SWAR
-            while (end - p >= 8)
+            while (digits.Length >= 8)
             {
-                res = (res * 100000000) + ParseEightDigitsUnrolled(p);
-                p += 8;
+                res = (res * 100000000) + ParseEightDigitsUnrolled(digits);
+                digits = digits.Slice(8);
             }
 
-            while (p != end)
+            foreach (byte b in digits)
             {
-                res = (10 * res) + p[0] - '0';
-                ++p;
+                res = (10 * res) + b - '0';
             }
 
             return res;
@@ -945,24 +937,16 @@ namespace System
         /// https://lemire.me/blog/2022/01/21/swar-explained-parsing-eight-digits/
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
-        internal static uint ParseEightDigitsUnrolled(byte* chars)
+        internal static uint ParseEightDigitsUnrolled(ReadOnlySpan<byte> chars)
         {
-            // let's take the following value (byte*) 12345678 and read it unaligned :
+            // let's take the following value 12345678 and read it as a little-endian ulong:
             // we get a ulong value of 0x3837363534333231
             // 1. Subtract character '0' 0x30 for each byte to get 0x0807060504030201
             // 2. Consider this sequence as bytes sequence : b8b7b6b5b4b3b2b1
             // we need to transform it to b1b2b3b4b5b6b7b8 by computing :
             // 10000 * (100 * (10*b1+b2) + 10*b3+b4) + 100*(10*b5+b6) + 10*b7+b8
             // this is achieved by masking and shifting values
-            ulong val = Unsafe.ReadUnaligned<ulong>(chars);
-
-            // With BigEndian system an endianness swap has to be performed
-            // before the following operations as if it has been read with LittleEndian system
-            if (!BitConverter.IsLittleEndian)
-            {
-                val = BinaryPrimitives.ReverseEndianness(val);
-            }
+            ulong val = BinaryPrimitives.ReadUInt64LittleEndian(chars);
 
             const ulong mask = 0x000000FF000000FF;
             const ulong mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
@@ -1002,9 +986,7 @@ namespace System
             // Above 19 digits, we rely on slow path
             if (totalDigits <= 19)
             {
-                byte* src = number.DigitsPtr;
-
-                ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
+                ulong mantissa = DigitsToUInt64(new ReadOnlySpan<byte>(number.DigitsPtr, (int)totalDigits));
 
                 int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
                 int fastExponent = Math.Abs(exponent);
