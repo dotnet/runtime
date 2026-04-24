@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -270,7 +269,7 @@ namespace System.Text.Json
                 AssertValidIndex(index);
                 Debug.Assert(length >= 0);
                 Span<byte> destination = _data.AsSpan(index + SizeOrLengthOffset);
-                BinaryPrimitives.WriteInt32LittleEndian(destination, length);
+                MemoryMarshal.Write(destination, in length);
             }
 
             internal void SetNumberOfRows(int index, int numberOfRows)
@@ -279,11 +278,11 @@ namespace System.Text.Json
                 Debug.Assert(numberOfRows >= 1 && numberOfRows <= 0x0FFFFFFF);
 
                 Span<byte> dataPos = _data.AsSpan(index + NumberOfRowsOffset);
-                int current = BinaryPrimitives.ReadInt32LittleEndian(dataPos);
+                int current = MemoryMarshal.Read<int>(dataPos);
 
                 // Persist the most significant nybble
                 int value = (current & unchecked((int)0xF0000000)) | numberOfRows;
-                BinaryPrimitives.WriteInt32LittleEndian(dataPos, value);
+                MemoryMarshal.Write(dataPos, in value);
             }
 
             internal void SetHasComplexChildren(int index)
@@ -292,10 +291,10 @@ namespace System.Text.Json
 
                 // The HasComplexChildren bit is the most significant bit of "SizeOrLength"
                 Span<byte> dataPos = _data.AsSpan(index + SizeOrLengthOffset);
-                int current = BinaryPrimitives.ReadInt32LittleEndian(dataPos);
+                int current = MemoryMarshal.Read<int>(dataPos);
 
                 int value = current | unchecked((int)0x80000000);
-                BinaryPrimitives.WriteInt32LittleEndian(dataPos, value);
+                MemoryMarshal.Write(dataPos, in value);
             }
 
             internal int FindIndexOfFirstUnsetSizeOrLength(JsonTokenType lookupType)
@@ -332,7 +331,7 @@ namespace System.Text.Json
             internal JsonTokenType GetJsonTokenType(int index)
             {
                 AssertValidIndex(index);
-                uint union = BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(index + NumberOfRowsOffset));
+                uint union = MemoryMarshal.Read<uint>(_data.AsSpan(index + NumberOfRowsOffset));
 
                 return (JsonTokenType)(union >> 28);
             }

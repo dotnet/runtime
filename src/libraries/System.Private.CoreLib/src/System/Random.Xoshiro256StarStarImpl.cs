@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -140,7 +139,7 @@ namespace System
 
                 while (buffer.Length >= sizeof(ulong))
                 {
-                    BinaryPrimitives.WriteUInt64LittleEndian(buffer, BitOperations.RotateLeft(s1 * 5, 7) * 9);
+                    MemoryMarshal.Write(buffer, BitOperations.RotateLeft(s1 * 5, 7) * 9);
 
                     // Update PRNG state.
                     ulong t = s1 << 17;
