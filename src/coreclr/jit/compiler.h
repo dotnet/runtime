@@ -3882,6 +3882,10 @@ public:
     // Note when inlining, this looks for calls back to the root method.
     bool gtIsRecursiveCall(GenTreeCall* call, bool useInlineRoot = true)
     {
+        if (call->gtCallType == CT_INDIRECT)
+        {
+            return false;
+        }
         return gtIsRecursiveCall(call->gtCallMethHnd, useInlineRoot);
     }
 
