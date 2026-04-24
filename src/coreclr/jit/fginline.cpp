@@ -210,6 +210,7 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
 {
     bool       m_madeChanges  = false;
+    bool       m_substitutedRetExpr = false;
     Statement* m_curStmt      = nullptr;
     Statement* m_firstNewStmt = nullptr;
 
@@ -243,9 +244,17 @@ public:
     //
     Statement* WalkStatement(Statement* stmt)
     {
-        m_curStmt      = stmt;
-        m_firstNewStmt = nullptr;
+        m_curStmt            = stmt;
+        m_firstNewStmt       = nullptr;
+        m_substitutedRetExpr = false;
         WalkTree(m_curStmt->GetRootNodePointer(), nullptr);
+        if (m_substitutedRetExpr)
+        {
+            // RET_EXPR substitution can leave stale side-effect flags on ancestors
+            // (e.g. GTF_CALL carried over from the original call, missing GTF_EXCEPT/
+            // GTF_GLOB_REF from the substituted expression). Refresh them.
+            m_compiler->gtUpdateStmtSideEffects(m_curStmt);
+        }
         return m_firstNewStmt == nullptr ? m_curStmt : m_firstNewStmt;
     }
 
@@ -416,7 +425,8 @@ private:
                 *use = inlineCandidate;
             }
 
-            m_madeChanges = true;
+            m_madeChanges        = true;
+            m_substitutedRetExpr = true;
 
             if (inlineeBB != nullptr)
             {

@@ -1524,6 +1524,7 @@ private:
                 m_compiler->lvaSetHiddenBufferStructArg(lclNum);
                 escapeAddr = false;
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                callUser->gtFlags |= GTF_ASG;
                 defFlag = GTF_VAR_DEF;
 
                 if ((val.Offset() != 0) ||
