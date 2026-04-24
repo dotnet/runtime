@@ -83,6 +83,23 @@ namespace System.Security.Cryptography
                 Debug.Fail($"Unexpected number of bytes written: {written}.");
                 throw new CryptographicException();
             }
+
+            // CNG with BCRYPT_NO_KEY_VALIDATION permits low-order public keys, which produce
+            // an all-zero shared secret. Other platforms reject these at
+            // derive time per RFC 7748 6.1. Mirror that behavior on Windows so that callers
+            // observe a uniform CryptographicException across platforms.
+            // We still need BCRYPT_NO_KEY_VALIDATION though because there are small subgroup keys that work, which do
+            // not produce all zero shared secrets.
+            ReadOnlySpan<byte> zeros = [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ];
+            Debug.Assert(zeros.Length == SecretAgreementSizeInBytes);
+
+            if (CryptographicOperations.FixedTimeEquals(destination, zeros))
+            {
+                throw new CryptographicException();
+            }
             else
             {
                 // BCryptDeriveKey exports with the wrong endianness.

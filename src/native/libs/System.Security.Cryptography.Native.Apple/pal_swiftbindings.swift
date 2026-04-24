@@ -556,6 +556,11 @@ public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutp
     return 1
 }
 
+// Return values:
+//   1: success
+//   0: key agreement failed (e.g. peer is a low-order point and the shared
+//      secret would be all-zero; CryptoKit raises an error)
+//  -1: invalid arguments or unexpected error
 @_silgen_name("AppleCryptoNative_X25519DeriveRawSecretAgreement")
 public func AppleCryptoNative_X25519DeriveRawSecretAgreement(
     keyPtr: UnsafeMutableRawPointer?,

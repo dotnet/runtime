@@ -52,16 +52,22 @@ internal static partial class Interop
         internal static void X25519DeriveRawSecretAgreement(SafeX25519KeyHandle key, SafeX25519KeyHandle peerKey, Span<byte> destination)
         {
             const int Success = 1;
+            const int KeyDerivationFailed = 0;
             int ret = AppleCryptoNative_X25519DeriveRawSecretAgreement(
                 key,
                 peerKey,
                 destination,
                 destination.Length);
 
-            if (ret != Success)
+            switch (ret)
             {
-                Debug.Fail($"Unexpected result from {nameof(AppleCryptoNative_X25519DeriveRawSecretAgreement)}: {ret}.");
-                throw new CryptographicException();
+                case Success:
+                    return;
+                case KeyDerivationFailed:
+                    throw new CryptographicException();
+                default:
+                    Debug.Fail($"Unexpected result from {nameof(AppleCryptoNative_X25519DeriveRawSecretAgreement)}: {ret}.");
+                    throw new CryptographicException();
             }
         }
 
