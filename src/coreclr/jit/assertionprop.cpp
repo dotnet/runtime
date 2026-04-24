@@ -887,6 +887,10 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             }
             break;
 
+        case O2K_CONST_VEC:
+            printf("VecCns");
+            break;
+
         case O2K_ZEROOBJ:
             printf("ZeroObj");
             break;
@@ -1137,6 +1141,32 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
                 AssertionDsc dsc = AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, dblCns, op2VN, equals);
                 return optAddAssertion(dsc);
             }
+
+#if defined(FEATURE_HW_INTRINSICS)
+            case GT_CNS_VEC:
+            {
+                // For now, only support SIMD constants up to 16 bytes (SIMD8/12/16).
+                if (!op1->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16) || (op1->TypeGet() != op2->TypeGet()))
+                {
+                    return NO_ASSERTION_INDEX;
+                }
+
+                ValueNum op1VN = optConservativeNormalVN(op1);
+                ValueNum op2VN = optConservativeNormalVN(op2);
+                if (!optLocalAssertionProp && (op1VN == ValueNumStore::NoVN || op2VN == ValueNumStore::NoVN))
+                {
+                    // GlobalAP requires valid VNs.
+                    return NO_ASSERTION_INDEX;
+                }
+
+                simd16_t simdVal = {};
+                memcpy(&simdVal, &op2->AsVecCon()->gtSimdVal, genTypeSize(op2->TypeGet()));
+
+                AssertionDsc dsc =
+                    AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, simdVal, op2VN, equals);
+                return optAddAssertion(dsc);
+            }
+#endif // FEATURE_HW_INTRINSICS
 
             case GT_CNS_INT:
             {
@@ -1826,6 +1856,61 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     //
     GenTree* op1 = relop->AsOp()->gtOp1->gtCommaStoreVal();
     GenTree* op2 = relop->AsOp()->gtOp2->gtCommaStoreVal();
+
+#if defined(FEATURE_HW_INTRINSICS)
+    if (op1->OperIsHWIntrinsic() && (op2->IsIntegralConst(0) || op2->IsIntegralConst(1)))
+    {
+        // We have ==/!= 0/1, we need to normalize it to ==/!= 1
+        if (op2->IsIntegralConst(0))
+        {
+            equals = !equals;
+        }
+
+        GenTreeHWIntrinsic* hwi = op1->AsHWIntrinsic();
+        switch (hwi->GetHWIntrinsicId())
+        {
+#if defined(TARGET_XARCH)
+            case NI_Vector128_op_Equality:
+#elif defined(TARGET_ARM64)
+            case NI_Vector64_op_Equality:
+            case NI_Vector128_op_Equality:
+#endif
+                break;
+#if defined(TARGET_XARCH)
+            case NI_Vector128_op_Inequality:
+#elif defined(TARGET_ARM64)
+            case NI_Vector64_op_Inequality:
+            case NI_Vector128_op_Inequality:
+#endif
+                equals = !equals;
+                break;
+
+            default:
+                return NO_ASSERTION_INDEX;
+        }
+
+        // SIMD floating-point equality is not bitwise equality (+0 == -0, NaN != NaN),
+        // Only enable for integral SIMD base types.
+        if (varTypeIsIntegral(hwi->GetSimdBaseType()))
+        {
+            assert(hwi->GetOperandCount() == 2);
+            op1 = hwi->Op(1);
+            op2 = hwi->Op(2);
+
+            if (!op2->IsCnsVec())
+            {
+                return NO_ASSERTION_INDEX;
+            }
+
+            assert(op1->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16));
+            assert(op1->TypeIs(op2->TypeGet()));
+        }
+        else
+        {
+            return NO_ASSERTION_INDEX;
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
 
     // Avoid creating local assertions for float types.
     //
@@ -3174,6 +3259,24 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
             newTree->BashToConst(curAssertion.GetOp2().GetDoubleConstant(), tree->TypeGet());
             break;
 
+#if defined(FEATURE_HW_INTRINSICS)
+        case O2K_CONST_VEC:
+        {
+            // The assertion was created from a LCL_VAR == CNS_VEC where types matched.
+            // For now, only support SIMD constants up to 16 bytes (SIMD8/12/16).
+            if (!tree->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16) || !tree->TypeIs(lvaGetDesc(lclNum)->TypeGet()))
+            {
+                return nullptr;
+            }
+
+            // We can't bash a LCL_VAR into a GenTreeVecCon (different node size), so allocate a fresh node.
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
+            memcpy(&vecCon->gtSimdVal, &curAssertion.GetOp2().GetSimdConstant(), genTypeSize(tree->TypeGet()));
+            newTree = vecCon;
+            break;
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         case O2K_CONST_INT:
 
             // Don't propagate non-nulll non-static handles if we need to report relocs.
@@ -3493,9 +3596,9 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    // There are no constant assertions for structs in global propagation.
+    // There are no constant assertions for structs in global propagation (except SIMD vector constants).
     //
-    if ((!optLocalAssertionProp && varTypeIsStruct(tree)) || !optCanPropLclVar)
+    if ((!optLocalAssertionProp && varTypeIsStruct(tree) && !varTypeIsSIMD(tree)) || !optCanPropLclVar)
     {
         return nullptr;
     }
@@ -3552,9 +3655,9 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
             continue;
         }
 
-        // There are no constant assertions for structs.
+        // There are no constant assertions for structs (except SIMD vector constants).
         //
-        if (varTypeIsStruct(tree))
+        if (varTypeIsStruct(tree) && !varTypeIsSIMD(tree))
         {
             continue;
         }
