@@ -432,25 +432,26 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Resolve webcil candidate items and define static web assets for the build.
        This target always runs because it populates item groups consumed by downstream targets.
-       It reconstructs the webcil candidate items from _BuildAssetsCandidates using the same
-       path logic as the ConvertDllsToWebcil task, so items are correct whether the conversion
-       target ran or was skipped due to incrementalism.
+       It reuses %(WebcilOutputPath) metadata computed in _ComputeWasmBuildCandidates to construct
+       webcil candidate items, so items are correct whether the conversion target ran or was
+       skipped due to incrementalism.
        Pass-through files are classified as Framework assets for per-project materialization. -->
   <Target Name="_ResolveWasmOutputs" DependsOnTargets="_ComputeWasmBuildCandidates;_ConvertBuildDllsToWebcil">
 
-    <!-- When webcil is enabled, transform DLL candidates to their webcil output paths and fix
-         metadata. Non-culture and culture DLLs use separate intermediate items to avoid MSBuild
-         batching errors on metadata (like RelatedAsset) that only culture items define.
+    <!-- When webcil is enabled, transform DLL candidates to their webcil output paths (reusing
+         %(WebcilOutputPath) computed in _ComputeWasmBuildCandidates) and fix metadata. Non-culture
+         and culture DLLs use separate intermediate items to avoid MSBuild batching errors on
+         metadata (like RelatedAsset) that only culture items define.
          Only webcil-converted items and WasmNativeBuildOutput items go to _WebcilAssetsCandidates
          (Computed SourceType). Framework candidates are classified separately. -->
     <ItemGroup Condition="'$(_WasmEnableWebcil)' == 'true'">
-      <_WasmWebcilConvertedNonCulture Include="@(_WasmDllBuildCandidatesNonCulture->'$(_WasmBuildWebcilPath)%(FileName).wasm')">
+      <_WasmWebcilConvertedNonCulture Include="@(_WasmDllBuildCandidatesNonCulture->'%(WebcilOutputPath)')">
         <RelativePath>$([System.IO.Path]::ChangeExtension(%(RelativePath), '.wasm'))</RelativePath>
-        <OriginalItemSpec>$(_WasmBuildWebcilPath)%(FileName).wasm</OriginalItemSpec>
+        <OriginalItemSpec>%(WebcilOutputPath)</OriginalItemSpec>
       </_WasmWebcilConvertedNonCulture>
-      <_WasmWebcilConvertedCulture Include="@(_WasmDllBuildCandidatesCulture->'$(_WasmBuildWebcilPath)%(AssetTraitValue)/%(FileName).wasm')">
+      <_WasmWebcilConvertedCulture Include="@(_WasmDllBuildCandidatesCulture->'%(WebcilOutputPath)')">
         <RelativePath>$([System.IO.Path]::ChangeExtension(%(RelativePath), '.wasm'))</RelativePath>
-        <OriginalItemSpec>$(_WasmBuildWebcilPath)%(AssetTraitValue)/%(FileName).wasm</OriginalItemSpec>
+        <OriginalItemSpec>%(WebcilOutputPath)</OriginalItemSpec>
         <RelatedAsset>$([System.IO.Path]::ChangeExtension(%(RelatedAsset), '.wasm'))</RelatedAsset>
       </_WasmWebcilConvertedCulture>
 
@@ -653,7 +654,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmBootJsonBuildPropertyStamp"
     DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints">
     <PropertyGroup>
-      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonBuildStampContent>
+      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonBuildStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
@@ -1123,7 +1124,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
     <PropertyGroup>
-      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonPublishStampContent>
+      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonPublishStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
