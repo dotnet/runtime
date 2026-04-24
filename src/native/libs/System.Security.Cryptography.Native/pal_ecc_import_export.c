@@ -573,6 +573,8 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
 #endif
 
     int rc = 0;
+
+#ifdef NEED_OPENSSL_3_0
     BIGNUM *xBn = NULL;
     BIGNUM *yBn = NULL;
     BIGNUM *dBn = NULL;
@@ -582,7 +584,6 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     EC_POINT* point = NULL;
     char curveName[80] = {0};
 
-#ifdef NEED_OPENSSL_3_0
     // Ensure we have an EC key
     if (EVP_PKEY_get_base_id(pkey) != EVP_PKEY_EC)
         goto error;
@@ -704,10 +705,6 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     goto exit;
 
 error:
-#else
-    (void)pkey;
-    (void)includePrivate;
-#endif
     *cbQx = *cbQy = 0;
     *qx = *qy = 0;
     if (d) *d = NULL;
@@ -721,6 +718,15 @@ exit:
     if (point) EC_POINT_free(point);
     if (group) EC_GROUP_free(group);
     return rc;
+#else
+    (void)pkey;
+    (void)includePrivate;
+    *cbQx = *cbQy = 0;
+    *qx = *qy = 0;
+    if (d) *d = NULL;
+    if (cbD) *cbD = 0;
+    return 0;
+#endif
 }
 
 EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
