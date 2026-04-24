@@ -4405,6 +4405,7 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
+        case GT_FTN_ENTRY:
         case GT_RET_EXPR:
         case GT_CNS_INT:
         case GT_CNS_LNG:
@@ -4478,6 +4479,7 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
         case GT_RETURN_SUSPEND:
+        case GT_NONLOCAL_JMP:
             return visitor(&this->AsUnOp()->gtOp1);
 
             // Variadic nodes
@@ -5611,9 +5613,30 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
         BitVecOps::AddElemD(&traits, actualPreds, pred->bbNum);
     }
 
+    // Fast opportunistic check: a block is considered unreachable if it has no normal
+    // preds and isn't the entry block. Note that bbPreds excludes EH flow, so
+    // handler-begin blocks may have no normal preds yet still be reachable via
+    // exception flow; conservatively treat them as reachable.
+    //
+    auto isUnreachableBlock = [this](BasicBlock* block) -> bool {
+        return (block->bbPreds == nullptr) && (block != fgFirstBB) && !bbIsHandlerBeg(block);
+    };
+
     for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
     {
         GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
+
+        // Ignore phi-args coming from unreachable blocks.
+        if (isUnreachableBlock(phiArg->gtPredBB))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": phi-pred " FMT_BB " is unreachable, ignoring\n",
+                    ssaDef->GetBlock()->bbNum, phiArg->gtPredBB->bbNum);
+
+            // Mark as visited so the coverage check below doesn't fail if this block is
+            // still listed in ssaDef's pred list.
+            BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+            continue;
+        }
 
         if (!BitVecOps::IsMember(&traits, actualPreds, phiArg->gtPredBB->bbNum))
         {
@@ -5626,8 +5649,13 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             return AssertVisit::Abort;
         }
 
-        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
-        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
+        // fgValueNumberPhiDef may leave gtVNPair as NoVN when it refuses to back-patch
+        // a loop-varying SSA-def VN into the phi-arg slot (a hygiene constraint for general
+        // gtVNPair consumers that does not apply here, since we hand the VN to the visitor
+        // together with this edge's assertion set and never write it back into any tree).
+        LclSsaVarDsc* phiArgSsaDef = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum());
+        ValueNum      phiArgVN     = vnStore->VNConservativeNormalValue(phiArgSsaDef->m_vnPair);
+        ASSERT_TP     assertions   = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
         {
             // The visitor wants to abort the walk.
