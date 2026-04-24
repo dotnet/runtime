@@ -1678,6 +1678,14 @@ inline GenTreeIndexAddr* Compiler::gtNewIndexAddr(GenTree*             arrayOp,
                                                   unsigned             firstElemOffset,
                                                   unsigned             lengthOffset)
 {
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+    if (elemType == TYP_STRUCT)
+    {
+        // Ensure we detect SIMD types in the array element, if the caller has not done so already.
+        elemType = impNormStructType(elemClassHandle);
+    }
+#endif
+
     ValueSize elemSize = (elemType == TYP_STRUCT) ? ValueSize(info.compCompHnd->getClassSize(elemClassHandle))
                                                   : ValueSize::FromJitType(elemType);
 

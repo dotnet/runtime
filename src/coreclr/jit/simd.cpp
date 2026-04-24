@@ -326,6 +326,12 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                                 return TYP_UNDEF;
                             }
                         }
+#if defined(TARGET_ARM64)
+                        if (size == SIZE_UNKNOWN)
+                        {
+                            SetUnknownSizeFrameUsed();
+                        }
+#endif
                         break;
                     }
 
