@@ -189,6 +189,52 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal((ulong)0, BinaryIntegerHelper<ulong>.Log10((ulong)0));
+            Assert.Equal((ulong)0, BinaryIntegerHelper<ulong>.Log10((ulong)1));
+            Assert.Equal((ulong)0, BinaryIntegerHelper<ulong>.Log10((ulong)9));
+            Assert.Equal((ulong)1, BinaryIntegerHelper<ulong>.Log10((ulong)10));
+            Assert.Equal((ulong)1, BinaryIntegerHelper<ulong>.Log10((ulong)99));
+            Assert.Equal((ulong)2, BinaryIntegerHelper<ulong>.Log10((ulong)100));
+            Assert.Equal((ulong)2, BinaryIntegerHelper<ulong>.Log10((ulong)999));
+            Assert.Equal((ulong)3, BinaryIntegerHelper<ulong>.Log10((ulong)1_000));
+            Assert.Equal((ulong)3, BinaryIntegerHelper<ulong>.Log10((ulong)9_999));
+            Assert.Equal((ulong)4, BinaryIntegerHelper<ulong>.Log10((ulong)10_000));
+            Assert.Equal((ulong)4, BinaryIntegerHelper<ulong>.Log10((ulong)99_999));
+            Assert.Equal((ulong)5, BinaryIntegerHelper<ulong>.Log10((ulong)100_000));
+            Assert.Equal((ulong)5, BinaryIntegerHelper<ulong>.Log10((ulong)999_999));
+            Assert.Equal((ulong)6, BinaryIntegerHelper<ulong>.Log10((ulong)1_000_000));
+            Assert.Equal((ulong)6, BinaryIntegerHelper<ulong>.Log10((ulong)9_999_999));
+            Assert.Equal((ulong)7, BinaryIntegerHelper<ulong>.Log10((ulong)10_000_000));
+            Assert.Equal((ulong)7, BinaryIntegerHelper<ulong>.Log10((ulong)99_999_999));
+            Assert.Equal((ulong)8, BinaryIntegerHelper<ulong>.Log10((ulong)100_000_000));
+            Assert.Equal((ulong)8, BinaryIntegerHelper<ulong>.Log10((ulong)999_999_999));
+            Assert.Equal((ulong)9, BinaryIntegerHelper<ulong>.Log10((ulong)1_000_000_000));
+            Assert.Equal((ulong)9, BinaryIntegerHelper<ulong>.Log10((ulong)9_999_999_999));
+            Assert.Equal((ulong)10, BinaryIntegerHelper<ulong>.Log10((ulong)10_000_000_000));
+            Assert.Equal((ulong)10, BinaryIntegerHelper<ulong>.Log10((ulong)99_999_999_999));
+            Assert.Equal((ulong)11, BinaryIntegerHelper<ulong>.Log10((ulong)100_000_000_000));
+            Assert.Equal((ulong)11, BinaryIntegerHelper<ulong>.Log10((ulong)999_999_999_999));
+            Assert.Equal((ulong)12, BinaryIntegerHelper<ulong>.Log10((ulong)1_000_000_000_000));
+            Assert.Equal((ulong)12, BinaryIntegerHelper<ulong>.Log10((ulong)9_999_999_999_999));
+            Assert.Equal((ulong)13, BinaryIntegerHelper<ulong>.Log10((ulong)10_000_000_000_000));
+            Assert.Equal((ulong)13, BinaryIntegerHelper<ulong>.Log10((ulong)99_999_999_999_999));
+            Assert.Equal((ulong)14, BinaryIntegerHelper<ulong>.Log10((ulong)100_000_000_000_000));
+            Assert.Equal((ulong)14, BinaryIntegerHelper<ulong>.Log10((ulong)999_999_999_999_999));
+            Assert.Equal((ulong)15, BinaryIntegerHelper<ulong>.Log10((ulong)1_000_000_000_000_000));
+            Assert.Equal((ulong)15, BinaryIntegerHelper<ulong>.Log10((ulong)9_999_999_999_999_999));
+            Assert.Equal((ulong)16, BinaryIntegerHelper<ulong>.Log10((ulong)10_000_000_000_000_000));
+            Assert.Equal((ulong)16, BinaryIntegerHelper<ulong>.Log10((ulong)99_999_999_999_999_999));
+            Assert.Equal((ulong)17, BinaryIntegerHelper<ulong>.Log10((ulong)100_000_000_000_000_000));
+            Assert.Equal((ulong)17, BinaryIntegerHelper<ulong>.Log10((ulong)999_999_999_999_999_999));
+            Assert.Equal((ulong)18, BinaryIntegerHelper<ulong>.Log10((ulong)1_000_000_000_000_000_000));
+            Assert.Equal((ulong)18, BinaryIntegerHelper<ulong>.Log10((ulong)9_999_999_999_999_999_999));
+            Assert.Equal((ulong)19, BinaryIntegerHelper<ulong>.Log10((ulong)10_000_000_000_000_000_000));
+            Assert.Equal((ulong)19, BinaryIntegerHelper<ulong>.Log10((ulong)18_446_744_073_709_551_615));
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             Assert.Equal((ulong)0x0000000000000000, BinaryIntegerHelper<ulong>.PopCount((ulong)0x0000000000000000));

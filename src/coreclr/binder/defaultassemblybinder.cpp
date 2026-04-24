@@ -14,6 +14,7 @@ using namespace BINDER_SPACE;
 HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
                                                        BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
                                                        bool excludeAppPaths,
+                                                       BINDER_SPACE::Assembly **ppExistingAssemblyOnFailure,
                                                        SString *pDiagnosticInfo)
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
@@ -28,10 +29,16 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
                                             pAssemblyName,
                                             excludeAppPaths,
                                             ppCoreCLRFoundAssembly,
+                                            ppExistingAssemblyOnFailure,
                                             pDiagnosticInfo);
     if (!FAILED(hr))
     {
         (*ppCoreCLRFoundAssembly)->SetBinder(this);
+    }
+    else if (hr == FUSION_E_APP_DOMAIN_LOCKED)
+    {
+        // The default binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+        hr = FUSION_E_REF_DEF_MISMATCH;
     }
 
     return hr;
@@ -51,7 +58,7 @@ HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName 
 
     ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
 
-    hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, false /* excludeAppPaths */, pDiagnosticInfo);
+    hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, false /* excludeAppPaths */, nullptr /* ppExistingAssemblyOnFailure */, pDiagnosticInfo);
 
 #if !defined(DACCESS_COMPILE)
     if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) ||
@@ -114,7 +121,8 @@ Exit:;
 #if !defined(DACCESS_COMPILE)
 HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                  /* in */ bool excludeAppPaths,
-                                                 /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
+                                                 /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly,
+                                                 /* [out, optional] */ BINDER_SPACE::Assembly **ppExistingAssemblyOnConflict)
 {
     HRESULT hr = S_OK;
 
@@ -148,7 +156,8 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             {
                 // The simple name of the assembly being requested to be bound was found in the TPA list.
                 // Now, perform the actual bind to see if the assembly was really in the TPA assembly list or not.
-                hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, true /* excludeAppPaths */);
+                ReleaseHolder<BINDER_SPACE::Assembly> pExistingAssembly;
+                hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, true /* excludeAppPaths */, &pExistingAssembly);
                 if (SUCCEEDED(hr))
                 {
                     if (pCoreCLRFoundAssembly->GetIsInTPA())
@@ -157,10 +166,20 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                         goto Exit;
                     }
                 }
+                else if (hr == FUSION_E_REF_DEF_MISMATCH && pExistingAssembly != nullptr)
+                {
+                    // The assembly was found but the version is incompatible.
+                    // Return the existing assembly so the caller can provide an informative error message.
+                    if (ppExistingAssemblyOnConflict != nullptr)
+                    {
+                        *ppExistingAssemblyOnConflict = pExistingAssembly.Extract();
+                    }
+                    goto Exit;
+                }
             }
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly, ppExistingAssemblyOnConflict);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);

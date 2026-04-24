@@ -2798,9 +2798,6 @@ ClrDataModule::SetJITCompilerFlags(
                 dwBits |= DACF_ALLOW_JIT_OPTS;
             }
 
-            // Settings from the debugger take precedence over all other settings.
-            dwBits |= DACF_USER_OVERRIDE;
-
             // set flags. This will write back to the target
             m_module->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)dwBits);
 

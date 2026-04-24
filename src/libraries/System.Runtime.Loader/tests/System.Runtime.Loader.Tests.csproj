@@ -12,6 +12,9 @@
     <!-- disabled due to https://github.com/dotnet/runtime/issues/65672 -->
     <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
     <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
@@ -62,6 +65,8 @@
     <ProjectReference Include="LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
     <ProjectReference Include="System.Runtime.Loader.Test.AssemblyVersion1\System.Runtime.Loader.Test.AssemblyVersion1.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" Link="AssemblyVersion1.dll" />
+    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyVersion2\System.Runtime.Loader.Test.AssemblyVersion2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" Link="AssemblyVersion2.dll" />
+    <ProjectReference Include="ReferencedClassLibVersion2\ReferencedClassLibVersion2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" Link="ReferencedClassLibVersion2.dll" />
   </ItemGroup>
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->

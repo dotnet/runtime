@@ -1936,7 +1936,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     // Also note The CASTCLASS helpers won't appear in predicates as they throw on failure.
     // So the helper list here is smaller than the one in optAssertionProp_Call.
     //
-    CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+    CorInfoHelpFunc helper = call->GetHelperNum();
     if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
         (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY))
     {
@@ -2110,7 +2110,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                 //
                 // arr[idx] = value; - creates idx is within bounds of arr assertion
                 //
-                CorInfoHelpFunc helperId = eeGetHelperNum(call->gtCallMethHnd);
+                CorInfoHelpFunc helperId = call->GetHelperNum();
                 if ((helperId == CORINFO_HELP_ARRADDR_ST) || (helperId == CORINFO_HELP_LDELEMA_REF))
                 {
                     assert(call->gtArgs.CountUserArgs() == 3);
@@ -2493,8 +2493,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
 GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 {
     JITDUMP("See if we can optimize NI_System_SpanHelpers_Memmove with help of VN...\n")
-    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) ||
-           call->IsHelperCall(this, CORINFO_HELP_MEMCPY));
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(CORINFO_HELP_MEMCPY));
 
     CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
     CallArg* srcArg = call->gtArgs.GetUserArgByIndex(1);
@@ -2637,7 +2636,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
             break;
     }
 
-    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(this, CORINFO_HELP_MEMCPY))
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(CORINFO_HELP_MEMCPY))
     {
         return optVNBasedFoldExpr_Call_Memmove(call);
     }
@@ -4206,10 +4205,10 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
     // Check if we have an assertion that exactly matches the relop.
     ValueNum relopVN = optConservativeNormalVN(tree);
+    ValueNum op1VN   = optConservativeNormalVN(op1);
+    ValueNum op2VN   = optConservativeNormalVN(op2);
     if (!BitVecOps::IsEmpty(apTraits, assertions))
     {
-        ValueNum op1VN   = optConservativeNormalVN(op1);
-        ValueNum op2VN   = optConservativeNormalVN(op2);
         ValueNum falseVN = vnStore->VNZeroForType(TYP_INT);
 
         BitVecOps::Iter iter(apTraits, assertions);
@@ -4263,6 +4262,25 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         Range relopRange = RangeCheck::GetRangeFromAssertions(this, relopVN, assertions);
 
         int relopResult;
+        if (!relopRange.IsSingleValueConstant(&relopResult))
+        {
+            // Retry by obtaining operand ranges individually. This accounts for cases where the
+            // relopVN's operands differ from the physical op1 and op2 due to optimization passes.
+            VNFuncApp relopFuncApp;
+            if (vnStore->IsVNRelop(relopVN, &relopFuncApp) &&
+                (((relopFuncApp.m_args[0] == op1VN) && (relopFuncApp.m_args[1] == op2VN)) ||
+                 ((relopFuncApp.m_args[0] == op2VN) && (relopFuncApp.m_args[1] == op1VN))))
+            {
+                // VNs match - we'll find nothing new by looking at individual operand ranges.
+            }
+            else
+            {
+                Range op1Range = RangeCheck::GetRangeFromAssertions(this, op1VN, assertions);
+                Range op2Range = RangeCheck::GetRangeFromAssertions(this, op2VN, assertions);
+                relopRange     = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Range, op2Range);
+            }
+        }
+
         if (relopRange.IsSingleValueConstant(&relopResult))
         {
             assert((relopResult == 0) || (relopResult == 1));
@@ -5132,7 +5150,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
 
     if (!optLocalAssertionProp && call->IsHelperCall())
     {
-        const CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+        const CorInfoHelpFunc helper = call->GetHelperNum();
         if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
             (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY) ||
             (helper == CORINFO_HELP_CHKCASTINTERFACE) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
@@ -5333,9 +5351,31 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         Range lenRng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
         if (idxRng.IsConstantRange() && lenRng.IsConstantRange())
         {
-            // idx.lo >= 0 && idx.hi < len.lo --> drop bounds check
-            if (idxRng.LowerLimit().GetConstant() >= 0 &&
-                idxRng.UpperLimit().GetConstant() < lenRng.LowerLimit().GetConstant())
+            int idxLo = idxRng.LowerLimit().GetConstant();
+            int idxHi = idxRng.UpperLimit().GetConstant();
+            int lenLo = lenRng.LowerLimit().GetConstant();
+
+            // GT_BOUNDS_CHECK node has an implicit contract - the length node must always be non-negative.
+            // So we additionally tighten the lower bound of lenLo to be ">= 1" when we also have a
+            // "length != 0" assertion for it.
+            if ((idxLo == 0) && (idxHi == 0) && (lenLo <= 0))
+            {
+                BitVecOps::Iter iter(apTraits, assertions);
+                unsigned        bvIndex = 0;
+                while (iter.NextElem(&bvIndex))
+                {
+                    const AssertionDsc& assertion = optGetAssertion(GetAssertionIndex(bvIndex));
+                    if (assertion.IsConstantInt32Assertion() && assertion.KindIs(OAK_NOT_EQUAL) &&
+                        (assertion.GetOp1().GetVN() == vnCurLen) && (assertion.GetOp2().GetIntConstant() == 0))
+                    {
+                        lenLo = 1;
+                        break;
+                    }
+                }
+            }
+
+            // index is always within [0..lenLo) --> drop bounds check
+            if ((idxLo >= 0) && (idxHi < lenLo))
             {
                 return dropBoundsCheck(INDEBUG("upper bound of index is less than lower bound of length"));
             }

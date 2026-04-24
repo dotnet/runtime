@@ -11,9 +11,9 @@ internal sealed class MethodDescCodeData : IData<MethodDescCodeData>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.MethodDescCodeData);
 
-        TemporaryEntryPoint = target.ReadCodePointer(address + (ulong)type.Fields[nameof(TemporaryEntryPoint)].Offset);
-        VersioningState = target.ReadPointer(address + (ulong)type.Fields[nameof(VersioningState)].Offset);
-        OptimizationTier = target.Read<uint>(address + (ulong)type.Fields[nameof(OptimizationTier)].Offset);
+        TemporaryEntryPoint = target.ReadCodePointerField(address, type, nameof(TemporaryEntryPoint));
+        VersioningState = target.ReadPointerField(address, type, nameof(VersioningState));
+        OptimizationTier = target.ReadField<uint>(address, type, nameof(OptimizationTier));
     }
 
     public TargetCodePointer TemporaryEntryPoint { get; set; }

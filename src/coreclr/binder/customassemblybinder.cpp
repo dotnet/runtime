@@ -30,6 +30,7 @@ HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
                                             pAssemblyName,
                                             false, //excludeAppPaths,
                                             ppCoreCLRFoundAssembly,
+                                            nullptr /* ppExistingAssemblyOnFailure */,
                                             pDiagnosticInfo);
     if (!FAILED(hr))
     {
@@ -106,7 +107,8 @@ Exit:;
 
 HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                 /* in */ bool excludeAppPaths,
-                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
+                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly,
+                                                /* [out, optional] */ BINDER_SPACE::Assembly **ppExistingAssemblyOnConflict)
 {
     HRESULT hr = S_OK;
 
@@ -132,7 +134,7 @@ HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly, ppExistingAssemblyOnConflict);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
