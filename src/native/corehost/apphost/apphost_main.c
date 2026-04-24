@@ -17,6 +17,10 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+#if defined(FEATURE_STATIC_HOST)
+extern void apphost_static_init(void);
+#endif
+
 /**
  * Detect if the apphost executable is allowed to load and execute a managed assembly.
  *
@@ -155,7 +159,6 @@ static void propagate_error_writer_cleanup(propagate_error_writer_state_t* state
 static int exe_start(const int argc, const pal_char_t* argv[])
 {
 #if defined(FEATURE_STATIC_HOST)
-    extern void apphost_static_init(void);
     apphost_static_init();
 #endif
 
