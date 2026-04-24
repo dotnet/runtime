@@ -1005,7 +1005,7 @@ end:
         EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)malloc(sizeof(EvpPKeyExtraHandle));
         extra->prov = prov;
         extra->libCtx = libCtx;
-        atomic_init(&extra->refCount, 1);
+        __c11_atomic_init(&extra->refCount, 1);
         *extraHandle = extra;
     }
 
