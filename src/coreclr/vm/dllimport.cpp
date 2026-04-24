@@ -1299,6 +1299,7 @@ public:
     void MarshalArgument(MarshalInfo* pInfo, int argOffset)
     {
         LIMITED_METHOD_CONTRACT;
+        pInfo->SetupArgumentSizes();
     }
 
     void MarshalLCID(int argIdx)
