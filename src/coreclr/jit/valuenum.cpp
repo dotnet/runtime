@@ -5588,7 +5588,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 // result should be 1, not AllBitsSet. The relop-combination table
                 // below handles `relop | Reverse(relop)` and yields VNOneForType.
                 //
-                VNFuncApp arg0Check;
+                VNFuncApp  arg0Check;
                 const bool arg0IsRelop = GetVNFunc(arg0VN, &arg0Check) && VNFuncIsComparison(arg0Check.m_func);
                 if (!arg0IsRelop)
                 {
