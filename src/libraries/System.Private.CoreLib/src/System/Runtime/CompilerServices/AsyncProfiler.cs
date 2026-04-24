@@ -140,10 +140,10 @@ namespace System.Runtime.CompilerServices
 
                                 // Force flush to deliver event promptly.
                                 context.Flush();
-                            }
 
-                            s_metadataRevision = Revision;
-                            s_lastSyncClockEventTimestamp = Stopwatch.GetTimestamp();
+                                s_metadataRevision = Revision;
+                                s_lastSyncClockEventTimestamp = Stopwatch.GetTimestamp();
+                            }
                         }
                     }
                 }
