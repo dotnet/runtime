@@ -46,18 +46,14 @@ public class DacDbiLoaderDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetModuleForAssembly_ReturnsNonNullModule(TestConfiguration config)
+    public unsafe void GetModuleForAssembly(TestConfiguration config)
     {
         InitializeDumpTest(config);
         DacDbiImpl dbi = CreateDacDbi();
         ILoader loader = Target.Contracts.Loader;
 
-        TargetPointer appDomainPtr = Target.ReadGlobalPointer(Constants.Globals.AppDomain);
-        ulong appDomain = Target.ReadPointer(appDomainPtr);
-        var modules = loader.GetModuleHandles(new TargetPointer(appDomain),
-            AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
-
-        foreach (ModuleHandle module in modules)
+        bool testedAtLeastOne = false;
+        foreach (ModuleHandle module in GetAllModules())
         {
             TargetPointer assemblyPtr = loader.GetAssembly(module);
             TargetPointer expectedModulePtr = loader.GetModule(module);
@@ -67,8 +63,21 @@ public class DacDbiLoaderDumpTests : DumpTestBase
             Assert.Equal(System.HResults.S_OK, hr);
             Assert.NotEqual(0UL, resultModule);
             Assert.Equal(expectedModulePtr.Value, resultModule);
-            break;
+            testedAtLeastOne = true;
         }
+        Assert.True(testedAtLeastOne, "Expected at least one module in the dump");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetModuleForAssembly_InvalidAssembly(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        ulong resultModule;
+        int hr = dbi.GetModuleForAssembly(0xDEAD, &resultModule);
+        Assert.NotEqual(System.HResults.S_OK, hr);
     }
 
     [ConditionalTheory]
