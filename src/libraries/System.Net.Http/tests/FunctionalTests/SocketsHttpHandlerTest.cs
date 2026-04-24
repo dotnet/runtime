@@ -4733,6 +4733,105 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+    public sealed class SocketsHttpHandler_ContentLengthValidation_Http11 : HttpClientHandlerTestBase
+    {
+        public SocketsHttpHandler_ContentLengthValidation_Http11(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task SingleValidContentLength_Success()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal("hello", await response.Content.ReadAsStringAsync());
+                Assert.Equal(5, response.Content.Headers.ContentLength);
+            },
+            async server =>
+            {
+                await server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                    "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello");
+            });
+        }
+
+        [Fact]
+        public async Task MultipleIdenticalContentLengths_Success()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal("hello", await response.Content.ReadAsStringAsync());
+            },
+            async server =>
+            {
+                await server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                    "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello");
+            });
+        }
+
+        [Fact]
+        public async Task MultipleConflictingContentLengths_Throws()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                Assert.Equal(HttpRequestError.InvalidResponse, ex.HttpRequestError);
+            },
+            async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                        "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Length: 10\r\nConnection: close\r\n\r\nhello");
+                }
+                catch { }
+            });
+        }
+
+        [Fact]
+        public async Task UnparsableContentLength_Throws()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                Assert.Equal(HttpRequestError.InvalidResponse, ex.HttpRequestError);
+            },
+            async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                        "HTTP/1.1 200 OK\r\nContent-Length: abc\r\nConnection: close\r\n\r\nhello");
+                }
+                catch { }
+            });
+        }
+
+        [Fact]
+        public async Task NegativeContentLength_Throws()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                Assert.Equal(HttpRequestError.InvalidResponse, ex.HttpRequestError);
+            },
+            async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                        "HTTP/1.1 200 OK\r\nContent-Length: -5\r\nConnection: close\r\n\r\nhello");
+                }
+                catch { }
+            });
+        }
+    }
+
     public class MySsl : SslStream
     {
         public MySsl(Stream stream) : base(stream)

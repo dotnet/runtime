@@ -99,5 +99,32 @@ namespace System.Net.Http.Tests
             Assert.Equal(expectedSeparatorFound, separatorFound);
         }
         #endregion
+
+        [Theory]
+        [InlineData("0", 0L)]
+        [InlineData("42", 42L)]
+        [InlineData("000015", 15L)]
+        [InlineData("123456789012345", 123456789012345L)]
+        [InlineData("9223372036854775807", long.MaxValue)]
+        public void TryParseInt64_Utf8_ValidValues_ReturnsTrue(string input, long expected)
+        {
+            Assert.True(HeaderUtilities.TryParseInt64(System.Text.Encoding.ASCII.GetBytes(input), out long result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("abc")]
+        [InlineData("-5")]
+        [InlineData("1.5")]
+        [InlineData(" 42")]
+        [InlineData("42 ")]
+        [InlineData("99999999999999999999")]
+        [InlineData("12 34")]
+        public void TryParseInt64_Utf8_InvalidValues_ReturnsFalse(string input)
+        {
+            Assert.False(HeaderUtilities.TryParseInt64(System.Text.Encoding.ASCII.GetBytes(input), out long result));
+            Assert.Equal(0, result);
+        }
     }
 }
