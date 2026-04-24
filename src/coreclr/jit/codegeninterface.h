@@ -79,6 +79,12 @@ public:
 #endif // !HAS_FIXED_REGISTER_SET
 };
 
+struct EHClauseInfo
+{
+    CORINFO_EH_CLAUSE clause;
+    EHblkDsc*         HBtab;
+};
+
 class CodeGenInterface
 {
     friend class emitter;

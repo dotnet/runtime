@@ -890,8 +890,18 @@ public:
     bool gtCostsInitialized;
 #endif // DEBUG
 
-#define MAX_COST    UCHAR_MAX
-#define IND_COST_EX 3 // execution cost for an indirection
+#define MAX_COST UCHAR_MAX
+
+// execution cost for an indirection
+#define IND_COST_EX 3
+
+#if defined(TARGET_XARCH)
+// floating-point indirections are slightly more expensive
+#define FLT_IND_COST_EX 5
+#else
+// TODO-CQ: Determine the appropriate cost of a floating-point indirection on other targets
+#define FLT_IND_COST_EX IND_COST_EX
+#endif
 
     unsigned char GetCostEx() const
     {
@@ -5870,6 +5880,8 @@ struct GenTreeCall final : public GenTree
 
     bool IsHelperCall(unsigned helper) const;
 
+    bool IsHelperCallOrUserEquivalent(Compiler* compiler, unsigned helper) const;
+
     bool IsRuntimeLookupHelperCall(Compiler* compiler) const;
 
     bool IsSpecialIntrinsic(Compiler* compiler, NamedIntrinsic ni) const;
@@ -6436,13 +6448,13 @@ public:
     //
     regNumber GetRegNumByIdx(unsigned idx) const
     {
-#ifdef TARGET_ARM64
-        assert(idx < MAX_MULTIREG_COUNT);
-
         if (idx == 0)
         {
             return GetRegNum();
         }
+
+#ifdef TARGET_ARM64
+        assert(idx < MAX_MULTIREG_COUNT);
 
         if (NeedsConsecutiveRegisters())
         {

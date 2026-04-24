@@ -488,7 +488,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetAssemblyLocation(ClrDataAddress assembly, int count, char* location, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? modules, uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -943,7 +943,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetDacModuleHandle(void* phModule)
-        => _legacyImpl is not null ? _legacyImpl.GetDacModuleHandle(phModule) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetDacModuleHandle(phModule) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetDomainFromContext(ClrDataAddress context, ClrDataAddress* domain)
     {
         int hr = HResults.S_OK;
@@ -1018,11 +1018,11 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetFailedAssemblyData(ClrDataAddress assembly, uint* pContext, int* pResult)
-        => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyData(assembly, pContext, pResult) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyData(assembly, pContext, pResult) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyDisplayName(assembly, count, name, pNeeded) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyDisplayName(assembly, count, name, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyList(ClrDataAddress appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyList(appDomain, count, values, pNeeded) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyList(appDomain, count, values, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyLocation(ClrDataAddress assembly, uint count, char* location, uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -1862,7 +1862,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetHandleEnumForGC(uint gen, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetHandleEnumForGC(gen, ppHandleEnum) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetHandleEnumForGC(gen, ppHandleEnum) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHandleEnumForTypes([In, MarshalUsing(CountElementName = "count")] uint[] types, uint count, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
     {
         int hr = HResults.S_OK;
@@ -1889,7 +1889,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetHeapAllocData(uint count, void* data, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetHeapAllocData(count, data, pNeeded) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetHeapAllocData(count, data, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapAnalyzeData(ClrDataAddress addr, DacpGcHeapAnalyzeData* data)
     {
         int hr = HResults.S_OK;
@@ -4648,11 +4648,97 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, void* pCallback)
-        => _legacyImpl is not null ? _legacyImpl.TraverseLoaderHeap(loaderHeapAddr, pCallback) : HResults.E_NOTIMPL;
 
 #if DEBUG
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    [ThreadStatic]
+    private static List<(ulong VirtualAddress, nuint VirtualSize)>? _debugTraverseLoaderHeapBlocks;
+    [ThreadStatic]
+    private static uint _debugTraverseLoaderDebugCount;
+
+    private static List<(ulong VirtualAddress, nuint VirtualSize)> DebugTraverseLoaderHeapBlocks
+        => _debugTraverseLoaderHeapBlocks ??= new();
+
+    [UnmanagedCallersOnly]
+    private static void TraverseLoaderHeapDebugCallback(ulong virtualAddress, nuint virtualSize, Interop.BOOL _)
+    {
+        List<(ulong VirtualAddress, nuint VirtualSize)> expected = DebugTraverseLoaderHeapBlocks;
+        bool found = expected.Remove((virtualAddress, virtualSize));
+        _debugTraverseLoaderDebugCount++;
+        Debug.Assert(found, $"Unexpected loader heap block: address={virtualAddress:x}, size={virtualSize:x}");
+    }
+#endif
+
+    private int TraverseLoaderHeapCore(ClrDataAddress loaderHeapAddr, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        DebugTraverseLoaderHeapBlocks.Clear();
+        _debugTraverseLoaderDebugCount = 0;
+#endif
+        try
+        {
+            if (loaderHeapAddr == 0 || pCallback is null)
+                throw new ArgumentException();
+            int iterationMax = 8192;
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
+            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
+            TargetPointer firstBlock = block;
+            int i = 0;
+            while (block != TargetPointer.Null && i++ < iterationMax)
+            {
+                Contracts.LoaderHeapBlockData blockData;
+                try
+                {
+                    blockData = loader.GetLoaderHeapBlockData(block);
+                }
+                catch (VirtualReadException)
+                {
+                    throw new NullReferenceException();
+                }
+                pCallback(blockData.Address.Value, (nuint)blockData.Size.Value, block == firstBlock ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+#if DEBUG
+                DebugTraverseLoaderHeapBlocks.Add((blockData.Address.Value, (nuint)blockData.Size.Value));
+#endif
+                block = blockData.NextBlock;
+                if (block == firstBlock)
+                    throw new NullReferenceException();
+            }
+            if (i >= iterationMax)
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        return hr;
+    }
+
+    int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
+    {
+        int hr = TraverseLoaderHeapCore(loaderHeapAddr, pCallback);
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int cdacCount = DebugTraverseLoaderHeapBlocks.Count;
+            delegate* unmanaged<ulong, nuint, Interop.BOOL, void> debugCallbackPtr = &TraverseLoaderHeapDebugCallback;
+            int hrLocal = _legacyImpl.TraverseLoaderHeap(loaderHeapAddr, debugCallbackPtr);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(DebugTraverseLoaderHeapBlocks.Count == 0,
+                    $"cDAC found {cdacCount} blocks, DAC matched {_debugTraverseLoaderDebugCount}, {DebugTraverseLoaderHeapBlocks.Count} unmatched");
+                Debug.Assert(_debugTraverseLoaderDebugCount == (uint)cdacCount,
+                    $"cDAC: {cdacCount} blocks, DAC: {_debugTraverseLoaderDebugCount} blocks");
+            }
+        }
+#endif
+        return hr;
+    }
+
+#if DEBUG
+    [UnmanagedCallersOnly]
     private static void TraverseModuleMapCallback(uint index, ulong moduleAddr, void* expectedElements)
     {
         var expectedElementsDict = (Dictionary<ulong, uint>)GCHandle.FromIntPtr((nint)expectedElements).Target!;
@@ -4666,7 +4752,7 @@ public sealed unsafe partial class SOSDacImpl
         }
     }
 #endif
-    int ISOSDacInterface.TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, ulong, void*, void> pCallback, void* token)
+    int ISOSDacInterface.TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged<uint, ulong, void*, void> pCallback, void* token)
     {
         int hr = HResults.S_OK;
         IEnumerable<(TargetPointer Address, uint Index)> elements = Enumerable.Empty<(TargetPointer, uint)>();
@@ -4706,7 +4792,7 @@ public sealed unsafe partial class SOSDacImpl
             Dictionary<ulong, uint> expectedElements = elements.ToDictionary(tuple => tuple.Address.ToClrDataAddress(_target).Value, tuple => tuple.Index);
             expectedElements.Add(default, 0);
             void* tokenDebug = GCHandle.ToIntPtr(GCHandle.Alloc(expectedElements)).ToPointer();
-            delegate* unmanaged[Stdcall]<uint, ulong, void*, void> callbackDebugPtr = &TraverseModuleMapCallback;
+            delegate* unmanaged<uint, ulong, void*, void> callbackDebugPtr = &TraverseModuleMapCallback;
 
             int hrLocal = _legacyImpl.TraverseModuleMap(mmt, moduleAddr, callbackDebugPtr, tokenDebug);
             Debug.ValidateHResult(hr, hrLocal);
@@ -4717,7 +4803,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 #if DEBUG
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    [UnmanagedCallersOnly]
     private static Interop.BOOL TraverseRCWCleanupListCallback(ulong rcwAddr, ulong ctx, ulong staThread, Interop.BOOL isFreeThreaded, void* expectedElements)
     {
         var expectedElementsDict = (Dictionary<ulong, ulong>)GCHandle.FromIntPtr((nint)expectedElements).Target!;
@@ -4732,7 +4818,7 @@ public sealed unsafe partial class SOSDacImpl
         return Interop.BOOL.TRUE;
     }
 #endif
-    int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token)
+    int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, delegate* unmanaged<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token)
     {
         int hr = HResults.S_OK;
         IEnumerable<Contracts.RCWCleanupInfo> cleanupInfos = Enumerable.Empty<Contracts.RCWCleanupInfo>();
@@ -4766,7 +4852,7 @@ public sealed unsafe partial class SOSDacImpl
             expectedElements.Add(default, 0);
             GCHandle expectedElementsHandle = GCHandle.Alloc(expectedElements);
             void* tokenDebug = GCHandle.ToIntPtr(expectedElementsHandle).ToPointer();
-            delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> callbackDebugPtr = &TraverseRCWCleanupListCallback;
+            delegate* unmanaged<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> callbackDebugPtr = &TraverseRCWCleanupListCallback;
 
             int hrLocal = _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, callbackDebugPtr, tokenDebug);
             Debug.ValidateHResult(hr, hrLocal);
@@ -4777,7 +4863,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, int heaptype, void* pCallback)
-        => _legacyImpl is not null ? _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, pCallback) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, pCallback) : HResults.E_NOTIMPL;
 #endregion ISOSDacInterface
 
     #region ISOSDacInterface2
@@ -6075,9 +6161,9 @@ public sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface11
     int ISOSDacInterface11.IsTrackedType(ClrDataAddress objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory)
-        => _legacyImpl11 is not null ? _legacyImpl11.IsTrackedType(objAddr, isTrackedType, hasTaggedMemory) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl11 is not null ? _legacyImpl11.IsTrackedType(objAddr, isTrackedType, hasTaggedMemory) : HResults.E_NOTIMPL;
     int ISOSDacInterface11.GetTaggedMemory(ClrDataAddress objAddr, ClrDataAddress* taggedMemory, nuint* taggedMemorySizeInBytes)
-        => _legacyImpl11 is not null ? _legacyImpl11.GetTaggedMemory(objAddr, taggedMemory, taggedMemorySizeInBytes) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl11 is not null ? _legacyImpl11.GetTaggedMemory(objAddr, taggedMemory, taggedMemorySizeInBytes) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface11
 
     #region ISOSDacInterface12
@@ -6118,8 +6204,28 @@ public sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface12
 
     #region ISOSDacInterface13
-    int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback)
-        => _legacyImpl13 is not null ? _legacyImpl13.TraverseLoaderHeap(loaderHeapAddr, kind, pCallback) : HResults.E_NOTIMPL;
+
+    int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
+    {
+        int hr = TraverseLoaderHeapCore(loaderHeapAddr, pCallback);
+#if DEBUG
+        if (_legacyImpl13 is not null)
+        {
+            int cdacCount = DebugTraverseLoaderHeapBlocks.Count;
+            delegate* unmanaged<ulong, nuint, Interop.BOOL, void> debugCallbackPtr = &TraverseLoaderHeapDebugCallback;
+            int hrLocal = _legacyImpl13.TraverseLoaderHeap(loaderHeapAddr, kind, debugCallbackPtr);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(DebugTraverseLoaderHeapBlocks.Count == 0,
+                    $"cDAC found {cdacCount} blocks, DAC matched {_debugTraverseLoaderDebugCount}, {DebugTraverseLoaderHeapBlocks.Count} unmatched");
+                Debug.Assert(_debugTraverseLoaderDebugCount == (uint)cdacCount,
+                    $"cDAC: {cdacCount} blocks, DAC: {_debugTraverseLoaderDebugCount} blocks");
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface13.GetDomainLoaderAllocator(ClrDataAddress domainAddress, ClrDataAddress* pLoaderAllocator)
     {
         int hr = HResults.S_OK;

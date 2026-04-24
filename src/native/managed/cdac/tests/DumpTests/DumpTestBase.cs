@@ -25,6 +25,12 @@ public abstract class DumpTestBase : IDisposable
     private DumpInfo? _dumpInfo;
 
     /// <summary>
+    /// The runtime version identifiers tested by <see cref="TestConfigurations"/> and
+    /// searched by <see cref="GetDumpSource"/>. Centralised here so both share the same list.
+    /// </summary>
+    private static readonly string[] RuntimeVersions = ["local", "net10.0"];
+
+    /// <summary>
     /// The set of runtime versions and R2R modes to test against.
     /// Each entry produces a separate test invocation via <c>[MemberData]</c>.
     /// R2R modes are provided by <see cref="GetR2RModes"/>, which currently yields
@@ -34,13 +40,14 @@ public abstract class DumpTestBase : IDisposable
     {
         get
         {
+            string? dumpSource = GetDumpSource();
             foreach (string r2rMode in GetR2RModes())
             {
-                if (!IsVersionSkipped("local"))
-                    yield return [new TestConfiguration("local", r2rMode)];
-
-                if (!IsVersionSkipped("net10.0"))
-                    yield return [new TestConfiguration("net10.0", r2rMode)];
+                foreach (string version in RuntimeVersions)
+                {
+                    if (!IsVersionSkipped(version))
+                        yield return [new TestConfiguration(version, r2rMode, dumpSource)];
+                }
             }
         }
     }
@@ -141,6 +148,18 @@ public abstract class DumpTestBase : IDisposable
 
         if (_dumpInfo is not null)
         {
+            // Cross-bitness dump reading is not yet supported when a 32-bit host
+            // tries to read a 64-bit dump (see microsoft/clrmd#1423).
+            // The reverse (64-bit host reading 32-bit dump) works fine.
+            bool isDump64Bit = _dumpInfo.Arch is "x64" or "arm64" or "riscv64" or "loongarch64";
+            bool isHost64Bit = IntPtr.Size == 8;
+            if (isDump64Bit && !isHost64Bit)
+            {
+                throw new SkipTestException(
+                    $"32-bit host cannot read 64-bit dumps: dump is {_dumpInfo.Arch}. " +
+                    $"See microsoft/clrmd#1423.");
+            }
+
             foreach (SkipOnOSAttribute attr in method.GetCustomAttributes<SkipOnOSAttribute>())
             {
                 if (attr.IncludeOnly is not null)
@@ -174,6 +193,28 @@ public abstract class DumpTestBase : IDisposable
             throw new InvalidOperationException("Could not locate the repository root.");
 
         return Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
+    }
+
+    /// <summary>
+    /// Returns the dump source platform from dump-info.json (e.g., "windows_x64"),
+    /// or null for local runs where CDAC_DUMP_ROOT is not set.
+    /// </summary>
+    private static string? GetDumpSource()
+    {
+        string? dumpRoot = Environment.GetEnvironmentVariable("CDAC_DUMP_ROOT");
+        if (string.IsNullOrEmpty(dumpRoot))
+            return null;
+
+        // Try loading dump-info.json from any version directory to get OS/Arch
+        foreach (string versionDir in RuntimeVersions)
+        {
+            DumpInfo? info = DumpInfo.TryLoad(Path.Combine(dumpRoot, versionDir));
+            if (info is not null)
+                return $"{info.Os}_{info.Arch}";
+        }
+
+        // Fall back to the directory name if dump-info.json isn't available
+        return Path.GetFileName(dumpRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
     }
 
     /// <summary>

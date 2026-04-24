@@ -111,6 +111,7 @@ namespace System.Runtime.CompilerServices
 
         // See note in ContinuationFlags above for the computation of these offsets.
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe object GetContinuationContext()
         {
             const uint mask = (1u << (int)ContinuationFlags.ContinuationContextIndexNumBits) - 1;
@@ -120,12 +121,14 @@ namespace System.Runtime.CompilerServices
             return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasException()
         {
             const uint mask = (1u << (int)ContinuationFlags.ExceptionIndexNumBits) - 1;
             return ((uint)Flags & (mask << (int)ContinuationFlags.ExceptionIndexFirstBit)) != 0;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetException(Exception ex)
         {
             const uint mask = (1u << (int)ContinuationFlags.ExceptionIndexNumBits) - 1;
@@ -135,6 +138,7 @@ namespace System.Runtime.CompilerServices
             Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize)) = ex;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref byte GetResultStorageOrNull()
         {
             const uint mask = (1u << (int)ContinuationFlags.ResultIndexNumBits) - 1;
@@ -213,7 +217,7 @@ namespace System.Runtime.CompilerServices
             // to one of these notifiers.
             public ICriticalNotifyCompletion? CriticalNotifier;
             public INotifyCompletion? Notifier;
-            public IValueTaskSourceNotifier? ValueTaskSourceNotifier;
+            public ValueTaskSourceNotifier? ValueTaskSourceNotifier;
             public Task? TaskNotifier;
 
             public ExecutionContext? ExecutionContext;
@@ -306,7 +310,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                state.ValueTaskSourceNotifier = (IValueTaskSourceNotifier)o;
+                state.ValueTaskSourceNotifier = (ValueTaskSourceNotifier)o;
             }
 
             state.CaptureContexts();
@@ -362,7 +366,7 @@ namespace System.Runtime.CompilerServices
 
                 ICriticalNotifyCompletion? critNotifier = state.CriticalNotifier;
                 INotifyCompletion? notifier = state.Notifier;
-                IValueTaskSourceNotifier? vtsNotifier = state.ValueTaskSourceNotifier;
+                ValueTaskSourceNotifier? vtsNotifier = state.ValueTaskSourceNotifier;
                 Task? taskNotifier = state.TaskNotifier;
 
                 state.CriticalNotifier = null;

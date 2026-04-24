@@ -1714,6 +1714,15 @@ struct FuncInfoDsc
     regNumber funFramePointerReg;
 #endif
 
+    EHblkDsc*            GetEHDesc(Compiler* comp) const;
+    BasicBlock*          GetStartBlock(Compiler* comp) const;
+    BasicBlock*          GetLastBlock(Compiler* comp) const;
+    BasicBlockRangeList  Blocks(Compiler* comp) const;
+    unsigned             GetFuncletIdx(Compiler* comp) const;
+    bool                 IsFunclet() const { return funKind != FUNC_ROOT; }
+    bool                 IsMethod() const { return funKind == FUNC_ROOT; }
+
+
 #if defined(TARGET_WASM)
     struct WasmLocalsDecl
     {
@@ -1722,13 +1731,13 @@ struct FuncInfoDsc
     };
 
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
-#endif // defined(TARGET_WASM)  
+    unsigned funWasmFrameSize;
+    bool needsUnwindableFrame;
+    emitLocation* startLoc;
+    emitLocation* endLoc;
 
-    EHblkDsc*            GetEHDesc(Compiler* comp) const;
-    BasicBlock*          GetStartBlock(Compiler* comp) const;
-    BasicBlock*          GetLastBlock(Compiler* comp) const;
-    BasicBlockRangeList  Blocks(Compiler* comp) const;
-    unsigned             GetFuncletIdx(Compiler* comp) const;
+    void ensureUnwindableFrame(Compiler* comp);
+#endif // defined(TARGET_WASM)
 
 #if defined(TARGET_AMD64)
 
@@ -3826,6 +3835,7 @@ public:
     void gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCostSz, bool isLikelyRegVar);
     void gtGetLclFldNodeCost(GenTreeLclFld* node, int* pCostEx, int* pCostSz);
     bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
+    bool gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile, int* pCostEx, int* pCostSz);
 
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
@@ -3872,6 +3882,10 @@ public:
     // Note when inlining, this looks for calls back to the root method.
     bool gtIsRecursiveCall(GenTreeCall* call, bool useInlineRoot = true)
     {
+        if (call->gtCallType == CT_INDIRECT)
+        {
+            return false;
+        }
         return gtIsRecursiveCall(call->gtCallMethHnd, useInlineRoot);
     }
 
@@ -4154,6 +4168,9 @@ public:
 
 #if defined(TARGET_WASM)
     unsigned lvaWasmSpArg = BAD_VAR_NUM; // lcl var index of Wasm stack pointer arg
+    unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
+    unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
+    unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -4778,6 +4795,11 @@ protected:
 
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
+#if defined(FEATURE_HW_INTRINSICS)
+    GenTree* impSimdCreateScalarHalf(GenTree* op1);
+    GenTree* impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd);
+#endif // FEATURE_HW_INTRINSICS
+
     enum class BoxPatterns
     {
         None                  = 0,
@@ -5371,6 +5393,30 @@ private:
                                                             GenTree*    dereferencedAddress,
                                                             InlArgInfo* inlArgInfo);
 
+    typedef JitHashTable<CORINFO_METHOD_HANDLE, JitPtrKeyFuncs<struct CORINFO_METHOD_STRUCT_>, CORINFO_METHOD_HANDLE> HelperToManagedMap;
+    HelperToManagedMap* m_helperToManagedMap = nullptr;
+
+public:
+    HelperToManagedMap* GetHelperToManagedMap()
+    {
+        if (m_helperToManagedMap == nullptr)
+        {
+            m_helperToManagedMap = new (getAllocator()) HelperToManagedMap(getAllocator());
+        }
+        return m_helperToManagedMap;
+    }
+    bool HelperToManagedMapLookup(CORINFO_METHOD_HANDLE helperCallHnd, CORINFO_METHOD_HANDLE* userCallHnd)
+    {
+        if (m_helperToManagedMap == nullptr)
+        {
+            return false;
+        }
+        bool found = m_helperToManagedMap->Lookup(helperCallHnd, userCallHnd);
+        return found;
+    }
+private:
+
+    void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
@@ -5437,6 +5483,7 @@ public:
     BasicBlock** fgIndexToBlockMap = nullptr;
     bool fgWasmHasCatchResumptions = false;
     FlowGraphTryRegions* fgTryRegions = nullptr;
+    EHClauseInfo* fgWasmEHInfo = nullptr;
 #endif
 
     FlowGraphDfsTree* m_dfsTree = nullptr;
@@ -6412,6 +6459,7 @@ public:
     void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
+    PhaseStatus fgWasmVirtualIP();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();
@@ -7579,7 +7627,6 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP               0x00000080 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT                     0x00000100 // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS                      0x00000200 // Method needs GC polls
-#define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 #define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
 #define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional intrinsic array element loads or stores.
@@ -7763,16 +7810,6 @@ public:
         optMethodFlags |= OMF_HAS_PATCHPOINT;
     }
 
-    bool doesMethodHavePartialCompilationPatchpoints()
-    {
-        return (optMethodFlags & OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT) != 0;
-    }
-
-    void setMethodHasPartialCompilationPatchpoint()
-    {
-        optMethodFlags |= OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT;
-    }
-
     unsigned optMethodFlags = 0;
 
     bool doesMethodHaveNoReturnCalls()
@@ -7943,7 +7980,8 @@ public:
                                    // "Checked bound" alone doesn't mean anything,
                                    // nor it implies that it's never negative.
         O2K_ZEROOBJ,
-        O2K_SUBRANGE
+        O2K_SUBRANGE,
+        O2K_CONST_VEC
     };
 
     struct AssertionDsc
@@ -8010,6 +8048,8 @@ public:
                 unsigned      m_lclNum;
                 double        m_dconVal;
                 IntegralRange m_range;
+                simd16_t m_simdVal; // for O2K_CONST_VEC (TYP_SIMD8/12/16 only). TODO-CQ: support wider SIMD via heap
+                                    // allocation.
                 struct
                 {
                     ssize_t   m_iconVal;
@@ -8042,6 +8082,12 @@ public:
                 return m_dconVal;
             }
 
+            const simd16_t& GetSimdConstant() const
+            {
+                assert(KindIs(O2K_CONST_VEC));
+                return m_simdVal;
+            }
+
             ssize_t GetIntConstant() const
             {
                 assert(KindIs(O2K_CONST_INT));
@@ -8065,7 +8111,7 @@ public:
             ValueNum GetVN() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ));
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -8393,6 +8439,10 @@ public:
                     // exact match because of positive and negative zero.
                     return (memcmp(&GetOp2().m_dconVal, &that.GetOp2().m_dconVal, sizeof(double)) == 0);
 
+                case O2K_CONST_VEC:
+                    // memcmp the full stored payload; GenTreeVecCon zero-inits gtSimdVal before populating.
+                    return (memcmp(&GetOp2().m_simdVal, &that.GetOp2().m_simdVal, sizeof(simd16_t)) == 0);
+
                 case O2K_ZEROOBJ:
                     return true;
 
@@ -8435,7 +8485,7 @@ public:
         static AssertionDsc CreateConstLclVarAssertion(const Compiler* comp,
                                                        unsigned        lclNum,
                                                        ValueNum        vn,
-                                                       T               cns,
+                                                       const T&        cns,
                                                        ValueNum        cnsVN,
                                                        bool            equals,
                                                        GenTreeFlags    iconFlags = GTF_EMPTY,
@@ -8483,6 +8533,14 @@ public:
                 dsc.m_op2.m_dconVal = static_cast<double>(cns);
                 assert(iconFlags == GTF_EMPTY); // no flags expected for double constants
                 assert(fldSeq == nullptr);      // no fieldSeq expected for double constants
+            }
+            else if constexpr (std::is_same_v<T, simd16_t>)
+            {
+                dsc.m_op2.m_kind    = O2K_CONST_VEC;
+                dsc.m_op2.m_simdVal = {};
+                memcpy(&dsc.m_op2.m_simdVal, &cns, sizeof(simd16_t));
+                assert(iconFlags == GTF_EMPTY); // no flags expected for vector constants
+                assert(fldSeq == nullptr);      // no fieldSeq expected for vector constants
             }
             else if constexpr (std::is_same_v<T, optOp2Kind>)
             {
@@ -9703,6 +9761,17 @@ private:
         }
 
         return isOpaqueSIMDType(varDsc->GetLayout());
+    }
+
+    bool isSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        if (isIntrinsicType(clsHnd))
+        {
+            const char* namespaceName = nullptr;
+            const char* className     = getClassNameFromMetadata(clsHnd, &namespaceName);
+            return (strcmp(className, "Half") == 0) && (strcmp(namespaceName, "System") == 0);
+        }
+        return false;
     }
 
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
@@ -12390,6 +12459,7 @@ public:
             case GT_ASYNC_RESUME_INFO:
             case GT_LABEL:
             case GT_FTN_ADDR:
+            case GT_FTN_ENTRY:
             case GT_RET_EXPR:
             case GT_CNS_INT:
             case GT_CNS_LNG:
@@ -12462,6 +12532,7 @@ public:
             case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETURN_SUSPEND:
+            case GT_NONLOCAL_JMP:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
             case GT_ARR_ADDR:
@@ -12931,6 +13002,18 @@ inline unsigned FuncInfoDsc::GetFuncletIdx(Compiler* comp) const
     assert(this == &comp->compFuncInfos[funcletIdx]);
     return funcletIdx;
 }
+
+#if defined(TARGET_WASM)
+inline void FuncInfoDsc::ensureUnwindableFrame(Compiler* comp)
+{
+    if (!needsUnwindableFrame)
+    {
+        JITDUMP("%s (index %u) needs to be unwindable\n", IsFunclet() ? "Funclet" : "Main method", GetFuncletIdx(comp));
+
+        needsUnwindableFrame = true;
+    }
+}
+#endif // defined(TARGET_WASM)
 
 // FuncInfoRange: adapter class for forward or reverse iteration of a contiguous range of function/funclet
 // descriptors using range-based `for`, e.g.:

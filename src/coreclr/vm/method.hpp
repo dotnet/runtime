@@ -64,6 +64,7 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 #endif
 
+// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None.
 enum class AsyncMethodFlags
 {
     // Method uses CORINFO_CALLCONV_ASYNCCALL call convention.
@@ -262,6 +263,9 @@ struct MethodDescCodeData final
 #ifdef FEATURE_INTERPRETER
     CallStubHeader *CallStub;
 #endif // FEATURE_INTERPRETER
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    PatchpointInfo *AltJitPatchpointInfo;
+#endif // _DEBUG && ALLOW_SXS_JIT
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
@@ -1626,6 +1630,7 @@ public:
     PCODE GetPortableEntryPointIfExists();
 
     void ResetPortableEntryPoint();
+    void SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *portableEntry);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     //*******************************************************************************
@@ -1989,6 +1994,11 @@ public:
 #ifndef DACCESS_COMPILE
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
     void SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier);
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    HRESULT SetMethodDescAltJitPatchpointInfo(PatchpointInfo* pInfo);
+    PatchpointInfo* GetMethodDescAltJitPatchpointInfo();
+#endif
 #endif // !DACCESS_COMPILE
     PTR_MethodDescVersioningState GetMethodDescVersionState();
     NativeCodeVersion::OptimizationTier GetMethodDescOptimizationTier();
@@ -2272,7 +2282,6 @@ public:
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
 
 private:
-    PCODE PrepareILBasedCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
@@ -2673,6 +2682,12 @@ public:
         m_next = chunk;
     }
 
+    void SetNextChunkVolatile(MethodDescChunk *chunk)
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&m_next, dac_cast<PTR_MethodDescChunk>(chunk));
+    }
+
     void SetLoaderModuleAttachedToChunk(Module* pModule)
     {
         m_flagsAndTokenRange |= enum_flag_LoaderModuleAttachedToChunk;
@@ -2684,7 +2699,11 @@ public:
     PTR_MethodDescChunk GetNextChunk()
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef DACCESS_COMPILE
         return m_next;
+#else
+        return VolatileLoad(&m_next);
+#endif
     }
 
     UINT32 GetCount()
@@ -3278,9 +3297,6 @@ public:
 
         kPInvokePopulated               = 0x8000, // Indicate if the PInvoke has been fully populated.
     };
-
-    // Resolve the import to the PInvoke target and set it on the PInvokeMethodDesc.
-    static void* ResolveAndSetPInvokeTarget(_In_ PInvokeMethodDesc* pMD);
 
     // Attempt to get a resolved PInvoke target. This will return true for already resolved
     // targets and methods that are resolved at JIT time, such as those marked SuppressGCTransition
