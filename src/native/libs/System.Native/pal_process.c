@@ -370,6 +370,7 @@ typedef struct
     int32_t childPid;
     int32_t result;
     int32_t errnoValue;
+    int32_t done;
 } PDeathSigForkRequest;
 
 static pthread_mutex_t s_pdeathsig_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -404,9 +405,10 @@ static void* PDeathSigThreadFunc(void* arg)
         req->childPid = childPid;
         req->errnoValue = errno;
 
-        // Signal completion. Use broadcast (not signal) because multiple callers may be
-        // waiting on done_cond simultaneously. Each caller checks s_pdeathsig_request == NULL
-        // in a while loop, so spurious wakeups are handled correctly.
+        // Mark this request as done and clear the global slot.
+        // Use broadcast because multiple callers may be waiting: the submitter waits for
+        // its done flag, and other callers wait for the slot to become free.
+        req->done = 1;
         s_pdeathsig_request = NULL;
         pthread_cond_broadcast(&s_pdeathsig_done_cond);
     }
@@ -491,15 +493,26 @@ static int32_t ForkAndExecOnPDeathSigThread(
     req.childPid = -1;
     req.result = -1;
     req.errnoValue = 0;
+    req.done = 0;
 
     pthread_mutex_lock(&s_pdeathsig_mutex);
+
+    // Wait until no other request is being processed. This serializes
+    // concurrent callers so requests cannot overwrite each other.
+    while (s_pdeathsig_request != NULL)
+    {
+        pthread_cond_wait(&s_pdeathsig_done_cond, &s_pdeathsig_mutex);
+    }
 
     // Submit request and signal the dedicated thread
     s_pdeathsig_request = &req;
     pthread_cond_signal(&s_pdeathsig_request_cond);
 
-    // Wait for the dedicated thread to complete the fork+exec
-    while (s_pdeathsig_request != NULL)
+    // Wait for the dedicated thread to complete OUR fork+exec.
+    // We check req.done (not s_pdeathsig_request) so that a concurrent
+    // caller submitting the next request doesn't prevent us from seeing
+    // that our request has already completed.
+    while (!req.done)
     {
         pthread_cond_wait(&s_pdeathsig_done_cond, &s_pdeathsig_mutex);
     }
