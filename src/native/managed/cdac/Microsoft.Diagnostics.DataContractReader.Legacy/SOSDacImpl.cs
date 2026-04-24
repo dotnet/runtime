@@ -4864,26 +4864,23 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, VCSHeapType heaptype, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
     {
         int hr = HResults.S_OK;
-#if DEBUG
-        DebugTraverseLoaderHeapBlocks.Clear();
-        _debugTraverseLoaderDebugCount = 0;
-#endif
         try
         {
-            if (pAppDomain == 0)
+            // Native DAC only validates pAppDomain here; traversal always uses the global loader allocator.
+            if (pAppDomain == 0 || pCallback is null)
                 throw new ArgumentException();
 
             Contracts.ILoader loader = _target.Contracts.Loader;
             TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
             IReadOnlyDictionary<string, TargetPointer> heaps = loader.GetLoaderAllocatorHeaps(globalLoaderAllocator);
 
-            if (!heaps.ContainsKey("IndcellHeap"))
+            if (!heaps.ContainsKey(nameof(VCSHeapType.IndcellHeap)))
                 throw new NullReferenceException();
 
             string? heapName = heaptype switch
             {
-                VCSHeapType.IndcellHeap => "IndcellHeap",
-                VCSHeapType.CacheEntryHeap => "CacheEntryHeap",
+                VCSHeapType.IndcellHeap => nameof(VCSHeapType.IndcellHeap),
+                VCSHeapType.CacheEntryHeap => nameof(VCSHeapType.CacheEntryHeap),
                 _ => throw new ArgumentException(),
             };
 

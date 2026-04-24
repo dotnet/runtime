@@ -635,7 +635,7 @@ public struct DacpRCWData
     public Interop.BOOL isDisconnected;
 }
 
-public enum VCSHeapType
+public enum VCSHeapType : int
 {
     IndcellHeap = 0,
     LookupHeap = 1,
