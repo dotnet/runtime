@@ -140,6 +140,8 @@ namespace System.Security.Cryptography
 
         internal static SafeEvpPKeyHandle GenerateECKey(ECCurve curve, out int keySize)
         {
+            curve.Validate();
+
             if (curve.IsNamed)
             {
                 string oid = !string.IsNullOrEmpty(curve.Oid.Value) ? curve.Oid.Value : curve.Oid.FriendlyName!;
