@@ -536,6 +536,8 @@ namespace System.Collections.Generic.Tests
             Assert.True(comparer.Equals(original, original));
             Assert.True(comparer.Equals(original, otherEqualLen));
             Assert.False(comparer.Equals(original, otherLongerLen));
+
+            Assert.Equal(comparer.GetHashCode(original), comparer.GetHashCode(otherEqualLen));
         }
 
         [Fact]
@@ -566,6 +568,13 @@ namespace System.Collections.Generic.Tests
             Assert.True(comparer.Equals(null, evenLen1));
             Assert.False(comparer.Equals(oddLen1, null));
             Assert.False(comparer.Equals(null, oddLen1));
+
+            Assert.Equal(comparer.GetHashCode(evenLen1), comparer.GetHashCode(evenLen2));
+            Assert.Equal(comparer.GetHashCode(oddLen1), comparer.GetHashCode(oddLen2));
+            Assert.NotEqual(comparer.GetHashCode(evenLen1), comparer.GetHashCode(oddLen1));
+            Assert.Equal(comparer.GetHashCode(null), comparer.GetHashCode(null));
+            Assert.Equal(comparer.GetHashCode(null), comparer.GetHashCode(evenLen1));
+            Assert.NotEqual(comparer.GetHashCode(null), comparer.GetHashCode(oddLen1));
         }
 
         [Fact]

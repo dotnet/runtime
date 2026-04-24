@@ -52,13 +52,7 @@ namespace System.Collections.Generic
                     keyComparer.Equals(x: keySelector(itemX), y: keySelector(itemY)),
                 getHashCode: obj =>
                 {
-                    if (obj is null)
-                    {
-                        return 0;
-                    }
-
                     TKey? key = keySelector(obj);
-
                     return key is null ? 0 : keyComparer.GetHashCode(key);
                 });
         }
