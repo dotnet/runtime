@@ -2308,7 +2308,13 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     {
         // Call impInlineFetchArg to "reserve" a temp for the "this" pointer.
         GenTree* thisOp = impInlineFetchArg(inlArgInfo[0], lclVarInfo[0]);
-        if (fgAddrCouldBeNull(thisOp))
+
+        // The temp returned by impInlineFetchArg may later be bashed in-place to the
+        // original arg node (see fgInsertInlineeArgument). If the original arg cannot be
+        // null, the bashed NULLCHECK would carry stale GTF_EXCEPT. Use the underlying
+        // arg node to decide whether a null check is actually needed.
+        GenTree* const origArgNode = inlArgInfo[0].arg->GetNode();
+        if (fgAddrCouldBeNull(thisOp) && fgAddrCouldBeNull(origArgNode))
         {
             nullcheck = gtNewNullCheck(thisOp);
             // The NULL-check statement will be inserted to the statement list after those statements
@@ -2345,6 +2351,20 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
         assert(argInfo != nullptr);
         fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
+    }
+
+    // Argument insertion above may have bashed single-use temps in-place
+    // (see fgInsertInlineeArgument). Such bashing can leave stale side-effect
+    // flags on parent nodes within the inlinee body (e.g. GTF_EXCEPT on a
+    // parent whose former IND child has been replaced with a non-faulting
+    // IND or a non-null expression). Refresh side-effect flags on every
+    // inlinee statement so the resulting IR is consistent.
+    for (BasicBlock* const inlineeBlock : InlineeCompiler->Blocks())
+    {
+        for (Statement* const stmt : inlineeBlock->Statements())
+        {
+            gtUpdateStmtSideEffects(stmt);
+        }
     }
 
     // Add the CCTOR check if asked for.
