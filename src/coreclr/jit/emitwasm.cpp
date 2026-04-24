@@ -210,7 +210,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     if (m_debugInfoSize > 0)
     {
         id->idDebugOnlyInfo()->idCallSig = params.sigInfo;
-        id->idDebugOnlyInfo()->isUnmanagedCall = params.isUnmanagedCall;
+        id->idDebugOnlyInfo()->idIsUnmanagedCall = params.isUnmanagedCall;
         id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
         id->idDebugOnlyInfo()->idFlags     = GTF_ICON_METHOD_HDL;
     }
@@ -861,13 +861,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         CORINFO_SIG_INFO sigInfoLocal;
         
         CORINFO_SIG_INFO *sigInfoCall = id->idDebugOnlyInfo()->idCallSig;
-        if (id->idDebugOnlyInfo()->isUnmanagedCall)
+        if (id->idDebugOnlyInfo()->idIsUnmanagedCall)
         {
             _ASSERTE(sigInfoCall != NULL);
             sigInfoLocal = *sigInfoCall;
             // Unmanaged calls need to be reported with the unmanaged calling convention so that the R2R compiler can ignore this report
             // for the purpose of determining if a call site needs to have a R2R to interpreter thunk generated
-            sigInfoLocal.callConv = CORINFO_CALLCONV_UNMGD;
+            sigInfoLocal.callConv = CORINFO_CALLCONV_UNMANAGED;
             sigInfoCall = &sigInfoLocal;
         }
         emitRecordCallSite(emitCurCodeOffs(*dp), sigInfoCall,
