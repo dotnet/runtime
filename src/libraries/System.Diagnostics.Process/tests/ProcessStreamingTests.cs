@@ -216,17 +216,7 @@ namespace System.Diagnostics.Tests
             List<string> capturedOutput = new();
             List<string> capturedError = new();
 
-            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
-            {
-                if (line.StandardError)
-                {
-                    capturedError.Add(line.Content);
-                }
-                else
-                {
-                    capturedOutput.Add(line.Content);
-                }
-            }
+            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
 
             if (string.IsNullOrEmpty(standardOutput))
             {
@@ -275,17 +265,7 @@ namespace System.Diagnostics.Tests
             List<string> capturedOutput = new();
             List<string> capturedError = new();
 
-            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
-            {
-                if (line.StandardError)
-                {
-                    capturedError.Add(line.Content);
-                }
-                else
-                {
-                    capturedOutput.Add(line.Content);
-                }
-            }
+            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
 
             List<string> expectedOutput = new();
             List<string> expectedError = new();
@@ -324,17 +304,7 @@ namespace System.Diagnostics.Tests
             List<string> capturedOutput = new();
             List<string> capturedError = new();
 
-            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
-            {
-                if (line.StandardError)
-                {
-                    capturedError.Add(line.Content);
-                }
-                else
-                {
-                    capturedOutput.Add(line.Content);
-                }
-            }
+            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
 
             for (int i = 0; i < lineCount; i++)
             {
@@ -394,15 +364,13 @@ namespace System.Diagnostics.Tests
         {
             using Process process = StartLinePrintingProcess("stdout_line", "stderr_line");
 
-            List<ProcessOutputLine> allLines = new();
+            List<string> capturedOutput = new();
+            List<string> capturedError = new();
 
-            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
-            {
-                allLines.Add(line);
-            }
+            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
 
-            Assert.Single(allLines, line => line.Content == "stdout_line" && !line.StandardError);
-            Assert.Single(allLines, line => line.Content == "stderr_line" && line.StandardError);
+            Assert.Single(capturedOutput, line => line == "stdout_line");
+            Assert.Single(capturedError, line => line == "stderr_line");
 
             Assert.True(process.WaitForExit(WaitInMS));
         }
@@ -430,10 +398,21 @@ namespace System.Diagnostics.Tests
 
             ProcessOutputLine? firstLine = null;
 
-            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
+            if (useAsync)
             {
-                firstLine = line;
-                break; // stop after first line
+                await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+                {
+                    firstLine = line;
+                    break;
+                }
+            }
+            else
+            {
+                foreach (ProcessOutputLine line in process.ReadAllLines())
+                {
+                    firstLine = line;
+                    break;
+                }
             }
 
             Assert.NotNull(firstLine);
@@ -463,17 +442,7 @@ namespace System.Diagnostics.Tests
             List<string> capturedOutput = new();
             List<string> capturedError = new();
 
-            await foreach (ProcessOutputLine line in EnumerateLines(process, useAsync))
-            {
-                if (line.StandardError)
-                {
-                    capturedError.Add(line.Content);
-                }
-                else
-                {
-                    capturedOutput.Add(line.Content);
-                }
-            }
+            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
 
             Assert.Equal(new[] { "stdout_line" }, capturedOutput);
             Assert.Equal(new[] { "stderr_line" }, capturedError);
@@ -506,24 +475,37 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Helper that wraps both the sync and async line-reading APIs into an
-        /// <see cref="IAsyncEnumerable{ProcessOutputLine}"/> so callers can always
-        /// use <c>await foreach</c>.
+        /// Helper that wraps both the sync and async line-reading APIs, populating
+        /// the provided output and error lists.
         /// </summary>
-        private static async IAsyncEnumerable<ProcessOutputLine> EnumerateLines(Process process, bool useAsync)
+        private static async Task EnumerateLines(Process process, bool useAsync, List<string> capturedOutput, List<string> capturedError)
         {
             if (useAsync)
             {
                 await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
                 {
-                    yield return line;
+                    if (line.StandardError)
+                    {
+                        capturedError.Add(line.Content);
+                    }
+                    else
+                    {
+                        capturedOutput.Add(line.Content);
+                    }
                 }
             }
             else
             {
                 foreach (ProcessOutputLine line in process.ReadAllLines())
                 {
-                    yield return line;
+                    if (line.StandardError)
+                    {
+                        capturedError.Add(line.Content);
+                    }
+                    else
+                    {
+                        capturedOutput.Add(line.Content);
+                    }
                 }
             }
         }

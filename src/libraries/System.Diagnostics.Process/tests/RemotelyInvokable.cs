@@ -138,12 +138,12 @@ namespace System.Diagnostics.Tests
         public static int WriteLinesToBothStreamsWithEncoding(string encodingName)
         {
             Encoding encoding = Encoding.GetEncoding(encodingName);
-            using (var outputWriter = new StreamWriter(Console.OpenStandardOutput(), encoding))
+            using (StreamWriter outputWriter = new(Console.OpenStandardOutput(), encoding))
             {
                 outputWriter.WriteLine("stdout_line");
             }
 
-            using (var errorWriter = new StreamWriter(Console.OpenStandardError(), encoding))
+            using (StreamWriter errorWriter = new(Console.OpenStandardError(), encoding))
             {
                 errorWriter.WriteLine("stderr_line");
             }

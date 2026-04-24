@@ -23,8 +23,8 @@ namespace System.Diagnostics
         /// </summary>
         private IEnumerable<ProcessOutputLine> ReadPipesToLines(
             int timeoutMs,
-            Encoding outputEncoding,
-            Encoding errorEncoding)
+            Decoder outputDecoder,
+            Decoder errorDecoder)
         {
             SafeFileHandle outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
             SafeFileHandle errorHandle = GetSafeHandleFromStreamReader(_standardError!);
@@ -35,6 +35,8 @@ namespace System.Diagnostics
             char[] errorCharBuffer = ArrayPool<char>.Shared.Rent(InitialReadAllBufferSize);
             bool outputRefAdded = false, errorRefAdded = false;
             PinnedGCHandle<byte[]> outputPin = default, errorPin = default;
+            // NativeOverlapped* can't be used as iterator state machine fields (pointers aren't
+            // allowed in managed types). Store as nint and cast back inside scoped unsafe blocks.
             nint outputOverlappedNint = 0, errorOverlappedNint = 0;
             EventWaitHandle? outputEvent = null, errorEvent = null;
             bool outputDone = true, errorDone = true;
@@ -58,9 +60,6 @@ namespace System.Diagnostics
 
                 // Error output gets index 0 so WaitAny services it first when both are signaled.
                 WaitHandle[] waitHandles = [errorEvent, outputEvent];
-
-                Decoder outputDecoder = outputEncoding.GetDecoder();
-                Decoder errorDecoder = errorEncoding.GetDecoder();
 
                 int outputCharStart = 0, outputCharEnd = 0;
                 int errorCharStart = 0, errorCharEnd = 0;

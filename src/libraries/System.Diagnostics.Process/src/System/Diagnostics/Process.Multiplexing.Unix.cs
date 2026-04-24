@@ -22,8 +22,8 @@ namespace System.Diagnostics
         /// </summary>
         private IEnumerable<ProcessOutputLine> ReadPipesToLines(
             int timeoutMs,
-            Encoding outputEncoding,
-            Encoding errorEncoding)
+            Decoder outputDecoder,
+            Decoder errorDecoder)
         {
             SafePipeHandle outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
             SafePipeHandle errorHandle = GetSafeHandleFromStreamReader(_standardError!);
@@ -51,9 +51,6 @@ namespace System.Diagnostics
                 // Cannot use stackalloc in an iterator method; use a regular array.
                 Interop.PollEvent[] pollFds = new Interop.PollEvent[2];
 
-                Decoder outputDecoder = outputEncoding.GetDecoder();
-                Decoder errorDecoder = errorEncoding.GetDecoder();
-
                 long deadline = timeoutMs >= 0 ? Environment.TickCount64 + timeoutMs : long.MaxValue;
 
                 int outputCharStart = 0, outputCharEnd = 0;
@@ -65,27 +62,7 @@ namespace System.Diagnostics
 
                 while (!outputDone || !errorDone)
                 {
-                    int numFds = 0;
-                    int outputIndex = -1;
-                    int errorIndex = -1;
-
-                    if (!errorDone)
-                    {
-                        errorIndex = numFds;
-                        pollFds[numFds].FileDescriptor = errorFd;
-                        pollFds[numFds].Events = Interop.PollEvents.POLLIN;
-                        pollFds[numFds].TriggeredEvents = Interop.PollEvents.POLLNONE;
-                        numFds++;
-                    }
-
-                    if (!outputDone)
-                    {
-                        outputIndex = numFds;
-                        pollFds[numFds].FileDescriptor = outputFd;
-                        pollFds[numFds].Events = Interop.PollEvents.POLLIN;
-                        pollFds[numFds].TriggeredEvents = Interop.PollEvents.POLLNONE;
-                        numFds++;
-                    }
+                    int numFds = PreparePollFds(pollFds, errorFd, outputFd, errorDone, outputDone, out int errorIndex, out int outputIndex);
 
                     if (!TryGetRemainingTimeout(deadline, timeoutMs, out int pollTimeout))
                     {
@@ -122,47 +99,15 @@ namespace System.Diagnostics
                         // Use explicit branching to avoid ref locals across yield points.
                         if (isError)
                         {
-                            int bytesRead = ReadNonBlocking(currentHandle, errorByteBuffer, 0);
-                            if (bytesRead > 0)
-                            {
-                                DecodeAndAppendChars(errorDecoder, errorByteBuffer, 0, bytesRead, flush: false, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
-                                if (!errorBomChecked && errorCharEnd > 0)
-                                {
-                                    SkipBomIfPresent(errorCharBuffer, errorCharEnd, ref errorCharStart);
-                                    errorBomChecked = true;
-                                }
-                                ParseLinesFromCharBuffer(errorCharBuffer, ref errorCharStart, errorCharEnd, true, lines);
-                                CompactOrGrowCharBuffer(ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
-                            }
-                            else if (bytesRead == 0)
-                            {
-                                DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
-                                EmitRemainingCharsAsLine(errorCharBuffer, ref errorCharStart, ref errorCharEnd, true, lines);
-                                errorDone = true;
-                            }
-                            // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.
+                            HandlePipeLineRead(currentHandle, errorDecoder, errorByteBuffer,
+                                ref errorCharBuffer, ref errorCharStart, ref errorCharEnd,
+                                ref errorBomChecked, ref errorDone, standardError: true, lines);
                         }
                         else
                         {
-                            int bytesRead = ReadNonBlocking(currentHandle, outputByteBuffer, 0);
-                            if (bytesRead > 0)
-                            {
-                                DecodeAndAppendChars(outputDecoder, outputByteBuffer, 0, bytesRead, flush: false, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
-                                if (!outputBomChecked && outputCharEnd > 0)
-                                {
-                                    SkipBomIfPresent(outputCharBuffer, outputCharEnd, ref outputCharStart);
-                                    outputBomChecked = true;
-                                }
-                                ParseLinesFromCharBuffer(outputCharBuffer, ref outputCharStart, outputCharEnd, false, lines);
-                                CompactOrGrowCharBuffer(ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
-                            }
-                            else if (bytesRead == 0)
-                            {
-                                DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
-                                EmitRemainingCharsAsLine(outputCharBuffer, ref outputCharStart, ref outputCharEnd, false, lines);
-                                outputDone = true;
-                            }
-                            // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.
+                            HandlePipeLineRead(currentHandle, outputDecoder, outputByteBuffer,
+                                ref outputCharBuffer, ref outputCharStart, ref outputCharEnd,
+                                ref outputBomChecked, ref outputDone, standardError: false, lines);
                         }
                     }
 
@@ -192,6 +137,80 @@ namespace System.Diagnostics
                 ArrayPool<char>.Shared.Return(outputCharBuffer);
                 ArrayPool<char>.Shared.Return(errorCharBuffer);
             }
+        }
+
+        /// <summary>
+        /// Populates the poll fd array with the active pipe file descriptors.
+        /// Error is added first so it gets serviced first when both have data.
+        /// Returns the number of active file descriptors.
+        /// </summary>
+        private static int PreparePollFds(
+            Interop.PollEvent[] pollFds,
+            int errorFd, int outputFd,
+            bool errorDone, bool outputDone,
+            out int errorIndex, out int outputIndex)
+        {
+            int numFds = 0;
+            errorIndex = -1;
+            outputIndex = -1;
+
+            if (!errorDone)
+            {
+                errorIndex = numFds;
+                pollFds[numFds].FileDescriptor = errorFd;
+                pollFds[numFds].Events = Interop.PollEvents.POLLIN;
+                pollFds[numFds].TriggeredEvents = Interop.PollEvents.POLLNONE;
+                numFds++;
+            }
+
+            if (!outputDone)
+            {
+                outputIndex = numFds;
+                pollFds[numFds].FileDescriptor = outputFd;
+                pollFds[numFds].Events = Interop.PollEvents.POLLIN;
+                pollFds[numFds].TriggeredEvents = Interop.PollEvents.POLLNONE;
+                numFds++;
+            }
+
+            return numFds;
+        }
+
+        /// <summary>
+        /// Handles a poll notification for a single pipe: reads bytes, decodes to chars,
+        /// strips BOM on first decode, parses lines, compacts the char buffer, and sets
+        /// <paramref name="done"/> to <see langword="true"/> on EOF.
+        /// </summary>
+        private static void HandlePipeLineRead(
+            SafePipeHandle handle,
+            Decoder decoder,
+            byte[] byteBuffer,
+            ref char[] charBuffer,
+            ref int charStart,
+            ref int charEnd,
+            ref bool bomChecked,
+            ref bool done,
+            bool standardError,
+            List<ProcessOutputLine> lines)
+        {
+            int bytesRead = ReadNonBlocking(handle, byteBuffer, 0);
+            if (bytesRead > 0)
+            {
+                DecodeAndAppendChars(decoder, byteBuffer, 0, bytesRead, flush: false, ref charBuffer, ref charStart, ref charEnd);
+                if (!bomChecked && charEnd > 0)
+                {
+                    SkipBomIfPresent(charBuffer, charEnd, ref charStart);
+                    bomChecked = true;
+                }
+                ParseLinesFromCharBuffer(charBuffer, ref charStart, charEnd, standardError, lines);
+                CompactOrGrowCharBuffer(ref charBuffer, ref charStart, ref charEnd);
+            }
+            else if (bytesRead == 0)
+            {
+                DecodeAndAppendChars(decoder, Array.Empty<byte>(), 0, 0, flush: true, ref charBuffer, ref charStart, ref charEnd);
+                EmitRemainingCharsAsLine(charBuffer, ref charStart, ref charEnd, standardError, lines);
+                done = true;
+            }
+            // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.
         }
 
         /// <summary>
@@ -231,7 +250,7 @@ namespace System.Diagnostics
                 throw new Win32Exception();
             }
 
-            Span<Interop.PollEvent> pollFds = stackalloc Interop.PollEvent[2];
+            Interop.PollEvent[] pollFds = new Interop.PollEvent[2];
 
             long deadline = timeoutMs >= 0
                 ? Environment.TickCount64 + timeoutMs
@@ -240,58 +259,27 @@ namespace System.Diagnostics
             bool outputDone = false, errorDone = false;
             while (!outputDone || !errorDone)
             {
-                int numFds = 0;
+                int numFds = PreparePollFds(pollFds, errorFd, outputFd, errorDone, outputDone, out int errorIndex, out int outputIndex);
 
-                int outputIndex = -1;
-                int errorIndex = -1;
-
-                if (!outputDone)
-                {
-                    outputIndex = numFds;
-                    pollFds[numFds].FileDescriptor = outputFd;
-                    pollFds[numFds].Events = Interop.PollEvents.POLLIN;
-                    pollFds[numFds].TriggeredEvents = Interop.PollEvents.POLLNONE;
-                    numFds++;
-                }
-
-                if (!errorDone)
-                {
-                    errorIndex = numFds;
-                    pollFds[numFds].FileDescriptor = errorFd;
-                    pollFds[numFds].Events = Interop.PollEvents.POLLIN;
-                    pollFds[numFds].TriggeredEvents = Interop.PollEvents.POLLNONE;
-                    numFds++;
-                }
-
-                int pollTimeout;
-                if (!TryGetRemainingTimeout(deadline, timeoutMs, out pollTimeout))
+                if (!TryGetRemainingTimeout(deadline, timeoutMs, out int pollTimeout))
                 {
                     throw new TimeoutException();
                 }
 
-                unsafe
+                Interop.Error pollError = PollPipes(pollFds, numFds, pollTimeout, out uint triggered);
+                if (pollError != Interop.Error.SUCCESS)
                 {
-                    uint triggered;
-                    fixed (Interop.PollEvent* pPollFds = pollFds)
+                    if (pollError == Interop.Error.EINTR)
                     {
-                        Interop.Error error = Interop.Sys.Poll(pPollFds, (uint)numFds, pollTimeout, &triggered);
-                        if (error != Interop.Error.SUCCESS)
-                        {
-                            if (error == Interop.Error.EINTR)
-                            {
-                                // We don't re-issue the poll immediately because we need to check
-                                // if we've already exceeded the overall timeout.
-                                continue;
-                            }
-
-                            throw new Win32Exception(Interop.Sys.ConvertErrorPalToPlatform(error));
-                        }
-
-                        if (triggered == 0)
-                        {
-                            throw new TimeoutException();
-                        }
+                        continue;
                     }
+
+                    throw new Win32Exception(Interop.Sys.ConvertErrorPalToPlatform(pollError));
+                }
+
+                if (triggered == 0)
+                {
+                    throw new TimeoutException();
                 }
 
                 for (int i = 0; i < numFds; i++)

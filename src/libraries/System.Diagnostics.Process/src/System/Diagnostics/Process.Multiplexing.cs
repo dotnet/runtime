@@ -152,7 +152,7 @@ namespace System.Diagnostics
             Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();
             Encoding errorEncoding = _startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding();
 
-            return ReadPipesToLines(timeoutMs, outputEncoding, errorEncoding);
+            return ReadPipesToLines(timeoutMs, outputEncoding.GetDecoder(), errorEncoding.GetDecoder());
         }
 
         /// <summary>
@@ -192,7 +192,7 @@ namespace System.Diagnostics
 
             while (charEndIndex + charCount > charBuffer.Length)
             {
-                RentLargerCharBuffer(ref charBuffer, charEndIndex);
+                RentLargerBuffer(ref charBuffer, charEndIndex);
             }
 
             int decoded = decoder.GetChars(byteBuffer, byteIndex, byteCount, charBuffer, charEndIndex, flush);
@@ -219,9 +219,10 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Scans the char buffer from <paramref name="startIndex"/> to <paramref name="endIndex"/> for complete
-        /// lines (delimited by <c>\n</c>), adds each as a <see cref="ProcessOutputLine"/> to
-        /// <paramref name="lines"/>, and advances <paramref name="startIndex"/> past the consumed data.
-        /// Handles both <c>\r\n</c> and <c>\n</c> line endings.
+        /// lines (delimited by <c>\r</c>, <c>\n</c>, or <c>\r\n</c>), adds each as a
+        /// <see cref="ProcessOutputLine"/> to <paramref name="lines"/>, and advances
+        /// <paramref name="startIndex"/> past the consumed data.
+        /// This matches <see cref="StreamReader.ReadLine"/> behavior used by the async path.
         /// </summary>
         private static void ParseLinesFromCharBuffer(
             char[] buffer,
@@ -233,28 +234,51 @@ namespace System.Diagnostics
             while (startIndex < endIndex)
             {
                 int remaining = endIndex - startIndex;
-                int lineEnd = buffer.AsSpan(startIndex, remaining).IndexOf('\n');
+                int lineEnd = buffer.AsSpan(startIndex, remaining).IndexOfAny('\r', '\n');
                 if (lineEnd == -1)
                 {
                     break;
                 }
 
-                int contentLength = lineEnd;
-                if (contentLength > 0 && buffer[startIndex + contentLength - 1] == '\r')
+                char terminator = buffer[startIndex + lineEnd];
+
+                // If we found '\r', we need to check for a following '\n' to treat \r\n as one terminator.
+                // If '\n' isn't available yet (end of current data), stop and wait for more data.
+                if (terminator == '\r')
                 {
-                    contentLength--;
+                    if (startIndex + lineEnd + 1 >= endIndex)
+                    {
+                        // The '\r' is at the very end of available data — we can't tell yet
+                        // whether it's a standalone '\r' or part of '\r\n'. Wait for more data.
+                        break;
+                    }
+
+                    lines.Add(new ProcessOutputLine(
+                        new string(buffer, startIndex, lineEnd),
+                        standardError));
+
+                    // Skip \r and also \n if it immediately follows.
+                    startIndex += lineEnd + 1;
+                    if (startIndex < endIndex && buffer[startIndex] == '\n')
+                    {
+                        startIndex++;
+                    }
                 }
+                else
+                {
+                    // terminator == '\n'
+                    lines.Add(new ProcessOutputLine(
+                        new string(buffer, startIndex, lineEnd),
+                        standardError));
 
-                lines.Add(new ProcessOutputLine(
-                    new string(buffer, startIndex, contentLength),
-                    standardError));
-
-                startIndex += lineEnd + 1;
+                    startIndex += lineEnd + 1;
+                }
             }
         }
 
         /// <summary>
         /// Emits any remaining characters in the buffer as a final line when an EOF is reached.
+        /// A trailing <c>\r</c> is stripped to match <see cref="StreamReader.ReadLine"/> behavior.
         /// </summary>
         private static void EmitRemainingCharsAsLine(
             char[] buffer,
@@ -271,12 +295,9 @@ namespace System.Diagnostics
                     length--;
                 }
 
-                if (length > 0)
-                {
-                    lines.Add(new ProcessOutputLine(
-                        new string(buffer, startIndex, length),
-                        standardError));
-                }
+                lines.Add(new ProcessOutputLine(
+                    new string(buffer, startIndex, length),
+                    standardError));
 
                 startIndex = 0;
                 endIndex = 0;
@@ -299,7 +320,7 @@ namespace System.Diagnostics
             if (remaining == buffer.Length)
             {
                 // The buffer is too small to hold a single line — grow it.
-                RentLargerCharBuffer(ref buffer, remaining);
+                RentLargerBuffer(ref buffer, remaining);
             }
             else
             {
@@ -309,20 +330,6 @@ namespace System.Diagnostics
 
             startIndex = 0;
             endIndex = remaining;
-        }
-
-        /// <summary>
-        /// Rents a larger char buffer from the array pool, copies existing data, and returns the old buffer.
-        /// </summary>
-        private static void RentLargerCharBuffer(ref char[] buffer, int charsUsed)
-        {
-            int newSize = (int)Math.Min((long)buffer.Length * 2, Array.MaxLength);
-            newSize = Math.Max(buffer.Length + 1, newSize);
-            char[] newBuffer = ArrayPool<char>.Shared.Rent(newSize);
-            Array.Copy(buffer, newBuffer, charsUsed);
-            char[] oldBuffer = buffer;
-            buffer = newBuffer;
-            ArrayPool<char>.Shared.Return(oldBuffer);
         }
 
         /// <summary>
@@ -631,17 +638,17 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Rents a larger buffer from the array pool and copies the existing data to it.
+        /// Rents a larger buffer from the array pool, copies existing data, and returns the old buffer.
         /// </summary>
-        private static void RentLargerBuffer(ref byte[] buffer, int bytesRead)
+        private static void RentLargerBuffer<T>(ref T[] buffer, int dataLength)
         {
             int newSize = (int)Math.Min((long)buffer.Length * 2, Array.MaxLength);
             newSize = Math.Max(buffer.Length + 1, newSize);
-            byte[] newBuffer = ArrayPool<byte>.Shared.Rent(newSize);
-            Buffer.BlockCopy(buffer, 0, newBuffer, 0, bytesRead);
-            byte[] oldBuffer = buffer;
+            T[] newBuffer = ArrayPool<T>.Shared.Rent(newSize);
+            Array.Copy(buffer, newBuffer, dataLength);
+            T[] oldBuffer = buffer;
             buffer = newBuffer;
-            ArrayPool<byte>.Shared.Return(oldBuffer);
+            ArrayPool<T>.Shared.Return(oldBuffer);
         }
 
         private static bool TryGetRemainingTimeout(long deadline, int originalTimeout, out int remainingTimeoutMs)
