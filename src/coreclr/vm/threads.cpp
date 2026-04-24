@@ -6784,10 +6784,6 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
 
     DAC_ENUM_DTHIS();
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
-    }
 
     if (m_debuggerFilterContext.IsValid())
     {
@@ -6873,11 +6869,6 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
             return;
         }
         DacGetThreadContext(this, &context);
-    }
-
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
     }
 
     FillRegDisplay(&regDisp, &context);

@@ -100,6 +100,21 @@ jobs:
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
+          # Provision emsdk on this agent so src/mono/browser/emsdk/ is populated
+          # before sendtohelix runs. The upstream runtime-build job acquires emsdk on
+          # its own agent (via src/coreclr/runtime.proj's BuildRuntimeDependsOnTargets),
+          # but that state is not shipped in its build artifacts. Mono WBT provisions
+          # implicitly because it builds the runtime in the same job; CoreCLR WBT is
+          # split across two agents, so we acquire it here on the WBT agent.
+          - ${{ if eq(platform, 'browser_wasm_win') }}:
+            - script: build.cmd -s provision.emsdk -os browser -c $(_BuildConfig)
+              displayName: Provision emsdk
+              workingDirectory: $(Build.SourcesDirectory)
+          - ${{ else }}:
+            - script: ./build.sh -s provision.emsdk -os browser -c $(_BuildConfig)
+              displayName: Provision emsdk
+              workingDirectory: $(Build.SourcesDirectory)
+
         # build WBT
         buildArgs: >-
           $(wbtProjectArg) $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
