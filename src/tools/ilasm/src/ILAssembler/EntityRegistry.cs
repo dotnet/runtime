@@ -1324,7 +1324,8 @@ namespace ILAssembler
                         var reader = new BlobReader(ptr, bytes.Length);
                         var typeArgs = decoder.DecodeMethodSpecificationSignature(ref reader);
                         var newBlob = new BlobBuilder();
-                        newBlob.WriteByte((byte)SignatureAttributes.Generic);
+                        const byte methodSpecSignatureHeader = 0x0A;
+                        newBlob.WriteByte(methodSpecSignatureHeader);
                         newBlob.WriteCompressedInteger(typeArgs.Length);
                         foreach (var typeArg in typeArgs)
                         {
