@@ -20,6 +20,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestNullTypeName();
             TestCaseInsensitive();
             TestUnknownAssembly();
+            TestUnknownTypeAssemblyGetType(null);
         }
 
         class InnerType
@@ -61,6 +62,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             Assembly assembly = GetUnknownAssembly();
             assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");
+        }
+
+        [ExpectedWarning("IL2128")]
+        static void TestUnknownTypeAssemblyGetType(Type unknownType)
+        {
+            unknownType.Assembly.GetType("Mono.Linker.Tests.Cases.DataFlow.AssemblyGetTypeDataFlow+InnerType");
         }
 
         static string GetUnknownString() => "unknown";
