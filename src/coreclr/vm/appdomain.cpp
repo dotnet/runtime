@@ -3035,7 +3035,7 @@ void AppDomain::GetParentAssemblyChain(Assembly *pStartAssembly, SString &chain,
 
     // Hold the lock for the entire chain build so that all Assembly*
     // from the cache are safe from collectible ALC unload.
-    DomainCacheCrstHolderForGCPreemp lock(this);
+    DomainCacheCrstHolderForGCCoop lock(this);
 
     MapSHash<Assembly*, Assembly*> parentMap;
     m_AssemblyCache.GetParentAssemblyMap(parentMap);
