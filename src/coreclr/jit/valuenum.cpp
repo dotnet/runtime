@@ -5081,7 +5081,7 @@ struct RelatedRelopEntry
 
 // clang-format off
 
-static RelatedRelopEntry s_relatedRelopTable_AND[] = {
+static const RelatedRelopEntry s_relatedRelopTable_AND[] = {
     // EQ & ...
     {VNFunc(GT_EQ), VNFunc(GT_EQ), -1, VNFunc(GT_EQ)},
     {VNFunc(GT_EQ), VNFunc(GT_NE),  0, VNF_COUNT},
@@ -5173,7 +5173,7 @@ static RelatedRelopEntry s_relatedRelopTable_AND[] = {
     {VNF_GE_UN,     VNF_GE_UN,     -1, VNF_GE_UN},
 };
 
-static RelatedRelopEntry s_relatedRelopTable_OR[] = {
+static const RelatedRelopEntry s_relatedRelopTable_OR[] = {
     // EQ | ...
     {VNFunc(GT_EQ), VNFunc(GT_EQ), -1, VNFunc(GT_EQ)},
     {VNFunc(GT_EQ), VNFunc(GT_NE),  1, VNF_COUNT},
@@ -7175,25 +7175,20 @@ VNFunc ValueNumStore::SwapRelop(VNFunc vnf)
 //
 genTreeOps ValueNumStore::VNRelopToGenTreeOp(VNFunc vnf, bool& isUnsigned)
 {
+    isUnsigned = false;
     switch (vnf)
     {
         case VNF_LT:
-            isUnsigned = false;
             return GT_LT;
         case VNF_LE:
-            isUnsigned = false;
             return GT_LE;
         case VNF_GE:
-            isUnsigned = false;
             return GT_GE;
         case VNF_GT:
-            isUnsigned = false;
             return GT_GT;
         case VNF_EQ:
-            isUnsigned = false;
             return GT_EQ;
         case VNF_NE:
-            isUnsigned = false;
             return GT_NE;
         case VNF_LT_UN:
             isUnsigned = true;
