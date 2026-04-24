@@ -13,7 +13,7 @@ public class VectorT
     // Vector<T> is not live into the loop, but created
     // during the loop.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int F(int from, int to, int cons)
+    public static int VectorCreatedInLoop(int from, int to, int cons)
     {
         int result = 0;
         for (int i = from; i < to; i++)
@@ -26,7 +26,7 @@ public class VectorT
 
     // Vector<T> is live into the loop.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int G(int from, int to, Vector<int> cons)
+    public static int LiveVectorArgument(int from, int to, Vector<int> cons)
     {
         int result = 0;
         for (int i = from; i < to; i++)
@@ -41,7 +41,7 @@ public class VectorT
 
     // Vector<T> is live into the loop from a local.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int H(int from, int to, int cons)
+    public static int LiveVectorLocal(int from, int to, int cons)
     {
         Vector<int> vec = Vector.Create<int>(cons);
         int result = 0;
@@ -52,10 +52,30 @@ public class VectorT
         return result;
     }
 
+    // Vector<T> is live into the loop from an address-exposed local, with outgoing stack arguments.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int LiveVectorWithStackArguments(int from, int to, int cons)
+    {
+        Vector<int> vec = Vector.Create<int>(cons);
+        int result = 0;
+        for (int i = from; i < to; i++)
+        {
+            result += SumWithStackArguments(ref vec, 1, 2, 3, 4, 5, 6, 7, 8);
+        }
+        return result;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static T Consume<T>(T t)
     {
         return t;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int SumWithStackArguments(ref Vector<int> value, int a, int b, int c, int d,
+        int e, int f, int g, int h)
+    {
+        return Vector.Sum(value) + a + b + c + d + e + f + g + h;
     }
 
     [Fact]
@@ -65,8 +85,9 @@ public class VectorT
         int iterations = 100_000;
         int expected = iterations * Vector<int>.Count * cons;
 
-        Assert.Equal(expected, F(0, iterations, cons));
-        Assert.Equal(expected, G(0, iterations, Vector.Create<int>(cons)));
-        Assert.Equal(expected, H(0, iterations, cons));
+        Assert.Equal(expected, VectorCreatedInLoop(0, iterations, cons));
+        Assert.Equal(expected, LiveVectorArgument(0, iterations, Vector.Create<int>(cons)));
+        Assert.Equal(expected, LiveVectorLocal(0, iterations, cons));
+        Assert.Equal(expected + iterations * 36, LiveVectorWithStackArguments(0, iterations, cons));
     }
 }

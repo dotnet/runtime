@@ -5036,7 +5036,23 @@ void CodeGen::genUnknownSizeFrame()
     // of the UnknownSizeFrame and we index into it.
     // TODO-SVE: We may want this to point into the middle of the frame to reduce address
     // computations (we have a signed 9-bit indexing immediate).
-    inst_Mov(TYP_I_IMPL, REG_UNKBASE, REG_SP, false);
+
+    unsigned outgoingArgSize = m_compiler->lvaOutgoingArgSpaceSize;
+
+    // The outgoing arg space should have been aligned during pre-allocation.
+    assert((outgoingArgSize % STACK_ALIGN) == 0);
+
+    if (outgoingArgSize == 0)
+    {
+        inst_Mov(TYP_I_IMPL, REG_UNKBASE, REG_SP, false);
+    }
+    else
+    {
+        // The fixed frame has already made provision for the outgoing arguments, so place the addressing
+        // vector at the beginning of this space. The outgoing arg space will be at the end of the
+        // UnknownSizeFrame.
+        genInstrWithConstant(INS_add, EA_PTRSIZE, REG_UNKBASE, REG_SP, outgoingArgSize, REG_SCRATCH);
+    }
 
     if (0 < totalVectorCount && totalVectorCount <= 32)
     {
@@ -5062,7 +5078,7 @@ void CodeGen::genUnknownSizeFrame()
 //
 // Remarks:
 //     This function emits code that assumes the state of sp has not been modified since
-//     establishing the UnknownSizeFrame. sp must point to the end of the UnknownSizeFrame.
+//     establishing the UnknownSizeFrame. sp points below the outgoing argument area.
 //
 void CodeGen::genZeroInitializeUnknownSizeFrame()
 {
@@ -5082,23 +5098,24 @@ void CodeGen::genZeroInitializeUnknownSizeFrame()
     {
         for (unsigned i = 0; i < vectorCount; i++)
         {
-            // str z9, [sp, #i MUL VL]
-            GetEmitter()->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, REG_SP, i);
+            // str z9, [x19, #-(i + 1) MUL VL]
+            GetEmitter()->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, REG_UNKBASE, -(ssize_t)(i + 1));
         }
     }
     else
     {
-        // $cursor <== x19
-        inst_Mov(TYP_BYREF, REG_SCRATCH, REG_UNKBASE, false);
+        // $cursor <== sp + outgoingArgSpaceSize
+        genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SCRATCH, REG_SP, m_compiler->lvaOutgoingArgSpaceSize,
+                             REG_SCRATCH);
         BasicBlock* loop = genCreateTempLabel();
         // loop:
         genDefineInlineTempLabel(loop);
-        // addvl $cursor, $cursor, #-1
-        GetEmitter()->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SCRATCH, REG_SCRATCH, -1);
         // str z9, [$cursor]
         GetEmitter()->emitIns_R_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, REG_SCRATCH);
-        // cmp sp, $cursor
-        GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, REG_SP, REG_SCRATCH, INS_OPTS_UXTX);
+        // addvl $cursor, $cursor, #1
+        GetEmitter()->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SCRATCH, REG_SCRATCH, 1);
+        // cmp x19, $cursor
+        GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, REG_UNKBASE, REG_SCRATCH);
         // b.ne loop
         GetEmitter()->emitIns_J(INS_bne, loop);
     }

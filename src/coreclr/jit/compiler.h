@@ -4676,7 +4676,7 @@ public:
     //
     //                 ...
     //  |          static space            |
-    //  |        (totalFrameSize)          |
+    //  | (excluding outgoing arguments)   |
     //  +----------------------------------+ x19, begin UnknownSizeFrame
     //  |         mask locals block        |                 ^
     //  |          (nMask * VL/8)          |                 |
@@ -4690,7 +4690,10 @@ public:
     //  +----------------------------------+ end UnknownSizeFrame
     //  |                                  |
     //  |       rest of alloca space       |
-    //                 ...                   sp
+    //                 ...
+    //  +----------------------------------+
+    //  |      outgoing argument area      |
+    //  +----------------------------------+ sp
     struct UnknownSizeFrame
     {
         // Number of allocated vectors/masks. These also represent the end of
