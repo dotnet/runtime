@@ -2995,8 +2995,23 @@ public sealed unsafe partial class SOSDacImpl
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
-                Debug.Assert(pNeeded == null || *pNeeded == neededLocal, $"local name = {new string(mtNameLocal, 0, (int)neededLocal - 1)}, name = {new string(mtName, 0, (int)*pNeeded - 1)}");
-                Debug.Assert(mtName == null || new ReadOnlySpan<char>(mtNameLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(mtName)));
+                int localNameLength = neededLocal == 0 ? 0 : (int)Math.Min(neededLocal - 1, count);
+                int nameLength = 0;
+                if (mtName is not null && pNeeded is not null && *pNeeded != 0)
+                {
+                    nameLength = (int)Math.Min(Math.Min(*pNeeded - 1, count), count);
+                }
+
+                if (!(pNeeded is null || *pNeeded == neededLocal))
+                {
+                    string localNameString = new(mtNameLocal, 0, localNameLength);
+                    string nameString = mtName is null ? string.Empty : new(mtName, 0, nameLength);
+                    Debug.Fail($"local name = {localNameString}, name = {nameString}");
+                }
+
+                Debug.Assert(
+                    mtName is null ||
+                    new ReadOnlySpan<char>(mtNameLocal, 0, localNameLength).SequenceEqual(new ReadOnlySpan<char>(mtName, nameLength)));
             }
         }
 #endif
