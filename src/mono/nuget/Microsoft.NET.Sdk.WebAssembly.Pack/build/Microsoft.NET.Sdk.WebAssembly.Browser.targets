@@ -10,7 +10,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 ***********************************************************************************************
 -->
 <Project ToolsVersion="14.0">
-  <!-- Test: verify CI triggers browser library tests on this file change -->
 
   <PropertyGroup>
     <_UseBlazorDevServer>$(RunArguments.Contains('blazor-devserver.dll').ToString().ToLower())</_UseBlazorDevServer>    
