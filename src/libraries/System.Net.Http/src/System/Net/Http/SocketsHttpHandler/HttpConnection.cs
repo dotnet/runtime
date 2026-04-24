@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Text;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
@@ -66,6 +64,7 @@ namespace System.Net.Http
         private bool _detachedFromPool;
         private bool _canRetry;
         private bool _connectionClose; // Connection: close was seen on last response
+        private long _responseContentLength = -1; // Content-Length value seen on the current response, -1 if not yet seen
 
         private volatile bool _disposed;
 
@@ -597,6 +596,7 @@ namespace System.Net.Http
 
                 // Start to read response.
                 _allowedReadLineBytes = _pool.Settings.MaxResponseHeadersByteLength;
+                _responseContentLength = -1;
 
                 // We should not have any buffered data here; if there was, it should have been treated as an error
                 // by the previous request handling.  (Note we do not support HTTP pipelining.)
@@ -1302,6 +1302,11 @@ namespace System.Net.Http
             }
             else if ((headerType & HttpHeaderType.Content) != 0)
             {
+                if (descriptor.Equals(KnownHeaders.ContentLength))
+                {
+                    ValidateContentLength(value);
+                }
+
                 headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                 headers = response.Content!.Headers;
             }
@@ -1369,6 +1374,26 @@ namespace System.Net.Http
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Validates the Content-Length header value from the response.
+        /// Per RFC 9112 Section 6.3, if multiple Content-Length values are present, they must all be identical.
+        /// An unparsable value is also rejected.
+        /// </summary>
+        private void ValidateContentLength(ReadOnlySpan<byte> value)
+        {
+            if (!HeaderUtilities.TryParseInt64(value, out long contentLength))
+            {
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_content_length);
+            }
+
+            if (_responseContentLength >= 0 && contentLength != _responseContentLength)
+            {
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_content_length);
+            }
+
+            _responseContentLength = contentLength;
         }
 
         private void WriteToBuffer(ReadOnlySpan<byte> source)

@@ -89,6 +89,8 @@ namespace System.Net.Http
 
             private bool _sendRstOnResponseClose;
 
+            private long _responseContentLength = -1;
+
             public Http2Stream(HttpRequestMessage request, Http2Connection connection)
             {
                 _request = request;
@@ -714,6 +716,12 @@ namespace System.Net.Http
                     else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
                     {
                         Debug.Assert(_response != null && _response.Content != null);
+
+                        if (descriptor.Equals(KnownHeaders.ContentLength))
+                        {
+                            ValidateContentLength(value);
+                        }
+
                         string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                         _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
                     }
@@ -756,6 +764,26 @@ namespace System.Net.Http
 
                     OnHeader(descriptor, value);
                 }
+            }
+
+            /// <summary>
+            /// Validates the Content-Length header value from the response.
+            /// Per RFC 9110, if multiple Content-Length values are present, they must all be identical.
+            /// An unparsable value is also rejected.
+            /// </summary>
+            private void ValidateContentLength(ReadOnlySpan<byte> value)
+            {
+                if (!HeaderUtilities.TryParseInt64(value, out long contentLength))
+                {
+                    throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_content_length);
+                }
+
+                if (_responseContentLength >= 0 && contentLength != _responseContentLength)
+                {
+                    throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_content_length);
+                }
+
+                _responseContentLength = contentLength;
             }
 
             public void OnHeadersStart()

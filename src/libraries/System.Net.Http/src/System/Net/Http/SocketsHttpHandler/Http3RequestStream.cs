@@ -60,6 +60,7 @@ namespace System.Net.Http
 
         private bool _requestSendCompleted;
         private bool _responseRecvCompleted;
+        private long _responseContentLength = -1;
 
         public long StreamId
         {
@@ -1146,6 +1147,10 @@ namespace System.Net.Http
                         if (NetEventSource.Log.IsEnabled()) Trace($"Received headers without :status.");
                         throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ProtocolError);
                     case HeaderState.ResponseHeaders when descriptor.HeaderType.HasFlag(HttpHeaderType.Content):
+                        if (descriptor.Equals(KnownHeaders.ContentLength))
+                        {
+                            ValidateContentLength(headerValue);
+                        }
                         _response!.Content!.Headers.TryAddWithoutValidation(descriptor, headerValue);
                         break;
                     case HeaderState.ResponseHeaders:
@@ -1159,6 +1164,26 @@ namespace System.Net.Http
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Validates the Content-Length header value from the response.
+        /// Per RFC 9110, if multiple Content-Length values are present, they must all be identical.
+        /// An unparsable value is also rejected.
+        /// </summary>
+        private void ValidateContentLength(string value)
+        {
+            if (!HeaderUtilities.TryParseInt64(value, 0, value.Length, out long contentLength))
+            {
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_content_length);
+            }
+
+            if (_responseContentLength >= 0 && contentLength != _responseContentLength)
+            {
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_content_length);
+            }
+
+            _responseContentLength = contentLength;
         }
 
         void IHttpStreamHeadersHandler.OnHeadersComplete(bool endStream)

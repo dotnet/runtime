@@ -75,50 +75,6 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void ContentLength_MultipleIdenticalValues_ReturnsValue()
-        {
-            _headers = new HttpContentHeaders(new ComputeLengthHttpContent(() => { throw new ShouldNotBeInvokedException(); }));
-            _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, "12");
-            _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, "12");
-
-            Assert.Equal(12, _headers.ContentLength);
-        }
-
-        [Fact]
-        public void ContentLength_MultipleConflictingValues_Throws()
-        {
-            _headers = new HttpContentHeaders(new ComputeLengthHttpContent(() => { throw new ShouldNotBeInvokedException(); }));
-            _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, "12");
-            _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, "34");
-
-            Assert.Throws<FormatException>(() => _headers.ContentLength);
-        }
-
-        [Theory]
-        [InlineData("12", "12", "12", 12)]
-        [InlineData(" 42 ", "42", " 42 ", 42)]
-        public void ContentLength_MultipleIdenticalValuesWithWhitespace_ReturnsValue(string value1, string value2, string value3, long expected)
-        {
-            _headers = new HttpContentHeaders(new ComputeLengthHttpContent(() => { throw new ShouldNotBeInvokedException(); }));
-            _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, value1);
-            _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, value2);
-            _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, value3);
-
-            Assert.Equal(expected, _headers.ContentLength);
-        }
-
-        [Fact]
-        public void ContentLength_ValidValueFollowedByInvalidValue_ReturnsValue()
-        {
-            _headers = new HttpContentHeaders(new ComputeLengthHttpContent(() => { throw new ShouldNotBeInvokedException(); }));
-            _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, "12");
-            _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, "abc");
-
-            // "abc" is not a valid number, so it's ignored (existing behavior for unparseable values).
-            Assert.Equal(12, _headers.ContentLength);
-        }
-
-        [Fact]
         public void ContentType_ReadAndWriteProperty_ValueMatchesPriorSetValue()
         {
             MediaTypeHeaderValue value = new MediaTypeHeaderValue("text/plain");

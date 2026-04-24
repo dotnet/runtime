@@ -324,6 +324,39 @@ namespace System.Net.Http.Headers
             return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, CultureInfo.InvariantCulture, out result);
         }
 
+        /// <summary>
+        /// Tries to parse a non-negative <see cref="long"/> from a UTF-8 byte span using the same rules
+        /// as <see cref="Int64NumberHeaderParser"/>: only ASCII digits, no sign, no whitespace, max 19 digits,
+        /// and the value must fit in a <see cref="long"/>.
+        /// </summary>
+        internal static bool TryParseInt64(ReadOnlySpan<byte> value, out long result)
+        {
+            if (value.Length == 0 || value.Length > HttpRuleParser.MaxInt64Digits)
+            {
+                result = 0;
+                return false;
+            }
+
+            // Validate all characters are ASCII digits (same as HttpRuleParser.GetNumberLength with allowDecimal: false).
+            foreach (byte b in value)
+            {
+                if (b < (byte)'0' || b > (byte)'9')
+                {
+                    result = 0;
+                    return false;
+                }
+            }
+
+            // Use Utf8Parser for the actual conversion.
+            if (!Buffers.Text.Utf8Parser.TryParse(value, out result, out int bytesConsumed) || bytesConsumed != value.Length || result < 0)
+            {
+                result = 0;
+                return false;
+            }
+
+            return true;
+        }
+
         internal static void DumpHeaders(ref ValueStringBuilder sb, params ReadOnlySpan<HttpHeaders?> headers)
         {
             // Dumps all headers in the following format:

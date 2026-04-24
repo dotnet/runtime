@@ -135,9 +135,6 @@
   <data name="net_http_headers_single_value_header" xml:space="preserve">
     <value>Cannot add value because header '{0}' does not support multiple values.</value>
   </data>
-  <data name="net_http_headers_conflicting_content_length" xml:space="preserve">
-    <value>The Content-Length header contains conflicting values.</value>
-  </data>
   <data name="net_http_headers_invalid_header_name" xml:space="preserve">
     <value>The header name '{0}' has an invalid format.</value>
   </data>
@@ -344,6 +341,9 @@
   </data>
   <data name="net_http_invalid_response_header_name" xml:space="preserve">
     <value>Received an invalid header name: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_content_length" xml:space="preserve">
+    <value>The response contained an invalid or conflicting Content-Length header.</value>
   </data>
   <data name="net_http_request_aborted" xml:space="preserve">
     <value>The request was aborted.</value>
