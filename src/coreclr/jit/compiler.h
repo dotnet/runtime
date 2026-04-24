@@ -8559,31 +8559,9 @@ public:
             {
                 dsc.m_op2.m_kind = O2K_CONST_VEC;
 
-                // genTypeSize() lives in compiler.hpp and isn't visible here, so map TYP_SIMDxx to byte size inline.
-                unsigned simdSize;
-                switch (cns->TypeGet())
-                {
-                    case TYP_SIMD8:
-                        simdSize = 8;
-                        break;
-                    case TYP_SIMD12:
-                        simdSize = 12;
-                        break;
-                    case TYP_SIMD16:
-                        simdSize = 16;
-                        break;
-#if defined(TARGET_XARCH)
-                    case TYP_SIMD32:
-                        simdSize = 32;
-                        break;
-                    case TYP_SIMD64:
-                        simdSize = 64;
-                        break;
-#endif // TARGET_XARCH
-                    default:
-                        unreached();
-                }
-                dsc.m_op2.m_simdSize = static_cast<uint8_t>(simdSize);
+                assert(varTypeIsSIMD(cns));
+                const unsigned simdSize = genTypeSize(cns->TypeGet());
+                dsc.m_op2.m_simdSize    = static_cast<uint8_t>(simdSize);
 
                 if (simdSize <= sizeof(simd16_t))
                 {
