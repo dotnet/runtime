@@ -292,10 +292,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             foreach (Blob srcBlob in srcBuilder.GetBlobs())
             {
-                Debug.Assert(
-                    srcBlobOffset == 0 ||
-                    srcBlobOffset == 1 && srcBlob.Buffer[0] == 0xff ||
-                    srcBlobOffset == 4 && srcBlob.Buffer[0] == 0xff && srcBlob.Buffer[1] == 0xff && srcBlob.Buffer[2] == 0xff && srcBlob.Buffer[3] == 0xff);
+                Debug.Assert(srcBlobOffset == 0);
 
                 while (true)
                 {
