@@ -4463,6 +4463,7 @@ VOID Module::EnsureActive()
 }
 #endif // DACCESS_COMPILE
 
+#include <optdefault.h>
 
 CHECK Module::CheckActivated()
 {

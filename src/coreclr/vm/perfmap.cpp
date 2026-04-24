@@ -4,6 +4,7 @@
 // File: perfmap.cpp
 //
 
+#include "common.h"
 
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
 #include <clrconfignocache.h>

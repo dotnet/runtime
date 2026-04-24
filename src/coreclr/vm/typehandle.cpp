@@ -684,6 +684,7 @@ TypeHandle::CastResult TypeHandle::CanCastToCached(TypeHandle type)  const
 
     return CastCache::TryGetFromCache(*this, type);
 }
+#include <optdefault.h>
 
 #endif // #ifndef DACCESS_COMPILE
 

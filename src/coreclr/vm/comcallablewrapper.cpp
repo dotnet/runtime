@@ -1170,6 +1170,7 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
 
     RETURN NULL;
 }
+#include <optdefault.h>
 
 //--------------------------------------------------------------------------
 // Init Outer unknown, cache a GIT cookie

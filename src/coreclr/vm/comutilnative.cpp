@@ -1728,6 +1728,7 @@ FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
 }
 FCIMPLEND
 
+#include <optdefault.h>
 
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)
 {
