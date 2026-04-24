@@ -110,11 +110,11 @@ internal sealed class ParserErrorListener : Antlr4.Runtime.IAntlrErrorListener<I
         var span = new SourceSpan(offendingSymbol?.StartIndex ?? 0, offendingSymbol is null ? 0 : offendingSymbol.StopIndex - offendingSymbol.StartIndex + 1);
         if (_loadedDocuments.TryGetValue(sourceName, out var sourceText))
         {
-            _diagnostics.Add(new Diagnostic("Parser", DiagnosticSeverity.Warning, $"line {line}:{charPositionInLine} {msg}", new Location(span, sourceText)));
+            _diagnostics.Add(new Diagnostic("Parser", DiagnosticSeverity.Error, $"line {line}:{charPositionInLine} {msg}", new Location(span, sourceText)));
         }
         else
         {
-            _diagnostics.Add(new Diagnostic("Parser", DiagnosticSeverity.Warning, $"line {line}:{charPositionInLine} {msg}", new Location(span, new SourceText("", sourceName))));
+            _diagnostics.Add(new Diagnostic("Parser", DiagnosticSeverity.Error, $"line {line}:{charPositionInLine} {msg}", new Location(span, new SourceText("", sourceName))));
         }
     }
 }
