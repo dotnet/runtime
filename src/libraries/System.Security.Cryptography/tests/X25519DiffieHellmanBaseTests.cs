@@ -627,23 +627,28 @@ namespace System.Security.Cryptography.Tests
                 yield return new("WycheproofTcId_2", // Twist
                     Convert.FromHexString("d85d8c061a50804ac488ad774ac716c3f5ba714b2712e048491379a500211958"),
                     Convert.FromHexString("63aa40c6e38346c5caf23a6df0a5e6c80889a08647e551b3563449befcfc9733"),
-                    Convert.FromHexString("279df67a7c4611db4708a0e8282b195e5ac0ed6f4b2f292c6fbd0acac30d1332"), RequiresLenientValidation: true);
+                    Convert.FromHexString("279df67a7c4611db4708a0e8282b195e5ac0ed6f4b2f292c6fbd0acac30d1332"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_4", // Twist
                     Convert.FromHexString("f876e34bcbe1f47fbc0fddfd7c1e1aa53d57bfe0f66d243067b424bb6210be51"),
                     Convert.FromHexString("0b8211a2b6049097f6871c6c052d3c5fc1ba17da9e32ae458403b05bb283092a"),
-                    Convert.FromHexString("119d37ed4b109cbd6418b1f28dea83c836c844715cdf98a3a8c362191debd514"), RequiresLenientValidation: true);
+                    Convert.FromHexString("119d37ed4b109cbd6418b1f28dea83c836c844715cdf98a3a8c362191debd514"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_7", // SpecialPublicKey,Twist
                     Convert.FromHexString("d03edde9f3e7b799045f9ac3793d4a9277dadeadc41bec0290f81f744f73775f"),
                     Convert.FromHexString("0200000000000000000000000000000000000000000000000000000000000000"),
-                    Convert.FromHexString("b87a1722cc6c1e2feecb54e97abd5a22acc27616f78f6e315fd2b73d9f221e57"), RequiresLenientValidation: true);
+                    Convert.FromHexString("b87a1722cc6c1e2feecb54e97abd5a22acc27616f78f6e315fd2b73d9f221e57"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_19", // SpecialPublicKey,Twist
                     Convert.FromHexString("105d621e1ef339c3d99245cfb77cd3a5bd0c4427a0e4d8752c3b51f045889b4f"),
                     Convert.FromHexString("ffffff030000f8ffff1f0000c0ffffff000000feffff070000f0ffff3f000000"),
-                    Convert.FromHexString("61eace52da5f5ecefafa4f199b077ff64f2e3d2a6ece6f8ec0497826b212ef5f"), RequiresLenientValidation: true);
+                    Convert.FromHexString("61eace52da5f5ecefafa4f199b077ff64f2e3d2a6ece6f8ec0497826b212ef5f"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_31", // SpecialPublicKey,Twist
                     Convert.FromHexString("d02456e456911d3c6cd054933199807732dfdc958642ad1aebe900c793bef24a"),
                     Convert.FromHexString("eaffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-                    Convert.FromHexString("07ba5fcbda21a9a17845c401492b10e6de0a168d5c94b606694c11bac39bea41"), RequiresLenientValidation: true);
+                    Convert.FromHexString("07ba5fcbda21a9a17845c401492b10e6de0a168d5c94b606694c11bac39bea41"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_34", // SpecialPublicKey
                     Convert.FromHexString("a8386f7f16c50731d64f82e6a170b142a4e34f31fd7768fcb8902925e7d1e25a"),
                     Convert.FromHexString("0400000000000000000000000000000000000000000000000000000000000000"),
@@ -661,27 +666,33 @@ namespace System.Security.Cryptography.Tests
                 yield return new("WycheproofTcId_87", // NonCanonicalPublic,SpecialPublicKey,Twist
                     Convert.FromHexString("0016b62af5cabde8c40938ebf2108e05d27fa0533ed85d70015ad4ad39762d54"),
                     Convert.FromHexString("efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-                    Convert.FromHexString("b4d10e832714972f96bd3382e4d082a21a8333a16315b3ffb536061d2482360d"), RequiresLenientValidation: true);
+                    Convert.FromHexString("b4d10e832714972f96bd3382e4d082a21a8333a16315b3ffb536061d2482360d"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_89", // NonCanonicalPublic,SpecialPublicKey
                     Convert.FromHexString("88dd14e2711ebd0b0026c651264ca965e7e3da5082789fbab7e24425e7b4377e"),
                     Convert.FromHexString("f1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
-                    Convert.FromHexString("6919992d6a591e77b3f2bacbd74caf3aea4be4802b18b2bc07eb09ade3ad6662"), RequiresLenientValidation: true);
+                    Convert.FromHexString("6919992d6a591e77b3f2bacbd74caf3aea4be4802b18b2bc07eb09ade3ad6662"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_91", // NonCanonicalPublic,SpecialPublicKey,Twist
                     Convert.FromHexString("c0697b6f05e0f3433b44ea352f20508eb0623098a7770853af5ca09727340c4e"),
                     Convert.FromHexString("0200000000000000000000000000000000000000000000000000000000000080"),
-                    Convert.FromHexString("ed18b06da512cab63f22d2d51d77d99facd3c4502e4abf4e97b094c20a9ddf10"), RequiresLenientValidation: true);
+                    Convert.FromHexString("ed18b06da512cab63f22d2d51d77d99facd3c4502e4abf4e97b094c20a9ddf10"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_94", // NonCanonicalPublic,SpecialPublicKey
                     Convert.FromHexString("285a6a7ceeb7122f2c78d99c53b2a902b490892f7dff326f89d12673c3101b53"),
                     Convert.FromHexString("daffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
-                    Convert.FromHexString("9b01287717d72f4cfb583ec85f8f936849b17d978dbae7b837db56a62f100a68"), RequiresLenientValidation: true);
+                    Convert.FromHexString("9b01287717d72f4cfb583ec85f8f936849b17d978dbae7b837db56a62f100a68"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_97", // NonCanonicalPublic,SpecialPublicKey,Twist
                     Convert.FromHexString("9041c6e044a277df8466275ca8b5ee0da7bc028648054ade5c592add3057474e"),
                     Convert.FromHexString("eaffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
-                    Convert.FromHexString("13da5695a4c206115409b5277a934782fe985fa050bc902cba5616f9156fe277"), RequiresLenientValidation: true);
+                    Convert.FromHexString("13da5695a4c206115409b5277a934782fe985fa050bc902cba5616f9156fe277"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_99", // NonCanonicalPublic,SpecialPublicKey
                     Convert.FromHexString("c85f08e60c845f82099141a66dc4583d2b1040462c544d33d0453b20b1a6377e"),
                     Convert.FromHexString("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
-                    Convert.FromHexString("e9db74bc88d0d9bf046ddd13f943bccbe6dbb47d49323f8dfeedc4a694991a3c"), RequiresLenientValidation: true);
+                    Convert.FromHexString("e9db74bc88d0d9bf046ddd13f943bccbe6dbb47d49323f8dfeedc4a694991a3c"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_100", // Ktv
                     Convert.FromHexString("a046e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449a44"),
                     Convert.FromHexString("e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c"),
@@ -690,7 +701,8 @@ namespace System.Security.Cryptography.Tests
                 yield return new("WycheproofTcId_101", // Ktv,Twist
                     Convert.FromHexString("4866e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba4d"),
                     Convert.FromHexString("e5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a413"),
-                    Convert.FromHexString("95cbde9476e8907d7aade45cb4b873f88b595a68799fa152e6f8f7647aac7957"), RequiresLenientValidation: true);
+                    Convert.FromHexString("95cbde9476e8907d7aade45cb4b873f88b595a68799fa152e6f8f7647aac7957"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_102", // Ktv
                     Convert.FromHexString("77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a"),
                     Convert.FromHexString("de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f"),
@@ -698,7 +710,8 @@ namespace System.Security.Cryptography.Tests
                 yield return new("WycheproofTcId_103", // EdgeCaseShared,Twist
                     Convert.FromHexString("60a3a4f130b98a5be4b1cedb7cb85584a3520e142d474dc9ccb909a073a9767f"),
                     Convert.FromHexString("b7b6d39c765cb60c0c8542f4f3952ffb51d3002d4aeb9f8ff988b192043e6d0a"),
-                    Convert.FromHexString("0200000000000000000000000000000000000000000000000000000000000000"), RequiresLenientValidation: true);
+                    Convert.FromHexString("0200000000000000000000000000000000000000000000000000000000000000"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_104", // EdgeCaseShared
                     Convert.FromHexString("60a3a4f130b98a5be4b1cedb7cb85584a3520e142d474dc9ccb909a073a9767f"),
                     Convert.FromHexString("3b18df1e50b899ebd588c3161cbd3bf98ebcc2c1f7df53b811bd0e91b4d5153d"),
@@ -710,7 +723,8 @@ namespace System.Security.Cryptography.Tests
                 yield return new("WycheproofTcId_112", // EdgeCaseShared,Twist
                     Convert.FromHexString("60a3a4f130b98a5be4b1cedb7cb85584a3520e142d474dc9ccb909a073a9767f"),
                     Convert.FromHexString("8d612c5831aa64b057300e7e310f3aa332af34066fefcab2b089c9592878f832"),
-                    Convert.FromHexString("e3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"), RequiresLenientValidation: true);
+                    Convert.FromHexString("e3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_113", // EdgeCaseShared
                     Convert.FromHexString("60a3a4f130b98a5be4b1cedb7cb85584a3520e142d474dc9ccb909a073a9767f"),
                     Convert.FromHexString("8d44108d05d940d3dfe5647ea7a87be24d0d036c9f0a95a2386b839e7b7bf145"),
@@ -718,11 +732,13 @@ namespace System.Security.Cryptography.Tests
                 yield return new("WycheproofTcId_116", // EdgeCaseShared,Twist
                     Convert.FromHexString("60a3a4f130b98a5be4b1cedb7cb85584a3520e142d474dc9ccb909a073a9767f"),
                     Convert.FromHexString("8e41f05ea3c76572be104ad8788e970863c6e2ca3daae64d1c2f46decfffa571"),
-                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000008000"), RequiresLenientValidation: true);
+                    Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000008000"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_119", // EdgeCaseMultiplication,Twist
                     Convert.FromHexString("e0a8be63315c4f0f0a3fee607f44d30a55be63f09561d9af93e0a1c9cf0ed751"),
                     Convert.FromHexString("0200000000000000000000000000000000000000000000000000000000000000"),
-                    Convert.FromHexString("0c50ac2bfb6815b47d0734c5981379882a24a2de6166853c735329d978baee4d"), RequiresLenientValidation: true);
+                    Convert.FromHexString("0c50ac2bfb6815b47d0734c5981379882a24a2de6166853c735329d978baee4d"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_120", // EdgeCaseMultiplication
                     Convert.FromHexString("0840a8af5bc4c48da8850e973d7e14220f45c192cea4020d377eecd25c7c3643"),
                     Convert.FromHexString("1200000000000000000000000000000000000000000000000000000000000000"),
@@ -736,7 +752,8 @@ namespace System.Security.Cryptography.Tests
                 yield return new("WycheproofTcId_256", // EdgeCaseMultiplication,Twist
                     Convert.FromHexString("d0e67f68183a4c1aed9c56864b36278bb7bb75d57a78321bc7c24ff61636607a"),
                     Convert.FromHexString("d8c8e2c6f33a98525df3767d1d04430dab0bda41f1f904c95bc61cc122caca74"),
-                    Convert.FromHexString("ef7612c156078dae3a81e50ef33951cab661fb07731d8f419bc0105c4d6d6050"), RequiresLenientValidation: true);
+                    Convert.FromHexString("ef7612c156078dae3a81e50ef33951cab661fb07731d8f419bc0105c4d6d6050"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_377", // EdgeCaseMultiplication
                     Convert.FromHexString("c01f66cb094289d728421dd46c6f9718412e1c546dad70e586851be4da58bf67"),
                     Convert.FromHexString("4e056b317a31dd96f8ec14b48474af587d195efcc2a70f01f052ef882d7b3a45"),
@@ -745,11 +762,13 @@ namespace System.Security.Cryptography.Tests
                 yield return new("WycheproofTcId_387", // EdgeCaseMultiplication,Twist
                     Convert.FromHexString("204a3b5652854ff48e25cd385cabe6360f64ce44fea5621db1fa2f6e219f3063"),
                     Convert.FromHexString("ed1c82082b74cc2aaebf3dc772ba09557c0fc14139a8814fc5f9370bb8e98858"),
-                    Convert.FromHexString("e0a82f313046024b3cea93b98e2f8ecf228cbfab8ae10b10292c32feccff1603"), RequiresLenientValidation: true);
+                    Convert.FromHexString("e0a82f313046024b3cea93b98e2f8ecf228cbfab8ae10b10292c32feccff1603"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_506", // EdgeCaseMultiplication,Twist
                     Convert.FromHexString("707ee81f113a244c9d87608b12158c50f9ac1f2c8948d170ad16ab0ad866d74b"),
                     Convert.FromHexString("dcffc4c1e1fba5fda9d5c98421d99c257afa90921bc212a046d90f6683e8a467"),
-                    Convert.FromHexString("7ecdd54c5e15f7b4061be2c30b5a4884a0256581f87df60d579a3345653eb641"), RequiresLenientValidation: true);
+                    Convert.FromHexString("7ecdd54c5e15f7b4061be2c30b5a4884a0256581f87df60d579a3345653eb641"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_510", // EdgeCaseMultiplication
                     Convert.FromHexString("78ed4c9bf9f44db8d93388985191ecf59226b9c1205fe7e762c327581c75884e"),
                     Convert.FromHexString("ce7295d1227c9062aab9cf02fc5671fb81632e725367f131d4122824a6132d68"),
@@ -762,7 +781,8 @@ namespace System.Security.Cryptography.Tests
                 yield return new("WycheproofTcId_512", // Twist
                     Convert.FromHexString("58083dd261ad91eff952322ec824c682ffffffffffffffffffffffffffffff5f"),
                     Convert.FromHexString("2eae5ec3dd494e9f2d37d258f873a8e6e9d0dbd1e383ef64d98bb91b3e0be035"),
-                    Convert.FromHexString("2eae5ec3dd494e9f2d37d258f873a8e6e9d0dbd1e383ef64d98bb91b3e0be035"), RequiresLenientValidation: true);
+                    Convert.FromHexString("2eae5ec3dd494e9f2d37d258f873a8e6e9d0dbd1e383ef64d98bb91b3e0be035"),
+                    RequiresLenientValidation: true);
                 yield return new("WycheproofTcId_515", // EdgeCasePrivateKey
                     Convert.FromHexString("4855555555555555555555555555555555555555555555555555555555555555"),
                     Convert.FromHexString("be3b3edeffaf83c54ae526379b23dd79f1cb41446e3687fef347eb9b5f0dc308"),
