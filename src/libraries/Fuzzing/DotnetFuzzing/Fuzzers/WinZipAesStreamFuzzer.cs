@@ -155,6 +155,11 @@ internal sealed class WinZipAesStreamFuzzer : IFuzzer
         {
             // ignore, crypto failures are expected for random fuzz input.
         }
+        catch (TargetInvocationException ex) when (ex.InnerException is InvalidDataException or CryptographicException)
+        {
+            // The reflected WinZipAesStream.Create call wraps exceptions
+            // in TargetInvocationException when header validation fails.
+        }
         finally
         {
             ArrayPool<byte>.Shared.Return(buffer);

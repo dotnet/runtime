@@ -118,6 +118,11 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
         {
             // ignore, this exception is expected for invalid/corrupted data.
         }
+        catch (TargetInvocationException ex) when (ex.InnerException is InvalidDataException)
+        {
+            // The reflected ZipCryptoStream.Create call wraps InvalidDataException
+            // (e.g. password mismatch, truncated header) in TargetInvocationException.
+        }
         finally
         {
             ArrayPool<byte>.Shared.Return(buffer);
