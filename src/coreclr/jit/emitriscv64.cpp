@@ -1376,6 +1376,39 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
+//--------------------------------------------------------------------
+// emitIns_R_L: Emit an instruction with a label operand.
+//
+// Arguments:
+//   ins - The instruction
+//   attr - Size of the instruction
+//   dst - Instruction group
+//   reg - Register destination
+//
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(dst != nullptr);
+
+    // 2-ins:
+    //   auipc reg, offset-hi20
+    //   addi  reg, reg, offset-lo12
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsOpt(INS_OPTS_RL);
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound(); // Mark as bound since we already have the target insGroup directly
+
+    if (m_compiler->opts.compReloc)
+        id->idSetIsDspReloc();
+
+    id->idCodeSize(2 * sizeof(code_t));
+    id->idReg1(reg);
+
+    appendToCurIG(id);
+}
+
 //------------------------------------------------------------------------
 // emitIns_R_R_Addr: emit instruction sequence for a long (address pointer) immediate
 //
@@ -3301,8 +3334,14 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
 
 BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins)
 {
-    insGroup* targetInsGroup = static_cast<insGroup*>(emitCodeGetCookie(id->idAddr()->iiaBBlabel));
-    id->idAddr()->iiaIGlabel = targetInsGroup;
+    if (!id->idIsBound())
+    {
+        insGroup* targetInsGroup = static_cast<insGroup*>(emitCodeGetCookie(id->idAddr()->iiaBBlabel));
+        id->idAddr()->iiaIGlabel = targetInsGroup;
+        id->idSetIsBound();
+    }
+
+    insGroup* targetInsGroup = id->idAddr()->iiaIGlabel;
 
     const regNumber reg1   = id->idReg1();
     const ssize_t   igOffs = targetInsGroup->igOffs;
