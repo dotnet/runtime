@@ -143,7 +143,7 @@ extends:
                 artifactName: 'TestResults_cDAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
               displayName: 'Publish Test Results and SOS Logs'
               continueOnError: true
-              condition: failed()
+              condition: always()
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
@@ -197,7 +197,7 @@ extends:
                 artifactName: 'TestResults_cDAC_no_fallback_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
               displayName: 'Publish Test Results and SOS Logs'
               continueOnError: true
-              condition: failed()
+              condition: always()
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
@@ -250,7 +250,7 @@ extends:
                 artifactName: 'TestResults_DAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
               displayName: 'Publish Test Results and SOS Logs'
               continueOnError: true
-              condition: failed()
+              condition: always()
 
     #
     # cDAC Dump Tests — Build, generate dumps, and run tests on Helix (single-leg mode)

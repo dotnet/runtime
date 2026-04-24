@@ -1939,7 +1939,11 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
 
             if (s.IsEmpty())
             {
-                hr = E_OUTOFMEMORY;
+                if (pNeeded)
+                    *pNeeded = 1;
+
+                if (mtName && count)
+                    mtName[0] = 0;
             }
             else
             {
