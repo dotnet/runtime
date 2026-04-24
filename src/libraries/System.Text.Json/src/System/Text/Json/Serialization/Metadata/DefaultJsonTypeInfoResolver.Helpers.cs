@@ -660,8 +660,8 @@ namespace System.Text.Json.Serialization.Metadata
                 };
             }
 
-            Type? baseTypeDefinition = baseType.IsGenericType ? baseType.GetGenericTypeDefinition() : null;
-            Type[]? baseTypeArgs = baseType.IsGenericType ? baseType.GetGenericArguments() : null;
+            Type? baseTypeDefinition = null;
+            Type[]? baseTypeArgs = null;
 
             foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
             {
@@ -669,10 +669,13 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (derivedType is { IsGenericTypeDefinition: true })
                 {
-                    if (baseTypeDefinition is null || baseTypeArgs is null)
+                    if (!baseType.IsGenericType)
                     {
                         ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(baseType, derivedType);
                     }
+
+                    baseTypeDefinition ??= baseType.GetGenericTypeDefinition();
+                    baseTypeArgs ??= baseType.GetGenericArguments();
 
                     if (!TryResolveOpenGenericDerivedType(derivedType, baseTypeDefinition, baseTypeArgs, out Type? resolvedType))
                     {
