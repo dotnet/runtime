@@ -550,8 +550,6 @@ void Lowering::AfterLowerBlocks()
 
         void StackifyBlock(BasicBlock* block)
         {
-
-            JITDUMP("LIR BEFORE stackification of " FMT_BB ": ", block->bbNum);
             m_anyChanges     = false;
             m_lower->m_block = block;
             GenTree* node    = block->lastNode();
@@ -560,6 +558,9 @@ void Lowering::AfterLowerBlocks()
                 assert(BitVecOps::IsEmpty(&m_pendingReleaseTempTraits, m_pendingReleaseTemps));
                 assert(IsDataFlowRoot(node));
                 node = StackifyTree(node);
+                // We've finished processing the current root tree, so
+                // we can release any pending temps used in stackification of the tree,
+                // since there is no more risk of interference between tree operands.
                 RemovePendingTemporaries();
             }
             m_lower->m_block = nullptr;
@@ -567,11 +568,6 @@ void Lowering::AfterLowerBlocks()
             JITDUMP(FMT_BB ": %s\n", block->bbNum,
                     m_anyChanges ? "stackified with some changes" : "already in WASM value stack order");
             assert((m_unusedTempNodes == nullptr) && "Some temporaries were not released");
-            if (m_anyChanges)
-            {
-                JITDUMP("LIR after stackification of " FMT_BB ": ", block->bbNum);
-                DISPRANGE(LIR::AsRange(block));
-            }
         }
 
         GenTree* StackifyTree(GenTree* root)
