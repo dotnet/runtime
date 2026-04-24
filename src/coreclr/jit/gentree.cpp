@@ -28243,7 +28243,9 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
             if ((simdSize > 16) || compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 // Per lane, the permute below gives us  [0, 1] -> [1, 0]
-                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, gtNewIconNode((int)0b0001, TYP_INT), permIntrinsic,
+                // vpermilpd uses one imm bit per double element (2 for V128, 4 for V256,
+                // 8 for V512); 0b01010101 swaps within each 128-bit lane at all widths.
+                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, gtNewIconNode((int)0b01010101, TYP_INT), permIntrinsic,
                                                simdBaseType, simdSize);
             }
             else
