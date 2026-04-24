@@ -469,7 +469,7 @@ int32_t CryptoNative_EvpPKeyGetEcGroupNid(const EVP_PKEY *pkey, int32_t* nidName
 int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(const EVP_PKEY* pkey)
 {
     if (!pkey || EVP_PKEY_get_base_id(pkey) != EVP_PKEY_EC)
-        return 0;
+        return -1;
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (!API_EXISTS(EVP_PKEY_get_utf8_string_param))
@@ -985,8 +985,7 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     }
     else
     {
-        // Named curve: create group to get field type.
-        // curveTypeNID will be always NID_X9_62_characteristic_two_field or NID_X9_62_prime_field
+        // Named curve: create group from the curve NID to get the field type.
         group = EC_GROUP_new_by_curve_name(curveTypeNID);
         if (!group)
             goto error;

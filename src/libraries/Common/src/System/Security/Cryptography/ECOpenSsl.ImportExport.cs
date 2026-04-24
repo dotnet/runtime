@@ -181,14 +181,9 @@ namespace System.Security.Cryptography
         {
             CheckInvalidKey(pkey);
 
-            try
+            if (SafeEvpPKeyHandle.OpenSslVersion >= 0x3_00_00_00_0)
             {
                 return ExportECParametersFromEvpPKeyUsingParams(pkey, includePrivateParameters);
-            }
-            catch (CryptographicException)
-            {
-                // EVP_PKEY params API is unavailable on pre-3.0 OpenSSL.
-                // Fall back to EC_KEY export path.
             }
 
             using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(pkey))
@@ -201,14 +196,9 @@ namespace System.Security.Cryptography
         {
             CheckInvalidKey(pkey);
 
-            try
+            if (SafeEvpPKeyHandle.OpenSslVersion >= 0x3_00_00_00_0)
             {
                 return ExportExplicitCurveParametersFromEvpPKeyUsingParams(pkey, includePrivateParameters);
-            }
-            catch (CryptographicException)
-            {
-                // EVP_PKEY params API is unavailable on pre-3.0 OpenSSL.
-                // Fall back to EC_KEY export path.
             }
 
             using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(pkey))
@@ -232,6 +222,7 @@ namespace System.Security.Cryptography
             }
 
             string? curveName = Interop.Crypto.EvpPKeyGetCurveName(pkey);
+
             if (curveName is null)
             {
                 return ExportExplicitCurveParametersFromEvpPKeyUsingParams(pkey, includePrivateParameters);

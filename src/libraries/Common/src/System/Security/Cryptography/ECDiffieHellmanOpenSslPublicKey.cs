@@ -63,6 +63,11 @@ namespace System.Security.Cryptography
                 // Fallback for EC_KEY-backed handles: check via EC_KEY.
                 using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(GetKey()))
                 {
+                    if (ecKey is null || ecKey.IsInvalid)
+                    {
+                        throw new CryptographicException(SR.Cryptography_InvalidHandle);
+                    }
+
                     return !Interop.Crypto.EcKeyHasCurveName(ecKey);
                 }
             }
