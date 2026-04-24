@@ -52,7 +52,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public static void GetNullableUnderlyingType_MetadataLoadContext_OpenNullable_ReturnsNull()
+        public static void GetNullableUnderlyingType_MetadataLoadContext_OpenNullable()
         {
             string coreAssemblyPath = TestUtils.GetPathToCoreAssembly();
             var resolver = new PathAssemblyResolver([coreAssemblyPath]);
@@ -61,8 +61,13 @@ namespace System.Reflection.Tests
             Assembly coreAssembly = mlc.LoadFromAssemblyPath(coreAssemblyPath);
             Type openNullableType = coreAssembly.GetType("System.Nullable`1", throwOnError: true)!;
 
+            // Nullable.GetUnderlyingType returns null for generic type definitions (COMPAT).
             Assert.Null(Nullable.GetUnderlyingType(openNullableType));
-            Assert.Null(openNullableType.GetNullableUnderlyingType());
+
+            // Type.GetNullableUnderlyingType returns the generic type parameter T for Nullable<>.
+            Type? underlying = openNullableType.GetNullableUnderlyingType();
+            Assert.NotNull(underlying);
+            Assert.Same(openNullableType.GetGenericArguments()[0], underlying);
         }
     }
 }

@@ -3600,6 +3600,13 @@ namespace System
                 MethodTable* pMT = th.AsMethodTable();
                 if (pMT->IsNullable)
                 {
+                    // The open generic Nullable<> is also classified as Nullable,
+                    // but InstantiationArg0() does not yield a MethodTable for the type variable T.
+                    // Fall back to the managed API which returns the generic type parameter.
+                    if (pMT->IsGenericTypeDefinition)
+                    {
+                        return GetGenericArguments()[0];
+                    }
                     RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->InstantiationArg0());
                     GC.KeepAlive(this);
                     return result;

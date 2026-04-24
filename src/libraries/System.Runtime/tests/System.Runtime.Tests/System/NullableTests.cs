@@ -88,11 +88,17 @@ namespace System.Tests
             Assert.Equal(expected, Nullable.GetUnderlyingType(nullableType));
         }
 
+        public static IEnumerable<object[]> GetNullableUnderlyingType_RuntimeType_TestData()
+        {
+            yield return new object[] { typeof(int?), typeof(int) };
+            yield return new object[] { typeof(int), null };
+            yield return new object[] { typeof(G<int>), null };
+            // Nullable<> (generic type definition) is nullable; returns the generic type parameter T.
+            yield return new object[] { typeof(Nullable<>), typeof(Nullable<>).GetGenericArguments()[0] };
+        }
+
         [Theory]
-        [InlineData(typeof(int?), typeof(int))]
-        [InlineData(typeof(int), null)]
-        [InlineData(typeof(G<int>), null)]
-        [InlineData(typeof(Nullable<>), null)]
+        [MemberData(nameof(GetNullableUnderlyingType_RuntimeType_TestData))]
         public static void GetNullableUnderlyingType_RuntimeType(Type type, Type? expected)
         {
             Assert.Equal(expected, type.GetNullableUnderlyingType());

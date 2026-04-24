@@ -336,7 +336,10 @@ namespace System.Reflection.TypeLoading
                 RoType? nullableOfT = Loader.TryGetCoreType(CoreType.NullableT);
                 if (nullableOfT is not null && GetGenericTypeDefinition() == nullableOfT)
                 {
-                    return GenericTypeArguments[0];
+                    // Use GetGenericArguments() to cover both constructed Nullable<T>
+                    // (returns T) and the generic type definition Nullable<>
+                    // (returns the generic type parameter).
+                    return GetGenericArguments()[0];
                 }
             }
 

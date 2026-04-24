@@ -607,7 +607,10 @@ namespace System
         /// </summary>
         /// <returns>
         /// The type argument of the <see cref="Nullable{T}"/> type if the current type represents
-        /// a <see cref="Nullable{T}"/> or its instantiation; otherwise, <see langword="null"/>.
+        /// the <see cref="Nullable{T}"/> generic type definition or a constructed <see cref="Nullable{T}"/>;
+        /// otherwise, <see langword="null"/>. When the current type is the generic type definition
+        /// (for example, <c>typeof(Nullable&lt;&gt;)</c>), the returned type is the generic type
+        /// parameter <c>T</c>.
         /// </returns>
         public virtual Type? GetNullableUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
