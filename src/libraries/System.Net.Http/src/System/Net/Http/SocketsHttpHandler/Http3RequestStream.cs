@@ -1173,7 +1173,7 @@ namespace System.Net.Http
         /// </summary>
         private void ValidateContentLength(string value)
         {
-            if (!HeaderUtilities.TryParseInt64(value, 0, value.Length, out long contentLength))
+            if (!HeaderUtilities.TryParseInt64(value.AsSpan(), out long contentLength))
             {
                 throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_content_length);
             }

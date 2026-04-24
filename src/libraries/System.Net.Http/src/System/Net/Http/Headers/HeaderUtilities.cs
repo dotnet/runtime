@@ -357,6 +357,31 @@ namespace System.Net.Http.Headers
             return true;
         }
 
+        /// <summary>
+        /// Tries to parse a non-negative <see cref="long"/> from a character span using the same rules
+        /// as <see cref="Int64NumberHeaderParser"/>: only ASCII digits, no sign, no whitespace, max 19 digits,
+        /// and the value must fit in a <see cref="long"/>.
+        /// </summary>
+        internal static bool TryParseInt64(ReadOnlySpan<char> value, out long result)
+        {
+            if (value.Length == 0 || value.Length > HttpRuleParser.MaxInt64Digits)
+            {
+                result = 0;
+                return false;
+            }
+
+            foreach (char c in value)
+            {
+                if (c < '0' || c > '9')
+                {
+                    result = 0;
+                    return false;
+                }
+            }
+
+            return long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out result);
+        }
+
         internal static void DumpHeaders(ref ValueStringBuilder sb, params ReadOnlySpan<HttpHeaders?> headers)
         {
             // Dumps all headers in the following format:
