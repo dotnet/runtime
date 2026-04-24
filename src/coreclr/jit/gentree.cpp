@@ -28279,8 +28279,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
             GenTree* op1Lane2 = fgMakeMultiUse(&op1);
             GenTree* op1Lane3 = fgMakeMultiUse(&op1);
 
-            GenTree* op1Lane0 =
-                gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector512_GetLower128, simdBaseType, 64);
+            GenTree* op1Lane0 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector512_GetLower128, simdBaseType, 64);
             op1Lane1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lane1, gtNewIconNode(1), NI_AVX512_ExtractVector128,
                                                 simdBaseType, 64);
             op1Lane2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lane2, gtNewIconNode(2), NI_AVX512_ExtractVector128,
