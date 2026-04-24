@@ -4428,7 +4428,7 @@ TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pN
             return dac_cast<TADDR>(pInterpCode);
         }
     }
-#endif
+#endif // defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
 
     return start;
 }
