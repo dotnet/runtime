@@ -124,7 +124,7 @@ namespace System.Diagnostics
         /// Returns the number of active file descriptors.
         /// </summary>
         private static int PreparePollFds(
-            Interop.PollEvent[] pollFds,
+            Span<Interop.PollEvent> pollFds,
             int errorFd, int outputFd,
             bool errorDone, bool outputDone,
             out int errorIndex, out int outputIndex)
@@ -160,7 +160,7 @@ namespace System.Diagnostics
         /// the caller should retry.
         /// </summary>
         private static int PollForPipeActivity(
-            Interop.PollEvent[] pollFds,
+            Span<Interop.PollEvent> pollFds,
             int errorFd, int outputFd,
             bool errorDone, bool outputDone,
             long deadline, int timeoutMs,
@@ -260,7 +260,7 @@ namespace System.Diagnostics
                 throw new Win32Exception();
             }
 
-            Interop.PollEvent[] pollFds = new Interop.PollEvent[2];
+            Span<Interop.PollEvent> pollFds = stackalloc Interop.PollEvent[2];
 
             long deadline = timeoutMs >= 0
                 ? Environment.TickCount64 + timeoutMs
