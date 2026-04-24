@@ -299,9 +299,6 @@ internal readonly struct Thread_1 : IThread
         if (contextSource.HasFlag(ThreadContextSource.Debugger))
             filterContext = thread.DebuggerFilterContext;
 
-        if (filterContext == TargetPointer.Null && contextSource.HasFlag(ThreadContextSource.Profiler))
-            filterContext = thread.ProfilerFilterContext;
-
         if (filterContext != TargetPointer.Null)
         {
             _target.ReadBuffer(filterContext.Value, buffer);

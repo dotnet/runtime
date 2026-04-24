@@ -774,7 +774,7 @@ internal partial class StackWalk_1 : IStackWalk
     {
         byte[] bytes = _target.Contracts.Thread.GetContext(
             threadData.ThreadAddress,
-            ThreadContextSource.Debugger | ThreadContextSource.Profiler,
+            ThreadContextSource.Debugger,
             flags);
         context.FillFromBuffer(bytes);
     }

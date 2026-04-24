@@ -10,7 +10,6 @@ public enum ThreadContextSource
 {
     None = 0,
     Debugger = 1,
-    Profiler = 2,
 }
 
 public record struct ThreadStoreData(
