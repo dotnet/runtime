@@ -848,5 +848,119 @@ namespace ILCompiler
                     && firstField.Offset.AsInt == 0
                     && ((mdType.GetElementSize().AsInt % firstFieldElementType.GetElementSize().AsInt) == 0);
         }
+
+        /// <summary>
+        /// Given a canonical interface method, resolves its implementation(s) on a concrete type.
+        /// Yields non-canonical implementing methods. A single canonical interface method may map
+        /// to multiple implementations when the type implements the same interface with different
+        /// type arguments (e.g., class Foo&lt;T, U&gt; : IFoo&lt;T&gt;, IFoo&lt;U&gt;).
+        /// Callers should canonicalize the results as needed.
+        /// <paramref name="foundMatchingInterface"/> is set to true if the type implements an interface
+        /// with the same canonical form, even if no concrete implementation was resolved (e.g., diamond ambiguity).
+        /// </summary>
+        public static IEnumerable<MethodDesc> ResolveCanonicalInterfaceMethodImplementations(
+            this TypeDesc potentialOverrideType, MethodDesc canonMethod, out bool foundMatchingInterface)
+        {
+            Debug.Assert(canonMethod.IsVirtual);
+            Debug.Assert(canonMethod.HasInstantiation);
+            Debug.Assert(canonMethod.OwningType.IsInterface);
+            Debug.Assert(canonMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == canonMethod);
+
+            TypeSystemContext context = canonMethod.Context;
+            TypeDesc methodOwningType = canonMethod.OwningType;
+
+            TypeDesc potentialOverrideDefinition = potentialOverrideType.GetTypeDefinition();
+            DefType[] potentialInterfaces = potentialOverrideType.RuntimeInterfaces;
+            DefType[] potentialDefinitionInterfaces = potentialOverrideDefinition.RuntimeInterfaces;
+
+            foundMatchingInterface = false;
+            List<MethodDesc> results = new List<MethodDesc>();
+
+            for (int interfaceIndex = 0; interfaceIndex < potentialInterfaces.Length; interfaceIndex++)
+            {
+                if (potentialInterfaces[interfaceIndex].ConvertToCanonForm(CanonicalFormKind.Specific) != methodOwningType)
+                    continue;
+
+                foundMatchingInterface = true;
+
+                MethodDesc interfaceMethod = canonMethod.GetMethodDefinition();
+                if (methodOwningType.HasInstantiation)
+                    interfaceMethod = context.GetMethodForInstantiatedType(
+                        canonMethod.GetTypicalMethodDefinition(), (InstantiatedType)potentialDefinitionInterfaces[interfaceIndex]);
+
+                MethodDesc slotDecl = interfaceMethod.Signature.IsStatic
+                    ? potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod)
+                    : potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodTarget(interfaceMethod);
+
+                if (slotDecl is null)
+                {
+                    // The method might be implemented through a default interface method
+                    var result = potentialOverrideDefinition.InstantiateAsOpen()
+                        .ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, out slotDecl);
+                    if (result != DefaultInterfaceMethodResolution.DefaultImplementation)
+                        slotDecl = null;
+                }
+
+                if (slotDecl is not null)
+                {
+                    results.Add(slotDecl.MakeInstantiatedMethod(canonMethod.Instantiation)
+                        .InstantiateSignature(potentialOverrideType.Instantiation, canonMethod.Instantiation));
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Given a canonical class virtual method, resolves its override on a concrete type.
+        /// Returns the canonical override target, or null if the type does not override the method.
+        /// </summary>
+        public static MethodDesc ResolveCanonicalClassVirtualMethodOverride(
+            this TypeDesc potentialOverrideType, MethodDesc canonMethod)
+        {
+            Debug.Assert(canonMethod.IsVirtual);
+            Debug.Assert(canonMethod.HasInstantiation);
+            Debug.Assert(!canonMethod.OwningType.IsInterface);
+            Debug.Assert(canonMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == canonMethod);
+
+            TypeSystemContext context = canonMethod.Context;
+            TypeDesc methodOwningType = canonMethod.OwningType;
+
+            // Walk up the type hierarchy to find where the canonical form matches.
+            // For example, resolving Base<__Canon>.Method on Derived : Base<string> requires
+            // re-instantiating to Base<string>.Method before calling FindVirtualFunctionTargetMethodOnObjectType.
+            TypeDesc overrideTypeCur = potentialOverrideType;
+            do
+            {
+                if (overrideTypeCur.ConvertToCanonForm(CanonicalFormKind.Specific) == methodOwningType)
+                    break;
+                overrideTypeCur = overrideTypeCur.BaseType;
+            }
+            while (overrideTypeCur != null);
+
+            if (overrideTypeCur is null)
+                return null;
+
+            MethodDesc methodToResolve;
+            if (methodOwningType == overrideTypeCur)
+            {
+                methodToResolve = canonMethod;
+            }
+            else
+            {
+                methodToResolve = context
+                    .GetMethodForInstantiatedType(canonMethod.GetTypicalMethodDefinition(), (InstantiatedType)overrideTypeCur)
+                    .MakeInstantiatedMethod(canonMethod.Instantiation);
+            }
+
+            MethodDesc canonTarget = potentialOverrideType.FindVirtualFunctionTargetMethodOnObjectType(methodToResolve)
+                .GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            // We didn't find a different target method, so no override for the virtual method we are looking for.
+            if (canonTarget == canonMethod)
+                return null;
+
+            return canonTarget;
+        }
     }
 }

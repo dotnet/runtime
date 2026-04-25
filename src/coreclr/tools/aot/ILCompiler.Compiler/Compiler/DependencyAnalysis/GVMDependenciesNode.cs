@@ -75,24 +75,19 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc methodOwningType = _method.OwningType;
             bool methodIsShared = _method.IsSharedByGenericInstantiations;
 
-            TypeSystemContext context = _method.Context;
-
             for (int i = firstNode; i < markedNodes.Count; i++)
             {
                 DependencyNodeCore<NodeFactory> entry = markedNodes[i];
-                EETypeNode entryAsEETypeNode;
 
                 // This method is often called with a long list of ScannedMethodNode
                 // or MethodCodeNode nodes. We are not interested in those. In order
                 // to make the type check as cheap as possible we check for specific
                 // *sealed* types instead of doing `entry is EETypeNode` which has
                 // to walk the whole class hierarchy for the non matching nodes.
-                if (entry is ConstructedEETypeNode constructedEETypeNode)
-                    entryAsEETypeNode = constructedEETypeNode;
-                else
+                if (entry is not ConstructedEETypeNode constructedEETypeNode)
                     continue;
 
-                TypeDesc potentialOverrideType = entryAsEETypeNode.Type;
+                TypeDesc potentialOverrideType = constructedEETypeNode.Type;
                 if (!potentialOverrideType.IsDefType || potentialOverrideType.IsInterface)
                     continue;
 
@@ -104,113 +99,31 @@ namespace ILCompiler.DependencyAnalysis
 
                 bool foundImpl = false;
 
-                // If this is an interface gvm, look for types that implement the interface
-                // and other instantantiations that have the same canonical form.
-                // This ensure the various slot numbers remain equivalent across all types where there is an equivalence
-                // relationship in the vtable.
                 if (methodOwningType.IsInterface)
                 {
-                    // We go over definitions because a single canonical interface method could actually be implemented
-                    // by multiple methods - consider:
-                    //
-                    // class Foo<T, U> : IFoo<T>, IFoo<U>, IFoo<string> { }
-                    //
-                    // If we ask what implements IFoo<__Canon>.Method, the answer could be "three methods"
-                    // and that's expected. We therefore resolve IFoo<__Canon>.Method for each IFoo<!0>.Method,
-                    // IFoo<!1>.Method, and IFoo<string>.Method, adding GVMDependencies for each.
-                    TypeDesc potentialOverrideDefinition = potentialOverrideType.GetTypeDefinition();
-                    DefType[] potentialInterfaces = potentialOverrideType.RuntimeInterfaces;
-                    DefType[] potentialDefinitionInterfaces = potentialOverrideDefinition.RuntimeInterfaces;
-                    for (int interfaceIndex = 0; interfaceIndex < potentialInterfaces.Length; interfaceIndex++)
+                    foreach (MethodDesc implementingMethod in potentialOverrideType.ResolveCanonicalInterfaceMethodImplementations(_method, out foundImpl))
                     {
-                        if (potentialInterfaces[interfaceIndex].ConvertToCanonForm(CanonicalFormKind.Specific) == methodOwningType)
-                        {
-                            MethodDesc interfaceMethod = _method.GetMethodDefinition();
-                            if (methodOwningType.HasInstantiation)
-                                interfaceMethod = context.GetMethodForInstantiatedType(
-                                    _method.GetTypicalMethodDefinition(), (InstantiatedType)potentialDefinitionInterfaces[interfaceIndex]);
+                        MethodDesc canonImpl = implementingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-                            MethodDesc slotDecl = interfaceMethod.Signature.IsStatic ?
-                                potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod)
-                                : potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodTarget(interfaceMethod);
-                            if (slotDecl == null)
-                            {
-                                // The method might be implemented through a default interface method
-                                var result = potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, out slotDecl);
-                                if (result != DefaultInterfaceMethodResolution.DefaultImplementation)
-                                {
-                                    slotDecl = null;
-                                }
-                            }
+                        // Static virtuals cannot be further overridden so this is an impl use. Otherwise it's a virtual slot use.
+                        if (implementingMethod.Signature.IsStatic)
+                            dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GenericVirtualMethodImpl(canonImpl), null, "ImplementingMethodInstantiation"));
+                        else
+                            dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(canonImpl), null, "ImplementingMethodInstantiation"));
 
-                            if (slotDecl != null)
-                            {
-                                MethodDesc implementingMethodInstantiation = slotDecl
-                                    .MakeInstantiatedMethod(_method.Instantiation)
-                                    .InstantiateSignature(potentialOverrideType.Instantiation, _method.Instantiation);
-
-                                // Static virtuals cannot be further overridden so this is an impl use. Otherwise it's a virtual slot use.
-                                if (implementingMethodInstantiation.Signature.IsStatic)
-                                    dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GenericVirtualMethodImpl(implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific)), null, "ImplementingMethodInstantiation"));
-                                else
-                                    dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific)), null, "ImplementingMethodInstantiation"));
-
-                                TypeSystemEntity origin = (implementingMethodInstantiation.OwningType != potentialOverrideType) ? potentialOverrideType : null;
-                                factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation, origin);
-                            }
-
-                            foundImpl = true;
-                        }
+                        TypeSystemEntity origin = (implementingMethod.OwningType != potentialOverrideType) ? potentialOverrideType : null;
+                        factory.MetadataManager.NoteOverridingMethod(_method, implementingMethod, origin);
                     }
                 }
                 else
                 {
-                    // This is not an interface GVM. Check whether the current type overrides the virtual method.
-                    // We might need to change what virtual method we ask about - consider:
-                    //
-                    // class Base<T> { virtual Method(); }
-                    // class Derived : Base<string> { override Method(); }
-                    //
-                    // We need to resolve Base<__Canon>.Method on Derived, but if we were to ask the virtual
-                    // method resolution algorithm, the answer would be "does not override" because Base<__Canon>
-                    // is not even in the inheritance hierarchy.
-                    //
-                    // So we need to modify the question to resolve Base<string>.Method instead and then
-                    // canonicalize the result.
-
-                    TypeDesc overrideTypeCur = potentialOverrideType;
-                    do
-                    {
-                        if (overrideTypeCur.ConvertToCanonForm(CanonicalFormKind.Specific) == methodOwningType)
-                            break;
-
-                        overrideTypeCur = overrideTypeCur.BaseType;
-                    }
-                    while (overrideTypeCur != null);
-
-                    if (overrideTypeCur == null)
-                        continue;
-
-                    MethodDesc methodToResolve;
-                    if (methodOwningType == overrideTypeCur)
-                    {
-                        methodToResolve = _method;
-                    }
-                    else
-                    {
-                        methodToResolve = context
-                            .GetMethodForInstantiatedType(_method.GetTypicalMethodDefinition(), (InstantiatedType)overrideTypeCur)
-                            .MakeInstantiatedMethod(_method.Instantiation);
-                    }
-
-                    MethodDesc instantiatedTargetMethod = potentialOverrideType.FindVirtualFunctionTargetMethodOnObjectType(methodToResolve)
-                        .GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    if (instantiatedTargetMethod != _method)
+                    MethodDesc canonTarget = potentialOverrideType.ResolveCanonicalClassVirtualMethodOverride(_method);
+                    if (canonTarget is not null)
                     {
                         dynamicDependencies.Add(new CombinedDependencyListEntry(
-                            factory.GenericVirtualMethodImpl(instantiatedTargetMethod), null, "DerivedMethodInstantiation"));
+                            factory.GenericVirtualMethodImpl(canonTarget), null, "DerivedMethodInstantiation"));
 
-                        factory.MetadataManager.NoteOverridingMethod(_method, instantiatedTargetMethod);
+                        factory.MetadataManager.NoteOverridingMethod(_method, canonTarget);
 
                         foundImpl = true;
                     }
