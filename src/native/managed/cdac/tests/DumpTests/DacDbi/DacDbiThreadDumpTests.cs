@@ -32,7 +32,7 @@ public class DacDbiThreadDumpTests : DumpTestBase
 
         int dbiCount = 0;
         delegate* unmanaged<ulong, nint, void> callback = &CountThreadCallback;
-        int hr = dbi.EnumerateThreads((nint)callback, (nint)(&dbiCount));
+        int hr = dbi.EnumerateThreads(callback, (nint)(&dbiCount));
         Assert.Equal(System.HResults.S_OK, hr);
 
         int expectedCount = 0;
@@ -109,6 +109,87 @@ public class DacDbiThreadDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetThreadObject_MatchesContractAndThreadStateRules(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        IThread threadContract = Target.Contracts.Thread;
+        ThreadStoreData storeData = threadContract.GetThreadStoreData();
+
+        TargetPointer current = storeData.FirstThread;
+        while (current != TargetPointer.Null)
+        {
+            ThreadData data = threadContract.GetThreadData(current);
+
+            ulong threadObject;
+            int hr = dbi.GetThreadObject(current, &threadObject);
+
+            bool shouldReturnBadThreadState = (data.State & (Contracts.ThreadState.Stopped | Contracts.ThreadState.Unstarted | Contracts.ThreadState.Detached)) != 0;
+            if (shouldReturnBadThreadState)
+            {
+                Assert.Equal(CorDbgHResults.CORDBG_E_BAD_THREAD_STATE, hr);
+            }
+            else
+            {
+                Assert.Equal(System.HResults.S_OK, hr);
+                Assert.Equal(data.ExposedObjectHandle.Value, threadObject);
+            }
+
+            current = data.NextThread;
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void HasUnhandledException_MatchesContract(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        IThread threadContract = Target.Contracts.Thread;
+        ThreadStoreData storeData = threadContract.GetThreadStoreData();
+
+        TargetPointer current = storeData.FirstThread;
+        while (current != TargetPointer.Null)
+        {
+            Interop.BOOL hasUnhandled;
+            int hr = dbi.HasUnhandledException(current, &hasUnhandled);
+            Assert.Equal(System.HResults.S_OK, hr);
+
+            ThreadData data = threadContract.GetThreadData(current);
+            Assert.Equal(data.HasUnhandledException, hasUnhandled == Interop.BOOL.TRUE);
+
+            current = data.NextThread;
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetCurrentCustomDebuggerNotification_MatchesContract(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        IThread threadContract = Target.Contracts.Thread;
+        ThreadStoreData storeData = threadContract.GetThreadStoreData();
+
+        TargetPointer current = storeData.FirstThread;
+        while (current != TargetPointer.Null)
+        {
+            ulong notificationHandle;
+            int hr = dbi.GetCurrentCustomDebuggerNotification(current, &notificationHandle);
+            Assert.Equal(System.HResults.S_OK, hr);
+
+            ThreadData data = threadContract.GetThreadData(current);
+            Assert.Equal(data.CurrentCustomDebuggerNotificationHandle.Value, notificationHandle);
+
+            current = data.NextThread;
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
     public unsafe void GetUniqueThreadID_MatchesContract(TestConfiguration config)
     {
         InitializeDumpTest(config);
@@ -136,7 +217,7 @@ public class DacDbiThreadDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetCurrentException_CrossValidateWithContract(TestConfiguration config)
+    public unsafe void GetCurrentException_AtLeastOneThreadHasException(TestConfiguration config)
     {
         InitializeDumpTest(config);
         DacDbiImpl dbi = CreateDacDbi();
@@ -147,17 +228,20 @@ public class DacDbiThreadDumpTests : DumpTestBase
         TargetPointer current = storeData.FirstThread;
         Assert.NotEqual(TargetPointer.Null, current);
 
-        ulong exception;
-        int hr = dbi.GetCurrentException(current, &exception);
-
-        // GetCurrentException depends on Thread.GetThrowableObject which is not yet
-        // implemented in the Thread contract. Skip until the contract is available.
-        if (hr == unchecked((int)0x80004001)) // E_NOTIMPL — GetThrowableObject not yet in Thread contract
+        bool foundException = false;
+        while (current != TargetPointer.Null)
         {
-            throw new SkipTestException("GetThrowableObject not yet implemented in Thread contract");
+            ulong exception;
+            int hr = dbi.GetCurrentException(current, &exception);
+            Assert.Equal(System.HResults.S_OK, hr);
+            if (exception != 0ul)
+                foundException = true;
+
+            ThreadData data = threadContract.GetThreadData(current);
+            current = data.NextThread;
         }
 
-        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.True(foundException, "Expected at least one thread to have a current exception in the FailFast dump.");
     }
 
     [UnmanagedCallersOnly]

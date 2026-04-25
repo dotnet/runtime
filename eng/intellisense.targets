@@ -122,11 +122,13 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Skip the PNSE doc-source self-reference when not building a .NETCoreApp vertical. -->
   <Target Name="AddProjectReferenceToPNSEDocSource"
           DependsOnTargets="GetPNSEDocTargetFramework"
           BeforeTargets="PrepareForBuild"
           Condition="'$(IsPlatformNotSupportedAssembly)' == 'true' and
-                    '$(UseCompilerGeneratedDocXmlFile)' == 'true'">
+                    '$(UseCompilerGeneratedDocXmlFile)' == 'true' and
+                    ('$(BuildTargetFramework)' == '' or '$(TargetFrameworkIdentifier)' == '.NETCoreApp')">
     
     <Error Condition="'$(PNSEDocTargetFramework)' == ''"
            Text="Could not find a compatible TargetFramework to use as the documentation source for this PNSE build. Set 'PNSEDocTargetFramework' to the desired target framework." />

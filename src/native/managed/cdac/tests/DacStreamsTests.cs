@@ -44,7 +44,7 @@ public class DacStreamsTests
         var target = targetBuilder
             .AddTypes(DacStreamsTypes)
             .AddGlobals(DacStreamsGlobals)
-            .AddContract<IDacStreams>(version: 1)
+            .AddContract<IDacStreams>(version: "c1")
             .Build();
 
         testCase(target);

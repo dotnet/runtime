@@ -685,6 +685,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerReturnSuspend(node);
             break;
 
+        case GT_NONLOCAL_JMP:
+            ContainCheckNonLocalJmp(node->AsUnOp());
+            break;
+
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
         case GT_CNS_MSK:
             return LowerCnsMask(node->AsMskCon());
@@ -9927,6 +9931,9 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckHWIntrinsic(node->AsHWIntrinsic());
             break;
 #endif // FEATURE_HW_INTRINSICS
+        case GT_NONLOCAL_JMP:
+            ContainCheckNonLocalJmp(node->AsUnOp());
+            break;
         default:
             break;
     }

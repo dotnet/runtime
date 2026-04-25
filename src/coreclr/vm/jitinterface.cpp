@@ -7744,6 +7744,10 @@ CEEInfo::getMethodInfo(
     else if (ftn->IsIL() || ftn->IsDynamicMethod())
     {
         // IL methods with no IL header indicate there is no implementation defined in metadata.
+        // NOTE: P/Invoke methods are also IL methods with no IL header,
+        // but it is generally not profitable to inline the marshalling IL.
+        // As a result, we skip inlining the marshalling IL.
+        // P/Invokes that don't require marshalling can still be inlined directly by the JIT.
         getMethodInfoWorker(ftn, NULL, methInfo, context);
         result = true;
     }
@@ -11410,6 +11414,26 @@ void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
     // We receive ownership of the array
     _ASSERTE(m_pPatchpointInfoFromJit == NULL);
     m_pPatchpointInfoFromJit = patchpointInfo;
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    if (m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT))
+    {
+        uint32_t ppiSize = patchpointInfo->PatchpointInfoSize();
+
+        AllocMemTracker am;
+        void* mem = am.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(ppiSize)));
+        PatchpointInfo *newPpi = new (mem) PatchpointInfo;
+        newPpi->Initialize(patchpointInfo->NumberOfLocals(), patchpointInfo->TotalFrameSize());
+        newPpi->Copy(patchpointInfo);
+
+        HRESULT hr = m_pMethodBeingCompiled->SetMethodDescAltJitPatchpointInfo(newPpi);
+        if (SUCCEEDED(hr))
+        {
+            am.SuppressRelease();
+        }
+    }
+#endif
+
 #else
     UNREACHABLE();
 #endif
@@ -11433,6 +11457,18 @@ PatchpointInfo* CEEJitInfo::getOSRInfo(unsigned* ilOffset)
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     result = m_pPatchpointInfoFromRuntime;
     *ilOffset = m_ilOffset;
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    if (m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT))
+    {
+        PatchpointInfo* ppi = m_pMethodBeingCompiled->GetMethodDescAltJitPatchpointInfo();
+        if (ppi != NULL)
+        {
+            result = ppi;
+        }
+    }
+#endif
+
 #endif
 
     EE_TO_JIT_TRANSITION();
@@ -14160,7 +14196,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
                 _ASSERTE(pMethod->IsPInvoke());
-                result = (size_t)(LPVOID)PInvokeMethodDesc::ResolveAndSetPInvokeTarget((PInvokeMethodDesc*)pMethod);
+                PInvoke::ResolvePInvokeTarget((PInvokeMethodDesc*)pMethod);
+                result = (size_t)(LPVOID)((PInvokeMethodDesc*)pMethod)->GetPInvokeTarget();
             }
             else
             {
