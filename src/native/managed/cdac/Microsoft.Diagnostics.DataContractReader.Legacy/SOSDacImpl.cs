@@ -3020,7 +3020,7 @@ public sealed unsafe partial class SOSDacImpl
                 int nameLength = 0;
                 if (mtName is not null)
                 {
-                    ReadOnlySpan<char> comparableSpan = new(mtNametest, maxComparableLength);
+                    ReadOnlySpan<char> comparableSpan = mtNametest.AsSpan(0, maxComparableLength);
                     nameLength = comparableSpan.IndexOf('\0');
                     if (nameLength < 0)
                     {
