@@ -48,15 +48,19 @@ namespace System.Linq
                 }
                 else if (!Vector256.IsHardwareAccelerated || !Vector256<T>.IsSupported || span.Length < Vector256<T>.Count)
                 {
+                    // Capture the trailing overlapping vector before slicing, so it remains valid
+                    // even when span.Length == Vector128<T>.Count (in which case it equals the first vector).
+                    ReadOnlySpan<T> lastVec = span.Slice(span.Length - Vector128<T>.Count);
+
                     Vector128<T> best = Vector128.Create(span);
                     span = span.Slice(Vector128<T>.Count);
 
-                    while (span.Length >= Vector128<T>.Count * 2)
+                    while (span.Length >= Vector128<T>.Count)
                     {
                         best = TMinMax.Compare(best, Vector128.Create(span));
                         span = span.Slice(Vector128<T>.Count);
                     }
-                    best = TMinMax.Compare(best, Vector128.Create(span.Slice(span.Length - Vector128<T>.Count)));
+                    best = TMinMax.Compare(best, Vector128.Create(lastVec));
 
                     value = best[0];
                     for (int i = 1; i < Vector128<T>.Count; i++)
@@ -69,15 +73,17 @@ namespace System.Linq
                 }
                 else if (!Vector512.IsHardwareAccelerated || !Vector512<T>.IsSupported || span.Length < Vector512<T>.Count)
                 {
+                    ReadOnlySpan<T> lastVec = span.Slice(span.Length - Vector256<T>.Count);
+
                     Vector256<T> best = Vector256.Create(span);
                     span = span.Slice(Vector256<T>.Count);
 
-                    while (span.Length >= Vector256<T>.Count * 2)
+                    while (span.Length >= Vector256<T>.Count)
                     {
                         best = TMinMax.Compare(best, Vector256.Create(span));
                         span = span.Slice(Vector256<T>.Count);
                     }
-                    best = TMinMax.Compare(best, Vector256.Create(span.Slice(span.Length - Vector256<T>.Count)));
+                    best = TMinMax.Compare(best, Vector256.Create(lastVec));
 
                     value = best[0];
                     for (int i = 1; i < Vector256<T>.Count; i++)
@@ -90,15 +96,17 @@ namespace System.Linq
                 }
                 else
                 {
+                    ReadOnlySpan<T> lastVec = span.Slice(span.Length - Vector512<T>.Count);
+
                     Vector512<T> best = Vector512.Create(span);
                     span = span.Slice(Vector512<T>.Count);
 
-                    while (span.Length >= Vector512<T>.Count * 2)
+                    while (span.Length >= Vector512<T>.Count)
                     {
                         best = TMinMax.Compare(best, Vector512.Create(span));
                         span = span.Slice(Vector512<T>.Count);
                     }
-                    best = TMinMax.Compare(best, Vector512.Create(span.Slice(span.Length - Vector512<T>.Count)));
+                    best = TMinMax.Compare(best, Vector512.Create(lastVec));
 
                     value = best[0];
                     for (int i = 1; i < Vector512<T>.Count; i++)
