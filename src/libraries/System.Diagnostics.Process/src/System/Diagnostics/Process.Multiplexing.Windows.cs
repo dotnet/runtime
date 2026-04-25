@@ -80,12 +80,6 @@ namespace System.Diagnostics
 
                     if (waitResult == WaitHandle.WaitTimeout)
                     {
-                        unsafe
-                        {
-                            CancelPendingIOIfNeeded(outputHandle, outputDone, (NativeOverlapped*)outputOverlappedNint);
-                            CancelPendingIOIfNeeded(errorHandle, errorDone, (NativeOverlapped*)errorOverlappedNint);
-                        }
-
                         throw new TimeoutException();
                     }
 
@@ -102,28 +96,15 @@ namespace System.Diagnostics
 
                     if (bytesRead > 0)
                     {
-                        // Decode bytes to chars and parse lines.
                         if (isError)
                         {
-                            DecodeAndAppendChars(errorDecoder, errorByteBuffer, 0, bytesRead, flush: false, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
-                            if (!errorBomChecked && errorCharEnd > 0)
-                            {
-                                SkipBomIfPresent(errorCharBuffer, errorCharEnd, ref errorCharStart);
-                                errorBomChecked = true;
-                            }
-                            ParseLinesFromCharBuffer(errorCharBuffer, ref errorCharStart, errorCharEnd, true, lines);
-                            CompactOrGrowCharBuffer(ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
+                            DecodeBytesAndParseLines(errorDecoder, errorByteBuffer, bytesRead, ref errorCharBuffer, ref errorCharStart,
+                                ref errorCharEnd, ref errorBomChecked, isError, lines);
                         }
                         else
                         {
-                            DecodeAndAppendChars(outputDecoder, outputByteBuffer, 0, bytesRead, flush: false, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
-                            if (!outputBomChecked && outputCharEnd > 0)
-                            {
-                                SkipBomIfPresent(outputCharBuffer, outputCharEnd, ref outputCharStart);
-                                outputBomChecked = true;
-                            }
-                            ParseLinesFromCharBuffer(outputCharBuffer, ref outputCharStart, outputCharEnd, false, lines);
-                            CompactOrGrowCharBuffer(ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
+                            DecodeBytesAndParseLines(outputDecoder, outputByteBuffer, bytesRead, ref outputCharBuffer, ref outputCharStart,
+                                ref outputCharEnd, ref outputBomChecked, isError, lines);
                         }
 
                         unsafe
@@ -139,38 +120,20 @@ namespace System.Diagnostics
                                 currentByteBuffer.Length,
                                 (NativeOverlapped*)currentOverlappedNint, currentEvent))
                             {
-                                // EOF during QueueRead — flush decoder and emit remaining.
-                                if (isError)
-                                {
-                                    DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
-                                    EmitRemainingCharsAsLine(errorCharBuffer, ref errorCharStart, ref errorCharEnd, true, lines);
-                                    errorDone = true;
-                                }
-                                else
-                                {
-                                    DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
-                                    EmitRemainingCharsAsLine(outputCharBuffer, ref outputCharStart, ref outputCharEnd, false, lines);
-                                    outputDone = true;
-                                }
-
-                                currentEvent.Reset();
+                                bytesRead = 0; // EOF during QueueRead
                             }
                         }
                     }
-                    else
+
+                    if (bytesRead == 0) // EOF
                     {
-                        // EOF: flush decoder and emit remaining chars.
                         if (isError)
                         {
-                            DecodeAndAppendChars(errorDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd);
-                            EmitRemainingCharsAsLine(errorCharBuffer, ref errorCharStart, ref errorCharEnd, true, lines);
-                            errorDone = true;
+                            errorDone = FlushDecoderAndEmitRemainingChars(errorDecoder, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd, isError, lines);
                         }
                         else
                         {
-                            DecodeAndAppendChars(outputDecoder, Array.Empty<byte>(), 0, 0, flush: true, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd);
-                            EmitRemainingCharsAsLine(outputCharBuffer, ref outputCharStart, ref outputCharEnd, false, lines);
-                            outputDone = true;
+                            outputDone = FlushDecoderAndEmitRemainingChars(outputDecoder, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd, isError, lines);
                         }
 
                         currentEvent.Reset();

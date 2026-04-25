@@ -329,6 +329,25 @@ namespace System.Diagnostics
             endIndex = remaining;
         }
 
+        private static void DecodeBytesAndParseLines(Decoder decoder, byte[] byteBuffer, int bytesRead, ref char[] charBuffer, ref int charStart, ref int charEnd, ref bool bomChecked, bool standardError, List<ProcessOutputLine> lines)
+        {
+            DecodeAndAppendChars(decoder, byteBuffer, 0, bytesRead, flush: false, ref charBuffer, ref charStart, ref charEnd);
+            if (!bomChecked && charEnd > 0)
+            {
+                SkipBomIfPresent(charBuffer, charEnd, ref charStart);
+                bomChecked = true;
+            }
+            ParseLinesFromCharBuffer(charBuffer, ref charStart, charEnd, standardError, lines);
+            CompactOrGrowCharBuffer(ref charBuffer, ref charStart, ref charEnd);
+        }
+
+        private static bool FlushDecoderAndEmitRemainingChars(Decoder decoder, ref char[] charBuffer, ref int charStart, ref int charEnd, bool standardError, List<ProcessOutputLine> lines)
+        {
+            DecodeAndAppendChars(decoder, Array.Empty<byte>(), 0, 0, flush: true, ref charBuffer, ref charStart, ref charEnd);
+            EmitRemainingCharsAsLine(charBuffer, ref charStart, ref charEnd, standardError, lines);
+            return true;
+        }
+
         /// <summary>
         /// Asynchronously reads all standard output and standard error of the process as text.
         /// </summary>

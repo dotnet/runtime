@@ -221,20 +221,11 @@ namespace System.Diagnostics
             int bytesRead = ReadNonBlocking(handle, byteBuffer, 0);
             if (bytesRead > 0)
             {
-                DecodeAndAppendChars(decoder, byteBuffer, 0, bytesRead, flush: false, ref charBuffer, ref charStart, ref charEnd);
-                if (!bomChecked && charEnd > 0)
-                {
-                    SkipBomIfPresent(charBuffer, charEnd, ref charStart);
-                    bomChecked = true;
-                }
-                ParseLinesFromCharBuffer(charBuffer, ref charStart, charEnd, standardError, lines);
-                CompactOrGrowCharBuffer(ref charBuffer, ref charStart, ref charEnd);
+                DecodeBytesAndParseLines(decoder, byteBuffer, bytesRead, ref charBuffer, ref charStart, ref charEnd, ref bomChecked, standardError, lines);
             }
             else if (bytesRead == 0)
             {
-                DecodeAndAppendChars(decoder, Array.Empty<byte>(), 0, 0, flush: true, ref charBuffer, ref charStart, ref charEnd);
-                EmitRemainingCharsAsLine(charBuffer, ref charStart, ref charEnd, standardError, lines);
-                done = true;
+                done = FlushDecoderAndEmitRemainingChars(decoder, ref charBuffer, ref charStart, ref charEnd, standardError, lines);
             }
             // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.
         }

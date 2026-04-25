@@ -19,7 +19,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false)]
         public async Task ReadAllLines_ThrowsAfterDispose(bool useAsync)
         {
-            Process process = CreateProcess(RemotelyInvokable.Dummy);
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             process.Start();
             Assert.True(process.WaitForExit(WaitInMS));
 
@@ -50,7 +50,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false)]
         public async Task ReadAllLines_ThrowsWhenNoStreamsRedirected(bool useAsync)
         {
-            Process process = CreateProcess(RemotelyInvokable.Dummy);
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             process.Start();
 
             if (useAsync)
@@ -82,7 +82,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false, false)]
         public async Task ReadAllLines_ThrowsWhenOnlyOutputOrErrorIsRedirected(bool standardOutput, bool useAsync)
         {
-            Process process = CreateProcess(RemotelyInvokable.Dummy);
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             process.StartInfo.RedirectStandardOutput = standardOutput;
             process.StartInfo.RedirectStandardError = !standardOutput;
             process.Start();
@@ -116,7 +116,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false, false)]
         public async Task ReadAllLines_ThrowsWhenOutputOrErrorIsInSyncMode(bool standardOutput, bool useAsync)
         {
-            Process process = CreateProcess(RemotelyInvokable.Dummy);
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.Start();
@@ -153,7 +153,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false, false)]
         public async Task ReadAllLines_ThrowsWhenOutputOrErrorIsInAsyncMode(bool standardOutput, bool useAsync)
         {
-            Process process = CreateProcess(RemotelyInvokable.StreamBody);
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.Start();
@@ -306,6 +306,7 @@ namespace System.Diagnostics.Tests
 
             await EnumerateLines(process, useAsync, capturedOutput, capturedError);
 
+            Assert.Equal(lineCount, capturedOutput.Count);
             for (int i = 0; i < lineCount; i++)
             {
                 Assert.Equal($"line{i}", capturedOutput[i]);
@@ -361,7 +362,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false)]
         public async Task ReadAllLines_ThrowsOnCancellationOrTimeout(bool useAsync)
         {
-            Process process = CreateProcess(RemotelyInvokable.ReadLine);
+            using Process process = CreateProcess(RemotelyInvokable.ReadLine);
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.RedirectStandardInput = true;
