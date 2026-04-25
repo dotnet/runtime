@@ -974,7 +974,7 @@ private:
             {
                 // Pass the original method handle and original context handle to the devirtualizer if needed.
                 //
-                if (inlineInfo->needsMethodContext)
+                if (inlineInfo->hasTypeArg)
                 {
                     methodHnd = inlineInfo->originalMethodHandle;
                     context   = inlineInfo->originalContextHandle;
