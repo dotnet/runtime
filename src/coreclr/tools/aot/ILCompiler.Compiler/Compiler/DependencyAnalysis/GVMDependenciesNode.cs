@@ -145,10 +145,9 @@ namespace ILCompiler.DependencyAnalysis
 
                             if (slotDecl != null)
                             {
-                                TypeDesc[] openInstantiation = new TypeDesc[_method.Instantiation.Length];
-                                for (int instArg = 0; instArg < openInstantiation.Length; instArg++)
-                                    openInstantiation[instArg] = context.GetSignatureVariable(instArg, method: true);
-                                MethodDesc implementingMethodInstantiation = slotDecl.MakeInstantiatedMethod(openInstantiation).InstantiateSignature(potentialOverrideType.Instantiation, _method.Instantiation);
+                                MethodDesc implementingMethodInstantiation = slotDecl
+                                    .MakeInstantiatedMethod(_method.Instantiation)
+                                    .InstantiateSignature(potentialOverrideType.Instantiation, _method.Instantiation);
 
                                 // Static virtuals cannot be further overridden so this is an impl use. Otherwise it's a virtual slot use.
                                 if (implementingMethodInstantiation.Signature.IsStatic)
