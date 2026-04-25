@@ -222,14 +222,11 @@ namespace System.Numerics
                 remaining = remaining.Slice(Vector128<nuint>.Count);
             }
 
-            nuint carry2 = 0;
-            int offset = bits.Length - remaining.Length;
-            for (int i = bits.Length - 1; i >= offset; i--)
+            for (int i = 0; i < remaining.Length - 1; i++)
             {
-                nuint value = carry2 | bits[i] >> shift;
-                carry2 = bits[i] << back;
-                bits[i] = value;
+                remaining[i] = (remaining[i] >> shift) | (remaining[i + 1] << back);
             }
+            remaining[remaining.Length - 1] >>= shift;
         }
     }
 }
