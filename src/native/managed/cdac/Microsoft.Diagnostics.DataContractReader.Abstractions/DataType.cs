@@ -77,6 +77,7 @@ public enum DataType
     StressMsg,
     StressMsgHeader,
     Object,
+    ContinuationObject,
     NativeObjectWrapperObject,
     ManagedObjectWrapperHolderObject,
     ManagedObjectWrapperLayout,

@@ -122,18 +122,11 @@ public interface IRuntimeTypeSystem : IContract
     // True if the MethodTable represents a continuation type used by the async continuation feature
     bool IsContinuation(TypeHandle typeHandle) => throw new NotImplementedException();
     /// <summary>
-    /// Returns the raw CGCDescSeries entries for the given method table, ordered from highest to lowest
-    /// (matching the iteration order of <c>CGCDesc::GetHighestSeries</c> down to <c>GetLowestSeries</c>).
-    /// Each entry is the raw (<c>startoffset</c>, <c>seriessize</c>) pair stored in the GC descriptor.
-    /// An empty sequence is returned when the method table has no GC pointers, is a value-class series
-    /// (repeating), or the handle does not represent a method table.
+    /// Enumerates GC pointer runs from the CGCDesc stored before the method table.
+    /// Returns (offset, size) pairs normalized to actual byte lengths.
+    /// See RuntimeTypeSystem.md for the full GCDesc format documentation.
     /// </summary>
-    /// <remarks>
-    /// The raw <c>seriessize</c> field has the object base size subtracted during construction; callers
-    /// that need the true run length in bytes must add <see cref="GetBaseSize"/> back, as in:
-    /// <c>trueSize = (SeriesSize + baseSize) / pointerSize</c>.
-    /// </remarks>
-    IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle) => throw new NotImplementedException();
+    IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle, uint objectSize) => throw new NotImplementedException();
     bool IsDynamicStatics(TypeHandle typeHandle) => throw new NotImplementedException();
     ushort GetNumInterfaces(TypeHandle typeHandle) => throw new NotImplementedException();
 

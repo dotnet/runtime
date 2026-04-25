@@ -32,10 +32,6 @@ public static class Constants
         public const string RecommendedReaderVersion = nameof(RecommendedReaderVersion);
 
         public const string ContinuationMethodTable = nameof(ContinuationMethodTable);
-        // Byte offset from the start of an object to the data payload of a CORINFO_Continuation struct.
-        // Equals sizeof(MethodTable*) + sizeof(Next*) + sizeof(Resume*) + sizeof(Flags+State).
-        // See OFFSETOF__CORINFO_Continuation__data in corinfo.h.
-        public const string OffsetOfContinuationData = nameof(OffsetOfContinuationData);
         public const string ExceptionMethodTable = nameof(ExceptionMethodTable);
         public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
         public const string ObjectMethodTable = nameof(ObjectMethodTable);

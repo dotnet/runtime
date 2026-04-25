@@ -173,6 +173,10 @@ CDAC_TYPE_FIELD(String, T_POINTER, m_FirstChar, cdac_data<StringObject>::m_First
 CDAC_TYPE_FIELD(String, T_UINT32, m_StringLength, cdac_data<StringObject>::m_StringLength)
 CDAC_TYPE_END(String)
 
+CDAC_TYPE_BEGIN(ContinuationObject)
+CDAC_TYPE_SIZE(sizeof(ContinuationObject))
+CDAC_TYPE_END(ContinuationObject)
+
 CDAC_TYPE_BEGIN(Array)
 CDAC_TYPE_SIZE(sizeof(ArrayBase))
 CDAC_TYPE_FIELD(Array, T_UINT32, m_NumComponents, cdac_data<ArrayBase>::m_NumComponents)
@@ -1440,11 +1444,6 @@ CDAC_GLOBAL(FieldOffsetDynamicRVA, T_UINT32, FIELD_OFFSET_DYNAMIC_RVA)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
 CDAC_GLOBAL_POINTER(ContinuationMethodTable, &::g_pContinuationClassIfSubTypeCreated)
-// Byte offset from the start of an object (method table pointer) to the data payload of
-// CORINFO_Continuation.  Equivalent to OFFSETOF__CORINFO_Continuation__data from corinfo.h:
-//   sizeof(MethodTable*) + sizeof(Next*) + sizeof(Resume*) + sizeof(Flags+State(uint64))
-//   = 3 * TARGET_POINTER_SIZE + 8
-CDAC_GLOBAL(OffsetOfContinuationData, T_UINT32, 3 * TARGET_POINTER_SIZE + 8)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)

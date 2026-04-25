@@ -58,8 +58,8 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
     public virtual bool IsContinuation(TypeHandle typeHandle);
-    // Returns the raw CGCDescSeries entries for the method table, ordered highest to lowest (empty for non-MT handles, no GC pointers, or value-class series)
-    public virtual IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle);
+    // Returns the GC pointer runs for the method table as (offset, size) pairs normalized to actual byte lengths.
+    public virtual IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle, uint objectSize);
     public virtual bool IsDynamicStatics(TypeHandle typeHandle);
     public virtual ushort GetNumInterfaces(TypeHandle typeHandle);
 
@@ -417,7 +417,6 @@ The contract depends on the following globals
 | Global name | Meaning |
 | --- | --- |
 | `ContinuationMethodTable` | A pointer to the address of the base `Continuation` `MethodTable`, or null if no continuations have been created
-| `OffsetOfContinuationData` | Byte offset from the start of an object (past the sync-block header) to the data payload of a `CORINFO_Continuation` struct; equals `3 * sizeof(void*) + 8`
 | `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
 | `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
@@ -556,6 +555,53 @@ Contracts used:
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+
+    public bool IsContinuation(TypeHandle typeHandle) => typeHandle.IsMethodTable()
+        && ContinuationMethodTablePointer != TargetPointer.Null
+        && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer;
+
+    IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle, uint objectSize)
+    {
+        // Returns empty if not a method table or has no GC pointers.
+
+        // Read NumSeries from (mtAddress - pointerSize), sign-extended to native width.
+        // NumSeries == 0 → empty.
+
+        // NumSeries > 0: Regular series.
+        // Used for normal objects and reference-type arrays (e.g. object[]).
+        // Memory layout (each slot is pointer-sized, growing away from MT):
+        //
+        //   MT - (2*N+1)*ptrSize : series[N-1].seriessize
+        //   MT - (2*N)  *ptrSize : series[N-1].startoffset
+        //   ...
+        //   MT - 3*ptrSize       : series[0].seriessize
+        //   MT - 2*ptrSize       : series[0].startoffset
+        //   MT - 1*ptrSize       : NumSeries (positive)
+        //   MT                   : MethodTable
+        //
+        // The raw seriessize is stored with baseSize subtracted.
+        // Add objectSize back to get the true run length:
+        //   trueRunLength = rawSeriesSize + objectSize
+        // For non-arrays objectSize == baseSize, recovering the actual run.
+        // For arrays objectSize > baseSize, extending the last series across all elements.
+
+        // NumSeries < 0: Value-class (repeating) series.
+        // Used for arrays of value types containing GC references.
+        // |NumSeries| val_serie_items describe pointer runs within one array element.
+        // Memory layout:
+        //
+        //   MT - (N+2)*ptrSize : val_serie[N-1]
+        //   ...
+        //   MT - 3*ptrSize     : val_serie[0]
+        //   MT - 2*ptrSize     : startoffset
+        //   MT - 1*ptrSize     : NumSeries (-N)
+        //   MT                 : MethodTable
+        //
+        // Each val_serie_item is { HALF_SIZE_T nptrs; HALF_SIZE_T skip; } packed into one pointer-width.
+        // HALF_SIZE_T is uint16 on 32-bit, uint32 on 64-bit.
+        // Read nptrs and skip as separate typed reads for endianness safety.
+        // runBytes = nptrs * pointerSize; advance currentOffset by runBytes + skip after each item.
+    }
 
     public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
 

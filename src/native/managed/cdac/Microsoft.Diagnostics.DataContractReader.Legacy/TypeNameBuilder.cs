@@ -513,18 +513,14 @@ public struct TypeNameBuilder
     private static void AppendContinuationName(ref TypeNameBuilder tnb, IRuntimeTypeSystem typeSystemContract, TypeHandle typeHandle)
     {
         uint baseSize = typeSystemContract.GetBaseSize(typeHandle);
-        uint continuationDataOffset = tnb.Target.ReadGlobal<uint>(Constants.Globals.OffsetOfContinuationData);
-
-        // OBJHEADER_SIZE equals the pointer size on all supported platforms:
-        // 64-bit: 4 bytes pad + 4 bytes SyncBlockValue = 8 = pointer size
-        // 32-bit: 4 bytes SyncBlockValue = 4 = pointer size
-        uint objHeaderSize = (uint)tnb.Target.PointerSize;
+        uint continuationDataOffset = tnb.Target.GetTypeInfo(DataType.ContinuationObject).Size!.Value;
+        uint objHeaderSize = tnb.Target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
         uint dataSize = baseSize - (objHeaderSize + continuationDataOffset);
 
         var name = new StringBuilder("Continuation_");
         name.Append(dataSize);
 
-        foreach ((uint seriesOffset, uint seriesSize) in typeSystemContract.GetGCDescSeries(typeHandle))
+        foreach ((uint seriesOffset, uint seriesSize) in typeSystemContract.GetGCDescSeries(typeHandle, baseSize))
         {
             if (seriesOffset < continuationDataOffset)
                 continue;
@@ -532,7 +528,7 @@ public struct TypeNameBuilder
             name.Append('_');
             name.Append(seriesOffset - continuationDataOffset);
             name.Append('_');
-            name.Append((seriesSize + baseSize) / (uint)tnb.Target.PointerSize);
+            name.Append(seriesSize / (uint)tnb.Target.PointerSize);
         }
 
         tnb.AddNameNoEscaping(name);
