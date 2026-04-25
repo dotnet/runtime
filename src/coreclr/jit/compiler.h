@@ -7743,7 +7743,7 @@ public:
                                              unsigned               methodAttr,
                                              unsigned               classAttr,
                                              unsigned               likelihood,
-                                             bool                   hasTypeArg,
+                                             bool                   needsMethodContext,
                                              CORINFO_METHOD_HANDLE  instantiatingStub,
                                              CORINFO_METHOD_HANDLE  originalMethodHandle,
                                              CORINFO_CONTEXT_HANDLE originalContextHandle);
