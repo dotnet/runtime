@@ -1020,7 +1020,6 @@ namespace System.Reflection.Metadata.Tests
             Assert.Throws<InvalidOperationException>(() => builder1.LinkSuffix(builder3));
 
             builder1.Free();
-            builder2.Free();
         }
 
         private class ProperStreamRead_TestStream : TestStreamBase
