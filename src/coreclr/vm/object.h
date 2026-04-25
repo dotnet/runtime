@@ -2129,6 +2129,12 @@ class ContinuationObject : public Object
         return ResumeInfo;
     }
 
+    CONTINUATIONREF GetNext() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return Next;
+    }
+
     void SetState(int32_t state)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2199,6 +2205,15 @@ private:
     void* ResumeInfo;
     int32_t Flags;
     int32_t State;
+};
+
+// Mirrors the managed AsyncDispatcherInfo ref struct layout.
+// DEFINE_CLASS_U / DEFINE_FIELD_U in corelib.h verify this matches at debug startup.
+struct AsyncDispatcherInfoLayout
+{
+    void*     Next;
+    OBJECTREF NextContinuation;
+    OBJECTREF CurrentTask;
 };
 
 // This class corresponds to Exception on the managed side.

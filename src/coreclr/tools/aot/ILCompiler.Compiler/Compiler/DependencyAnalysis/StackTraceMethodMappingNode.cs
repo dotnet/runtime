@@ -124,6 +124,11 @@ namespace ILCompiler.DependencyAnalysis
                     command |= StackTraceDataCommand.IsStackTraceHidden;
                 }
 
+                if ((entry.Flags & StackTraceRecordFlags.IsAsyncMethod) != 0)
+                {
+                    command |= StackTraceDataCommand.IsAsyncMethod;
+                }
+
                 objData.EmitByte(commandReservation, command);
                 objData.EmitReloc(factory.MethodEntrypoint(entry.Method), RelocType.IMAGE_REL_BASED_RELPTR32);
             }

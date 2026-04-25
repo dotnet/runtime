@@ -11,5 +11,6 @@ namespace Internal.Runtime
         public const byte UpdateGenericSignature = 0x08; // Just a shortcut - sig metadata has the info
 
         public const byte IsStackTraceHidden = 0x10;
+        public const byte IsAsyncMethod = 0x20;
     }
 }

@@ -214,6 +214,11 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RichDebugInfo, W("RichDebugInfo"), 0, "If n
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_OutOfProcessSetContext, W("OutOfProcessSetContext"), 0, "If enabled the debugger will not modify thread contexts in-process.  Enabled by default when CET is enabled for the process.")
 
 ///
+/// Async Stack Traces
+///
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_StackTraceAsyncBehavior, W("StackTraceAsyncBehavior"), 1, "Controls async stack trace behavior for Environment.StackTrace and System.Diagnostics.StackTrace: 0 = show all frames above the dispatch boundary with async continuation stitching, 1 (default) = hide non-async frames below the first runtime async frame, 2 = disable async stitching entirely and show only physical call stack frames.")
+
+///
 /// Diagnostics (internal general-purpose)
 ///
 CONFIG_DWORD_INFO(INTERNAL_ConditionalContracts, W("ConditionalContracts"), 0, "If ENABLE_CONTRACTS_IMPL is defined, sets whether contracts are conditional. (?)")

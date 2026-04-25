@@ -177,6 +177,96 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
 #endif // DEBUGGING_SUPPORTED
 }
 
+bool DebugStackTrace::ExtractContinuationData(SArray<ResumeData>* pContinuationResumeList)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // Use the CoreLib binder to get AsyncDispatcherInfo and its t_current field.
+    FieldDesc* pTCurrentField = CoreLibBinder::GetField(FIELD__ASYNC_DISPATCHER_INFO__T_CURRENT);
+    MethodTable* pDispatcherInfoMT = CoreLibBinder::GetClass(CLASS__ASYNC_DISPATCHER_INFO);
+
+    Thread * pThread = GetThread();
+
+    pDispatcherInfoMT->EnsureTlsIndexAllocated();
+    PTR_BYTE base = pDispatcherInfoMT->GetNonGCThreadStaticsBasePointer(pThread);
+    if (base == NULL)
+        return false;
+
+    // ResumeInfo is an unmanaged struct:
+    //   [0]             delegate*  Resume       (function pointer)
+    //   [sizeof(void*)] void*      DiagnosticIP (code pointer)
+    struct ResumeInfoLayout
+    {
+        PCODE Resume;
+        PCODE DiagnosticIP;
+    };
+
+    SIZE_T offset = pTCurrentField->GetOffset();
+    AsyncDispatcherInfoLayout** ppDispatcherInfo = (AsyncDispatcherInfoLayout**)((PTR_BYTE)base + offset);
+    if (ppDispatcherInfo == NULL || *ppDispatcherInfo == NULL)
+        return false;
+
+    struct
+    {
+        CONTINUATIONREF continuation;
+        CONTINUATIONREF pNext;
+    } gc{};
+    gc.continuation = NULL;
+    gc.pNext = NULL;
+    GCPROTECT_BEGIN(gc)
+    {
+        AsyncDispatcherInfoLayout* pDispatcherInfo = *ppDispatcherInfo;
+        while (pDispatcherInfo != NULL)
+        {
+            if (pDispatcherInfo->NextContinuation == NULL)
+            {
+                pDispatcherInfo = (AsyncDispatcherInfoLayout*)pDispatcherInfo->Next;
+                continue;
+            }
+
+            gc.continuation = (CONTINUATIONREF)pDispatcherInfo->NextContinuation;
+            while (gc.continuation != NULL)
+            {
+                // Use ContinuationObject accessors — these match the binder-verified layout.
+                gc.pNext = gc.continuation->GetNext();
+                ResumeInfoLayout* pResumeInfo = (ResumeInfoLayout*)gc.continuation->GetResumeInfo();
+
+                if (pResumeInfo != NULL && pResumeInfo->Resume != NULL)
+                {
+                    MethodDesc* pMD = NonVirtualEntry2MethodDesc((PCODE)pResumeInfo->Resume);
+
+                    if (pMD != NULL && pMD->IsDynamicMethod())
+                    {
+                        PTR_ILStubResolver pILResolver = pMD->AsDynamicMethodDesc()->GetILStubResolver();
+                        if (pILResolver != nullptr)
+                        {
+                            MethodDesc* pTargetMD = pILResolver->GetStubTargetMethodDesc();
+                            if (pTargetMD != nullptr && pResumeInfo->DiagnosticIP != NULL)
+                            {
+                                pContinuationResumeList->Append({ pTargetMD, pResumeInfo->DiagnosticIP });
+                            }
+                        }
+                    }
+                }
+
+                gc.continuation = gc.pNext;
+            }
+
+            // Only display continuations from the innermost (first) dispatcher in the chain.
+            break;
+        }
+    }
+    GCPROTECT_END();
+
+    return true;
+}
+
 static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
 {
     CONTRACTL
@@ -199,9 +289,29 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     }
 
     DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
-    if (pData->cElements >= pData->cElementsAllocated)
+
+    if (pFunc != NULL && pData->hideAsyncDispatchMode != 2 && pFunc->IsAsyncMethod())
     {
-        DebugStackTrace::Element* pTemp = new (nothrow) DebugStackTrace::Element[2*pData->cElementsAllocated];
+        pData->fAsyncFramesPresent = TRUE;
+    }
+    else if (pFunc != NULL && pData->hideAsyncDispatchMode != 2 && pData->fAsyncFramesPresent)
+    {
+        if (pFunc->HasSameMethodDefAs(CoreLibBinder::GetMethod(METHOD__RUNTIME_ASYNC_TASK__DISPATCH_CONTINUATIONS)))
+        {
+            // capture runtime async continuations
+            DebugStackTrace::ExtractContinuationData(&pData->continuationResumeList);
+        }
+        else if (pData->hideAsyncDispatchMode == 1)
+        {
+            // Mode 1: Hide all non-async frames below the first async frame.
+            return SWA_CONTINUE;
+        }
+    }
+
+    int cNumAlloc = pData->cElements + pData->continuationResumeList.GetCount();
+    if (cNumAlloc >= pData->cElementsAllocated)
+    {
+        DebugStackTrace::Element* pTemp = new (nothrow) DebugStackTrace::Element[2*cNumAlloc];
         if (pTemp == NULL)
         {
             return SWA_ABORT;
@@ -212,36 +322,70 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
         delete [] pData->pElements;
 
         pData->pElements = pTemp;
-        pData->cElementsAllocated *= 2;
+        pData->cElementsAllocated = 2*cNumAlloc;
     }
 
     PCODE ip;
     DWORD dwNativeOffset;
 
-    if (pCf->IsFrameless())
+    if (pData->continuationResumeList.GetCount() == 0)
     {
-        // Real method with jitted code.
-        dwNativeOffset = pCf->GetRelOffset();
-        ip = GetControlPC(pCf->GetRegisterSet());
+        if (pCf->IsFrameless())
+        {
+            // Real method with jitted code.
+            dwNativeOffset = pCf->GetRelOffset();
+            ip = GetControlPC(pCf->GetRegisterSet());
+        }
+        else
+        {
+            ip = (PCODE)NULL;
+            dwNativeOffset = 0;
+        }
+
+        // Pass on to InitPass2 that the IP has already been adjusted (decremented by 1)
+        INT flags = pCf->IsIPadjusted() ? STEF_IP_ADJUSTED : 0;
+
+        pData->pElements[pData->cElements].InitPass1(
+                dwNativeOffset,
+                pFunc,
+                ip,
+                flags);
+
+        // We'll init the IL offsets outside the TSL lock.
+
+        ++pData->cElements;
     }
     else
     {
-        ip = (PCODE)NULL;
-        dwNativeOffset = 0;
+        // inject runtime async continuations if any
+        for (UINT32 i = 0; i < pData->continuationResumeList.GetCount() && (pData->NumFramesRequested == 0 || pData->cElements < pData->NumFramesRequested); i++)
+        {
+            DebugStackTrace::ResumeData& resumeData = pData->continuationResumeList[i];
+            MethodDesc* pResumeMd = resumeData.pResumeMd;
+            PCODE pResumeIp = resumeData.pResumeIp;
+
+            if (pResumeIp == NULL)
+                continue;
+
+            DWORD dwNativeOffset = 0;
+            EECodeInfo codeInfo(pResumeIp);
+            if (codeInfo.IsValid())
+            {
+                dwNativeOffset = codeInfo.GetRelOffset();
+            }
+            pData->pElements[pData->cElements].InitPass1(
+                dwNativeOffset,
+                pResumeMd,
+                pResumeIp,
+                STEF_CONTINUATION);
+
+            ++pData->cElements;
+        }
+        pData->continuationResumeList.Clear();
+
+        // physical stack is truncated after injecting continuations
+        return SWA_ABORT;
     }
-
-    // Pass on to InitPass2 that the IP has already been adjusted (decremented by 1)
-    INT flags = pCf->IsIPadjusted() ? STEF_IP_ADJUSTED : 0;
-
-    pData->pElements[pData->cElements].InitPass1(
-            dwNativeOffset,
-            pFunc,
-            ip,
-            flags);
-
-    // We'll init the IL offsets outside the TSL lock.
-
-    ++pData->cElements;
 
     // check if we already have the number of frames that the user had asked for
     if ((pData->NumFramesRequested != 0) && (pData->NumFramesRequested <= pData->cElements))
@@ -279,9 +423,10 @@ static void GetStackFrames(DebugStackTrace::GetStackFramesData *pData)
 
     // Allocate memory for the initial 'n' frames
     pData->pElements = new DebugStackTrace::Element[pData->cElementsAllocated];
+    pData->hideAsyncDispatchMode = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_StackTraceAsyncBehavior);
     GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY | QUICKUNWIND, NULL);
 
-    // Do a 2nd pass outside of any locks.
+    // Do a 2nd passoutside of any locks.
     // This will compute IL offsets.
     for (INT32 i = 0; i < pData->cElements; i++)
     {
