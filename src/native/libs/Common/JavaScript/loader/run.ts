@@ -35,6 +35,23 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         const modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = normalizeCollection(resources.modulesAfterConfigLoaded).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
         await Promise.all(modulesAfterConfigLoadedPromises.map(([, p]) => p));
 
+        // Wire user-provided out/err overrides to Emscripten's print/printErr.
+        // This must happen before the native module loads so Emscripten picks them up.
+        if (!Module.out) {
+            // eslint-disable-next-line no-console
+            Module.out = console.log.bind(console);
+        }
+        if (!Module.err) {
+            // eslint-disable-next-line no-console
+            Module.err = console.error.bind(console);
+        }
+        if (!Module.print) {
+            Module.print = Module.out;
+        }
+        if (!Module.printErr) {
+            Module.printErr = Module.err;
+        }
+
         // after onConfigLoaded hooks that could install polyfills, our polyfills can be initialized
         await initPolyfills();
 

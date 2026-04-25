@@ -797,6 +797,19 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         return false;
     }
 
+    // Exclude floating point compares.
+    //
+    VNFuncApp treeApp;
+    if (!vnStore->GetVNFunc(treeNormVN, &treeApp) || !ValueNumStore::VNFuncIsComparison(treeApp.m_func))
+    {
+        return false;
+    }
+
+    if (varTypeIsFloating(vnStore->TypeOfVN(treeApp.m_args[0])))
+    {
+        return false;
+    }
+
     // Skip through chains of empty or side effect free blocks.
     // Watch for cycles.
     //
@@ -974,8 +987,68 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         rii.domCmpNormVN = blockPathVN;
 
         optRelopImpliesRelop(&rii);
+        bool canOptimize = rii.canInfer && rii.canInferFromTrue && !rii.reverseSense;
 
-        if (!(rii.canInfer && rii.canInferFromTrue && !rii.reverseSense))
+        genTreeOps newRelop   = GT_NONE;
+        bool       isUnsigned = false;
+
+        if (!canOptimize)
+        {
+            if (rii.canInfer)
+            {
+                JITDUMP("Can't infer along the path we care about; trying simplification instead\n");
+            }
+            else
+            {
+                JITDUMP("Can't infer, trying simplification instead\n");
+            }
+
+            // See if we can simplify the VN for blockPathVN AND domPathVN
+            //
+            ValueNum  andVN = vnStore->VNForFunc(TYP_INT, VNF_AND, blockPathVN, domPathVN);
+            VNFuncApp andApp;
+            VNFuncApp pathApp;
+            VNFunc    newRelopFunc = VNF_NONE;
+            if (vnStore->IsVNRelop(andVN, &andApp) && vnStore->GetVNFunc(blockPathVN, &pathApp))
+            {
+                if (andApp.m_args[0] == pathApp.m_args[0] && andApp.m_args[1] == pathApp.m_args[1])
+                {
+                    newRelopFunc = andApp.m_func;
+                }
+                else if (andApp.m_args[0] == pathApp.m_args[1] && andApp.m_args[1] == pathApp.m_args[0])
+                {
+                    andVN = vnStore->GetRelatedRelop(andVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
+                    vnStore->GetVNFunc(andVN, &andApp);
+                    newRelopFunc = andApp.m_func;
+                }
+
+                JITDUMPEXEC(vnStore->vnDump(this, blockPathVN));
+                JITDUMP(" AND");
+                JITDUMPEXEC(vnStore->vnDump(this, domPathVN));
+                JITDUMP(" ==>");
+                JITDUMPEXEC(vnStore->vnDump(this, andVN));
+            }
+
+            // TODO-CQ: if the AND simplifies to a constant, we can optimize both the dominating branch
+            // and the current branch. This is likely rare.
+
+            if (newRelopFunc != VNF_NONE)
+            {
+                newRelop = vnStore->VNRelopToGenTreeOp(newRelopFunc, &isUnsigned);
+
+                if (newRelop != GT_NONE)
+                {
+                    JITDUMP("; simplified to %s%s\n", GenTree::OpName(newRelop), isUnsigned ? " (unsigned)" : "");
+                    canOptimize = true;
+                }
+            }
+            else
+            {
+                JITDUMP("; not a relop, cannot simplify\n");
+            }
+        }
+
+        if (!canOptimize)
         {
             JITDUMP("failed -- Dominated VN " FMT_VN " does not imply dominating VN " FMT_VN "\n", blockPathVN,
                     domPathVN);
@@ -1008,6 +1081,29 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         fgMorphBlockStmt(domBlockProbe, domStmt DEBUGARG(__FUNCTION__), /* allowFGChange */ true,
                          /* invalidateDFSTreeOnFGChange */ false);
         Metrics.RedundantBranchesEliminated++;
+
+        if (newRelop != GT_NONE)
+        {
+            if (sharedSuccessor == blockTrueSucc)
+            {
+                newRelop = GenTree::ReverseRelop(newRelop);
+            }
+
+            tree->SetOper(newRelop);
+
+            // Update GTF_UNSIGNED before re-value-numbering.
+            //
+            if (isUnsigned)
+            {
+                tree->SetUnsigned();
+            }
+            else
+            {
+                tree->ClearUnsigned();
+            }
+
+            fgValueNumberTree(tree);
+        }
         madeChanges = true;
 
         // We can keep looking if we haven't seen any side effects yet along the path to block.
