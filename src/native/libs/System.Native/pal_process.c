@@ -506,6 +506,7 @@ static int32_t ForkAndExecOnPDeathSigThread(
     }
 
     // Submit request and signal the dedicated thread
+    assert(s_pdeathsig_request == NULL);
     s_pdeathsig_request = &req;
     pthread_cond_signal(&s_pdeathsig_request_cond);
 
