@@ -104,10 +104,14 @@ public class SpAddr
         int  overlapping       = OverlappingNonZeroThenShort();
         long floatPair         = AdjacentFloatNonZeroThenZero();
 
+        int expectedOverlapping = BitConverter.IsLittleEndian
+            ? unchecked((int)0xDEAD0000)
+            : unchecked((int)0x0000BEEF);
+
         if ((res == 10) &&
             (nonAddressExposed == 0x5566778811223344L) &&
             (addressExposed == 0x5060708010203040L) &&
-            (overlapping == unchecked((int)0xDEAD0000)) &&
+            (overlapping == expectedOverlapping) &&
             (floatPair == 0x000000003F800000L))
             return 100;
         else

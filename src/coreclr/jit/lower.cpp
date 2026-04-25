@@ -10656,7 +10656,8 @@ bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       
                                    currData.offset + static_cast<int>(currData.accessSize));
     unsigned combinedSize    = static_cast<unsigned>(maxEndOffset - minOffset);
 
-    if (!allowsNonAtomic && (currData.lclNum == m_compiler->info.compRetBuffArg))
+    if (!allowsNonAtomic && (m_compiler->info.compRetBuffArg != BAD_VAR_NUM) &&
+        (currData.lclNum == m_compiler->info.compRetBuffArg))
     {
         // RetBuf is a private stack memory, so we don't need to worry about atomicity.
         allowsNonAtomic = true;
