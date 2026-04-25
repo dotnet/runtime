@@ -83,7 +83,7 @@ namespace System.Reflection.PortableExecutable
         {
             if (IsDeterministic)
             {
-                // The exact size of a reproducible debug entry: 7 4-bit integers, and no additional data (28 bytes).
+                // The exact size of a reproducible debug entry: 7 4-byte integers, and no additional data (28 bytes).
                 var builder = new DebugDirectoryBuilder(CreateBlobBuilder(28));
                 builder.AddReproducibleEntry();
                 return builder;
