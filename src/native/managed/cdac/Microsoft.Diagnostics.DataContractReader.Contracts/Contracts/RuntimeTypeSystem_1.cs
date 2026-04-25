@@ -564,6 +564,46 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool IsContinuation(TypeHandle typeHandle) => typeHandle.IsMethodTable()
         && _continuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == _continuationMethodTablePointer;
+
+    /// <inheritdoc cref="IRuntimeTypeSystem.GetGCDescSeries"/>
+    IEnumerable<(uint SeriesOffset, uint SeriesSize)> IRuntimeTypeSystem.GetGCDescSeries(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            yield break;
+
+        if (!ContainsGCPointers(typeHandle))
+            yield break;
+
+        ulong mtAddress = typeHandle.Address;
+        ulong pointerSize = (ulong)_target.PointerSize;
+
+        // NumSeries is stored one pointer-width before the method table. When interpreted as a signed
+        // value, a negative count indicates a value-class (repeating) series, which uses a different
+        // layout and is not supported by this API.
+        // ReadPointer zero-extends to ulong; sign-extend to the native pointer width before checking sign.
+        long numSeries = _target.PointerSize == sizeof(uint)
+            ? (long)(int)_target.ReadPointer(mtAddress - pointerSize).Value  // sign-extend 32-bit
+            : (long)_target.ReadPointer(mtAddress - pointerSize).Value;      // 64-bit sign already correct
+        if (numSeries <= 0)
+            yield break;
+
+        // The GC descriptor is laid out before the method table as follows (each cell is pointer-sized):
+        //
+        //   [ series[n-1].seriessize ] [ series[n-1].startoffset ]  <- lowest series in memory
+        //   ...
+        //   [ series[0].seriessize   ] [ series[0].startoffset   ]  <- highest series (MT - 3*ptrSize)
+        //   [ NumSeries              ]                               <- MT - 1*ptrSize
+        //   [ MethodTable            ]                               <- MT address
+        //
+        // Iteration mirrors CGCDesc::GetHighestSeries() down to GetLowestSeries().
+        for (ulong i = 0; i < (ulong)numSeries; i++)
+        {
+            ulong seriesBase = mtAddress - (3 + 2 * i) * pointerSize;
+            ulong seriesSize = _target.ReadPointer(seriesBase).Value;
+            ulong seriesOffset = _target.ReadPointer(seriesBase + pointerSize).Value;
+            yield return ((uint)seriesOffset, (uint)seriesSize);
+        }
+    }
     public bool IsDynamicStatics(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsDynamicStatics;
     public ushort GetNumInterfaces(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : _methodTables[typeHandle.Address].NumInterfaces;
 

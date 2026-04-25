@@ -58,6 +58,8 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
     public virtual bool IsContinuation(TypeHandle typeHandle);
+    // Returns the raw CGCDescSeries entries for the method table, ordered highest to lowest (empty for non-MT handles, no GC pointers, or value-class series)
+    public virtual IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle);
     public virtual bool IsDynamicStatics(TypeHandle typeHandle);
     public virtual ushort GetNumInterfaces(TypeHandle typeHandle);
 
@@ -415,6 +417,7 @@ The contract depends on the following globals
 | Global name | Meaning |
 | --- | --- |
 | `ContinuationMethodTable` | A pointer to the address of the base `Continuation` `MethodTable`, or null if no continuations have been created
+| `OffsetOfContinuationData` | Byte offset from the start of an object (past the sync-block header) to the data payload of a `CORINFO_Continuation` struct; equals `3 * sizeof(void*) + 8`
 | `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
 | `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`

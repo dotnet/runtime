@@ -316,6 +316,8 @@ internal partial class MockDescriptors
         internal ulong ContinuationMethodTableGlobalAddress => TestContinuationMethodTableGlobalAddress;
         internal ulong MethodDescAlignment => GetMethodDescAlignment(Builder.TargetTestHelpers);
         internal ulong ArrayBaseSize => Builder.TargetTestHelpers.ArrayBaseBaseSize;
+        // OFFSETOF__CORINFO_Continuation__data = sizeof(MT*) + sizeof(Next*) + sizeof(Resume*) + 8 (Flags+State)
+        internal ulong OffsetOfContinuationData => 3ul * (ulong)Builder.TargetTestHelpers.PointerSize + 8;
 
         public RuntimeTypeSystem(MockMemorySpace.Builder builder)
             : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -446,6 +448,59 @@ internal partial class MockDescriptors
         {
             MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(size, name);
             return layout.Create(fragment.Data.AsMemory(), fragment.Address);
+        }
+
+        /// <summary>
+        /// Allocates a method table together with a CGCDesc immediately before it in memory.
+        /// </summary>
+        /// <param name="name">Descriptive name for the allocation.</param>
+        /// <param name="baseSize">Value to store in the method table's <c>BaseSize</c> field.</param>
+        /// <param name="series">
+        /// GC descriptor series ordered from highest to lowest
+        /// (matching <c>CGCDesc::GetHighestSeries</c> down to <c>GetLowestSeries</c>).
+        /// Each entry is <c>(SeriesSize, SeriesOffset)</c> – the raw field values stored in the
+        /// <c>CGCDescSeries</c> struct (i.e. <c>seriessize</c> already has <c>BaseSize</c> subtracted).
+        /// </param>
+        /// <returns>
+        /// A <see cref="MockMethodTable"/> whose address is <em>after</em> the GCDesc bytes.
+        /// The caller is responsible for setting additional method table flags (e.g.
+        /// <c>ContainsGCPointers = 0x01000000</c>) and linking to an EEClass.
+        /// </returns>
+        internal MockMethodTable AddMethodTableWithGCDesc(string name, uint baseSize, (ulong SeriesSize, ulong SeriesOffset)[] series)
+        {
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+
+            // GCDesc layout (each slot is pointer-sized):
+            //   [ series[N-1].seriessize ] [ series[N-1].startoffset ]  <- lowest series (fragment start)
+            //   ...
+            //   [ series[0].seriessize   ] [ series[0].startoffset   ]  <- highest series (MT - 3*ptrSize)
+            //   [ NumSeries              ]                               <- MT - 1*ptrSize
+            //   [ MethodTable data starts here ]
+            int gcDescSize = (1 + 2 * series.Length) * pointerSize;
+            int totalSize = gcDescSize + MethodTableLayout.Size;
+
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate((ulong)totalSize, $"GCDesc+MethodTable '{name}'");
+
+            // Write series entries. The highest series (index 0) lives closest to the MT (highest address),
+            // and the lowest series (index N-1) lives farthest from the MT (lowest address).
+            // So series[i] goes at fragment offset (N-1-i)*2*pointerSize.
+            for (int i = 0; i < series.Length; i++)
+            {
+                int seriesBase = (series.Length - 1 - i) * 2 * pointerSize;
+                Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(seriesBase, pointerSize), series[i].SeriesSize);
+                Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(seriesBase + pointerSize, pointerSize), series[i].SeriesOffset);
+            }
+
+            // Write NumSeries immediately before the MT
+            Builder.TargetTestHelpers.WritePointer(
+                fragment.Data.AsSpan(series.Length * 2 * pointerSize, pointerSize),
+                (ulong)series.Length);
+
+            // The MockMethodTable lives at offset gcDescSize within the combined fragment
+            ulong mtAddress = fragment.Address + (ulong)gcDescSize;
+            MockMethodTable mt = MethodTableLayout.Create(fragment.Data.AsMemory(gcDescSize, MethodTableLayout.Size), mtAddress);
+            mt.BaseSize = baseSize;
+            return mt;
         }
     }
 }
