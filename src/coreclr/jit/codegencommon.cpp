@@ -7319,6 +7319,13 @@ void CodeGen::genPatchpoint(GenTreeOp* treeNode)
 
     genConsumeOperands(treeNode);
 
+    // Move operands into the expected argument registers if needed.
+    genCopyRegIfNeeded(treeNode->gtGetOp1(), REG_ARG_0);
+    if (treeNode->OperIs(GT_PATCHPOINT))
+    {
+        genCopyRegIfNeeded(treeNode->gtGetOp2(), REG_ARG_1);
+    }
+
     CorInfoHelpFunc helper = treeNode->OperIs(GT_PATCHPOINT) ? CORINFO_HELP_PATCHPOINT : CORINFO_HELP_PATCHPOINT_FORCED;
 
     genEmitHelperCall(helper, 0, EA_UNKNOWN);
