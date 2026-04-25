@@ -9130,16 +9130,16 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             compileTimeHandle = instParam;
         }
 
-        GenTree* instParam = getLookupTree(&dvInfo.instParamLookup, GTF_ICON_METHOD_HDL, compileTimeHandle);
+        GenTree* instParamNode = getLookupTree(&dvInfo.instParamLookup, GTF_ICON_METHOD_HDL, compileTimeHandle);
 
-        if (instParam == nullptr)
+        if (instParamNode == nullptr)
         {
             // If we're inlining, impLookupToTree can return nullptr after recording a fatal observation.
             JITDUMP("Failed to produce the lookup for devirtualized call, sorry.\n");
             return;
         }
 
-        call->gtArgs.InsertInstParam(this, instParam);
+        call->gtArgs.InsertInstParam(this, instParamNode);
     }
 
     // All checks done. Time to transform the call.
