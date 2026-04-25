@@ -185,63 +185,50 @@ namespace System.Numerics
 
             int back = BitsPerLimb - shift;
 
-            if (Vector128.IsHardwareAccelerated)
+            carry = bits[0] << back;
+
+            Span<nuint> remaining = bits;
+
+            while (Vector512.IsHardwareAccelerated && remaining.Length >= Vector512<nuint>.Count + 1)
             {
-                carry = bits[0] << back;
+                Vector512<nuint> current = Vector512.Create(remaining) >> shift;
+                Vector512<nuint> carries = Vector512.Create(remaining.Slice(1)) << back;
 
-                Span<nuint> remaining = bits;
+                Vector512<nuint> newValue = current | carries;
 
-                while (Vector512.IsHardwareAccelerated && remaining.Length >= Vector512<nuint>.Count + 1)
-                {
-                    Vector512<nuint> current = Vector512.Create(remaining) >> shift;
-                    Vector512<nuint> carries = Vector512.Create(remaining.Slice(1)) << back;
-
-                    Vector512<nuint> newValue = current | carries;
-
-                    newValue.CopyTo(remaining);
-                    remaining = remaining.Slice(Vector512<nuint>.Count);
-                }
-
-                while (Vector256.IsHardwareAccelerated && remaining.Length >= Vector256<nuint>.Count + 1)
-                {
-                    Vector256<nuint> current = Vector256.Create(remaining) >> shift;
-                    Vector256<nuint> carries = Vector256.Create(remaining.Slice(1)) << back;
-
-                    Vector256<nuint> newValue = current | carries;
-
-                    newValue.CopyTo(remaining);
-                    remaining = remaining.Slice(Vector256<nuint>.Count);
-                }
-
-                while (Vector128.IsHardwareAccelerated && remaining.Length >= Vector128<nuint>.Count + 1)
-                {
-                    Vector128<nuint> current = Vector128.Create(remaining) >> shift;
-                    Vector128<nuint> carries = Vector128.Create(remaining.Slice(1)) << back;
-
-                    Vector128<nuint> newValue = current | carries;
-
-                    newValue.CopyTo(remaining);
-                    remaining = remaining.Slice(Vector128<nuint>.Count);
-                }
-
-                nuint carry2 = 0;
-                int offset = bits.Length - remaining.Length;
-                for (int i = bits.Length - 1; i >= offset; i--)
-                {
-                    nuint value = carry2 | bits[i] >> shift;
-                    carry2 = bits[i] << back;
-                    bits[i] = value;
-                }
+                newValue.CopyTo(remaining);
+                remaining = remaining.Slice(Vector512<nuint>.Count);
             }
-            else
+
+            while (Vector256.IsHardwareAccelerated && remaining.Length >= Vector256<nuint>.Count + 1)
             {
-                carry = 0;
-                for (int i = bits.Length - 1; i >= 0; i--)
-                {
-                    nuint value = carry | bits[i] >> shift;
-                    carry = bits[i] << back;
-                    bits[i] = value;
-                }
+                Vector256<nuint> current = Vector256.Create(remaining) >> shift;
+                Vector256<nuint> carries = Vector256.Create(remaining.Slice(1)) << back;
+
+                Vector256<nuint> newValue = current | carries;
+
+                newValue.CopyTo(remaining);
+                remaining = remaining.Slice(Vector256<nuint>.Count);
+            }
+
+            while (Vector128.IsHardwareAccelerated && remaining.Length >= Vector128<nuint>.Count + 1)
+            {
+                Vector128<nuint> current = Vector128.Create(remaining) >> shift;
+                Vector128<nuint> carries = Vector128.Create(remaining.Slice(1)) << back;
+
+                Vector128<nuint> newValue = current | carries;
+
+                newValue.CopyTo(remaining);
+                remaining = remaining.Slice(Vector128<nuint>.Count);
+            }
+
+            nuint carry2 = 0;
+            int offset = bits.Length - remaining.Length;
+            for (int i = bits.Length - 1; i >= offset; i--)
+            {
+                nuint value = carry2 | bits[i] >> shift;
+                carry2 = bits[i] << back;
+                bits[i] = value;
             }
         }
     }
