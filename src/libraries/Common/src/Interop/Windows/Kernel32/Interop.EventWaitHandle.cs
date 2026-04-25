@@ -23,9 +23,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateEventExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial SafeWaitHandle CreateEventEx(IntPtr lpSecurityAttributes, string? name, uint flags, uint desiredAccess);
 
-        [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateEventExW", SetLastError = true)]
-        internal static partial IntPtr CreateEventExNoName(IntPtr lpSecurityAttributes, IntPtr name, uint flags, uint desiredAccess);
-
         [LibraryImport(Libraries.Kernel32, EntryPoint = "OpenEventW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial SafeWaitHandle OpenEvent(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, string name);
     }

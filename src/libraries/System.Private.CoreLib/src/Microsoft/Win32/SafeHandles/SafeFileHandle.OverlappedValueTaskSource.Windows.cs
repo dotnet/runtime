@@ -14,17 +14,43 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private OverlappedValueTaskSource? _reusableOverlappedValueTaskSource; // reusable OverlappedValueTaskSource that is currently NOT being used
+        private nint _reusableWaitHandle = -1; // reusable native event handle for sync-over-async I/O; -1 means empty
 
         // Rent the reusable OverlappedValueTaskSource, or create a new one to use if we couldn't get one (which
         // should only happen on first use or if the SafeFileHandle is being used concurrently).
         internal OverlappedValueTaskSource GetOverlappedValueTaskSource() =>
             Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new OverlappedValueTaskSource(this);
 
+        internal nint RentSyncWaitHandle() =>
+            Interlocked.Exchange(ref _reusableWaitHandle, -1);
+
+        internal void ReturnSyncWaitHandle(nint waitHandle)
+        {
+            if (Interlocked.CompareExchange(ref _reusableWaitHandle, waitHandle, -1) != -1)
+            {
+                Interop.Kernel32.CloseHandle(waitHandle);
+            }
+            else if (IsClosed)
+            {
+                nint h = Interlocked.Exchange(ref _reusableWaitHandle, -1);
+                if (h != -1)
+                {
+                    Interop.Kernel32.CloseHandle(h);
+                }
+            }
+        }
+
         protected override bool ReleaseHandle()
         {
             bool result = Interop.Kernel32.CloseHandle(handle);
 
             Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null)?.Dispose();
+
+            nint waitHandle = Interlocked.Exchange(ref _reusableWaitHandle, -1);
+            if (waitHandle != -1)
+            {
+                Interop.Kernel32.CloseHandle(waitHandle);
+            }
 
             return result;
         }

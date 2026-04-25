@@ -67,7 +67,7 @@ namespace System.IO
 
         private static unsafe int ReadSyncUsingAsyncHandle(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
-            IntPtr eventHandle = CreateSyncOverlappedEvent();
+            IntPtr eventHandle = GetSyncOverlappedEvent(handle);
             NativeOverlapped* overlapped = null;
 
             try
@@ -106,7 +106,7 @@ namespace System.IO
                     NativeMemory.Free(overlapped);
                 }
 
-                Interop.Kernel32.CloseHandle(eventHandle);
+                handle.ReturnSyncWaitHandle(eventHandle);
             }
         }
 
@@ -144,7 +144,7 @@ namespace System.IO
                 return;
             }
 
-            IntPtr eventHandle = CreateSyncOverlappedEvent();
+            IntPtr eventHandle = GetSyncOverlappedEvent(handle);
             NativeOverlapped* overlapped = null;
 
             try
@@ -186,7 +186,7 @@ namespace System.IO
                     NativeMemory.Free(overlapped);
                 }
 
-                Interop.Kernel32.CloseHandle(eventHandle);
+                handle.ReturnSyncWaitHandle(eventHandle);
             }
         }
 
@@ -686,20 +686,29 @@ namespace System.IO
             }
         }
 
-        private static IntPtr CreateSyncOverlappedEvent()
+        private static IntPtr GetSyncOverlappedEvent(SafeFileHandle safeFileHandle)
         {
-            IntPtr eventHandle = Interop.Kernel32.CreateEventExNoName(
+            nint handle = safeFileHandle.RentSyncWaitHandle();
+            if (handle != -1)
+            {
+                return handle;
+            }
+
+            using SafeWaitHandle safeHandle = Interop.Kernel32.CreateEventEx(
                 IntPtr.Zero,
-                IntPtr.Zero,
+                null,
                 Interop.Kernel32.CREATE_EVENT_MANUAL_RESET,
                 (uint)(Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.EVENT_MODIFY_STATE));
 
-            if (eventHandle == IntPtr.Zero)
+            if (safeHandle.IsInvalid)
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
 
-            return eventHandle;
+            handle = safeHandle.DangerousGetHandle();
+            safeHandle.SetHandleAsInvalid();
+
+            return handle;
         }
 
         private static unsafe NativeOverlapped* AllocNativeOverlappedWithEventHandle(SafeFileHandle handle, long fileOffset, IntPtr eventHandle)
