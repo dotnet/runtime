@@ -7529,16 +7529,37 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             BitVecOps::Assign(apTraits, origAssertions, apLocal);
         }
 
-        // TODO-Bug: Moving the null check to this indirection should nominally check for interference with
-        // the other operands in case this is a store. However, doing so unconditionally preserves previous
-        // behavior and "fixes up" field store importation that places the null check in the wrong location
-        // (before the 'value' operand is evaluated).
         MorphAddrContext indMac;
         if (tree->OperIsIndir() && !tree->OperIsAtomicOp())
         {
             // Communicate to FIELD_ADDR morphing that the parent is an indirection.
-            indMac.m_user = tree->AsIndir();
-            mac           = &indMac;
+            // This allows eliding the explicit null check on the FIELD_ADDR when the
+            // parent indirection will perform an implicit null check.
+            //
+            // For stores we must not let the FIELD_ADDR's null check be reordered
+            // after side effects in the value operand (op2). Block the fold when
+            // op2 may have side effects, unless the FIELD_ADDR base is provably
+            // non-null and so no null check is actually being reordered.
+            //
+            // We can't use impCanReorderWithNullCheck / gtCollectExceptions
+            // here because morph may leave stale GTF_EXCEPT flags on FIELD_ADDR
+            // ancestors.
+            //
+            GenTree* fldObj = nullptr;
+            if (tree->AsIndir()->Addr()->OperIs(GT_FIELD_ADDR) && tree->AsIndir()->Addr()->AsFieldAddr()->IsInstance())
+            {
+                fldObj = tree->AsIndir()->Addr()->AsFieldAddr()->GetFldObj();
+            }
+            bool const addrIsNonFaulting =
+                (fldObj != nullptr) &&
+                (!fgAddrCouldBeNull(fldObj) || (optLocalAssertionProp && optAssertionIsNonNull(fldObj, apLocal)));
+            bool const op2CanBeReordered =
+                (op2 == nullptr) || ((op2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) == 0) || addrIsNonFaulting;
+            if (!tree->OperIsStore() || op2CanBeReordered)
+            {
+                indMac.m_user = tree->AsIndir();
+                mac           = &indMac;
+            }
         }
         // For additions, if we already have a context, keep track of whether all offsets added
         // to the address are constant, and their sum does not overflow.
