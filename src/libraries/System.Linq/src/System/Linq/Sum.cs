@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Linq
 {
@@ -84,9 +83,6 @@ namespace System.Linq
             Debug.Assert(Vector<T>.Count > 2);
             Debug.Assert(Vector.IsHardwareAccelerated);
 
-            ref T ptr = ref MemoryMarshal.GetReference(span);
-            nuint length = (nuint)span.Length;
-
             // Overflow testing for vectors is based on setting the sign bit of the overflowTracking
             // vector for an element if the following are all true:
             //   - The two elements being summed have the same sign bit. If one element is positive
@@ -120,24 +116,22 @@ namespace System.Linq
             // Unroll the loop to sum 4 vectors per iteration. This reduces range check
             // and overflow check frequency, allows us to eliminate move operations swapping
             // accumulators, and may have pipelining benefits.
-            nuint index = 0;
-            nuint limit = length - (nuint)Vector<T>.Count * 4;
-            do
+            while (span.Length >= Vector<T>.Count * 4)
             {
                 // Switch accumulators with each step to avoid an additional move operation
-                Vector<T> data = Vector.LoadUnsafe(ref ptr, index);
+                Vector<T> data = Vector.Create(span);
                 Vector<T> accumulator2 = accumulator + data;
                 Vector<T> overflowTracking = (accumulator2 ^ accumulator) & (accumulator2 ^ data);
 
-                data = Vector.LoadUnsafe(ref ptr, index + (nuint)Vector<T>.Count);
+                data = Vector.Create(span.Slice(Vector<T>.Count));
                 accumulator = accumulator2 + data;
                 overflowTracking |= (accumulator ^ accumulator2) & (accumulator ^ data);
 
-                data = Vector.LoadUnsafe(ref ptr, index + (nuint)Vector<T>.Count * 2);
+                data = Vector.Create(span.Slice(Vector<T>.Count * 2));
                 accumulator2 = accumulator + data;
                 overflowTracking |= (accumulator2 ^ accumulator) & (accumulator2 ^ data);
 
-                data = Vector.LoadUnsafe(ref ptr, index + (nuint)Vector<T>.Count * 3);
+                data = Vector.Create(span.Slice(Vector<T>.Count * 3));
                 accumulator = accumulator2 + data;
                 overflowTracking |= (accumulator ^ accumulator2) & (accumulator ^ data);
 
@@ -146,24 +140,23 @@ namespace System.Linq
                     ThrowHelper.ThrowOverflowException();
                 }
 
-                index += (nuint)Vector<T>.Count * 4;
-            } while (index < limit);
+                span = span.Slice(Vector<T>.Count * 4);
+            }
 
             // Process remaining vectors, if any, without unrolling
-            limit = length - (nuint)Vector<T>.Count;
-            if (index < limit)
+            if (span.Length >= Vector<T>.Count)
             {
                 Vector<T> overflowTracking = Vector<T>.Zero;
 
                 do
                 {
-                    Vector<T> data = Vector.LoadUnsafe(ref ptr, index);
+                    Vector<T> data = Vector.Create(span);
                     Vector<T> accumulator2 = accumulator + data;
                     overflowTracking |= (accumulator2 ^ accumulator) & (accumulator2 ^ data);
                     accumulator = accumulator2;
 
-                    index += (nuint)Vector<T>.Count;
-                } while (index < limit);
+                    span = span.Slice(Vector<T>.Count);
+                } while (span.Length >= Vector<T>.Count);
 
                 if ((overflowTracking & overflowTestVector) != Vector<T>.Zero)
                 {
@@ -180,11 +173,9 @@ namespace System.Linq
             }
 
             // Add any remaining elements
-            while (index < length)
+            foreach (T value in span)
             {
-                checked { result += Unsafe.Add(ref ptr, index); }
-
-                index++;
+                checked { result += value; }
             }
 
             return result;
