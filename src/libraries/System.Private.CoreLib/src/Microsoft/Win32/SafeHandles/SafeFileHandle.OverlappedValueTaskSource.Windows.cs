@@ -21,8 +21,30 @@ namespace Microsoft.Win32.SafeHandles
         internal OverlappedValueTaskSource GetOverlappedValueTaskSource() =>
             Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new OverlappedValueTaskSource(this);
 
-        internal nint RentSyncWaitHandle() =>
-            Interlocked.Exchange(ref _reusableWaitHandle, -1);
+        internal nint RentSyncWaitHandle()
+        {
+            nint handle = Interlocked.Exchange(ref _reusableWaitHandle, -1);
+            if (handle != -1)
+            {
+                return handle;
+            }
+
+            using SafeWaitHandle safeHandle = Interop.Kernel32.CreateEventEx(
+                IntPtr.Zero,
+                null,
+                Interop.Kernel32.CREATE_EVENT_MANUAL_RESET,
+                (uint)(Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.EVENT_MODIFY_STATE));
+
+            if (safeHandle.IsInvalid)
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error();
+            }
+
+            handle = safeHandle.DangerousGetHandle();
+            safeHandle.SetHandleAsInvalid();
+
+            return handle;
+        }
 
         internal void ReturnSyncWaitHandle(nint waitHandle)
         {

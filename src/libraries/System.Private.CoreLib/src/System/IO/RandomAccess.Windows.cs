@@ -67,7 +67,7 @@ namespace System.IO
 
         private static unsafe int ReadSyncUsingAsyncHandle(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
-            IntPtr eventHandle = GetSyncOverlappedEvent(handle);
+            IntPtr eventHandle = handle.RentSyncWaitHandle();
             NativeOverlapped* overlapped = null;
 
             try
@@ -144,7 +144,7 @@ namespace System.IO
                 return;
             }
 
-            IntPtr eventHandle = GetSyncOverlappedEvent(handle);
+            IntPtr eventHandle = handle.RentSyncWaitHandle();
             NativeOverlapped* overlapped = null;
 
             try
@@ -684,31 +684,6 @@ namespace System.IO
                 await WriteAtOffsetAsync(handle, rom, fileOffset, cancellationToken).ConfigureAwait(false);
                 fileOffset += rom.Length;
             }
-        }
-
-        private static IntPtr GetSyncOverlappedEvent(SafeFileHandle safeFileHandle)
-        {
-            nint handle = safeFileHandle.RentSyncWaitHandle();
-            if (handle != -1)
-            {
-                return handle;
-            }
-
-            using SafeWaitHandle safeHandle = Interop.Kernel32.CreateEventEx(
-                IntPtr.Zero,
-                null,
-                Interop.Kernel32.CREATE_EVENT_MANUAL_RESET,
-                (uint)(Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.EVENT_MODIFY_STATE));
-
-            if (safeHandle.IsInvalid)
-            {
-                throw Win32Marshal.GetExceptionForLastWin32Error();
-            }
-
-            handle = safeHandle.DangerousGetHandle();
-            safeHandle.SetHandleAsInvalid();
-
-            return handle;
         }
 
         private static unsafe NativeOverlapped* AllocNativeOverlappedWithEventHandle(SafeFileHandle handle, long fileOffset, IntPtr eventHandle)
