@@ -161,6 +161,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public override MultiValue VisitFieldReference(IFieldReferenceOperation fieldRef, StateValue state)
         {
+            // Visit the instance to ensure that method calls or other operations
+            // used as the instance are properly analyzed for diagnostics.
+            // For example: someMethod().Field should analyze someMethod().
+            Visit(fieldRef.Instance, state);
+
             var field = fieldRef.Field;
             switch (field.Name)
             {

@@ -120,12 +120,21 @@ public sealed partial class QuicStream
 
     private long _id = -1;
     private readonly QuicStreamType _type;
+    private byte _priority = DefaultPriority;
 
     /// <summary>
     /// Provided via <see cref="StartAsync(Action{QuicStreamType}, CancellationToken)" /> from <see cref="QuicConnection" /> so that <see cref="QuicStream"/> can decrement its available stream count field.
     /// When <see cref="HandleEventStartComplete(ref START_COMPLETE_DATA)">START_COMPLETE</see> arrives it gets invoked and unset back to <c>null</c> to not to hold any unintended reference to <see cref="QuicConnection"/>.
     /// </summary>
     private Action<QuicStreamType>? _decrementStreamCapacity;
+
+    /// <summary>
+    /// The default value of <see cref="Priority"/>, which is the middle of the <see cref="byte"/> range.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="byte.MinValue"/> represents the lowest priority and <see cref="byte.MaxValue"/> represents the highest priority.
+    /// </remarks>
+    public const byte DefaultPriority = 0x7F;
 
     /// <summary>
     /// Stream id, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-types-and-identifier" />.
@@ -136,6 +145,27 @@ public sealed partial class QuicStream
     /// Stream type, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-types-and-identifier" />.
     /// </summary>
     public QuicStreamType Type => _type;
+
+    /// <summary>
+    /// Gets or sets the stream priority, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-prioritization">RFC 9000: Stream Prioritization</see>.
+    /// </summary>
+    /// <remarks>
+    /// <para>Priority only affects the order of data sent on the wire relative to other streams on the same connection.
+    /// <see cref="byte.MinValue"/> represents the lowest priority and <see cref="byte.MaxValue"/> represents the highest.
+    /// The default value is <see cref="DefaultPriority"/>.</para>
+    /// </remarks>
+    /// <value>The priority level for this stream. The default value is <see cref="DefaultPriority"/>.</value>
+    public byte Priority
+    {
+        get => _priority;
+        set
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            SetMsQuicParameter(_handle, QUIC_PARAM_STREAM_PRIORITY, (ushort)((value << 8) | 0xFF));
+            _priority = value;
+        }
+    }
 
     /// <summary>
     /// A <see cref="Task"/> that will get completed once reading side has been closed.

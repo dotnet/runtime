@@ -4,19 +4,22 @@
     cdac-dump-xplat-test-helix.proj — Runs cDAC dump tests on Helix against
     dumps collected from multiple source platforms (x-plat flow).
 
-    The payload directory should contain:
-      tests/                              — Test DLLs + xunit.console.dll
-      dumps/{source_platform}/            — Extracted dumps from each source platform
-        local/{dumpType}/{r2rMode}/{name}/{name}.dmp
-
     One Helix work item is created per source platform, each running xunit with
     CDAC_DUMP_ROOT pointing to that platform's dump subdirectory. This gives each
     platform independent exit code tracking and test result reporting.
 
+    The dumps are sent as per-work-item payloads (one platform per work item) to
+    avoid exceeding the 2 GB MemoryStream/ZipArchive limit that occurs when all
+    platforms' dumps are zipped into a single payload.
+
+    The test DLLs are sent as a correlation payload (shared across work items).
+
     Properties (set by pipeline):
       HelixTargetQueues  — Helix queue(s) to run on
       TestHostPayload    — Path to testhost shared framework directory
-      DumpTestsPayload   — Path to payload directory (tests/ + dumps/)
+      TestPayload        — Path to test DLLs directory
+      DumpPayloadBase    — Base path containing per-platform dump subdirectories
+                           (e.g. artifacts/helixPayload/cdac/dumps)
       TargetOS           — Target OS (windows, linux, osx)
       TargetArchitecture — Target architecture (x64, x86, arm64, arm)
       SourcePlatforms    — Semicolon-separated source platform names
@@ -41,10 +44,14 @@
     so that all Helix queue references stay centralized under eng/.
   -->
 
-  <!-- Send the testhost as a correlation payload -->
+  <!-- Correlation payloads: testhost + test DLLs (shared across all work items) -->
   <ItemGroup>
     <HelixCorrelationPayload Include="$(TestHostPayload)">
       <PayloadDirectory>%(Identity)</PayloadDirectory>
+    </HelixCorrelationPayload>
+    <HelixCorrelationPayload Include="$(TestPayload)">
+      <PayloadDirectory>%(Identity)</PayloadDirectory>
+      <Destination>tests</Destination>
     </HelixCorrelationPayload>
   </ItemGroup>
 
@@ -71,35 +78,35 @@
 
   <!--
     Create one Helix work item per source platform. Target batching (Outputs)
-    iterates once per _SourcePlatform. Each work item gets its own command file
-    and uses the standard testResults.xml filename so the XUnit reporter finds it.
+    iterates once per _SourcePlatform. Each work item gets its own dump payload
+    (per-platform subdirectory) and uses shared test DLLs from the correlation payload.
   -->
   <Target Name="_CreateHelixWorkItems"
           Outputs="%(_SourcePlatform.Identity)"
           BeforeTargets="CoreTest">
     <PropertyGroup>
-      <_HelixCommandFile>$(DumpTestsPayload)/HelixCommand_%(_SourcePlatform.Identity).txt</_HelixCommandFile>
+      <_HelixCommandFile>$(DumpPayloadBase)/%(_SourcePlatform.Identity)/HelixCommand.txt</_HelixCommandFile>
     </PropertyGroup>
 
     <ItemGroup>
       <_HelixCommandLines Remove="@(_HelixCommandLines)" />
       <!-- Windows: set CDAC_DUMP_ROOT, run xunit -->
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="set &quot;CDAC_DUMP_ROOT=%25HELIX_WORKITEM_PAYLOAD%25\dumps\%(_SourcePlatform.Identity)&quot;" />
+          Include="set &quot;CDAC_DUMP_ROOT=%25HELIX_WORKITEM_PAYLOAD%25&quot;" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="%25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec --runtimeconfig %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json %25HELIX_WORKITEM_PAYLOAD%25\tests\xunit.console.dll %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo" />
+          Include="%25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec --runtimeconfig %25HELIX_CORRELATION_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile %25HELIX_CORRELATION_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json %25HELIX_CORRELATION_PAYLOAD%25\tests\xunit.console.dll %25HELIX_CORRELATION_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo" />
       <!-- Unix: set CDAC_DUMP_ROOT via export, run xunit -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="export CDAC_DUMP_ROOT=$HELIX_WORKITEM_PAYLOAD/dumps/%(_SourcePlatform.Identity)" />
+          Include="export CDAC_DUMP_ROOT=$HELIX_WORKITEM_PAYLOAD" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="$HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/xunit.console.dll $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo" />
+          Include="$HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_CORRELATION_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile $HELIX_CORRELATION_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json $HELIX_CORRELATION_PAYLOAD/tests/xunit.console.dll $HELIX_CORRELATION_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(_HelixCommandFile)" Lines="@(_HelixCommandLines)" Overwrite="true" />
 
     <ItemGroup>
       <HelixWorkItem Include="CdacXPlatDumpTests_host_$(TargetOS)_$(TargetArchitecture)_dumps_%(_SourcePlatform.Identity)">
-        <PayloadDirectory>$(DumpTestsPayload)</PayloadDirectory>
+        <PayloadDirectory>$(DumpPayloadBase)/%(_SourcePlatform.Identity)</PayloadDirectory>
         <Command>$([System.IO.File]::ReadAllText('$(_HelixCommandFile)'))</Command>
         <Timeout>$(WorkItemTimeout)</Timeout>
       </HelixWorkItem>

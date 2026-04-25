@@ -434,7 +434,7 @@ enum BasicBlockFlags : uint64_t
     BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(23), // BB is surrounded by a backward jump/switch arc
     BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(24), // Block is a source of a backward jump
     BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(25), // Block is a target of a backward jump
-    BBF_PATCHPOINT                     = MAKE_BBFLAG(26), // Block is a patchpoint
+    BBF_OSR_PATCHPOINT                 = MAKE_BBFLAG(26), // Block is a patchpoint
     BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(27), // Block is a partial compilation patchpoint
     BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(28), // BB contains a call needing a histogram profile
     BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(29), // BB has pred that has potential tail call

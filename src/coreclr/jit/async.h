@@ -53,7 +53,7 @@ struct ContinuationLayoutBuilder
 {
 private:
     Compiler* m_compiler;
-    bool      m_needsOSRILOffset         = false;
+    bool      m_needsOSRAddress          = false;
     bool      m_needsException           = false;
     bool      m_needsContinuationContext = false;
     bool      m_needsKeepAlive           = false;
@@ -70,13 +70,13 @@ public:
     {
     }
 
-    void SetNeedsOSRILOffset()
+    void SetNeedsOSRAddress()
     {
-        m_needsOSRILOffset = true;
+        m_needsOSRAddress = true;
     }
-    bool NeedsOSRILOffset() const
+    bool NeedsOSRAddress() const
     {
-        return m_needsOSRILOffset;
+        return m_needsOSRAddress;
     }
     void SetNeedsException()
     {
@@ -128,7 +128,7 @@ public:
 struct ContinuationLayout
 {
     unsigned                      Size                      = 0;
-    unsigned                      OSRILOffset               = UINT_MAX;
+    unsigned                      OSRAddressOffset          = UINT_MAX;
     unsigned                      ExceptionOffset           = UINT_MAX;
     unsigned                      ContinuationContextOffset = UINT_MAX;
     unsigned                      KeepAliveOffset           = UINT_MAX;

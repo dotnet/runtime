@@ -26,6 +26,7 @@
 #include "pal_evp_pkey_rsa.h"
 #include "pal_evp_pkey_ml_dsa.h"
 #include "pal_evp_pkey_slh_dsa.h"
+#include "pal_evp_pkey_x25519.h"
 #include "pal_hmac.h"
 #include "pal_ocsp.h"
 #include "pal_pkcs7.h"
@@ -420,6 +421,12 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslV2_3Method)
     DllImportEntry(CryptoNative_SslWrite)
     DllImportEntry(CryptoNative_Tls13Supported)
+    DllImportEntry(CryptoNative_X25519Available)
+    DllImportEntry(CryptoNative_X25519ExportPrivateKey)
+    DllImportEntry(CryptoNative_X25519ExportPublicKey)
+    DllImportEntry(CryptoNative_X25519GenerateKey)
+    DllImportEntry(CryptoNative_X25519ImportPrivateKey)
+    DllImportEntry(CryptoNative_X25519ImportPublicKey)
     DllImportEntry(CryptoNative_X509DecodeOcspToExpiration)
     DllImportEntry(CryptoNative_X509Duplicate)
     DllImportEntry(CryptoNative_SslGet0AlpnSelected)

@@ -178,7 +178,10 @@ internal sealed class MockThread : TypedView
     private const string FrameFieldName = "Frame";
     private const string CachedStackBaseFieldName = "CachedStackBase";
     private const string CachedStackLimitFieldName = "CachedStackLimit";
+    private const string ExposedObjectFieldName = "ExposedObject";
     private const string LastThrownObjectFieldName = "LastThrownObject";
+    private const string LastThrownObjectIsUnhandledFieldName = "LastThrownObjectIsUnhandled";
+    private const string CurrentCustomDebuggerNotificationFieldName = "CurrentCustomDebuggerNotification";
     private const string LinkNextFieldName = "LinkNext";
     private const string ExceptionTrackerFieldName = "ExceptionTracker";
     private const string ThreadLocalDataPtrFieldName = "ThreadLocalDataPtr";
@@ -197,7 +200,10 @@ internal sealed class MockThread : TypedView
             .AddPointerField(FrameFieldName)
             .AddPointerField(CachedStackBaseFieldName)
             .AddPointerField(CachedStackLimitFieldName)
+            .AddPointerField(ExposedObjectFieldName)
             .AddPointerField(LastThrownObjectFieldName)
+            .AddUInt32Field(LastThrownObjectIsUnhandledFieldName)
+            .AddPointerField(CurrentCustomDebuggerNotificationFieldName)
             .AddPointerField(LinkNextFieldName)
             .AddPointerField(ExceptionTrackerFieldName)
             .AddPointerField(ThreadLocalDataPtrFieldName)
@@ -254,9 +260,25 @@ internal sealed class MockThread : TypedView
         set => WritePointerField(ExceptionTrackerFieldName, value);
     }
 
-    public ulong FrameAddress => GetFieldAddress(FrameFieldName);
+    public ulong ExposedObject
+    {
+        get => ReadPointerField(ExposedObjectFieldName);
+        set => WritePointerField(ExposedObjectFieldName, value);
+    }
 
-    public ulong LinkAddress => GetFieldAddress(LinkNextFieldName);
+    public uint LastThrownObjectIsUnhandled
+    {
+        get => ReadUInt32Field(LastThrownObjectIsUnhandledFieldName);
+        set => WriteUInt32Field(LastThrownObjectIsUnhandledFieldName, value);
+    }
+
+    public ulong CurrentCustomDebuggerNotification
+    {
+        get => ReadPointerField(CurrentCustomDebuggerNotificationFieldName);
+        set => WritePointerField(CurrentCustomDebuggerNotificationFieldName, value);
+    }
+
+    public ulong FrameAddress => GetFieldAddress(FrameFieldName);
 }
 
 internal sealed class MockThreadBuilder
@@ -337,11 +359,11 @@ internal sealed class MockThreadBuilder
 
         if (_previousThread is not null)
         {
-            _previousThread.LinkNext = thread.LinkAddress;
+            _previousThread.LinkNext = thread.Address;
         }
         else
         {
-            _threadStore.FirstThreadLink = thread.LinkAddress;
+            _threadStore.FirstThreadLink = thread.Address;
         }
 
         _previousThread = thread;

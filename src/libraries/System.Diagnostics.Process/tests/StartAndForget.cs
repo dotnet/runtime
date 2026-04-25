@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
@@ -18,7 +19,7 @@ namespace System.Diagnostics.Tests
             using Process template = CreateSleepProcess((int)TimeSpan.FromHours(1).TotalMilliseconds);
             int pid = useProcessStartInfo
                 ? Process.StartAndForget(template.StartInfo)
-                : Process.StartAndForget(template.StartInfo.FileName, template.StartInfo.ArgumentList);
+                : Process.StartAndForget(template.StartInfo.FileName, Helpers.MapToArgumentList(template.StartInfo));
 
             Assert.True(pid > 0);
 
@@ -110,5 +111,7 @@ namespace System.Diagnostics.Tests
 
             Assert.Throws<InvalidOperationException>(() => Process.StartAndForget(startInfo));
         }
+
+
     }
 }
