@@ -209,10 +209,10 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
 {
-    bool       m_madeChanges  = false;
+    bool       m_madeChanges        = false;
     bool       m_substitutedRetExpr = false;
-    Statement* m_curStmt      = nullptr;
-    Statement* m_firstNewStmt = nullptr;
+    Statement* m_curStmt            = nullptr;
+    Statement* m_firstNewStmt       = nullptr;
 
 public:
     enum
