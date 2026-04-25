@@ -1598,7 +1598,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
     //   use it as the parameter to getCallInfo
     // - instParamLookup contains all the information necessary to pass the instantiation parameter for
-    //   the devirtualized method. IAT_VALUE with a nullptr handle indicates no instantiation parameter is needed.
+    //   the devirtualized method. A constant lookup with IAT_VALUE with a nullptr handle indicates no instantiation parameter is needed.
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
     CORINFO_CONTEXT_HANDLE          exactContext;
