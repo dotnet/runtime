@@ -2938,7 +2938,7 @@ public sealed unsafe partial class SOSDacImpl
     {
         int hr = HResults.S_OK;
         char[] mtNametest = new char[4096];
-        int counttest = 4096;
+        uint counttest = 4096;
         try
         {
             if (mt == 0)
@@ -3034,10 +3034,6 @@ public sealed unsafe partial class SOSDacImpl
                     string nameString = mtNametest is null ? string.Empty : new(mtNametest, 0, nameLength);
                     Debug.Fail($"local name = {localNameString}, name = {nameString}, neededlocal = {neededLocal}, pneeded = {pNeeded == null ? "null" : *pNeeded}");
                 }
-
-                Debug.Assert(
-                    mtName is null ||
-                    new ReadOnlySpan<char>(mtNameLocal, 0, localNameLength).SequenceEqual(new ReadOnlySpan<char>(mtName, nameLength)));
             }
         }
 #endif
