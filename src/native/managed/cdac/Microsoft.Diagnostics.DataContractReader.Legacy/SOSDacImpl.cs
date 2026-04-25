@@ -3009,7 +3009,7 @@ public sealed unsafe partial class SOSDacImpl
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
-                int maxComparableLength = count == 0 ? 0 : (int)count - 1;
+                int maxComparableLength = 4095;
                 ReadOnlySpan<char> localComparableSpan = mtNameLocal.AsSpan(0, maxComparableLength);
                 int localNameLength = localComparableSpan.IndexOf('\0');
                 if (localNameLength < 0)
@@ -3020,7 +3020,7 @@ public sealed unsafe partial class SOSDacImpl
                 int nameLength = 0;
                 if (mtName is not null)
                 {
-                    ReadOnlySpan<char> comparableSpan = new(mtName, maxComparableLength);
+                    ReadOnlySpan<char> comparableSpan = new(mtNametest, maxComparableLength);
                     nameLength = comparableSpan.IndexOf('\0');
                     if (nameLength < 0)
                     {
@@ -3031,8 +3031,8 @@ public sealed unsafe partial class SOSDacImpl
                 if (!(pNeeded is null || *pNeeded == neededLocal))
                 {
                     string localNameString = new(mtNameLocal, 0, localNameLength);
-                    string nameString = mtName is null ? string.Empty : new(mtName, 0, nameLength);
-                    Debug.Fail($"local name = {localNameString}, name = {nameString}");
+                    string nameString = mtNametest is null ? string.Empty : new(mtNametest, 0, nameLength);
+                    Debug.Fail($"local name = {localNameString}, name = {nameString}, neededlocal = {neededLocal}, pneeded = {pNeeded == null ? "null" : *pNeeded}");
                 }
 
                 Debug.Assert(
