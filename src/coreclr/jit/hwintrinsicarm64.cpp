@@ -3311,11 +3311,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 assert(HWIntrinsicInfo::isImmOp(intrinsic, op3));
                 op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
 
-                argType                = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-                op2                    = getArgForHWIntrinsic(argType, argClass);
-                var_types op2BaseType  = getBaseTypeOfSIMDType(argClass);
-                argType                = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-                op1                    = impPopStack().val;
+                argType               = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+                op2                   = getArgForHWIntrinsic(argType, argClass);
+                var_types op2BaseType = getBaseTypeOfSIMDType(argClass);
+                argType               = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+                op1                   = impPopStack().val;
 
 #ifdef DEBUG
 
@@ -3341,13 +3341,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 assert(HWIntrinsicInfo::isImmOp(intrinsic, op4));
                 op4 = addRangeCheckIfNeeded(intrinsic, op4, immLowerBound, immUpperBound);
 
-                argType                = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-                op3                    = getArgForHWIntrinsic(argType, argClass);
-                var_types op3BaseType  = getBaseTypeOfSIMDType(argClass);
-                argType                = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-                op2                    = getArgForHWIntrinsic(argType, argClass);
-                argType                = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-                op1                    = impPopStack().val;
+                argType               = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+                op3                   = getArgForHWIntrinsic(argType, argClass);
+                var_types op3BaseType = getBaseTypeOfSIMDType(argClass);
+                argType               = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+                op2                   = getArgForHWIntrinsic(argType, argClass);
+                argType               = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+                op1                   = impPopStack().val;
 
                 assert(varTypeIsSIMD(op3->TypeGet()));
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, op4, intrinsic, simdBaseType, simdSize);

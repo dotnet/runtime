@@ -479,7 +479,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
     return simdBaseType;
 }
 
-
 //------------------------------------------------------------------------
 // impSIMDPopStack: Pop a SIMD value from the importer's stack.
 //
