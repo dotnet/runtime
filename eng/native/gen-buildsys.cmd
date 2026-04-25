@@ -76,7 +76,7 @@ if /i "%__Arch%" == "wasm" (
 
 if /i "%__Os%" == "android" (
     :: Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
-    set __ANDROID_API_LEVEL=21
+    set __ANDROID_API_LEVEL=24
     if "%ANDROID_NDK_ROOT%" == "" (
         echo Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root.
         exit /B 1

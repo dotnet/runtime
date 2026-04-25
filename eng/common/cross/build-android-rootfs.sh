@@ -21,7 +21,7 @@ usage()
     exit 1
 }
 
-__ApiLevel=28 # The minimum platform for arm64 is API level 21 but the minimum version that support glob(3) is 28. See $ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/glob.h
+__ApiLevel=28 # The minimum platform for arm64 is API level 24 but the minimum version that supports glob(3) is 28. See $ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/glob.h
 __BuildArch=arm64
 __AndroidArch=aarch64
 __AndroidToolchain=aarch64-linux-android

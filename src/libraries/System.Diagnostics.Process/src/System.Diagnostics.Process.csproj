@@ -24,6 +24,7 @@
     <Compile Include="System\Diagnostics\Process.Scenarios.cs" />
     <Compile Include="System\Diagnostics\ProcessExitStatus.cs" />
     <Compile Include="System\Diagnostics\ProcessOutputLine.cs" />
+    <Compile Include="System\Diagnostics\ProcessTextOutput.cs" />
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
     <Compile Include="System\Diagnostics\ProcessModule.cs" />
     <Compile Include="System\Diagnostics\ProcessModuleCollection.cs" />
