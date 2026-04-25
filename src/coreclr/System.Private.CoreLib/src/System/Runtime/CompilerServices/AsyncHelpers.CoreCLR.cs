@@ -427,21 +427,21 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    if (stackState->CriticalNotifier != null)
+                    if (stackState->CriticalNotifier is { } critNotifier)
                     {
-                        stackState->CriticalNotifier!.UnsafeOnCompleted(GetContinuationAction());
+                        critNotifier.UnsafeOnCompleted(GetContinuationAction());
                     }
-                    else if (stackState->TaskNotifier != null)
+                    else if (stackState->TaskNotifier is { } taskNotifier)
                     {
                         // Runtime async callable wrapper for task returning
                         // method. This implements the context transparent
                         // forwarding and makes these wrappers minimal cost.
-                        if (!stackState->TaskNotifier!.TryAddCompletionAction(this))
+                        if (!taskNotifier.TryAddCompletionAction(this))
                         {
                             ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
                         }
                     }
-                    else if (stackState->ValueTaskSourceNotifier != null)
+                    else if (stackState->ValueTaskSourceNotifier is { } valueTaskSourceNotifier)
                     {
                         // The awaiter must inform the ValueTaskSource on whether the continuation
                         // wants to run on a context, although the source may decide to ignore the suggestion.
@@ -476,7 +476,7 @@ namespace System.Runtime.CompilerServices
 
                         // Clear continuation flags, so that continuation runs transparently
                         nextUserContinuation.Flags &= ~continueFlags;
-                        stackState->ValueTaskSourceNotifier!.OnCompleted(s_runContinuationAction, this, configFlags);
+                        valueTaskSourceNotifier.OnCompleted(s_runContinuationAction, this, configFlags);
                     }
                     else
                     {
