@@ -16,7 +16,9 @@ static uint8_t* EncodeEcPointFromCoordinates(
     int32_t* outLength)
 {
     int32_t coordLen = fieldSize;
-    assert(xLength <= coordLen && yLength <= coordLen);
+    if (xLength > coordLen || yLength > coordLen)
+        return NULL;
+
     int32_t len = 1 + 2 * coordLen;
     uint8_t* buf = (uint8_t*)OPENSSL_zalloc((size_t)len);
     if (buf == NULL)
@@ -713,7 +715,7 @@ error:
 exit:
     if (xBn) BN_free(xBn);
     if (yBn) BN_free(yBn);
-    if (dBn) BN_free(dBn);
+    if (dBn) BN_clear_free(dBn);
     if (pubKeyBuf) OPENSSL_free(pubKeyBuf);
     if (point) EC_POINT_free(point);
     if (group) EC_GROUP_free(group);
@@ -1264,6 +1266,7 @@ int32_t CryptoNative_EvpPKeyCreateByEcKeyParameters(
     BIGNUM* dBn = NULL;
     EC_GROUP* group = NULL;
     EC_POINT* pubPoint = NULL;
+    int32_t fieldSize = 0;
 
     const int hasPublicKey = (qx != NULL && qy != NULL);
     const int hasPrivateKey = (d != NULL && dLength > 0);
@@ -1282,13 +1285,19 @@ int32_t CryptoNative_EvpPKeyCreateByEcKeyParameters(
             goto error;
     }
 
+    // Build an EC_GROUP to determine the field size and (if needed) derive the public key.
+    group = EC_GROUP_new_by_curve_name(nid);
+    if (group == NULL)
+        goto error;
+
+    fieldSize = (EC_GROUP_get_degree(group) + 7) / 8;
+
     // Push public key, deriving it from the private key if unavailable.
     if (hasPublicKey)
     {
         int32_t pubKeyLen;
 
-        // Coordinates are padded to field size (qxLength) by managed caller.
-        pubKeyBuf = EncodeEcPointFromCoordinates(qx, qxLength, qy, qyLength, qxLength, &pubKeyLen);
+        pubKeyBuf = EncodeEcPointFromCoordinates(qx, qxLength, qy, qyLength, fieldSize, &pubKeyLen);
         if (pubKeyBuf == NULL)
             goto error;
 
@@ -1298,10 +1307,6 @@ int32_t CryptoNative_EvpPKeyCreateByEcKeyParameters(
     else if (hasPrivateKey)
     {
         // No public key provided, derive Q = d * G using EC_GROUP/EC_POINT (not deprecated).
-        group = EC_GROUP_new_by_curve_name(nid);
-        if (group == NULL)
-            goto error;
-
         pubPoint = EC_POINT_new(group);
         if (pubPoint == NULL ||
             !EC_POINT_mul(group, pubPoint, dBn, NULL, NULL, NULL))
@@ -1420,6 +1425,8 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
     EC_GROUP* group = NULL;
     EC_POINT* G = NULL;
     EC_POINT* pubPoint = NULL;
+    int32_t fieldSize = 0;
+    int32_t genLen = 0;
 
     const int hasPublicKey = (qx != NULL && qy != NULL);
     const int hasPrivateKey = (d != NULL && dLength > 0);
@@ -1454,9 +1461,10 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
     if (!OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_EC_B, bBn))
         goto error;
 
-    // Generator as uncompressed point: 0x04 || gx || gy, padded to field size (pLength).
-    int32_t genLen;
-    generatorBuf = EncodeEcPointFromCoordinates(gx, gxLength, gy, gyLength, pLength, &genLen);
+    fieldSize = BN_num_bytes(pBn);
+
+    // Generator as uncompressed point: 0x04 || gx || gy, padded to field size.
+    generatorBuf = EncodeEcPointFromCoordinates(gx, gxLength, gy, gyLength, fieldSize, &genLen);
     if (generatorBuf == NULL)
         goto error;
 
@@ -1496,8 +1504,7 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
     {
         int32_t pubKeyLen;
 
-        // Coordinates are padded to field size (pLength) by managed caller.
-        pubKeyBuf = EncodeEcPointFromCoordinates(qx, qxLength, qy, qyLength, pLength, &pubKeyLen);
+        pubKeyBuf = EncodeEcPointFromCoordinates(qx, qxLength, qy, qyLength, fieldSize, &pubKeyLen);
         if (pubKeyBuf == NULL)
             goto error;
 
