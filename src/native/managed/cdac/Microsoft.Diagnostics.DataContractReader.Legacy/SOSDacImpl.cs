@@ -3032,7 +3032,7 @@ public sealed unsafe partial class SOSDacImpl
                 {
                     string localNameString = new(mtNameLocal, 0, localNameLength);
                     string nameString = mtNametest is null ? string.Empty : new(mtNametest, 0, nameLength);
-                    Debug.Fail($"local name = {localNameString}, name = {nameString}, neededlocal = {neededLocal}, pneeded = {pNeeded == null ? "null" : *pNeeded}");
+                    Debug.Fail($"local name = {localNameString}, name = {nameString}, neededlocal = {neededLocal}, pneeded = {(pNeeded == null ? "null" : *pNeeded)}");
                 }
             }
         }
