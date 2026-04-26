@@ -221,6 +221,7 @@ namespace R2RDump
                     OperatingSystem.Apple => TargetOS.OSX,
                     OperatingSystem.FreeBSD => TargetOS.FreeBSD,
                     OperatingSystem.NetBSD => TargetOS.FreeBSD,
+                    OperatingSystem.Haiku => TargetOS.Haiku,
                     _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
                 };
                 TargetDetails details = new(architecture, os, TargetAbi.NativeAot);

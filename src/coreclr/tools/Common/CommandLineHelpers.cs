@@ -67,6 +67,8 @@ namespace System.CommandLine
                     return TargetOS.OSX;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
                     return TargetOS.FreeBSD;
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("HAIKU")))
+                    return TargetOS.Haiku;
 
                 throw new NotImplementedException();
             }
@@ -77,6 +79,7 @@ namespace System.CommandLine
                 "win" or "windows" => TargetOS.Windows,
                 "osx" => TargetOS.OSX,
                 "freebsd" => TargetOS.FreeBSD,
+                "haiku" => TargetOS.Haiku,
                 "maccatalyst" => TargetOS.MacCatalyst,
                 "iossimulator" => TargetOS.iOSSimulator,
                 "ios" => TargetOS.iOS,

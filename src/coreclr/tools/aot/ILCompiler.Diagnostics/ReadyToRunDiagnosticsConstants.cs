@@ -32,6 +32,7 @@ public enum PerfMapOSToken : uint
     FreeBSD = 4,
     NetBSD = 5,
     SunOS = 6,
+    Haiku = 7,
 }
 
 public enum PerfMapAbiToken : uint

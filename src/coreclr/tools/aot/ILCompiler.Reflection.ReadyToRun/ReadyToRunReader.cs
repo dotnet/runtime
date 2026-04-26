@@ -30,6 +30,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         Linux = 0x7B79,
         NetBSD = 0x1993,
         SunOS = 0x1992,
+        Haiku = 0x0B05,
         Windows = 0,
         Unknown = -1
     }

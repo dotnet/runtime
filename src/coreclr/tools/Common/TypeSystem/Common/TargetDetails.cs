@@ -23,6 +23,7 @@ namespace Internal.TypeSystem
         FreeBSD,
         NetBSD,
         SunOS,
+        Haiku,
         Browser,
         Wasi
     }

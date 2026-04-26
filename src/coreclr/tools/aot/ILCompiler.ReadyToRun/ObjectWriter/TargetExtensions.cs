@@ -20,6 +20,7 @@ namespace ILCompiler.PEWriter
         FreeBSD = 0xADC4,
         NetBSD = 0x1993,
         SunOS = 0x1992,
+        Haiku = 0x0B05,
     }
 
     /// <summary>
@@ -124,6 +125,9 @@ namespace ILCompiler.PEWriter
 
                 case TargetOS.NetBSD:
                     return MachineOSOverride.NetBSD;
+
+                case TargetOS.Haiku:
+                    return MachineOSOverride.Haiku;
 
                 default:
                     throw new NotImplementedException(target.OperatingSystem.ToString());
