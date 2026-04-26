@@ -100,28 +100,29 @@ namespace System.Linq
             // Thus, if we had a sign swap compared to both inputs, then signof(input1) == signof(input2) and
             // we must have overflowed.
             //
-            // By bitwise or-ing the overflowTracking vector for each step we can save cycles by testing
-            // the sign bits less often. If any iteration has the sign bit set in any element it indicates
-            // there was an overflow.
+            // By bitwise or-ing the overflowTracking vector throughout the entire loop and
+            // only testing it once at the end we save the cost of an in-loop test+branch per
+            // iteration. If any accumulation across the whole input has the sign bit set in
+            // any element it indicates there was an overflow.
             //
             // Note: The overflow checking in this algorithm is only correct for signed integers.
             // If support is ever added for unsigned integers then the overflow check should be:
             //   overflowTracking |= (input1 & input2) | Vector.AndNot(input1 | input2, result);
 
             Vector<T> accumulator = Vector<T>.Zero;
+            Vector<T> overflowTracking = Vector<T>.Zero;
 
             // Build a test vector with only the sign bit set in each element.
             Vector<T> overflowTestVector = new(T.MinValue);
 
-            // Unroll the loop to sum 4 vectors per iteration. This reduces range check
-            // and overflow check frequency, allows us to eliminate move operations swapping
-            // accumulators, and may have pipelining benefits.
+            // Unroll the loop to sum 4 vectors per iteration. This allows us to eliminate
+            // move operations swapping accumulators, and may have pipelining benefits.
             while (span.Length >= Vector<T>.Count * 4)
             {
                 // Switch accumulators with each step to avoid an additional move operation
                 Vector<T> data = Vector.Create(span);
                 Vector<T> accumulator2 = accumulator + data;
-                Vector<T> overflowTracking = (accumulator2 ^ accumulator) & (accumulator2 ^ data);
+                overflowTracking |= (accumulator2 ^ accumulator) & (accumulator2 ^ data);
 
                 data = Vector.Create(span.Slice(Vector<T>.Count));
                 accumulator = accumulator2 + data;
@@ -135,33 +136,23 @@ namespace System.Linq
                 accumulator = accumulator2 + data;
                 overflowTracking |= (accumulator ^ accumulator2) & (accumulator ^ data);
 
-                if ((overflowTracking & overflowTestVector) != Vector<T>.Zero)
-                {
-                    ThrowHelper.ThrowOverflowException();
-                }
-
                 span = span.Slice(Vector<T>.Count * 4);
             }
 
             // Process remaining vectors, if any, without unrolling
-            if (span.Length >= Vector<T>.Count)
+            while (span.Length >= Vector<T>.Count)
             {
-                Vector<T> overflowTracking = Vector<T>.Zero;
+                Vector<T> data = Vector.Create(span);
+                Vector<T> accumulator2 = accumulator + data;
+                overflowTracking |= (accumulator2 ^ accumulator) & (accumulator2 ^ data);
+                accumulator = accumulator2;
 
-                do
-                {
-                    Vector<T> data = Vector.Create(span);
-                    Vector<T> accumulator2 = accumulator + data;
-                    overflowTracking |= (accumulator2 ^ accumulator) & (accumulator2 ^ data);
-                    accumulator = accumulator2;
+                span = span.Slice(Vector<T>.Count);
+            }
 
-                    span = span.Slice(Vector<T>.Count);
-                } while (span.Length >= Vector<T>.Count);
-
-                if ((overflowTracking & overflowTestVector) != Vector<T>.Zero)
-                {
-                    ThrowHelper.ThrowOverflowException();
-                }
+            if ((overflowTracking & overflowTestVector) != Vector<T>.Zero)
+            {
+                ThrowHelper.ThrowOverflowException();
             }
 
             // Add the elements in the vector horizontally.
