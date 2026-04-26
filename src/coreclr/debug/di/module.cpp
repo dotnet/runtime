@@ -424,7 +424,7 @@ public:
             //
             // Send 2nd event to free buffer.
             //
-            DebuggerIPCEvent event;
+            DebuggerIPCEvent_DebuggerSide event;
             pProcess->InitIPCEvent(&event,
                 DB_IPCE_RESOLVE_UPDATE_METADATA_2,
                 true,
@@ -433,7 +433,7 @@ public:
             event.MetadataUpdateRequest.pMetadataStart = CORDB_ADDRESS_TO_PTR(bufferMetaData.pAddress);
 
             // Note: two-way event here...
-            IfFailThrow(pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
+            IfFailThrow(pProcess->SendIPCEvent(&event));
             _ASSERTE(event.type == DB_IPCE_RESOLVE_UPDATE_METADATA_2_RESULT);
         }
     }
@@ -538,7 +538,7 @@ void CordbModule::RefreshMetaData()
         //
         // Send 1 event to get metadata. This allocates a buffer
         //
-        DebuggerIPCEvent event;
+        DebuggerIPCEvent_DebuggerSide event;
         pProcess->InitIPCEvent(&event,
             DB_IPCE_RESOLVE_UPDATE_METADATA_1,
             true,
@@ -547,7 +547,7 @@ void CordbModule::RefreshMetaData()
         event.MetadataUpdateRequest.vmModule = m_vmModule;
 
         // Note: two-way event here...
-        IfFailThrow(pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
+        IfFailThrow(pProcess->SendIPCEvent(&event));
 
         _ASSERTE(event.type == DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT);
 
@@ -1366,7 +1366,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
     // called whether or not the process is synchronized.
     CordbProcess *pProcess = GetProcess();
 
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
     pProcess->InitIPCEvent(&event,
                            DB_IPCE_SET_CLASS_LOAD_FLAG,
                            false,
@@ -1374,8 +1374,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
     event.SetClassLoad.vmAssembly = this->m_vmAssembly;
     event.SetClassLoad.flag = (bClassLoadCallbacks == TRUE);
 
-    HRESULT hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event,
-                                                 sizeof(DebuggerIPCEvent));
+    HRESULT hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event);
     hr = WORST_HR(hr, event.hr);
     return hr;
 }
@@ -2145,7 +2144,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
         // Create and initialize the event as synchronous
         // We'll be sending a NULL appdomain pointer since the individual modules
         // will contains pointers to their respective A.D.s
-        DebuggerIPCEvent event;
+        DebuggerIPCEvent_DebuggerSide event;
         GetProcess()->InitIPCEvent(&event, DB_IPCE_APPLY_CHANGES, false, VMPTR_AppDomain::NullPtr());
 
         event.ApplyChanges.vmAssembly = this->m_vmAssembly;
@@ -2170,15 +2169,15 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
         event.ApplyChanges.cbDeltaIL = tbIL.cbSize;
 
         LOG((LF_ENC,LL_INFO100, "CordbProcess::ApplyChangesInternal sending event\n"));
-        hr = GetProcess()->SendIPCEvent(&event, sizeof(event));
+        hr = GetProcess()->SendIPCEvent(&event);
         hr = WORST_HR(hr, event.hr);
         IfFailThrow(hr);
 
         // Allocate space for the return event.
-        // We always copy over the whole buffer size which is bigger than sizeof(DebuggerIPCEvent)
+        // We always copy over the whole buffer size which is bigger than sizeof(DebuggerIPCEvent_DebuggerSide)
         // This seems ugly, in this case we know the exact size of the event we want to read
         // why copy over all the extra data?
-        DebuggerIPCEvent *retEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
+        DebuggerIPCEvent_DebuggerSide *retEvent = (DebuggerIPCEvent_DebuggerSide *) _alloca(CorDBIPC_BUFFER_SIZE);
 
         {
             //
@@ -2289,14 +2288,14 @@ HRESULT CordbModule::SetJMCStatus(
 
 
     // Tell the LS that this module is/is not user code
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
     pProcess->InitIPCEvent(&event, DB_IPCE_SET_MODULE_JMC_STATUS, true, this->GetAppDomain()->GetADToken());
     event.SetJMCFunctionStatus.vmAssembly = m_vmAssembly;
     event.SetJMCFunctionStatus.dwStatus = fIsUserCode;
 
 
     // Note: two-way event here...
-    HRESULT hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+    HRESULT hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event);
 
     // Stop now if we can't even send the event.
     if (!SUCCEEDED(hr))

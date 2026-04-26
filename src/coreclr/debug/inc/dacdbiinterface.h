@@ -1582,12 +1582,12 @@ public:
     //             vmTypeHandle - type handle for the type
     //     output: pTypeInfo    - holds information needed to build the corresponding CordbType
     //
-    virtual HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
+    virtual HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, ExpandedTypeData * pTypeInfo) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT ExpandedTypeData * pTypeInfo) = 0;
 
 
-    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT ExpandedTypeData * pTypeInfo) = 0;
 
 
     // Get type handle for a TypeDef token, if one exists. For generics this returns the open type.
@@ -1634,7 +1634,7 @@ public:
     //            pVmTypeHandle    - [out] the exact type handle derived from the type information
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    virtual HRESULT STDMETHODCALLTYPE GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData * pTypeData,
+    virtual HRESULT STDMETHODCALLTYPE GetExactTypeHandle(ExpandedTypeData * pTypeData,
                                ArgInfoList *   pArgInfo,
                                VMPTR_TypeHandle * pVmTypeHandle) = 0;
 
@@ -1710,7 +1710,7 @@ public:
     // for "Dict<String,List<int>>", and sends it back to the right side.
     // Arguments:
     //    input:  vmTypeHandle - type handle for the type
-    //    output: pParams      - list of instances of DebuggerIPCE_ExpandedTypeData,
+    //    output: pParams      - list of instances of ExpandedTypeData,
     //                           one for each type parameter. These will be used on the
     //                           RS to build up an instantiation which will allow
     //                           building an instance of CordbType for the top-level
@@ -2325,6 +2325,12 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(
         VMPTR_MethodDesc vmMethod,
         OUT UINT32* pTokenIndex) = 0;
+
+    // Convert raw IPC event bytes (DebuggerIPCEvent_RuntimeSide layout) into a DebuggerIPCEvent_DebuggerSide struct.
+    virtual void FillDebuggerIPCEvent_DebuggerSide(const BYTE * pRawEvent, DebuggerIPCEvent_DebuggerSide * pEvent) = 0;
+
+    // Convert a DebuggerIPCEvent_DebuggerSide struct into raw IPC event bytes (DebuggerIPCEvent_RuntimeSide layout).
+    virtual void FillDebuggerIPCEvent_RuntimeSide(const DebuggerIPCEvent_DebuggerSide * pEvent, BYTE * pRawEventOut, UINT * pBufSize) = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL

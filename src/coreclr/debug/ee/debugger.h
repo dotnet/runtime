@@ -390,7 +390,7 @@ inline LPVOID PushedRegAddr(REGDISPLAY* pRD, LPVOID pAddr)
     return pAddr;
 }
 
-bool HandleIPCEventWrapper(Debugger* pDebugger, DebuggerIPCEvent *e);
+bool HandleIPCEventWrapper(Debugger* pDebugger, DebuggerIPCEvent_RuntimeSide *e);
 
 HRESULT ValidateObject(Object *objPtr);
 
@@ -760,7 +760,7 @@ public:
     // These are used by this thread to send IPC events to the Debugger
     // Interface side.
     //
-    DebuggerIPCEvent* GetIPCEventSendBuffer()
+    DebuggerIPCEvent_RuntimeSide* GetIPCEventSendBuffer()
     {
         CONTRACTL
         {
@@ -791,7 +791,7 @@ public:
     HRESULT EnsureRuntimeOffsetsInit(IpcTarget i); // helper function for SendIPCEvent
     void NeedRuntimeOffsetsReInit(IpcTarget i);
 
-    DebuggerIPCEvent* GetIPCEventReceiveBuffer()
+    DebuggerIPCEvent_RuntimeSide* GetIPCEventReceiveBuffer()
     {
         CONTRACTL
         {
@@ -862,23 +862,23 @@ private:
 
     // The transport based communication protocol keeps the send and receive buffers outside of the DCB
     // to keep the DCB size down (since we send it over the wire).
-    DebuggerIPCEvent * GetRCThreadReceiveBuffer()
+    DebuggerIPCEvent_RuntimeSide * GetRCThreadReceiveBuffer()
     {
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-        return reinterpret_cast<DebuggerIPCEvent *>(&m_receiveBuffer[0]);
+        return reinterpret_cast<DebuggerIPCEvent_RuntimeSide *>(&m_receiveBuffer[0]);
 #else
-        return reinterpret_cast<DebuggerIPCEvent *>(&m_pDCB->m_receiveBuffer[0]);
+        return reinterpret_cast<DebuggerIPCEvent_RuntimeSide *>(&m_pDCB->m_receiveBuffer[0]);
 #endif
     }
 
     // The transport based communication protocol keeps the send and receive buffers outside of the DCB
     // to keep the DCB size down (since we send it over the wire).
-    DebuggerIPCEvent * GetRCThreadSendBuffer()
+    DebuggerIPCEvent_RuntimeSide * GetRCThreadSendBuffer()
     {
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-        return reinterpret_cast<DebuggerIPCEvent *>(&m_sendBuffer[0]);
+        return reinterpret_cast<DebuggerIPCEvent_RuntimeSide *>(&m_sendBuffer[0]);
 #else  // FEATURE_DBGIPC_TRANSPORT_VM
-        return reinterpret_cast<DebuggerIPCEvent *>(&m_pDCB->m_sendBuffer[0]);
+        return reinterpret_cast<DebuggerIPCEvent_RuntimeSide *>(&m_pDCB->m_sendBuffer[0]);
 #endif  // FEATURE_DBGIPC_TRANSPORT_VM
     }
 
@@ -1931,7 +1931,7 @@ public:
     HRESULT LazyInitWrapper(); // calls LazyInit and converts to HR.
 
     // Send a raw managed debug event over the managed pipeline.
-    void SendRawEvent(const DebuggerIPCEvent * pManagedEvent);
+    void SendRawEvent(const DebuggerIPCEvent_RuntimeSide * pManagedEvent);
 
     void SetEEInterface(EEDebugInterface* i);
     void StopDebugger(void);
@@ -2126,12 +2126,12 @@ public:
     void Terminate();
     void Continue();
 
-    bool HandleIPCEvent(DebuggerIPCEvent* event);
+    bool HandleIPCEvent(DebuggerIPCEvent_RuntimeSide* event);
 
     DebuggerModule * LookupOrCreateModule(VMPTR_Assembly vmAssembly);
     DebuggerModule * LookupOrCreateModule(Module * pModule);
 
-    HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
+    HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent_RuntimeSide *event);
 
     //HRESULT GetAndSendJITFunctionData(DebuggerRCThread* rcThread,
     //                               mdMethodDef methodToken,
@@ -2709,7 +2709,7 @@ private:
 #ifndef DACCESS_COMPILE
     // @dbgtodo  inspection -  eventually, all replies should be removed because requests will be DAC-ized.
     // Do not call this function unless you are getting ThreadId from RS
-    void InitIPCReply(DebuggerIPCEvent *ipce,
+    void InitIPCReply(DebuggerIPCEvent_RuntimeSide *ipce,
                       DebuggerIPCEventType type)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2725,7 +2725,7 @@ private:
 
 public:
     // Let this function to figure out the unique Id that we will use for Thread.
-    void InitIPCEvent(DebuggerIPCEvent *ipce,
+    void InitIPCEvent(DebuggerIPCEvent_RuntimeSide *ipce,
                       DebuggerIPCEventType type,
                       Thread *pThread)
     {
@@ -2746,7 +2746,7 @@ public:
     }
 
 private:
-    void InitIPCEvent(DebuggerIPCEvent *ipce,
+    void InitIPCEvent(DebuggerIPCEvent_RuntimeSide *ipce,
                       DebuggerIPCEventType type)
     {
         WRAPPER_NO_CONTRACT;

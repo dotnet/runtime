@@ -1004,7 +1004,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     UNKNOWN
         Cordb*                      m_cordb;
         CordbHashTable              m_unmanagedThreads; // Released in CordbProcess but not removed from hash
-        DebuggerIPCEvent*           m_lastQueuedEvent;
+        DebuggerIPCEvent_DebuggerSide*           m_lastQueuedEvent;
 
         // CordbUnmannagedEvent is a struct which is not derrived from CordbBase.
         // It contains a CordbUnmannagedThread which may need to be released.
@@ -1023,7 +1023,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
         CordbAppDomain*       m_pAppDomain;
 
         // Cleaned up in ExitProcess
-        DebuggerIPCEvent*     m_queuedEventList;
+        DebuggerIPCEvent_DebuggerSide*     m_queuedEventList;
 
         CordbHashTable        m_steppers; // Closed in ~CordbProcess
 
@@ -2013,7 +2013,7 @@ void SendAttachProcessWorkItem::Do()
     // This is being processed on the RCET, where it's safe to take the Stop-Go lock.
     RSLockHolder ch(this->GetProcess()->GetStopGoLock());
 
-    DebuggerIPCEvent *event = (DebuggerIPCEvent*) _alloca(CorDBIPC_BUFFER_SIZE);
+    DebuggerIPCEvent_DebuggerSide *event = (DebuggerIPCEvent_DebuggerSide*) _alloca(CorDBIPC_BUFFER_SIZE);
 
     // This just acts like an async-break, which will kick off things.
     // This will not induce any faked attach events from the VM (like it did in V2).
@@ -2034,7 +2034,7 @@ void SendAttachProcessWorkItem::Do()
     // synchronize first (to stop all running threads) before marking the debugger as attached.
     LOG((LF_CORDB, LL_INFO1000, "[%x] CP::S: sending attach.\n", GetCurrentThreadId()));
 
-    hr = GetProcess()->SendIPCEvent(event, CorDBIPC_BUFFER_SIZE);
+    hr = GetProcess()->SendIPCEvent(event);
 
     LOG((LF_CORDB, LL_INFO1000, "[%x] CP::S: sent attach.\n", GetCurrentThreadId()));
 }
@@ -2461,7 +2461,7 @@ HRESULT CordbProcess::GetTypeForTypeID(COR_TYPEID id, ICorDebugType **ppType)
 
     EX_TRY
     {
-        DebuggerIPCE_ExpandedTypeData data;
+        ExpandedTypeData data;
         IfFailThrow(GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, id, &data));
 
         CordbType *type = 0;
@@ -2649,7 +2649,7 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, C
 
         _ASSERTE(cdbAppDomain);
 
-        DebuggerIPCE_ExpandedTypeData data;
+        ExpandedTypeData data;
         IfFailThrow(GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, addr, &data));
 
         CordbType *type = 0;
@@ -3167,10 +3167,10 @@ void CordbProcess::DetachShim()
         }
 
         // Go ahead and detach from the entire process now. This is like sending a "Continue".
-        DebuggerIPCEvent * pIPCEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
+        DebuggerIPCEvent_DebuggerSide * pIPCEvent = (DebuggerIPCEvent_DebuggerSide *) _alloca(CorDBIPC_BUFFER_SIZE);
         InitIPCEvent(pIPCEvent, DB_IPCE_DETACH_FROM_PROCESS, true, VMPTR_AppDomain::NullPtr());
 
-        hr = m_cordb->SendIPCEvent(this, pIPCEvent, CorDBIPC_BUFFER_SIZE);
+        hr = m_cordb->SendIPCEvent(this, pIPCEvent);
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
         if (hr == CORDBG_E_PROCESS_TERMINATED)
         {
@@ -3515,7 +3515,7 @@ HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainTo
     }
 
 
-    DebuggerIPCEvent* event;
+    DebuggerIPCEvent_DebuggerSide* event;
     HRESULT hr = S_OK;
 
     STRESS_LOG2(LF_CORDB, LL_INFO1000, "CP::SI, timeout=%d, this=%p\n", dwTimeout, this);
@@ -3628,12 +3628,12 @@ HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainTo
     }
 
     // Send the async break event to the RC.
-    event = (DebuggerIPCEvent*) _alloca(CorDBIPC_BUFFER_SIZE);
+    event = (DebuggerIPCEvent_DebuggerSide*) _alloca(CorDBIPC_BUFFER_SIZE);
     InitIPCEvent(event, DB_IPCE_ASYNC_BREAK, false, pAppDomainToken);
 
     STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::S: sending async stop to appd 0x%x.\n", VmPtrToCookie(pAppDomainToken));
 
-    hr = m_cordb->SendIPCEvent(this, event, CorDBIPC_BUFFER_SIZE);
+    hr = m_cordb->SendIPCEvent(this, event);
     hr = WORST_HR(hr, event->hr);
     if (FAILED(hr))
     {
@@ -4226,11 +4226,11 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
         STRESS_LOG2(LF_CORDB, LL_INFO1000, "Continue flags:special=%d, dowin32=%d\n", m_specialDeferment, fDoWin32Continue);
 #endif
         // Send to the RC to continue the process.
-        DebuggerIPCEvent * pEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
+        DebuggerIPCEvent_DebuggerSide * pEvent = (DebuggerIPCEvent_DebuggerSide *) _alloca(CorDBIPC_BUFFER_SIZE);
 
         InitIPCEvent(pEvent, DB_IPCE_CONTINUE, false, pAppDomainToken);
 
-        hr = m_cordb->SendIPCEvent(this, pEvent, CorDBIPC_BUFFER_SIZE);
+        hr = m_cordb->SendIPCEvent(this, pEvent);
 
         // It is possible that we continue and then the process immediately exits before the helper
         // thread is finished continuing and can report success back to us. That's arguably a success
@@ -4829,7 +4829,7 @@ void CordbProcess::DispatchRCEvent()
 //    does the real dispatch to the user to emulate V2 semantics.
 //
 void CordbProcess::RawDispatchEvent(
-    DebuggerIPCEvent *          pEvent,
+    DebuggerIPCEvent_DebuggerSide *          pEvent,
     RSLockHolder *              pLockHolder,
     ICorDebugManagedCallback *  pCallback1,
     ICorDebugManagedCallback2 * pCallback2,
@@ -6040,7 +6040,7 @@ HRESULT CordbProcess::SetAllThreadsDebugState(CorDebugThreadState state,
          (pCordbExceptThread != NULL) ? pCordbExceptThread->m_id : 0));
 
     // Send one event to the Left Side to twiddle each thread's state.
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
 
     InitIPCEvent(&event, DB_IPCE_SET_ALL_DEBUG_STATE, true, VMPTR_AppDomain::NullPtr());
 
@@ -6049,7 +6049,7 @@ HRESULT CordbProcess::SetAllThreadsDebugState(CorDebugThreadState state,
 
     event.SetAllDebugState.debugState = state;
 
-    HRESULT hr = SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
+    HRESULT hr = SendIPCEvent(&event);
 
     hr = WORST_HR(hr, event.hr);
 
@@ -6124,13 +6124,13 @@ HRESULT CordbProcess::IsTransitionStub(CORDB_ADDRESS address, BOOL *pfTransition
     HRESULT hr = S_OK;
     EX_TRY
     {
-        DebuggerIPCEvent eventData;
+        DebuggerIPCEvent_DebuggerSide eventData;
 
         InitIPCEvent(&eventData, DB_IPCE_IS_TRANSITION_STUB, true, VMPTR_AppDomain::NullPtr());
 
         eventData.IsTransitionStub.address = CORDB_ADDRESS_TO_PTR(address);
 
-        hr = SendIPCEvent(&eventData, sizeof(eventData));
+        hr = SendIPCEvent(&eventData);
         hr = WORST_HR(hr, eventData.hr);
         IfFailThrow(hr);
 
@@ -8248,14 +8248,14 @@ HRESULT CordbProcess::StartSyncFromWin32Stop(BOOL * pfAsyncBreakSent)
             LOG((LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: internal continue returned\n", GetCurrentThreadId()));
 
             // Send an async break to the left side now that its running.
-            DebuggerIPCEvent * pEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
+            DebuggerIPCEvent_DebuggerSide * pEvent = (DebuggerIPCEvent_DebuggerSide *) _alloca(CorDBIPC_BUFFER_SIZE);
             InitIPCEvent(pEvent, DB_IPCE_ASYNC_BREAK, false, VMPTR_AppDomain::NullPtr());
 
             LOG((LF_CORDB, LL_INFO1000, "[%x] CP::SSFW32S: sending async stop\n", GetCurrentThreadId()));
 
             // If the process gets synchronized between the Unlock() and here, then this message will do nothing (Left
             // Side catches it) and we'll never get a response, and it won't hurt anything.
-            hr = m_cordb->SendIPCEvent(this, pEvent, CorDBIPC_BUFFER_SIZE);
+            hr = m_cordb->SendIPCEvent(this, pEvent);
             // @Todo- how do we handle a failure here?
 
             // If the send returns with the helper thread being dead, then we know we don't need to wait for the process
@@ -8460,11 +8460,11 @@ HRESULT CordbProcess::EnableLogMessages(BOOL fOnOff)
     ATT_REQUIRE_STOPPED_MAY_FAIL(this);
     HRESULT hr = S_OK;
 
-    DebuggerIPCEvent *event = (DebuggerIPCEvent*) _alloca(CorDBIPC_BUFFER_SIZE);
+    DebuggerIPCEvent_DebuggerSide *event = (DebuggerIPCEvent_DebuggerSide*) _alloca(CorDBIPC_BUFFER_SIZE);
     InitIPCEvent(event, DB_IPCE_ENABLE_LOG_MESSAGES, false, VMPTR_AppDomain::NullPtr());
     event->LogSwitchSettingMessage.iLevel = (int)fOnOff;
 
-    hr = m_cordb->SendIPCEvent(this, event, CorDBIPC_BUFFER_SIZE);
+    hr = m_cordb->SendIPCEvent(this, event);
     hr = WORST_HR(hr, event->hr);
 
     LOG((LF_CORDB, LL_INFO10000, "[%x] CP::EnableLogMessages: EnableLogMessages=%d sent.\n",
@@ -8486,12 +8486,12 @@ COM_METHOD CordbProcess::ModifyLogSwitch(_In_z_ WCHAR *pLogSwitchName, LONG lLev
 
     _ASSERTE (pLogSwitchName != NULL);
 
-    DebuggerIPCEvent *event = (DebuggerIPCEvent*) _alloca(CorDBIPC_BUFFER_SIZE);
+    DebuggerIPCEvent_DebuggerSide *event = (DebuggerIPCEvent_DebuggerSide*) _alloca(CorDBIPC_BUFFER_SIZE);
     InitIPCEvent(event, DB_IPCE_MODIFY_LOGSWITCH, false, VMPTR_AppDomain::NullPtr());
     event->LogSwitchSettingMessage.iLevel = lLevel;
     event->LogSwitchSettingMessage.szSwitchName.SetStringTruncate(pLogSwitchName);
 
-    hr = m_cordb->SendIPCEvent(this, event, CorDBIPC_BUFFER_SIZE);
+    hr = m_cordb->SendIPCEvent(this, event);
     hr = WORST_HR(hr, event->hr);
 
     LOG((LF_CORDB, LL_INFO10000, "[%x] CP::ModifyLogSwitch: ModifyLogSwitch sent.\n",
@@ -9414,7 +9414,7 @@ void Ls_Rs_StringBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
 //
 //     This could be rolled into code:CordbProcess::RawDispatchEvent
 //---------------------------------------------------------------------------------------
-void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
+void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent_DebuggerSide * pManagedEvent)
 {
     CONTRACTL
     {
@@ -9480,13 +9480,10 @@ void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
 //---------------------------------------------------------------------------------------
 bool CordbProcess::CopyManagedEventFromTarget(
     const EXCEPTION_RECORD * pRecord,
-    DebuggerIPCEvent * pLocalManagedEvent)
+    BYTE * pRawEventBuffer)
 {
     _ASSERTE(pRecord != NULL);
-    _ASSERTE(pLocalManagedEvent != NULL);
-
-    // Initialize the event enough such backout code can call code:DeleteIPCEventHelper.
-    pLocalManagedEvent->type = DB_IPCE_DEBUGGER_INVALID;
+    _ASSERTE(pRawEventBuffer != NULL);
 
     // Ensure we have a CLR instance ID by now.  Either we had one already, or we're in
     // V2 mode and this is the startup event, and so we'll set it now.
@@ -9502,21 +9499,17 @@ bool CordbProcess::CopyManagedEventFromTarget(
         return false;
     }
 
-    // What we are doing on Windows here is dangerous.  Any buffer for IPC events must be at least
-    // CorDBIPC_BUFFER_SIZE big, but here we are only copying sizeof(DebuggerIPCEvent).  Fortunately, the
-    // only case where an IPC event is bigger than sizeof(DebuggerIPCEvent) is for the second category
-    // described in the comment for code:IEventChannel.  In this case, we are just transferring the IPC
-    // event from the native pipeline to the event channel, and the event channel will read it directly from
-    // the send buffer on the LS.  See code:CordbRCEventThread::WaitForIPCEventFromProcess.
+    // Copy the raw runtime-side event bytes into the caller's buffer.
+    // No deserialization is done here — the caller is responsible for converting
+    // to DebuggerIPCEvent_DebuggerSide via FillDebuggerIPCEvent_DebuggerSide when needed.
 #if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
-    hr = SafeReadStruct(ptrRemoteManagedEvent, pLocalManagedEvent);
+    // Windows: read raw bytes from target shared memory.
+    hr = SafeReadBuffer(TargetBuffer(ptrRemoteManagedEvent, CorDBIPC_BUFFER_SIZE), pRawEventBuffer);
 #else
-    // For Mac remote debugging the address returned above is actually a local address.
-    // Also, we need to copy the entire buffer because once a debug event is read from the debugger
-    // transport, it won't be available afterwards.
-    memcpy(reinterpret_cast<BYTE *>(pLocalManagedEvent),
-           CORDB_ADDRESS_TO_PTR(ptrRemoteManagedEvent),
-           CorDBIPC_BUFFER_SIZE);
+    // Transport: the address is local (filled by GetNextEvent). Copy the raw bytes.
+    memcpy(pRawEventBuffer,
+        reinterpret_cast<BYTE *>(CORDB_ADDRESS_TO_PTR(ptrRemoteManagedEvent)),
+        CorDBIPC_BUFFER_SIZE);
     hr = S_OK;
 #endif
     SIMPLIFYING_ASSUMPTION(SUCCEEDED(hr));
@@ -9591,11 +9584,12 @@ HRESULT CordbProcess::EnsureClrInstanceIdSet()
 //    The event still needs to be Marshaled before being used. (see code:CordbProcess::MarshalManagedEvent)
 //
 //---------------------------------------------------------------------------------------
-void inline CordbProcess::CopyRCEventFromIPCBlock(DebuggerIPCEvent * pLocalManagedEvent)
+void inline CordbProcess::CopyRCEventFromIPCBlock(DebuggerIPCEvent_DebuggerSide * pLocalManagedEvent)
 {
     _ASSERTE(pLocalManagedEvent != NULL);
-
-    IfFailThrow(m_pEventChannel->GetEventFromLeftSide(pLocalManagedEvent));
+    BYTE * pEventInIPCBlock = (BYTE *)_alloca(CorDBIPC_BUFFER_SIZE);
+    IfFailThrow(m_pEventChannel->GetEventFromLeftSide(pEventInIPCBlock, CorDBIPC_BUFFER_SIZE));
+    GetDAC()->FillDebuggerIPCEvent_DebuggerSide(pEventInIPCBlock, pLocalManagedEvent);
 }
 
 // Return true if this is the RCEvent thread, else false.
@@ -9641,8 +9635,7 @@ void CordbProcess::TargetConsistencyCheck(bool fExpression)
 // Returns whether the event was sent successfully. This is different than event->eventHr.
 //
 HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
-                                         DebuggerIPCEvent* event,
-                                         SIZE_T eventSize)
+                                         DebuggerIPCEvent_DebuggerSide* event)
 {
 
     _ASSERTE(process != NULL);
@@ -9749,11 +9742,6 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
     HRESULT hrEvent = S_OK;
     _ASSERTE(event != NULL);
 
-    // NOTE: the eventSize parameter is only so you can specify an event size that is SMALLER than the process send
-    // buffer size!!
-    if (eventSize > CorDBIPC_BUFFER_SIZE)
-        return E_INVALIDARG;
-
     STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: sending %s to AD 0x%x, proc 0x%x(%d)\n",
          IPCENames::GetName(event->type), VmPtrToCookie(event->vmAppDomain), process->m_id, process->m_id);
 
@@ -9778,7 +9766,10 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
     BOOL fUnrecoverableError = TRUE;
     EX_TRY
     {
-        hr = process->GetEventChannel()->SendEventToLeftSide(event, eventSize);
+        UINT bufSize;
+        BYTE * buf = (BYTE *)_alloca(CorDBIPC_BUFFER_SIZE);
+        process->GetDAC()->FillDebuggerIPCEvent_RuntimeSide(event, buf, &bufSize);
+        hr = process->GetEventChannel()->SendEventToLeftSide(buf, bufSize, event->type);
         fUnrecoverableError = FALSE;
     }
     EX_CATCH_HRESULT(hr);
@@ -9886,7 +9877,9 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
                 // processing it...
                 if (event->replyRequired)
                 {
-                    process->GetEventChannel()->GetReplyFromLeftSide(event, eventSize);
+                    BYTE * buf = (BYTE *)_alloca(CorDBIPC_BUFFER_SIZE);
+                    process->GetEventChannel()->GetReplyFromLeftSide(buf, CorDBIPC_BUFFER_SIZE);
+                    process->GetDAC()->FillDebuggerIPCEvent_DebuggerSide(buf, event);
                     hrEvent = event->hr;
                 }
                 break;
@@ -10082,7 +10075,7 @@ void CordbRCEventThread::FlushQueuedEvents(CordbProcess* process)
 //
 //---------------------------------------------------------------------------------------
 void CordbProcess::HandleRCEvent(
-    DebuggerIPCEvent *         pManagedEvent,
+    DebuggerIPCEvent_DebuggerSide *         pManagedEvent,
     RSLockHolder *             pLockHolder,
     ICorDebugManagedCallback * pCallback)
 {
@@ -10483,7 +10476,7 @@ void CordbRCEventThread::DrainWorkerQueue()
 //---------------------------------------------------------------------------------------
 HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
                                                        CordbAppDomain * pAppDomain,
-                                                       DebuggerIPCEvent * pEvent)
+                                                       DebuggerIPCEvent_DebuggerSide * pEvent)
 {
 
     CORDBRequireProcessStateOKAndSync(pProcess, pAppDomain);
@@ -10740,44 +10733,6 @@ void CordbWin32EventThread::ThreadProc()
 #endif
 }
 
-// Define a holder that calls code:DeleteIPCEventHelper
-using DeleteIPCEventHolder = SpecializedWrapper<DebuggerIPCEvent, DeleteIPCEventHelper>;
-
-//---------------------------------------------------------------------------------------
-//
-// Helper to clean up IPCEvent before deleting it.
-// This must be called after an event is marshalled via code:CordbProcess::MarshalManagedEvent
-//
-// Arguments:
-//     pManagedEvent - managed event to delete.
-//
-// Notes:
-//     This can delete a partially marshalled event.
-//
-void DeleteIPCEventHelper(DebuggerIPCEvent *pManagedEvent)
-{
-    CONTRACTL
-    {
-        // This is backout code that shouldn't need to throw.
-        NOTHROW;
-    }
-    CONTRACTL_END;
-    if (pManagedEvent == NULL)
-    {
-        return;
-    }
-    switch (pManagedEvent->type & DB_IPCE_TYPE_MASK)
-    {
-        case DB_IPCE_FIRST_LOG_MESSAGE:
-            pManagedEvent->FirstLogMessage.szContent.CleanUp();
-            break;
-
-        default:
-            break;
-    }
-    delete [] (BYTE *)pManagedEvent;
-}
-
 //---------------------------------------------------------------------------------------
 // Handle a CLR specific notification event.
 //
@@ -10801,7 +10756,7 @@ void DeleteIPCEventHelper(DebuggerIPCEvent *pManagedEvent)
 //
 //---------------------------------------------------------------------------------------
 void CordbProcess::FilterClrNotification(
-    DebuggerIPCEvent * pManagedEvent,
+    BYTE * pManagedEvent,
     RSLockHolder * pLockHolder,
     ICorDebugManagedCallback * pCallback)
 {
@@ -10826,10 +10781,6 @@ void CordbProcess::FilterClrNotification(
 
     // IF we're synced, then we must be getting a "Reply".
     bool fReply = this->GetSynchronized();
-
-    LOG((LF_CORDB, LL_INFO10000, "CP::FCN - Received event %s; fReply: %d\n",
-         IPCENames::GetName(pManagedEvent->type),
-         fReply));
 
     if (fReply)
     {
@@ -10861,7 +10812,8 @@ void CordbProcess::FilterClrNotification(
     }
     else
     {
-        if (pManagedEvent->type == DB_IPCE_LEFTSIDE_STARTUP)
+        DebuggerIPCEventType eventType = reinterpret_cast<BYTE*>(pManagedEvent)[0];
+        if (eventType == DB_IPCE_LEFTSIDE_STARTUP)
         {
             //
             // Case 4: Left-side startup event. We'll mark that we're attached from oop.
@@ -10873,7 +10825,7 @@ void CordbProcess::FilterClrNotification(
             // @dbgtodo 'attach-bit': we don't want the debugger automatically invading the process.
             IfFailThrow(GetDAC()->MarkDebuggerAttached(TRUE));
         }
-        else if (pManagedEvent->type == DB_IPCE_SYNC_COMPLETE)
+        else if (eventType == DB_IPCE_SYNC_COMPLETE)
         {
             // Since V3 doesn't request syncs, it shouldn't get sync-complete.
             // @dbgtodo sync: this changes when V3 can explicitly request an AsyncBreak.
@@ -10892,7 +10844,9 @@ void CordbProcess::FilterClrNotification(
             //
 
             // Toggles the process-lock if it dispatches callbacks.
-            HandleRCEvent(pManagedEvent, pLockHolder, pCallback);
+            DebuggerIPCEvent_DebuggerSide rightSideEvent;
+            GetDAC()->FillDebuggerIPCEvent_DebuggerSide(pManagedEvent, &rightSideEvent);
+            HandleRCEvent(&rightSideEvent, pLockHolder, pCallback);
 
         } // end Notification
     }
@@ -11422,7 +11376,7 @@ HRESULT CordbProcess::SetEnableCustomNotification(ICorDebugClass * pClass, BOOL 
     CordbProcess * pProcess = GetProcess();
     RSLockHolder lockHolder(pProcess->GetProcessLock());
 
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
     CordbClass *pCordbClass = static_cast<CordbClass *>(pClass);
     _ASSERTE(pCordbClass != NULL);
     CordbAppDomain * pAppDomain = pCordbClass->GetAppDomain();
@@ -11438,7 +11392,7 @@ HRESULT CordbProcess::SetEnableCustomNotification(ICorDebugClass * pClass, BOOL 
     event.CustomNotificationData.Enabled = fEnable;
 
     lockHolder.Release();
-    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event);
     lockHolder.Acquire();
 
     _ASSERTE(event.type == DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT);
@@ -11535,14 +11489,12 @@ HRESULT CordbProcess::Filter(
             // 2. Notifications may come on unmanaged threads if they're coming from MDAs or CLR internal events
             //    fired before the thread is created.
             //
-            BYTE * pManagedEventBuffer = new BYTE[CorDBIPC_BUFFER_SIZE];
-            DeleteIPCEventHolder pManagedEvent(reinterpret_cast<DebuggerIPCEvent *>(pManagedEventBuffer));
-
-            bool fOwner = CopyManagedEventFromTarget(pRecord, pManagedEvent);
+            BYTE * pManagedEventBuffer = (BYTE *)_alloca(CorDBIPC_BUFFER_SIZE);
+            bool fOwner = CopyManagedEventFromTarget(pRecord, pManagedEventBuffer);
             if (fOwner)
             {
                 // This toggles the lock if it dispatches callbacks
-                FilterClrNotification(pManagedEvent, GET_PUBLIC_LOCK_HOLDER(), pCallback);
+                FilterClrNotification(pManagedEventBuffer, GET_PUBLIC_LOCK_HOLDER(), pCallback);
 
                 // Cancel any notification events from target. These are just supposed to notify ICD and not
                 // actually be real exceptions in the target.
@@ -11696,6 +11648,13 @@ void CordbWin32EventThread::Win32EventLoop()
                 // Managed-only, never win32 stopped, so always check for an event.
                 dwWaitTimeout = 0;
                 fEventAvailable = m_pNativePipeline->WaitForDebugEvent(&event, dwWFDETimeout, m_pProcess);
+                if (fEventAvailable)
+                {
+                    DebuggerIPCEvent_DebuggerSide rightSideEvent;
+                    process->GetDAC()->FillDebuggerIPCEvent_DebuggerSide((BYTE*)event.u.Exception.ExceptionRecord.ExceptionInformation[2], &rightSideEvent);
+                    event.dwProcessId = rightSideEvent.processId;
+                    event.dwThreadId = rightSideEvent.threadId;
+                }
 #else
                 // Wait for a Win32 debug event from any processes that we may be attached to as the Win32 debugger.
                 const bool fIsWin32Stopped = (m_pProcess->m_state & CordbProcess::PS_WIN32_STOPPED) != 0;
@@ -11712,6 +11671,13 @@ void CordbWin32EventThread::Win32EventLoop()
                 {
                     dwWaitTimeout = 0;
                     fEventAvailable = m_pNativePipeline->WaitForDebugEvent(&event, dwWFDETimeout, m_pProcess);
+                    if (fEventAvailable)
+                    {
+                        DebuggerIPCEvent_DebuggerSide rightSideEvent;
+                        process->GetDAC()->FillDebuggerIPCEvent_DebuggerSide((BYTE*)event.u.Exception.ExceptionRecord.ExceptionInformation[2], &rightSideEvent);
+                        event.dwProcessId = rightSideEvent.processId;
+                        event.dwThreadId = rightSideEvent.threadId;
+                    }
                 }
                 else
                 {
@@ -14988,7 +14954,7 @@ TargetBuffer CordbProcess::GetRemoteBuffer(ULONG cbBuffer)
     INTERNAL_SYNC_API_ENTRY(this); //
 
     // Create and initialize the event as synchronous
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
     InitIPCEvent(&event,
                  DB_IPCE_GET_BUFFER,
                  true,
@@ -14998,7 +14964,7 @@ TargetBuffer CordbProcess::GetRemoteBuffer(ULONG cbBuffer)
     event.GetBuffer.bufSize = cbBuffer;
 
     // Make the request, which is synchronous
-    HRESULT hr = SendIPCEvent(&event, sizeof(event));
+    HRESULT hr = SendIPCEvent(&event);
     IfFailThrow(hr);
     _ASSERTE(event.type == DB_IPCE_GET_BUFFER_RESULT);
 
@@ -15018,7 +14984,7 @@ HRESULT CordbProcess::ReleaseRemoteBuffer(void **ppBuffer)
     _ASSERTE(m_pShim != NULL);
 
     // Create and initialize the event as synchronous
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
     InitIPCEvent(&event,
                  DB_IPCE_RELEASE_BUFFER,
                  true,
@@ -15028,7 +14994,7 @@ HRESULT CordbProcess::ReleaseRemoteBuffer(void **ppBuffer)
     event.ReleaseBuffer.pBuffer = (*ppBuffer);
 
     // Make the request, which is synchronous
-    HRESULT hr = SendIPCEvent(&event, sizeof(event));
+    HRESULT hr = SendIPCEvent(&event);
     TESTANDRETURNHR(hr);
 
     (*ppBuffer) = NULL;
@@ -15419,7 +15385,7 @@ void CordbProcess::HandleControlCTrapResult(HRESULT result)
 {
     RSLockHolder ch(GetStopGoLock());
 
-    DebuggerIPCEvent eventControlCResult;
+    DebuggerIPCEvent_DebuggerSide eventControlCResult;
 
     InitIPCEvent(&eventControlCResult,
         DB_IPCE_CONTROL_C_EVENT_RESULT,
@@ -15430,7 +15396,7 @@ void CordbProcess::HandleControlCTrapResult(HRESULT result)
     eventControlCResult.hr = result;
 
     // Send the reply to the LS.
-    SendIPCEvent(&eventControlCResult, sizeof(eventControlCResult));
+    SendIPCEvent(&eventControlCResult);
 }
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT

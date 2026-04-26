@@ -147,7 +147,7 @@ public:
     //    TRUE if an acknowledgement is required (see the comment for this class for more information)
     //
 
-    virtual BOOL NeedToWaitForAck(DebuggerIPCEvent * pEvent) = 0;
+    virtual BOOL NeedToWaitForAck(DebuggerIPCEvent_DebuggerSide * pEvent) = 0;
 
     //
     // Get a handle to wait on after sending an IPC event to the LS.  The caller should call NeedToWaitForAck()
@@ -186,7 +186,7 @@ public:
     //    This function returns a failure HR for recoverable errors.  It throws on unrecoverable errors.
     //
 
-    virtual HRESULT SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T eventSize) = 0;
+    virtual HRESULT SendEventToLeftSide(BYTE * pEvent, SIZE_T eventSize, DebuggerIPCEventType eventType) = 0;
 
     //
     // Get the reply from the LS for a previously sent IPC event.  The caller must have waited on
@@ -200,7 +200,7 @@ public:
     //    S_OK if successful
     //
 
-    virtual HRESULT GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent, SIZE_T eventSize) = 0;
+    virtual HRESULT GetReplyFromLeftSide(BYTE * pReplyEvent, SIZE_T eventSize) = 0;
 
     //
     // This function and GetEventFromLeftSide() are for the second category of IPC events described in the
@@ -220,7 +220,7 @@ public:
     //    synchronization.
     //
 
-    virtual HRESULT SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromLeftSide) = 0;
+    virtual HRESULT SaveEventFromLeftSide(BYTE * pEventFromLeftSide) = 0;
 
     //
     // See the function header for SaveEventFromLeftSide.
@@ -236,7 +236,7 @@ public:
     //    synchronization.
     //
 
-    virtual HRESULT GetEventFromLeftSide(DebuggerIPCEvent * pLocalManagedEvent) = 0;
+    virtual HRESULT GetEventFromLeftSide(BYTE * pLocalManagedEvent, SIZE_T eventSize) = 0;
 };
 
 //-----------------------------------------------------------------------------

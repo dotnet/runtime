@@ -92,7 +92,7 @@ CORDB_ADDRESS IsEventDebuggerNotification(
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
                                       CORDB_ADDRESS      pClrBaseAddress,
-                                      DebuggerIPCEvent * pIPCEvent)
+                                      BYTE * pIPCEvent)
 {
     pDebugEvent->dwDebugEventCode = EXCEPTION_DEBUG_EVENT;
 

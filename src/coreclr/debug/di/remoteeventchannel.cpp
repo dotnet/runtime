@@ -49,7 +49,7 @@ public:
 
 
     // Check whether we need to wait for an acknowledgement from the LS after sending an IPC event.
-    virtual BOOL NeedToWaitForAck(DebuggerIPCEvent * pEvent);
+    virtual BOOL NeedToWaitForAck(DebuggerIPCEvent_DebuggerSide * pEvent);
 
     // Get a handle to wait on after sending an IPC event to the LS.  The caller should call NeedToWaitForAck()
     virtual HANDLE GetRightSideEventAckHandle();
@@ -60,20 +60,20 @@ public:
 
 
     // Send an IPC event to the LS.
-    virtual HRESULT SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T eventSize);
+    virtual HRESULT SendEventToLeftSide(BYTE * pEvent, SIZE_T eventSize, DebuggerIPCEventType eventType);
 
     // Get the reply from the LS for a previously sent IPC event.
-    virtual HRESULT GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent, SIZE_T eventSize);
+    virtual HRESULT GetReplyFromLeftSide(BYTE * pReplyEvent, SIZE_T eventSize);
 
 
 
     // Save an IPC event from the LS.
     // Used for transferring an IPC event from the native pipeline to the IPC event channel.
-    virtual HRESULT SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromLeftSide);
+    virtual HRESULT SaveEventFromLeftSide(BYTE * pEventFromLeftSide);
 
     // Get a saved IPC event from the LS.
     // Used for transferring an IPC event from the native pipeline to the IPC event channel.
-    virtual HRESULT GetEventFromLeftSide(DebuggerIPCEvent * pLocalManagedEvent);
+    virtual HRESULT GetEventFromLeftSide(BYTE * pLocalManagedEvent, SIZE_T eventSize);
 
 private:
     DebuggerIPCControlBlock * m_pDCBBuffer;     // local buffer for the DCB on the RS
@@ -246,7 +246,7 @@ DebuggerIPCControlBlock * RemoteEventChannel::GetDCB()
 // Check whether we need to wait for an acknowledgement from the LS after sending an IPC event.
 //
 // virtual
-BOOL RemoteEventChannel::NeedToWaitForAck(DebuggerIPCEvent * pEvent)
+BOOL RemoteEventChannel::NeedToWaitForAck(DebuggerIPCEvent_DebuggerSide * pEvent)
 {
     // There are three cases to consider when sending an event over the transport:
     //
@@ -284,18 +284,18 @@ void RemoteEventChannel::ClearEventForLeftSide()
 // Send an IPC event to the LS.
 //
 // virtual
-HRESULT RemoteEventChannel::SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T eventSize)
+HRESULT RemoteEventChannel::SendEventToLeftSide(BYTE * pEvent, SIZE_T eventSize, DebuggerIPCEventType eventType)
 {
     _ASSERTE(eventSize <= CorDBIPC_BUFFER_SIZE);
 
     // Delegate to the transport.  The event size is ignored.
-    return m_pTransport->SendEvent(pEvent);
+    return m_pTransport->SendEvent(pEvent, (DWORD)eventSize, eventType);
 }
 
 // Get the reply from the LS for a previously sent IPC event.
 //
 // virtual
-HRESULT RemoteEventChannel::GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent, SIZE_T eventSize)
+HRESULT RemoteEventChannel::GetReplyFromLeftSide(BYTE * pReplyEvent, SIZE_T eventSize)
 {
     // Delegate to the transport.
     m_pTransport->GetNextEvent(pReplyEvent, (DWORD)eventSize);
@@ -306,7 +306,7 @@ HRESULT RemoteEventChannel::GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent,
 // Used for transferring an IPC event from the native pipeline to the IPC event channel.
 //
 // virtual
-HRESULT RemoteEventChannel::SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromLeftSide)
+HRESULT RemoteEventChannel::SaveEventFromLeftSide(BYTE * pEventFromLeftSide)
 {
     if (m_fLeftSideEventAvailable)
     {
@@ -315,7 +315,7 @@ HRESULT RemoteEventChannel::SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromL
     }
     else
     {
-        memcpy(m_rgbLeftSideEventBuffer, reinterpret_cast<BYTE *>(pEventFromLeftSide), CorDBIPC_BUFFER_SIZE);
+        memcpy(m_rgbLeftSideEventBuffer, pEventFromLeftSide, CorDBIPC_BUFFER_SIZE);
         m_fLeftSideEventAvailable = TRUE;
         return S_OK;
     }
@@ -325,11 +325,11 @@ HRESULT RemoteEventChannel::SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromL
 // Used for transferring an IPC event from the native pipeline to the IPC event channel.
 //
 // virtual
-HRESULT RemoteEventChannel::GetEventFromLeftSide(DebuggerIPCEvent * pLocalManagedEvent)
+HRESULT RemoteEventChannel::GetEventFromLeftSide(BYTE * pLocalManagedEvent, SIZE_T eventSize)
 {
     if (m_fLeftSideEventAvailable)
     {
-        memcpy(reinterpret_cast<BYTE *>(pLocalManagedEvent), m_rgbLeftSideEventBuffer, CorDBIPC_BUFFER_SIZE);
+        memcpy(pLocalManagedEvent, m_rgbLeftSideEventBuffer, eventSize);
         m_fLeftSideEventAvailable = FALSE;
         return S_OK;
     }

@@ -450,4 +450,7 @@ interface IDacDbiInterface : IUnknown
 
     // Generic Arg Token
     HRESULT GetGenericArgTokenIndex([in] VMPTR_MethodDesc vmMethod, [out] UINT32 * pTokenIndex);
+
+    void FillDebuggerIPCEvent_DebuggerSide([in] const BYTE * pRawEvent, [out] DebuggerIPCEvent_DebuggerSide * pEvent);
+    void FillDebuggerIPCEvent_RuntimeSide([in] const DebuggerIPCEvent_DebuggerSide * pEvent, [out] BYTE * pRawEventOut, [out] UINT * pBufSize);
 };

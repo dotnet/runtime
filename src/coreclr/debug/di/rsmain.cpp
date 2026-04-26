@@ -1212,9 +1212,6 @@ HRESULT Cordb::Initialize(void)
         LOG((LF_CORDB, LL_EVERYTHING, "Memory: CordbBase object allocated: this=%p, count=%d, RootObject\n", this, s_TotalObjectCount));
         LOG((LF_CORDB, LL_INFO10, "Initializing ICorDebug...\n"));
 
-        // Ensure someone hasn't messed up the IPC buffer size
-        _ASSERTE(sizeof(DebuggerIPCEvent) <= CorDBIPC_BUFFER_SIZE);
-
         //
         // Init things that the Cordb will need to operate
         //
@@ -1376,15 +1373,14 @@ CordbSafeHashTable<CordbProcess> *Cordb::GetProcessList()
 
 
 HRESULT Cordb::SendIPCEvent(CordbProcess * pProcess,
-                            DebuggerIPCEvent * pEvent,
-                            SIZE_T eventSize)
+                            DebuggerIPCEvent_DebuggerSide * pEvent)
 {
     HRESULT hr = S_OK;
 
     LOG((LF_CORDB, LL_EVERYTHING, "SendIPCEvent in Cordb called\n"));
     EX_TRY
     {
-        hr = m_rcEventThread->SendIPCEvent(pProcess, pEvent, eventSize);
+        hr = m_rcEventThread->SendIPCEvent(pProcess, pEvent);
     }
     EX_CATCH_HRESULT(hr)
     return hr;
@@ -1399,7 +1395,7 @@ void Cordb::ProcessStateChanged(void)
 
 HRESULT Cordb::WaitForIPCEventFromProcess(CordbProcess* process,
                                           CordbAppDomain *pAppDomain,
-                                          DebuggerIPCEvent* event)
+                                          DebuggerIPCEvent_DebuggerSide* event)
 {
     return m_rcEventThread->WaitForIPCEventFromProcess(process,
                                                        pAppDomain,

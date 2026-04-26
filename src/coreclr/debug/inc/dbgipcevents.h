@@ -615,210 +615,6 @@ DEFINE_LSPTR_TYPE(class TypeHandleDummyPtr, LSPTR_TYPEHANDLE); // TypeHandle in 
 //-----------------------------------------------------------------------------
 DEFINE_RSPTR_TYPE(CordbEval,               RSPTR_CORDBEVAL);
 
-
-//---------------------------------------------------------------------------------------
-// VMPTR_Base is the base type for an abstraction over pointers into the VM so
-// that DBI can treat them as opaque handles. Classes will derive from it to
-// provide type-safe Target pointers, which ICD will view as opaque handles.
-//
-// Lifetimes:
-//   VMPTR_ objects survive across flushing the DAC cache. Therefore, the underlying
-//   storage must be a target-pointer (and not a marshalled host pointer).
-//   The RS must ensure they're still in sync with the LS (eg, by
-//   tracking unload events).
-//
-//
-// Assumptions:
-//    These handles are TADDR pointers and must not require any cleanup from DAC/DBI.
-//    For direct untyped pointers into the VM, use CORDB_ADDRESS.
-//
-// Notes:
-//  1. This helps enforce that DBI goes through the primitives interface
-//     for all access (and that it doesn't accidentally start calling
-//     dac-ized methods on the objects)
-//  2. This isolates DBI from VM headers.
-//  3. This isolates DBI from the dac implementation (of DAC_Ptr)
-//  4. This is distinct from LSPTR because LSPTRs are truly opaque handles, whereas VMPtrs
-//     move across VM, DAC, and DBI, exposing proper functionality in each component.
-//  5. VMPTRs are blittable because they are Target Addresses which act as opaque
-//     handles outside of the Target / Dac-marshaller.
-//
-//---------------------------------------------------------------------------------------
-
-
-template <typename TTargetPtr, typename TDacPtr>
-class MSLAYOUT VMPTR_Base
-{
-    // Underlying pointer into Target address space.
-    // Target pointers are blittable.
-    // - In Target: can be used as normal local pointers.
-    // - In DAC: must be marshalled to a host-pointer and then they can be used via DAC
-    // - In RS: opaque handles.
-private:
-    CORDB_ADDRESS m_addr;
-
-public:
-    typedef VMPTR_Base<TTargetPtr,TDacPtr> VMPTR_This;
-
-    // For DBI, VMPTRs are opaque handles.
-    // But the DAC side is allowed to inspect the handles to get at the raw pointer.
-#if defined(ALLOW_VMPTR_ACCESS)
-    //
-    // Case 1: Using in DAcDbi implementation
-    //
-
-    // DAC accessor
-    TDacPtr GetDacPtr() const
-    {
-        SUPPORTS_DAC;
-        return TDacPtr((TADDR)m_addr);
-    }
-
-
-    // This will initialize the handle to a given target-pointer.
-    // We choose TADDR to make it explicit that it's a target pointer and avoid the risk
-    // of it accidentally getting marshalled to a host pointer.
-    void SetDacTargetPtr(TADDR addr)
-    {
-        SUPPORTS_DAC;
-        m_addr = (CORDB_ADDRESS)addr;
-    }
-
-    void SetHostPtr(const TTargetPtr * pObject)
-    {
-        SUPPORTS_DAC;
-        m_addr = PTR_TO_CORDB_ADDRESS(pObject);
-    }
-
-
-#elif !defined(RIGHT_SIDE_COMPILE)
-    //
-    // Case 2: Used in Left-side. Can get/set from local pointers.
-    //
-
-    // This will set initialize from a Target pointer. Since this is happening in the
-    // Left-side (Target), the pointer is local.
-    // This is commonly used by the Left-side to create a VMPTR_ for a notification event.
-    void SetRawPtr(TTargetPtr * ptr)
-    {
-        m_addr = PTR_TO_CORDB_ADDRESS(ptr);
-    }
-
-    // This will get the raw underlying target pointer.
-    // This can be used by inproc Left-side code to unwrap a VMPTR (Eg, for a func-eval
-    // hijack or in-proc worker threads)
-    TTargetPtr * GetRawPtr()
-    {
-        return reinterpret_cast<TTargetPtr*>((TADDR)m_addr);
-    }
-
-    // Convenience for converting TTargetPtr --> VMPTR
-    static VMPTR_This MakePtr(TTargetPtr * ptr)
-    {
-        VMPTR_This t;
-        t.SetRawPtr(ptr);
-        return t;
-    }
-
-
-#else
-    //
-    // Case 3: Used in RS. Opaque handles only.
-    //
-#endif
-
-
-#ifndef DACCESS_COMPILE
-    // For compatibility, these can be converted to LSPTRs on the RS or LS (case 2 and 3).  We don't allow
-    // this in the DAC case because it's a cast between address spaces which we're trying to eliminate
-    // in the DAC code.
-    // @dbgtodo  inspection: LSPTRs will go away entirely once we've moved completely over to DAC
-    LsPointer<TTargetPtr> ToLsPtr()
-    {
-        return LsPointer<TTargetPtr>::MakePtr( reinterpret_cast<TTargetPtr *>((TADDR)m_addr));
-    }
-#endif
-
-    //
-    // Operators to emulate Pointer semantics.
-    //
-    bool IsNull() { SUPPORTS_DAC; return m_addr == (CORDB_ADDRESS)0; }
-
-    static VMPTR_This NullPtr()
-    {
-        SUPPORTS_DAC;
-
-        VMPTR_This dummy;
-        dummy.m_addr = (CORDB_ADDRESS)NULL;
-        return dummy;
-    }
-
-    bool operator!= (VMPTR_This vmOther) const { SUPPORTS_DAC; return this->m_addr != vmOther.m_addr; }
-    bool operator== (VMPTR_This vmOther) const { SUPPORTS_DAC; return this->m_addr == vmOther.m_addr; }
-};
-
-#if defined(ALLOW_VMPTR_ACCESS)
-// Helper macro to define a VMPTR.
-// This is used in the DAC case, so this definition connects the pointers up to their DAC values.
-#define DEFINE_VMPTR(ls_type, dac_ptr_type, ptr_name) \
-    ls_type;  \
-    typedef VMPTR_Base<ls_type, dac_ptr_type> ptr_name;
-
-#else
-// Helper macro to define a VMPTR.
-// This is used in the Right-side and Left-side (but not DAC) case.
-// This definition explicitly ignores dac_ptr_type to prevent accidental DAC usage.
-#define DEFINE_VMPTR(ls_type, dac_ptr_type, ptr_name) \
-    ls_type;  \
-    typedef VMPTR_Base<ls_type, void> ptr_name;
-
-#endif
-
-// Declare VMPTRs.
-// The naming convention for instantiating a VMPTR is a 'vm' prefix.
-//
-//           VM definition,         DAC definition,     pretty name for VMPTR
-DEFINE_VMPTR(class AppDomain,       PTR_AppDomain,      VMPTR_AppDomain);
-
-// Need to be careful not to annoy the compiler here since DT_CONTEXT is a typedef, not a struct.
-// DEFINE_VMPTR(struct _CONTEXT,       PTR_CONTEXT,        VMPTR_CONTEXT);
-#if defined(ALLOW_VMPTR_ACCESS)
-typedef VMPTR_Base<DT_CONTEXT, PTR_CONTEXT> VMPTR_CONTEXT;
-#else
-typedef VMPTR_Base<DT_CONTEXT, void > VMPTR_CONTEXT;
-#endif
-
-DEFINE_VMPTR(class Module,          PTR_Module,         VMPTR_Module);
-
-DEFINE_VMPTR(class Assembly,        PTR_Assembly,       VMPTR_Assembly);
-
-DEFINE_VMPTR(class PEAssembly,      PTR_PEAssembly,     VMPTR_PEAssembly);
-DEFINE_VMPTR(class MethodDesc,      PTR_MethodDesc,     VMPTR_MethodDesc);
-DEFINE_VMPTR(class FieldDesc,       PTR_FieldDesc,      VMPTR_FieldDesc);
-
-// ObjectHandle is a safe way to represent an object into the GC heap. It gets updated
-// when a GC occurs.
-DEFINE_VMPTR(struct OBJECTHANDLE__, TADDR,              VMPTR_OBJECTHANDLE);
-
-DEFINE_VMPTR(class TypeHandle,      PTR_TypeHandle,     VMPTR_TypeHandle);
-
-// A VMPTR_Thread represents a thread that has entered the runtime at some point.
-// It may or may not have executed managed code yet; and it may or may not have managed code
-// on its callstack.
-DEFINE_VMPTR(class Thread,          PTR_Thread,         VMPTR_Thread);
-
-DEFINE_VMPTR(class Object,          PTR_Object,         VMPTR_Object);
-
-DEFINE_VMPTR(class CrstBase,        PTR_Crst,           VMPTR_Crst);
-DEFINE_VMPTR(class SimpleRWLock,    PTR_SimpleRWLock,   VMPTR_SimpleRWLock);
-DEFINE_VMPTR(class SimpleRWLock,    PTR_SimpleRWLock,   VMPTR_RWLock);
-DEFINE_VMPTR(struct ReJitInfo,       PTR_ReJitInfo,      VMPTR_ReJitInfo);
-DEFINE_VMPTR(struct SharedReJitInfo, PTR_SharedReJitInfo, VMPTR_SharedReJitInfo);
-#ifdef FEATURE_CODE_VERSIONING
-DEFINE_VMPTR(class NativeCodeVersionNode, PTR_NativeCodeVersionNode, VMPTR_NativeCodeVersionNode);
-DEFINE_VMPTR(class ILCodeVersionNode, PTR_ILCodeVersionNode, VMPTR_ILCodeVersionNode);
-#endif // FEATURE_CODE_VERSIONING
-
 typedef CORDB_ADDRESS GENERICS_TYPE_TOKEN;
 
 
@@ -1901,7 +1697,6 @@ static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #error Target registers are not defined for this platform
 #endif
 
-
 //
 // Event structure that is passed between the Runtime Controller and the
 // Debugger Interface. Some types of events are a fixed size and have
@@ -1909,9 +1704,9 @@ static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 // more specialized data structures that are attached to the end of this
 // structure.
 //
-struct MSLAYOUT DebuggerIPCEvent
+struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
 {
-    DebuggerIPCEvent*       next;
+    DebuggerIPCEvent_RuntimeSide*       next;
     DebuggerIPCEventType    type;
     DWORD             processId;
     DWORD             threadId;
@@ -2355,15 +2150,14 @@ struct MSLAYOUT DebuggerIPCEvent
     };
 };
 
-
 // When using a network transport rather than shared memory buffers CorDBIPC_BUFFER_SIZE is the upper bound
-// for a single DebuggerIPCEvent structure. This now relates to the maximal size of a network message and is
+// for a single DebuggerIPCEvent_DebuggerSide structure. This now relates to the maximal size of a network message and is
 // orthogonal to the host's page size. Round the buffer size up to a multiple of 8 since MSVC seems more
 // aggressive in this regard than gcc.
-#define CorDBIPC_TRANSPORT_BUFFER_SIZE (((sizeof(DebuggerIPCEvent) + 7) / 8) * 8)
+#define CorDBIPC_TRANSPORT_BUFFER_SIZE (((sizeof(DebuggerIPCEvent_RuntimeSide) + 7) / 8) * 8)
 
-// A DebuggerIPCEvent must fit in the send & receive buffers, which are CorDBIPC_BUFFER_SIZE bytes.
-static_assert(sizeof(DebuggerIPCEvent) <= CorDBIPC_BUFFER_SIZE);
+// A DebuggerIPCEvent_RuntimeSide must fit in the send & receive buffers, which are CorDBIPC_BUFFER_SIZE bytes.
+static_assert(sizeof(DebuggerIPCEvent_RuntimeSide) <= CorDBIPC_BUFFER_SIZE);
 static_assert(CorDBIPC_TRANSPORT_BUFFER_SIZE <= CorDBIPC_BUFFER_SIZE);
 
 // 2*sizeof(WCHAR) for the two string terminating characters in the FirstLogMessage

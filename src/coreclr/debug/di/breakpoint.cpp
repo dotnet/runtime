@@ -191,7 +191,7 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
     pProcess->ClearPatchTable(); // if we add something, then the right side
                                 // view of the patch table is no longer valid
 
-    DebuggerIPCEvent * pEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
+    DebuggerIPCEvent_DebuggerSide * pEvent = (DebuggerIPCEvent_DebuggerSide *) _alloca(CorDBIPC_BUFFER_SIZE);
 
     CordbAppDomain * pAppDomain = GetAppDomain();
     _ASSERTE (pAppDomain != NULL);
@@ -224,7 +224,7 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
         // until the breakpoint is really added and the reply event is
         // copied over the event we sent.
         lockHolder.Release();
-        hr = pProcess->SendIPCEvent(pEvent, CorDBIPC_BUFFER_SIZE);
+        hr = pProcess->SendIPCEvent(pEvent);
         lockHolder.Acquire();
 
         hr = WORST_HR(hr, pEvent->hr);
@@ -258,7 +258,7 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
             pEvent->BreakpointData.breakpointToken = GetLsPtrBP();
 
             lockHolder.Release();
-            hr = pProcess->SendIPCEvent(pEvent, CorDBIPC_BUFFER_SIZE);
+            hr = pProcess->SendIPCEvent(pEvent);
             lockHolder.Acquire();
 
             hr = WORST_HR(hr, pEvent->hr);
@@ -376,7 +376,7 @@ HRESULT CordbStepper::Deactivate()
     CordbAppDomain *pAppDomain = GetAppDomain();
     _ASSERTE (pAppDomain != NULL);
 
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
     process->InitIPCEvent(&event,
                           DB_IPCE_STEP_CANCEL,
                           false,
@@ -385,7 +385,7 @@ HRESULT CordbStepper::Deactivate()
     event.StepData.stepperToken = GetLsPtrStepper();
 
     process->Unlock();
-    hr = process->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
+    hr = process->SendIPCEvent(&event);
     hr = WORST_HR(hr, event.hr);
     process->Lock();
 
@@ -510,7 +510,7 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
     // Build step event
     //
 
-    DebuggerIPCEvent * pEvent = reinterpret_cast<DebuggerIPCEvent *>(_alloca(CorDBIPC_BUFFER_SIZE));
+    DebuggerIPCEvent_DebuggerSide * pEvent = reinterpret_cast<DebuggerIPCEvent_DebuggerSide *>(_alloca(CorDBIPC_BUFFER_SIZE));
 
     pProcess->InitIPCEvent(pEvent, DB_IPCE_STEP, true, GetAppDomain()->GetADToken());
 
@@ -579,7 +579,7 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
             // Send step event (two-way event here...)
             //
 
-            hr = pProcess->SendIPCEvent(pEvent, CorDBIPC_BUFFER_SIZE);
+            hr = pProcess->SendIPCEvent(pEvent);
 
             hr = WORST_HR(hr, pEvent->hr);
 
@@ -595,7 +595,7 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
         // Send step event without any ranges (two-way event here...)
         //
 
-        hr = pProcess->SendIPCEvent(pEvent, CorDBIPC_BUFFER_SIZE);
+        hr = pProcess->SendIPCEvent(pEvent);
 
         hr = WORST_HR(hr, pEvent->hr);
 
@@ -677,7 +677,7 @@ HRESULT CordbStepper::StepOut()
     // Build step event
     //
 
-    DebuggerIPCEvent * pEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
+    DebuggerIPCEvent_DebuggerSide * pEvent = (DebuggerIPCEvent_DebuggerSide *) _alloca(CorDBIPC_BUFFER_SIZE);
 
     pProcess->InitIPCEvent(pEvent, DB_IPCE_STEP_OUT, true, GetAppDomain()->GetADToken());
 
@@ -698,7 +698,7 @@ HRESULT CordbStepper::StepOut()
     pEvent->StepData.totalRangeCount = 0;
 
     // Note: two-way event here...
-    hr = pProcess->SendIPCEvent(pEvent, CorDBIPC_BUFFER_SIZE);
+    hr = pProcess->SendIPCEvent(pEvent);
 
     hr = WORST_HR(hr, pEvent->hr);
 

@@ -59,7 +59,6 @@ public:
     {
         m_fRunning   = FALSE;
         m_hProcess   = NULL;
-        m_pIPCEvent  = reinterpret_cast<DebuggerIPCEvent * >(m_rgbIPCEventBuffer);
         m_pProxy     = NULL;
         m_pTransport = NULL;
         _ASSERTE(!IsTransportRunning());
@@ -156,7 +155,6 @@ private:
 
     // Any buffer for storing a DebuggerIPCEvent must be at least CorDBIPC_BUFFER_SIZE big.  For simplicity
     // sake I have added an extra field member which points to the buffer.
-    DebuggerIPCEvent *    m_pIPCEvent;
     BYTE                  m_rgbIPCEventBuffer[CorDBIPC_BUFFER_SIZE];
     DebugTicket           m_ticket;
 };
@@ -355,11 +353,7 @@ BOOL DbgTransportPipeline::WaitForDebugEvent(DEBUG_EVENT * pEvent, DWORD dwTimeo
     {
         // The Mac debugging transport actually transmits IPC events and not debug events.
         // We need to convert the IPC event to a debug event and pass it back to the caller.
-        m_pTransport->GetNextEvent(m_pIPCEvent, CorDBIPC_BUFFER_SIZE);
-
-        pEvent->dwProcessId = m_pIPCEvent->processId;
-        pEvent->dwThreadId = m_pIPCEvent->threadId;
-        _ASSERTE(m_dwProcessId == m_pIPCEvent->processId);
+        m_pTransport->GetNextEvent(m_rgbIPCEventBuffer, CorDBIPC_BUFFER_SIZE);
 
         // The Windows implementation stores the target address of the IPC event in the debug event.
         // We can do that for Mac debugging, but that would require the caller to do another cross-machine
@@ -367,7 +361,7 @@ BOOL DbgTransportPipeline::WaitForDebugEvent(DEBUG_EVENT * pEvent, DWORD dwTimeo
         //
         // @dbgtodo  Mac - We are using -1 as a dummy base address right now.
         // Currently Mac remote debugging doesn't really support multi-instance.
-        InitEventForDebuggerNotification(pEvent, PTR_TO_CORDB_ADDRESS(reinterpret_cast<LPVOID>(-1)), m_pIPCEvent);
+        InitEventForDebuggerNotification(pEvent, PTR_TO_CORDB_ADDRESS(reinterpret_cast<LPVOID>(-1)), m_rgbIPCEventBuffer);
 
         return TRUE;
     }

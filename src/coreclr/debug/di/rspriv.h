@@ -57,6 +57,459 @@ struct MachineInfo;
 #define CRASH(x)  _ASSERTE(!(x))
 #define ASSERT(x) _ASSERTE(x)
 
+//
+// Event structure that is passed between the Runtime Controller and the
+// Debugger Interface. Some types of events are a fixed size and have
+// entries in the main union, while others are variable length and have
+// more specialized data structures that are attached to the end of this
+// structure.
+//
+struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
+{
+    DebuggerIPCEvent_DebuggerSide*       next;
+    DebuggerIPCEventType    type;
+    DWORD             processId;
+    DWORD             threadId;
+    VMPTR_AppDomain   vmAppDomain;
+    VMPTR_Thread      vmThread;
+
+    HRESULT           hr;
+    bool              replyRequired;
+    bool              asyncSend;
+
+    union MSLAYOUT
+    {
+        struct MSLAYOUT
+        {
+            // Pointer to a BOOL in the target.
+            CORDB_ADDRESS pfBeingDebugged;
+        } LeftSideStartupData;
+
+        struct MSLAYOUT
+        {
+            // Module whose metadata is being updated
+            // This tells the RS that the metadata for that module has become invalid.
+            VMPTR_Assembly vmAssembly;
+
+        } MetadataUpdateData;
+
+        struct MSLAYOUT
+        {
+            // Handle to CLR's internal appdomain object.
+            VMPTR_AppDomain vmAppDomain;
+        } AppDomainData;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Assembly vmAssembly;
+        } AssemblyData;
+
+        // Debug event that a module has been loaded
+        struct MSLAYOUT
+        {
+            // Module that was just loaded.
+            VMPTR_Assembly vmAssembly;
+        }LoadModuleData;
+
+
+        struct MSLAYOUT
+        {
+            VMPTR_Assembly vmAssembly;
+            LSPTR_ASSEMBLY debuggerAssemblyToken;
+        } UnloadModuleData;
+
+
+        // The given module's pdb has been updated.
+        // Queury PDB from OOP
+        struct MSLAYOUT
+        {
+            VMPTR_Assembly vmAssembly;
+        } UpdateModuleSymsData;
+
+        DebuggerMDANotification MDANotification;
+
+        struct MSLAYOUT
+        {
+            LSPTR_BREAKPOINT breakpointToken;
+            mdMethodDef  funcMetadataToken;
+            VMPTR_Assembly vmAssembly;
+            bool         isIL;
+            SIZE_T       offset;
+            SIZE_T       encVersion;
+            LSPTR_METHODDESC  nativeCodeMethodDescToken; // points to the MethodDesc if !isIL
+            CORDB_ADDRESS codeStartAddress;
+        } BreakpointData;
+
+        struct MSLAYOUT
+        {
+            mdMethodDef funcMetadataToken;
+            VMPTR_Module pModule;
+        } DisableOptData;
+
+        struct MSLAYOUT
+        {
+            BOOL enableEvents;
+            VMPTR_Object vmObj;
+        } ForceCatchHandlerFoundData;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Module vmModule;
+            mdTypeDef    classMetadataToken;
+            BOOL Enabled;
+        } CustomNotificationData;
+
+        struct MSLAYOUT
+        {
+            LSPTR_BREAKPOINT breakpointToken;
+        } BreakpointSetErrorData;
+
+        struct MSLAYOUT
+        {
+#ifdef FEATURE_DATABREAKPOINT
+            CONTEXT context;
+#else
+            int dummy;
+#endif
+        } DataBreakpointData;
+
+        struct MSLAYOUT
+        {
+            LSPTR_STEPPER        stepperToken;
+            VMPTR_Thread         vmThreadToken;
+            FramePointer         frameToken;
+            bool                 stepIn;
+            bool                 rangeIL;
+            bool                 IsJMCStop;
+            unsigned int         totalRangeCount;
+            CorDebugStepReason   reason;
+            CorDebugUnmappedStop rgfMappingStop;
+            CorDebugIntercept    rgfInterceptStop;
+            unsigned int         rangeCount;
+            COR_DEBUG_STEP_RANGE range; //note that this is an array
+        } StepData;
+
+        struct MSLAYOUT
+        {
+            // An unvalidated GC-handle
+            VMPTR_OBJECTHANDLE GCHandle;
+        } GetGCHandleInfo;
+
+        struct MSLAYOUT
+        {
+            // An unvalidated GC-handle for which we're returning the results
+            LSPTR_OBJECTHANDLE GCHandle;
+
+            // The following are initialized by the LS in response to our query:
+            VMPTR_AppDomain vmAppDomain; // AD that handle is in (only applicable if fValid).
+            bool            fValid; // Did the LS determine the GC handle to be valid?
+        } GetGCHandleInfoResult;
+
+        // Allocate memory on the left-side
+        struct MSLAYOUT
+        {
+            ULONG      bufSize;             // number of bytes to allocate
+        } GetBuffer;
+
+        // Memory allocated on the left-side
+        struct MSLAYOUT
+        {
+            void        *pBuffer;           // LS pointer to the buffer allocated
+            HRESULT     hr;                 // success / failure
+        } GetBufferResult;
+
+        // Free a buffer allocated on the left-side with GetBuffer
+        struct MSLAYOUT
+        {
+            void        *pBuffer;           // Pointer previously returned in GetBufferResult
+        } ReleaseBuffer;
+
+        struct MSLAYOUT
+        {
+            HRESULT     hr;
+        } ReleaseBufferResult;
+
+        // Apply an EnC edit
+        struct MSLAYOUT
+        {
+            VMPTR_Assembly vmAssembly;      // Module to edit
+            DWORD cbDeltaMetadata;              // size of blob pointed to by pDeltaMetadata
+            CORDB_ADDRESS pDeltaMetadata;       // pointer to delta metadata in debuggee
+                                                // it's the RS's responsibility to allocate and free
+                                                // this (and pDeltaIL) using GetBuffer / ReleaseBuffer
+            CORDB_ADDRESS pDeltaIL;             // pointer to delta IL in debugee
+            DWORD cbDeltaIL;                    // size of blob pointed to by pDeltaIL
+        } ApplyChanges;
+
+        struct MSLAYOUT
+        {
+            HRESULT hr;
+        } ApplyChangesResult;
+
+        struct MSLAYOUT
+        {
+            mdTypeDef   classMetadataToken;
+            VMPTR_Assembly vmAssembly;
+            LSPTR_ASSEMBLY classDebuggerAssemblyToken;
+        } LoadClass;
+
+        struct MSLAYOUT
+        {
+            mdTypeDef   classMetadataToken;
+            VMPTR_Assembly vmAssembly;
+            LSPTR_ASSEMBLY classDebuggerAssemblyToken;
+        } UnloadClass;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Assembly vmAssembly;
+            bool  flag;
+        } SetClassLoad;
+
+        struct MSLAYOUT
+        {
+            VMPTR_OBJECTHANDLE vmExceptionHandle;
+            bool        firstChance;
+            bool        continuable;
+        } Exception;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Thread   vmThreadToken;
+        } ClearException;
+
+        struct MSLAYOUT
+        {
+            void        *address;
+        } IsTransitionStub;
+
+        struct MSLAYOUT
+        {
+            bool        isStub;
+        } IsTransitionStubResult;
+
+        struct MSLAYOUT
+        {
+            CORDB_ADDRESS    startAddress;
+            bool             fCanSetIPOnly;
+            VMPTR_Thread     vmThreadToken;
+            VMPTR_Assembly vmAssembly;
+            mdMethodDef      mdMethod;
+            VMPTR_MethodDesc vmMethodDesc;
+            SIZE_T           offset;
+            bool             fIsIL;
+            void *           firstExceptionHandler;
+        } SetIP; // this is also used for CanSetIP
+
+        struct MSLAYOUT
+        {
+            int iLevel;
+
+            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szCategory;
+            Ls_Rs_StringBuffer szContent;
+        } FirstLogMessage;
+
+        struct MSLAYOUT
+        {
+            int iLevel;
+            int iReason;
+
+            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szSwitchName;
+            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szParentSwitchName;
+        } LogSwitchSettingMessage;
+
+        // information needed to send to the RS as part of a custom notification from the target
+        struct MSLAYOUT
+        {
+            // assembly for the domain in which the notification occurred
+            VMPTR_Assembly vmAssembly;
+
+            // metadata token for the type of the CustomNotification object's type
+            mdTypeDef    classToken;
+        } CustomNotification;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Thread vmThreadToken;
+            CorDebugThreadState debugState;
+        } SetAllDebugState;
+
+        DebuggerIPCE_FuncEvalInfo FuncEval;
+
+        struct MSLAYOUT
+        {
+            CORDB_ADDRESS argDataArea;
+            LSPTR_DEBUGGEREVAL debuggerEvalKey;
+        } FuncEvalSetupComplete;
+
+        struct MSLAYOUT
+        {
+            RSPTR_CORDBEVAL funcEvalKey;
+            bool            successful;
+            bool            aborted;
+            void           *resultAddr;
+
+            // AppDomain that the result is in.
+            VMPTR_AppDomain vmAppDomain;
+
+            VMPTR_OBJECTHANDLE vmObjectHandle;
+            DebuggerIPCE_ExpandedTypeData resultType;
+        } FuncEvalComplete;
+
+        struct MSLAYOUT
+        {
+            LSPTR_DEBUGGEREVAL debuggerEvalKey;
+        } FuncEvalAbort;
+
+        struct MSLAYOUT
+        {
+            LSPTR_DEBUGGEREVAL debuggerEvalKey;
+        } FuncEvalRudeAbort;
+
+        struct MSLAYOUT
+        {
+            LSPTR_DEBUGGEREVAL debuggerEvalKey;
+        } FuncEvalCleanup;
+
+        struct MSLAYOUT
+        {
+            void           *objectRefAddress;
+            VMPTR_OBJECTHANDLE vmObjectHandle;
+            void           *newReference;
+        } SetReference;
+
+        struct MSLAYOUT
+        {
+            NameChangeType  eventType;
+            VMPTR_AppDomain vmAppDomain;
+            VMPTR_Thread    vmThread;
+        } NameChange;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Assembly vmAssembly;
+            BOOL             fAllowJitOpts;
+            BOOL             fEnableEnC;
+        } JitDebugInfo;
+
+        // EnC Remap opportunity
+        struct MSLAYOUT
+        {
+            VMPTR_Assembly vmAssembly;
+            mdMethodDef funcMetadataToken ;        // methodDef of function with remap opportunity
+            SIZE_T          currentVersionNumber;  // version currently executing
+            SIZE_T          resumeVersionNumber;   // latest version
+            SIZE_T          currentILOffset;       // the IL offset of the current IP
+            SIZE_T          *resumeILOffset;       // pointer into left-side where an offset to resume
+                                                   // to should be written if remap is desired.
+        } EnCRemap;
+
+        // EnC Remap has taken place
+        struct MSLAYOUT
+        {
+            VMPTR_Assembly vmAssembly;
+            mdMethodDef funcMetadataToken;         // methodDef of function that was remapped
+        } EnCRemapComplete;
+
+        // Notification that the LS is about to update a CLR data structure to account for a
+        // specific edit made by EnC (function add/update or field add).
+        struct MSLAYOUT
+        {
+            VMPTR_Assembly vmAssembly;
+            mdToken         memberMetadataToken;   // Either a methodDef token indicating the function that
+                                                   // was updated/added, or a fieldDef token indicating the
+                                                   // field which was added.
+            mdTypeDef       classMetadataToken;    // TypeDef token of the class in which the update was made
+            SIZE_T          newVersionNumber;      // The new function/module version
+        } EnCUpdate;
+
+        struct MSLAYOUT
+        {
+            void      *oldData;
+            void      *newData;
+            DebuggerIPCE_BasicTypeData type;
+        } SetValueClass;
+
+
+        // Event used to tell LS if a single function is user or non-user code.
+        // Same structure used to get function status.
+        // @todo - Perhaps we can bundle these up so we can set multiple funcs w/ 1 event?
+        struct MSLAYOUT
+        {
+            VMPTR_Assembly vmAssembly;
+            mdMethodDef     funcMetadataToken;
+            DWORD           dwStatus;
+        } SetJMCFunctionStatus;
+
+        struct MSLAYOUT
+        {
+            TASKID      taskid;
+        } GetThreadForTaskId;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Thread vmThreadToken;
+        } GetThreadForTaskIdResult;
+
+        struct MSLAYOUT
+        {
+            CONNID     connectionId;
+        } ConnectionChange;
+
+        struct MSLAYOUT
+        {
+            CONNID     connectionId;
+            EmbeddedIPCString<MAX_LONGPATH> wzConnectionName;
+        } CreateConnection;
+
+        struct MSLAYOUT
+        {
+            void               *objectToken;
+            CorDebugHandleType handleType;
+        } CreateHandle;
+
+        struct MSLAYOUT
+        {
+            VMPTR_OBJECTHANDLE vmObjectHandle;
+        } CreateHandleResult;
+
+        // used in DB_IPCE_DISPOSE_HANDLE event
+        struct MSLAYOUT
+        {
+            VMPTR_OBJECTHANDLE vmObjectHandle;
+            CorDebugHandleType handleType;
+        } DisposeHandle;
+
+        struct MSLAYOUT
+        {
+            FramePointer                  framePointer;
+            SIZE_T                        nOffset;
+            CorDebugExceptionCallbackType eventType;
+            DWORD                         dwFlags;
+            VMPTR_OBJECTHANDLE            vmExceptionHandle;
+        } ExceptionCallback2;
+
+        struct MSLAYOUT
+        {
+            CorDebugExceptionUnwindCallbackType eventType;
+            DWORD                               dwFlags;
+        } ExceptionUnwind;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Thread vmThreadToken;
+            FramePointer frameToken;
+        } InterceptException;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Module vmModule;
+            void * pMetadataStart;
+            ULONG nMetadataSize;
+        } MetadataUpdateRequest;
+    };
+};
+
 // We want to keep the 'worst' HRESULT - if one has failed (..._E_...) & the
 // other hasn't, take the failing one.  If they've both/neither failed, then
 // it doesn't matter which we take.
@@ -2258,14 +2711,13 @@ public:
 
 
     HRESULT SendIPCEvent(CordbProcess * pProcess,
-                         DebuggerIPCEvent * pEvent,
-                         SIZE_T eventSize);
+                         DebuggerIPCEvent_DebuggerSide * pEvent);
 
     void ProcessStateChanged();
 
     HRESULT WaitForIPCEventFromProcess(CordbProcess* process,
                                        CordbAppDomain *appDomain,
-                                       DebuggerIPCEvent* event);
+                                       DebuggerIPCEvent_DebuggerSide* event);
 
 private:
     Cordb(CorDebugInterfaceVersion iDebuggerVersion, const ProcessDescriptor& pd);
@@ -2758,9 +3210,6 @@ const int DEBUG_EVENTQUEUE_SIZE = 30;
 const int DEBUG_EVENTQUEUE_SIZE = 10;
 #endif
 
-void DeleteIPCEventHelper(DebuggerIPCEvent *pDel);
-
-
 // Private interface on CordbProcess that ShimProcess needs to emulate V2 functionality.
 // The fact that we need private hooks means that V3 is not sufficiently finished to allow building
 // a V2 debugger. This interface should shrink over time (and eventually go away) as the functionality gets exposed
@@ -3215,7 +3664,7 @@ public:
 
     // Filter a CLR notification (subset of exceptions).
     void FilterClrNotification(
-        DebuggerIPCEvent * pManagedEvent,
+        BYTE * pRawEventBytes,
         RSLockHolder * pLockHolder,
         ICorDebugManagedCallback * pCallback);
 
@@ -3235,21 +3684,21 @@ public:
     void FinishInitializeIPCChannelWorker();
 
     // This is called on each IPC event from the debuggee.
-    void HandleRCEvent(DebuggerIPCEvent * pManagedEvent, RSLockHolder * pLockHolder, ICorDebugManagedCallback * pCallback);
+    void HandleRCEvent(DebuggerIPCEvent_DebuggerSide * pManagedEvent, RSLockHolder * pLockHolder, ICorDebugManagedCallback * pCallback);
 
     // Queue the RC event.
-    void QueueRCEvent(DebuggerIPCEvent * pManagedEvent);
+    void QueueRCEvent(DebuggerIPCEvent_DebuggerSide * pManagedEvent);
 
     // This marshals a managed debug event from the
-    void MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent);
+    void MarshalManagedEvent(DebuggerIPCEvent_DebuggerSide * pManagedEvent);
 
     // This copies a managed debug event from the IPC block and to pManagedEvent.
     // The event still needs to be marshalled.
-    void CopyRCEventFromIPCBlock(DebuggerIPCEvent * pManagedEvent);
+    void CopyRCEventFromIPCBlock(DebuggerIPCEvent_DebuggerSide * pManagedEvent);
 
     // This copies a managed debug event out of the Native-Debug event envelope.
     // The event still needs to be marshalled.
-    bool CopyManagedEventFromTarget(const EXCEPTION_RECORD * pRecord, DebuggerIPCEvent * pLocalManagedEvent);
+    bool CopyManagedEventFromTarget(const EXCEPTION_RECORD * pRecord, BYTE * pRawEventBuffer);
 
     // Helper for Filter() to verify parameters and return a type-safe exception record.
     const EXCEPTION_RECORD * ValidateExceptionRecord(
@@ -3330,7 +3779,7 @@ public:
 
     // Dispatch a single event via the callbacks.
     void RawDispatchEvent(
-        DebuggerIPCEvent *          pEvent,
+        DebuggerIPCEvent_DebuggerSide *          pEvent,
         RSLockHolder *              pLockHolder,
         ICorDebugManagedCallback *  pCallback1,
         ICorDebugManagedCallback2 * pCallback2,
@@ -3404,7 +3853,7 @@ public:
     // Send a truly asynchronous IPC event.
     void SendAsyncIPCEvent(DebuggerIPCEventType t);
 
-    HRESULT SendIPCEvent(DebuggerIPCEvent *event, SIZE_T eventSize)
+    HRESULT SendIPCEvent(DebuggerIPCEvent_DebuggerSide *event)
     {
         // @dbgtodo - eventually remove this when all IPC events are gone.
         // In V3 paths, we can't send IPC events.
@@ -3414,10 +3863,10 @@ public:
             return E_NOTIMPL;
         }
         _ASSERTE(m_cordb != NULL);
-        return (m_cordb->SendIPCEvent(this, event, eventSize));
+        return (m_cordb->SendIPCEvent(this, event));
     }
 
-    void InitAsyncIPCEvent(DebuggerIPCEvent *ipce,
+    void InitAsyncIPCEvent(DebuggerIPCEvent_DebuggerSide *ipce,
                       DebuggerIPCEventType type,
                       VMPTR_AppDomain vmAppDomain)
     {
@@ -3428,14 +3877,14 @@ public:
         ipce->asyncSend = true;
     }
 
-    void InitIPCEvent(DebuggerIPCEvent *ipce,
+    void InitIPCEvent(DebuggerIPCEvent_DebuggerSide *ipce,
                       DebuggerIPCEventType type,
                       bool twoWay,
                       VMPTR_AppDomain vmAppDomain
                       )
     {
         // zero out the event in case we try and use any uninitialized fields
-        memset( ipce, 0, sizeof(DebuggerIPCEvent) );
+        memset( ipce, 0, sizeof(DebuggerIPCEvent_DebuggerSide) );
 
         _ASSERTE((!vmAppDomain.IsNull()) ||
                  type == DB_IPCE_GET_GCHANDLE_INFO ||
@@ -3678,8 +4127,8 @@ private:
 
     static void ThreadEnumerationCallback(VMPTR_Thread vmThread, void * pUserData);
 
-    void ProcessFirstLogMessage (DebuggerIPCEvent *event);
-    void ProcessContinuedLogMessage (DebuggerIPCEvent *event);
+    void ProcessFirstLogMessage (DebuggerIPCEvent_DebuggerSide *event);
+    void ProcessContinuedLogMessage (DebuggerIPCEvent_DebuggerSide *event);
 
     void CloseIPCHandles();
 
@@ -4747,8 +5196,8 @@ public:
     static HRESULT SigToType(CordbModule * pModule, SigParser * pSigParser, const Instantiation * pInst, CordbType ** ppResultType);
 
     // Create a type from from the data received from the left-side
-    static HRESULT TypeDataToType(CordbAppDomain *appdomain, DebuggerIPCE_ExpandedTypeData *data, CordbType **pRes);
-    static HRESULT TypeDataToType(CordbAppDomain *appdomain, DebuggerIPCE_BasicTypeData *data, CordbType **pRes);
+    static HRESULT TypeDataToType(CordbAppDomain *appdomain, ExpandedTypeData *data, CordbType **pRes);
+    static HRESULT TypeDataToType(CordbAppDomain *appdomain, BasicTypeData *data, CordbType **pRes);
     static HRESULT InstantiateFromTypeHandle(CordbAppDomain * appdomain,
                                              VMPTR_TypeHandle vmTypeHandle,
                                              CorElementType et,
@@ -4757,8 +5206,8 @@ public:
 
     // Prepare data to send back to left-side during Init() and FuncEval.  Fail if the exact
     // type data is requested but was not fetched correctly during Init()
-    HRESULT TypeToBasicTypeData(DebuggerIPCE_BasicTypeData *data);
-    void TypeToExpandedTypeData(DebuggerIPCE_ExpandedTypeData *data);
+    HRESULT TypeToBasicTypeData(BasicTypeData *data);
+    void TypeToExpandedTypeData(ExpandedTypeData *data);
     void TypeToTypeArgData(DebuggerIPCE_TypeArgData *data);
 
     void CountTypeDataNodes(unsigned int *count);
@@ -9936,7 +10385,7 @@ private:
     CordbClass                *m_class;
     DebuggerIPCE_FuncEvalType  m_evalType;
 
-    HRESULT SendFuncEval(unsigned int genericArgsCount, ICorDebugType *genericArgs[], void *argData1, unsigned int argData1Size, void *argData2, unsigned int argData2Size, DebuggerIPCEvent * event);
+    HRESULT SendFuncEval(unsigned int genericArgsCount, ICorDebugType *genericArgs[], void *argData1, unsigned int argData1Size, void *argData2, unsigned int argData2Size, DebuggerIPCEvent_DebuggerSide * event);
     HRESULT FilterHR(HRESULT hr);
     BOOL DoAppDomainsMatch( CordbAppDomain* pAppDomain, ULONG32 nTypes, ICorDebugType *pTypes[], ULONG32 nValues, ICorDebugValue *pValues[] );
 
@@ -9959,7 +10408,7 @@ public:
     // on a NeuterAtWill sweep.
     RSExtSmartPtr<CordbHandleValue> m_pHandleValue;
 
-    DebuggerIPCE_ExpandedTypeData m_resultType;
+    ExpandedTypeData m_resultType;
     VMPTR_AppDomain            m_resultAppDomainToken;
 
     // Left-side memory that needs to be freed.
@@ -10258,15 +10707,14 @@ public:
     void QueueAsyncWorkItem(RCETWorkItem * pItem);
 
     HRESULT SendIPCEvent(CordbProcess* process,
-                         DebuggerIPCEvent* event,
-                         SIZE_T eventSize);
+                         DebuggerIPCEvent_DebuggerSide* event);
 
     void ProcessStateChanged();
     void FlushQueuedEvents(CordbProcess* process);
 
     HRESULT WaitForIPCEventFromProcess(CordbProcess* process,
                                        CordbAppDomain *pAppDomain,
-                                       DebuggerIPCEvent* event);
+                                       DebuggerIPCEvent_DebuggerSide* event);
 
     bool IsRCEventThread();
 

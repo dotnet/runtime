@@ -504,7 +504,7 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
 
 struct DebugFilterParam
 {
-    DebuggerIPCEvent *event;
+    DebuggerIPCEvent_RuntimeSide *event;
 };
 
 // Filter called when we throw an exception while Handling events.
@@ -516,7 +516,7 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
 
 #if defined(_DEBUG)
-    DebuggerIPCEvent *event = ((DebugFilterParam *)pv)->event;
+    DebuggerIPCEvent_RuntimeSide *event = ((DebugFilterParam *)pv)->event;
 
     DWORD pid = GetCurrentProcessId();
     DWORD tid = GetCurrentThreadId();
@@ -732,7 +732,7 @@ void DebuggerRCThread::RightSideDetach(void)
 // So make this its own function to enforce that we free the stack space between
 // iterations.
 //
-bool HandleIPCEventWrapper(Debugger* pDebugger, DebuggerIPCEvent *e)
+bool HandleIPCEventWrapper(Debugger* pDebugger, DebuggerIPCEvent_RuntimeSide *e)
 {
     struct Param : DebugFilterParam
     {
@@ -766,11 +766,11 @@ bool DebuggerRCThread::HandleRSEA()
     CONTRACTL_END;
 
     LOG((LF_CORDB,LL_INFO10000, "RSEA from out of process (right side)\n"));
-    DebuggerIPCEvent * e;
+    DebuggerIPCEvent_RuntimeSide * e;
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
     // Make room for any Right Side event on the stack.
  BYTE buffer[CorDBIPC_BUFFER_SIZE];
-    e = (DebuggerIPCEvent *) buffer;
+    e = (DebuggerIPCEvent_RuntimeSide *) buffer;
 
     // If the RSEA is signaled, then handle the event from the Right Side.
     memcpy(e, GetIPCEventReceiveBuffer(), CorDBIPC_BUFFER_SIZE);
@@ -778,7 +778,7 @@ bool DebuggerRCThread::HandleRSEA()
     // Be sure to fetch the event into the official receive buffer since some event handlers assume it's there
     // regardless of the event buffer pointer passed to them.
     e = GetIPCEventReceiveBuffer();
-    g_pDbgTransport->GetNextEvent(e, CorDBIPC_BUFFER_SIZE);
+    g_pDbgTransport->GetNextEvent(reinterpret_cast<BYTE *>(e), CorDBIPC_BUFFER_SIZE);
 #endif // !FEATURE_DBGIPC_TRANSPOPRT
 
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
@@ -1528,7 +1528,7 @@ HRESULT DebuggerRCThread::SendIPCEvent()
     // All the initialization is already done in code:DebuggerRCThread.Init,
     // so we can just go ahead and send the event.
 
-    DebuggerIPCEvent* pManagedEvent = GetIPCEventSendBuffer();
+    DebuggerIPCEvent_RuntimeSide* pManagedEvent = GetIPCEventSendBuffer();
 
     STRESS_LOG2(LF_CORDB, LL_INFO1000, "D::SendIPCEvent %s to outofproc appD 0x%p,\n",
             IPCENames::GetName(pManagedEvent->type),
@@ -1751,7 +1751,7 @@ HRESULT DebuggerRCThread::SendIPCReply()
     HRESULT hr = S_OK;
 
 #ifdef LOGGING
-    DebuggerIPCEvent* event = GetIPCEventReceiveBuffer();
+    DebuggerIPCEvent_RuntimeSide* event = GetIPCEventReceiveBuffer();
 
     LOG((LF_CORDB, LL_INFO10000, "D::SIPCR: replying with %s.\n",
          IPCENames::GetName(event->type)));
@@ -1764,7 +1764,7 @@ HRESULT DebuggerRCThread::SendIPCReply()
         hr = CORDBDebuggerSetUnrecoverableWin32Error(m_debugger, 0, false);
     }
 #else // !FEATURE_DBGIPC_TRANSPORT_VM
-    hr = g_pDbgTransport->SendEvent(GetIPCEventReceiveBuffer());
+    hr = g_pDbgTransport->SendEvent(reinterpret_cast<BYTE *>(GetIPCEventReceiveBuffer()), sizeof(DebuggerIPCEvent_RuntimeSide), event->type);
     if (FAILED(hr))
     {
         m_debugger->UnrecoverableError(hr,

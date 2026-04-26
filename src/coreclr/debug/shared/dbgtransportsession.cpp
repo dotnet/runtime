@@ -323,22 +323,20 @@ bool DbgTransportSession::StopUsingAsDebugger(DebugTicket * pTicket)
 #endif // RIGHT_SIDE_COMPILE
 
 // Sends a pre-initialized event to the other side.
-HRESULT DbgTransportSession::SendEvent(DebuggerIPCEvent *pEvent)
+HRESULT DbgTransportSession::SendEvent(BYTE *pEvent, UINT cbEvent, DebuggerIPCEventType eventType)
 {
-    DbgTransportLog(LC_Events, "Sending '%s'", IPCENames::GetName(pEvent->type));
     DBG_TRANSPORT_INC_STAT(SentEvent);
 
-    return SendEventWorker(pEvent, IPCET_OldStyle);
+    return SendEventWorker(pEvent, IPCET_OldStyle, eventType, cbEvent);
 }
 
 // Sends a pre-initialized event to the other side, but pretend that this is coming from the native pipeline.
 // See code:IPCEventType for more information.
-HRESULT DbgTransportSession::SendDebugEvent(DebuggerIPCEvent * pEvent)
+HRESULT DbgTransportSession::SendDebugEvent(BYTE * pEvent, UINT cbEvent, DebuggerIPCEventType eventType)
 {
-    DbgTransportLog(LC_Events, "Sending '%s' as DEBUG_EVENT", IPCENames::GetName(pEvent->type));
     DBG_TRANSPORT_INC_STAT(SentEvent);
 
-    return SendEventWorker(pEvent, IPCET_DebugEvent);
+    return SendEventWorker(pEvent, IPCET_DebugEvent, eventType, cbEvent);
 }
 
 // Retrieves the auto-reset handle which is signalled by the session each time a new event is received from
@@ -357,7 +355,7 @@ HANDLE DbgTransportSession::GetDebugEventReadyEvent()
 
 // Copies the last event received from the other side into the provided buffer. This should only be called
 // (once) after the event returned from GetIPCEEventReadyEvent()/GetDebugEventReadyEvent() has been signalled.
-void DbgTransportSession::GetNextEvent(DebuggerIPCEvent *pEvent, DWORD cbEvent)
+void DbgTransportSession::GetNextEvent(BYTE *pEvent, DWORD cbEvent)
 {
     _ASSERTE(cbEvent <= CorDBIPC_BUFFER_SIZE);
 
@@ -556,9 +554,8 @@ HRESULT DbgTransportSession::SetDCB(DebuggerIPCControlBlock *pDCB)
 #endif // RIGHT_SIDE_COMPILE
 
 // Worker function for code:DbgTransportSession::SendEvent and code:DbgTransportSession::SendDebugEvent.
-HRESULT DbgTransportSession::SendEventWorker(DebuggerIPCEvent * pEvent, IPCEventType type)
+HRESULT DbgTransportSession::SendEventWorker(BYTE * pEvent, IPCEventType type, DebuggerIPCEventType eventType, UINT cbEvent)
 {
-    DWORD cbEvent = GetEventSize(pEvent);
     _ASSERTE(cbEvent <= CorDBIPC_BUFFER_SIZE);
 
     Message sMessage;
@@ -566,7 +563,7 @@ HRESULT DbgTransportSession::SendEventWorker(DebuggerIPCEvent * pEvent, IPCEvent
 
     // Store the event type in the header as well, it's sometimes useful for debugging.
     sMessage.m_sHeader.TypeSpecificData.Event.m_eIPCEventType = type;
-    sMessage.m_sHeader.TypeSpecificData.Event.m_eType = pEvent->type;
+    sMessage.m_sHeader.TypeSpecificData.Event.m_eType = eventType;
 
     return SendMessage(&sMessage, false);
 }
@@ -2111,385 +2108,6 @@ void DbgTransportSession::TransportWorker()
     Release();
 }
 
-// Given a fully initialized debugger event structure, return the size of the structure in bytes (this is not
-// trivial since DebuggerIPCEvent contains a large union member which can cause the portion containing
-// significant data to vary wildy from event to event).
-DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
-{
-    DWORD cbBaseSize = offsetof(DebuggerIPCEvent, LeftSideStartupData);
-    DWORD cbAdditionalSize = 0;
-
-    switch (pEvent->type & DB_IPCE_TYPE_MASK)
-    {
-    case DB_IPCE_SYNC_COMPLETE:
-    case DB_IPCE_THREAD_ATTACH:
-    case DB_IPCE_THREAD_DETACH:
-    case DB_IPCE_USER_BREAKPOINT:
-    case DB_IPCE_SET_DEBUG_STATE_RESULT:
-    case DB_IPCE_FUNC_EVAL_ABORT_RESULT:
-    case DB_IPCE_CONTROL_C_EVENT:
-    case DB_IPCE_FUNC_EVAL_CLEANUP_RESULT:
-    case DB_IPCE_SET_METHOD_JMC_STATUS_RESULT:
-    case DB_IPCE_SET_MODULE_JMC_STATUS_RESULT:
-    case DB_IPCE_FUNC_EVAL_RUDE_ABORT_RESULT:
-    case DB_IPCE_INTERCEPT_EXCEPTION_RESULT:
-    case DB_IPCE_INTERCEPT_EXCEPTION_COMPLETE:
-    case DB_IPCE_CREATE_PROCESS:
-    case DB_IPCE_SET_NGEN_COMPILER_FLAGS_RESULT:
-    case DB_IPCE_LEFTSIDE_STARTUP:
-    case DB_IPCE_ASYNC_BREAK:
-    case DB_IPCE_CONTINUE:
-    case DB_IPCE_ATTACHING:
-    case DB_IPCE_GET_NGEN_COMPILER_FLAGS:
-    case DB_IPCE_DETACH_FROM_PROCESS:
-    case DB_IPCE_CONTROL_C_EVENT_RESULT:
-    case DB_IPCE_BEFORE_GARBAGE_COLLECTION:
-    case DB_IPCE_AFTER_GARBAGE_COLLECTION:
-    case DB_IPCE_DISABLE_OPTS_RESULT:
-    case DB_IPCE_CATCH_HANDLER_FOUND_RESULT:
-    case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT:
-        cbAdditionalSize = 0;
-        break;
-
-    case DB_IPCE_DATA_BREAKPOINT:
-        cbAdditionalSize = sizeof(pEvent->DataBreakpointData);
-        break;
-
-    case DB_IPCE_BREAKPOINT:
-        cbAdditionalSize = sizeof(pEvent->BreakpointData);
-        break;
-
-    case DB_IPCE_LOAD_MODULE:
-        cbAdditionalSize = sizeof(pEvent->LoadModuleData);
-        break;
-
-    case DB_IPCE_UNLOAD_MODULE:
-        cbAdditionalSize = sizeof(pEvent->UnloadModuleData);
-        break;
-
-    case DB_IPCE_LOAD_CLASS:
-        cbAdditionalSize = sizeof(pEvent->LoadClass);
-        break;
-
-    case DB_IPCE_UNLOAD_CLASS:
-        cbAdditionalSize = sizeof(pEvent->UnloadClass);
-        break;
-
-    case DB_IPCE_EXCEPTION:
-        cbAdditionalSize = sizeof(pEvent->Exception);
-        break;
-
-    case DB_IPCE_BREAKPOINT_ADD_RESULT:
-        cbAdditionalSize = sizeof(pEvent->BreakpointData);
-        break;
-
-    case DB_IPCE_STEP_RESULT:
-        cbAdditionalSize = sizeof(pEvent->StepData);
-        if (pEvent->StepData.rangeCount)
-            cbAdditionalSize += (pEvent->StepData.rangeCount - 1) * sizeof(COR_DEBUG_STEP_RANGE);
-        break;
-
-    case DB_IPCE_STEP_COMPLETE:
-        cbAdditionalSize = sizeof(pEvent->StepData);
-        break;
-
-    case DB_IPCE_GET_BUFFER_RESULT:
-        cbAdditionalSize = sizeof(pEvent->GetBufferResult);
-        break;
-
-    case DB_IPCE_RELEASE_BUFFER_RESULT:
-        cbAdditionalSize = sizeof(pEvent->ReleaseBufferResult);
-        break;
-
-    case DB_IPCE_ENC_ADD_FIELD:
-        cbAdditionalSize = sizeof(pEvent->EnCUpdate);
-        break;
-
-    case DB_IPCE_APPLY_CHANGES_RESULT:
-        cbAdditionalSize = sizeof(pEvent->ApplyChangesResult);
-        break;
-
-    case DB_IPCE_FIRST_LOG_MESSAGE:
-        cbAdditionalSize = sizeof(pEvent->FirstLogMessage);
-        break;
-
-    case DB_IPCE_LOGSWITCH_SET_MESSAGE:
-        cbAdditionalSize = sizeof(pEvent->LogSwitchSettingMessage);
-        break;
-
-    case DB_IPCE_CREATE_APP_DOMAIN:
-        cbAdditionalSize = sizeof(pEvent->AppDomainData);
-        break;
-
-    case DB_IPCE_LOAD_ASSEMBLY:
-        cbAdditionalSize = sizeof(pEvent->AssemblyData);
-        break;
-
-    case DB_IPCE_UNLOAD_ASSEMBLY:
-        cbAdditionalSize = sizeof(pEvent->AssemblyData);
-        break;
-
-    case DB_IPCE_FUNC_EVAL_SETUP_RESULT:
-        cbAdditionalSize = sizeof(pEvent->FuncEvalSetupComplete);
-        break;
-
-    case DB_IPCE_FUNC_EVAL_COMPLETE:
-        cbAdditionalSize = sizeof(pEvent->FuncEvalComplete);
-        break;
-
-    case DB_IPCE_SET_REFERENCE_RESULT:
-        cbAdditionalSize = sizeof(pEvent->SetReference);
-        break;
-
-    case DB_IPCE_NAME_CHANGE:
-        cbAdditionalSize = sizeof(pEvent->NameChange);
-        break;
-
-    case DB_IPCE_UPDATE_MODULE_SYMS:
-        cbAdditionalSize = sizeof(pEvent->UpdateModuleSymsData);
-        break;
-
-    case DB_IPCE_ENC_REMAP:
-        cbAdditionalSize = sizeof(pEvent->EnCRemap);
-        break;
-
-    case DB_IPCE_SET_VALUE_CLASS_RESULT:
-        cbAdditionalSize = sizeof(pEvent->SetValueClass);
-        break;
-
-    case DB_IPCE_BREAKPOINT_SET_ERROR:
-        cbAdditionalSize = sizeof(pEvent->BreakpointSetErrorData);
-        break;
-
-    case DB_IPCE_ENC_UPDATE_FUNCTION:
-        cbAdditionalSize = sizeof(pEvent->EnCUpdate);
-        break;
-
-    case DB_IPCE_GET_METHOD_JMC_STATUS_RESULT:
-        cbAdditionalSize = sizeof(pEvent->SetJMCFunctionStatus);
-        break;
-
-    case DB_IPCE_GET_THREAD_FOR_TASKID_RESULT:
-        cbAdditionalSize = sizeof(pEvent->GetThreadForTaskIdResult);
-        break;
-
-    case DB_IPCE_CREATE_CONNECTION:
-        cbAdditionalSize = sizeof(pEvent->CreateConnection);
-        break;
-
-    case DB_IPCE_DESTROY_CONNECTION:
-        cbAdditionalSize = sizeof(pEvent->ConnectionChange);
-        break;
-
-    case DB_IPCE_CHANGE_CONNECTION:
-        cbAdditionalSize = sizeof(pEvent->ConnectionChange);
-        break;
-
-    case DB_IPCE_EXCEPTION_CALLBACK2:
-        cbAdditionalSize = sizeof(pEvent->ExceptionCallback2);
-        break;
-
-    case DB_IPCE_EXCEPTION_UNWIND:
-        cbAdditionalSize = sizeof(pEvent->ExceptionUnwind);
-        break;
-
-    case DB_IPCE_CREATE_HANDLE_RESULT:
-        cbAdditionalSize = sizeof(pEvent->CreateHandleResult);
-        break;
-
-    case DB_IPCE_ENC_REMAP_COMPLETE:
-        cbAdditionalSize = sizeof(pEvent->EnCRemapComplete);
-        break;
-
-    case DB_IPCE_ENC_ADD_FUNCTION:
-        cbAdditionalSize = sizeof(pEvent->EnCUpdate);
-        break;
-
-    case DB_IPCE_GET_NGEN_COMPILER_FLAGS_RESULT:
-        cbAdditionalSize = sizeof(pEvent->JitDebugInfo);
-        break;
-
-    case DB_IPCE_GET_GCHANDLE_INFO_RESULT:
-        cbAdditionalSize = sizeof(pEvent->GetGCHandleInfoResult);
-        break;
-
-    case DB_IPCE_SET_IP:
-        cbAdditionalSize = sizeof(pEvent->SetIP);
-        break;
-
-    case DB_IPCE_BREAKPOINT_ADD:
-        cbAdditionalSize = sizeof(pEvent->BreakpointData);
-        break;
-
-    case DB_IPCE_BREAKPOINT_REMOVE:
-        cbAdditionalSize = sizeof(pEvent->BreakpointData);
-        break;
-
-    case DB_IPCE_STEP_CANCEL:
-        cbAdditionalSize = sizeof(pEvent->StepData);
-        break;
-
-    case DB_IPCE_STEP:
-        cbAdditionalSize = sizeof(pEvent->StepData);
-        if (pEvent->StepData.rangeCount)
-            cbAdditionalSize += (pEvent->StepData.rangeCount - 1) * sizeof(COR_DEBUG_STEP_RANGE);
-        break;
-
-    case DB_IPCE_STEP_OUT:
-        cbAdditionalSize = sizeof(pEvent->StepData);
-        break;
-
-    case DB_IPCE_GET_BUFFER:
-        cbAdditionalSize = sizeof(pEvent->GetBuffer);
-        break;
-
-    case DB_IPCE_RELEASE_BUFFER:
-        cbAdditionalSize = sizeof(pEvent->ReleaseBuffer);
-        break;
-
-    case DB_IPCE_SET_CLASS_LOAD_FLAG:
-        cbAdditionalSize = sizeof(pEvent->SetClassLoad);
-        break;
-
-    case DB_IPCE_APPLY_CHANGES:
-        cbAdditionalSize = sizeof(pEvent->ApplyChanges);
-        break;
-
-    case DB_IPCE_SET_NGEN_COMPILER_FLAGS:
-        cbAdditionalSize = sizeof(pEvent->JitDebugInfo);
-        break;
-
-    case DB_IPCE_IS_TRANSITION_STUB:
-        cbAdditionalSize = sizeof(pEvent->IsTransitionStub);
-        break;
-
-    case DB_IPCE_IS_TRANSITION_STUB_RESULT:
-        cbAdditionalSize = sizeof(pEvent->IsTransitionStubResult);
-        break;
-
-    case DB_IPCE_MODIFY_LOGSWITCH:
-        cbAdditionalSize = sizeof(pEvent->LogSwitchSettingMessage);
-        break;
-
-    case DB_IPCE_ENABLE_LOG_MESSAGES:
-        cbAdditionalSize = sizeof(pEvent->LogSwitchSettingMessage);
-        break;
-
-    case DB_IPCE_FUNC_EVAL:
-        cbAdditionalSize = sizeof(pEvent->FuncEval);
-        break;
-
-    case DB_IPCE_SET_REFERENCE:
-        cbAdditionalSize = sizeof(pEvent->SetReference);
-        break;
-
-    case DB_IPCE_FUNC_EVAL_ABORT:
-        cbAdditionalSize = sizeof(pEvent->FuncEvalAbort);
-        break;
-
-    case DB_IPCE_FUNC_EVAL_CLEANUP:
-        cbAdditionalSize = sizeof(pEvent->FuncEvalCleanup);
-        break;
-
-    case DB_IPCE_SET_ALL_DEBUG_STATE:
-        cbAdditionalSize = sizeof(pEvent->SetAllDebugState);
-        break;
-
-    case DB_IPCE_SET_VALUE_CLASS:
-        cbAdditionalSize = sizeof(pEvent->SetValueClass);
-        break;
-
-    case DB_IPCE_SET_METHOD_JMC_STATUS:
-        cbAdditionalSize = sizeof(pEvent->SetJMCFunctionStatus);
-        break;
-
-    case DB_IPCE_GET_METHOD_JMC_STATUS:
-        cbAdditionalSize = sizeof(pEvent->SetJMCFunctionStatus);
-        break;
-
-    case DB_IPCE_SET_MODULE_JMC_STATUS:
-        cbAdditionalSize = sizeof(pEvent->SetJMCFunctionStatus);
-        break;
-
-    case DB_IPCE_GET_THREAD_FOR_TASKID:
-        cbAdditionalSize = sizeof(pEvent->GetThreadForTaskId);
-        break;
-
-    case DB_IPCE_FUNC_EVAL_RUDE_ABORT:
-        cbAdditionalSize = sizeof(pEvent->FuncEvalRudeAbort);
-        break;
-
-    case DB_IPCE_CREATE_HANDLE:
-        cbAdditionalSize = sizeof(pEvent->CreateHandle);
-        break;
-
-    case DB_IPCE_DISPOSE_HANDLE:
-        cbAdditionalSize = sizeof(pEvent->DisposeHandle);
-        break;
-
-    case DB_IPCE_INTERCEPT_EXCEPTION:
-        cbAdditionalSize = sizeof(pEvent->InterceptException);
-        break;
-
-    case DB_IPCE_GET_GCHANDLE_INFO:
-        cbAdditionalSize = sizeof(pEvent->GetGCHandleInfo);
-        break;
-
-    case DB_IPCE_CUSTOM_NOTIFICATION:
-        cbAdditionalSize = sizeof(pEvent->CustomNotification);
-        break;
-
-    case DB_IPCE_DISABLE_OPTS:
-        cbAdditionalSize = sizeof(pEvent->DisableOptData);
-        break;
-
-    case DB_IPCE_FORCE_CATCH_HANDLER_FOUND:
-        cbAdditionalSize = sizeof(pEvent->ForceCatchHandlerFoundData);
-        break;
-
-    case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION:
-        cbAdditionalSize = sizeof(pEvent->CustomNotificationData);
-        break;
-
-    default:
-        STRESS_LOG1(LF_CORDB, LL_INFO1000, "Unknown debugger event type: 0x%x\n", (pEvent->type & DB_IPCE_TYPE_MASK));
-        _ASSERTE(!"Unknown debugger event type");
-    }
-
-    return cbBaseSize + cbAdditionalSize;
-}
-
-#ifdef _DEBUG
-// Debug helper which returns the name associated with a MessageType.
-const char *DbgTransportSession::MessageName(MessageType eType)
-{
-    switch (eType)
-    {
-    case MT_SessionRequest:
-        return "SessionRequest";
-    case MT_SessionAccept:
-        return "SessionAccept";
-    case MT_SessionReject:
-        return "SessionReject";
-    case MT_SessionResync:
-        return "SessionResync";
-    case MT_SessionClose:
-        return "SessionClose";
-    case MT_Event:
-        return "Event";
-    case MT_ReadMemory:
-        return "ReadMemory";
-    case MT_WriteMemory:
-        return "WriteMemory";
-    case MT_GetDCB:
-        return "GetDCB";
-    case MT_SetDCB:
-        return "SetDCB";
-    default:
-        _ASSERTE(!"Unknown message type");
-        return NULL;
-    }
-}
 
 // Debug logging helper which logs an incoming message of any type (as long as logging for that message
 // class is currently enabled).

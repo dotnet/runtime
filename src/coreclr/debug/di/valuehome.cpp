@@ -911,7 +911,7 @@ void HandleValueHome::SetValue(MemoryRange src, CordbType * pType)
 {
     _ASSERTE(!m_vmObjectHandle.IsNull());
 
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
 
     m_pProcess->InitIPCEvent(&event, DB_IPCE_SET_REFERENCE, true, VMPTR_AppDomain::NullPtr());
 
@@ -920,7 +920,7 @@ void HandleValueHome::SetValue(MemoryRange src, CordbType * pType)
     event.SetReference.newReference = *((void **)src.StartAddress());
 
     // Note: two-way event here...
-    IfFailThrow(m_pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
+    IfFailThrow(m_pProcess->SendIPCEvent(&event));
 
     _ASSERTE(event.type == DB_IPCE_SET_REFERENCE_RESULT);
 
@@ -972,7 +972,7 @@ void VCRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 
  // send a Set Value Class message to the right side with the address of this value class, the address of
  // the new data, and the class of the value class that we're setting.
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
 
     // First, we have to make room on the Left Side for the new data for the value class. We allocate
     // memory on the Left Side for this, then write the new data across. The Set Value Class message will
@@ -990,7 +990,7 @@ void VCRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
     IfFailThrow(pType->TypeToBasicTypeData(&event.SetValueClass.type));
 
     // Note: two-way event here...
-    IfFailThrow(m_pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
+    IfFailThrow(m_pProcess->SendIPCEvent(&event));
 
     _ASSERTE(event.type == DB_IPCE_SET_VALUE_CLASS_RESULT);
 
@@ -1040,7 +1040,7 @@ void RefRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
     }
     else
     {
-        DebuggerIPCEvent event;
+        DebuggerIPCEvent_DebuggerSide event;
 
         m_pProcess->InitIPCEvent(&event, DB_IPCE_SET_REFERENCE, true, VMPTR_AppDomain::NullPtr());
 
@@ -1049,7 +1049,7 @@ void RefRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
         event.SetReference.newReference = *((void **)src.StartAddress());
 
         // Note: two-way event here...
-        IfFailThrow(m_pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
+        IfFailThrow(m_pProcess->SendIPCEvent(&event));
 
         _ASSERTE(event.type == DB_IPCE_SET_REFERENCE_RESULT);
 

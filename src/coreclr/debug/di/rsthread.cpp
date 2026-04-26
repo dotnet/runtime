@@ -1648,7 +1648,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
        return (CORDBG_E_SET_IP_NOT_ALLOWED_ON_EXCEPTION);
     }
 
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
     GetProcess()->InitIPCEvent(&event, DB_IPCE_SET_IP, true, GetAppDomain()->GetADToken());
     event.SetIP.fCanSetIPOnly = fCanSetIPOnly;
     event.SetIP.vmThreadToken = m_vmThreadToken;
@@ -1669,10 +1669,10 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
          offset,
          fIsIL));
 
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: sizeof(DebuggerIPCEvent):0x%x **********\n",
-        sizeof(DebuggerIPCEvent)));
+    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: sizeof(DebuggerIPCEvent_DebuggerSide):0x%x **********\n",
+        sizeof(DebuggerIPCEvent_DebuggerSide)));
 
-    HRESULT hr = GetProcess()->m_cordb->SendIPCEvent(GetProcess(), &event, sizeof(DebuggerIPCEvent));
+    HRESULT hr = GetProcess()->m_cordb->SendIPCEvent(GetProcess(), &event);
 
     if (FAILED(hr))
     {
@@ -2131,7 +2131,7 @@ HRESULT CordbThread::InterceptCurrentException(ICorDebugFrame * pFrame)
     HRESULT hr = S_OK;
     EX_TRY
     {
-        DebuggerIPCEvent event;
+        DebuggerIPCEvent_DebuggerSide event;
 
         if (pFrame == NULL)
         {
@@ -2186,7 +2186,7 @@ HRESULT CordbThread::InterceptCurrentException(ICorDebugFrame * pFrame)
             event.InterceptException.vmThreadToken = m_vmThreadToken;
             event.InterceptException.frameToken  = pRealFrame->GetFramePointer();
 
-            hr = GetProcess()->m_cordb->SendIPCEvent(GetProcess(), &event, sizeof(DebuggerIPCEvent));
+            hr = GetProcess()->m_cordb->SendIPCEvent(GetProcess(), &event);
 
             //
             // Stop now if we can't even send the event.
@@ -7666,7 +7666,7 @@ void CordbJITILFrame::LoadGenericArgs()
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
     UINT32 cGenericClassTypeParams = 0;
-    DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
+    DacDbiArrayList<ExpandedTypeData> rgGenericTypeParams;
 
     IfFailThrow(pDAC->GetMethodDescParams(m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
                               m_frameParamsToken,
@@ -9180,7 +9180,7 @@ HRESULT CordbEval::SendCleanup()
             return CORDBG_E_FUNC_EVAL_NOT_COMPLETE;
 
         // Release the left side handle to the object
-        DebuggerIPCEvent event;
+        DebuggerIPCEvent_DebuggerSide event;
 
         GetProcess()->InitIPCEvent(
                                 &event,
@@ -9190,7 +9190,7 @@ HRESULT CordbEval::SendCleanup()
 
         event.FuncEvalCleanup.debuggerEvalKey = m_debuggerEvalKey;
 
-        hr = GetProcess()->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
+        hr = GetProcess()->SendIPCEvent(&event);
         IfFailRet(hr);
 
 #if _DEBUG
@@ -9398,7 +9398,7 @@ HRESULT CordbEval::SendFuncEval(unsigned int genericArgsCount,
                                 ICorDebugType *genericArgs[],
                                 void *argData1, unsigned int argData1Size,
                                 void *argData2, unsigned int argData2Size,
-                                DebuggerIPCEvent * event)
+                                DebuggerIPCEvent_DebuggerSide * event)
 {
     FAIL_IF_NEUTERED(this);
     INTERNAL_SYNC_API_ENTRY(GetProcess()); //
@@ -9436,7 +9436,7 @@ HRESULT CordbEval::SendFuncEval(unsigned int genericArgsCount,
     // an extra ref-count to determine when this can be done.
     AddRef();
 
-    HRESULT hr = m_thread->GetProcess()->SendIPCEvent(event, sizeof(DebuggerIPCEvent));
+    HRESULT hr = m_thread->GetProcess()->SendIPCEvent(event);
 
     // If the send failed, return that failure.
     if (FAILED(hr))
@@ -9799,7 +9799,7 @@ HRESULT CordbEval::CallParameterizedFunction(ICorDebugFunction *pFunction,
         }
 
         // Send over to the left side and get it to setup this eval.
-        DebuggerIPCEvent event;
+        DebuggerIPCEvent_DebuggerSide event;
         m_thread->GetProcess()->InitIPCEvent(&event, DB_IPCE_FUNC_EVAL, true, m_thread->GetAppDomain()->GetADToken());
 
         event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
@@ -9981,7 +9981,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
     }
 
     // Send over to the left side and get it to setup this eval.
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
 
     m_thread->GetProcess()->InitIPCEvent(&event, DB_IPCE_FUNC_EVAL, true, m_thread->GetAppDomain()->GetADToken());
 
@@ -10081,7 +10081,7 @@ HRESULT CordbEval::NewParameterizedObjectNoConstructor(ICorDebugClass * pClass,
     m_evalType = DB_IPCE_FET_NEW_OBJECT_NC;
 
     // Send over to the left side and get it to setup this eval.
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
 
     m_thread->GetProcess()->InitIPCEvent(&event, DB_IPCE_FUNC_EVAL, true, m_thread->GetAppDomain()->GetADToken());
 
@@ -10172,7 +10172,7 @@ HRESULT CordbEval::NewStringWithLength(LPCWSTR wszString, UINT iLength)
     m_evalType = DB_IPCE_FET_NEW_STRING;
 
     // Send over to the left side and get it to setup this eval.
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
 
     m_thread->GetProcess()->InitIPCEvent(&event, DB_IPCE_FUNC_EVAL, true, m_thread->GetAppDomain()->GetADToken());
 
@@ -10288,7 +10288,7 @@ HRESULT CordbEval::NewParameterizedArray(ICorDebugType * pElementType,
     m_evalType = DB_IPCE_FET_NEW_ARRAY;
 
     // Send over to the left side and get it to setup this eval.
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
 
     m_thread->GetProcess()->InitIPCEvent(&event, DB_IPCE_FUNC_EVAL, true, m_thread->GetAppDomain()->GetADToken());
 
@@ -10397,7 +10397,7 @@ CordbEval::Abort(
     //
     // Send over to the left side to get the eval aborted.
     //
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
 
     m_thread->GetProcess()->InitIPCEvent(&event,
                                          DB_IPCE_FUNC_EVAL_ABORT,
@@ -10407,9 +10407,9 @@ CordbEval::Abort(
 
     event.FuncEvalAbort.debuggerEvalKey = m_debuggerEvalKey;
 
-    HRESULT hr = m_thread->GetProcess()->SendIPCEvent(&event,
-                                                      sizeof(DebuggerIPCEvent)
-                                                     );
+    HRESULT hr = m_thread->GetProcess()->SendIPCEvent(&event);
+
+
 
 
     //
@@ -10751,7 +10751,7 @@ CordbEval::RudeAbort(
     //
     // Send over to the left side to get the eval aborted.
     //
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
 
     m_thread->GetProcess()->InitIPCEvent(&event,
                                          DB_IPCE_FUNC_EVAL_RUDE_ABORT,
@@ -10761,9 +10761,9 @@ CordbEval::RudeAbort(
 
     event.FuncEvalRudeAbort.debuggerEvalKey = m_debuggerEvalKey;
 
-    HRESULT hr = m_thread->GetProcess()->SendIPCEvent(&event,
-                                                      sizeof(DebuggerIPCEvent)
-                                                     );
+    HRESULT hr = m_thread->GetProcess()->SendIPCEvent(&event);
+
+
 
     //
     // If the send failed, return that failure.
@@ -11526,7 +11526,7 @@ void CordbAsyncFrame::LoadGenericArgs()
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
     UINT32 cGenericClassTypeParams = 0;
-    DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
+    DacDbiArrayList<ExpandedTypeData> rgGenericTypeParams;
 
     UINT32 genericArgIndex;
     HRESULT result = pDAC->GetGenericArgTokenIndex(

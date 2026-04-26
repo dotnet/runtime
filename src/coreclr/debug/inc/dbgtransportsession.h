@@ -52,7 +52,6 @@
 // comments). If you see a term you don't understand please do a search for it further down the file, where
 // hopefully you will find a detailed definition (and if not, please add one).
 
-struct DebuggerIPCEvent;
 struct DbgEventBufferEntry;
 
 // Some simple ad-hoc debug only transport logging. This output is too chatty for an existng CLR logging
@@ -419,8 +418,8 @@ public:
 #endif // RIGHT_SIDE_COMPILE
 
     // Sends a pre-initialized event to the other side.
-    HRESULT SendEvent(DebuggerIPCEvent * pEvent);
-    HRESULT SendDebugEvent(DebuggerIPCEvent * pEvent);
+    HRESULT SendEvent(BYTE * pEvent, UINT cbEvent, DebuggerIPCEventType eventType);
+    HRESULT SendDebugEvent(BYTE * pEvent, UINT cbEvent, DebuggerIPCEventType eventType);
 
     // Retrieves the auto-reset handle which is signalled by the session each time a new event is received
     // from the other side.
@@ -429,7 +428,7 @@ public:
 
     // Copies the last event received from the other side into the provided buffer. This should only be called
     // (once) after the event returned from GetIPCEventReadyEvent()/GetDebugEventReadyEvent() has been signalled.
-    void GetNextEvent(DebuggerIPCEvent *pEvent, DWORD cbEvent);
+    void GetNextEvent(BYTE *pEvent, DWORD cbEvent);
 
 #ifdef RIGHT_SIDE_COMPILE
     // Read and write memory on the LS from the RS.
@@ -754,7 +753,7 @@ private:
 
 #endif // _DEBUG
 
-    HRESULT SendEventWorker(DebuggerIPCEvent * pEvent, IPCEventType type);
+    HRESULT SendEventWorker(BYTE * pEvent, IPCEventType type, DebuggerIPCEventType eventType, UINT cbEvent);
 
     // Sends a pre-formatted message (including the data block, if any). The fWaitsForReply indicates whether
     // the caller is going to block until some sort of reply message is received (for instance an event that
@@ -816,11 +815,6 @@ private:
     // instance method version defined below for convenience in the implementation.
     static DWORD WINAPI TransportWorkerStatic(LPVOID pvContext);
     void TransportWorker();
-
-    // Given a fully initialized debugger event structure, return the size of the structure in bytes (this is
-    // not trivial since DebuggerIPCEvent contains a large union member which can cause the portion containing
-    // significant data to vary wildy from event to event).
-    DWORD GetEventSize(DebuggerIPCEvent *pEvent);
 
 #ifdef _DEBUG
     // Debug helper which returns the name associated with a MessageType.

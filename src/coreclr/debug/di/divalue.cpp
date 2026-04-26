@@ -420,7 +420,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
     INTERNAL_SYNC_API_ENTRY(GetProcess());
     LOG((LF_CORDB,LL_INFO1000,"CV::CreateHandle\n"));
 
-    DebuggerIPCEvent      event;
+    DebuggerIPCEvent_DebuggerSide      event;
     CordbProcess              *process;
 
     // @dbgtodo- , as part of inspection, convert this path to throwing.
@@ -464,7 +464,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
     event.CreateHandle.handleType = handleType;
 
     // Note: two-way event here...
-    HRESULT hr = process->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
+    HRESULT hr = process->SendIPCEvent(&event);
     hr = WORST_HR(hr, event.hr);
 
     if (SUCCEEDED(hr))
@@ -2515,7 +2515,7 @@ HRESULT CordbObjectValue::ForceCatchHandlerFoundEvents(BOOL enableEvents)
         VMPTR_Object vmObj;
         IfFailThrow(pDAC->GetObject(objAddr, &vmObj));
 
-        DebuggerIPCEvent event;
+        DebuggerIPCEvent_DebuggerSide event;
         CordbAppDomain * pAppDomain = GetAppDomain();
         _ASSERTE (pAppDomain != NULL);
 
@@ -2523,7 +2523,7 @@ HRESULT CordbObjectValue::ForceCatchHandlerFoundEvents(BOOL enableEvents)
         event.ForceCatchHandlerFoundData.enableEvents = enableEvents;
         event.ForceCatchHandlerFoundData.vmObj = vmObj;
 
-        hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+        hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event);
 
         _ASSERTE(event.type == DB_IPCE_CATCH_HANDLER_FOUND_RESULT);
 
@@ -4408,7 +4408,7 @@ HRESULT CordbHandleValue::Dispose()
     _ASSERTE(!m_appdomain->IsNeutered());
 
     HRESULT             hr = S_OK;
-    DebuggerIPCEvent    event;
+    DebuggerIPCEvent_DebuggerSide    event;
     CordbProcess        *process;
 
     process = GetProcess();
@@ -4445,7 +4445,7 @@ HRESULT CordbHandleValue::Dispose()
     event.DisposeHandle.handleType = m_handleType;
 
     // Note: one-way event here...
-    hr = process->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
+    hr = process->SendIPCEvent(&event);
 
     hr = WORST_HR(hr, event.hr);
 

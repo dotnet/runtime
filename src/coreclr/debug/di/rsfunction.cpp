@@ -640,7 +640,7 @@ HRESULT CordbFunction::DisableOptimizations()
     CordbProcess * pProcess = GetProcess();
     RSLockHolder lockHolder(pProcess->GetProcessLock());
 
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
     CordbAppDomain * pAppDomain = GetAppDomain();
     _ASSERTE (pAppDomain != NULL);
 
@@ -649,7 +649,7 @@ HRESULT CordbFunction::DisableOptimizations()
     event.DisableOptData.pModule = m_pModule->GetRuntimeModule();
 
     lockHolder.Release();
-    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event);
     lockHolder.Acquire();
 
     _ASSERTE(event.type == DB_IPCE_DISABLE_OPTS_RESULT);
@@ -985,7 +985,7 @@ HRESULT CordbFunction::SetJMCStatus(BOOL fIsUserCode)
     // code is loaded), which may happen while we have outstanding steppers.
 
 
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
     pProcess->InitIPCEvent(&event, DB_IPCE_SET_METHOD_JMC_STATUS, true, m_pModule->GetAppDomain()->GetADToken());
     event.SetJMCFunctionStatus.vmAssembly = m_pModule->GetRuntimeAssembly();
     event.SetJMCFunctionStatus.funcMetadataToken   = m_MDToken;
@@ -993,7 +993,7 @@ HRESULT CordbFunction::SetJMCStatus(BOOL fIsUserCode)
 
 
     // Note: two-way event here...
-    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event);
 
     // Stop now if we can't even send the event.
     if (!SUCCEEDED(hr))
@@ -1037,14 +1037,14 @@ HRESULT CordbFunction::GetJMCStatus(BOOL * pfIsUserCode)
     _ASSERTE(pProcess != NULL);
 
     // Ask the left-side if a method is user code or not.
-    DebuggerIPCEvent event;
+    DebuggerIPCEvent_DebuggerSide event;
     pProcess->InitIPCEvent(&event, DB_IPCE_GET_METHOD_JMC_STATUS, true, m_pModule->GetAppDomain()->GetADToken());
     event.SetJMCFunctionStatus.vmAssembly = m_pModule->GetRuntimeAssembly();
     event.SetJMCFunctionStatus.funcMetadataToken   = m_MDToken;
 
 
     // Note: two-way event here...
-    HRESULT hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+    HRESULT hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event);
 
     // Stop now if we can't even send the event.
     if (!SUCCEEDED(hr))

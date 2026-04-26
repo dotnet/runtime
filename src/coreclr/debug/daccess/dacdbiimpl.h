@@ -158,10 +158,13 @@ public:
     HRESULT STDMETHODCALLTYPE GetAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals);
     HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
 
+    void FillDebuggerIPCEvent_DebuggerSide(const BYTE * pRawEvent, DebuggerIPCEvent_DebuggerSide * pEvent);
+    void FillDebuggerIPCEvent_RuntimeSide(const DebuggerIPCEvent_DebuggerSide * pEvent, BYTE * pRawEventOut, UINT * pBufSize);
+
 private:
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
                                        TypeHandle                      typeHandle,
-                                       DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+                                       ExpandedTypeData * pTypeInfo);
 
     // Get the number of fixed arguments to a function, i.e., the explicit args and the "this" pointer.
     SIZE_T GetArgCount(MethodDesc * pMD);
@@ -244,16 +247,16 @@ public:
     HRESULT STDMETHODCALLTYPE GetInstantiationFieldInfo(VMPTR_Assembly vmAssembly, VMPTR_TypeHandle vmThExact, VMPTR_TypeHandle vmThApprox, OUT DacDbiArrayList<FieldData> * pFieldList, OUT SIZE_T * pObjectSize);
 
 
-    HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT ExpandedTypeData * pTypeInfo);
 
 
-    HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT ExpandedTypeData * pTypeInfo);
 
 
-    // @dbgtodo Microsoft inspection: change DebuggerIPCE_ExpandedTypeData to DacDbiStructures type hierarchy
+    // @dbgtodo Microsoft inspection: change ExpandedTypeData to DacDbiStructures type hierarchy
     // once ICorDebugType and ICorDebugClass are DACized
     // use a type handle to get the information needed to create the corresponding RS CordbType instance
-    HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, ExpandedTypeData * pTypeInfo);
 
     // Get type handle for a TypeDef token, if one exists. For generics this returns the open type.
     HRESULT STDMETHODCALLTYPE GetTypeHandle(VMPTR_Module vmModule, mdTypeDef metadataToken, OUT VMPTR_TypeHandle * pRetVal);
@@ -263,7 +266,7 @@ public:
     HRESULT STDMETHODCALLTYPE GetApproxTypeHandle(TypeInfoList * pTypeData, OUT VMPTR_TypeHandle * pRetVal);
 
     // Get the exact type handle from type data
-    HRESULT STDMETHODCALLTYPE GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData * pTypeData,
+    HRESULT STDMETHODCALLTYPE GetExactTypeHandle(ExpandedTypeData * pTypeData,
                                ArgInfoList *   pArgInfo,
                                VMPTR_TypeHandle * pVmTypeHandle);
 
@@ -380,23 +383,23 @@ private:
 
     // Gets additional information to convert a type handle to an instance of CordbType if the type is E_T_ARRAY
     void GetArrayTypeInfo(TypeHandle                      typeHandle,
-                          DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+                          ExpandedTypeData * pTypeInfo);
 
     // Gets additional information to convert a type handle to an instance of CordbType if the type is
     // E_T_PTR or E_T_BYREF
     void GetPtrTypeInfo(AreValueTypesBoxed              boxed,
                         TypeHandle                      typeHandle,
-                        DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+                        ExpandedTypeData * pTypeInfo);
 
     // Gets additional information to convert a type handle to an instance of CordbType if the type is E_T_FNPTR
     void GetFnPtrTypeInfo(AreValueTypesBoxed              boxed,
                           TypeHandle                      typeHandle,
-                          DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+                          ExpandedTypeData * pTypeInfo);
 
     // Gets additional information to convert a type handle to an instance of CordbType if the type is
     // E_T_CLASS or E_T_VALUETYPE
     void GetClassTypeInfo(TypeHandle                      typeHandle,
-                          DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+                          ExpandedTypeData * pTypeInfo);
 
     // Gets the correct CorElementType value from a type handle
     CorElementType GetElementType (TypeHandle typeHandle);
@@ -404,7 +407,7 @@ private:
     // Gets additional information to convert a type handle to an instance of CordbType for the referent of an
     // E_T_BYREF or E_T_PTR or for the element type of an E_T_ARRAY or E_T_SZARRAY
     void TypeHandleToBasicTypeInfo(TypeHandle                   typeHandle,
-                                   DebuggerIPCE_BasicTypeData * pTypeInfo);
+                                   BasicTypeData * pTypeInfo);
 
     // wrapper routines to set up for a call to ClassLoader functions to retrieve a type handle for a
     // particular kind of type
@@ -499,18 +502,18 @@ private:
 
     // get a typehandle for a class or valuetype from basic type data (metadata token
     // and assembly
-    TypeHandle GetClassOrValueTypeHandle(DebuggerIPCE_BasicTypeData * pData);
+    TypeHandle GetClassOrValueTypeHandle(BasicTypeData * pData);
 
     // get an exact type handle for an array type
-    TypeHandle GetExactArrayTypeHandle(DebuggerIPCE_ExpandedTypeData * pTopLevelTypeData,
+    TypeHandle GetExactArrayTypeHandle(ExpandedTypeData * pTopLevelTypeData,
                                        ArgInfoList *                   pArgInfo);
 
     // get an exact type handle for a PTR or BYREF type
-    TypeHandle GetExactPtrOrByRefTypeHandle(DebuggerIPCE_ExpandedTypeData * pTopLevelTypeData,
+    TypeHandle GetExactPtrOrByRefTypeHandle(ExpandedTypeData * pTopLevelTypeData,
                                             ArgInfoList *                   pArgInfo);
 
     // get an exact type handle for a CLASS or VALUETYPE type
-    TypeHandle GetExactClassTypeHandle(DebuggerIPCE_ExpandedTypeData * pTopLevelTypeData,
+    TypeHandle GetExactClassTypeHandle(ExpandedTypeData * pTopLevelTypeData,
                                        ArgInfoList *                   pArgInfo);
 
     // get an exact type handle for a FNPTR type
@@ -523,13 +526,13 @@ private:
     // we use the metadata token and assembly in the type info to look up the
     // appropriate type handle. If the type parameter is any other types, we get the
     // type handle by having the loader look up the type handle for the element type.
-    TypeHandle BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicTypeData * pArgTypeData);
+    TypeHandle BasicTypeInfoToTypeHandle(BasicTypeData * pArgTypeData);
 
     // Convert type information for a top-level type to an exact type handle. This
     // information includes information about the element type if the top-level type is
     // an array type, the referent if the top-level type is a pointer type, or actual
     // parameters if the top-level type is a generic class or value type.
-    TypeHandle ExpandedTypeInfoToTypeHandle(DebuggerIPCE_ExpandedTypeData * pTopLevelTypeData,
+    TypeHandle ExpandedTypeInfoToTypeHandle(ExpandedTypeData * pTopLevelTypeData,
                                             ArgInfoList *                   pArgInfo);
 
     // Initialize information about a field added with EnC

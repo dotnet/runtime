@@ -633,13 +633,13 @@ public:
               mdTypeDef        metadataToken,
               VMPTR_Assembly vmAssembly);
 
-    DebuggerIPCE_BasicTypeData GetObjectTypeData() const { return m_objectTypeData; };
+    BasicTypeData GetObjectTypeData() const { return m_objectTypeData; };
     mdFieldDef GetFieldToken() const { return m_fldToken; };
     VMPTR_Object GetVmObject() const { return m_vmObject; };
     SIZE_T GetOffsetToVars() const { return m_offsetToVars; };
 
 private:
-    DebuggerIPCE_BasicTypeData m_objectTypeData; // type data for the EnC field
+    BasicTypeData m_objectTypeData; // type data for the EnC field
     VMPTR_Object               m_vmObject;        // object instance to which the field has been added--if the field is
                                                  // static, this will be NULL instead of pointing to an instance
     SIZE_T                     m_offsetToVars;   // offset to the beginning of variable storage in the object
@@ -647,7 +647,7 @@ private:
 
 }; // EnCHangingFieldInfo
 
-// TypeHandleToExpandedTypeInfo returns different DebuggerIPCE_ExpandedTypeData objects
+// TypeHandleToExpandedTypeInfo returns different ExpandedTypeData objects
 // depending on whether the object value that the TypeData corresponds to is
 // boxed or not.  Different parts of the API transfer objects in slightly different ways.
 // AllBoxed:
@@ -678,10 +678,10 @@ typedef DacDbiArrayList<DebuggerIPCE_TypeArgData> TypeInfoList;
 
 // ArgInfoList encapsulates a list of type data instances for arguments for a top-level
 // type and the length of the list.
-typedef DacDbiArrayList<DebuggerIPCE_BasicTypeData> ArgInfoList;
+typedef DacDbiArrayList<BasicTypeData> ArgInfoList;
 
 // TypeParamsList encapsulate a list of type parameters and the length of the list
-typedef DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> TypeParamsList;
+typedef DacDbiArrayList<ExpandedTypeData> TypeParamsList;
 
 // A struct for passing version information from DBI to DAC.
 // See code:CordbProcess::CordbProcess#DBIVersionChecking for more information.
@@ -781,6 +781,91 @@ struct MSLAYOUT DacThreadAllocInfo
     ULONG64 m_allocBytesSOH;
     ULONG64 m_allocBytesUOH;
 };
+
+//
+// BasicTypeData and ExpandedTypeData
+// hold data for each type sent across the
+// boundary, whether it be a constructed type List<String> or a non-constructed
+// type such as String, Foo or Object.
+//
+// Logically speaking BasicTypeData might just be "typeHandle", as
+// we could then send further events to ask what the elementtype, typeToken and moduleToken
+// are for the type handle.  But as
+// nearly all types are non-generic we send across even the basic type information in
+// the slightly expanded form shown below, sending the element type and the
+// tokens with the type handle itself. The fields debuggerModuleToken, metadataToken and typeHandle
+// are only used as follows:
+//                                   elementType    debuggerModuleToken metadataToken      typeHandle
+//     E_T_INT8    :                  E_T_INT8         No                     No              No
+//     Boxed E_T_INT8:                E_T_CLASS        No                     No              No
+//     E_T_CLASS, non-generic class:  E_T_CLASS       Yes                    Yes              No
+//     E_T_VALUETYPE, non-generic:    E_T_VALUETYPE   Yes                    Yes              No
+//     E_T_CLASS,     generic class:  E_T_CLASS       Yes                    Yes             Yes
+//     E_T_VALUETYPE, generic class:  E_T_VALUETYPE   Yes                    Yes             Yes
+//     E_T_BYREF                   :  E_T_BYREF        No                     No             Yes
+//     E_T_PTR                     :  E_T_PTR          No                     No             Yes
+//     E_T_ARRAY etc.              :  E_T_ARRAY        No                     No             Yes
+//     E_T_FNPTR etc.              :  E_T_FNPTR        No                     No             Yes
+// This allows us to always set "typeHandle" to NULL except when dealing with highly nested
+// types or function-pointer types (the latter are too complexe to transfer over in one hit).
+//
+
+struct MSLAYOUT BasicTypeData
+{
+    CorElementType  elementType;
+    mdTypeDef       metadataToken;
+    VMPTR_Assembly  vmAssembly;
+    VMPTR_TypeHandle vmTypeHandle;
+};
+
+// So this type information is not "fully expanded", it's just a little
+// more detail then BasicTypeData.  For type
+// instantiatons (e.g. List<int>) and
+// function pointer types you will need to make further requests for
+// information about the type parameters.
+// For array types there is always only one type parameter so
+// we include that as part of the expanded data.
+//
+//
+struct MSLAYOUT ExpandedTypeData
+{
+    CorElementType  elementType; // Note this is _never_ E_T_VAR, E_T_WITH or E_T_MVAR
+    union MSLAYOUT
+    {
+        // used for E_T_CLASS and E_T_VALUECLASS, E_T_PTR, E_T_BYREF etc.
+        // For non-constructed E_T_CLASS or E_T_VALUECLASS the tokens will be set and the typeHandle will be NULL
+        // For constructed E_T_CLASS or E_T_VALUECLASS the tokens will be set and the typeHandle will be non-NULL
+        // For E_T_PTR etc. the tokens will be NULL and the typeHandle will be non-NULL.
+        struct MSLAYOUT
+         {
+            mdTypeDef       metadataToken;
+            VMPTR_Assembly  vmAssembly;
+            VMPTR_TypeHandle typeHandle; // if non-null then further fetches will be needed to get type arguments
+        } ClassTypeData;
+
+        // used for E_T_PTR, E_T_BYREF etc.
+        struct MSLAYOUT
+        {
+            BasicTypeData unaryTypeArg;  // used only when sending back to debugger
+        } UnaryTypeData;
+
+
+        // used for E_T_ARRAY etc.
+        struct MSLAYOUT
+        {
+          BasicTypeData arrayTypeArg; // used only when sending back to debugger
+            DWORD           arrayRank;
+        } ArrayTypeData;
+
+        // used for E_T_FNPTR
+        struct MSLAYOUT
+         {
+            VMPTR_TypeHandle typeHandle; // if non-null then further fetches needed to get type arguments
+        } NaryTypeData;
+
+    };
+};
+
 
 #include "dacdbistructures.inl"
 #endif // DACDBISTRUCTURES_H_

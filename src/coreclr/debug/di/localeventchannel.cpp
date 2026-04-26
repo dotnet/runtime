@@ -48,7 +48,7 @@ public:
 
 
     // Check whether we need to wait for an acknowledgement from the LS after sending an IPC event.
-    virtual BOOL NeedToWaitForAck(DebuggerIPCEvent * pEvent);
+    virtual BOOL NeedToWaitForAck(DebuggerIPCEvent_DebuggerSide * pEvent);
 
     // Get a handle to wait on after sending an IPC event to the LS.  The caller should call NeedToWaitForAck()
     virtual HANDLE GetRightSideEventAckHandle();
@@ -59,20 +59,20 @@ public:
 
 
     // Send an IPC event to the LS.
-    virtual HRESULT SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T eventSize);
+    virtual HRESULT SendEventToLeftSide(BYTE * pEvent, SIZE_T eventSize, DebuggerIPCEventType eventType);
 
     // Get the reply from the LS for a previously sent IPC event.
-    virtual HRESULT GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent, SIZE_T eventSize);
+    virtual HRESULT GetReplyFromLeftSide(BYTE * pReplyEvent, SIZE_T eventSize);
 
 
 
     // Save an IPC event from the LS.
     // Used for transferring an IPC event from the native pipeline to the IPC event channel.
-    virtual HRESULT SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromLeftSide);
+    virtual HRESULT SaveEventFromLeftSide(BYTE * pEventFromLeftSide);
 
     // Get a saved IPC event from the LS.
     // Used for transferring an IPC event from the native pipeline to the IPC event channel.
-    virtual HRESULT GetEventFromLeftSide(DebuggerIPCEvent * pLocalManagedEvent);
+    virtual HRESULT GetEventFromLeftSide(BYTE * pLocalManagedEvent, SIZE_T eventSize);
 
 private:
     // Get a target buffer representing the area of the DebuggerIPCControlBlock on the helper thread that
@@ -285,7 +285,7 @@ DebuggerIPCControlBlock * LocalEventChannel::GetDCB()
 // Check whether we need to wait for an acknowledgement from the LS after sending an IPC event.
 //
 // virtual
-BOOL LocalEventChannel::NeedToWaitForAck(DebuggerIPCEvent * pEvent)
+BOOL LocalEventChannel::NeedToWaitForAck(DebuggerIPCEvent_DebuggerSide * pEvent)
 {
     // On Windows, we need to wait for acknowledgement for every synchronous event.
     return !pEvent->asyncSend;
@@ -310,7 +310,7 @@ void LocalEventChannel::ClearEventForLeftSide()
 // Send an IPC event to the LS.
 //
 // virtual
-HRESULT LocalEventChannel::SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T eventSize)
+HRESULT LocalEventChannel::SendEventToLeftSide(BYTE * pEvent, SIZE_T eventSize, DebuggerIPCEventType eventType)
 {
     _ASSERTE(eventSize <= CorDBIPC_BUFFER_SIZE);
 
@@ -318,7 +318,7 @@ HRESULT LocalEventChannel::SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T
     BOOL    fSuccess = FALSE;
 
     // Copy the event into the shared memory segment.
-    hr = SafeWriteBuffer(RemoteReceiveBuffer(eventSize), reinterpret_cast<BYTE *>(pEvent));
+    hr = SafeWriteBuffer(RemoteReceiveBuffer(eventSize), pEvent);
     if (FAILED(hr))
     {
         return hr;
@@ -357,17 +357,17 @@ HRESULT LocalEventChannel::SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T
 // Get the reply from the LS for a previously sent IPC event.
 //
 // virtual
-HRESULT LocalEventChannel::GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent, SIZE_T eventSize)
+HRESULT LocalEventChannel::GetReplyFromLeftSide(BYTE * pReplyEvent, SIZE_T eventSize)
 {
     // Simply read the IPC event reply directly from the receive buffer on the LS.
-    return SafeReadBuffer(RemoteReceiveBuffer(eventSize), reinterpret_cast<BYTE *>(pReplyEvent));
+    return SafeReadBuffer(RemoteReceiveBuffer(eventSize), pReplyEvent);
 }
 
 // Save an IPC event from the LS.
 // Used for transferring an IPC event from the native pipeline to the IPC event channel.
 //
 // virtual
-HRESULT LocalEventChannel::SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromLeftSide)
+HRESULT LocalEventChannel::SaveEventFromLeftSide(BYTE * pEventFromLeftSide)
 {
     // On Windows, when a thread raises a debug event through the native pipeline, the process is suspended.
     // Thus, the LS IPC event will still be in the send buffer in the debuggee's address space.
@@ -380,11 +380,11 @@ HRESULT LocalEventChannel::SaveEventFromLeftSide(DebuggerIPCEvent * pEventFromLe
 // Used for transferring an IPC event from the native pipeline to the IPC event channel.
 //
 // virtual
-HRESULT LocalEventChannel::GetEventFromLeftSide(DebuggerIPCEvent * pLocalManagedEvent)
+HRESULT LocalEventChannel::GetEventFromLeftSide(BYTE * pLocalManagedEvent, SIZE_T eventSize)
 {
     // See code:LocalEventChannel::SaveEventFromLeftSide.
     // Make sure we are reading form the send buffer, not the receive buffer.
-    return SafeReadBuffer(RemoteSendBuffer(CorDBIPC_BUFFER_SIZE), reinterpret_cast<BYTE *>(pLocalManagedEvent));
+    return SafeReadBuffer(RemoteSendBuffer(eventSize), pLocalManagedEvent);
 }
 
 //-----------------------------------------------------------------------------
