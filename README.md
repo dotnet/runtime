@@ -71,3 +71,11 @@ General .NET OSS discussions: [.NET Foundation Discussions](https://github.com/d
 ## License
 
 .NET (including the runtime repo) is licensed under the [MIT](LICENSE.TXT) license.
+
+## 💰 Bounty Contribution
+
+- **Task:** Assertion failures: localhost resolves to non-loopback addresses on tvOS arm64
+- **Reward:** $2
+- **Source:** GitHub-Paid
+- **Date:** 2026-04-27
+
