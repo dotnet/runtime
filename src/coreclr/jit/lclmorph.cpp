@@ -865,7 +865,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 
     ArrayStack<Value>               m_valueStack;
     bool                            m_stmtModified          = false;
-    bool                            m_stmtSideEffectsShrunk = false;
+    bool                            m_stmtUpdateSideEffects = false;
     bool                            m_madeChanges           = false;
     bool                            m_propagatedAddrs       = false;
     LocalSequencer*                 m_sequencer;
@@ -908,7 +908,7 @@ public:
 #endif // DEBUG
 
         m_stmtModified          = false;
-        m_stmtSideEffectsShrunk = false;
+        m_stmtUpdateSideEffects = false;
 
         if (m_sequencer != nullptr)
         {
@@ -923,7 +923,7 @@ public:
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
 
-        if (m_stmtSideEffectsShrunk)
+        if (m_stmtUpdateSideEffects)
         {
             // Rewrites such as IND(FIELD_ADDR(LCL_VAR)) -> LCL_FLD can remove
             // side effects (e.g. GTF_EXCEPT) from a subtree; refresh the
@@ -1187,7 +1187,7 @@ public:
                         PopValue();
                         PopValue();
                         m_stmtModified          = true;
-                        m_stmtSideEffectsShrunk = true;
+                        m_stmtUpdateSideEffects = true;
                         break;
                     }
                 }
@@ -1319,7 +1319,7 @@ public:
                     *lhs.Use()              = m_compiler->gtNewIconNode(0);
                     *rhs.Use()              = m_compiler->gtNewIconNode(1);
                     m_stmtModified          = true;
-                    m_stmtSideEffectsShrunk = true;
+                    m_stmtUpdateSideEffects = true;
 
                     INDEBUG(TopValue(0).Consume());
                     INDEBUG(TopValue(1).Consume());
@@ -1333,7 +1333,7 @@ public:
                     *lhs.Use()              = m_compiler->gtNewIconNode(0);
                     *rhs.Use()              = m_compiler->gtNewIconNode(isSameAddress ? 0 : 1);
                     m_stmtModified          = true;
-                    m_stmtSideEffectsShrunk = true;
+                    m_stmtUpdateSideEffects = true;
 
                     INDEBUG(TopValue(0).Consume());
                     INDEBUG(TopValue(1).Consume());
@@ -1363,7 +1363,7 @@ public:
                     INDEBUG(TopValue(0).Consume());
                     PopValue();
                     m_stmtModified          = true;
-                    m_stmtSideEffectsShrunk = true;
+                    m_stmtUpdateSideEffects = true;
                 }
                 else
                 {
@@ -1672,7 +1672,7 @@ private:
         m_stmtModified                = true;
         if (oldEffects != GTF_EMPTY)
         {
-            m_stmtSideEffectsShrunk = true;
+            m_stmtUpdateSideEffects = true;
         }
     }
 
@@ -1700,7 +1700,7 @@ private:
             case IndirTransform::Nop:
                 indir->gtBashToNOP();
                 m_stmtModified          = true;
-                m_stmtSideEffectsShrunk = true;
+                m_stmtUpdateSideEffects = true;
                 return;
 
             case IndirTransform::BitCast:
@@ -1932,7 +1932,7 @@ private:
 
         lclNode->gtFlags        = lclNodeFlags;
         m_stmtModified          = true;
-        m_stmtSideEffectsShrunk = true;
+        m_stmtUpdateSideEffects = true;
     }
 
     //------------------------------------------------------------------------
@@ -2163,7 +2163,7 @@ private:
 
                 JITDUMP("Replacing the field in promoted struct with local var V%02u\n", fieldLclNum);
                 m_stmtModified          = true;
-                m_stmtSideEffectsShrunk = true;
+                m_stmtUpdateSideEffects = true;
 
                 node->ChangeOper(GT_LCL_ADDR);
                 node->AsLclFld()->SetLclNum(fieldLclNum);
@@ -2236,7 +2236,7 @@ private:
         else
         {
             m_stmtModified          = true;
-            m_stmtSideEffectsShrunk = true;
+            m_stmtUpdateSideEffects = true;
         }
     }
 
