@@ -34,7 +34,7 @@ static void CopyThreadInfo(HaikuThreadInfo* info, const thread_info* nativeInfo)
 
     info->thread = nativeInfo->thread;
     info->team = nativeInfo->team;
-    info->state = nativeInfo->state;
+    info->state = (int32_t)nativeInfo->state;
     info->priority = nativeInfo->priority;
     info->user_time = nativeInfo->user_time;
     info->kernel_time = nativeInfo->kernel_time;
@@ -288,7 +288,7 @@ int32_t SystemNative_GetNextImageInfo(int32_t team, int32_t* cookie, ImageInfo* 
     }
 
     memset(info, 0, sizeof(*info));
-    info->type = nativeInfo.type;
+    info->type = (int32_t)nativeInfo.type;
     SafeStringCopy((char*)info->name, sizeof(info->name), (const char*)nativeInfo.name);
     info->text = (uintptr_t)nativeInfo.text;
     info->text_size = nativeInfo.text_size;
