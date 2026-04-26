@@ -31,6 +31,7 @@ namespace System.Runtime.Intrinsics
     // the internal inlining limits of the JIT.
 
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 128-bit vectors.</summary>
+    [Intrinsic]
     public static partial class Vector128
     {
         internal const int Size = 16;

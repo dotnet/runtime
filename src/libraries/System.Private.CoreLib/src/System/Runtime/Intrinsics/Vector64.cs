@@ -11,6 +11,7 @@ using System.Runtime.Intrinsics.Arm;
 namespace System.Runtime.Intrinsics
 {
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 64-bit vectors.</summary>
+    [Intrinsic]
     public static class Vector64
     {
         internal const int Size = 8;
