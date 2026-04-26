@@ -864,9 +864,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     };
 
     ArrayStack<Value>               m_valueStack;
-    bool                            m_stmtModified    = false;
-    bool                            m_madeChanges     = false;
-    bool                            m_propagatedAddrs = false;
+    bool                            m_stmtModified          = false;
+    bool                            m_stmtSideEffectsShrunk = false;
+    bool                            m_madeChanges           = false;
+    bool                            m_propagatedAddrs       = false;
     LocalSequencer*                 m_sequencer;
     LocalEqualsLocalAddrAssertions* m_lclAddrAssertions;
 
@@ -906,7 +907,8 @@ public:
         }
 #endif // DEBUG
 
-        m_stmtModified = false;
+        m_stmtModified          = false;
+        m_stmtSideEffectsShrunk = false;
 
         if (m_sequencer != nullptr)
         {
@@ -921,7 +923,7 @@ public:
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
 
-        if (m_stmtModified)
+        if (m_stmtSideEffectsShrunk)
         {
             // Rewrites such as IND(FIELD_ADDR(LCL_VAR)) -> LCL_FLD can remove
             // side effects (e.g. GTF_EXCEPT) from a subtree; refresh the
@@ -1184,7 +1186,8 @@ public:
                         INDEBUG(rhs.Consume());
                         PopValue();
                         PopValue();
-                        m_stmtModified = true;
+                        m_stmtModified          = true;
+                        m_stmtSideEffectsShrunk = true;
                         break;
                     }
                 }
@@ -1313,9 +1316,10 @@ public:
                     (rhs.IsAddress() && lhs.Node()->IsIntegralConst(0)))
                 {
                     JITDUMP("Rewriting known address vs null comparison [%06u]\n", m_compiler->dspTreeID(node));
-                    *lhs.Use()     = m_compiler->gtNewIconNode(0);
-                    *rhs.Use()     = m_compiler->gtNewIconNode(1);
-                    m_stmtModified = true;
+                    *lhs.Use()              = m_compiler->gtNewIconNode(0);
+                    *rhs.Use()              = m_compiler->gtNewIconNode(1);
+                    m_stmtModified          = true;
+                    m_stmtSideEffectsShrunk = true;
 
                     INDEBUG(TopValue(0).Consume());
                     INDEBUG(TopValue(1).Consume());
@@ -1325,10 +1329,11 @@ public:
                 else if (lhs.IsAddress() && rhs.IsAddress())
                 {
                     JITDUMP("Rewriting known address vs address comparison [%06u]\n", m_compiler->dspTreeID(node));
-                    bool isSameAddress = lhs.IsSameAddress(rhs);
-                    *lhs.Use()         = m_compiler->gtNewIconNode(0);
-                    *rhs.Use()         = m_compiler->gtNewIconNode(isSameAddress ? 0 : 1);
-                    m_stmtModified     = true;
+                    bool isSameAddress      = lhs.IsSameAddress(rhs);
+                    *lhs.Use()              = m_compiler->gtNewIconNode(0);
+                    *rhs.Use()              = m_compiler->gtNewIconNode(isSameAddress ? 0 : 1);
+                    m_stmtModified          = true;
+                    m_stmtSideEffectsShrunk = true;
 
                     INDEBUG(TopValue(0).Consume());
                     INDEBUG(TopValue(1).Consume());
@@ -1357,7 +1362,8 @@ public:
                     node->gtBashToNOP();
                     INDEBUG(TopValue(0).Consume());
                     PopValue();
-                    m_stmtModified = true;
+                    m_stmtModified          = true;
+                    m_stmtSideEffectsShrunk = true;
                 }
                 else
                 {
@@ -1661,8 +1667,13 @@ private:
         }
 
         // Local address nodes never have side effects (nor any other flags, at least at this point).
-        addr->gtFlags  = GTF_EMPTY;
-        m_stmtModified = true;
+        GenTreeFlags const oldEffects = addr->gtFlags & GTF_ALL_EFFECT;
+        addr->gtFlags                 = GTF_EMPTY;
+        m_stmtModified                = true;
+        if (oldEffects != GTF_EMPTY)
+        {
+            m_stmtSideEffectsShrunk = true;
+        }
     }
 
     //------------------------------------------------------------------------
@@ -1688,7 +1699,8 @@ private:
         {
             case IndirTransform::Nop:
                 indir->gtBashToNOP();
-                m_stmtModified = true;
+                m_stmtModified          = true;
+                m_stmtSideEffectsShrunk = true;
                 return;
 
             case IndirTransform::BitCast:
@@ -1918,8 +1930,9 @@ private:
             }
         }
 
-        lclNode->gtFlags = lclNodeFlags;
-        m_stmtModified   = true;
+        lclNode->gtFlags        = lclNodeFlags;
+        m_stmtModified          = true;
+        m_stmtSideEffectsShrunk = true;
     }
 
     //------------------------------------------------------------------------
@@ -2149,7 +2162,8 @@ private:
                 }
 
                 JITDUMP("Replacing the field in promoted struct with local var V%02u\n", fieldLclNum);
-                m_stmtModified = true;
+                m_stmtModified          = true;
+                m_stmtSideEffectsShrunk = true;
 
                 node->ChangeOper(GT_LCL_ADDR);
                 node->AsLclFld()->SetLclNum(fieldLclNum);
@@ -2221,7 +2235,8 @@ private:
         }
         else
         {
-            m_stmtModified = true;
+            m_stmtModified          = true;
+            m_stmtSideEffectsShrunk = true;
         }
     }
 
