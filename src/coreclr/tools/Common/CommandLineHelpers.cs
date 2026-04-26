@@ -75,18 +75,8 @@ namespace System.CommandLine
 
             return token.ToLowerInvariant() switch
             {
-                "linux" => TargetOS.Linux,
-                "win" or "windows" => TargetOS.Windows,
-                "osx" => TargetOS.OSX,
-                "freebsd" => TargetOS.FreeBSD,
-                "haiku" => TargetOS.Haiku,
-                "maccatalyst" => TargetOS.MacCatalyst,
-                "iossimulator" => TargetOS.iOSSimulator,
-                "ios" => TargetOS.iOS,
-                "tvossimulator" => TargetOS.tvOSSimulator,
-                "tvos" => TargetOS.tvOS,
-                "browser" => TargetOS.Browser,
-                "wasi" => TargetOS.Wasi,
+                "win" => TargetOS.Windows,
+                _ when Enum.TryParse(token, ignoreCase: true, out TargetOS os) => os,
                 _ => throw new CommandLineException($"Target OS '{token}' is not supported")
             };
         }

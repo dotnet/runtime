@@ -214,15 +214,12 @@ namespace R2RDump
                     Machine.RiscV64 => TargetArchitecture.RiscV64,
                     _ => throw new NotImplementedException(r2r.Machine.ToString()),
                 };
+                string osToken = r2r.OperatingSystem.ToString();
                 TargetOS os = r2r.OperatingSystem switch
                 {
-                    OperatingSystem.Windows => TargetOS.Windows,
-                    OperatingSystem.Linux => TargetOS.Linux,
                     OperatingSystem.Apple => TargetOS.OSX,
-                    OperatingSystem.FreeBSD => TargetOS.FreeBSD,
-                    OperatingSystem.NetBSD => TargetOS.FreeBSD,
-                    OperatingSystem.Haiku => TargetOS.Haiku,
-                    _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
+                    _ when Enum.TryParse(osToken, ignoreCase: true, out TargetOS parsedOs) => parsedOs,
+                    _ => throw new NotImplementedException(osToken),
                 };
                 TargetDetails details = new(architecture, os, TargetAbi.NativeAot);
 
