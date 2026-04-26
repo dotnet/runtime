@@ -1667,13 +1667,12 @@ private:
         }
 
         // Local address nodes never have side effects (nor any other flags, at least at this point).
-        GenTreeFlags const oldEffects = addr->gtFlags & GTF_ALL_EFFECT;
-        addr->gtFlags                 = GTF_EMPTY;
-        m_stmtModified                = true;
-        if (oldEffects != GTF_EMPTY)
-        {
-            m_stmtUpdateSideEffects = true;
-        }
+        // Even when the original address had no side effects of its own, rewriting it to a known
+        // non-null LCL_ADDR can shed GTF_EXCEPT from ancestor indirections that were potentially
+        // faulting via a possibly-null address, so we must refresh statement side effects.
+        addr->gtFlags           = GTF_EMPTY;
+        m_stmtModified          = true;
+        m_stmtUpdateSideEffects = true;
     }
 
     //------------------------------------------------------------------------
