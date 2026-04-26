@@ -989,7 +989,7 @@ public:
     // Maximum number of over-budget [Intrinsic]-type inlines allowed per root method.
     enum
     {
-        MAX_OVER_BUDGET_INTRINSIC_INLINES = 32
+        MAX_OVER_BUDGET_INTRINSIC_INLINES = 50
     };
 
     // Number of over-budget inlines admitted because the callee was on an [Intrinsic] type.
