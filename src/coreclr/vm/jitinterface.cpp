@@ -11451,18 +11451,6 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
     void* result = NULL;
     JIT_TO_EE_TRANSITION();
 
-    Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
-    Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
-    SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
-    Module* mod = GetModule(szMetaSig->scope);
-
-    MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
-
-    if (szMetaSig->isAsyncCall())
-        sig.SetIsAsyncCall();
-
-    _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
-
     // When compiling a calli inside an IL stub for a P/Invoke, pass the target
     // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
     MethodDesc* pContextMD = nullptr;
@@ -11472,9 +11460,32 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
         if (pTargetMD != nullptr)
         {
             pContextMD = pTargetMD;
+            result = (void*)pTargetMD->GetCalliCookie();
         }
     }
-    result = GetCookieForCalliSig(sig, pContextMD);
+
+    if (result == NULL)
+    {
+        Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
+        Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
+        SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
+        Module* mod = GetModule(szMetaSig->scope);
+
+        MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
+
+        if (szMetaSig->isAsyncCall())
+            sig.SetIsAsyncCall();
+
+        _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
+
+        result = GetCookieForCalliSig(sig, pContextMD);
+
+        if (pContextMD != nullptr)
+        {
+            pContextMD->SetCalliCookie((InterpreterCalliCookie)result);
+            result = (void*)pContextMD->GetCalliCookie();
+        }
+    }
 
     EE_TO_JIT_TRANSITION();
     return result;
