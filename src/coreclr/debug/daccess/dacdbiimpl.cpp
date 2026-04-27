@@ -1316,7 +1316,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(CORDB_AD
 
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
         {
-            codeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(codeAddr);
+            codeAddr = GetInterpreterCodeFromEntryPointIfPresent(codeAddr);
         }
         EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
 

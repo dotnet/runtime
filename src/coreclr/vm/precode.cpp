@@ -959,32 +959,41 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
-TADDR GetInterpreterCodeFromInterpreterPrecodeIfPresent(TADDR codePointerMaybeInterpreterStub)
+TADDR GetInterpreterCodeFromEntryPointIfPresent(TADDR entryPoint, MethodDesc* pMethodDesc)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
     } CONTRACTL_END;
-    
+
 #if defined(FEATURE_INTERPRETER) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
-    if (codePointerMaybeInterpreterStub == (TADDR)NULL)
+    if (entryPoint == (TADDR)NULL)
     {
         return (TADDR)NULL;
     }
 
-    RangeSection * pRS = ExecutionManager::FindCodeRange(codePointerMaybeInterpreterStub, ExecutionManager::GetScanFlags());
+    RangeSection * pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
     if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
     {
         if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
         {
-            if (dac_cast<PTR_StubPrecode>(PCODEToPINSTR(codePointerMaybeInterpreterStub))->GetType() == PRECODE_INTERPRETER)
+            if (dac_cast<PTR_StubPrecode>(PCODEToPINSTR(entryPoint))->GetType() == PRECODE_INTERPRETER)
             {
-                codePointerMaybeInterpreterStub = (dac_cast<PTR_InterpreterPrecode>(PCODEToPINSTR(codePointerMaybeInterpreterStub)))->GetData()->ByteCodeAddr;
+                entryPoint = (dac_cast<PTR_InterpreterPrecode>(PCODEToPINSTR(entryPoint)))->GetData()->ByteCodeAddr;
             }
+        }
+    }
+#elif defined(FEATURE_INTERPRETER) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    if (pMethodDesc != NULL)
+    {
+        PTR_InterpByteCodeStart pInterpCode = pMethodDesc->GetInterpreterCode();
+        if (pInterpCode != NULL)
+        {
+            return dac_cast<TADDR>(pInterpCode);
         }
     }
 #endif
 
-    return codePointerMaybeInterpreterStub;
+    return entryPoint;
 }

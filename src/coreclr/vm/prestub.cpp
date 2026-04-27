@@ -2544,7 +2544,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // Check to see if the entrypoint is into the interpreter. If so, grab the interpreter codes from the stub and put that directly
             // into the MethodDesc
             TADDR functionAddress = GetOrCreatePrecode()->GetTarget();
-            TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromInterpreterPrecodeIfPresent(functionAddress);
+            TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromEntryPointIfPresent(functionAddress);
             if (byteCodeStartOrFunctionAddress != functionAddress)
             {
                 // Then we must have an InterpByteCodeStart
