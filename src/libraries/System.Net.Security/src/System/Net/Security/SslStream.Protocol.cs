@@ -1253,7 +1253,7 @@ namespace System.Net.Security
             }
 
 #if TARGET_APPLE
-            if (_lastFrame.Header.Version != SslProtocols.Tls13)
+            if (_securityContext is not null && !SslStreamPal.IsAsyncSecurityContext(_securityContext))
             {
                 byte[] alertFrame = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, (TlsAlertDescription)alertMessage);
                 if (alertFrame.Length != 0)
