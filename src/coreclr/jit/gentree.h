@@ -1868,8 +1868,13 @@ public:
         {
             return true;
         }
-#endif
         return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
+#elif defined(TARGET_AMD64)
+        // GT_JCC, GT_SETCC, GT_SELECTCC, and GT_CCMP are contiguous in the GT_ enum.
+        return (GT_JCC <= gtOper) && (gtOper <= GT_CCMP);
+#else
+        return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
+#endif
     }
 
 #ifdef DEBUG
