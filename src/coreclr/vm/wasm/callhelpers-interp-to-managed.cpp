@@ -166,6 +166,20 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5));
     }
 
+    NOINLINE static void CallFunc_This_I32_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    {
+        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+        int32_t (*fptr)(int*, int32_t, int32_t, PCODE) = (int32_t (*)(int*, int32_t, int32_t, PCODE))pcode;
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), pPortableEntryPointContext);
+    }
+
+    NOINLINE static void CallFunc_This_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    {
+        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+        int32_t (*fptr)(int*, int32_t, PCODE) = (int32_t (*)(int*, int32_t, PCODE))pcode;
+        *((int32_t*)pRet) = (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPointContext);
+    }
+
     static void CallFunc_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         int32_t (*fptr)(int32_t) = (int32_t (*)(int32_t))pcode;
@@ -472,6 +486,13 @@ namespace
         (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7), ARG_I32(8), ARG_I32(9), ARG_I32(10), ARG_I32(11));
     }
 
+    NOINLINE static void CallFunc_This_RetVoid_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    {
+        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+        void (*fptr)(int*, int32_t, PCODE) = (void (*)(int*, int32_t, PCODE))pcode;
+        (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPointContext);
+    }
+
     NOINLINE static void CallFunc_F64_I32_I32_RetVoid_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
@@ -611,6 +632,8 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "MiS8iii", (void*)&CallFunc_S8_I32_I32_I32_RetI32 },
     { "MiS8iiii", (void*)&CallFunc_S8_I32_I32_I32_I32_RetI32 },
     { "MiS8iiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_RetI32 },
+    { "MiTip", (void*)&CallFunc_This_I32_RetI32_PE },
+    { "MiTp", (void*)&CallFunc_This_RetI32_PE },
     { "Mii", (void*)&CallFunc_I32_RetI32 },
     { "MiiS8i", (void*)&CallFunc_I32_S8_I32_RetI32 },
     { "MiiS8iii", (void*)&CallFunc_I32_S8_I32_I32_I32_RetI32 },
@@ -660,6 +683,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "MvS8iiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_RetVoid },
     { "MvS8iiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_RetVoid },
     { "MvS8iiiiiiiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetVoid },
+    { "MvTp", (void*)&CallFunc_This_RetVoid_PE },
     { "Mvdiip", (void*)&CallFunc_F64_I32_I32_RetVoid_PE },
     { "Mvfiip", (void*)&CallFunc_F32_I32_I32_RetVoid_PE },
     { "Mvi", (void*)&CallFunc_I32_RetVoid },

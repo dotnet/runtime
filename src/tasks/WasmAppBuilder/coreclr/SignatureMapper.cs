@@ -216,7 +216,7 @@ internal static class SignatureMapper
         'f' => "F32",
         'd' => "F64",
         'S' => token, // e.g. "S8", "S64" — encodes size in the name
-        'T' => "I32",
+        'T' => "This",
         'p' => "PE",
         _ => throw new InvalidSignatureCharException(token[0])
     };
