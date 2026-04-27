@@ -1758,12 +1758,16 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     // this is a non-standard arg in a register.
 #ifndef TARGET_WASM
     bool needsIndirectionCellArg = call->IsR2RRelativeIndir() && !call->IsDelegateInvoke();
-#else
-    bool needsIndirectionCellArg = false;
-#endif
 
 #if defined(TARGET_XARCH)
     needsIndirectionCellArg &= call->IsFastTailCall();
+#endif
+
+#else
+    // TARGET_WASM does not use an explicit indirection cell arg for the R2R calling convention,
+    // the address of the indirection cell is recoverable from the portable entrypoint which
+    // we pass as part of the Wasm managed calling convention (See LowerPEPCall).
+    bool needsIndirectionCellArg = false;
 #endif
 
     if (needsIndirectionCellArg)
