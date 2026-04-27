@@ -622,34 +622,24 @@ namespace System.Threading.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static async Task WaitAsync_AvailableWaitHandle_ConcurrentInit_StaysConsistent()
         {
-            const int Iterations = 10_000;
-            var sem = new SemaphoreSlim(1, 1);
+            // The race only fires during the first AvailableWaitHandle access on a given semaphore
+            // (after init, m_waitHandle is non-null and the WaitAsync fast path is excluded). Use a
+            // fresh semaphore per iteration so each iteration is a real attempt at the race.
+            const int Iterations = 1_000;
 
-            using var cts = new CancellationTokenSource();
-            Task accessor = Task.Run(() =>
+            for (int i = 0; i < Iterations; i++)
             {
-                SpinWait spinner = default;
-                while (!cts.IsCancellationRequested)
-                {
-                    _ = sem.AvailableWaitHandle;
-                    spinner.SpinOnce();
-                }
-            });
+                var sem = new SemaphoreSlim(1, 1);
+                Task accessor = Task.Run(() => sem.AvailableWaitHandle);
 
-            try
-            {
-                for (int i = 0; i < Iterations; i++)
-                {
-                    await sem.WaitAsync();
-                    // Count is 0; the handle must not be signaled.
-                    Assert.False(sem.AvailableWaitHandle.WaitOne(0));
-                    sem.Release();
-                }
-            }
-            finally
-            {
-                cts.Cancel();
+                await sem.WaitAsync();
                 await accessor;
+
+                // Count is 0; the handle must not be signaled.
+                Assert.False(sem.AvailableWaitHandle.WaitOne(0));
+
+                sem.Release();
+                sem.Dispose();
             }
         }
 
