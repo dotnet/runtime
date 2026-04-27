@@ -32,7 +32,6 @@ check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR
 check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
 check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 check_library_exists(${PTHREAD_LIBRARY} pthread_getthreadid_np "" HAVE_PTHREAD_GETTHREADID_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_key_create "" HAVE_PTHREAD_KEY_CREATE)
 
 check_function_exists(clock_nanosleep HAVE_CLOCK_NANOSLEEP)
 

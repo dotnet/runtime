@@ -504,7 +504,7 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-#if HAVE_PTHREAD_KEY_CREATE
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID) || defined(TARGET_HAIKU)
 static pthread_key_t key;
 #endif
 
@@ -548,7 +548,7 @@ bool PalInit()
     }
 #endif
 
-#if HAVE_PTHREAD_KEY_CREATE
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID) || defined(TARGET_HAIKU)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
     {
         return false;
@@ -558,7 +558,7 @@ bool PalInit()
     return true;
 }
 
-#if !HAVE_PTHREAD_KEY_CREATE
+#if !defined(TARGET_LINUX) && !defined(TARGET_ANDROID) && !defined(TARGET_HAIKU)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -604,7 +604,7 @@ FCIMPLEND
 //  thread        - thread to attach
 void PalAttachThread(void* thread)
 {
-#if HAVE_PTHREAD_KEY_CREATE
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID) || defined(TARGET_HAIKU)
     if (pthread_setspecific(key, thread) != 0)
     {
         _ASSERTE(!"pthread_setspecific failed");
