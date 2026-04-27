@@ -2668,8 +2668,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // and then the PEP pointed to by the indirection cell.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
-        GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 
     genEmitCallWithCurrentGC(params);
