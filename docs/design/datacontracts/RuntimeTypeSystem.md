@@ -601,6 +601,14 @@ Contracts used:
         // HALF_SIZE_T is uint16 on 32-bit, uint32 on 64-bit.
         // Read nptrs and skip as separate typed reads for endianness safety.
         // runBytes = nptrs * pointerSize; advance currentOffset by runBytes + skip after each item.
+        //
+        // The val_serie_items describe the GC pointer layout of a single array element.
+        // An outer loop repeats the pattern across all elements in the array:
+        //   currentOffset = startoffset
+        //   while currentOffset <= objectSize - pointerSize:
+        //       for each val_serie_item:
+        //           yield (currentOffset, nptrs * pointerSize)
+        //           currentOffset += nptrs * pointerSize + skip
     }
 
     public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;

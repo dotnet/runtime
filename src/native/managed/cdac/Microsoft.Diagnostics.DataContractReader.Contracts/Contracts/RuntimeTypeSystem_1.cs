@@ -601,26 +601,29 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             ulong startOffset = _target.ReadPointer(mtAddress - 2 * pointerSize).Value;
 
             ulong currentOffset = startOffset;
-            for (long i = 0; i < absNumSeries; i++)
+            while (currentOffset <= objectSize - pointerSize)
             {
-                ulong itemAddress = mtAddress - (3 + (ulong)i) * pointerSize;
-
-                // Read val_serie_item fields individually for endianness safety.
-                uint nptrs, skip;
-                if (_target.PointerSize == sizeof(uint))
+                for (long i = 0; i < absNumSeries; i++)
                 {
-                    nptrs = _target.Read<ushort>(itemAddress);
-                    skip = _target.Read<ushort>(itemAddress + sizeof(ushort));
-                }
-                else
-                {
-                    nptrs = _target.Read<uint>(itemAddress);
-                    skip = _target.Read<uint>(itemAddress + sizeof(uint));
-                }
+                    ulong itemAddress = mtAddress - (3 + (ulong)i) * pointerSize;
 
-                uint runBytes = nptrs * (uint)pointerSize;
-                yield return ((uint)currentOffset, runBytes);
-                currentOffset += runBytes + skip;
+                    // Read val_serie_item fields individually for endianness safety.
+                    uint nptrs, skip;
+                    if (_target.PointerSize == sizeof(uint))
+                    {
+                        nptrs = _target.Read<ushort>(itemAddress);
+                        skip = _target.Read<ushort>(itemAddress + sizeof(ushort));
+                    }
+                    else
+                    {
+                        nptrs = _target.Read<uint>(itemAddress);
+                        skip = _target.Read<uint>(itemAddress + sizeof(uint));
+                    }
+
+                    uint runBytes = nptrs * (uint)pointerSize;
+                    yield return ((uint)currentOffset, runBytes);
+                    currentOffset += runBytes + skip;
+                }
             }
         }
     }
