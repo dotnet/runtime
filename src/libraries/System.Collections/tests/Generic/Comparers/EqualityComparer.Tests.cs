@@ -541,6 +541,67 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
+        public void EqualityComparerCreate_KeySelectorPassesNullToSelector()
+        {
+            int selectorCalls = 0;
+            var comparer = EqualityComparer<string>.Create<string>(str =>
+            {
+                selectorCalls++;
+                return str ?? "default";
+            });
+
+            // Null is passed through to keySelector in Equals, mapping to "default"
+            Assert.True(comparer.Equals(null, null));
+            Assert.Equal(2, selectorCalls);
+
+            selectorCalls = 0;
+            Assert.True(comparer.Equals(null, "default"));
+            Assert.Equal(2, selectorCalls);
+
+            selectorCalls = 0;
+            Assert.True(comparer.Equals("default", null));
+            Assert.Equal(2, selectorCalls);
+
+            selectorCalls = 0;
+            Assert.False(comparer.Equals(null, "other"));
+            Assert.Equal(2, selectorCalls);
+
+            // Null is passed through to keySelector in GetHashCode
+            selectorCalls = 0;
+            int hashCode = comparer.GetHashCode(null);
+            Assert.Equal(1, selectorCalls);
+            Assert.Equal(comparer.GetHashCode("default"), hashCode);
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_KeySelectorReturnsNullKey()
+        {
+            var comparer = EqualityComparer<string>.Create<string>(str => str == "nil" ? null : str);
+
+            // When keySelector returns null for both, they are equal
+            Assert.True(comparer.Equals("nil", "nil"));
+
+            // When keySelector returns null for one side only, they are not equal
+            Assert.False(comparer.Equals("nil", "foo"));
+            Assert.False(comparer.Equals("foo", "nil"));
+
+            // GetHashCode returns 0 for a null key
+            Assert.Equal(0, comparer.GetHashCode("nil"));
+            Assert.Equal(comparer.GetHashCode("nil"), comparer.GetHashCode("nil"));
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_KeySelectorNotHandlingNull_Throws()
+        {
+            var comparer = EqualityComparer<string>.Create<int>(str => str.Length);
+
+            // keySelector doesn't guard against null, so NullReferenceException propagates
+            Assert.Throws<NullReferenceException>(() => comparer.Equals(null, "foo"));
+            Assert.Throws<NullReferenceException>(() => comparer.Equals("foo", null));
+            Assert.Throws<NullReferenceException>(() => comparer.GetHashCode(null));
+        }
+
+        [Fact]
         public void EqualityComparerCreate_KeySelectorComparerUsed()
         {
             var evenLen1 = "12";
