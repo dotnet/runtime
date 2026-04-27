@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, EmscriptenModuleInternal, JsAsset } from "./types";
+import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource } from "./types";
 
 import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
 import { exit, runtimeState } from "./exit";
@@ -14,7 +14,9 @@ import { validateEngineFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
-let downloadStarted = false;
+type DownloadMode = "none" | "cacheOnly" | "intoMemory";
+let downloadMode: DownloadMode = "none";
+let downloadDeferred: PromiseCompletionSource<void> | undefined;
 let downloadedIntoMemory = false;
 let configInitialized = false;
 
@@ -25,9 +27,15 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
     try {
         runtimeState.creatingRuntime = true;
 
-        // Calling download() again is a noop
-        if (downloadOnly && downloadStarted) {
-            return;
+        // Re-entrancy guard: await any in-flight download, skip if already at requested level
+        if (downloadOnly) {
+            if (downloadDeferred) {
+                await downloadDeferred.promise;
+            }
+            if (downloadMode === "intoMemory" || (httpCacheOnly && downloadMode === "cacheOnly")) {
+                return;
+            }
+            downloadDeferred = createPromiseCompletionSource<void>();
         }
 
         // Fast path: download() already loaded everything into memory, create() just needs to init
@@ -88,8 +96,9 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
 
         // HTTP cache only path: just fetch all resources into browser cache and discard
         if (downloadOnly && httpCacheOnly) {
-            downloadStarted = true;
             await prefetchAllResources();
+            downloadMode = "cacheOnly";
+            downloadDeferred?.resolve(undefined as unknown as void);
             return;
         }
 
@@ -158,8 +167,9 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         verifyAllAssetsDownloaded();
 
         if (downloadOnly) {
-            downloadStarted = true;
+            downloadMode = "intoMemory";
             downloadedIntoMemory = true;
+            downloadDeferred?.resolve(undefined as unknown as void);
             return;
         }
 
@@ -170,6 +180,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         await Promise.all([...modulesAfterConfigLoadedPromises, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
 
     } catch (err) {
+        downloadDeferred?.reject(err);
         exit(1, err);
     } finally {
         runtimeState.creatingRuntime = false;

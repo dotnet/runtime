@@ -594,9 +594,9 @@ export async function prefetchAllResources(): Promise<void> {
 
     const maxParallel = loaderConfig.maxParallelDownloads || 1000000;
     const pending: Promise<void>[] = [];
-    const queue: { url: string; hash?: string | null | ""; name: string; behavior: string }[] = [];
+    const queue: { url: string; hash?: string | null | ""; name: string; behavior: AssetBehaviors }[] = [];
 
-    function enqueueAsset(asset: { name?: string; resolvedUrl?: string; hash?: string | null | "" }, behavior: string): void {
+    function enqueueAsset(asset: { name?: string; resolvedUrl?: string; hash?: string | null | "" }, behavior: AssetBehaviors): void {
         if (!asset.resolvedUrl && asset.name) {
             asset.resolvedUrl = locateFile(asset.name);
         }
@@ -673,18 +673,20 @@ export function prefetchJSModuleLinks(modules: JsAsset[]): void {
     }
 }
 
-async function prefetchUrl(url: string, hash?: string | null | "", name?: string, behavior?: string): Promise<void> {
+async function prefetchUrl(url: string, hash?: string | null | "", name?: string, behavior?: AssetBehaviors): Promise<void> {
     // Respect loadBootResourceCallback so prefetch goes through the same custom loader as create()
     if (typeof loadBootResourceCallback === "function" && behavior && name) {
         const blazorType = behaviorToBlazorAssetTypeMap[behavior];
         if (blazorType) {
-            const customLoadResult = loadBootResourceCallback(blazorType, name, url, hash ?? "", behavior as AssetBehaviors);
+            const customLoadResult = loadBootResourceCallback(blazorType, name, url, hash ?? "", behavior);
             if (typeof customLoadResult === "string") {
                 url = makeURLAbsoluteWithApplicationBase(customLoadResult);
-            } else if (typeof customLoadResult === "object") {
+            } else if (customLoadResult != null && typeof customLoadResult === "object") {
                 // Custom loader returned a Response promise — await and discard
                 const response = await (customLoadResult as Promise<Response>);
-                await response.arrayBuffer();
+                if (typeof response?.arrayBuffer === "function") {
+                    await response.arrayBuffer();
+                }
                 return;
             }
         }
