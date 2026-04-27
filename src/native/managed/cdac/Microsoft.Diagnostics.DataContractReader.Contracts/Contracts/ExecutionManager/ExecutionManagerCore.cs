@@ -545,7 +545,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, jittedCodeAddress);
         if (range.Data == null)
-            return StubKind.UnknownStub;
+            return StubKind.Unknown;
 
         JitManager jitManager = GetJitManager(range.Data);
         return jitManager.GetStubCodeBlockKind(range, jittedCodeAddress);

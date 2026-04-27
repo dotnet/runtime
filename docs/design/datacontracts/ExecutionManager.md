@@ -52,8 +52,8 @@ struct CodeBlockHandle
     // Get the exception clause info for the code block
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle);
 
-    // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
-    // or as managed code. Returns CodeBlockUnknown if the address is not recognized.
+    // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.).
+    // Returns Unknown if the address is not a recognized stub.
     StubKind GetStubKind(TargetCodePointer jittedCodeAddress);
 
     // Extension Methods (implemented in terms of other APIs)
@@ -122,6 +122,21 @@ public struct ExceptionClauseInfo
     public uint? ClassToken;
     public TargetNUInt? TypeHandle;
     public TargetPointer? ModuleAddr;
+}
+
+public enum StubKind : uint
+{
+    Unknown = 0,
+    JumpStub = 1,
+    DynamicHelper = 3,
+    Prestub = 4,
+    VSD_DispatchStub = 5,
+    VSD_ResolveStub = 6,
+    VSD_LookupStub = 7,
+    VSD_VTableStub = 8,
+    CallCountingStub = 9,
+    StubLinkStub = 10,
+    MethodCallThunk = 11,
 }
 ```
 
@@ -509,7 +524,7 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 
 ### Stub Kind Classification
 
-`GetStubKind` classifies a code address as a known stub type or managed code. It returns `UnknownStub` if the address is not recognized.
+`GetStubKind` classifies a code address as a known stub type or managed code. It returns `Unknown` if the address is not recognized.
 
 The method looks up the address in the `RangeSectionMap`. If a `RangeSection` is found, the JIT manager for that section classifies the code:
 
@@ -523,7 +538,7 @@ StubKind GetStubKind(TargetCodePointer jittedCodeAddress)
 
     // Look up in range section map
     RangeSection range = FindRangeSection(jittedCodeAddress);
-    if (range == null) return StubKind.UnknownStub;
+    if (range == null) return StubKind.Unknown;
 
     JitManager jitManager = GetJitManager(range);
     return jitManager.GetStubCodeBlockKind(range, jittedCodeAddress);

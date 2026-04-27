@@ -145,8 +145,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         public override StubKind GetStubCodeBlockKind(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             if (rangeSection.Data == null)
-                return StubKind.UnknownStub;
-            return IsStubCodeBlockThunk(rangeSection.Data, GetReadyToRunInfo(rangeSection), jittedCodeAddress) ? StubKind.MethodCallThunk : StubKind.UnknownStub;
+                return StubKind.Unknown;
+            return IsStubCodeBlockThunk(rangeSection.Data, GetReadyToRunInfo(rangeSection), jittedCodeAddress) ? StubKind.MethodCallThunk : StubKind.Unknown;
         }
 
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)

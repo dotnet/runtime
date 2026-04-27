@@ -4728,9 +4728,9 @@ StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSectio
 
     TADDR start = dac_cast<PTR_EEJitManager>(pRangeSection->_pjit)->FindMethodCode(pRangeSection, currentPC);
     if (start == (TADDR)0)
-        return STUB_CODE_BLOCK_NOCODE;
+        return STUB_CODE_BLOCK_UNKNOWN;
     CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
-    return pCHdr->IsStubCodeBlock() ? pCHdr->GetStubCodeBlockKind() : STUB_CODE_BLOCK_MANAGED;
+    return pCHdr->IsStubCodeBlock() ? pCHdr->GetStubCodeBlockKind() : STUB_CODE_BLOCK_UNKNOWN;
 }
 
 
@@ -4744,7 +4744,7 @@ TADDR EECodeGenManager::FindMethodCode(PCODE currentPC)
 
     RangeSection * pRS = ExecutionManager::FindCodeRange(currentPC, ExecutionManager::GetScanFlags());
     if (pRS == NULL || (pRS->_flags & RangeSection::RANGE_SECTION_CODEHEAP) == 0)
-        return STUB_CODE_BLOCK_NOCODE;
+        return STUB_CODE_BLOCK_UNKNOWN;
     return dac_cast<PTR_EECodeGenManager>(pRS->_pjit)->FindMethodCode(pRS, currentPC);
 }
 

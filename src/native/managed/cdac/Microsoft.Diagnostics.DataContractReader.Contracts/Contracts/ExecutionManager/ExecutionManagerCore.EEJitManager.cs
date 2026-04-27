@@ -140,7 +140,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             }
             TargetPointer startAddr = FindMethodCode(rangeSection, jittedCodeAddress); // validate that the code address is within the method's code range
             if (startAddr == TargetPointer.Null)
-                return StubKind.NoCodeStub;
+                return StubKind.Unknown;
             return GetCodeHeaderStubKind(rangeSection, startAddr);
         }
 
@@ -228,7 +228,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 StubCodeBlockKind.VSDLookupStub => StubKind.VSD_LookupStub,
                 StubCodeBlockKind.VSDVTableStub => StubKind.VSD_VTableStub,
                 StubCodeBlockKind.CallCountingStub => StubKind.CallCountingStub,
-                _ => StubKind.UnknownStub,
+                _ => StubKind.Unknown,
             };
         }
 
@@ -240,9 +240,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 {
                     return GetStubKind((StubCodeBlockKind)codeHeaderAddress.Value);
                 }
-                return StubKind.Managed;
             }
-            return StubKind.UnknownStub;
+            return StubKind.Unknown;
         }
 
         public override void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr)

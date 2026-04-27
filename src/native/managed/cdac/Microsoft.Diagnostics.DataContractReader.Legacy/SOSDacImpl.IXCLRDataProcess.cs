@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
@@ -185,7 +184,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
     private static string? GetStubName(Contracts.StubKind stubKind)
     {
-        if (stubKind == Contracts.StubKind.UnknownStub || stubKind == Contracts.StubKind.Managed || stubKind == Contracts.StubKind.NoCodeStub)
+        if (stubKind == Contracts.StubKind.Unknown)
             return null;
         return stubKind.ToString();
     }

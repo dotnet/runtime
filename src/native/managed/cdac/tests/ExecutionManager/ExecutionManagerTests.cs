@@ -663,7 +663,7 @@ public class ExecutionManagerTests
     {
         IExecutionManager em = CreateExecutionManagerContract(version, arch);
 
-        Assert.Equal(StubKind.UnknownStub, em.GetStubKind(new TargetCodePointer(0x00aa_9000)));
+        Assert.Equal(StubKind.Unknown, em.GetStubKind(new TargetCodePointer(0x00aa_9000)));
     }
 
     [Theory]
@@ -748,7 +748,7 @@ public class ExecutionManagerTests
             });
 
         StubKind kind = em.GetStubKind(new TargetCodePointer(methodStart));
-        Assert.Equal(StubKind.Managed, kind);
+        Assert.Equal(StubKind.Unknown, kind);
     }
 
     [Theory]
@@ -808,7 +808,7 @@ public class ExecutionManagerTests
             });
 
         StubKind kind = em.GetStubKind(new TargetCodePointer(codeRangeStart + thunkRva + thunkSize + 0x10));
-        Assert.Equal(StubKind.UnknownStub, kind);
+        Assert.Equal(StubKind.Unknown, kind);
     }
 
     public static IEnumerable<object[]> StdArchAllVersions()
