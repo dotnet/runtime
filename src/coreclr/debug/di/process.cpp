@@ -234,7 +234,6 @@ bool IsLegalFatalError(HRESULT hr)
 {
     return
         (hr == CORDBG_E_INCOMPATIBLE_PROTOCOL) ||
-        (hr == CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS) ||
         (hr == CORDBG_E_INCOMPATIBLE_PLATFORMS) ||
         (hr == CORDBG_E_MISMATCHED_CORWKS_AND_DACWKS_DLLS) ||
         // This should only happen in the case of a security attack on us.
@@ -339,19 +338,14 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
 {
     INTERNAL_DAC_CALLBACK(this);
 
-    HASHFIND hashFindAppDomain;
     HASHFIND hashFindModule;
     IMDInternalImport * pMDII = NULL;
 
-    // Check to see if one of the cached modules has the metadata we need
-    // If not we will do a more exhaustive search below
-    for (CordbAppDomain * pAppDomain = m_appDomains.FindFirst(&hashFindAppDomain);
-         pAppDomain != NULL;
-         pAppDomain = m_appDomains.FindNext(&hashFindAppDomain))
+    if (m_pAppDomain != NULL)
     {
-        for (CordbModule * pModule = pAppDomain->m_modules.FindFirst(&hashFindModule);
+        for (CordbModule * pModule = m_pAppDomain->m_modules.FindFirst(&hashFindModule);
              pModule != NULL;
-             pModule = pAppDomain->m_modules.FindNext(&hashFindModule))
+             pModule = m_pAppDomain->m_modules.FindNext(&hashFindModule))
         {
             if (pModule->GetPEFile() == vmPEAssembly)
             {
@@ -366,21 +360,21 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
     }
 
     // Cache didn't have it... time to search harder
-    PrepopulateAppDomainsOrThrow();
+    VMPTR_AppDomain vmAppDomain;
+    GetDAC()->GetCurrentAppDomain(&vmAppDomain);
+    LookupOrCreateAppDomain(vmAppDomain);
 
     // There may be perf issues here. The DAC may make a lot of metadata requests, and so
     // this may be an area for potential perf optimizations if we find things running slow.
 
     // enumerate through all Modules
-    for (CordbAppDomain * pAppDomain = m_appDomains.FindFirst(&hashFindAppDomain);
-         pAppDomain != NULL;
-         pAppDomain = m_appDomains.FindNext(&hashFindAppDomain))
+    if (m_pAppDomain != NULL)
     {
-        pAppDomain->PrepopulateModules();
+        m_pAppDomain->PrepopulateModules();
 
-        for (CordbModule * pModule = pAppDomain->m_modules.FindFirst(&hashFindModule);
+        for (CordbModule * pModule = m_pAppDomain->m_modules.FindFirst(&hashFindModule);
              pModule != NULL;
-             pModule = pAppDomain->m_modules.FindNext(&hashFindModule))
+             pModule = m_pAppDomain->m_modules.FindNext(&hashFindModule))
         {
             if (pModule->GetPEFile() == vmPEAssembly)
             {
@@ -921,7 +915,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
 #ifdef FEATURE_INTEROP_DEBUGGING
     m_unmanagedThreads(11),
 #endif
-    m_appDomains(11),
+    m_pAppDomain(NULL),
     m_steppers(11),
     m_continueCounter(1),
     m_flushCounter(0),
@@ -1025,7 +1019,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
    RESOLVED
         // Nutered
         CordbHashTable        m_userThreads;
-        CordbHashTable        m_appDomains;
+        CordbAppDomain*       m_pAppDomain;
 
         // Cleaned up in ExitProcess
         DebuggerIPCEvent*     m_queuedEventList;
@@ -1289,7 +1283,12 @@ void CordbProcess::NeuterChildren()
     m_userThreads.NeuterAndClear(GetProcessLock());
 
     // Frees per-appdomain left-side resources. See assumptions above.
-    m_appDomains.NeuterAndClear(GetProcessLock());
+    if (m_pAppDomain != NULL)
+    {
+        m_pAppDomain->Neuter();
+        m_pAppDomain->InternalRelease();
+        m_pAppDomain = NULL;
+    }
 
     m_steppers.NeuterAndClear(GetProcessLock());
 
@@ -1717,7 +1716,6 @@ HRESULT CordbProcess::Init()
         m_StopGoLock.Init("Stop-Go Lock", RSLock::cLockReentrant, RSLock::LL_STOP_GO_LOCK);
 
 #ifdef _DEBUG
-        m_appDomains.DebugSetRSLock(GetProcessLock());
         m_userThreads.DebugSetRSLock(GetProcessLock());
 #ifdef FEATURE_INTEROP_DEBUGGING
         m_unmanagedThreads.DebugSetRSLock(GetProcessLock());
@@ -2366,7 +2364,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 _ASSERTE(cdbAppDomain != NULL);
 
                 DebuggerIPCE_ObjectData objData;
-                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, cdbAppDomain->GetADToken(), &objData));
+                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, &objData));
 
                 NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, (ULONG)objData.objSize), &objData));
                 hr = pNewObjectValue->Init();
@@ -2463,7 +2461,7 @@ HRESULT CordbProcess::GetTypeForTypeID(COR_TYPEID id, ICorDebugType **ppType)
     EX_TRY
     {
         DebuggerIPCE_ExpandedTypeData data;
-        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, VMPTR_AppDomain::NullPtr(), id, &data));
+        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, id, &data));
 
         CordbType *type = 0;
         hr = CordbType::TypeDataToType(GetAppDomain(), &data, &type);
@@ -2640,21 +2638,18 @@ COM_METHOD CordbProcess::GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDe
 
 HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, CordbAppDomain **pAppDomain)
 {
-    VMPTR_AppDomain appDomain;
-    VMPTR_Module mod;
-    VMPTR_DomainAssembly domainAssembly;
+    VMPTR_AppDomain appDomain = VMPTR_AppDomain::NullPtr();
 
     HRESULT hr = E_FAIL;
-    BOOL _appDomainResult;
-    IfFailThrow(GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &domainAssembly, &_appDomainResult));
-    if (_appDomainResult)
+    IfFailThrow(GetDAC()->GetCurrentAppDomain(&appDomain));
+    if (!appDomain.IsNull())
     {
         CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetAppDomain() : LookupOrCreateAppDomain(appDomain);
 
         _ASSERTE(cdbAppDomain);
 
         DebuggerIPCE_ExpandedTypeData data;
-        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, appDomain, addr, &data));
+        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, addr, &data));
 
         CordbType *type = 0;
         hr = CordbType::TypeDataToType(cdbAppDomain, &data, &type);
@@ -3128,14 +3123,6 @@ void CordbProcess::NeuterChildrenLeftSideResources()
     _ASSERTE(!GetProcessLock()->HasLock());
     RSLockHolder lockHolder(GetProcessLock());
 
-
-    // Need process-lock to operate on hashtable, but can't yet Neuter under process-lock,
-    // so we have to copy the contents to an auxilary list which we can then traverse outside the lock.
-    RSPtrArray<CordbAppDomain> listAppDomains;
-    m_appDomains.CopyToArray(&listAppDomains);
-
-
-
     // Must not hold process lock so that we can be safe to send IPC events
     // to cleanup left-side resources.
     lockHolder.Release();
@@ -3145,17 +3132,10 @@ void CordbProcess::NeuterChildrenLeftSideResources()
     // This will make normal neutering a nop.
     m_LeftSideResourceCleanupList.NeuterLeftSideResourcesAndClear(this);
 
-    for(unsigned int idx = 0; idx < listAppDomains.Length(); idx++)
+    if (m_pAppDomain != NULL)
     {
-        CordbAppDomain * pAppDomain = listAppDomains[idx];
-
-        // CordbHandleValue is in the appdomain exit list, and that needs
-        // to send an IPC event to cleanup and release the handle from
-        // the GCs handle table.
-        pAppDomain->GetSweepableExitNeuterList()->NeuterLeftSideResourcesAndClear(this);
+        m_pAppDomain->GetSweepableExitNeuterList()->NeuterLeftSideResourcesAndClear(this);
     }
-    listAppDomains.Clear();
-
 }
 
 //---------------------------------------------------------------------------------------
@@ -3170,8 +3150,6 @@ void CordbProcess::NeuterChildrenLeftSideResources()
 //   handles) on detach.
 void CordbProcess::DetachShim()
 {
-
-    HASHFIND hashFind;
     HRESULT hr = S_OK;
 
     // If we detach before the CLR is loaded into the debuggee, then we can no-op a lot of work.
@@ -3250,9 +3228,8 @@ void CordbProcess::DetachShim()
         // @dbgtodo attach-bit: push this up, once detach IPC event is hoisted.
         RSLockHolder lockHolder(GetProcessLock());
 
-        // Shouldn't have any appdomains.
-        (void)hashFind; //prevent "unused variable" error from GCC
-        _ASSERTE(m_appDomains.FindFirst(&hashFind) == NULL);
+        // Shouldn't have an appdomain.
+        _ASSERTE(m_pAppDomain == NULL);
     }
 
     LOG((LF_CORDB, LL_INFO10000, "CP::Detach - got reply from LS\n"));
@@ -4023,17 +4000,6 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
     // Only do this if we're synced- we don't want to do this if we're continuing from a Native Debug event.
     if (GetSynchronized())
     {
-        // Need process-lock to operate on hashtable, but can't yet Neuter under process-lock,
-        // so we have to copy the contents to an auxilary list which we can then traverse outside the lock.
-        RSPtrArray<CordbAppDomain> listAppDomains;
-        HRESULT hrCopy = S_OK;
-        EX_TRY // @dbgtodo cleanup: push this up
-        {
-            m_appDomains.CopyToArray(&listAppDomains);
-        }
-        EX_CATCH_HRESULT(hrCopy);
-        SetUnrecoverableIfFailed(GetProcess(), hrCopy);
-
         m_ContinueNeuterList.NeuterAndClear(this);
 
         // @dbgtodo left-side resources: eventually (once
@@ -4058,18 +4024,14 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
         // This will toggle the process lock
         m_ExitNeuterList.SweepAllNeuterAtWillObjects(this);
 
-
-        for(unsigned int idx = 0; idx < listAppDomains.Length(); idx++)
+        // CordbHandleValue is in the appdomain exit list, and that needs
+        // to send an IPC event to cleanup and release the handle from
+        // the GCs handle table.
+        // This will toggle the process lock.
+        if (m_pAppDomain != NULL)
         {
-            CordbAppDomain * pAppDomain = listAppDomains[idx];
-
-            // CordbHandleValue is in the appdomain exit list, and that needs
-            // to send an IPC event to cleanup and release the handle from
-            // the GCs handle table.
-            // This will toggle the process lock.
-            pAppDomain->GetSweepableExitNeuterList()->SweepNeuterLeftSideResources(this);
+            m_pAppDomain->GetSweepableExitNeuterList()->SweepNeuterLeftSideResources(this);
         }
-        listAppDomains.Clear();
 
         Lock();
     }
@@ -4422,15 +4384,15 @@ public:
     // Callback invoked from DAC enumeration.
     //
     // arguments:
-    //    vmDomainAssembly - VMPTR for assembly
+    //    vmAssembly - VMPTR for assembly
     //    pData - a 'this' pointer
     //
-    static void Callback(VMPTR_DomainAssembly vmDomainAssembly, void * pData)
+    static void Callback(VMPTR_Assembly vmAssembly, void * pData)
     {
         ShimAssemblyCallbackData * pThis = static_cast<ShimAssemblyCallbackData *> (pData);
         INTERNAL_DAC_CALLBACK(pThis->m_pProcess);
 
-        CordbAssembly * pAssembly = pThis->m_pAppDomain->LookupOrCreateAssembly(vmDomainAssembly);
+        CordbAssembly * pAssembly = pThis->m_pAppDomain->LookupOrCreateAssembly(vmAssembly);
 
         pThis->SetAndMoveNext(pAssembly);
     }
@@ -4557,15 +4519,15 @@ public:
     // Callback invoked from DAC enumeration.
     //
     // arguments:
-    //    vmDomainAssembly - VMPTR for Module
+    //    vmAssembly - VMPTR for Assembly
     //    pData - a 'this' pointer
     //
-    static void Callback(VMPTR_DomainAssembly vmDomainAssembly, void * pData)
+    static void Callback(VMPTR_Assembly vmAssembly, void * pData)
     {
         ShimModuleCallbackData * pThis = static_cast<ShimModuleCallbackData *> (pData);
         INTERNAL_DAC_CALLBACK(pThis->m_pProcess);
 
-        CordbModule * pModule = pThis->m_pAssembly->GetAppDomain()->LookupOrCreateModule(vmDomainAssembly);
+        CordbModule * pModule = pThis->m_pAssembly->GetAppDomain()->LookupOrCreateModule(vmAssembly);
 
         pThis->SetAndMoveNext(pModule);
     }
@@ -4655,7 +4617,7 @@ void CordbProcess::GetModulesInLoadOrder(
 
     // Enumerate through and fill out pModules table.
     IfFailThrow(GetDAC()->EnumerateModulesInAssembly(
-        pAssemblyInternal->GetDomainAssemblyPtr(),
+        pAssemblyInternal->GetAssemblyPtr(),
         ShimModuleCallbackData::Callback,
         &data)); // user data
 
@@ -4836,53 +4798,6 @@ void CordbProcess::DispatchRCEvent()
     Lock();
 
 };
-
-#ifdef _DEBUG
-//---------------------------------------------------------------------------------------
-// Debug-only callback to ensure that an appdomain is not available after the ExitAppDomain event.
-//
-// Arguments:
-//    vmAppDomain - appdomain from enumeration
-//    pUserData - pointer to a DbgAssertAppDomainDeletedData which contains the VMAppDomain that was just deleted.
-// notes:
-//    see code:CordbProcess::DbgAssertAppDomainDeleted for details.
-void CordbProcess::DbgAssertAppDomainDeletedCallback(VMPTR_AppDomain vmAppDomain, void * pUserData)
-{
-    DbgAssertAppDomainDeletedData * pCallbackData = reinterpret_cast<DbgAssertAppDomainDeletedData *>(pUserData);
-    INTERNAL_DAC_CALLBACK(pCallbackData->m_pThis);
-
-    VMPTR_AppDomain vmAppDomainDeleted = pCallbackData->m_vmAppDomainDeleted;
-    CONSISTENCY_CHECK_MSGF((vmAppDomain != vmAppDomainDeleted),
-        ("An ExitAppDomain event was sent for appdomain, but it still shows up in the enumeration.\n vmAppDomain=%p\n",
-        VmPtrToCookie(vmAppDomainDeleted)));
-}
-
-//---------------------------------------------------------------------------------------
-// Debug-only helper to Assert that VMPTR is actually removed.
-//
-// Arguments:
-//    vmAppDomainDeleted - vmptr of appdomain that we just got exit event for.
-//       This should not be discoverable from the RS.
-//
-// Notes:
-//   See code:IDacDbiInterface#Enumeration for rules that we're asserting.
-//   Once the exit appdomain event is dispatched, the appdomain should not be discoverable by the RS.
-//   Else the RS may use the AppDomain* after it's deleted.
-//   This asserts that the AppDomain* is not discoverable.
-//
-//   Since this is a debug-only function, it should have no side-effects.
-void CordbProcess::DbgAssertAppDomainDeleted(VMPTR_AppDomain vmAppDomainDeleted)
-{
-    DbgAssertAppDomainDeletedData callbackData;
-    callbackData.m_pThis = this;
-    callbackData.m_vmAppDomainDeleted = vmAppDomainDeleted;
-
-    IfFailThrow(GetDAC()->EnumerateAppDomains(
-        CordbProcess::DbgAssertAppDomainDeletedCallback,
-        &callbackData));
-}
-
-#endif  // _DEBUG
 
 //---------------------------------------------------------------------------------------
 // Update state and potentially Dispatch a single event.
@@ -5187,7 +5102,7 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_METADATA_UPDATE:
         {
-            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->MetadataUpdateData.vmDomainAssembly);
+            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->MetadataUpdateData.vmAssembly);
             pModule->RefreshMetaData();
         }
         break;
@@ -5197,13 +5112,13 @@ void CordbProcess::RawDispatchEvent(
             LOG((LF_CORDB, LL_INFO100,
                 "RCET::HRCE: load module (includes assembly loading) on thread %#x Asm:0x%08x AD:0x%08x \n",
                 dwVolatileThreadId,
-                VmPtrToCookie(pEvent->LoadModuleData.vmDomainAssembly),
+                VmPtrToCookie(pEvent->LoadModuleData.vmAssembly),
                 VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
 
             // Determine if this Assembly is cached.
-            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->LoadModuleData.vmDomainAssembly);
+            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->LoadModuleData.vmAssembly);
             _ASSERTE(pAssembly != NULL); // throws on error
 
             // If created, or have, an Assembly, notify callback.
@@ -5212,7 +5127,7 @@ void CordbProcess::RawDispatchEvent(
                 hr = pCallback1->LoadAssembly(pAppDomain, pAssembly);
             }
             _ASSERTE (pAppDomain != NULL);
-            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->LoadModuleData.vmDomainAssembly);
+            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->LoadModuleData.vmAssembly);
 
             {
                 pModule->SetLoadEventContinueMarker();
@@ -5264,12 +5179,12 @@ void CordbProcess::RawDispatchEvent(
         {
             STRESS_LOG3(LF_CORDB, LL_INFO100, "RCET::HRCE: unload module on thread %#x Mod:0x%x AD:0x%08x\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->UnloadModuleData.vmDomainAssembly),
+                 VmPtrToCookie(pEvent->UnloadModuleData.vmAssembly),
                  VmPtrToCookie(pEvent->vmAppDomain));
 
             _ASSERTE (pAppDomain != NULL);
 
-            CordbModule *module = pAppDomain->LookupOrCreateModule(pEvent->UnloadModuleData.vmDomainAssembly);
+            CordbModule *module = pAppDomain->LookupOrCreateModule(pEvent->UnloadModuleData.vmAssembly);
 
             if (module == NULL)
             {
@@ -5302,13 +5217,13 @@ void CordbProcess::RawDispatchEvent(
                  "RCET::HRCE: load class on thread %#x Tok:0x%08x Mod:0x%08x Asm:0x%08x AD:0x%08x\n",
                  dwVolatileThreadId,
                  pEvent->LoadClass.classMetadataToken,
-                 VmPtrToCookie(pEvent->LoadClass.vmDomainAssembly),
+                 VmPtrToCookie(pEvent->LoadClass.vmAssembly),
                  LsPtrToCookie(pEvent->LoadClass.classDebuggerAssemblyToken),
                  VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
 
-            CordbModule* pModule = pAppDomain->LookupOrCreateModule(pEvent->LoadClass.vmDomainAssembly);
+            CordbModule* pModule = pAppDomain->LookupOrCreateModule(pEvent->LoadClass.vmAssembly);
             if (pModule == NULL)
             {
                 LOG((LF_CORDB, LL_INFO100, "Load Class on not-loaded Module - continue()ing!" ));
@@ -5360,13 +5275,13 @@ void CordbProcess::RawDispatchEvent(
                  "RCET::HRCE: unload class on thread %#x Tok:0x%08x Mod:0x%08x AD:0x%08x\n",
                  dwVolatileThreadId,
                  pEvent->UnloadClass.classMetadataToken,
-                 VmPtrToCookie(pEvent->UnloadClass.vmDomainAssembly),
+                 VmPtrToCookie(pEvent->UnloadClass.vmAssembly),
                  VmPtrToCookie(pEvent->vmAppDomain)));
 
             // get the appdomain object
             _ASSERTE (pAppDomain != NULL);
 
-            CordbModule *pModule = pAppDomain->LookupOrCreateModule(pEvent->UnloadClass.vmDomainAssembly);
+            CordbModule *pModule = pAppDomain->LookupOrCreateModule(pEvent->UnloadClass.vmAssembly);
             if (pModule == NULL)
             {
                 LOG((LF_CORDB, LL_INFO100, "Unload Class on not-loaded Module - continue()ing!" ));
@@ -5443,7 +5358,7 @@ void CordbProcess::RawDispatchEvent(
             // determine first whether custom notifications for this type are enabled -- if not
             // we just return without doing anything.
             CordbClass * pNotificationClass = LookupClass(pAppDomain,
-                                                          pEvent->CustomNotification.vmDomainAssembly,
+                                                          pEvent->CustomNotification.vmAssembly,
                                                           pEvent->CustomNotification.classToken);
 
             // if the class is NULL, that means the debugger never enabled notifications for it. Otherwise,
@@ -5480,61 +5395,18 @@ void CordbProcess::RawDispatchEvent(
             }
         }
 
-
-        break;
-
-    case DB_IPCE_EXIT_APP_DOMAIN:
-        {
-            STRESS_LOG2(LF_CORDB, LL_INFO100, "RCET::HRCE: exit appdomain on thread %#x AD:0x%08x \n",
-                 dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->vmAppDomain));
-
-            // In debug-only builds, assert that the appdomain is indeed deleted and not discoverable.
-            INDEBUG(DbgAssertAppDomainDeleted(pEvent->vmAppDomain));
-
-            // If we get an ExitAD message for which we have no AppDomain, then ignore it.
-            // This can happen if an AD gets torn down very early (before the LS AD is to the
-            // point that it can be published).
-            // This could also happen if we attach a debugger right before the Exit event is sent.
-            // In this case, the debuggee is no longer publishing the appdomain.
-            if (pAppDomain == NULL)
-            {
-                break;
-            }
-            _ASSERTE (pAppDomain != NULL);
-
-            // This will still maintain weak references so we could call Continue.
-            AddToNeuterOnContinueList(pAppDomain);
-
-            {
-                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                hr = pCallback1->ExitAppDomain(this, pAppDomain);
-            }
-
-            // @dbgtodo appdomain: This should occur before the callback.
-            // Even after ExitAppDomain, the outside world will want to continue calling
-            // Continue (and thus they may need to call CordbAppDomain::GetProcess(), which Neutering
-            // would clear). Thus we can't neuter yet.
-
-            // Remove this app domain. This means any attempt to lookup the AppDomain
-            // will fail (which we do at the top of this method).  Since any threads (incorrectly) referring
-            // to this AppDomain have been moved to the default AppDomain, no one should be
-            // interested in looking this AppDomain up anymore.
-            m_appDomains.RemoveBase(VmPtrToCookie(pEvent->vmAppDomain));
-        }
-
         break;
 
     case DB_IPCE_UNLOAD_ASSEMBLY:
         {
             LOG((LF_CORDB, LL_INFO100, "RCET::DRCE: unload assembly on thread %#x Asm:0x%x AD:0x%x\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->AssemblyData.vmDomainAssembly),
+                 VmPtrToCookie(pEvent->AssemblyData.vmAssembly),
                  VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
 
-            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->AssemblyData.vmDomainAssembly);
+            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->AssemblyData.vmAssembly);
 
             if (pAssembly == NULL)
             {
@@ -5552,7 +5424,7 @@ void CordbProcess::RawDispatchEvent(
                 hr = pCallback1->UnloadAssembly(pAppDomain, pAssembly);
             }
 
-            pAppDomain->RemoveAssemblyFromCache(pEvent->AssemblyData.vmDomainAssembly);
+            pAppDomain->RemoveAssemblyFromCache(pEvent->AssemblyData.vmAssembly);
         }
 
         break;
@@ -5683,7 +5555,7 @@ void CordbProcess::RawDispatchEvent(
             _ASSERTE (pAppDomain != NULL);
 
             // Find the Right Side module for this module.
-            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->UpdateModuleSymsData.vmDomainAssembly);
+            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->UpdateModuleSymsData.vmAssembly);
             _ASSERTE(pModule != NULL);
 
             // This is a legacy event notification for updated PDBs.
@@ -5726,7 +5598,7 @@ void CordbProcess::RawDispatchEvent(
 
             _ASSERTE(NULL != pAppDomain);
 
-            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmDomainAssembly);
+            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmAssembly);
             _ASSERTE(pModule != NULL);
 
             CordbFunction * pCurFunction    = NULL;
@@ -5782,7 +5654,7 @@ void CordbProcess::RawDispatchEvent(
 
             _ASSERTE(NULL != pAppDomain);
 
-            CordbModule* pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmDomainAssembly);
+            CordbModule* pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmAssembly);
             _ASSERTE(pModule != NULL);
 
             // Find the function we're remapping to, which must be the latest version
@@ -5953,71 +5825,6 @@ void CordbProcess::RawDispatchEvent(
             }
         }
         break;
-#ifdef TEST_DATA_CONSISTENCY
-    case DB_IPCE_TEST_CRST:
-        {
-            EX_TRY
-            {
-                // the left side has signaled that we should test whether pEvent->TestCrstData.vmCrst is held
-                IfFailThrow(GetDAC()->TestCrst(pEvent->TestCrstData.vmCrst));
-            }
-            EX_CATCH_HRESULT(hr);
-
-            if (pEvent->TestCrstData.fOkToTake)
-            {
-                _ASSERTE(hr == S_OK);
-                if (hr != S_OK)
-                {
-                    // we want to catch this in retail builds too
-                    ThrowHR(E_FAIL);
-                }
-            }
-            else // the lock was already held
-            {
-                // see if we threw because the lock was held
-                _ASSERTE(hr == CORDBG_E_PROCESS_NOT_SYNCHRONIZED);
-                if (hr != CORDBG_E_PROCESS_NOT_SYNCHRONIZED)
-                {
-                    // we want to catch this in retail builds too
-                    ThrowHR(E_FAIL);
-                }
-            }
-
-        }
-        break;
-
-    case DB_IPCE_TEST_RWLOCK:
-        {
-            EX_TRY
-            {
-                // the left side has signaled that we should test whether pEvent->TestRWLockData.vmRWLock is held
-                IfFailThrow(GetDAC()->TestRWLock(pEvent->TestRWLockData.vmRWLock));
-            }
-            EX_CATCH_HRESULT(hr);
-
-            if (pEvent->TestRWLockData.fOkToTake)
-            {
-                _ASSERTE(hr == S_OK);
-                if (hr != S_OK)
-                {
-                    // we want to catch this in retail builds too
-                    ThrowHR(E_FAIL);
-                }
-            }
-            else // the lock was already held
-            {
-                // see if we threw because the lock was held
-                _ASSERTE(hr == CORDBG_E_PROCESS_NOT_SYNCHRONIZED);
-                if (hr != CORDBG_E_PROCESS_NOT_SYNCHRONIZED)
-                {
-                    // we want to catch this in retail builds too
-                    ThrowHR(E_FAIL);
-                }
-            }
-        }
-        break;
-#endif
-
     default:
         _ASSERTE(!"Unknown event");
         LOG((LF_CORDB, LL_INFO1000,
@@ -6335,14 +6142,6 @@ HRESULT CordbProcess::IsTransitionStub(CORDB_ADDRESS address, BOOL *pfTransition
         // (See IMDArocess::SetThreadContext for details on that bug).
         // If we ever stop using IPC events here and only use DAC; we need to be aware of that.
 
-        // Check against DAC primitives
-        {
-            BOOL fIsStub2;
-            IfFailThrow(GetDAC()->IsTransitionStub(address, &fIsStub2));
-            (void)fIsStub2; //prevent "unused variable" error from GCC
-            CONSISTENCY_CHECK_MSGF(*pfTransitionStub == fIsStub2, ("IsStub2 failed, DAC2:%d, IPC:%d, addr:0x%p", (int) fIsStub2, (int) *pfTransitionStub, CORDB_ADDRESS_TO_PTR(address)));
-
-        }
     }
     EX_CATCH_HRESULT(hr);
     if(FAILED(hr))
@@ -7665,11 +7464,6 @@ void CordbProcess::VerifyControlBlock()
         ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
 #endif
 
-    if (GetDCB()->m_bHostingInFiber)
-    {
-        ThrowHR(CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS);
-    }
-
     _ASSERTE(!GetDCB()->m_rightSideShouldCreateHelperThread);
 } // CordbProcess::VerifyControlBlock
 
@@ -8577,7 +8371,7 @@ void CordbProcess::UnrecoverableError(HRESULT errorHR,
 
     CONSISTENCY_CHECK_MSGF(IsLegalFatalError(errorHR), ("Unrecoverable internal error: hr=0x%08x!", errorHR));
 
-    if (!IsLegalFatalError(errorHR) || (errorHR != CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS))
+    if (!IsLegalFatalError(errorHR))
     {
         // This will throw everything into a Zombie state. The ATT_ macros will check this and fail immediately.
         m_unrecoverableError = true;
@@ -8778,139 +8572,32 @@ HRESULT CordbProcess::SafeReadBuffer(TargetBuffer tb, BYTE * pLocalBuffer, BOOL 
 //     Never returns NULL. Throw on error.
 CordbAppDomain * CordbProcess::LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDomain)
 {
-    CordbAppDomain * pAppDomain = m_appDomains.GetBase(VmPtrToCookie(vmAppDomain));
-    if (pAppDomain != NULL)
+    if (m_pAppDomain == NULL)
     {
-        return pAppDomain;
+        _ASSERTE(GetProcessLock()->HasLock());
+
+        RSInitHolder<CordbAppDomain> pAppDomain;
+        pAppDomain.Assign(new CordbAppDomain(this, vmAppDomain));  // throws
+
+        m_pAppDomain = pAppDomain;
+        m_pAppDomain->InternalAddRef();
+        pAppDomain.ClearAndMarkDontNeuter();
     }
-    return CacheAppDomain(vmAppDomain);
+    return m_pAppDomain;
 }
 
 CordbAppDomain * CordbProcess::GetAppDomain()
 {
     // Return the one and only app domain
-    HASHFIND find;
-    CordbAppDomain* appDomain = m_appDomains.FindFirst(&find);
-    if (appDomain != NULL)
+    if (m_pAppDomain != NULL)
     {
-        const ULONG appDomainId = 1; // DefaultADID in appdomain.hpp
-        ULONG32 id;
-        HRESULT hr = appDomain->GetID(&id);
-        TargetConsistencyCheck(SUCCEEDED(hr) && id == appDomainId);
-        return appDomain;
+        return m_pAppDomain;
     }
 
     VMPTR_AppDomain vmAppDomain;
     IfFailThrow(GetDAC()->GetCurrentAppDomain(&vmAppDomain));
-    appDomain = LookupOrCreateAppDomain(vmAppDomain);
+    CordbAppDomain * appDomain = LookupOrCreateAppDomain(vmAppDomain);
     return appDomain;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Add a new appdomain to the cache.
-//
-// Arguments:
-//      vmAppDomain - appdomain to add.
-//
-// Return Value:
-//    Pointer to newly created appdomain, which should be the normal case.
-//    Throws on failure. Never returns null.
-//
-// Assumptions:
-//    Caller ensure the appdomain is not already cached.
-//    Caller should have stop-go lock, which provides thread-safety.
-//
-// Notes:
-//    This sets unrecoverable error on failure.
-//
-//---------------------------------------------------------------------------------------
-CordbAppDomain * CordbProcess::CacheAppDomain(VMPTR_AppDomain vmAppDomain)
-{
-    INTERNAL_API_ENTRY(GetProcess());
-
-    _ASSERTE(GetProcessLock()->HasLock());
-
-    RSInitHolder<CordbAppDomain> pAppDomain;
-    pAppDomain.Assign(new CordbAppDomain(this, vmAppDomain));  // throws
-
-    // Add to the hash. This will addref the pAppDomain.
-    // Caller ensures we're not already cached.
-    // The cache will take ownership.
-    m_appDomains.AddBaseOrThrow(pAppDomain);
-
-    CordbAppDomain * pReturn = pAppDomain;
-    pAppDomain.ClearAndMarkDontNeuter();
-
-    _ASSERTE(pReturn != NULL);
-    return pReturn;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Callback for Appdomain enumeration.
-//
-// Arguments:
-//      vmAppDomain - new appdomain to add to enumeration
-//      pUserData - data passed with callback (a 'this' ptr for CordbProcess)
-//
-//
-// Assumptions:
-//    Invoked as callback from code:CordbProcess::PrepopulateAppDomains
-//
-//
-//---------------------------------------------------------------------------------------
-
-// static
-void CordbProcess::AppDomainEnumerationCallback(VMPTR_AppDomain vmAppDomain, void * pUserData)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    CordbProcess * pProcess = static_cast<CordbProcess *> (pUserData);
-    INTERNAL_DAC_CALLBACK(pProcess);
-
-    pProcess->LookupOrCreateAppDomain(vmAppDomain);
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Traverse appdomains in the target and build up our list.
-//
-// Arguments:
-//
-// Return Value:
-//    returns on success.
-//    Throws on error. AppDomain cache may be partially populated.
-//
-// Assumptions:
-//    This is an non-invasive inspection operation called when the debuggee is stopped.
-//
-// Notes:
-//    This can be called multiple times. If the list is non-empty, it will nop.
-//---------------------------------------------------------------------------------------
-void CordbProcess::PrepopulateAppDomainsOrThrow()
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    INTERNAL_API_ENTRY(this);
-
-    if (!IsDacInitialized())
-    {
-        return;
-    }
-
-    // DD-primitive  that invokes a callback.  This may throw.
-    IfFailThrow(GetDAC()->EnumerateAppDomains(
-        CordbProcess::AppDomainEnumerationCallback,
-        this));
 }
 
 //---------------------------------------------------------------------------------------
@@ -8937,21 +8624,23 @@ HRESULT CordbProcess::EnumerateAppDomains(ICorDebugAppDomainEnum **ppAppDomains)
     {
         ValidateOrThrow(ppAppDomains);
 
-        // Ensure list is populated.
-        PrepopulateAppDomainsOrThrow();
+        // Ensure the appdomain is populated.
+        VMPTR_AppDomain vmAppDomain;
+        GetDAC()->GetCurrentAppDomain(&vmAppDomain);
+        LookupOrCreateAppDomain(vmAppDomain);
 
-        RSInitHolder<CordbHashTableEnum> pEnum;
-        CordbHashTableEnum::BuildOrThrow(
-            this,
-            GetContinueNeuterList(),
-            &m_appDomains,
-            IID_ICorDebugAppDomainEnum,
-            pEnum.GetAddr());
+        RSSmartPtr<CordbAppDomain> rgAppDomains[1];
+        DWORD count = 0;
+        if (m_pAppDomain != NULL)
+        {
+            rgAppDomains[0].Assign(m_pAppDomain);
+            count = 1;
+        }
 
-        *ppAppDomains = static_cast<ICorDebugAppDomainEnum*> (pEnum);
-        pEnum->ExternalAddRef();
-
-        pEnum.ClearAndMarkDontNeuter();
+        RSInitHolder<CordbAppDomainEnumerator> pEnum(
+            new CordbAppDomainEnumerator(this, rgAppDomains, count));
+        GetContinueNeuterList()->Add(this, pEnum);
+        pEnum.TransferOwnershipExternal(ppAppDomains);
     }
     PUBLIC_API_END(hr);
     return hr;
@@ -15357,16 +15046,7 @@ HRESULT CordbProcess::GetDesiredNGENCompilerFlags(DWORD *pdwFlags )
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(pdwFlags, DWORD*);
     *pdwFlags = 0;
-
-    CordbProcess *pProcess = GetProcess();
-    ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);
-    HRESULT  hr = S_OK;
-    EX_TRY
-    {
-        hr = pProcess->GetDAC()->GetNGENCompilerFlags(pdwFlags);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
+    return CORDBG_E_NGEN_NOT_SUPPORTED;
 }
 
 //-----------------------------------------------------------------------------
@@ -15402,10 +15082,8 @@ HRESULT CordbProcess::GetReferenceValueFromGCHandle(
         {
             ThrowHR(CORDBG_E_BAD_REFERENCE_VALUE);
         }
-        ULONG appDomainId;
-        IfFailThrow(pDAC->GetAppDomainIdFromVmObjectHandle(vmObjHandle, &appDomainId));
         VMPTR_AppDomain vmAppDomain;
-        IfFailThrow(pDAC->GetAppDomainFromId(appDomainId, &vmAppDomain));
+        IfFailThrow(pDAC->GetCurrentAppDomain(&vmAppDomain));
 
         RSLockHolder lockHolder(GetProcessLock());
         CordbAppDomain * pAppDomain = LookupOrCreateAppDomain(vmAppDomain);
@@ -15506,30 +15184,25 @@ HRESULT CordbProcess::IsReadyForDetach()
     //
     // If there are any outstanding breakpoints then fail the detach.
     //
-    HASHFIND foundAppDomain;
-    CordbAppDomain *pAppDomain = m_appDomains.FindFirst(&foundAppDomain);
 
-    while (pAppDomain != NULL)
+    if (m_pAppDomain != NULL)
     {
-        if (pAppDomain->m_breakpoints.IsInitialized() && (pAppDomain->m_breakpoints.GetCount() > 0))
+        if (m_pAppDomain->m_breakpoints.IsInitialized() && (m_pAppDomain->m_breakpoints.GetCount() > 0))
         {
             return CORDBG_E_DETACH_FAILED_OUTSTANDING_BREAKPOINTS;
         }
 
         // Check for any outstanding EnC modules.
         HASHFIND foundModule;
-        CordbModule * pModule = pAppDomain->m_modules.FindFirst(&foundModule);
+        CordbModule * pModule = m_pAppDomain->m_modules.FindFirst(&foundModule);
         while (pModule != NULL)
         {
             if (pModule->m_EnCCount > 0)
             {
                 return CORDBG_E_DETACH_FAILED_ON_ENC;
             }
-            pModule = pAppDomain->m_modules.FindNext(&foundModule);
+            pModule = m_pAppDomain->m_modules.FindNext(&foundModule);
         }
-
-
-        pAppDomain = m_appDomains.FindNext(&foundAppDomain);
     }
 
     return S_OK;
@@ -15538,17 +15211,17 @@ HRESULT CordbProcess::IsReadyForDetach()
 // CordbProcess::LookupClass
 // Looks up a previously constructed CordbClass instance without creating. May return NULL if the
 // CordbClass instance doesn't exist.
-// Argument: (in) vmDomainAssembly - pointer to the domain assembly for the module
+// Argument: (in) vmAssembly - pointer to the assembly for the module
 //           (in) mdTypeDef    - metadata token for the class
 // Return value: pointer to a previously created CordbClass instance or NULL in none exists
-CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_DomainAssembly vmDomainAssembly, mdTypeDef classToken)
+CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_Assembly vmAssembly, mdTypeDef classToken)
 {
     _ASSERTE(ThreadHoldsProcessLock());
 
     if (pAppDomain != NULL)
     {
         VMPTR_Module vmModule = VMPTR_Module::NullPtr();
-        IfFailThrow(GetProcess()->GetDAC()->GetModuleForDomainAssembly(vmDomainAssembly, &vmModule));
+        IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule));
         _ASSERTE(!vmModule.IsNull());
         CordbModule * pModule = ((CordbAppDomain *)pAppDomain)->m_modules.GetBase(VmPtrToCookie(vmModule));
         if (pModule != NULL)
@@ -15558,37 +15231,6 @@ CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_Do
     }
     return NULL;
 } // CordbProcess::LookupClass
-
-//---------------------------------------------------------------------------------------
-// Look for a specific module in the process.
-//
-// Arguments:
-//    vmDomainAssembly - non-null module to lookup
-//
-// Returns:
-//    a CordbModule object for the given cookie. Object may be from the cache, or created
-//    lazily.
-//    Never returns null.  Throws on error.
-//
-// Notes:
-//    A VMPTR_DomainAssembly has appdomain affinity, but is ultimately scoped to a process.
-//    So if we get a raw VMPTR_DomainAssembly (eg, from the stackwalker or from some other
-//    lookup function), then we need to do a process wide lookup since we don't know which
-//    appdomain it's in. If you know the appdomain, you can use code:CordbAppDomain::LookupOrCreateModule.
-//
-CordbModule * CordbProcess::LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly)
-{
-    INTERNAL_API_ENTRY(this);
-
-    RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-    _ASSERTE(!vmDomainAssembly.IsNull());
-
-    DomainAssemblyInfo data;
-    IfFailThrow(GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &data));
-
-    CordbAppDomain * pAppDomain = LookupOrCreateAppDomain(data.vmAppDomain);
-    return pAppDomain->LookupOrCreateModule(vmDomainAssembly);
-}
 
 //---------------------------------------------------------------------------------------
 // Determine if the process has any in-band queued events which have not been dispatched

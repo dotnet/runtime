@@ -8,6 +8,8 @@
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
     <!-- error xUnit1015: MemberData must reference an existing member '{MemberName}' on type '{TypeName}'. Fix the member reference, or add the missing data member.-->
     <NoWarn>$(NoWarn);xUnit1015</NoWarn>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
