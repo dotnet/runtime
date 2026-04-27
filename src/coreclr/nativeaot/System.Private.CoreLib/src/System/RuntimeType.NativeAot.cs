@@ -131,8 +131,6 @@ namespace System
                     return null;
                 if (!pEEType->IsGenericTypeDefinition)
                     return GetTypeFromMethodTable(pEEType->NullableType);
-                // Open generic Nullable<>: return the generic type parameter T.
-                return GetGenericArguments()[0];
             }
             return GetRuntimeTypeInfo().GetNullableUnderlyingType();
         }

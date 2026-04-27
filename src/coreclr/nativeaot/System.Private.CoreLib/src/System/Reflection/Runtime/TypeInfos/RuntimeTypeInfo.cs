@@ -399,7 +399,14 @@ namespace System.Reflection.Runtime.TypeInfos
             throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
         }
 
-        public virtual Type? GetNullableUnderlyingType() => null;
+        public virtual Type? GetNullableUnderlyingType()
+        {
+            if (!IsGenericType)
+                return null;
+            if (GetGenericTypeDefinition() != typeof(Nullable<>))
+                return null;
+            return IsGenericTypeDefinition ? GenericTypeParameters[0] : GenericTypeArguments[0];
+        }
 
         public Type MakeArrayType()
         {

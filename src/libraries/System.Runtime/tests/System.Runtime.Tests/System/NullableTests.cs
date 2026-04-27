@@ -105,6 +105,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void GetNullableUnderlyingType_NullableOverForeignGenericParameter()
+        {
+            // Nullable<T> instantiated over the generic parameter of another type.
+            Type genericParam = typeof(GStruct<>).GetGenericArguments()[0];
+            Type nullableOverParam = typeof(Nullable<>).MakeGenericType(genericParam);
+
+            Assert.Same(genericParam, nullableOverParam.GetNullableUnderlyingType());
+            Assert.Same(genericParam, Nullable.GetUnderlyingType(nullableOverParam));
+        }
+
+        [Fact]
         public static void GetUnderlyingType_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("nullableType", () => Nullable.GetUnderlyingType((Type)null));
@@ -238,5 +249,7 @@ namespace System.Tests
         }
 
         public class G<T> { }
+
+        public struct GStruct<T> where T : struct { }
     }
 }
