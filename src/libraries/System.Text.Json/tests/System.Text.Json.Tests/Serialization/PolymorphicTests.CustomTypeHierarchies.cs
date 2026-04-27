@@ -2867,6 +2867,19 @@ namespace System.Text.Json.Serialization.Tests
         public class OpenGenericDerived_Unresolvable<T> : OpenGenericBase_Unresolvable<int>;
 
         [Fact]
+        public async Task OpenGenericDerivedType_ArityMismatch_ThrowsInvalidOperationException()
+        {
+            // Derived<T> : Base<T, int> — derived type has fewer generic parameters than the base type
+            var value = new OpenGenericBase_ArityMismatch<int, string>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_ArityMismatch<>), "derived")]
+        public class OpenGenericBase_ArityMismatch<T1, T2>;
+
+        public class OpenGenericDerived_ArityMismatch<T> : OpenGenericBase_ArityMismatch<T, int>;
+
+        [Fact]
         public async Task OpenGenericDerivedType_ProgrammaticApi_Works()
         {
             var options = new JsonSerializerOptions
