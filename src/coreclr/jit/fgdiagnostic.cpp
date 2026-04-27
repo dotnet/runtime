@@ -3440,7 +3440,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             // indirections. For those nodes GTF_VAR_USEASG was set against the
             // original struct size and so may not match IsPartialLclFld against the
             // new TYP_BYREF size; skip the check.
-            if (!fgImplicitByRefLclFldsStale || !tree->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) ||
+            if (!fgImplicitByRefLclFldsStale || !tree->OperIs(GT_STORE_LCL_FLD) ||
                 !lvaGetDesc(tree->AsLclFld())->TypeIs(TYP_BYREF) ||
                 !lvaIsImplicitByRefLocal(tree->AsLclFld()->GetLclNum()))
             {

@@ -209,10 +209,10 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
 {
-    bool       m_madeChanges        = false;
-    bool       m_substitutedRetExpr = false;
-    Statement* m_curStmt            = nullptr;
-    Statement* m_firstNewStmt       = nullptr;
+    bool       m_madeChanges            = false;
+    bool       m_needsSideEffectRefresh = false;
+    Statement* m_curStmt                = nullptr;
+    Statement* m_firstNewStmt           = nullptr;
 
 public:
     enum
@@ -244,15 +244,15 @@ public:
     //
     Statement* WalkStatement(Statement* stmt)
     {
-        m_curStmt            = stmt;
-        m_firstNewStmt       = nullptr;
-        m_substitutedRetExpr = false;
+        m_curStmt                = stmt;
+        m_firstNewStmt           = nullptr;
+        m_needsSideEffectRefresh = false;
         WalkTree(m_curStmt->GetRootNodePointer(), nullptr);
-        if (m_substitutedRetExpr)
+        if (m_needsSideEffectRefresh)
         {
-            // RET_EXPR substitution can leave stale side-effect flags on ancestors
-            // (e.g. GTF_CALL carried over from the original call, missing GTF_EXCEPT/
-            // GTF_GLOB_REF from the substituted expression). Refresh them.
+            // RET_EXPR substitution and gtSplitTree can leave stale side-effect flags
+            // on ancestors (e.g. GTF_CALL carried over from the original call, missing
+            // GTF_EXCEPT/GTF_GLOB_REF from the substituted expression). Refresh them.
             m_compiler->gtUpdateStmtSideEffects(m_curStmt);
         }
         return m_firstNewStmt == nullptr ? m_curStmt : m_firstNewStmt;
@@ -425,8 +425,8 @@ private:
                 *use = inlineCandidate;
             }
 
-            m_madeChanges        = true;
-            m_substitutedRetExpr = true;
+            m_madeChanges            = true;
+            m_needsSideEffectRefresh = true;
 
             if (inlineeBB != nullptr)
             {
@@ -651,7 +651,7 @@ private:
                             }
                             // gtSplitTree may leave stale side-effect flags on the
                             // ancestors of the split point in m_curStmt.
-                            m_substitutedRetExpr = true;
+                            m_needsSideEffectRefresh = true;
                         }
 
                         // If the call is the root expression in a statement, and it returns void,
