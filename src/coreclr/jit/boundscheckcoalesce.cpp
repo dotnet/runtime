@@ -6,17 +6,14 @@
 //
 // Within a single block, when multiple GT_BOUNDS_CHECK nodes share the same
 // length VN and use constant indices, only the bounds check with the largest
-// constant index is actually needed. This pass finds such groups and:
-//
-//   1. Strengthens the FIRST bounds check in the group by replacing its
-//      constant index with the maximum constant index in the group.
-//   2. Marks all other bounds checks in the group with GTF_CHK_INDEX_INBND
-//      so the existing assertion-prop COMMA handler removes them.
+// constant index is actually needed. This pass finds such groups and
+// strengthens the FIRST bounds check in the group by replacing its constant
+// index with the maximum constant index in the group. Forward assertion prop
+// then drops the now-redundant later bounds checks.
 //
 // Example: `a[0] + a[1] + a[2] + a[3]` produces four bounds checks with
 // indices 0, 1, 2, 3 and the same length. We rewrite the first BC's index
-// to 3 and tag the other three for removal. Forward assertion prop then
-// drops them as redundant.
+// to 3; forward assertion prop then drops the other three as redundant.
 //
 // Safety:
 //   * Strengthening is sound: if the new (stronger) check passes, all the
@@ -24,18 +21,20 @@
 //     the original checks would have failed too -- both throw the same
 //     IndexOutOfRangeException.
 //   * We only coalesce bounds checks that are not separated by side effects
-//     (calls, indirect/heap stores, atomic ops, memory barriers, or stores
-//     to locals that are live in/out of an exception handler in a containing
-//     try region). Other bounds checks between members of the group are not
-//     barriers (they only throw IOOB, which is the same exception type our
-//     strengthened check throws).
+//     that could change observable exception ordering: calls, any other
+//     potentially-throwing node (div/mod, checked arithmetic, faulting
+//     indirections / null checks, etc.), `GTF_ORDER_SIDEEFF` (e.g. volatile
+//     loads), heap-visible stores, and stores to locals that are live across
+//     an exception handler reachable from this block. Other bounds checks
+//     between members of the group are not barriers (they only throw IOOB,
+//     the same exception type our strengthened check throws).
 //   * We require all candidates in the group to have the same length VN
 //     and constant non-negative indices. The first BC's index must itself
 //     be a constant so it can be mutated in place.
 //
 // This phase runs before PHASE_ASSERTION_PROP_MAIN so that the existing
 // forward direction of assertion prop sees the strengthened first BC and
-// removes the marked-redundant later BCs.
+// drops the redundant followers.
 //
 
 #include "jitpch.h"
@@ -70,21 +69,28 @@ struct BoundsCheckCandidate
 // Returns true if a node may have a side effect that should prevent us from
 // reordering an earlier bounds-check failure across it.
 //
-// Stores to tracked locals that are not live in/out of any exception handler
-// are not barriers: they cannot be observed if a bounds-check failure is
-// reordered to before them.
+// Bounds checks themselves are not barriers: their only exception is IOOB,
+// the same exception type our strengthened check throws.
 //
-bool IsSideEffectBarrier(Compiler* comp, GenTree* node, bool blockIsInsideTry)
+// Stores to tracked locals that are not live across any exception handler
+// reachable from this block are not barriers: they cannot be observed if a
+// bounds-check failure is reordered to before them.
+//
+bool IsSideEffectBarrier(Compiler* comp, GenTree* node, bool blockHasEHSuccs)
 {
     if (node->IsCall())
     {
         return true;
     }
-    if (node->OperIs(GT_MEMORYBARRIER))
+    if (node->OperIs(GT_BOUNDS_CHECK))
+    {
+        return false;
+    }
+    if (node->OperMayThrow(comp))
     {
         return true;
     }
-    if (node->OperIsAtomicOp())
+    if ((node->gtFlags & GTF_ORDER_SIDEEFF) != 0)
     {
         return true;
     }
@@ -94,7 +100,7 @@ bool IsSideEffectBarrier(Compiler* comp, GenTree* node, bool blockIsInsideTry)
         {
             return true;
         }
-        if (!blockIsInsideTry)
+        if (!blockHasEHSuccs)
         {
             return false;
         }
@@ -129,7 +135,7 @@ PhaseStatus Compiler::optBoundsCheckCoalesce()
 
     // Per-block scratch state, reused across blocks. The candidates stack
     // holds the "head" (first) candidate in each (barrierCount, lenVN) group;
-    // followers are tagged GTF_CHK_INDEX_INBND immediately and not retained.
+    // followers only update the head's running max offset and are not retained.
     // groupMap maps a packed (barrierCount, lenVN) key to the candidate index
     // of the group head.
     typedef JitHashTable<UINT64, JitLargePrimitiveKeyFuncs<UINT64>, int> GroupMap;
@@ -144,14 +150,14 @@ PhaseStatus Compiler::optBoundsCheckCoalesce()
     {
         candidates.Reset();
         groupMap.RemoveAll();
-        int        barrierCount     = 0;
-        bool const blockIsInsideTry = block->hasTryIndex();
+        int        barrierCount    = 0;
+        bool const blockHasEHSuccs = block->HasPotentialEHSuccs(this);
 
         for (Statement* const stmt : block->Statements())
         {
             for (GenTree* const node : stmt->TreeList())
             {
-                if (IsSideEffectBarrier(this, node, blockIsInsideTry))
+                if (IsSideEffectBarrier(this, node, blockHasEHSuccs))
                 {
                     barrierCount++;
                     continue;
@@ -197,12 +203,11 @@ PhaseStatus Compiler::optBoundsCheckCoalesce()
                     continue;
                 }
 
-                // Follower: tag for forward assertion prop to splice out, and
-                // bump the head's running max offset.
+                // Follower: bump the head's running max offset. Once we
+                // strengthen the head, forward assertion prop will drop us.
                 BoundsCheckCandidate& head = candidates.BottomRef(headIndex);
-                JITDUMP("BC coalesce in " FMT_BB ": marking [%06u] (offset %d) as redundant of [%06u]\n", block->bbNum,
+                JITDUMP("BC coalesce in " FMT_BB ": [%06u] (offset %d) is redundant given [%06u]\n", block->bbNum,
                         dspTreeID(bc), offset, dspTreeID(head.m_bc));
-                bc->gtFlags |= GTF_CHK_INDEX_INBND;
                 if (offset > head.m_offset)
                 {
                     head.m_offset = offset;
