@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
@@ -933,6 +934,43 @@ namespace System.Text.Json.Serialization.Tests
 
                 return totalRead;
             }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled<int>(cancellationToken);
+                }
+
+                return Task.FromResult(Read(buffer, offset, count));
+            }
+
+#if NET
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return ValueTask.FromCanceled<int>(cancellationToken);
+                }
+
+                if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))
+                {
+                    return new ValueTask<int>(Read(array.Array!, array.Offset, array.Count));
+                }
+
+                byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+                try
+                {
+                    int bytesRead = Read(sharedBuffer, 0, buffer.Length);
+                    new ReadOnlySpan<byte>(sharedBuffer, 0, bytesRead).CopyTo(buffer.Span);
+                    return new ValueTask<int>(bytesRead);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(sharedBuffer);
+                }
+            }
+#endif
 
             public override long Length => throw new NotSupportedException();
             public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
