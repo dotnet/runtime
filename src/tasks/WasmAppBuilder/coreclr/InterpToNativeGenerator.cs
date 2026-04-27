@@ -117,7 +117,7 @@ internal sealed class InterpToNativeGenerator
                         {{(isPortableEntryPointCall ? "NOINLINE " : "")}}static void {{CallFuncName(args, SignatureMapper.TokenToNameType(returnToken), isPortableEntryPointCall)}}(PCODE pcode, int8_t* pArgs, int8_t* pRet{{(isPortableEntryPointCall ? ", PCODE pPortableEntryPointContext" : "")}})
                         {{{(isPortableEntryPointCall ? "\n        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;" : "")}}
                             {{result.nativeType}} (*fptr)({{portableEntrypointStackDeclaration}}{{string.Join(", ", args.Select(static t => SignatureMapper.TokenToNativeType(t)))}}{{portableEntrypointDeclaration}}) = ({{result.nativeType}} (*)({{portableEntrypointStackDeclaration}}{{string.Join(", ", args.Select(static t => SignatureMapper.TokenToNativeType(t)))}}{{portableEntrypointDeclaration}}))pcode;
-                            {{portabilityAssert}}{{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{portableEntrypointStackParam}}{{string.Join(", ", args.Select(static (t, i) => $"{SignatureMapper.TokenToArgType(t)}({i})"))}}{{portableEntrypointParam}});
+                            {{portabilityAssert}}{{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{portableEntrypointStackParam}}{{string.Join(", ", ArgsWithSlotOffsets(args))}}{{portableEntrypointParam}});
                         }
 
                     """);
@@ -152,6 +152,19 @@ internal sealed class InterpToNativeGenerator
         static List<string> Args(List<string> tokens)
         {
             return tokens.Count > 1 ? tokens.GetRange(1, tokens.Count - 1) : new List<string>();
+        }
+
+        static List<string> ArgsWithSlotOffsets(List<string> args)
+        {
+            var result = new List<string>();
+            int slot = 0;
+            foreach (var token in args)
+            {
+                result.Add($"{SignatureMapper.TokenToArgType(token)}({slot})");
+                slot += SignatureMapper.TokenToSlotCount(token);
+            }
+
+            return result;
         }
 
         static (bool isVoid, string nativeType) Result(string returnToken)

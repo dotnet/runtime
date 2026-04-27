@@ -88,7 +88,7 @@ internal static class SignatureMapper
                 Type fieldType = fields[0].FieldType;
                 return TypeToChar(fieldType, log, out isByRefStruct, out structSize, ++depth);
             }
-            else if (PInvokeTableGenerator.IsBlittable(t, log))
+            else
             {
                 string fullName = t.FullName ?? t.Name;
                 if (s_knownStructSizes.TryGetValue(fullName, out int size))
@@ -214,7 +214,7 @@ internal static class SignatureMapper
         'l' => "I64",
         'f' => "F32",
         'd' => "F64",
-        'S' => "IND",
+        'S' => token, // e.g. "S8", "S64" — encodes size in the name
         'p' => "PE",
         _ => throw new InvalidSignatureCharException(token[0])
     };
@@ -228,6 +228,19 @@ internal static class SignatureMapper
         'S' => "ARG_IND",
         _ => throw new InvalidSignatureCharException(token[0])
     };
+
+    /// <summary>
+    /// Returns the number of INTERP_STACK_SLOT_SIZE slots consumed by a token.
+    /// Struct tokens (S&lt;N&gt;) consume max(size / 8, 1) slots; all others consume 1.
+    /// </summary>
+    public static int TokenToSlotCount(string token)
+    {
+        if (token[0] != 'S' || token.Length < 2)
+            return 1;
+
+        int size = int.Parse(token.Substring(1));
+        return Math.Max(size / 8, 1);
+    }
 
     // Legacy single-char overloads — still used by consumers that don't encounter S<N> tokens.
     public static string CharToNativeType(char c) => TokenToNativeType(c.ToString());
