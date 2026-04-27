@@ -782,6 +782,14 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags,
         uint singleFlags)
     {
+        // Behavior difference from the legacy DAC: the legacy DAC performs an upfront
+        // capacity check (numTokens > table size returns E_OUTOFMEMORY with no writes
+        // performed). The cDAC's CodeNotifications contract does not expose a capacity
+        // check, so this batch wrapper writes entries one at a time. If the in-target
+        // table fills up part-way through, entries written before the overflow remain
+        // set and the first failing per-entry SetCodeNotification surfaces a COMException
+        // with HResult == E_FAIL, which is mapped to the returned hr below. Callers that
+        // depend on atomic batch semantics should size their batches conservatively.
         int hr = HResults.S_OK;
 
         try

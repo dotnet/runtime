@@ -23,11 +23,6 @@ public enum CodeNotificationKind : uint
 /// The table is an allowlist of (module, method token) pairs that causes the runtime to
 /// raise <c>DEBUG_CODE_NOTIFICATION</c> events when the specified methods are JIT-compiled
 /// or discarded.
-///
-/// This contract doesn't currently offer a capacity check, so consumers won't be able to
-/// confirm in advance whether a batch of notification updates will all succeed. If the
-/// in-target table fills up, <see cref="SetCodeNotification"/> throws a
-/// <see cref="System.Runtime.InteropServices.COMException"/> with <c>HResult == E_FAIL</c>.
 /// </summary>
 public interface ICodeNotifications : IContract
 {
