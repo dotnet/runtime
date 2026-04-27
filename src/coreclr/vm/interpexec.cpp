@@ -783,11 +783,17 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
             (void*)GetSP(&ctx),
             (void*)GetFP(&ctx)));
 
-        g_pDebugInterface->FirstChanceNativeException(
+        if (g_pDebugInterface->FirstChanceNativeException(
             &exceptionRecord,
             &ctx,
             STATUS_BREAKPOINT,
-            pThread);
+            pThread))
+        {
+            if ((GetIP(&ctx) != (PCODE)ip) || (GetSP(&ctx) != (DWORD64)pFrame))
+            {
+                ThrowResumeAfterCatchException(GetSP(&ctx), GetIP(&ctx));
+            }
+        }
     }
 }
 #endif // DEBUGGING_SUPPORTED
