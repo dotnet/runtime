@@ -10,6 +10,7 @@
 #include "peassembly.h"
 #include <clrconfignocache.h>
 #include <minipal/guid.h>
+#include <minipal/tempdir.h>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
@@ -435,27 +436,22 @@ CrashReportConfigure()
     }
 
     // If DbgMiniDumpName is just a filename (no directory component), write
-    // the crash report under TMPDIR / /tmp so it lands somewhere writable.
+    // the crash report under the platform temp directory.
     char dumpPathBuf[CRASHREPORT_STRING_BUFFER_SIZE];
     if (strchr(dumpName, DIRECTORY_SEPARATOR_CHAR_A) == nullptr)
     {
-        const char* tmpDir = getenv("TMPDIR");
-        if (tmpDir == nullptr || tmpDir[0] == '\0')
-        {
-            tmpDir = "/tmp";
-        }
-        size_t tmpLen = strlen(tmpDir);
-        const char* separator = (tmpLen > 0 && tmpDir[tmpLen - 1] == DIRECTORY_SEPARATOR_CHAR_A) ? "" : DIRECTORY_SEPARATOR_STR_A;
-        size_t sepLen = strlen(separator);
-        size_t dumpLen = strlen(dumpName);
-        if (tmpLen + sepLen + dumpLen + 1 > sizeof(dumpPathBuf))
+        if (!minipal_get_tempdir(dumpPathBuf, sizeof(dumpPathBuf)))
         {
             return;
         }
-        memcpy(dumpPathBuf, tmpDir, tmpLen);
-        memcpy(dumpPathBuf + tmpLen, separator, sepLen);
-        memcpy(dumpPathBuf + tmpLen + sepLen, dumpName, dumpLen);
-        dumpPathBuf[tmpLen + sepLen + dumpLen] = '\0';
+        size_t tmpLen = strlen(dumpPathBuf);
+        size_t dumpLen = strlen(dumpName);
+        if (tmpLen + dumpLen + 1 > sizeof(dumpPathBuf))
+        {
+            return;
+        }
+        memcpy(dumpPathBuf + tmpLen, dumpName, dumpLen);
+        dumpPathBuf[tmpLen + dumpLen] = '\0';
         dumpName = dumpPathBuf;
     }
 
