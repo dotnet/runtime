@@ -887,7 +887,6 @@ namespace System.Threading
                     throw new SemaphoreFullException();
                 }
 
-                // netCount is decremented for each async waiter directly satisfied; delta applied below.
                 int netCount = snapshot + releaseCount;
 
                 // Signal synchronous waiters, accounting for those already pulsed but not yet woken.
