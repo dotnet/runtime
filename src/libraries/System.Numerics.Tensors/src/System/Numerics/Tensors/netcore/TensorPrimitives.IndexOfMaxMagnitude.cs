@@ -26,111 +26,78 @@ namespace System.Numerics.Tensors
             where T : INumber<T> =>
             IndexOfMinMaxCore<T, IndexOfMaxMagnitudeOperator<T>>(x);
 
-        internal readonly struct IndexOfMaxMagnitudeOperator<T> : IIndexOfOperator<T> where T : INumber<T>
+        internal readonly struct IndexOfMaxMagnitudeOperator<T> : IIndexOfMinMaxOperator<T> where T : INumber<T>
         {
+            public static T Aggregate(Vector128<T> x) => HorizontalAggregate<T, MaxMagnitudeOperator<T>>(x);
+            public static T Aggregate(Vector256<T> x) => HorizontalAggregate<T, MaxMagnitudeOperator<T>>(x);
+            public static T Aggregate(Vector512<T> x) => HorizontalAggregate<T, MaxMagnitudeOperator<T>>(x);
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector128<T> result, Vector128<T> current, ref Vector128<T> resultIndex, Vector128<T> currentIndex)
+            public static bool IsQuickReturn(T value) => T.IsNaN(value);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<T> IsQuickReturn(Vector128<T> value) => IsNaN(value);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<T> IsQuickReturn(Vector256<T> value) => IsNaN(value);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<T> IsQuickReturn(Vector512<T> value) => IsNaN(value);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool Compare(T x, T y)
             {
-                Vector128<T> resultMag = Vector128.Abs(result), currentMag = Vector128.Abs(current);
-                Vector128<T> useResult = Vector128.GreaterThan(resultMag, currentMag);
-                Vector128<T> equalMask = Vector128.Equals(resultMag, currentMag);
-
-                if (equalMask != Vector128<T>.Zero)
+                T xMag = T.Abs(x), yMag = T.Abs(y);
+                if (xMag == yMag)
                 {
-                    Vector128<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
-                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                    {
-                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
-                        Vector128<T> currentNegative = IsNegative(current);
-                        Vector128<T> sameSign = Vector128.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
-                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
-                    }
-                    else
-                    {
-                        useResult |= equalMask & lessThanIndexMask;
-                    }
+                    return T.IsPositive(x) && T.IsNegative(y);
                 }
-
-                result = ElementWiseSelect(useResult, result, current);
-                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
+                else
+                {
+                    return xMag > yMag;
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector256<T> result, Vector256<T> current, ref Vector256<T> resultIndex, Vector256<T> currentIndex)
+            public static Vector128<T> Compare(Vector128<T> x, Vector128<T> y)
             {
-                Vector256<T> resultMag = Vector256.Abs(result), currentMag = Vector256.Abs(current);
-                Vector256<T> useResult = Vector256.GreaterThan(resultMag, currentMag);
-                Vector256<T> equalMask = Vector256.Equals(resultMag, currentMag);
-
-                if (equalMask != Vector256<T>.Zero)
+                Vector128<T> xMag = Vector128.Abs(x), yMag = Vector128.Abs(y);
+                if (typeof(T) == typeof(double) || typeof(T) == typeof(float))
                 {
-                    Vector256<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
-                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                    {
-                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
-                        Vector256<T> currentNegative = IsNegative(current);
-                        Vector256<T> sameSign = Vector256.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
-                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
-                    }
-                    else
-                    {
-                        useResult |= equalMask & lessThanIndexMask;
-                    }
+                    Vector128<T> equalResult = IsPositive(x) & IsNegative(y);
+                    return Vector128.GreaterThan(xMag, yMag) | (Vector128.Equals(xMag, yMag) & equalResult);
                 }
-
-                result = ElementWiseSelect(useResult, result, current);
-                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
+                else
+                {
+                    return Vector128.GreaterThan(xMag, yMag);
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector512<T> result, Vector512<T> current, ref Vector512<T> resultIndex, Vector512<T> currentIndex)
+            public static Vector256<T> Compare(Vector256<T> x, Vector256<T> y)
             {
-                Vector512<T> resultMag = Vector512.Abs(result), currentMag = Vector512.Abs(current);
-                Vector512<T> useResult = Vector512.GreaterThan(resultMag, currentMag);
-                Vector512<T> equalMask = Vector512.Equals(resultMag, currentMag);
-
-                if (equalMask != Vector512<T>.Zero)
+                Vector256<T> xMag = Vector256.Abs(x), yMag = Vector256.Abs(y);
+                if (typeof(T) == typeof(double) || typeof(T) == typeof(float))
                 {
-                    Vector512<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
-                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                    {
-                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
-                        Vector512<T> currentNegative = IsNegative(current);
-                        Vector512<T> sameSign = Vector512.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
-                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
-                    }
-                    else
-                    {
-                        useResult |= equalMask & lessThanIndexMask;
-                    }
+                    Vector256<T> equalResult = IsPositive(x) & IsNegative(y);
+                    return Vector256.GreaterThan(xMag, yMag) | (Vector256.Equals(xMag, yMag) & equalResult);
                 }
-
-                result = ElementWiseSelect(useResult, result, current);
-                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
+                else
+                {
+                    return Vector256.GreaterThan(xMag, yMag);
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(ref T result, T current, int resultIndex, int currentIndex)
+            public static Vector512<T> Compare(Vector512<T> x, Vector512<T> y)
             {
-                T resultMag = T.Abs(result);
-                T currentMag = T.Abs(current);
-
-                if (resultMag == currentMag)
+                Vector512<T> xMag = Vector512.Abs(x), yMag = Vector512.Abs(y);
+                if (typeof(T) == typeof(double) || typeof(T) == typeof(float))
                 {
-                    bool resultNegative = IsNegative(result);
-                    if ((resultNegative == IsNegative(current)) ? (currentIndex < resultIndex) : resultNegative)
-                    {
-                        result = current;
-                        return currentIndex;
-                    }
+                    Vector512<T> equalResult = IsPositive(x) & IsNegative(y);
+                    return Vector512.GreaterThan(xMag, yMag) | (Vector512.Equals(xMag, yMag) & equalResult);
                 }
-                else if (currentMag > resultMag)
+                else
                 {
-                    result = current;
-                    return currentIndex;
+                    return Vector512.GreaterThan(xMag, yMag);
                 }
-
-                return resultIndex;
             }
         }
     }
