@@ -3656,8 +3656,8 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 // entrypoint calling convention.
 // To do this, it:
 //      1. Introduces a new local variable to hold the PEP address
-//      1. Adds a new well-known argument to the call passing this local
-//      2. Rewrites the control expression to indirect through the new local, since for PEP's, the actual call target
+//      2. Adds a new well-known argument to the call passing this local
+//      3. Rewrites the control expression to indirect through the new local, since for PEP's, the actual call target
 //         must be loaded from the portable entry point address.
 //
 // Arguments:
