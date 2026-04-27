@@ -39,6 +39,7 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include <unistd.h>
 #include <limits.h>
 #include <dlfcn.h>
+#include <minipal/wasm.h>
 
 #if HAVE_VM_ALLOCATE
 #include <mach/vm_map.h>
@@ -165,7 +166,7 @@ extern "C"
 BOOL
 VIRTUALInitialize(bool initializeExecutableMemoryAllocator)
 {
-    s_virtualPageSize = getpagesize();
+    s_virtualPageSize = minipal_getpagesize();
 
     TRACE("Initializing the Virtual Critical Sections. \n");
 
@@ -531,7 +532,11 @@ static LPVOID VIRTUALReserveMemory(
         {
             ASSERT( "Unable to store the structure in the list.\n");
             pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
+#ifdef TARGET_WASM
+            free( pRetVal );
+#else
             munmap( pRetVal, MemSize );
+#endif
             pRetVal = NULL;
         }
     }
@@ -565,6 +570,49 @@ static LPVOID ReserveVirtualMemory(
 
     TRACE( "Reserving the memory now.\n");
 
+#ifdef TARGET_WASM
+    if (lpAddress != nullptr)
+    {
+        // Address hints (lpAddress) cannot be honored on WASM.
+        ERROR("Failed due to unsupported address hint on WASM.\n");
+        pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
+        return nullptr;
+    }
+    (void)fAllocationType; // Large pages / executable flags are N/A on WASM.
+
+    // WASM has no virtual memory — mmap(PROT_NONE) still consumes linear memory,
+    // munmap of partial ranges doesn't return memory, and MAP_FIXED is broken.
+    // Use posix_memalign/free instead.
+
+    #ifndef FEATURE_MULTITHREADING
+    // sbrk optimization: posix_memalign (dlmemalign) either recycles a free()'d
+    // block or grows the WASM linear memory via sbrk() → memory.grow. The WASM
+    // spec guarantees that memory.grow zero-initializes new pages, so only
+    // recycled blocks need explicit zeroing. We detect which case occurred by
+    // probing sbrk(0) before the allocation — safe because WASM is single-threaded.
+    void* old_brk = sbrk(0);
+#endif
+
+    LPVOID pRetVal = nullptr;
+    if (posix_memalign(&pRetVal, GetVirtualPageSize(), MemSize) != 0 || pRetVal == nullptr)
+    {
+        ERROR( "Failed due to insufficient memory.\n" );
+        pthrCurrent->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return nullptr;
+    }
+
+#ifndef FEATURE_MULTITHREADING
+    // Only zero recycled memory. Fresh pages from memory.grow are guaranteed zero.
+    if (pRetVal < old_brk)
+    {
+        memset(pRetVal, 0, MemSize);
+    }
+#else
+    // The sbrk optimization is not safe with multiple threads. Fall back to
+    // always zeroing.
+    memset(pRetVal, 0, MemSize);
+#endif
+#else // !TARGET_WASM
     // Most platforms will only commit memory if it is dirtied,
     // so this should not consume too much swap space.
     int mmapFlags = MAP_ANON | MAP_PRIVATE;
@@ -627,13 +675,14 @@ static LPVOID ReserveVirtualMemory(
     }
 #endif  // MMAP_ANON_IGNORES_PROTECTION
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#if defined(MADV_DONTDUMP)
     // Do not include reserved uncommitted memory in coredump.
     if (!(fAllocationType & MEM_COMMIT))
     {
         madvise(pRetVal, MemSize, MADV_DONTDUMP);
     }
 #endif
+#endif // !TARGET_WASM
 
     return pRetVal;
 }
@@ -724,6 +773,20 @@ VIRTUALCommitMemory(
         ERROR("mprotect() failed! Error(%d)=%s\n", errno, strerror(errno));
         goto error;
     }
+#else
+    // On WASM, reserve == commit. If this range was previously decommitted,
+    // sentinels were placed at each page boundary. Check the first byte and
+    // zero the entire range if needed.
+#ifdef FEATURE_MULTITHREADING
+    // Under MT, VirtualDecommit already zeroes the full range on decommit, and
+    // reserve already zeroes on allocation — so commit is a no-op.
+    (void)MemSize;
+#else
+    if (MemSize && *(BYTE*)StartBoundary != 0)
+    {
+        ZeroMemory((LPVOID) StartBoundary, MemSize);
+    }
+#endif
 #endif
 
 #if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
@@ -738,7 +801,6 @@ VIRTUALCommitMemory(
 
 #ifndef TARGET_WASM
 error:
-#endif
     if ( flAllocationType & MEM_RESERVE || IsLocallyReserved )
     {
         munmap( pRetVal, MemSize );
@@ -753,6 +815,7 @@ error:
 
     pInformation = NULL;
     pRetVal = NULL;
+#endif // !TARGET_WASM
 done:
 
     LogVaOperation(
@@ -1077,11 +1140,22 @@ VirtualFree(
             goto VirtualFreeExit;
         }
 #else // TARGET_WASM
-        // We can't decommit the mapping (MAP_FIXED doesn't work in emscripten), and we can't
-        //  MADV_DONTNEED it (madvise doesn't work in emscripten), but we can at least zero
-        //  the memory so that if an attempt is made to reuse it later, the memory will be
-        //  empty as PAL tests expect it to be.
+#ifdef FEATURE_MULTITHREADING
+        // Under MT, VirtualCommit always zeroes unconditionally, so just zero
+        // here immediately — no sentinel trick needed, and no races.
         ZeroMemory((LPVOID) StartBoundary, MemSize);
+#else
+        // We can't decommit the mapping (MAP_FIXED doesn't work in emscripten), and we can't
+        //  MADV_DONTNEED it (madvise doesn't work in emscripten). Instead of zeroing the
+        //  entire range here, write a non-zero sentinel at each page boundary. The commit
+        //  path checks the first byte to decide whether a zeroing pass is needed.
+        //  Writing every page guarantees the sentinel is visible even if a sub-range is
+        //  recommitted at an offset.
+        for (SIZE_T offset = 0; offset < MemSize; offset += GetVirtualPageSize())
+        {
+            *((BYTE*)StartBoundary + offset) = 1;
+        }
+#endif // FEATURE_MULTITHREADING
 #endif // TARGET_WASM
     }
 
@@ -1108,6 +1182,22 @@ VirtualFree(
         TRACE( "Releasing the following memory %d to %d.\n",
                pMemoryToBeReleased->startBoundary, pMemoryToBeReleased->memSize );
 
+#ifdef TARGET_WASM
+        // Remove the tracking entry before freeing — if list removal fails,
+        // the memory is still valid and the caller can retry.
+        {
+            UINT_PTR boundary = pMemoryToBeReleased->startBoundary;
+            if ( VIRTUALReleaseMemory( pMemoryToBeReleased ) == FALSE )
+            {
+                ASSERT( "Unable to remove the PCMI entry from the list.\n" );
+                pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
+                bRetVal = FALSE;
+                goto VirtualFreeExit;
+            }
+            pMemoryToBeReleased = NULL;
+            free( (LPVOID)boundary );
+        }
+#else // !TARGET_WASM
         if ( munmap( (LPVOID)pMemoryToBeReleased->startBoundary,
                      pMemoryToBeReleased->memSize ) == 0 )
         {
@@ -1127,6 +1217,7 @@ VirtualFree(
             bRetVal = FALSE;
             goto VirtualFreeExit;
         }
+#endif // !TARGET_WASM
     }
 
 VirtualFreeExit:
