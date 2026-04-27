@@ -2787,15 +2787,11 @@ namespace System.Text.Json.Serialization.Tests
         public class OpenGenericDerived_ComplexArg<T> : OpenGenericBase_ComplexArg<T>;
 
         [Fact]
-        public async Task OpenGenericDerivedType_WrappedTypeArg_Works()
+        public async Task OpenGenericDerivedType_WrappedTypeArg_ThrowsInvalidOperationException()
         {
-            // Derived<T> : Base<List<T>> - the type args are related but not identical
-            OpenGenericBase_Wrapped<List<string>> value = new OpenGenericDerived_Wrapped<string> { Data = ["a", "b"] };
-            string json = await Serializer.SerializeWrapper(value);
-            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Data":["a","b"]}""", json);
-
-            var result = await Serializer.DeserializeWrapper<OpenGenericBase_Wrapped<List<string>>>(json);
-            Assert.IsType<OpenGenericDerived_Wrapped<string>>(result);
+            // Derived<T> : Base<List<T>> - complex type arg wrapping is not supported
+            var value = new OpenGenericBase_Wrapped<List<string>>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
         [JsonDerivedType(typeof(OpenGenericDerived_Wrapped<>), "derived")]
@@ -2977,16 +2973,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task OpenGenericDerivedType_InterfaceBaseWithWrappedTypeArg_Works()
+        public async Task OpenGenericDerivedType_InterfaceBaseWithWrappedTypeArg_ThrowsInvalidOperationException()
         {
-            // Tests unification through an interface with wrapped type args:
-            // Impl<T> implements IBase<List<T>>.
-            IOpenGenericBase_InterfaceWrapped<List<string>> value = new OpenGenericImpl_InterfaceWrapped<string> { Data = ["a", "b"] };
-            string json = await Serializer.SerializeWrapper(value);
-            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","Data":["a","b"]}""", json);
-
-            var result = await Serializer.DeserializeWrapper<IOpenGenericBase_InterfaceWrapped<List<string>>>(json);
-            Assert.IsType<OpenGenericImpl_InterfaceWrapped<string>>(result);
+            // Impl<T> implements IBase<List<T>> - complex type arg wrapping is not supported
+            var value = new OpenGenericImpl_InterfaceWrapped<string> { Data = ["a", "b"] };
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                Serializer.SerializeWrapper<IOpenGenericBase_InterfaceWrapped<List<string>>>(value));
         }
 
         [JsonDerivedType(typeof(OpenGenericImpl_InterfaceWrapped<>), "impl")]

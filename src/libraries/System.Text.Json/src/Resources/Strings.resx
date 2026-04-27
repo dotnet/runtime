@@ -666,7 +666,7 @@
     <value>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type, must not be open generic type definitions and cannot be abstract classes or interfaces unless 'JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor' is specified.</value>
   </data>
   <data name="Polymorphism_OpenGenericDerivedTypeNotSupported" xml:space="preserve">
-    <value>The open generic type '{0}' cannot be used as a derived type for the polymorphic type '{1}'. The type arguments of the open generic derived type must be resolvable from the base type's generic arguments.</value>
+    <value>The open generic type '{0}' cannot be used as a derived type for the polymorphic type '{1}'. The derived type's generic parameters must exactly match the base type's generic parameters in number and position.</value>
   </data>
   <data name="Polymorphism_DerivedTypeIsAlreadySpecified" xml:space="preserve">
     <value>The polymorphic type '{0}' has already specified derived type '{1}'.</value>

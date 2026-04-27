@@ -711,25 +711,20 @@ namespace System.Text.Json.Serialization.Metadata
                 return false;
             }
 
+            // Only support direct parameter matching: the derived type's generic parameters
+            // must appear directly as the matching base type's type arguments, in corresponding positions.
+            // Complex forms like Derived<T> : Base<List<T>> or Derived<T1,T2> : Base<T2,T1> are not supported.
             Type[] matchingBaseArgs = matchingBase.GetGenericArguments();
-            Debug.Assert(matchingBaseArgs.Length == baseTypeArgs.Length);
-
-            // Build a mapping from the derived type's generic parameters to concrete types.
             Type[] derivedTypeParams = openDerivedType.GetGenericArguments();
-            Type?[] resolvedArgs = new Type?[derivedTypeParams.Length];
+
+            if (matchingBaseArgs.Length != derivedTypeParams.Length)
+            {
+                return false;
+            }
 
             for (int i = 0; i < matchingBaseArgs.Length; i++)
             {
-                if (!TryUnifyTypes(matchingBaseArgs[i], baseTypeArgs[i], derivedTypeParams, resolvedArgs))
-                {
-                    return false;
-                }
-            }
-
-            // Verify all type parameters were resolved.
-            for (int i = 0; i < resolvedArgs.Length; i++)
-            {
-                if (resolvedArgs[i] is null)
+                if (matchingBaseArgs[i] != derivedTypeParams[i])
                 {
                     return false;
                 }
@@ -737,7 +732,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             try
             {
-                closedDerivedType = openDerivedType.MakeGenericType(resolvedArgs!);
+                closedDerivedType = openDerivedType.MakeGenericType(baseTypeArgs);
                 return true;
             }
             catch (ArgumentException)
@@ -770,55 +765,6 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 return null;
-            }
-
-            static bool TryUnifyTypes(Type pattern, Type concrete, Type[] typeParams, Type?[] resolvedArgs)
-            {
-                if (pattern.IsGenericParameter)
-                {
-                    int index = Array.IndexOf(typeParams, pattern);
-                    if (index < 0)
-                    {
-                        return false;
-                    }
-
-                    if (resolvedArgs[index] is null)
-                    {
-                        resolvedArgs[index] = concrete;
-                        return true;
-                    }
-
-                    return resolvedArgs[index] == concrete;
-                }
-
-                if (pattern.IsGenericType)
-                {
-                    if (!concrete.IsGenericType)
-                    {
-                        return false;
-                    }
-
-                    if (pattern.GetGenericTypeDefinition() != concrete.GetGenericTypeDefinition())
-                    {
-                        return false;
-                    }
-
-                    Type[] patternArgs = pattern.GetGenericArguments();
-                    Type[] concreteArgs = concrete.GetGenericArguments();
-
-                    for (int i = 0; i < patternArgs.Length; i++)
-                    {
-                        if (!TryUnifyTypes(patternArgs[i], concreteArgs[i], typeParams, resolvedArgs))
-                        {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-
-                // Non-generic, non-parameter type: must be an exact match.
-                return pattern == concrete;
             }
         }
     }

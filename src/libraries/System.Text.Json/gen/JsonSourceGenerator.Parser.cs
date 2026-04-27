@@ -887,7 +887,9 @@ namespace System.Text.Json.SourceGeneration
             /// <summary>
             /// Resolves an unbound generic derived type to a closed type using the
             /// type arguments from the constructed base type at compile time.
-            /// Returns null if the type arguments cannot be resolved.
+            /// Only supports direct parameter matching: the derived type's generic parameters
+            /// must appear directly as the base type's type arguments in corresponding positions.
+            /// Returns false if the type arguments cannot be resolved.
             /// </summary>
             private static bool TryResolveOpenGenericDerivedType(
                 INamedTypeSymbol unboundDerived,
@@ -911,30 +913,26 @@ namespace System.Text.Json.SourceGeneration
                     return false;
                 }
 
-                var baseTypeArgs = constructedBase.TypeArguments;
+                // Only support direct parameter matching: the derived type's generic parameters
+                // must appear directly as the matching base type's type arguments, in corresponding positions.
+                // Complex forms like Derived<T> : Base<List<T>> or Derived<T1,T2> : Base<T2,T1> are not supported.
                 var matchingBaseArgs = matchingBase.TypeArguments;
                 var derivedTypeParams = derivedDefinition.TypeParameters;
-                var resolved = new ITypeSymbol?[derivedTypeParams.Length];
 
-                // Unify the type arguments to build a mapping.
+                if (matchingBaseArgs.Length != derivedTypeParams.Length)
+                {
+                    return false;
+                }
+
                 for (int i = 0; i < matchingBaseArgs.Length; i++)
                 {
-                    if (!TryUnifyTypes(matchingBaseArgs[i], baseTypeArgs[i], derivedTypeParams, resolved))
+                    if (!SymbolEqualityComparer.Default.Equals(matchingBaseArgs[i], derivedTypeParams[i]))
                     {
                         return false;
                     }
                 }
 
-                // Verify all type parameters were resolved.
-                for (int i = 0; i < resolved.Length; i++)
-                {
-                    if (resolved[i] is null)
-                    {
-                        return false;
-                    }
-                }
-
-                resolvedType = derivedDefinition.Construct(resolved!);
+                resolvedType = derivedDefinition.Construct(constructedBase.TypeArguments.ToArray());
                 return true;
 
                 static INamedTypeSymbol? FindMatchingBaseType(INamedTypeSymbol derivedDef, INamedTypeSymbol baseDef)
@@ -961,57 +959,6 @@ namespace System.Text.Json.SourceGeneration
                     }
 
                     return null;
-                }
-
-                static bool TryUnifyTypes(
-                    ITypeSymbol pattern, ITypeSymbol concrete,
-                    System.Collections.Immutable.ImmutableArray<ITypeParameterSymbol> typeParams,
-                    ITypeSymbol?[] resolvedArgs)
-                {
-                    if (pattern is ITypeParameterSymbol typeParam)
-                    {
-                        int index = typeParams.IndexOf(typeParam, SymbolEqualityComparer.Default);
-                        if (index < 0)
-                        {
-                            return false;
-                        }
-
-                        if (resolvedArgs[index] is null)
-                        {
-                            resolvedArgs[index] = concrete;
-                            return true;
-                        }
-
-                        return SymbolEqualityComparer.Default.Equals(resolvedArgs[index], concrete);
-                    }
-
-                    if (pattern is INamedTypeSymbol { IsGenericType: true } namedPattern)
-                    {
-                        if (concrete is not INamedTypeSymbol { IsGenericType: true } namedConcrete)
-                        {
-                            return false;
-                        }
-
-                        if (!SymbolEqualityComparer.Default.Equals(namedPattern.OriginalDefinition, namedConcrete.OriginalDefinition))
-                        {
-                            return false;
-                        }
-
-                        var patternArgs = namedPattern.TypeArguments;
-                        var concreteArgs = namedConcrete.TypeArguments;
-
-                        for (int i = 0; i < patternArgs.Length; i++)
-                        {
-                            if (!TryUnifyTypes(patternArgs[i], concreteArgs[i], typeParams, resolvedArgs))
-                            {
-                                return false;
-                            }
-                        }
-
-                        return true;
-                    }
-
-                    return SymbolEqualityComparer.Default.Equals(pattern, concrete);
                 }
             }
 
