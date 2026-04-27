@@ -192,7 +192,8 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinderCommon::BindAssembly(/* in */  AssemblyBinder      *pBinder,
                                                /* in */  AssemblyName        *pAssemblyName,
                                                /* in */  bool                 excludeAppPaths,
-                                               /* out */ Assembly           **ppAssembly)
+                                               /* out */ Assembly           **ppAssembly,
+                                               /* [out, optional] */ Assembly **ppExistingAssemblyOnFailure)
     {
         HRESULT hr = S_OK;
         LONG kContextVersion = 0;
@@ -213,7 +214,8 @@ namespace BINDER_SPACE
                                     false, // skipFailureCaching
                                     false, // skipVersionCompatibilityCheck
                                     excludeAppPaths,
-                                    &bindResult));
+                                    &bindResult,
+                                    ppExistingAssemblyOnFailure));
 
             // Remember the post-bind version
             kContextVersion = pApplicationContext->GetVersion();
@@ -393,7 +395,8 @@ namespace BINDER_SPACE
                                        bool                skipFailureCaching,
                                        bool                skipVersionCompatibilityCheck,
                                        bool                excludeAppPaths,
-                                       BindResult         *pBindResult)
+                                       BindResult         *pBindResult,
+                                       Assembly           **ppExistingAssemblyOnFailure)
     {
         HRESULT hr = S_OK;
         PathString assemblyDisplayName;
@@ -430,7 +433,8 @@ namespace BINDER_SPACE
                               pAssemblyName,
                               skipVersionCompatibilityCheck,
                               excludeAppPaths,
-                              pBindResult));
+                              pBindResult,
+                              ppExistingAssemblyOnFailure));
 
         if (!pBindResult->HaveResult())
         {
@@ -467,7 +471,8 @@ namespace BINDER_SPACE
                                              AssemblyName       *pAssemblyName,
                                              bool                skipVersionCompatibilityCheck,
                                              bool                excludeAppPaths,
-                                             BindResult         *pBindResult)
+                                             BindResult         *pBindResult,
+                                             Assembly           **ppExistingAssemblyOnFailure)
     {
         HRESULT hr = S_OK;
 
@@ -489,9 +494,11 @@ namespace BINDER_SPACE
                 hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
                 pBindResult->SetAttemptResult(hr, pAssembly, /*isInContext*/ true);
 
-                // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
-                if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
-                    hr = FUSION_E_REF_DEF_MISMATCH;
+                if (FAILED(hr) && ppExistingAssemblyOnFailure != nullptr)
+                {
+                    pAssembly->AddRef();
+                    *ppExistingAssemblyOnFailure = pAssembly;
+                }
             }
             else
             {
@@ -516,9 +523,10 @@ namespace BINDER_SPACE
                 hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
                 pBindResult->SetAttemptResult(hr, pBindResult->GetAssembly());
 
-                // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
-                if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
-                    hr = FUSION_E_REF_DEF_MISMATCH;
+                if (FAILED(hr) && ppExistingAssemblyOnFailure != nullptr)
+                {
+                    *ppExistingAssemblyOnFailure = pBindResult->GetAssembly(TRUE /* fAddRef */);
+                }
             }
 
             if (FAILED(hr))
@@ -1156,7 +1164,8 @@ HRESULT AssemblyBinderCommon::BindUsingPEImage(/* in */  AssemblyBinder* pBinder
                                                /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                                /* in */  PEImage            *pPEImage,
                                                /* in */  bool               excludeAppPaths,
-                                               /* [retval] [out] */  Assembly **ppAssembly)
+                                               /* [retval] [out] */  Assembly **ppAssembly,
+                                               /* [out, optional] */ Assembly **ppExistingAssemblyOnConflict)
 {
     HRESULT hr = E_FAIL;
 
@@ -1220,6 +1229,11 @@ Retry:
                 if (mvidMismatch)
                 {
                     // MVIDs do not match, so fail the load.
+                    // If caller wants the existing assembly for error message, provide it
+                    if (ppExistingAssemblyOnConflict != nullptr)
+                    {
+                        *ppExistingAssemblyOnConflict = bindResult.GetAssembly(TRUE /* fAddRef */);
+                    }
                     IF_FAIL_GO(COR_E_FILELOAD);
                 }
 
