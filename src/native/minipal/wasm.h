@@ -4,6 +4,10 @@
 #ifndef MINIPAL_WASM_H
 #define MINIPAL_WASM_H
 
+#ifndef __wasm__
+#include <unistd.h>
+#endif
+
 // Cross-platform page size accessor
 #ifdef __cplusplus
 inline
