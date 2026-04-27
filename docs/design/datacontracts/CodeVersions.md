@@ -322,6 +322,7 @@ IEnumerable<NativeCodeVersionHandle> ICodeVersions.GetNativeCodeVersions(TargetP
 }
 ```
 
+
 ### Finding the active native code version of an ILCodeVersion for a method descriptor
 ```csharp
 public virtual NativeCodeVersionHandle GetActiveNativeCodeVersionForILCodeVersion(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle);
