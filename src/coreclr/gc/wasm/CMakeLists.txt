@@ -3,6 +3,8 @@ include_directories("../env")
 include_directories("..")
 include_directories("../unix")
 
+include(../unix/configure.cmake)
+
 set(GC_PAL_SOURCES
     gcenv.cpp
     ../unix/events.cpp)
