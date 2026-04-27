@@ -532,8 +532,7 @@ namespace System.Runtime.CompilerServices
                     // Static callstack payload: type (1) + callstackId (1) + frameCount (1) + id (max 10 bytes compressed).
                     const int MaxStaticEventPayloadSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
 
-                    int savedAsyncEventHeaderIndex = Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, MaxStaticEventPayloadSize);
-                    if (savedAsyncEventHeaderIndex >= 0)
+                    if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, MaxStaticEventPayloadSize, out var rollbackData))
                     {
                         int frameCountOffset = CallstackHeader(ref eventBuffer, id, type, 0);
 
@@ -552,13 +551,12 @@ namespace System.Runtime.CompilerServices
                                 Buffer.BlockCopy(buffer, startIndex, rentedArray, 0, length);
                                 CaptureRuntimeAsyncCallstack(rentedArray, ref index, ref state);
 
-                                // Remove async event header from the event buffer before flushing.
-                                Serializer.RemoveAsyncEventHeader(context, savedAsyncEventHeaderIndex);
+                                // Rollback async event header before flushing.
+                                Serializer.RollbackAsyncEventHeader(context, in rollbackData);
                                 context.Flush();
 
                                 // Write the callstack again.
-                                savedAsyncEventHeaderIndex = Serializer.AsyncEventHeader(context, ref eventBuffer, context.LastEventTimestamp, 0, eventID, MaxStaticEventPayloadSize + index);
-                                if (savedAsyncEventHeaderIndex >= 0)
+                                if (Serializer.AsyncEventHeader(context, ref eventBuffer, context.LastEventTimestamp, 0, eventID, MaxStaticEventPayloadSize + index))
                                 {
                                     CallstackHeader(ref eventBuffer, id, type, state.Count);
                                     CallstackData(ref eventBuffer, rentedArray, index);
@@ -568,8 +566,8 @@ namespace System.Runtime.CompilerServices
                             }
                             else
                             {
-                                // Remove async event header from the event buffer since we can't write the callstack.
-                                Serializer.RemoveAsyncEventHeader(context, savedAsyncEventHeaderIndex);
+                                // Rollback async event header since we can't write the callstack.
+                                Serializer.RollbackAsyncEventHeader(context, in rollbackData);
                             }
                         }
                         else
