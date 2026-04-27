@@ -1050,7 +1050,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                Debug.Assert(threadExecCtx == null || !threadExecCtx.InstanceIsFlowSuppressed);
+                Debug.Assert(threadExecCtx == null || !threadExecCtx.InstanceIsFlowSuppressed || execCtx == ExecutionContext.DefaultFlowSuppressed);
             }
 
             if (!resumed)
@@ -1116,7 +1116,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                Debug.Assert(threadExecCtx == null || !threadExecCtx.InstanceIsFlowSuppressed);
+                Debug.Assert(threadExecCtx == null || !threadExecCtx.InstanceIsFlowSuppressed || execCtx == ExecutionContext.DefaultFlowSuppressed);
             }
 
             if (!resumed)
