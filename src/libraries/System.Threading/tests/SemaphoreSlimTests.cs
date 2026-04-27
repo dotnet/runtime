@@ -736,7 +736,7 @@ namespace System.Threading.Tests
             for (int i = 0; i < Iterations; i++)
             {
                 using var cts = new CancellationTokenSource();
-                Task<bool> t = sem.WaitAsync(cts.Token);
+                Task t = sem.WaitAsync(cts.Token);
                 cts.Cancel();
                 try { await t; sem.Release(); }
                 catch (OperationCanceledException) { }
