@@ -172,7 +172,7 @@ namespace System.Diagnostics
             ref int charEndIndex)
         {
             int charCount = decoder.GetCharCount(byteBuffer, byteIndex, byteCount, flush);
-            if (charCount == 0)
+            if (charCount == 0 && byteCount == 0)
             {
                 return;
             }

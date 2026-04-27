@@ -492,6 +492,35 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("utf-8", true)]
+        [InlineData("utf-8", false)]
+        [InlineData("utf-16", true)]
+        [InlineData("utf-16", false)]
+        [InlineData("utf-32", true)]
+        [InlineData("utf-32", false)]
+        public async Task ReadAllLines_WorksWithMultiByteCharacters(string encodingName, bool useAsync)
+        {
+            Encoding encoding = Encoding.GetEncoding(encodingName);
+
+            using Process process = CreateProcessPortable(RemotelyInvokable.WriteMultiByteLinesToBothStreamsWithEncoding, encodingName);
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.StandardOutputEncoding = encoding;
+            process.StartInfo.StandardErrorEncoding = encoding;
+            process.Start();
+
+            List<string> capturedOutput = new();
+            List<string> capturedError = new();
+
+            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
+
+            Assert.Equal(new[] { "hello_\u4e16\u754c_stdout" }, capturedOutput);
+            Assert.Equal(new[] { "hello_\u4e16\u754c_stderr" }, capturedError);
+
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
         private Process StartLinePrintingProcess(string stdOutText, string stdErrText)
         {
             Process process = CreateProcess((stdOut, stdErr) =>

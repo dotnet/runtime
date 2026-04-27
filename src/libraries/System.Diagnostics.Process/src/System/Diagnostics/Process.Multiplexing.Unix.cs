@@ -28,8 +28,7 @@ namespace System.Diagnostics
             SafePipeHandle outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
             SafePipeHandle errorHandle = GetSafeHandleFromStreamReader(_standardError!);
 
-            byte[] outputByteBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
-            byte[] errorByteBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            byte[] byteBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
             char[] outputCharBuffer = ArrayPool<char>.Shared.Rent(InitialReadAllBufferSize);
             char[] errorCharBuffer = ArrayPool<char>.Shared.Rent(InitialReadAllBufferSize);
             bool outputRefAdded = false, errorRefAdded = false;
@@ -78,13 +77,13 @@ namespace System.Diagnostics
                         // Use explicit branching to avoid ref locals across yield points.
                         if (isError)
                         {
-                            HandlePipeLineRead(currentHandle, errorDecoder, errorByteBuffer,
+                            HandlePipeLineRead(currentHandle, errorDecoder, byteBuffer,
                                 ref errorCharBuffer, ref errorCharStart, ref errorCharEnd,
                                 ref errorBomChecked, ref errorDone, standardError: true, lines);
                         }
                         else
                         {
-                            HandlePipeLineRead(currentHandle, outputDecoder, outputByteBuffer,
+                            HandlePipeLineRead(currentHandle, outputDecoder, byteBuffer,
                                 ref outputCharBuffer, ref outputCharStart, ref outputCharEnd,
                                 ref outputBomChecked, ref outputDone, standardError: false, lines);
                         }
@@ -111,8 +110,7 @@ namespace System.Diagnostics
                     errorHandle.DangerousRelease();
                 }
 
-                ArrayPool<byte>.Shared.Return(outputByteBuffer);
-                ArrayPool<byte>.Shared.Return(errorByteBuffer);
+                ArrayPool<byte>.Shared.Return(byteBuffer);
                 ArrayPool<char>.Shared.Return(outputCharBuffer);
                 ArrayPool<char>.Shared.Return(errorCharBuffer);
             }
