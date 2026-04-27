@@ -147,12 +147,19 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetModuleSimpleName(ulong vmModule, nint pStrFilename)
     {
         int hr = HResults.S_OK;
+        string? cdacSimpleName = null;
         try
         {
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
-            loader.TryGetSimpleName(handle, out string simpleName);
-            hr = StringHolderAssignCopy(pStrFilename, simpleName ?? string.Empty);
+            if (!loader.TryGetSimpleName(handle, out cdacSimpleName))
+            {
+                hr = HResults.E_FAIL;
+            }
+            else
+            {
+                hr = StringHolderAssignCopy(pStrFilename, cdacSimpleName);
+            }
         }
         catch (System.Exception ex)
         {
@@ -161,8 +168,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null)
         {
-            int hrLocal = _legacy.GetModuleSimpleName(vmModule, pStrFilename);
+            using var legacyHolder = new DebugStringHolder();
+            int hrLocal = _legacy.GetModuleSimpleName(vmModule, legacyHolder.Ptr);
             Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0 && hrLocal >= 0)
+            {
+                Debug.Assert(
+                    string.Equals(cdacSimpleName, legacyHolder.Value, System.StringComparison.Ordinal),
+                    $"GetModuleSimpleName string mismatch - cDAC: '{cdacSimpleName}', DAC: '{legacyHolder.Value}'");
+            }
         }
 #endif
         return hr;
@@ -1761,4 +1775,56 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetGenericArgTokenIndex(vmMethod, pIndex) : HResults.E_NOTIMPL;
+
+#if DEBUG
+    /// <summary>
+    /// A managed IStringHolder that captures the string written via AssignCopy,
+    /// used in DEBUG builds to compare cDAC and legacy DAC string outputs
+    /// without overwriting the caller-provided string holder.
+    /// </summary>
+    private sealed class DebugStringHolder : IDisposable
+    {
+        private readonly IntPtr _objectPtr;
+        private readonly IntPtr _vtablePtr;
+        private readonly GCHandle _delegateHandle;
+        private bool _disposed;
+
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        private delegate int AssignCopyDelegate(IntPtr thisPtr, IntPtr psz);
+
+        public string? Value { get; private set; }
+
+        public DebugStringHolder()
+        {
+            AssignCopyDelegate assignCopy = AssignCopyImpl;
+            _delegateHandle = GCHandle.Alloc(assignCopy);
+            IntPtr fnPtr = Marshal.GetFunctionPointerForDelegate(assignCopy);
+
+            _vtablePtr = Marshal.AllocHGlobal(IntPtr.Size);
+            Marshal.WriteIntPtr(_vtablePtr, fnPtr);
+
+            _objectPtr = Marshal.AllocHGlobal(IntPtr.Size);
+            Marshal.WriteIntPtr(_objectPtr, _vtablePtr);
+        }
+
+        public nint Ptr => _objectPtr;
+
+        private int AssignCopyImpl(IntPtr thisPtr, IntPtr psz)
+        {
+            Value = Marshal.PtrToStringUni(psz);
+            return HResults.S_OK;
+        }
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                Marshal.FreeHGlobal(_objectPtr);
+                Marshal.FreeHGlobal(_vtablePtr);
+                _delegateHandle.Free();
+                _disposed = true;
+            }
+        }
+    }
+#endif
 }
