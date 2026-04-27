@@ -584,13 +584,14 @@ static LPVOID ReserveVirtualMemory(
     // munmap of partial ranges doesn't return memory, and MAP_FIXED is broken.
     // Use posix_memalign/free instead.
 
-    #ifndef FEATURE_MULTITHREADING
+#ifndef FEATURE_MULTITHREADING
     // sbrk optimization: posix_memalign (dlmemalign) either recycles a free()'d
     // block or grows the WASM linear memory via sbrk() → memory.grow. The WASM
     // spec guarantees that memory.grow zero-initializes new pages, so only
     // recycled blocks need explicit zeroing. We detect which case occurred by
     // probing sbrk(0) before the allocation - safe because WASM is single-threaded.
     void* old_brk = sbrk(0);
+    uintptr_t old_brk_val = (old_brk != (void*)-1) ? (uintptr_t)old_brk : 0;
 #endif
 
     LPVOID pRetVal = nullptr;
@@ -603,7 +604,9 @@ static LPVOID ReserveVirtualMemory(
 
 #ifndef FEATURE_MULTITHREADING
     // Only zero recycled memory. Fresh pages from memory.grow are guaranteed zero.
-    if (pRetVal < old_brk)
+    // Compare as uintptr_t to avoid UB from relational comparison of unrelated pointers.
+    // When sbrk failed (old_brk_val == 0), fall back to unconditional zeroing.
+    if (old_brk_val == 0 || (uintptr_t)pRetVal < old_brk_val)
     {
         memset(pRetVal, 0, MemSize);
     }

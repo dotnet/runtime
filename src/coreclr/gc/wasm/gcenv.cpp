@@ -210,6 +210,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags)
 #ifndef FEATURE_MULTITHREADING
     // Capture the program break before allocation to detect heap growth vs recycling.
     void* old_brk = sbrk(0);
+    uintptr_t old_brk_val = (old_brk != (void*)-1) ? (uintptr_t)old_brk : 0;
 #endif
 
     void* pRetVal;
@@ -222,7 +223,9 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags)
 #ifndef FEATURE_MULTITHREADING
     // Only zero recycled memory. Fresh memory from heap growth (memory.grow) is
     // guaranteed to be zero by the WebAssembly spec.
-    if (pRetVal < old_brk)
+    // Compare as uintptr_t to avoid UB from relational comparison of unrelated pointers.
+    // When sbrk failed (old_brk_val == 0), fall back to unconditional zeroing.
+    if (old_brk_val == 0 || (uintptr_t)pRetVal < old_brk_val)
     {
         memset(pRetVal, 0, size);
     }
