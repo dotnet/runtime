@@ -22,7 +22,7 @@ CreateDump(const CreateDumpOptions& options)
 #if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
     g_pageSize = sysconf(_SC_PAGESIZE);
 #endif
-    TRACE("PAGE_SIZE %d\n", PAGE_SIZE);
+    TRACE("PAGE_SIZE %lu\n", (unsigned long)PAGE_SIZE);
 
     if (options.CrashReport && (options.AppModel == AppModelType::SingleFile || options.AppModel == AppModelType::NativeAOT))
     {

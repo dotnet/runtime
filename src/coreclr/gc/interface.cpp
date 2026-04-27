@@ -678,7 +678,7 @@ HRESULT GCHeap::Initialize()
 
             if (gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min > gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max)
             {
-                log_init_error_to_host ("DATAS min permil for gen0 growth %d is greater than max %d, it needs to be lower",
+                log_init_error_to_host ("DATAS min permil for gen0 growth %.3f is greater than max %.3f, it needs to be lower",
                     gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min, gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max);
                 return E_FAIL;
             }

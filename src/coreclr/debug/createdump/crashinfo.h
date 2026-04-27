@@ -32,7 +32,7 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 
 extern const std::string GetFileName(const std::string& fileName);
 extern const std::string GetDirectory(const std::string& fileName);
-extern std::string FormatString(const char* format, ...);
+extern std::string FormatString(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 extern std::string ConvertString(const WCHAR* str);
 extern std::string FormatGuid(const GUID* guid);
 
@@ -166,6 +166,6 @@ private:
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool PageCanBeRead(uint64_t start);
     bool PageMappedToPhysicalMemory(uint64_t start);
-    void Trace(const char* format, ...);
-    void TraceVerbose(const char* format, ...);
+    void Trace(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
+    void TraceVerbose(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
 };
