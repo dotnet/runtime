@@ -40,6 +40,8 @@ namespace JIT.HardwareIntrinsics.X86
             TestNullReferenceScenarios();
             TestLargeRandomCalculations();
             TestSignedOverflowIntoHigh();
+            TestOutParameterConsistency();
+            TestPropertyInputs();
         }
 
         private static void TestZeroMultiplying()
