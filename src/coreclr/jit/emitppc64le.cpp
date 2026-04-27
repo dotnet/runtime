@@ -1455,15 +1455,22 @@ void emitter::emitDispIns(
         code = *((code_t*)pCode);
     }
 
-    if (doffs)
+
+    // Print offset/address
+    if (doffs && pCode != nullptr)
     {
-        printf(" ?????????");
+        // Print actual code address in hex
+        printf("  %08X", (unsigned int)((uintptr_t)pCode & 0xFFFFFFFF));
+    }
+    else if (doffs)
+    {
+        // Print offset if we don't have code pointer yet
+        printf("  %08X", offset);
     }
     else
     {
         printf("            ");
     }
-
     if (code != 0)
     {
         printf("  %08X", code);
