@@ -317,3 +317,10 @@ public unsafe partial interface IMetaDataAssemblyImport
     int FindAssembliesByName(char* szAppBase, char* szPrivateBin, char* szAssemblyName,
         nint* ppIUnk, uint cMax, uint* pcAssemblies);
 }
+
+internal static class CldbHResults
+{
+    public const int CLDB_E_RECORD_NOTFOUND = unchecked((int)0x80131130);
+    public const int CLDB_E_FILE_CORRUPT = unchecked((int)0x8013110E);
+    public const int CLDB_S_TRUNCATION = 0x00131106;
+}

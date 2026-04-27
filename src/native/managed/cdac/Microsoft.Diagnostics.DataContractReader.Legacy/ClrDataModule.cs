@@ -103,7 +103,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                     return CustomQueryInterfaceResult.NotHandled;
 
                 wrapper = new MetaDataImportImpl(reader, legacyImport);
-                // Not thread-safe: multiple wrappers may be created concurrently, but only one is retained.
                 _metaDataImportImpl ??= wrapper;
                 wrapper = _metaDataImportImpl;
             }

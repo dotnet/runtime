@@ -281,7 +281,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 *ptkExtends = baseType.IsNil ? 0 : (uint)MetadataTokens.GetToken(baseType);
             }
 
-            hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
+            hr = truncated ? CldbHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -325,7 +325,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 *ptkResolutionScope = scope.IsNil ? 0 : (uint)MetadataTokens.GetToken(scope);
             }
 
-            hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
+            hr = truncated ? CldbHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -384,7 +384,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             if (pdwImplFlags is not null)
                 *pdwImplFlags = (uint)methodDef.ImplAttributes;
 
-            hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
+            hr = truncated ? CldbHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -472,7 +472,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 }
             }
 
-            hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
+            hr = truncated ? CldbHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -596,7 +596,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             if (ptdEnclosingClass is not null)
                 *ptdEnclosingClass = declaringType.IsNil ? 0 : (uint)MetadataTokens.GetToken(declaringType);
 
-            hr = declaringType.IsNil ? CorDbgHResults.CLDB_E_RECORD_NOTFOUND : HResults.S_OK;
+            hr = declaringType.IsNil ? CldbHResults.CLDB_E_RECORD_NOTFOUND : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -640,7 +640,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             string name = _reader.GetString(genericParam.Name);
             OutputBufferHelpers.CopyStringToBuffer(wzname, cchName, pchName, name, out bool truncated);
 
-            hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
+            hr = truncated ? CldbHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -898,7 +898,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             }
 
             if (!found)
-                hr = CorDbgHResults.CLDB_E_RECORD_NOTFOUND;
+                hr = CldbHResults.CLDB_E_RECORD_NOTFOUND;
         }
         catch (System.Exception ex)
         {
@@ -984,7 +984,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                     *pbSig = (uint)blobReader.Length;
             }
 
-            hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
+            hr = truncated ? CldbHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -1042,7 +1042,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
 
             if (layout.IsDefault)
             {
-                hr = CorDbgHResults.CLDB_E_RECORD_NOTFOUND;
+                hr = CldbHResults.CLDB_E_RECORD_NOTFOUND;
             }
             else
             {
@@ -1116,7 +1116,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             string name = _reader.GetString(modRef.Name);
             OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name, out bool truncated);
 
-            hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
+            hr = truncated ? CldbHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -1200,18 +1200,18 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             byte* heapBase = _reader.MetadataPointer + heapMetadataOffset;
             int remaining = heapSize - handleOffset;
             if (remaining <= 0)
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CLDB_E_FILE_CORRUPT)!;
+                throw Marshal.GetExceptionForHR(CldbHResults.CLDB_E_FILE_CORRUPT)!;
 
             BlobReader blobReader = new BlobReader(heapBase + handleOffset, remaining);
             int blobSize = blobReader.ReadCompressedInteger();
 
             // Validate blob fits within the remaining heap to prevent out-of-bounds reads.
             if (blobSize > blobReader.RemainingBytes)
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CLDB_E_FILE_CORRUPT)!;
+                throw Marshal.GetExceptionForHR(CldbHResults.CLDB_E_FILE_CORRUPT)!;
 
             // Native rejects even-sized blobs (missing terminal byte) as corrupt.
             if ((blobSize % sizeof(char)) == 0)
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CLDB_E_FILE_CORRUPT)!;
+                throw Marshal.GetExceptionForHR(CldbHResults.CLDB_E_FILE_CORRUPT)!;
 
             int charCount = (blobSize - 1) / sizeof(char);
 
@@ -1227,7 +1227,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 if ((uint)charCount > cchString)
                 {
                     szString[cchString - 1] = '\0';
-                    hr = CorDbgHResults.CLDB_S_TRUNCATION;
+                    hr = CldbHResults.CLDB_S_TRUNCATION;
                 }
             }
         }
@@ -1287,7 +1287,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             }
 
             if (!found)
-                hr = CorDbgHResults.CLDB_E_RECORD_NOTFOUND;
+                hr = CldbHResults.CLDB_E_RECORD_NOTFOUND;
         }
         catch (System.Exception ex)
         {
@@ -1366,7 +1366,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 }
             }
 
-            hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
+            hr = truncated ? CldbHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -1431,7 +1431,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         {
             // Validate that the token is the assembly definition token
             if (mda != 0x20000001)
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CLDB_E_RECORD_NOTFOUND)!;
+                throw Marshal.GetExceptionForHR(CldbHResults.CLDB_E_RECORD_NOTFOUND)!;
 
             AssemblyDefinition assemblyDef = _reader.GetAssemblyDefinition();
             string name = _reader.GetString(assemblyDef.Name);
@@ -1481,7 +1481,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                 *pdwAssemblyFlags = flags;
             }
 
-            hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
+            hr = truncated ? CldbHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {
@@ -1585,7 +1585,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             if (pdwAssemblyRefFlags is not null)
                 *pdwAssemblyRefFlags = (uint)assemblyRef.Flags;
 
-            hr = truncated ? CorDbgHResults.CLDB_S_TRUNCATION : HResults.S_OK;
+            hr = truncated ? CldbHResults.CLDB_S_TRUNCATION : HResults.S_OK;
         }
         catch (System.Exception ex)
         {

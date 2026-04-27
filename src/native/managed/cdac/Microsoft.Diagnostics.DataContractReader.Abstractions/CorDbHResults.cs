@@ -11,7 +11,4 @@ public static class CorDbgHResults
     public const int ERROR_BUFFER_OVERFLOW = unchecked((int)0x8007006F); // HRESULT_FROM_WIN32(ERROR_BUFFER_OVERFLOW)
     public const int CORDBG_E_CLASS_NOT_LOADED = unchecked((int)0x80131303);
     public const int CORDBG_S_NOT_ALL_BITS_SET = unchecked((int)0x00131c13);
-    public const int CLDB_E_RECORD_NOTFOUND = unchecked((int)0x80131130);
-    public const int CLDB_E_FILE_CORRUPT = unchecked((int)0x8013110E);
-    public const int CLDB_S_TRUNCATION = 0x00131106;
 }
