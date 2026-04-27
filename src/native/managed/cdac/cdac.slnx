@@ -14,6 +14,5 @@
   <Folder Name="/tests/">
     <Project Path="tests/Microsoft.Diagnostics.DataContractReader.Tests.csproj" />
     <Project Path="tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj" />
-    <Project Path="tests/StressTests/Microsoft.Diagnostics.DataContractReader.StressTests.csproj" />
   </Folder>
 </Solution>

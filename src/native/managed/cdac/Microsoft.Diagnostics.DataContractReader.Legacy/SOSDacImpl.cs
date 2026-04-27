@@ -4082,9 +4082,9 @@ public sealed unsafe partial class SOSDacImpl
 
             ppEnum.Interface = new SOSStackRefEnum(sosRefs);
         }
-        catch (System.Exception)
+        catch (System.Exception ex)
         {
-            hr = HResults.E_FAIL;
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl is not null)

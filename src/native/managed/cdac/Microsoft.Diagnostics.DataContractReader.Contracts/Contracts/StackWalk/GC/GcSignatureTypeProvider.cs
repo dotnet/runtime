@@ -40,13 +40,13 @@ internal sealed class GcSignatureTypeProvider
         };
 
     public GcTypeKind GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
-        => rawTypeKind == 0x11 ? GcTypeKind.Other : GcTypeKind.Ref;
+        => rawTypeKind == (byte)SignatureTypeKind.ValueType ? GcTypeKind.Other : GcTypeKind.Ref;
 
     public GcTypeKind GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
-        => rawTypeKind == 0x11 ? GcTypeKind.Other : GcTypeKind.Ref;
+        => rawTypeKind == (byte)SignatureTypeKind.ValueType ? GcTypeKind.Other : GcTypeKind.Ref;
 
     public GcTypeKind GetTypeFromSpecification(MetadataReader reader, object? genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
-        => rawTypeKind == 0x11 ? GcTypeKind.Other : GcTypeKind.Ref;
+        => rawTypeKind == (byte)SignatureTypeKind.ValueType ? GcTypeKind.Other : GcTypeKind.Ref;
 
     public GcTypeKind GetSZArrayType(GcTypeKind elementType) => GcTypeKind.Ref;
     public GcTypeKind GetArrayType(GcTypeKind elementType, ArrayShape shape) => GcTypeKind.Ref;
