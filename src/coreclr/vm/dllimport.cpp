@@ -419,16 +419,6 @@ public:
                 ((PTR_DynamicMethodDesc)pStubMD)->SetFlags(DynamicMethodDesc::FlagStatic);
                 pStubMD->SetStatic();
             }
-
-#if !defined(TARGET_X86) && defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
-            // we store the real managed argument stack size in the stub MethodDesc on non-X86
-            UINT stackSize = pStubMD->SizeOfNativeArgStack();
-
-            if (!FitsInU2(stackSize))
-                COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
-
-            pStubMD->AsDynamicMethodDesc()->SetNativeStackArgSize(static_cast<WORD>(stackSize));
-#endif // TARGET_X86
         }
 
         DWORD   cbTempModuleIndependentSigLength;
@@ -3953,36 +3943,25 @@ static COR_ILMETHOD_DECODER* CreatePInvokeStubWorker(
             nativeStackSize += TARGET_POINTER_SIZE;
     }
 
+#ifdef TARGET_X86
     if (pMD->IsDynamicMethod())
     {
-        // Set the native stack size to the IL stub MD. It is needed for alignment
-        // thunk generation on the Mac and stdcall name decoration on Windows.
-        // We do not store it directly in the interop MethodDesc here because due
-        // to sharing we come here only for the first call with given signature and
-        // the target MD may even be NULL.
-
-#ifdef TARGET_X86
+        // Set the native stack size to the IL stub MD. It is needed for
+        // stdcall name decoration and correct stack management in error cases for COM->CLR calls.
         if (fThisCall)
         {
             _ASSERTE(nativeStackSize >= TARGET_POINTER_SIZE);
             nativeStackSize -= TARGET_POINTER_SIZE;
         }
-#endif // TARGET_X86
 
         nativeStackSize = ALIGN_UP(nativeStackSize, TARGET_POINTER_SIZE);
 
         if (!FitsInU2(nativeStackSize))
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
-#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
         DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
-
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
-        if (fStubNeedsCOM)
-            pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
-#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
     }
-#ifdef TARGET_X86
     else if (pMD->IsPInvoke())
     {
         PInvokeMethodDesc *pNMD = (PInvokeMethodDesc *)pMD;
@@ -3997,8 +3976,12 @@ static COR_ILMETHOD_DECODER* CreatePInvokeStubWorker(
 #endif // FEATURE_COMINTEROP
 #endif // TARGET_X86
 
-    // FinishEmit needs to know the native stack arg size so we call it after the number
-    // has been set in the stub MD (code:DynamicMethodDesc.SetNativeStackArgSize)
+    if (fStubNeedsCOM && pMD->IsDynamicMethod())
+    {
+        DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
+        pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
+    }
+
     return pss->FinishEmit(pMD, pResolver);
 }
 
@@ -5681,14 +5664,6 @@ MethodDesc* PInvoke::CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOpe
         &typeContext,
         &pLinker
     );
-
-#if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
-    if (pStubMD->IsDynamicMethod())
-    {
-        DynamicMethodDesc* pDMD = pStubMD->AsDynamicMethodDesc();
-        pDMD->SetNativeStackArgSize(3 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
-    }
-#endif
 
     szMetaSig.SuppressRelease();
 

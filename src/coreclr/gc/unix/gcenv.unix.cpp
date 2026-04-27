@@ -208,7 +208,7 @@ bool GCToOSInterface::Initialize()
 
 #else // HAVE_SCHED_GETAFFINITY
 
-    for (size_t i = 0; i < configuredCpuCount; i++)
+    for (int i = 0; i < configuredCpuCount; i++)
     {
         g_processAffinitySet.Add(i);
     }
