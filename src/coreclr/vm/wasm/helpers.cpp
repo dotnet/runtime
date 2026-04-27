@@ -1011,14 +1011,14 @@ namespace
                 return NULL;
         }
 
-        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2 + ((callConv == IMAGE_CEE_CS_CALLCONV_DEFAULT) ? 1 : 0) + 1; // +1 for prefix
-        char* keyBuffer = (char*)alloca(keyBufferLen);
+        char fixedBuffer[64];
+        char* keyBuffer = fixedBuffer;
+        uint32_t keyBufferLen = sizeof(fixedBuffer);
         uint32_t needed = GetSignatureKey(sig, 'M', keyBuffer, keyBufferLen);
         if (needed == UINT32_MAX)
             return NULL;
         if (needed >= keyBufferLen)
         {
-            // S<N> tokens made the key longer than the initial estimate — retry with exact size
             keyBufferLen = needed + 1;
             keyBuffer = (char*)alloca(keyBufferLen);
             sig.Reset();
@@ -1056,14 +1056,15 @@ namespace
             default:
                 return NULL;
         }
-        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2 + 1 + 1; // +1 for 'p' suffix, +1 for prefix
-        char* keyBuffer = (char*)alloca(keyBufferLen);
+
+        char fixedBuffer[64];
+        char* keyBuffer = fixedBuffer;
+        uint32_t keyBufferLen = sizeof(fixedBuffer);
         uint32_t needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
         if (needed == UINT32_MAX)
             return NULL;
         if (needed >= keyBufferLen)
         {
-            // S<N> tokens made the key longer than the initial estimate — retry with exact size
             keyBufferLen = needed + 1;
             keyBuffer = (char*)alloca(keyBufferLen);
             sig.Reset();
