@@ -1421,9 +1421,6 @@ SWITCH_OPCODE:
                     MemoryBarrier();
                     ip++;
                     break;
-                case INTOP_NOP:
-                    ip++;
-                    break;
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
                 case INTOP_STORESTUBCONTEXT:
                 {

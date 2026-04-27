@@ -1054,7 +1054,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         if (ilOffset < (uint32_t)m_ILCodeSizeFromILHeader)
         {
             uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
-            // Only emit mapping entries at IL offsets where the evaluation stack is empty or on NOP instructions
+            // Only emit mapping entries at IL offsets where the evaluation stack is empty
             if ((ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK) &&
                 ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset)))
             {
@@ -1125,9 +1125,10 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
             ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
             if (prevWasCall && m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
             {
-                // Emit a real NOP so the return address after a call lands within
-                // the call's native offset range, not on the next statement boundary.
-                *ip++ = INTOP_NOP;
+                // Emit a debug sequence point so the return address after a call
+                // lands within the call's native offset range, not on the next
+                // statement boundary.
+                *ip++ = INTOP_DEBUG_SEQ_POINT;
                 prevWasCall = false;
             }
             continue;
