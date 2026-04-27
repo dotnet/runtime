@@ -254,10 +254,10 @@ namespace System.Threading.Tasks.Tests
                 if (index + 2 > buffer.Length)
                     break;
 
+                AsyncEventID eventId = (AsyncEventID)buffer[index++];
+
                 long delta = (long)ReadCompressedUInt64(buffer, ref index);
                 baseTimestamp += delta;
-
-                AsyncEventID eventId = (AsyncEventID)buffer[index++];
 
                 if (!visitor(eventId, baseTimestamp, buffer, ref index))
                     break;
@@ -325,10 +325,10 @@ namespace System.Threading.Tasks.Tests
         private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index,
             out ulong taskId, out byte frameCount, out List<(ulong NativeIP, int State)> frames)
         {
-            taskId = ReadCompressedUInt64(buffer, ref index);
             index++; // type
             index++; // callstack ID (reserved)
             frameCount = buffer[index++];
+            taskId = ReadCompressedUInt64(buffer, ref index);
             frames = new List<(ulong, int)>(frameCount);
 
             if (frameCount == 0)
@@ -1714,8 +1714,8 @@ namespace System.Threading.Tasks.Tests
                     if (index + 2 > buffer.Length)
                         return;
 
-                    ReadCompressedUInt64(buffer, ref index);
                     AsyncEventID firstEvent = (AsyncEventID)buffer[index++];
+                    ReadCompressedUInt64(buffer, ref index);
                     if (firstEvent != AsyncEventID.ResumeAsyncCallstack)
                         return;
 
@@ -1872,10 +1872,10 @@ namespace System.Threading.Tasks.Tests
                     break;
                 }
 
+                AsyncEventID eventId = (AsyncEventID)buffer[index++];
+
                 Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong delta);
                 currentTimestamp += delta;
-
-                AsyncEventID eventId = (AsyncEventID)buffer[index++];
 
                 Console.WriteLine($"Entry[{eventCount}]: Timestamp=0x{currentTimestamp:X16}, EventId={eventId}");
 
@@ -2034,10 +2034,10 @@ namespace System.Threading.Tasks.Tests
             byte asyncCallstackLength;
             int index = 0;
 
-            Deserializer.ReadCompressedUInt64(buffer, ref index, out id);
             type = buffer[index++];
             callstackId = buffer[index++];
             asyncCallstackLength = buffer[index++];
+            Deserializer.ReadCompressedUInt64(buffer, ref index, out id);
 
             Console.WriteLine($"--- {eventName} ---");
             Console.WriteLine($"ID: {id}");
