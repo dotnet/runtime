@@ -25,6 +25,12 @@ public abstract class DumpTestBase : IDisposable
     private DumpInfo? _dumpInfo;
 
     /// <summary>
+    /// The runtime version identifiers tested by <see cref="TestConfigurations"/> and
+    /// searched by <see cref="GetDumpSource"/>. Centralised here so both share the same list.
+    /// </summary>
+    private static readonly string[] RuntimeVersions = ["local", "net10.0"];
+
+    /// <summary>
     /// The set of runtime versions and R2R modes to test against.
     /// Each entry produces a separate test invocation via <c>[MemberData]</c>.
     /// R2R modes are provided by <see cref="GetR2RModes"/>, which currently yields
@@ -37,11 +43,11 @@ public abstract class DumpTestBase : IDisposable
             string? dumpSource = GetDumpSource();
             foreach (string r2rMode in GetR2RModes())
             {
-                if (!IsVersionSkipped("local"))
-                    yield return [new TestConfiguration("local", r2rMode, dumpSource)];
-
-                if (!IsVersionSkipped("net10.0"))
-                    yield return [new TestConfiguration("net10.0", r2rMode, dumpSource)];
+                foreach (string version in RuntimeVersions)
+                {
+                    if (!IsVersionSkipped(version))
+                        yield return [new TestConfiguration(version, r2rMode, dumpSource)];
+                }
             }
         }
     }
@@ -200,7 +206,7 @@ public abstract class DumpTestBase : IDisposable
             return null;
 
         // Try loading dump-info.json from any version directory to get OS/Arch
-        foreach (string versionDir in new[] { "local", "net10.0" })
+        foreach (string versionDir in RuntimeVersions)
         {
             DumpInfo? info = DumpInfo.TryLoad(Path.Combine(dumpRoot, versionDir));
             if (info is not null)

@@ -297,24 +297,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                 }
                 else if (pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
                 {
-                    MethodDesc *pMD = pIter->m_crawl.GetFunction();
-                    MethodTable *pMT = pMD->GetMethodTable();
-
-                    // Skip the exception handling managed code, the debugger clients are not supposed to see them
-                    // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
-                    // and System.Runtime.StackFrameIterator.*
-                    if (pMT == g_pEHClass || pMT == g_pExceptionServicesInternalCallsClass || pMT == g_pStackFrameIteratorClass)
-                    {
-                        continue;
-                    }
-
-                    // Skip the runtime helper that invokes the main program entrypoint, the debuggers do not want to see it.
-                    // Environment.CallEntryPoint
-                    if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
-                    {
-                        continue;
-                    }
-
+                    // Runtime-internal frames (exception handling helpers, entry point, etc.) are NOT
+                    // skipped here with continue. On x86, GetFrameWorker() unwinds one frame ahead to
+                    // compute the frame pointer (see rsstackwalk.cpp). Skipping frames here would cause
+                    // the unwind to land on the wrong frame, producing incorrect frame pointers.
+                    // Instead, GetStackWalkCurrentFrameInfo classifies these frames and GetFrameWorker
+                    // returns S_FALSE to hide them from debugger clients.
                     fIsAtEndOfStack = FALSE;
                 }
                 else
@@ -425,7 +413,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                     {
                         MethodDesc *pMD = pIter->m_crawl.GetFunction();
                         // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
-                        if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
+                        // and System.Runtime.StackFrameIterator.*
+                        if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
                         {
                             ftResult = kManagedExceptionHandlingCodeFrame;
                         }

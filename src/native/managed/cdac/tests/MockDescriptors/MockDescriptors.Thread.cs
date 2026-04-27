@@ -273,8 +273,6 @@ internal sealed class MockThread : TypedView
     }
 
     public ulong FrameAddress => GetFieldAddress(FrameFieldName);
-
-    public ulong LinkAddress => GetFieldAddress(LinkNextFieldName);
 }
 
 internal sealed class MockThreadBuilder
@@ -355,11 +353,11 @@ internal sealed class MockThreadBuilder
 
         if (_previousThread is not null)
         {
-            _previousThread.LinkNext = thread.LinkAddress;
+            _previousThread.LinkNext = thread.Address;
         }
         else
         {
-            _threadStore.FirstThreadLink = thread.LinkAddress;
+            _threadStore.FirstThreadLink = thread.Address;
         }
 
         _previousThread = thread;

@@ -45,12 +45,12 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackBase, cdac_data<Thread>::CachedSta
 CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackLimit, cdac_data<Thread>::CachedStackLimit)
 CDAC_TYPE_FIELD(Thread, T_POINTER, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, T_POINTER, DebuggerFilterContext, cdac_data<Thread>::DebuggerFilterContext)
-CDAC_TYPE_FIELD(Thread, T_POINTER, ExposedObject, cdac_data<Thread>::ExposedObject)
-CDAC_TYPE_FIELD(Thread, T_POINTER, LastThrownObject, cdac_data<Thread>::LastThrownObject)
+CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), ExposedObject, cdac_data<Thread>::ExposedObject)
+CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, T_UINT32, LastThrownObjectIsUnhandled, cdac_data<Thread>::LastThrownObjectIsUnhandled)
 CDAC_TYPE_FIELD(Thread, T_POINTER, LinkNext, cdac_data<Thread>::Link)
 CDAC_TYPE_FIELD(Thread, T_POINTER, ThreadLocalDataPtr, cdac_data<Thread>::ThreadLocalDataPtr)
-CDAC_TYPE_FIELD(Thread, T_POINTER, CurrentCustomDebuggerNotification, cdac_data<Thread>::CurrentCustomDebuggerNotification)
+CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), CurrentCustomDebuggerNotification, cdac_data<Thread>::CurrentCustomDebuggerNotification)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(Thread, T_POINTER, UEWatsonBucketTrackerBuckets, cdac_data<Thread>::UEWatsonBucketTrackerBuckets)
 #endif
@@ -96,7 +96,7 @@ CDAC_TYPE_BEGIN(InFlightTLSData)
 CDAC_TYPE_INDETERMINATE(InFlightTLSData)
 CDAC_TYPE_FIELD(InFlightTLSData, T_POINTER, Next, offsetof(InFlightTLSData, pNext))
 CDAC_TYPE_FIELD(InFlightTLSData, TYPE(TLSIndex), TlsIndex, offsetof(InFlightTLSData, tlsIndex))
-CDAC_TYPE_FIELD(InFlightTLSData, T_POINTER, TLSData, offsetof(InFlightTLSData, hTLSData))
+CDAC_TYPE_FIELD(InFlightTLSData, TYPE(ObjectHandle), TLSData, offsetof(InFlightTLSData, hTLSData))
 CDAC_TYPE_END(InFlightTLSData)
 
 CDAC_TYPE_BEGIN(TLSIndex)
@@ -135,7 +135,7 @@ CDAC_TYPE_END(Exception)
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
-CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ThrownObjectHandle, offsetof(ExInfo, m_hThrowable))
+CDAC_TYPE_FIELD(ExceptionInfo, TYPE(ObjectHandle), ThrownObjectHandle, offsetof(ExInfo, m_hThrowable))
 CDAC_TYPE_FIELD(ExceptionInfo, T_UINT32, ExceptionFlags, cdac_data<ExInfo>::ExceptionFlagsValue)
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, StackLowBound, cdac_data<ExInfo>::StackLowBound)
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, StackHighBound, cdac_data<ExInfo>::StackHighBound)
@@ -148,9 +148,9 @@ CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, CSFEnclosingClause, offsetof(ExInfo, m
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, CallerOfActualHandlerFrame, offsetof(ExInfo, m_sfCallerOfActualHandlerFrame))
 CDAC_TYPE_END(ExceptionInfo)
 
-CDAC_TYPE_BEGIN(GCHandle)
+CDAC_TYPE_BEGIN(ObjectHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
-CDAC_TYPE_END(GCHandle)
+CDAC_TYPE_END(ObjectHandle)
 
 // Object
 
@@ -187,16 +187,12 @@ CDAC_TYPE_END(InteropSyncBlockInfo)
 CDAC_TYPE_BEGIN(SyncBlock)
 CDAC_TYPE_INDETERMINATE(SyncBlock)
 CDAC_TYPE_FIELD(SyncBlock, T_POINTER, InteropInfo, cdac_data<SyncBlock>::InteropInfo)
-CDAC_TYPE_FIELD(SyncBlock, T_POINTER, Lock, cdac_data<SyncBlock>::Lock)
+CDAC_TYPE_FIELD(SyncBlock, TYPE(ObjectHandle), Lock, cdac_data<SyncBlock>::Lock)
 CDAC_TYPE_FIELD(SyncBlock, T_UINT32, ThinLock, cdac_data<SyncBlock>::ThinLock)
 CDAC_TYPE_FIELD(SyncBlock, T_POINTER, LinkNext, cdac_data<SyncBlock>::LinkNext)
 CDAC_TYPE_FIELD(SyncBlock, T_UINT32, HashCode, cdac_data<SyncBlock>::HashCode)
 CDAC_TYPE_END(SyncBlock)
 
-CDAC_TYPE_BEGIN(SLink)
-CDAC_TYPE_INDETERMINATE(SLink)
-CDAC_TYPE_FIELD(SLink, T_POINTER, Next, offsetof(SLink, m_pNext))
-CDAC_TYPE_END(SLink)
 
 #ifdef FEATURE_COMWRAPPERS
 CDAC_TYPE_BEGIN(NativeObjectWrapperObject)
@@ -303,8 +299,19 @@ CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, NewStubPrecodeHeap, cdac_data<Loader
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, DynamicHelpersStubHeap, cdac_data<LoaderAllocator>::DynamicHelpersStubHeap)
 #endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, VirtualCallStubManager, cdac_data<LoaderAllocator>::VirtualCallStubManager)
-CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
+CDAC_TYPE_FIELD(LoaderAllocator, TYPE(ObjectHandle), ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
 CDAC_TYPE_END(LoaderAllocator)
+
+CDAC_TYPE_BEGIN(LoaderHeap)
+CDAC_TYPE_INDETERMINATE(LoaderHeap)
+CDAC_TYPE_FIELD(LoaderHeap, T_POINTER, FirstBlock, cdac_data<UnlockedLoaderHeapBaseTraversable>::FirstBlock)
+CDAC_TYPE_END(LoaderHeap)
+
+CDAC_TYPE_BEGIN(LoaderHeapBlock)
+CDAC_TYPE_FIELD(LoaderHeapBlock, T_POINTER, Next, offsetof(LoaderHeapBlock, pNext))
+CDAC_TYPE_FIELD(LoaderHeapBlock, T_POINTER, VirtualAddress, offsetof(LoaderHeapBlock, pVirtualAddress))
+CDAC_TYPE_FIELD(LoaderHeapBlock, T_NUINT, VirtualSize, offsetof(LoaderHeapBlock, dwVirtualSize))
+CDAC_TYPE_END(LoaderHeapBlock)
 
 CDAC_TYPE_BEGIN(VirtualCallStubManager)
 CDAC_TYPE_INDETERMINATE(VirtualCallStubManager)
@@ -322,7 +329,7 @@ CDAC_TYPE_END(PEAssembly)
 
 CDAC_TYPE_BEGIN(AssemblyBinder)
 CDAC_TYPE_INDETERMINATE(AssemblyBinder)
-CDAC_TYPE_FIELD(AssemblyBinder, T_POINTER, AssemblyLoadContext, cdac_data<AssemblyBinder>::AssemblyLoadContext)
+CDAC_TYPE_FIELD(AssemblyBinder, TYPE(ObjectHandle), AssemblyLoadContext, cdac_data<AssemblyBinder>::AssemblyLoadContext)
 CDAC_TYPE_END(AssemblyBinder)
 
 CDAC_TYPE_BEGIN(PEImage)
@@ -567,6 +574,7 @@ CDAC_TYPE_END(NativeCodeSlot)
 
 CDAC_TYPE_BEGIN(AsyncMethodData)
 CDAC_TYPE_SIZE(sizeof(AsyncMethodData))
+CDAC_TYPE_FIELD(AsyncMethodData, T_UINT32, Flags, offsetof(AsyncMethodData, flags))
 CDAC_TYPE_END(AsyncMethodData)
 
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
@@ -913,6 +921,8 @@ CDAC_TYPE_END(ILCodeVersionNode)
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, T_UINT64, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
 CDAC_TYPE_FIELD(ProfControlBlock, T_BOOL, RejitOnAttachEnabled, offsetof(ProfControlBlock, fRejitOnAttachEnabled))
+CDAC_TYPE_FIELD(ProfControlBlock, T_POINTER, MainProfilerProfInterface, offsetof(ProfControlBlock, mainProfilerInfo) + offsetof(ProfilerInfo, pProfInterface))
+CDAC_TYPE_FIELD(ProfControlBlock, T_INT32, NotificationProfilerCount, offsetof(ProfControlBlock, notificationProfilerCount))
 CDAC_TYPE_END(ProfControlBlock)
 #endif // PROFILING_SUPPORTED
 
@@ -1300,6 +1310,11 @@ CDAC_GLOBALS_BEGIN()
 #error Handle 'Browser' define
 #endif // Browser
 CDAC_GLOBAL_STRING(OperatingSystem, Browser)
+#elif defined(TARGET_APPLE)
+#ifdef Apple
+#error Handle 'Apple' define
+#endif // Apple
+CDAC_GLOBAL_STRING(OperatingSystem, Apple)
 #elif defined(TARGET_UNIX)
 #ifdef Unix
 #error Handle 'Unix' define
@@ -1345,6 +1360,7 @@ CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
+CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 #ifdef FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
