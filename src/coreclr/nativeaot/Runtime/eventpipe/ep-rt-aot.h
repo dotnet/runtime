@@ -515,7 +515,7 @@ ep_rt_config_value_get_sampling_rate (void)
     STATIC_CONTRACT_NOTHROW;
 
     uint64_t value;
-    if (RhConfig::Environment::TryGetIntegerValue("EventPipeCpuSamplingRate", &value, true))
+    if (RhConfig::Environment::TryGetIntegerValue("EventPipeThreadSamplingRate", &value, true))
     {
         EP_ASSERT(value <= UINT32_MAX);
         return static_cast<uint32_t>(value);

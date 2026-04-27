@@ -578,7 +578,7 @@ uint32_t
 ep_rt_config_value_get_sampling_rate (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeCpuSamplingRate);
+	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeThreadSamplingRate);
 }
 
 /*

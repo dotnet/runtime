@@ -1497,7 +1497,7 @@ ep_init (void)
 	const uint32_t default_profiler_sample_rate_in_nanoseconds = 5000000; // 5 msec.
 #endif // PERFTRACING_DISABLE_THREADS
 
-	// Allow overriding the sampling rate via DOTNET_EventPipeCpuSamplingRate (in milliseconds).
+	// Allow overriding the sampling rate via DOTNET_EventPipeThreadSamplingRate (in milliseconds).
 	uint32_t configured_rate_ms = ep_rt_config_value_get_sampling_rate ();
 	if (configured_rate_ms > 0)
 		ep_sample_profiler_set_sampling_rate ((uint64_t)configured_rate_ms * 1000000);

@@ -497,7 +497,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
       <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstDescriptor)" Condition="'$(_WasmPerfInstDescriptor)' != ''" />
-      <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeCpuSamplingRate" Value="$(_WasmPerfInstInterval)" />
+      <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
     </ItemGroup>
   </Target>
 
