@@ -674,7 +674,8 @@ namespace Microsoft.Win32.SafeHandles
             if (!processWaitHandle.WaitOne(milliseconds))
             {
 #pragma warning disable CA1416 // PosixSignal.SIGKILL is supported on Windows via SignalCore
-                Canceled = SignalCore(PosixSignal.SIGKILL);
+                Canceled = true;
+                SignalCore(PosixSignal.SIGKILL);
 #pragma warning restore CA1416
                 processWaitHandle.WaitOne(Timeout.Infinite);
             }
