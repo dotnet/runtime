@@ -264,6 +264,22 @@ PALAPI
 PAL_SetLogManagedCallstackForSignalCallback(
     IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback);
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+/// <summary>
+/// Callback invoked from the fatal-signal path to write an in-proc crash
+/// report. The callback runs inside the signal handler and must therefore
+/// be async-signal-safe. siginfo is opaque (siginfo_t*) and context is the
+/// raw ucontext_t pointer received by the PAL signal handler.
+/// </summary>
+typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetInProcCrashReportCallback(
+    IN PINPROCCRASHREPORT_CALLBACK callback);
+#endif // FEATURE_INPROC_CRASHREPORT
+
 PALIMPORT
 VOID
 PALAPI

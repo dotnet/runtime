@@ -100,3 +100,10 @@ private:
     char m_reportPath[CRASHREPORT_STRING_BUFFER_SIZE] = {};
     char m_processName[CRASHREPORT_STRING_BUFFER_SIZE] = {};
 };
+
+// Free-function entry point used by the runtime to wire the in-proc crash
+// reporter into the PAL signal-handler path. Captures `settings` into the
+// singleton and registers a signal-safe dispatcher with PAL via
+// PAL_SetInProcCrashReportCallback. PAL has no direct dependency on the
+// reporter; the only coupling is through this registered callback.
+void InProcCrashReportInitialize(const InProcCrashReporterSettings& settings);

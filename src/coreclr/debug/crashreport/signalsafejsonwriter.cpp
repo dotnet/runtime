@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Streaming JSON writer implementation for crash reports.
-
 #include "signalsafejsonwriter.h"
 
+#include <stdint.h>
 #include <string.h>
 
 static
@@ -16,7 +15,7 @@ ToHexChar(unsigned value)
 
 void
 SignalSafeJsonWriter::Init(
-    CrashJsonOutputCallback outputCallback,
+    SignalSafeJsonOutputCallback outputCallback,
     void* outputContext)
 {
     m_pos = 0;
@@ -26,7 +25,7 @@ SignalSafeJsonWriter::Init(
     m_outputContext = outputContext;
 }
 
-void
+bool
 SignalSafeJsonWriter::OpenObject(
     const char* key)
 {
@@ -38,22 +37,24 @@ SignalSafeJsonWriter::OpenObject(
     }
     AppendChar('{');
     m_commaNeeded = false;
+    return !m_writeFailed;
 }
 
-void
+bool
 SignalSafeJsonWriter::OpenObject()
 {
-    OpenObject(nullptr);
+    return OpenObject(nullptr);
 }
 
-void
+bool
 SignalSafeJsonWriter::CloseObject()
 {
     AppendChar('}');
     m_commaNeeded = true;
+    return !m_writeFailed;
 }
 
-void
+bool
 SignalSafeJsonWriter::OpenArray(
     const char* key)
 {
@@ -65,22 +66,24 @@ SignalSafeJsonWriter::OpenArray(
     }
     AppendChar('[');
     m_commaNeeded = false;
+    return !m_writeFailed;
 }
 
-void
+bool
 SignalSafeJsonWriter::OpenArray()
 {
-    OpenArray(nullptr);
+    return OpenArray(nullptr);
 }
 
-void
+bool
 SignalSafeJsonWriter::CloseArray()
 {
     AppendChar(']');
     m_commaNeeded = true;
+    return !m_writeFailed;
 }
 
-void
+bool
 SignalSafeJsonWriter::WriteString(
     const char* key,
     const char* value)
@@ -89,6 +92,7 @@ SignalSafeJsonWriter::WriteString(
     WriteEscapedString(key);
     AppendStr(": ");
     WriteEscapedString(value);
+    return !m_writeFailed;
 }
 
 bool
@@ -145,7 +149,7 @@ SignalSafeJsonWriter::Append(
     }
 
     size_t offset = 0;
-    size_t remaining = CRASH_JSON_BUFFER_SIZE - m_pos;
+    size_t remaining = SIGNAL_SAFE_JSON_BUFFER_SIZE - m_pos;
     while (offset < len)
     {
         if (remaining == 0)
@@ -154,7 +158,7 @@ SignalSafeJsonWriter::Append(
             {
                 return false;
             }
-            remaining = CRASH_JSON_BUFFER_SIZE;
+            remaining = SIGNAL_SAFE_JSON_BUFFER_SIZE;
         }
 
         size_t chunk = len - offset;
@@ -180,7 +184,7 @@ SignalSafeJsonWriter::AppendChar(char c)
         return false;
     }
 
-    if (m_pos == CRASH_JSON_BUFFER_SIZE && !Flush())
+    if (m_pos == SIGNAL_SAFE_JSON_BUFFER_SIZE && !Flush())
     {
         return false;
     }
@@ -251,4 +255,140 @@ SignalSafeJsonWriter::WriteEscapedString(
     }
 
     AppendChar('"');
+}
+
+// Bounded, async-signal-safe integer-to-string formatters. They write into the
+// caller-supplied buffer and never allocate or call into stdio/locale code.
+// If the buffer is too small to hold the maximum-width output (per the
+// MAX_*_BUFFER_SIZE constants on SignalSafeJsonWriter), they leave only a null
+// terminator and return early.
+
+void
+SignalSafeJsonWriter::FormatHexValue(
+    char* buffer,
+    size_t bufferSize,
+    uint64_t value)
+{
+    if (buffer == nullptr || bufferSize == 0)
+    {
+        return;
+    }
+
+    if (bufferSize < MAX_HEX_FORMAT_BUFFER_SIZE)
+    {
+        buffer[0] = '\0';
+        return;
+    }
+
+    buffer[0] = '0';
+    buffer[1] = 'x';
+
+    char reverse[MAX_HEX_DIGITS_UINT64];
+    size_t reverseLength = 0;
+    do
+    {
+        unsigned digit = static_cast<unsigned>(value & 0xf);
+        reverse[reverseLength++] = static_cast<char>(digit < 10 ? ('0' + digit) : ('a' + digit - 10));
+        value >>= 4;
+    } while (value != 0 && reverseLength < sizeof(reverse));
+
+    size_t index = 2;
+    while (reverseLength > 0)
+    {
+        buffer[index++] = reverse[--reverseLength];
+    }
+    buffer[index] = '\0';
+}
+
+size_t
+SignalSafeJsonWriter::FormatUnsignedDecimal(
+    char* buffer,
+    size_t bufferSize,
+    uint64_t value)
+{
+    if (buffer == nullptr || bufferSize == 0)
+    {
+        return 0;
+    }
+
+    if (bufferSize < MAX_UNSIGNED_DECIMAL_BUFFER_SIZE)
+    {
+        buffer[0] = '\0';
+        return 0;
+    }
+
+    char reverse[MAX_DECIMAL_DIGITS_UINT64];
+    size_t reverseLength = 0;
+    do
+    {
+        reverse[reverseLength++] = static_cast<char>('0' + (value % 10));
+        value /= 10;
+    } while (value != 0 && reverseLength < sizeof(reverse));
+
+    size_t pos = 0;
+    while (reverseLength > 0)
+    {
+        buffer[pos++] = reverse[--reverseLength];
+    }
+    buffer[pos] = '\0';
+    return pos;
+}
+
+size_t
+SignalSafeJsonWriter::FormatSignedDecimal(
+    char* buffer,
+    size_t bufferSize,
+    int64_t value)
+{
+    if (buffer == nullptr || bufferSize == 0)
+    {
+        return 0;
+    }
+
+    if (bufferSize < MAX_SIGNED_DECIMAL_BUFFER_SIZE)
+    {
+        buffer[0] = '\0';
+        return 0;
+    }
+
+    if (value >= 0)
+    {
+        return FormatUnsignedDecimal(buffer, bufferSize, static_cast<uint64_t>(value));
+    }
+
+    buffer[0] = '-';
+    // Cast to unsigned first to handle INT64_MIN without signed overflow.
+    uint64_t absValue = static_cast<uint64_t>(-(value + 1)) + 1;
+    size_t written = FormatUnsignedDecimal(buffer + 1, bufferSize - 1, absValue);
+    return written == 0 ? 0 : written + 1;
+}
+
+bool
+SignalSafeJsonWriter::WriteHex(
+    const char* key,
+    uint64_t value)
+{
+    char scratch[MAX_HEX_FORMAT_BUFFER_SIZE];
+    FormatHexValue(scratch, sizeof(scratch), value);
+    return WriteString(key, scratch);
+}
+
+bool
+SignalSafeJsonWriter::WriteDecimal(
+    const char* key,
+    uint64_t value)
+{
+    char scratch[MAX_UNSIGNED_DECIMAL_BUFFER_SIZE];
+    (void)FormatUnsignedDecimal(scratch, sizeof(scratch), value);
+    return WriteString(key, scratch);
+}
+
+bool
+SignalSafeJsonWriter::WriteSignedDecimal(
+    const char* key,
+    int64_t value)
+{
+    char scratch[MAX_SIGNED_DECIMAL_BUFFER_SIZE];
+    (void)FormatSignedDecimal(scratch, sizeof(scratch), value);
+    return WriteString(key, scratch);
 }

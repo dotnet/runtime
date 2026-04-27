@@ -109,12 +109,9 @@ if(CLR_CMAKE_HOST_UNIX)
       add_linker_flag(-Wl,-z,notext)
     endif()
 
-    # PAL consumes FEATURE_INPROC_CRASHREPORT, so the feature variable must be
-    # populated and the compile definition added before PAL is processed.
+    # FEATURE_INPROC_CRASHREPORT must be visible to PAL sources before
+    # clrdefinitions.cmake is processed (PAL is added before that include).
     include(clrfeatures.cmake)
-    if(FEATURE_INPROC_CRASHREPORT)
-        add_compile_definitions(FEATURE_INPROC_CRASHREPORT)
-    endif()
 
     add_subdirectory(pal)
 else()

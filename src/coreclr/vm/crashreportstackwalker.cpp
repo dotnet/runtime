@@ -13,11 +13,9 @@
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
-#include "debug/crashreport/inproccrashreporter.h"
+#include "inproccrashreporter.h"
 #include "threadsuspend.h"
 #include "gcenv.h"
-
-void PROCInitializeInProcCrashReport(const InProcCrashReporterSettings& settings);
 
 struct WalkContext
 {
@@ -25,7 +23,7 @@ struct WalkContext
     void* userCtx;
 };
 
-static void BuildTypeName(char* buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
+static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
 
 static
 StackWalkAction
@@ -33,6 +31,15 @@ FrameCallbackAdapter(
     CrawlFrame* pCF,
     VOID* pData)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     WalkContext* ctx = static_cast<WalkContext*>(pData);
     MethodDesc* pMD = pCF->GetFunction();
     if (pMD == nullptr)
@@ -56,10 +63,10 @@ FrameCallbackAdapter(
         }
     }
 
-    char classNameBuf[CRASHREPORT_STRING_BUFFER_SIZE] = { 0 };
+    char classNameBuf[CRASHREPORT_STRING_BUFFER_SIZE];
     BuildTypeName(classNameBuf, sizeof(classNameBuf), namespaceName, className);
 
-    const char* moduleName = nullptr;
+    LPCUTF8 moduleName = nullptr;
     Module* pModule = pMD->GetModule();
     if (pModule != nullptr)
     {
@@ -72,16 +79,16 @@ FrameCallbackAdapter(
 
     uint32_t nativeOffset = pCF->HasFaulted() ? 0 : pCF->GetRelOffset();
     uint32_t ilOffset = 0;
-    uint64_t ip = 0;
-    uint64_t stackPointer = 0;
+    PCODE ip = (PCODE)0;
+    TADDR stackPointer = (TADDR)0;
     PREGDISPLAY pRD = pCF->GetRegisterSet();
     if (pRD != nullptr)
     {
-        ip = static_cast<uint64_t>(GetControlPC(pRD));
-        stackPointer = static_cast<uint64_t>(GetRegdisplaySP(pRD));
+        ip = GetControlPC(pRD);
+        stackPointer = GetRegdisplaySP(pRD);
     }
 
-    if (ip == 0 && stackPointer == 0)
+    if (ip == (PCODE)0 && stackPointer == (TADDR)0)
     {
         return SWA_CONTINUE;
     }
@@ -89,11 +96,22 @@ FrameCallbackAdapter(
     if (g_pDebugInterface != nullptr && pMD != nullptr)
     {
         DWORD resolvedILOffset = 0;
-        if (g_pDebugInterface->GetILOffsetFromNative(
-            pMD,
-            reinterpret_cast<LPCBYTE>(static_cast<TADDR>(ip)),
-            nativeOffset,
-            &resolvedILOffset))
+        BOOL haveILOffset = FALSE;
+        EX_TRY
+        {
+            haveILOffset = g_pDebugInterface->GetILOffsetFromNative(
+                pMD,
+                reinterpret_cast<LPCBYTE>(ip),
+                nativeOffset,
+                &resolvedILOffset);
+        }
+        EX_CATCH
+        {
+            // Best-effort: if IL-offset resolution throws, leave ilOffset = 0
+            // and continue with the native frame metadata we already have.
+        }
+        EX_END_CATCH
+        if (haveILOffset)
         {
             ilOffset = resolvedILOffset;
         }
@@ -124,7 +142,8 @@ FrameCallbackAdapter(
         }
     }
 
-    ctx->callback(ip, stackPointer, methodName, classNameBuf, moduleName, nativeOffset, static_cast<uint32_t>(token), ilOffset, moduleTimestamp, moduleSize, moduleGuid, ctx->userCtx);
+    className = classNameBuf[0] == '\0' ? nullptr : classNameBuf;
+    ctx->callback(static_cast<uint64_t>(ip), static_cast<uint64_t>(stackPointer), methodName, className, moduleName, nativeOffset, static_cast<uint32_t>(token), ilOffset, moduleTimestamp, moduleSize, moduleGuid, ctx->userCtx);
     return SWA_CONTINUE;
 }
 
@@ -166,7 +185,7 @@ CrashReportIsCurrentThreadManaged()
 static
 void
 BuildTypeName(
-    char* buffer,
+    LPUTF8 buffer,
     size_t bufferSize,
     LPCUTF8 namespaceName,
     LPCUTF8 className)
@@ -209,6 +228,15 @@ CrashReportGetExceptionForThread(
     size_t exceptionTypeBufSize,
     uint32_t* hresult)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     if (exceptionTypeBufSize > 0)
     {
         exceptionTypeBuf[0] = '\0';
@@ -301,10 +329,9 @@ CrashReportGetException(
 // The crash reporter is best-effort; on hang the Android watchdog
 // kills the process and we keep whatever crash report JSON was flushed
 // beforehand.
-static bool s_runtimeSuspendedForCrashReport = false;
 
 static
-void
+bool
 CrashReportSuspendThreads(Thread* pCrashThread)
 {
     if (g_fFatalErrorOccurredOnGCThread
@@ -312,20 +339,19 @@ CrashReportSuspendThreads(Thread* pCrashThread)
         || IsGCSpecialThread()
         || ThreadStore::HoldingThreadStore(pCrashThread))
     {
-        return;
+        return false;
     }
 
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
-    s_runtimeSuspendedForCrashReport = true;
+    return true;
 }
 
 static
 void
-CrashReportResumeThreads()
+CrashReportResumeThreads(bool runtimeSuspended)
 {
-    if (s_runtimeSuspendedForCrashReport)
+    if (runtimeSuspended)
     {
-        s_runtimeSuspendedForCrashReport = false;
         ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     }
 }
@@ -340,7 +366,7 @@ CrashReportEnumerateThreads(
 {
     Thread* pCrashThread = GetThreadAsyncSafe();
 
-    CrashReportSuspendThreads(pCrashThread);
+    bool runtimeSuspended = CrashReportSuspendThreads(pCrashThread);
 
     // Emit the crashing thread first so the report keeps the most important
     // thread even if later enumeration is incomplete.
@@ -362,7 +388,7 @@ CrashReportEnumerateThreads(
     // Walk the remaining managed threads only when the runtime was
     // successfully suspended; otherwise the walker is not guaranteed
     // to be at a safe point for them.
-    if (s_runtimeSuspendedForCrashReport)
+    if (runtimeSuspended)
     {
         Thread* pThread = nullptr;
         while ((pThread = ThreadStore::GetThreadList(pThread)) != nullptr)
@@ -379,11 +405,11 @@ CrashReportEnumerateThreads(
         }
     }
 
-    CrashReportResumeThreads();
+    CrashReportResumeThreads(runtimeSuspended);
 }
 
 void
-CrashReportRegisterStackWalker()
+CrashReportConfigure()
 {
     // Read crash report configuration here rather than in PROCAbortInitialize
     // because on Android the DOTNET_* environment variables are set via JNI
@@ -411,7 +437,7 @@ CrashReportRegisterStackWalker()
     // If DbgMiniDumpName is just a filename (no directory component), write
     // the crash report under TMPDIR / /tmp so it lands somewhere writable.
     char dumpPathBuf[CRASHREPORT_STRING_BUFFER_SIZE];
-    if (strchr(dumpName, '/') == nullptr)
+    if (strchr(dumpName, DIRECTORY_SEPARATOR_CHAR_A) == nullptr)
     {
         const char* tmpDir = getenv("TMPDIR");
         if (tmpDir == nullptr || tmpDir[0] == '\0')
@@ -419,7 +445,7 @@ CrashReportRegisterStackWalker()
             tmpDir = "/tmp";
         }
         size_t tmpLen = strlen(tmpDir);
-        const char* separator = (tmpLen > 0 && tmpDir[tmpLen - 1] == '/') ? "" : "/";
+        const char* separator = (tmpLen > 0 && tmpDir[tmpLen - 1] == DIRECTORY_SEPARATOR_CHAR_A) ? "" : DIRECTORY_SEPARATOR_STR_A;
         size_t sepLen = strlen(separator);
         size_t dumpLen = strlen(dumpName);
         if (tmpLen + sepLen + dumpLen + 1 > sizeof(dumpPathBuf))
@@ -440,10 +466,9 @@ CrashReportRegisterStackWalker()
     settings.getExceptionCallback = CrashReportGetException;
     settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
 
-    // Initialize and enable the PAL side last so PROCCreateCrashDumpIfEnabled
-    // only observes the reporter as enabled after all VM callbacks are
-    // registered.
-    PROCInitializeInProcCrashReport(settings);
+    // Initialize the reporter and register the PAL signal-path callback last
+    // so PAL only observes the reporter after all VM callbacks are wired in.
+    InProcCrashReportInitialize(settings);
 }
 
 #endif // FEATURE_INPROC_CRASHREPORT

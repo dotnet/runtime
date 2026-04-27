@@ -6,7 +6,7 @@
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
-void CrashReportRegisterStackWalker();
+void CrashReportConfigure();
 
 #endif // FEATURE_INPROC_CRASHREPORT
 

@@ -35,10 +35,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <generatedumpflags.h>
 #include <clrconfignocache.h>
 
-#ifdef FEATURE_INPROC_CRASHREPORT
-#include "debug/crashreport/inproccrashreporter.h"
-#endif
-
 #include <errno.h>
 #if HAVE_POLL
 #include <poll.h>
@@ -196,9 +192,11 @@ const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 // Read from the fatal-signal path (PROCCreateCrashDumpIfEnabled) and written
-// once during startup (PROCInitializeInProcCrashReport); use Volatile<bool> to
-// match the signal-path publication of g_logManagedCallstackForSignalCallback.
-static Volatile<bool> g_inProcCrashReportEnabled = false;
+// once during startup via PAL_SetInProcCrashReportCallback; use Volatile<>
+// to match the publication ordering of g_logManagedCallstackForSignalCallback.
+// PAL has no direct dependency on the in-proc crash reporter library; the
+// reporter registers itself by installing this signal-safe callback.
+static Volatile<PINPROCCRASHREPORT_CALLBACK> g_inProcCrashReportCallback = nullptr;
 #endif
 
 //
@@ -2799,26 +2797,27 @@ Parameters:
 --*/
 #ifdef FEATURE_INPROC_CRASHREPORT
 #include <minipal/log.h>
-void
-PROCInitializeInProcCrashReport(const InProcCrashReporterSettings& settings)
+VOID
+PALAPI
+PAL_SetInProcCrashReportCallback(
+    IN PINPROCCRASHREPORT_CALLBACK callback)
 {
-    InProcCrashReporter::GetInstance().Initialize(settings);
-
-    // Publish last so PROCCreateCrashDumpIfEnabled only observes the reporter
-    // as enabled after the crashreport path (and any other state) is set.
-    g_inProcCrashReportEnabled = true;
+    _ASSERTE(g_inProcCrashReportCallback == nullptr);
+    g_inProcCrashReportCallback = callback;
 }
 
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
+    (void)serialize;
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
 
     // TODO: Dump stress log into logcat and/or file when enabled?
-    if (g_inProcCrashReportEnabled)
+    PINPROCCRASHREPORT_CALLBACK callback = g_inProcCrashReportCallback;
+    if (callback != nullptr)
     {
-        InProcCrashReporter::GetInstance().CreateReport(signal, siginfo, context);
+        callback(signal, siginfo, context);
     }
     minipal_log_write_fatal("Aborting process.\n");
 }

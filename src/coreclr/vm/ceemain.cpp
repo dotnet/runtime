@@ -703,7 +703,7 @@ void EEStartupHelper()
 #endif // HOST_ANDROID
 
 #ifdef FEATURE_INPROC_CRASHREPORT
-        CrashReportRegisterStackWalker();
+        CrashReportConfigure();
 #endif // FEATURE_INPROC_CRASHREPORT
 
 #ifdef STRESS_LOG

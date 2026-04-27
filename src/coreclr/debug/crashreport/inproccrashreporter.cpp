@@ -130,122 +130,82 @@ private:
     bool m_writeFailed;
 };
 
-static
-void
-GetVersionString(
-    char* buffer,
-    size_t bufferSize);
+struct CrashReportHelpers
+{
+    static void GetVersionString(
+        char* buffer,
+        size_t bufferSize);
 
-static
-void
-FormatHexValue(
-    char* buffer,
-    size_t bufferSize,
-    uint64_t value);
+    static bool AppendString(
+        char* buffer,
+        size_t bufferSize,
+        size_t* pos,
+        const char* value);
 
-static
-size_t
-FormatUnsignedDecimal(
-    char* buffer,
-    size_t bufferSize,
-    uint64_t value);
+    static void WriteRegistersToJson(
+        SignalSafeJsonWriter* writer,
+        void* context);
 
-static
-size_t
-FormatSignedDecimal(
-    char* buffer,
-    size_t bufferSize,
-    int64_t value);
+    static uint64_t GetInstructionPointer(
+        void* context);
 
-static
-bool
-AppendString(
-    char* buffer,
-    size_t bufferSize,
-    size_t* pos,
-    const char* value);
+    static uint64_t GetStackPointer(
+        void* context);
 
-static
-void
-WriteRegistersToJson(
-    SignalSafeJsonWriter* writer,
-    void* context);
+    static uint64_t GetFramePointer(
+        void* context);
 
-static
-uint64_t
-GetInstructionPointer(
-    void* context);
+    static void WriteCrashSiteFrameToJson(
+        SignalSafeJsonWriter* writer,
+        void* context);
 
-static
-uint64_t
-GetStackPointer(
-    void* context);
+    static void BuildMethodName(
+        char* buffer,
+        size_t bufferSize,
+        const char* className,
+        const char* methodName);
 
-static
-uint64_t
-GetFramePointer(
-    void* context);
+    static const char* GetFilename(
+        const char* path);
 
-static
-void
-WriteCrashSiteFrameToJson(
-    SignalSafeJsonWriter* writer,
-    void* context);
+    static void CopyString(
+        char* buffer,
+        size_t bufferSize,
+        const char* value);
 
-static
-void
-BuildMethodName(
-    char* buffer,
-    size_t bufferSize,
-    const char* className,
-    const char* methodName);
+    static bool TryGetProcessName(
+        char* filename,
+        size_t filenameLen);
 
-static
-const char*
-GetFilename(
-    const char* path);
+    static void JsonFrameCallback(
+        uint64_t ip,
+        uint64_t stackPointer,
+        const char* methodName,
+        const char* className,
+        const char* moduleName,
+        uint32_t nativeOffset,
+        uint32_t token,
+        uint32_t ilOffset,
+        uint32_t moduleTimestamp,
+        uint32_t moduleSize,
+        const char* moduleGuid,
+        void* ctx);
 
-static
-void
-CopyString(
-    char* buffer,
-    size_t bufferSize,
-    const char* value);
+    static bool WriteToFile(
+        int fd,
+        const char* buffer,
+        size_t len);
 
-static
-bool
-TryGetProcessName(
-    char* filename,
-    size_t filenameLen);
+    static bool BuildReportPath(
+        char* buffer,
+        size_t bufferSize,
+        const char* dumpPath);
 
-static
-void
-JsonFrameCallback(
-    uint64_t ip,
-    uint64_t stackPointer,
-    const char* methodName,
-    const char* className,
-    const char* moduleName,
-    uint32_t nativeOffset,
-    uint32_t token,
-    uint32_t ilOffset,
-    uint32_t moduleTimestamp,
-    uint32_t moduleSize,
-    const char* moduleGuid,
-    void* ctx);
-
-bool
-WriteToFile(
-    int fd,
-    const char* buffer,
-    size_t len);
-
-static
-bool
-BuildReportPath(
-    char* buffer,
-    size_t bufferSize,
-    const char* dumpPath);
+    static size_t ExpandDumpTemplate(
+        char* buffer,
+        size_t bufferSize,
+        const char* pattern);
+};
 
 void
 InProcCrashReporter::CreateReport(
@@ -262,7 +222,7 @@ InProcCrashReporter::CreateReport(
     char reportPath[CRASHREPORT_STRING_BUFFER_SIZE];
     reportPath[0] = '\0';
 
-    if (m_reportPath[0] == '\0' || !BuildReportPath(reportPath, sizeof(reportPath), m_reportPath))
+    if (m_reportPath[0] == '\0' || !CrashReportHelpers::BuildReportPath(reportPath, sizeof(reportPath), m_reportPath))
     {
         return;
     }
@@ -301,8 +261,8 @@ InProcCrashReporter::CreateReport(
 #elif defined(__arm__)
     m_jsonWriter.WriteString("architecture", "arm");
 #endif
-    char version[sizeof(sccsid) + 1];
-    GetVersionString(version, sizeof(version));
+    char version[sizeof(sccsid)];
+    CrashReportHelpers::GetVersionString(version, sizeof(version));
     m_jsonWriter.WriteString("version", version);
     m_jsonWriter.CloseObject(); // configuration
 
@@ -311,9 +271,7 @@ InProcCrashReporter::CreateReport(
         m_jsonWriter.WriteString("process_name", m_processName);
     }
 
-    char pidBuf[16];
-    (void)FormatUnsignedDecimal(pidBuf, sizeof(pidBuf), static_cast<uint64_t>(GetCurrentProcessId()));
-    m_jsonWriter.WriteString("pid", pidBuf);
+    m_jsonWriter.WriteDecimal("pid", static_cast<uint64_t>(GetCurrentProcessId()));
 
     m_jsonWriter.OpenArray("threads");
     if (m_enumerateThreadsCallback != nullptr)
@@ -339,9 +297,7 @@ InProcCrashReporter::CreateReport(
     m_jsonWriter.CloseObject(); // payload
 
     m_jsonWriter.OpenObject("parameters");
-    char signalBuf[16];
-    (void)FormatSignedDecimal(signalBuf, sizeof(signalBuf), static_cast<int64_t>(signal));
-    m_jsonWriter.WriteString("signal", signalBuf);
+    m_jsonWriter.WriteSignedDecimal("signal", static_cast<int64_t>(signal));
     m_jsonWriter.CloseObject(); // parameters
 
     m_jsonWriter.CloseObject(); // root
@@ -350,7 +306,7 @@ InProcCrashReporter::CreateReport(
     {
         bool writeSucceeded = m_jsonWriter.Finish() &&
             !outputContext.WriteFailed() &&
-            WriteToFile(fd, "\n", 1);
+            CrashReportHelpers::WriteToFile(fd, "\n", 1);
 
         if (close(fd) != 0 || !writeSucceeded)
         {
@@ -374,12 +330,29 @@ InProcCrashReporter::Initialize(
     m_walkStackCallback = settings.walkStackCallback;
     m_getExceptionCallback = settings.getExceptionCallback;
     m_enumerateThreadsCallback = settings.enumerateThreadsCallback;
-    CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
-    (void)TryGetProcessName(m_processName, sizeof(m_processName));
+    CrashReportHelpers::CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
+    (void)CrashReportHelpers::TryGetProcessName(m_processName, sizeof(m_processName));
+}
+
+static void
+InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
+{
+    InProcCrashReporter::GetInstance().CreateReport(signal, static_cast<siginfo_t*>(siginfo), context);
+}
+
+void
+InProcCrashReportInitialize(const InProcCrashReporterSettings& settings)
+{
+    InProcCrashReporter::GetInstance().Initialize(settings);
+
+    // Register last so PAL only observes the dispatcher after the reporter
+    // singleton is fully populated (mirrors the publication ordering used by
+    // PAL_SetLogManagedCallstackForSignalCallback).
+    PAL_SetInProcCrashReportCallback(&InProcCrashReportSignalDispatcher);
 }
 
 bool
-WriteToFile(
+CrashReportHelpers::WriteToFile(
     int fd,
     const char* buffer,
     size_t len)
@@ -420,7 +393,7 @@ CrashReportOutputContext::HandleChunk(
         return false;
     }
 
-    if (!WriteToFile(m_fd, buffer, len))
+    if (!CrashReportHelpers::WriteToFile(m_fd, buffer, len))
     {
         m_writeFailed = true;
         return false;
@@ -448,9 +421,8 @@ CrashReportOutputContext::ChunkCallback(
 // FormatDumpName: %%  %p  %d (PID).  Other specifiers are passed through
 // literally since the remaining createdump patterns (%e, %h, %t) are not
 // meaningful for in-proc crash reports.
-static
 size_t
-ExpandDumpTemplate(
+CrashReportHelpers::ExpandDumpTemplate(
     char* buffer,
     size_t bufferSize,
     const char* pattern)
@@ -474,13 +446,17 @@ ExpandDumpTemplate(
             }
             else if (*pattern == 'p' || *pattern == 'd')
             {
-                char pidBuf[16];
-                size_t pidLen = FormatUnsignedDecimal(pidBuf, sizeof(pidBuf), pid);
-                if (pidLen > 0 && pos + pidLen < bufferSize)
+                char pidBuf[CRASHREPORT_NUMBER_BUFFER_SIZE];
+                size_t pidLen = SignalSafeJsonWriter::FormatUnsignedDecimal(pidBuf, sizeof(pidBuf), pid);
+                if (pidLen == 0 || pos + pidLen >= bufferSize)
                 {
-                    memcpy(buffer + pos, pidBuf, pidLen);
-                    pos += pidLen;
+                    // Not enough room to expand %p/%d; fail rather than emit
+                    // a path missing the PID (which could collide with the
+                    // dump file on disk).
+                    return 0;
                 }
+                memcpy(buffer + pos, pidBuf, pidLen);
+                pos += pidLen;
             }
             else
             {
@@ -511,7 +487,7 @@ ExpandDumpTemplate(
 }
 
 bool
-BuildReportPath(
+CrashReportHelpers::BuildReportPath(
     char* buffer,
     size_t bufferSize,
     const char* dumpPath)
@@ -541,7 +517,7 @@ BuildReportPath(
 }
 
 void
-GetVersionString(
+CrashReportHelpers::GetVersionString(
     char* buffer,
     size_t bufferSize)
 {
@@ -567,125 +543,13 @@ GetVersionString(
 
     version += sizeof(versionPrefix) - 1;
 
-    size_t copied = strnlen(version, bufferSize - 2);
+    size_t copied = strnlen(version, bufferSize - 1);
     if (copied != 0)
     {
         memcpy(buffer, version, copied);
     }
 
-    buffer[copied] = ' ';
-    buffer[copied + 1] = '\0';
-}
-
-// Formats a 64-bit value as a lowercase hexadecimal C string with a "0x"
-// prefix into |buffer|. The output is always null-terminated provided
-// |bufferSize| > 0. This helper is async-signal-safe: it performs no
-// allocation, locking, or TLS access.
-void
-FormatHexValue(
-    char* buffer,
-    size_t bufferSize,
-    uint64_t value)
-{
-    if (buffer == nullptr || bufferSize == 0)
-    {
-        return;
-    }
-
-    if (bufferSize == 1)
-    {
-        buffer[0] = '\0';
-        return;
-    }
-
-    buffer[0] = '0';
-    if (bufferSize == 2)
-    {
-        buffer[1] = '\0';
-        return;
-    }
-
-    buffer[1] = 'x';
-
-    char reverse[16];
-    size_t reverseLength = 0;
-    do
-    {
-        unsigned digit = static_cast<unsigned>(value & 0xf);
-        reverse[reverseLength++] = static_cast<char>(digit < 10 ? ('0' + digit) : ('a' + digit - 10));
-        value >>= 4;
-    } while (value != 0 && reverseLength < sizeof(reverse));
-
-    size_t index = 2;
-    while (reverseLength > 0 && index + 1 < bufferSize)
-    {
-        buffer[index++] = reverse[--reverseLength];
-    }
-    buffer[index] = '\0';
-}
-
-// Formats an unsigned value as decimal into |buffer|. Returns the number of
-// characters written (not counting the null terminator). Always
-// null-terminates when bufferSize > 0. Async-signal-safe.
-size_t
-FormatUnsignedDecimal(
-    char* buffer,
-    size_t bufferSize,
-    uint64_t value)
-{
-    if (buffer == nullptr || bufferSize == 0)
-    {
-        return 0;
-    }
-
-    char reverse[20]; // enough for UINT64_MAX
-    size_t reverseLength = 0;
-    do
-    {
-        reverse[reverseLength++] = static_cast<char>('0' + (value % 10));
-        value /= 10;
-    } while (value != 0 && reverseLength < sizeof(reverse));
-
-    size_t pos = 0;
-    while (reverseLength > 0 && pos + 1 < bufferSize)
-    {
-        buffer[pos++] = reverse[--reverseLength];
-    }
-    buffer[pos] = '\0';
-    return pos;
-}
-
-// Formats a signed value as decimal into |buffer|. Returns the number of
-// characters written (not counting the null terminator). Handles INT64_MIN
-// correctly via unsigned negation. Always null-terminates when
-// bufferSize > 0. Async-signal-safe.
-size_t
-FormatSignedDecimal(
-    char* buffer,
-    size_t bufferSize,
-    int64_t value)
-{
-    if (buffer == nullptr || bufferSize == 0)
-    {
-        return 0;
-    }
-
-    if (value >= 0)
-    {
-        return FormatUnsignedDecimal(buffer, bufferSize, static_cast<uint64_t>(value));
-    }
-
-    if (bufferSize < 2)
-    {
-        buffer[0] = '\0';
-        return 0;
-    }
-
-    buffer[0] = '-';
-    // Cast to unsigned first to handle INT64_MIN without signed overflow.
-    uint64_t absValue = static_cast<uint64_t>(-(value + 1)) + 1;
-    size_t written = FormatUnsignedDecimal(buffer + 1, bufferSize - 1, absValue);
-    return written == 0 ? 0 : written + 1;
+    buffer[copied] = '\0';
 }
 
 // Appends |value| to |buffer| at *|pos|, advancing *|pos|, while leaving
@@ -693,7 +557,7 @@ FormatSignedDecimal(
 // bufferSize > 0. Returns true iff the full value was appended.
 // Async-signal-safe.
 bool
-AppendString(
+CrashReportHelpers::AppendString(
     char* buffer,
     size_t bufferSize,
     size_t* pos,
@@ -715,30 +579,23 @@ AppendString(
 }
 
 void
-WriteRegistersToJson(
+CrashReportHelpers::WriteRegistersToJson(
     SignalSafeJsonWriter* writer,
     void* context)
 {
     uint64_t ipValue = GetInstructionPointer(context);
     uint64_t spValue = GetStackPointer(context);
     uint64_t bpValue = GetFramePointer(context);
-    char ip[CRASHREPORT_NUMBER_BUFFER_SIZE] = "0x0";
-    char sp[CRASHREPORT_NUMBER_BUFFER_SIZE] = "0x0";
-    char bp[CRASHREPORT_NUMBER_BUFFER_SIZE] = "0x0";
-
-    FormatHexValue(ip, sizeof(ip), ipValue);
-    FormatHexValue(sp, sizeof(sp), spValue);
-    FormatHexValue(bp, sizeof(bp), bpValue);
 
     writer->OpenObject("ctx");
-    writer->WriteString("IP", ip);
-    writer->WriteString("SP", sp);
-    writer->WriteString("BP", bp);
+    writer->WriteHex("IP", ipValue);
+    writer->WriteHex("SP", spValue);
+    writer->WriteHex("BP", bpValue);
     writer->CloseObject(); // ctx
 }
 
 uint64_t
-GetInstructionPointer(
+CrashReportHelpers::GetInstructionPointer(
     void* context)
 {
     if (context == nullptr)
@@ -759,7 +616,7 @@ GetInstructionPointer(
 }
 
 uint64_t
-GetStackPointer(
+CrashReportHelpers::GetStackPointer(
     void* context)
 {
     if (context == nullptr)
@@ -780,7 +637,7 @@ GetStackPointer(
 }
 
 uint64_t
-GetFramePointer(
+CrashReportHelpers::GetFramePointer(
     void* context)
 {
     if (context == nullptr)
@@ -801,27 +658,29 @@ GetFramePointer(
 }
 
 void
-WriteCrashSiteFrameToJson(
+CrashReportHelpers::WriteCrashSiteFrameToJson(
     SignalSafeJsonWriter* writer,
     void* context)
 {
     uint64_t ipValue = GetInstructionPointer(context);
     uint64_t spValue = GetStackPointer(context);
-    char ip[CRASHREPORT_NUMBER_BUFFER_SIZE] = "0x0";
-    char sp[CRASHREPORT_NUMBER_BUFFER_SIZE] = "0x0";
-
-    FormatHexValue(ip, sizeof(ip), ipValue);
-    FormatHexValue(sp, sizeof(sp), spValue);
 
     writer->OpenObject();
+    // Crash-site frame: IP/SP captured directly from the signal's saved
+    // ucontext_t. It is the instruction the OS interrupted (faulting user
+    // code, libc abort(), the JIT, etc.) - not a frame inside this reporter.
+    // Marked native because classifying an arbitrary IP as managed would
+    // require a JIT lookup we deliberately avoid in the signal handler;
+    // subsequent frames produced by the managed stack walker carry their
+    // own is_managed classification.
     writer->WriteString("is_managed", "false");
-    writer->WriteString("stack_pointer", sp);
-    writer->WriteString("native_address", ip);
+    writer->WriteHex("stack_pointer", spValue);
+    writer->WriteHex("native_address", ipValue);
     writer->CloseObject(); // frame
 }
 
 void
-BuildMethodName(
+CrashReportHelpers::BuildMethodName(
     char* buffer,
     size_t bufferSize,
     const char* className,
@@ -853,14 +712,19 @@ BuildMethodName(
     }
 }
 
+// Returns the basename of a POSIX path (the substring after the last '/').
+// The in-proc reporter only consumes /proc paths, so a single POSIX separator
+// is sufficient; if this ever needs to handle other separators, extend the
+// loop to recognize them as well.
 const char*
-GetFilename(
+CrashReportHelpers::GetFilename(
     const char* path)
 {
+    constexpr char POSIX_PATH_SEPARATOR = '/';
     const char* last = path;
     for (const char* p = path; *p != '\0'; p++)
     {
-        if (*p == '/')
+        if (*p == POSIX_PATH_SEPARATOR)
         {
             last = p + 1;
         }
@@ -870,7 +734,7 @@ GetFilename(
 }
 
 void
-CopyString(
+CrashReportHelpers::CopyString(
     char* buffer,
     size_t bufferSize,
     const char* value)
@@ -896,7 +760,7 @@ CopyString(
 }
 
 bool
-TryGetProcessName(
+CrashReportHelpers::TryGetProcessName(
     char* filename,
     size_t filenameLen)
 {
@@ -938,7 +802,7 @@ TryGetProcessName(
 }
 
 void
-JsonFrameCallback(
+CrashReportHelpers::JsonFrameCallback(
     uint64_t ip,
     uint64_t stackPointer,
     const char* methodName,
@@ -954,19 +818,10 @@ JsonFrameCallback(
 {
     SignalSafeJsonWriter* writer = reinterpret_cast<SignalSafeJsonWriter*>(ctx);
 
-    // Reuse a single scratch buffer for hex formatting: WriteString copies the
-    // value into the writer's buffer before we format the next field, so we
-    // don't need one scratch buffer per hex field. Keeps the signal-handler
-    // stack footprint down.
-    char scratch[CRASHREPORT_NUMBER_BUFFER_SIZE];
-
     writer->OpenObject();
-    FormatHexValue(scratch, sizeof(scratch), stackPointer);
-    writer->WriteString("stack_pointer", scratch);
-    FormatHexValue(scratch, sizeof(scratch), ip);
-    writer->WriteString("native_address", scratch);
-    FormatHexValue(scratch, sizeof(scratch), nativeOffset);
-    writer->WriteString("native_offset", scratch);
+    writer->WriteHex("stack_pointer", stackPointer);
+    writer->WriteHex("native_address", ip);
+    writer->WriteHex("native_offset", nativeOffset);
 
     if (methodName != nullptr)
     {
@@ -974,23 +829,19 @@ JsonFrameCallback(
         BuildMethodName(fullName, sizeof(fullName), className, methodName);
         writer->WriteString("method_name", fullName);
         writer->WriteString("is_managed", "true");
-        FormatHexValue(scratch, sizeof(scratch), token);
-        writer->WriteString("token", scratch);
-        FormatHexValue(scratch, sizeof(scratch), ilOffset);
-        writer->WriteString("il_offset", scratch);
+        writer->WriteHex("token", token);
+        writer->WriteHex("il_offset", ilOffset);
         if (moduleName != nullptr)
         {
             writer->WriteString("filename", moduleName);
         }
         if (moduleTimestamp != 0)
         {
-            FormatHexValue(scratch, sizeof(scratch), moduleTimestamp);
-            writer->WriteString("timestamp", scratch);
+            writer->WriteHex("timestamp", moduleTimestamp);
         }
         if (moduleSize != 0)
         {
-            FormatHexValue(scratch, sizeof(scratch), moduleSize);
-            writer->WriteString("sizeofimage", scratch);
+            writer->WriteHex("sizeofimage", moduleSize);
         }
         if (moduleGuid != nullptr && moduleGuid[0] != '\0')
         {
@@ -1023,7 +874,7 @@ ThreadEnumerationContext::OnFrame(
     uint32_t moduleSize,
     const char* moduleGuid)
 {
-    JsonFrameCallback(ip, stackPointer, methodName, className, moduleName, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid, m_writer);
+    CrashReportHelpers::JsonFrameCallback(ip, stackPointer, methodName, className, moduleName, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid, m_writer);
 }
 
 void
@@ -1068,35 +919,28 @@ ThreadEnumerationContext::OnThread(
     m_writer->OpenObject();
     m_writer->WriteString("is_managed", "true");
     m_writer->WriteString("crashed", isCrashThread ? "true" : "false");
-
-    char scratch[CRASHREPORT_NUMBER_BUFFER_SIZE];
-    FormatHexValue(scratch, sizeof(scratch), osThreadId);
-    m_writer->WriteString("native_thread_id", scratch);
+    m_writer->WriteHex("native_thread_id", osThreadId);
 
     if (isCrashThread && m_hasCrashException)
     {
-        FormatHexValue(scratch, sizeof(scratch), m_crashExceptionHResult);
-
         m_writer->WriteString("managed_exception_type", m_crashExceptionType);
-        m_writer->WriteString("managed_exception_hresult", scratch);
+        m_writer->WriteHex("managed_exception_hresult", m_crashExceptionHResult);
     }
     else if (exceptionType != nullptr && exceptionType[0] != '\0')
     {
-        FormatHexValue(scratch, sizeof(scratch), exceptionHResult);
-
         m_writer->WriteString("managed_exception_type", exceptionType);
-        m_writer->WriteString("managed_exception_hresult", scratch);
+        m_writer->WriteHex("managed_exception_hresult", exceptionHResult);
     }
 
     if (isCrashThread)
     {
-        WriteRegistersToJson(m_writer, m_signalContext);
+        CrashReportHelpers::WriteRegistersToJson(m_writer, m_signalContext);
     }
 
     m_writer->OpenArray("stack_frames");
     if (isCrashThread)
     {
-        WriteCrashSiteFrameToJson(m_writer, m_signalContext);
+        CrashReportHelpers::WriteCrashSiteFrameToJson(m_writer, m_signalContext);
     }
 }
 
@@ -1142,25 +986,20 @@ InProcCrashReporter::EmitSynthesizedCrashThread(
     m_jsonWriter.WriteString("is_managed",
         m_isManagedThreadCallback != nullptr && m_isManagedThreadCallback() ? "true" : "false");
     m_jsonWriter.WriteString("crashed", "true");
-
-    char scratch[CRASHREPORT_NUMBER_BUFFER_SIZE];
-    FormatHexValue(scratch, sizeof(scratch), crashingTid);
-    m_jsonWriter.WriteString("native_thread_id", scratch);
+    m_jsonWriter.WriteHex("native_thread_id", crashingTid);
 
     if (hasException)
     {
-        FormatHexValue(scratch, sizeof(scratch), crashExceptionHResult);
-
         m_jsonWriter.WriteString("managed_exception_type", crashExceptionType);
-        m_jsonWriter.WriteString("managed_exception_hresult", scratch);
+        m_jsonWriter.WriteHex("managed_exception_hresult", crashExceptionHResult);
     }
 
-    WriteRegistersToJson(&m_jsonWriter, context);
+    CrashReportHelpers::WriteRegistersToJson(&m_jsonWriter, context);
     m_jsonWriter.OpenArray("stack_frames");
-    WriteCrashSiteFrameToJson(&m_jsonWriter, context);
+    CrashReportHelpers::WriteCrashSiteFrameToJson(&m_jsonWriter, context);
     if (walkStack && m_walkStackCallback != nullptr)
     {
-        m_walkStackCallback(JsonFrameCallback, &m_jsonWriter);
+        m_walkStackCallback(&CrashReportHelpers::JsonFrameCallback, &m_jsonWriter);
     }
     m_jsonWriter.CloseArray(); // stack_frames
     m_jsonWriter.CloseObject(); // thread

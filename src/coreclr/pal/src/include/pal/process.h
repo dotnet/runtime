@@ -176,10 +176,5 @@ VOID PROCLogManagedCallstackForSignal(int signal);
 }
 #endif // __cplusplus
 
-#ifdef FEATURE_INPROC_CRASHREPORT
-struct InProcCrashReporterSettings;
-void PROCInitializeInProcCrashReport(const InProcCrashReporterSettings& settings);
-#endif
-
 #endif //PAL_PROCESS_H_
 
