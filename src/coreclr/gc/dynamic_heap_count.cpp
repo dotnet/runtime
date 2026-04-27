@@ -485,7 +485,7 @@ void gc_heap::calculate_new_heap_count ()
             assert (throughput_cost_percents[i] >= 0.0);
             if (throughput_cost_percents[i] > 100.0)
                 throughput_cost_percents[i] = 100.0;
-            dprintf (6666, ("sample %d in GC#%zd msl %ld / %d + pause %ld / elapsed %ld = tcp: %.3f, surv %zd, gc speed %zd/ms", i,
+            dprintf (6666, ("sample %d in GC#%zd msl %" PRIu64 " / %d + pause %" PRIu64 " / elapsed %" PRIu64 " = tcp: %.3f, surv %zd, gc speed %zd/ms", i,
                 sample.gc_index, sample.msl_wait_time, n_heaps, sample.gc_pause_time, sample.elapsed_between_gcs, throughput_cost_percents[i],
                 sample.gc_survived_size, (sample.gc_pause_time ? (sample.gc_survived_size * 1000 / sample.gc_pause_time) : 0)));
         }
@@ -505,7 +505,7 @@ void gc_heap::calculate_new_heap_count ()
         min_pause = min (dynamic_heap_count_data.samples[i].gc_pause_time, min_pause);
     }
 
-    dprintf (6666, ("checking if samples are stable %zd %zd %zd, min tcp %.3f, min pause %ld",
+    dprintf (6666, ("checking if samples are stable %zd %zd %zd, min tcp %.3f, min pause %" PRIu64,
         dynamic_heap_count_data.samples[0].gc_survived_size, dynamic_heap_count_data.samples[1].gc_survived_size, dynamic_heap_count_data.samples[2].gc_survived_size,
         min_tcp, min_pause));
 
@@ -1373,7 +1373,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         change_heap_count_time = GetHighPrecisionTimeStamp() - start_time;
         total_change_heap_count_time += change_heap_count_time;
         total_change_heap_count++;
-        dprintf (6666, ("changing HC took %ldus", change_heap_count_time));
+        dprintf (6666, ("changing HC took %" PRIu64 "us", change_heap_count_time));
     }
 
     return true;
@@ -1438,7 +1438,7 @@ void gc_heap::process_datas_sample()
             assign_new_budget (0, desired_per_heap_datas);
         }
 
-        dprintf (6666, ("sample#%d: %d heaps, this GC end %ld - last sus end %ld = %ld, this GC pause %.3fms, msl wait %ldus, tcp %.3f, surv %zd, gc speed %.3fmb/ms (%.3fkb/ms/heap)",
+        dprintf (6666, ("sample#%d: %d heaps, this GC end %" PRIu64 " - last sus end %" PRIu64 " = %" PRIu64 ", this GC pause %.3fms, msl wait %" PRIu64 "us, tcp %.3f, surv %zd, gc speed %.3fmb/ms (%.3fkb/ms/heap)",
             dynamic_heap_count_data.sample_index, n_heaps, before_distribute_free_regions_time, last_suspended_end_time, sample.elapsed_between_gcs,
             (sample.gc_pause_time / 1000.0), sample.msl_wait_time, tcp, sample.gc_survived_size,
             (sample.gc_pause_time ? (sample.gc_survived_size / 1000.0 / sample.gc_pause_time) : 0),
@@ -1469,7 +1469,7 @@ void gc_heap::process_datas_sample()
             g2_sample.gc_percent = (float)gen2_elapsed_time * 100.0f / elapsed_between_gen2_gcs;
             (dynamic_heap_count_data.current_gen2_samples_count)++;
 
-            dprintf (6666, ("gen2 sample#%d: this GC end %ld - last gen2 end %ld = %ld, GC elapsed %ld, percent %.3f",
+            dprintf (6666, ("gen2 sample#%d: this GC end %" PRIu64 " - last gen2 end %" PRIu64 " = %zu, GC elapsed %zu, percent %.3f",
                 dynamic_heap_count_data.gen2_sample_index, before_distribute_free_regions_time, prev_gen2_end_time, elapsed_between_gen2_gcs, gen2_elapsed_time, g2_sample.gc_percent));
             dynamic_heap_count_data.gen2_sample_index = (dynamic_heap_count_data.gen2_sample_index + 1) % dynamic_heap_count_data_t::sample_size;
         }

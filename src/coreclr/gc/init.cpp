@@ -300,12 +300,12 @@ void gc_heap::gc_thread_function ()
                 wait_time = min (wait_time, (uint32_t)(sample.elapsed_between_gcs / 1000 / 3));
                 wait_time = max (wait_time, 1u);
 
-                dprintf (6666, ("gc#0 thread waiting for %d ms (betwen GCs %ld)", wait_time, sample.elapsed_between_gcs));
+                dprintf (6666, ("gc#0 thread waiting for %d ms (betwen GCs %" PRIu64 ")", wait_time, sample.elapsed_between_gcs));
             }
 #endif //DYNAMIC_HEAP_COUNT
             uint32_t wait_result = gc_heap::ee_suspend_event.Wait(wait_on_time_out_p ? wait_time : INFINITE, FALSE);
 #ifdef DYNAMIC_HEAP_COUNT
-            dprintf (9999, ("waiting for ee done res %d (timeout %d, %ld ms since last suspend end)(should_change_heap_count is %d) (gradual_decommit_in_progress_p %d)",
+            dprintf (9999, ("waiting for ee done res %d (timeout %d, %" PRIu64 " ms since last suspend end)(should_change_heap_count is %d) (gradual_decommit_in_progress_p %d)",
                 wait_result, wait_time, ((GetHighPrecisionTimeStamp() - last_suspended_end_time) / 1000),
                 dynamic_heap_count_data.should_change_heap_count, gradual_decommit_in_progress_p));
 #endif //DYNAMIC_HEAP_COUNT

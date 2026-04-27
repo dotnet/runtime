@@ -14,6 +14,7 @@
 #define inline __forceinline
 #endif // __GNUC__
 
+#include <inttypes.h>
 #include "gc.h"
 #include "gcrecord.h"
 

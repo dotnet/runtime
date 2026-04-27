@@ -1521,7 +1521,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
 
     uint64_t elapsed = GetHighPrecisionTimeStamp () - start_us;
 
-    dprintf (8888, ("rethreaded %zd items, merging took %ldus (%ldms)",
+    dprintf (8888, ("rethreaded %zd items, merging took %" PRIu64 "us (%" PRIu64 "ms)",
         total_num_fl_items_rethreaded_stage2, elapsed, (elapsed / 1000)));
 #endif //_DEBUG
 

@@ -56,7 +56,7 @@ void gc_heap::update_end_gc_time_per_heap()
 
         if (heap_number == 0)
         {
-            dprintf (3, ("prev gen%d GC end time: prev start %ld + prev gc elapsed %zd = %ld",
+            dprintf (3, ("prev gen%d GC end time: prev start %" PRIu64 " + prev gc elapsed %zu = %" PRIu64,
                 gen_number, dd_previous_time_clock (dd), dd_gc_elapsed_time (dd), (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd))));
         }
 
@@ -64,7 +64,7 @@ void gc_heap::update_end_gc_time_per_heap()
 
         if (heap_number == 0)
         {
-            dprintf (3, ("updated NGC%d %zd elapsed time to %ld - %ld = %ld", gen_number, dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
+            dprintf (3, ("updated NGC%d %zd elapsed time to %" PRIu64 " - %" PRIu64 " = %zu", gen_number, dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
         }
     }
 }
@@ -194,7 +194,7 @@ void gc_heap::gc1()
         if ((heap_number == 0) && (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes))
         {
             time_since_last_gen2 = (size_t)(end_gc_time - (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd)));
-            dprintf (6666, ("BGC %zd end %ld - (prev gen2 start %ld + elapsed %zd = %ld) = time inbewteen gen2 %zd",
+            dprintf (6666, ("BGC %zd end %" PRIu64 " - (prev gen2 start %" PRIu64 " + elapsed %zu = %" PRIu64 ") = time inbewteen gen2 %zu",
                 dd_gc_clock (dd), end_gc_time, dd_previous_time_clock (dd), dd_gc_elapsed_time (dd), (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd)), time_since_last_gen2));
         }
 #endif //DYNAMIC_HEAP_COUNT
@@ -203,7 +203,7 @@ void gc_heap::gc1()
 #ifdef DYNAMIC_HEAP_COUNT
         if ((heap_number == 0) && (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes))
         {
-            dprintf (6666, ("updating BGC %zd elapsed time to %ld - %ld = %ld", dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
+            dprintf (6666, ("updating BGC %zd elapsed time to %" PRIu64 " - %" PRIu64 " = %zu", dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
 
             float bgc_percent = (float)dd_gc_elapsed_time (dd) * 100.0f / (float)time_since_last_gen2;
             dynamic_heap_count_data_t::gen2_sample& g2_sample = dynamic_heap_count_data.gen2_samples[dynamic_heap_count_data.gen2_sample_index];

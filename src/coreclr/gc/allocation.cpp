@@ -280,7 +280,7 @@ void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* f
     }
 
     end_us = GetHighPrecisionTimeStamp();
-    dprintf (3, ("total - %zd items out of %zd items are from a different heap in %ld us",
+    dprintf (3, ("total - %zd items out of %zd items are from a different heap in %" PRIu64 " us",
         num_fl_items_for_oh, num_fl_items, (end_us - start_us)));
 
     *fl_items_count = num_fl_items;
@@ -400,7 +400,7 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
     }
 
     end_us = GetHighPrecisionTimeStamp();
-    dprintf (8888, ("h%d total %zd items rethreaded out of %zd items in %ld us (%ldms)",
+    dprintf (8888, ("h%d total %zd items rethreaded out of %zd items in %" PRIu64 " us (%" PRIu64 "ms)",
         current_heap->heap_number, num_fl_items_rethreaded, num_fl_items, (end_us - start_us), ((end_us - start_us) / 1000)));
 
     (*num_total_fl_items) += num_fl_items;
@@ -4538,7 +4538,7 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
             {
                 if (alloced_on_retry)
                 {
-                    dprintf (5555, ("UOH h%d allocated %zd on retry (%ldus)", alloc_heap->heap_number, size, (end_us - start_us)));
+                    dprintf (5555, ("UOH h%d allocated %zd on retry (%" PRIu64 "us)", alloc_heap->heap_number, size, (end_us - start_us)));
                 }
             }
         }
