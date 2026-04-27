@@ -7,10 +7,7 @@ using System.Diagnostics.Tracing;
 namespace System.Runtime.CompilerServices
 {
     /// <summary>Provides an event source for tracing async execution.</summary>
-    [EventSource(
-        Name = "System.Runtime.CompilerServices.AsyncProfilerEventSource",
-        Guid = "742BD0FE-9200-4DE2-9059-576F35EBEB62"
-        )]
+    [EventSource(Name = "System.Runtime.CompilerServices.AsyncProfilerEventSource")]
     internal sealed partial class AsyncProfilerEventSource : EventSource
     {
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
