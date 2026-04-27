@@ -2063,7 +2063,35 @@ namespace System.Net.Http
                 // Wait for the response headers to complete if they haven't already, propagating any exceptions.
                 await responseHeadersTask.ConfigureAwait(false);
 
-                return http2Stream.GetAndClearResponse();
+                HttpResponseMessage response = http2Stream.GetAndClearResponse();
+
+                // Check if this is a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
+                // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
+                if (AuthenticationHelper.IsSessionAuthenticationChallenge(response))
+                {
+                    // Mark the pool so future requests that can use HTTP/1.1 go directly to HTTP/1.1.
+                    // This is set regardless of whether we can retry this particular request,
+                    // so that subsequent requests benefit from the downgrade.
+                    _pool.OnSessionAuthenticationChallengeSeen();
+
+                    // We can only safely retry if there's no request content, as we cannot guarantee
+                    // that we can rewind arbitrary content streams.
+                    // Additionally, we only retry if the version negotiation allows the request to fall back to HTTP/1.1.
+                    if (request.Content is null &&
+                        HttpConnectionPool.CanFallBackToHttp11(request) &&
+                        !request.IsAuthDisabled())
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            Trace($"Received session-based authentication challenge on HTTP/2, request will be retried on HTTP/1.1.");
+                        }
+
+                        response.Dispose();
+                        throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure, null, RequestRetryType.RetryOnSessionAuthenticationChallenge);
+                    }
+                }
+
+                return response;
             }
             catch (HttpIOException e)
             {

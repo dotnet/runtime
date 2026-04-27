@@ -21,18 +21,18 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
                                       const char* cwd,
-                                      int32_t redirectStdin,
-                                      int32_t redirectStdout,
-                                      int32_t redirectStderr,
                                       int32_t setCredentials,
                                       uint32_t userId,
                                       uint32_t groupId,
                                       uint32_t* groups,
                                       int32_t groupsLength,
                                       int32_t* childPid,
-                                      int32_t* stdinFd,
-                                      int32_t* stdoutFd,
-                                      int32_t* stderrFd)
+                                      int32_t stdinFd,
+                                      int32_t stdoutFd,
+                                      int32_t stderrFd,
+                                      int32_t* inheritedFds,
+                                      int32_t inheritedFdCount,
+                                      int32_t startDetached)
 {
     return -1;
 }
@@ -76,7 +76,7 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
     return -1;
 }
 
-int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
+int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal)
 {
     return -1;
 }

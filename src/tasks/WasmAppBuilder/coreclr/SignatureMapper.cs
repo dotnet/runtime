@@ -6,7 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using WasmAppBuilder;
+
+namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 internal static class SignatureMapper
 {
@@ -63,7 +64,7 @@ internal static class SignatureMapper
         }
         else if (t.IsPointer)
             c = 'i';
-        else if (t.IsFunctionPointer)
+        else if (PInvokeTableGenerator.IsFunctionPointer(t))
             c = 'i';
         else if (t.IsValueType)
         {
@@ -84,7 +85,7 @@ internal static class SignatureMapper
         return c;
     }
 
-    public static string? MethodToSignature(MethodInfo method, LogAdapter log)
+    public static string? MethodToSignature(MethodInfo method, LogAdapter log, bool includeThis = false)
     {
         string? result = TypeToChar(method.ReturnType, log, out bool resultIsByRef)?.ToString();
         if (result == null)
@@ -95,6 +96,11 @@ internal static class SignatureMapper
         if (resultIsByRef)
         {
             result = "n";
+        }
+
+        if (includeThis && !method.IsStatic)
+        {
+            result += 'i';
         }
 
         foreach (var parameter in method.GetParameters())

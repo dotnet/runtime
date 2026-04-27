@@ -60,7 +60,7 @@ public static partial class XmlSerializerTests
         TypeWithDateTimePropertyAsXmlTime localTimeObjectRoundTrip = SerializeAndDeserialize(localTimeObject,
             string.Format(WithXmlHeader(@"<TypeWithDateTimePropertyAsXmlTime xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">{0}</TypeWithDateTimePropertyAsXmlTime>"), localTimeString));
 
-        Assert.StrictEqual(localTimeObject.Value, localTimeObjectRoundTrip.Value);
+        Assert.Equal(localTimeObject.Value, localTimeObjectRoundTrip.Value);
 
         TypeWithDateTimePropertyAsXmlTime utcTimeObject = new TypeWithDateTimePropertyAsXmlTime()
         {
@@ -70,7 +70,7 @@ public static partial class XmlSerializerTests
         TypeWithDateTimePropertyAsXmlTime utcTimeRoundTrip = SerializeAndDeserialize(utcTimeObject,
             WithXmlHeader(@"<TypeWithDateTimePropertyAsXmlTime xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">15:15:26.9870000Z</TypeWithDateTimePropertyAsXmlTime>"));
 
-        Assert.StrictEqual(utcTimeObject.Value, utcTimeRoundTrip.Value);
+        Assert.Equal(utcTimeObject.Value, utcTimeRoundTrip.Value);
     }
 
     [Fact]
@@ -359,28 +359,28 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_EnumAsRoot()
     {
-        Assert.StrictEqual(MyEnum.Two, SerializeAndDeserialize<MyEnum>(MyEnum.Two,
+        Assert.Equal(MyEnum.Two, SerializeAndDeserialize<MyEnum>(MyEnum.Two,
 @"<?xml version=""1.0""?>
 <MyEnum>Two</MyEnum>"));
-        Assert.StrictEqual(ByteEnum.Option1, SerializeAndDeserialize<ByteEnum>(ByteEnum.Option1,
+        Assert.Equal(ByteEnum.Option1, SerializeAndDeserialize<ByteEnum>(ByteEnum.Option1,
 @"<?xml version=""1.0""?>
 <ByteEnum>Option1</ByteEnum>"));
-        Assert.StrictEqual(SByteEnum.Option1, SerializeAndDeserialize<SByteEnum>(SByteEnum.Option1,
+        Assert.Equal(SByteEnum.Option1, SerializeAndDeserialize<SByteEnum>(SByteEnum.Option1,
 @"<?xml version=""1.0""?>
 <SByteEnum>Option1</SByteEnum>"));
-        Assert.StrictEqual(ShortEnum.Option1, SerializeAndDeserialize<ShortEnum>(ShortEnum.Option1,
+        Assert.Equal(ShortEnum.Option1, SerializeAndDeserialize<ShortEnum>(ShortEnum.Option1,
 @"<?xml version=""1.0""?>
 <ShortEnum>Option1</ShortEnum>"));
-        Assert.StrictEqual(IntEnum.Option1, SerializeAndDeserialize<IntEnum>(IntEnum.Option1,
+        Assert.Equal(IntEnum.Option1, SerializeAndDeserialize<IntEnum>(IntEnum.Option1,
 @"<?xml version=""1.0""?>
 <IntEnum>Option1</IntEnum>"));
-        Assert.StrictEqual(UIntEnum.Option1, SerializeAndDeserialize<UIntEnum>(UIntEnum.Option1,
+        Assert.Equal(UIntEnum.Option1, SerializeAndDeserialize<UIntEnum>(UIntEnum.Option1,
 @"<?xml version=""1.0""?>
 <UIntEnum>Option1</UIntEnum>"));
-        Assert.StrictEqual(LongEnum.Option1, SerializeAndDeserialize<LongEnum>(LongEnum.Option1,
+        Assert.Equal(LongEnum.Option1, SerializeAndDeserialize<LongEnum>(LongEnum.Option1,
 @"<?xml version=""1.0""?>
 <LongEnum>Option1</LongEnum>"));
-        Assert.StrictEqual(ULongEnum.Option1, SerializeAndDeserialize<ULongEnum>(ULongEnum.Option1,
+        Assert.Equal(ULongEnum.Option1, SerializeAndDeserialize<ULongEnum>(ULongEnum.Option1,
 @"<?xml version=""1.0""?>
 <ULongEnum>Option1</ULongEnum>"));
     }
@@ -397,8 +397,8 @@ public static partial class XmlSerializerTests
 </TypeWithEnumMembers>");
 
         Assert.NotNull(y);
-        Assert.StrictEqual(x.F1, y.F1);
-        Assert.StrictEqual(x.P1, y.P1);
+        Assert.Equal(x.F1, y.F1);
+        Assert.Equal(x.P1, y.P1);
     }
 
 #if !XMLSERIALIZERGENERATORTESTS
@@ -409,7 +409,7 @@ public static partial class XmlSerializerTests
         object o2 = SerializeAndDeserialize<object>(o,
             WithXmlHeader(@"<anyType xmlns:q1=""http://www.w3.org/2001/XMLSchema"" p2:type=""q1:int"" xmlns:p2=""http://www.w3.org/2001/XMLSchema-instance"">2</anyType>"));
         Assert.NotNull(o2);
-        Assert.StrictEqual((int)o, o2);
+        Assert.Equal((int)o, o2);
         Assert.Equal(MyEnum.Three, (MyEnum)o2);
     }
 #endif
@@ -427,7 +427,7 @@ public static partial class XmlSerializerTests
   <MyEnum1>One</MyEnum1>
 </DCClassWithEnumAndStruct>");
 
-        Assert.StrictEqual(value.MyEnum1, actual.MyEnum1);
+        Assert.Equal(value.MyEnum1, actual.MyEnum1);
         Assert.Equal(value.MyStruct.Data, actual.MyStruct.Data);
     }
 
@@ -487,7 +487,7 @@ public static partial class XmlSerializerTests
 </KnownTypesThroughConstructor>",
             () => { return new XmlSerializer(typeof(KnownTypesThroughConstructor), new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
 
-        Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
+        Assert.Equal((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.Equal(((SimpleKnownTypeValue)value.SimpleTypeValue).StrProperty, ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
 
@@ -510,8 +510,8 @@ public static partial class XmlSerializerTests
   </ListProperty>
 </DerivedClassWithSameProperty>");
 
-        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
-        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.Equal(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
 
@@ -530,8 +530,8 @@ public static partial class XmlSerializerTests
   <DateTimeProperty>0001-01-01T00:00:00.00001</DateTimeProperty>
 </DerivedClassWithSameProperty>");
 
-        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
-        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.Equal(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Empty(actual.ListProperty.ToArray());
 
@@ -548,7 +548,7 @@ public static partial class XmlSerializerTests
         var value2 = SerializeAndDeserialize<EnumFlags>(value1,
 @"<?xml version=""1.0""?>
 <EnumFlags>One Four</EnumFlags>");
-        Assert.StrictEqual(value1, value2);
+        Assert.Equal(value1, value2);
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
@@ -567,7 +567,7 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.ClassID, actual.ClassID);
         Assert.Equal(value.DisplayName, actual.DisplayName);
         Assert.Equal(value.Id, actual.Id);
-        Assert.StrictEqual(value.IsLoaded, actual.IsLoaded);
+        Assert.Equal(value.IsLoaded, actual.IsLoaded);
     }
 
     [Fact]
@@ -586,16 +586,16 @@ public static partial class XmlSerializerTests
     <ItemChoiceType>None</ItemChoiceType>
   </XmlEnumProperty>&lt;xml&gt;Hello XML&lt;/xml&gt;<XmlNamespaceDeclarationsProperty>XmlNamespaceDeclarationsPropertyValue</XmlNamespaceDeclarationsProperty><XmlElementPropertyNode xmlns=""http://element"">1</XmlElementPropertyNode><CustomXmlArrayProperty xmlns=""http://mynamespace""><string>one</string><string>two</string><string>three</string></CustomXmlArrayProperty></AttributeTesting>");
 
-        Assert.StrictEqual(actual.EnumType, value.EnumType);
-        Assert.StrictEqual(actual.MyChoice, value.MyChoice);
+        Assert.Equal(actual.EnumType, value.EnumType);
+        Assert.Equal(actual.MyChoice, value.MyChoice);
         object[] stringArray = actual.XmlArrayProperty.Where(x => x != null)
             .Select(x => x.ToString())
             .ToArray();
         Assert.Equal(stringArray, value.XmlArrayProperty);
-        Assert.StrictEqual(actual.XmlAttributeProperty, value.XmlAttributeProperty);
-        Assert.StrictEqual(actual.XmlElementProperty, value.XmlElementProperty);
+        Assert.Equal(actual.XmlAttributeProperty, value.XmlAttributeProperty);
+        Assert.Equal(actual.XmlElementProperty, value.XmlElementProperty);
         Assert.Equal(actual.XmlEnumProperty, value.XmlEnumProperty);
-        Assert.StrictEqual(actual.XmlIncludeProperty, value.XmlIncludeProperty);
+        Assert.Equal(actual.XmlIncludeProperty, value.XmlIncludeProperty);
         Assert.Equal(actual.XmlNamespaceDeclarationsProperty, value.XmlNamespaceDeclarationsProperty);
         Assert.Equal(actual.XmlTextProperty, value.XmlTextProperty);
     }
@@ -617,9 +617,9 @@ public static partial class XmlSerializerTests
             stream.Position = 0;
             var obj = (TypeWithAnyAttribute)serializer.Deserialize(stream);
             Assert.NotNull(obj);
-            Assert.StrictEqual(intProperty, obj.IntProperty);
+            Assert.Equal(intProperty, obj.IntProperty);
             Assert.Equal(name, obj.Name);
-            Assert.StrictEqual(2, obj.Attributes.Length);
+            Assert.Equal(2, obj.Attributes.Length);
             Assert.Equal(attribute1, obj.Attributes[0].Value);
             Assert.Equal(attribute2, obj.Attributes[1].Value);
         }
@@ -639,8 +639,8 @@ public static partial class XmlSerializerTests
 </WithStruct>");
 
         // Assert
-        Assert.StrictEqual(result.Some.A, value.Some.A);
-        Assert.StrictEqual(result.Some.B, value.Some.B);
+        Assert.Equal(result.Some.A, value.Some.A);
+        Assert.Equal(result.Some.B, value.Some.B);
     }
 
     [Fact]
@@ -653,8 +653,8 @@ public static partial class XmlSerializerTests
   <Int>Option1</Int>
   <Short>Option2</Short>
 </WithEnums>");
-        Assert.StrictEqual(item.Short, actual.Short);
-        Assert.StrictEqual(item.Int, actual.Int);
+        Assert.Equal(item.Short, actual.Short);
+        Assert.Equal(item.Int, actual.Int);
     }
 
     [Fact]
@@ -674,13 +674,13 @@ public static partial class XmlSerializerTests
   </Struct1>
   <Struct2 xsi:nil=""true"" />
 </WithNullables>");
-        Assert.StrictEqual(item.OptionalInt, actual.OptionalInt);
-        Assert.StrictEqual(item.Optional, actual.Optional);
-        Assert.StrictEqual(item.Optionull, actual.Optionull);
-        Assert.StrictEqual(item.OptionullInt, actual.OptionullInt);
+        Assert.Equal(item.OptionalInt, actual.OptionalInt);
+        Assert.Equal(item.Optional, actual.Optional);
+        Assert.Equal(item.Optionull, actual.Optionull);
+        Assert.Equal(item.OptionullInt, actual.OptionullInt);
         Assert.Null(actual.Struct2);
-        Assert.StrictEqual(item.Struct1.Value.A, actual.Struct1.Value.A);
-        Assert.StrictEqual(item.Struct1.Value.B, actual.Struct1.Value.B);
+        Assert.Equal(item.Struct1.Value.A, actual.Struct1.Value.A);
+        Assert.Equal(item.Struct1.Value.B, actual.Struct1.Value.B);
     }
 
     [Fact]
@@ -691,14 +691,14 @@ public static partial class XmlSerializerTests
         var expectedXml = WithXmlHeader(@"<SimpleBaseClass xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xsi:type=""SimpleDerivedClass"" AttributeString=""derivedClassTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""true"" />");
         var fromBase = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(SimpleBaseClass)));
         Assert.Equal(dClass.AttributeString, fromBase.AttributeString);
-        Assert.StrictEqual(dClass.DateTimeValue, fromBase.DateTimeValue);
+        Assert.Equal(dClass.DateTimeValue, fromBase.DateTimeValue);
         Assert.Equal(dClass.BoolValue, fromBase.BoolValue);
 
         // Derived class does not apply XmlRoot attribute to force itself to be emitted with the base class element name, so update expected xml accordingly.
         expectedXml = WithXmlHeader(@"<SimpleDerivedClass xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" AttributeString=""derivedClassTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""true"" />");
         var fromDerived = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(SimpleDerivedClass)));
         Assert.Equal(dClass.AttributeString, fromDerived.AttributeString);
-        Assert.StrictEqual(dClass.DateTimeValue, fromDerived.DateTimeValue);
+        Assert.Equal(dClass.DateTimeValue, fromDerived.DateTimeValue);
         Assert.Equal(dClass.BoolValue, fromDerived.BoolValue);
     }
 
@@ -710,9 +710,47 @@ public static partial class XmlSerializerTests
 @"<?xml version=""1.0""?>
 <ClassImplementingIXmlSerializable StringValue=""Hello world"" BoolValue=""True"" />");
         Assert.Equal(value.StringValue, actual.StringValue);
-        Assert.StrictEqual(value.GetPrivateMember(), actual.GetPrivateMember());
+        Assert.Equal(value.GetPrivateMember(), actual.GetPrivateMember());
         Assert.True(ClassImplementingIXmlSerializable.ReadXmlInvoked);
         Assert.True(ClassImplementingIXmlSerializable.WriteXmlInvoked);
+    }
+
+    [Fact]
+    public static void Xml_StructImplementingIXmlSerializableWithoutParameterlessConstructor()
+    {
+        StructImplementingIXmlSerializableWithoutParameterlessConstructor value = new()
+        {
+            StringValue = "Hello world"
+        };
+        StructImplementingIXmlSerializableWithoutParameterlessConstructor actual = SerializeAndDeserialize(
+            value,
+            $"""
+            <?xml version="1.0"?>
+            <{nameof(StructImplementingIXmlSerializableWithoutParameterlessConstructor)} StringValue="Hello world" />
+            """
+        );
+        Assert.Equal(value.StringValue, actual.StringValue);
+        Assert.True(StructImplementingIXmlSerializableWithoutParameterlessConstructor.ReadXmlInvoked);
+        Assert.True(StructImplementingIXmlSerializableWithoutParameterlessConstructor.WriteXmlInvoked);
+    }
+
+    [Fact]
+    public static void Xml_StructImplementingIXmlSerializableWithParameterlessConstructor()
+    {
+        StructImplementingIXmlSerializableWithParameterlessConstructor value = new()
+        {
+            StringValue = "Hello world"
+        };
+        StructImplementingIXmlSerializableWithParameterlessConstructor actual = SerializeAndDeserialize(
+            value,
+            $"""
+            <?xml version="1.0"?>
+            <{nameof(StructImplementingIXmlSerializableWithParameterlessConstructor)} StringValue="Hello world" />
+            """
+        );
+        Assert.Equal(value.StringValue, actual.StringValue);
+        Assert.True(StructImplementingIXmlSerializableWithParameterlessConstructor.ReadXmlInvoked);
+        Assert.True(StructImplementingIXmlSerializableWithParameterlessConstructor.WriteXmlInvoked);
     }
 
     [Fact]
@@ -722,7 +760,7 @@ public static partial class XmlSerializerTests
         var actual = SerializeAndDeserialize<TypeWithPropertyNameSpecified>(value,
 @"<?xml version=""1.0""?><TypeWithPropertyNameSpecified xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><MyField>MyField</MyField></TypeWithPropertyNameSpecified>");
         Assert.Equal(value.MyField, actual.MyField);
-        Assert.StrictEqual(0, actual.MyFieldIgnored);
+        Assert.Equal(0, actual.MyFieldIgnored);
     }
 
     [Fact]
@@ -732,12 +770,12 @@ public static partial class XmlSerializerTests
         var actual = SerializeAndDeserialize<TypeWithXmlSchemaFormAttribute>(value,
 @"<?xml version=""1.0""?><TypeWithXmlSchemaFormAttribute xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><UnqualifiedSchemaFormListProperty><int>1</int></UnqualifiedSchemaFormListProperty><NoneSchemaFormListProperty><NoneParameter>abc</NoneParameter></NoneSchemaFormListProperty><QualifiedSchemaFormListProperty><QualifiedParameter>true</QualifiedParameter></QualifiedSchemaFormListProperty></TypeWithXmlSchemaFormAttribute>");
 
-        Assert.StrictEqual(value.NoneSchemaFormListProperty.Count, actual.NoneSchemaFormListProperty.Count);
+        Assert.Equal(value.NoneSchemaFormListProperty.Count, actual.NoneSchemaFormListProperty.Count);
         Assert.Equal(value.NoneSchemaFormListProperty[0], actual.NoneSchemaFormListProperty[0]);
-        Assert.StrictEqual(value.UnqualifiedSchemaFormListProperty.Count, actual.UnqualifiedSchemaFormListProperty.Count);
-        Assert.StrictEqual(value.UnqualifiedSchemaFormListProperty[0], actual.UnqualifiedSchemaFormListProperty[0]);
-        Assert.StrictEqual(value.QualifiedSchemaFormListProperty.Count, actual.QualifiedSchemaFormListProperty.Count);
-        Assert.StrictEqual(value.QualifiedSchemaFormListProperty[0], actual.QualifiedSchemaFormListProperty[0]);
+        Assert.Equal(value.UnqualifiedSchemaFormListProperty.Count, actual.UnqualifiedSchemaFormListProperty.Count);
+        Assert.Equal(value.UnqualifiedSchemaFormListProperty[0], actual.UnqualifiedSchemaFormListProperty[0]);
+        Assert.Equal(value.QualifiedSchemaFormListProperty.Count, actual.QualifiedSchemaFormListProperty.Count);
+        Assert.Equal(value.QualifiedSchemaFormListProperty[0], actual.QualifiedSchemaFormListProperty[0]);
     }
 
     [Fact]
@@ -758,7 +796,7 @@ public static partial class XmlSerializerTests
 @"<?xml version=""1.0""?>
 <TypeWithXmlTextAttributeOnArray xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://schemas.xmlsoap.org/ws/2005/04/discovery"">val1val2</TypeWithXmlTextAttributeOnArray>");
         Assert.NotNull(actual.Text);
-        Assert.StrictEqual(1, actual.Text.Length);
+        Assert.Equal(1, actual.Text.Length);
         Assert.Equal("val1val2", actual.Text[0]);
     }
 
@@ -784,7 +822,7 @@ public static partial class XmlSerializerTests
         var expected = new TypeWithXmlElementProperty() { Elements = new[] { productElement, categoryElement } };
         var actual = SerializeAndDeserialize(expected,
             WithXmlHeader(@"<TypeWithXmlElementProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Product>Product innertext</Product><Category>Category innertext</Category></TypeWithXmlElementProperty>"));
-        Assert.StrictEqual(expected.Elements.Length, actual.Elements.Length);
+        Assert.Equal(expected.Elements.Length, actual.Elements.Length);
         for (int i = 0; i < expected.Elements.Length; ++i)
         {
             Assert.Equal(expected.Elements[i].InnerText, actual.Elements[i].InnerText);
@@ -906,7 +944,7 @@ public static partial class XmlSerializerTests
             // XmlSerializer.Deserialize(XmlReader)
             var actual = (SimpleType)serializer.Deserialize(reader);
             Assert.Equal(expected.P1, actual.P1);
-            Assert.StrictEqual(expected.P2, actual.P2);
+            Assert.Equal(expected.P2, actual.P2);
 
             stream.Dispose();
         }
@@ -919,7 +957,7 @@ public static partial class XmlSerializerTests
         var deserializedObj = SerializeAndDeserialize(obj, WithXmlHeader(@"<TypeWithTimeSpanProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
 <TimeSpanProperty>PT0.001S</TimeSpanProperty>
 </TypeWithTimeSpanProperty>"));
-        Assert.StrictEqual(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
+        Assert.Equal(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
     }
 
     [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
@@ -979,14 +1017,14 @@ public static partial class XmlSerializerTests
   <NullableDTO xsi:nil=""true"" />
   <NullableDefaultDTO xsi:nil=""true"" />
 </TypeWithDateTimeOffsetProperties>");
-        Assert.StrictEqual(obj.DTO, deserializedObj.DTO);
-        Assert.StrictEqual(obj.DTO2, deserializedObj.DTO2);
-        Assert.StrictEqual(defDTO, deserializedObj.DTO2);
-        Assert.StrictEqual(obj.DTOWithDefault, deserializedObj.DTOWithDefault);
-        Assert.StrictEqual(defDTO, deserializedObj.DTOWithDefault);
-        Assert.StrictEqual(obj.NullableDTO, deserializedObj.NullableDTO);
+        Assert.Equal(obj.DTO, deserializedObj.DTO);
+        Assert.Equal(obj.DTO2, deserializedObj.DTO2);
+        Assert.Equal(defDTO, deserializedObj.DTO2);
+        Assert.Equal(obj.DTOWithDefault, deserializedObj.DTOWithDefault);
+        Assert.Equal(defDTO, deserializedObj.DTOWithDefault);
+        Assert.Equal(obj.NullableDTO, deserializedObj.NullableDTO);
         Assert.True(deserializedObj.NullableDTO == null);
-        Assert.StrictEqual(obj.NullableDTOWithDefault, deserializedObj.NullableDTOWithDefault);
+        Assert.Equal(obj.NullableDTOWithDefault, deserializedObj.NullableDTOWithDefault);
         Assert.True(deserializedObj.NullableDTOWithDefault == null);
     }
 
@@ -1053,7 +1091,7 @@ public static partial class XmlSerializerTests
         var result = SerializeAndDeserialize<DateOnly>(doObj, WithXmlHeader($"""
             <dateOnly>{FormatDateString(doObj)}</dateOnly>
             """));
-        Assert.StrictEqual(doObj, result);
+        Assert.Equal(doObj, result);
     }
 
     [Theory]
@@ -1081,7 +1119,7 @@ public static partial class XmlSerializerTests
         var result = SerializeAndDeserialize<TimeOnly>(toObj, WithXmlHeader($"""
             <timeOnly>{FormatTimeString(toObj)}</timeOnly>
             """));
-        Assert.StrictEqual(toObj, result);
+        Assert.Equal(toObj, result);
     }
 
     [Theory]
@@ -1181,17 +1219,17 @@ public static partial class XmlSerializerTests
             """), () => doSerializer);
 
         // Verify round trip
-        Assert.StrictEqual(doObj.Today, doResult.Today);
-        Assert.StrictEqual(doObj.CustomDate, doResult.CustomDate);
-        Assert.StrictEqual(defaultDateOnly, doResult.DefaultDate);
+        Assert.Equal(doObj.Today, doResult.Today);
+        Assert.Equal(doObj.CustomDate, doResult.CustomDate);
+        Assert.Equal(defaultDateOnly, doResult.DefaultDate);
         Assert.Null(doResult.NullableDate);
-        Assert.StrictEqual(doObj.NullableDateWithValue, doResult.NullableDateWithValue);
+        Assert.Equal(doObj.NullableDateWithValue, doResult.NullableDateWithValue);
         Assert.Null(doResult.NullableDefaultDate);
-        Assert.StrictEqual(doObj.Now, doResult.Now);
-        Assert.StrictEqual(doObj.CustomTime, doResult.CustomTime);
-        Assert.StrictEqual(defaultTimeOnly, doResult.DefaultTime);
+        Assert.Equal(doObj.Now, doResult.Now);
+        Assert.Equal(doObj.CustomTime, doResult.CustomTime);
+        Assert.Equal(defaultTimeOnly, doResult.DefaultTime);
         Assert.Null(doResult.NullableTime);
-        Assert.StrictEqual(doObj.NullableTimeWithValue, doResult.NullableTimeWithValue);
+        Assert.Equal(doObj.NullableTimeWithValue, doResult.NullableTimeWithValue);
         Assert.Null(doResult.NullableDefaultTime);
     }
 
@@ -1222,7 +1260,7 @@ public static partial class XmlSerializerTests
             </DateAndTimeTest>
             """), () => doSerializer);
         var dtdObj = (DateTimeDateWrapper)Deserialize(dtdSerializer, xml);
-        Assert.StrictEqual(now.Date, dtdObj.TestValue);
+        Assert.Equal(now.Date, dtdObj.TestValue);
         Assert.Equal(DateTimeKind.Unspecified, dtdObj.TestValue.Kind);
 
         // Verify DateTime (Unspecified) -> DateOnly
@@ -1233,7 +1271,7 @@ public static partial class XmlSerializerTests
             </DateAndTimeTest>
             """), () => dtdSerializer);
         doObj = (DateOnlyWrapper)Deserialize(doSerializer, xml);
-        Assert.StrictEqual(DateOnly.FromDateTime(dtdObj.TestValue /* now */), doObj.TestValue);
+        Assert.Equal(DateOnly.FromDateTime(dtdObj.TestValue /* now */), doObj.TestValue);
 
         // Verify DateTime (Local) -> DateOnly
         dtdObj = new DateTimeDateWrapper() { TestValue = localNow };
@@ -1243,7 +1281,7 @@ public static partial class XmlSerializerTests
             </DateAndTimeTest>
             """), () => dtdSerializer);
         doObj = (DateOnlyWrapper)Deserialize(doSerializer, xml);
-        Assert.StrictEqual(DateOnly.FromDateTime(dtdObj.TestValue /* localNow */), doObj.TestValue);
+        Assert.Equal(DateOnly.FromDateTime(dtdObj.TestValue /* localNow */), doObj.TestValue);
 
         // Verify DateTime (Utc) -> DateOnly
         dtdObj = new DateTimeDateWrapper() { TestValue = utcNow };
@@ -1253,7 +1291,7 @@ public static partial class XmlSerializerTests
             </DateAndTimeTest>
             """), () => dtdSerializer);
         doObj = (DateOnlyWrapper)Deserialize(doSerializer, xml);
-        Assert.StrictEqual(DateOnly.FromDateTime(dtdObj.TestValue /* utcNow */), doObj.TestValue);
+        Assert.Equal(DateOnly.FromDateTime(dtdObj.TestValue /* utcNow */), doObj.TestValue);
     }
 
     [Theory]
@@ -1287,7 +1325,7 @@ public static partial class XmlSerializerTests
             </DateAndTimeTest>
             """), () => toSerializer);
         var dttObj = (DateTimeTimeWrapper)Deserialize(dttSerializer, xml);
-        Assert.StrictEqual(testTime.TimeOfDay, dttObj.TestValue.TimeOfDay);
+        Assert.Equal(testTime.TimeOfDay, dttObj.TestValue.TimeOfDay);
         Assert.Equal(DateTimeKind.Unspecified, dttObj.TestValue.Kind);
         Assert.Equal(DateTime.MinValue.Date, dttObj.TestValue.Date);
 
@@ -1300,7 +1338,7 @@ public static partial class XmlSerializerTests
             </DateAndTimeTest>
             """), () => dttSerializer);
         var toaxtObj = (TimeOnlyAsXsdTimeWrapper)Deserialize(toaxtSerializer, xml);
-        Assert.StrictEqual(TimeOnly.FromDateTime(dttObj.TestValue /* now */), toaxtObj.TestValue);
+        Assert.Equal(TimeOnly.FromDateTime(dttObj.TestValue /* now */), toaxtObj.TestValue);
     }
 
     [Fact]
@@ -1311,7 +1349,7 @@ public static partial class XmlSerializerTests
 WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
   <ByteProperty>123</ByteProperty>
 </TypeWithByteProperty>"));
-        Assert.StrictEqual(obj.ByteProperty, deserializedObj.ByteProperty);
+        Assert.Equal(obj.ByteProperty, deserializedObj.ByteProperty);
     }
 
     [Fact]
@@ -1417,7 +1455,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 </SimpleType>"));
         Assert.NotNull(deserializedObj);
         Assert.Equal(obj.P1, deserializedObj.P1);
-        Assert.StrictEqual(obj.P2, deserializedObj.P2);
+        Assert.Equal(obj.P2, deserializedObj.P2);
     }
 
     [Fact]
@@ -1464,24 +1502,24 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
   </ListProperty>
 </DerivedClassWithSameProperty2>");
 
-        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
-        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.Equal(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
 
         // All base properties have been hidden, so they should be default here in the base class
         BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
-        Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
-        Assert.StrictEqual(default(int), castAsBase.IntProperty);
+        Assert.Equal(default(DateTime), castAsBase.DateTimeProperty);
+        Assert.Equal(default(int), castAsBase.IntProperty);
         Assert.Null(castAsBase.StringProperty);
         Assert.Null(castAsBase.ListProperty);
 
         // IntProperty and StringProperty are not hidden in Derived2, so they should be set here in the middle
         DerivedClassWithSameProperty castAsMiddle = (DerivedClassWithSameProperty)actual;
-        Assert.StrictEqual(value.IntProperty, castAsMiddle.IntProperty);
+        Assert.Equal(value.IntProperty, castAsMiddle.IntProperty);
         Assert.Equal(value.StringProperty, castAsMiddle.StringProperty);
         // The other properties should be default
-        Assert.StrictEqual(default(DateTime), castAsMiddle.DateTimeProperty);
+        Assert.Equal(default(DateTime), castAsMiddle.DateTimeProperty);
         Assert.Null(castAsMiddle.ListProperty);
 
 
@@ -1496,24 +1534,24 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
   <DateTimeProperty>0001-01-01T00:00:00.00001Z</DateTimeProperty>
 </DerivedClassWithSameProperty2>");
 
-        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
-        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.Equal(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Empty(actual.ListProperty.ToArray());
 
         // All base properties have been hidden, so they should be default here in the base class
         castAsBase = (BaseClassWithSamePropertyName)actual;
-        Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
-        Assert.StrictEqual(default(int), castAsBase.IntProperty);
+        Assert.Equal(default(DateTime), castAsBase.DateTimeProperty);
+        Assert.Equal(default(int), castAsBase.IntProperty);
         Assert.Null(castAsBase.StringProperty);
         Assert.Null(castAsBase.ListProperty);
 
         // IntProperty and StringProperty are not hidden in Derived2, so they should be set here in the middle
         castAsMiddle = (DerivedClassWithSameProperty)actual;
-        Assert.StrictEqual(value.IntProperty, castAsMiddle.IntProperty);
+        Assert.Equal(value.IntProperty, castAsMiddle.IntProperty);
         Assert.Equal(value.StringProperty, castAsMiddle.StringProperty);
         // The other properties should be default
-        Assert.StrictEqual(default(DateTime), castAsMiddle.DateTimeProperty);
+        Assert.Equal(default(DateTime), castAsMiddle.DateTimeProperty);
         Assert.Null(castAsMiddle.ListProperty);
     }
 
@@ -1533,8 +1571,8 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.NotNull(actual);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.EmptyStringProperty, actual.EmptyStringProperty);
-        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
-        Assert.StrictEqual(value.CharProperty, actual.CharProperty);
+        Assert.Equal(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.CharProperty, actual.CharProperty);
     }
 
     [Fact]
@@ -1563,7 +1601,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             skipStringCompare: false);
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.EnumProperty, actual.EnumProperty);
+        Assert.Equal(value.EnumProperty, actual.EnumProperty);
 
 
         value = new TypeWithEnumPropertyHavingDefaultValue() { EnumProperty = IntEnum.Option1 };
@@ -1572,7 +1610,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             skipStringCompare: false);
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.EnumProperty, actual.EnumProperty);
+        Assert.Equal(value.EnumProperty, actual.EnumProperty);
     }
 
     [Fact]
@@ -1583,7 +1621,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             WithXmlHeader("<TypeWithEnumFlagPropertyHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <EnumProperty>Two Three</EnumProperty>\r\n</TypeWithEnumFlagPropertyHavingDefaultValue>"));
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.EnumProperty, actual.EnumProperty);
+        Assert.Equal(value.EnumProperty, actual.EnumProperty);
 
 
         value = new TypeWithEnumFlagPropertyHavingDefaultValue();
@@ -1591,7 +1629,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             WithXmlHeader("<TypeWithEnumFlagPropertyHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.EnumProperty, actual.EnumProperty);
+        Assert.Equal(value.EnumProperty, actual.EnumProperty);
     }
 
     [Fact]
@@ -1607,7 +1645,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             () => serializer);
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.EnumProperty, actual.EnumProperty);
+        Assert.Equal(value.EnumProperty, actual.EnumProperty);
 
 
         value = new TypeWithEnumFlagPropertyHavingDefaultValue();
@@ -1617,7 +1655,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             () => serializer);
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.EnumProperty, actual.EnumProperty);
+        Assert.Equal(value.EnumProperty, actual.EnumProperty);
     }
 
     [Fact]
@@ -1631,7 +1669,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithXmlQualifiedName xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Value xmlns=\"\">FooName</Value>\r\n</TypeWithXmlQualifiedName>"), skipStringCompare: false);
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.Value, actual.Value);
+        Assert.Equal(value.Value, actual.Value);
     }
 
     [Fact]
@@ -1651,7 +1689,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             () => serializer);
 
         Assert.NotNull(actual);
-        Assert.StrictEqual(value.Value, actual.Value);
+        Assert.Equal(value.Value, actual.Value);
     }
 
     [Fact]
@@ -1674,6 +1712,42 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 
         Assert.NotNull(actual);
         Assert.Equal(value.Foo, actual.Foo);
+    }
+
+    [Fact]
+    public static void Xml_InheritedShouldSerializeMethod_WithDefaultValue()
+    {
+        var value = new DerivedTypeWithInheritedShouldSerialize();
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<DerivedTypeWithInheritedShouldSerialize xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Foo, actual.Foo);
+        Assert.Equal(value.Bar, actual.Bar);
+    }
+
+    [Fact]
+    public static void Xml_InheritedShouldSerializeMethod_WithNonDefaultValue()
+    {
+        var value = new DerivedTypeWithInheritedShouldSerialize() { Foo = "SomeValue", Bar = "SomeBar" };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<DerivedTypeWithInheritedShouldSerialize Bar=\"SomeBar\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></DerivedTypeWithInheritedShouldSerialize>"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Foo, actual.Foo);
+        Assert.Equal(value.Bar, actual.Bar);
+    }
+
+    [Fact]
+    public static void Xml_FieldBackedSpecifiedMember_SetOnDeserialize()
+    {
+        var value = new TypeWithFieldBackedSpecifiedMember() { Foo = "SomeValue", FooSpecified = true };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithFieldBackedSpecifiedMember xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></TypeWithFieldBackedSpecifiedMember>"));
+
+        Assert.NotNull(actual);
+        Assert.Equal("SomeValue", actual.Foo);
+        Assert.True(actual.FooSpecified);
     }
 
     [Fact]
@@ -2476,7 +2550,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         var value = new TypeWithMismatchBetweenAttributeAndPropertyType();
         var actual = SerializeAndDeserialize(value,
 @"<?xml version=""1.0""?><RootElement xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" IntValue=""120"" />");
-        Assert.StrictEqual(value.IntValue, actual.IntValue);
+        Assert.Equal(value.IntValue, actual.IntValue);
     }
 
     [Fact]
@@ -2592,8 +2666,8 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 
         Assert.NotNull(retWrapper);
         Assert.NotNull(retWrapper.Value);
-        Assert.Equal("Root", retWrapper.Value.Name);
-        Assert.Equivalent(wrapper, retWrapper);
+        Assert.Equal(wrapper.Value.Name, retWrapper.Value.Name);
+        Assert.Equal(wrapper.Value.ToString(), retWrapper.Value.ToString());
     }
 
     [Fact]

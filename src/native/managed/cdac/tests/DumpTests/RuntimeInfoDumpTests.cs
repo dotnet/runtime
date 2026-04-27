@@ -31,6 +31,8 @@ public class RuntimeInfoDumpTests : DumpTestBase
             "x86" => RuntimeInfoArchitecture.X86,
             "arm64" => RuntimeInfoArchitecture.Arm64,
             "arm" => RuntimeInfoArchitecture.Arm,
+            "riscv64" => RuntimeInfoArchitecture.RiscV64,
+            "loongarch64" => RuntimeInfoArchitecture.LoongArch64,
             _ => RuntimeInfoArchitecture.Unknown,
         };
 
@@ -50,7 +52,8 @@ public class RuntimeInfoDumpTests : DumpTestBase
         RuntimeInfoOperatingSystem expected = DumpMetadata.Os switch
         {
             "windows" => RuntimeInfoOperatingSystem.Windows,
-            "linux" or "osx" or "freebsd" => RuntimeInfoOperatingSystem.Unix,
+            "osx" => RuntimeInfoOperatingSystem.Apple,
+            "linux" or "freebsd" => RuntimeInfoOperatingSystem.Unix,
             _ => RuntimeInfoOperatingSystem.Unknown,
         };
 

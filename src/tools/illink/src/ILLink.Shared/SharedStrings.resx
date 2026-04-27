@@ -301,7 +301,7 @@
     <value>Root assembly could not be found.</value>
   </data>
   <data name="RootAssemblyCouldNotBeFoundMessage" xml:space="preserve">
-    <value>Root assembly '{0}' could not be found.</value>
+    <value>Root assembly with name '{0}' could not be found.</value>
   </data>
   <data name="XmlDescriptorCouldNotBeFoundTitle" xml:space="preserve">
     <value>XML descriptor file could not be found'.</value>
@@ -1292,5 +1292,11 @@
   </data>
   <data name="RequiresUnsafeOnEntryPointTitle" xml:space="preserve">
     <value>The use of 'RequiresUnsafeAttribute' on entry points is disallowed since the method will be called from outside the visible app.</value>
+  </data>
+  <data name="UnsafeMethodMissingRequiresUnsafeTitle" xml:space="preserve">
+    <value>Methods with pointer types in their signature should be annotated with 'RequiresUnsafeAttribute'.</value>
+  </data>
+  <data name="UnsafeMethodMissingRequiresUnsafeMessage" xml:space="preserve">
+    <value>Method '{0}' has pointer types in its signature but is not annotated with 'RequiresUnsafeAttribute'.</value>
   </data>
 </root>

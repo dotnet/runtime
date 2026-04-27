@@ -51,6 +51,44 @@ ISOSDacInterface* / IXCLRDataProcess (COM-style API surface)
 | `mscordaccore_universal` | Entry point that wires everything together |
 | `tests` | Unit tests with mock memory infrastructure |
 
+## GC Stress Verification (GCSTRESS_CDAC)
+
+The cDAC includes a GC stress verification mode that compares the cDAC's stack reference
+enumeration against the runtime's own GC root scanning at every GC stress instruction-level
+trigger point.
+
+### How it works
+
+When `DOTNET_CdacStress` is set, at each configured stress point:
+1. The cDAC is loaded in-process and enumerates stack GC references via `GetStackReferences`
+2. The runtime enumerates the same references via `StackWalkFrames` + `GcStackCrawlCallBack`
+3. The tool compares the two sets and reports mismatches
+
+### Usage
+
+```bash
+DOTNET_CdacStress=0x11 DOTNET_CdacStressLogFile=results.txt corerun test.dll
+```
+
+Configuration variables:
+- `DOTNET_CdacStress=0x11` — Enable alloc-point cDAC verification (see [StressTests README](tests/StressTests/README.md) for all flags)
+- `DOTNET_CdacStressFailFast=1` — Assert on mismatch (default: log and continue)
+- `DOTNET_CdacStressLogFile=<path>` — Write detailed results to a log file
+
+### Files
+
+| File | Location | Purpose |
+|------|----------|---------|
+| `cdacstress.h/cpp` | `src/coreclr/vm/` | In-process cDAC loading and comparison |
+| `RunStressTests.ps1` | `src/native/managed/cdac/tests/StressTests/` | Build and test script |
+| `known-issues.md` | `src/native/managed/cdac/tests/StressTests/` | Documented gaps |
+
+### Known limitations
+
+See [tests/StressTests/known-issues.md](tests/StressTests/known-issues.md) for the full list.
+Key gaps include explicit frame GC root scanning (ScanFrameRoots) for stub frames.
+Current pass rate: ~99.5%.
+
 ## Contract specifications
 
 Each contract has a specification document in
@@ -68,32 +106,12 @@ Key specs: [GC](/docs/design/datacontracts/GC.md) ·
 
 ## Unit testing
 
-### Setting up a solution
+### Opening the solution
 
-For VS Code and Visual Studio, create a file `cdac.slnx` in the runtime repo root to bring
-all the cDAC projects into scope:
-
-```xml
-<Solution>
-  <Configurations>
-    <Platform Name="Any CPU" />
-    <Platform Name="x64" />
-    <Platform Name="x86" />
-  </Configurations>
-  <Folder Name="/cdac/">
-    <Project Path="src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Abstractions/Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" />
-    <Project Path="src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Microsoft.Diagnostics.DataContractReader.Contracts.csproj" />
-    <Project Path="src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader/Microsoft.Diagnostics.DataContractReader.csproj" />
-    <Project Path="src/native/managed/cdac/mscordaccore_universal/mscordaccore_universal.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="src/native/managed/cdac/tests/Microsoft.Diagnostics.DataContractReader.Tests.csproj" />
-  </Folder>
-</Solution>
-```
-
-In VS Code, run the ".NET: Open Solution" command and select `cdac.slnx`. In Visual Studio,
-open the solution file directly. You can then use Test Explorer to run and debug tests.
+The [`cdac.slnx`](cdac.slnx) solution file in this directory brings all cDAC projects and
+tests into scope. In VS Code, run the ".NET: Open Solution" command and select
+`src/native/managed/cdac/cdac.slnx`. In Visual Studio, open the file directly. You can then
+use Test Explorer to run and debug tests.
 
 ### Running unit tests from the command line
 

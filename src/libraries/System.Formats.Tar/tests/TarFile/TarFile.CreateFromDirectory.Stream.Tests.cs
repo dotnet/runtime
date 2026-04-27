@@ -73,5 +73,26 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<ArgumentOutOfRangeException>("format", () =>
                 TarFile.CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, format));
         }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void CreateFromDirectory_UsesWriterOptions(bool toggle)
+        {
+            // Toggle an option property to verify changing options changes the produced archive.
+            bool preserveLinks = toggle;
+
+            using TempDirectory source = CreateSourceDirectoryForCreateFromDirectory_UsesWriterOptions();
+
+            TarWriterOptions options = new TarWriterOptions()
+            {
+                HardLinkMode = preserveLinks ? TarHardLinkMode.PreserveLink : TarHardLinkMode.CopyContents
+            };
+
+            using MemoryStream archive = new MemoryStream();
+            TarFile.CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, options);
+
+            VerifyCreateFromDirectory_UsesWriterOptions(archive, preserveLinks);
+        }
     }
 }

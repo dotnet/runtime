@@ -81,6 +81,8 @@
 // Hence, we add them here.
 GARY_IMPL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
 GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
+GARY_IMPL(VMAUXILIARYSYMBOLDEF, hlpAuxiliarySymbolTable, MAX_AUXILIARY_SYMBOLS);
+GVAL_IMPL_INIT(DWORD, g_auxiliarySymbolCount, 0);
 
 #else // DACCESS_COMPILE
 
@@ -2877,13 +2879,12 @@ CORINFO_OBJECT_HANDLE CEEInfo::getJitHandleForObject(OBJECTREF objref, bool know
         m_pJitHandles = new SArray<OBJECTHANDLE>();
     }
 
-    OBJECTHANDLEHolder handle = AppDomain::GetCurrentDomain()->CreateHandle(objref);
+    OBJECTHANDLEHolder handle(AppDomain::GetCurrentDomain()->CreateHandle(objref));
     m_pJitHandles->Append(handle);
-    handle.SuppressRelease();
 
     // We know that handle is aligned so we use the lowest bit as a marker
     // "this is a handle, not a frozen object".
-    return (CORINFO_OBJECT_HANDLE)((size_t)handle.GetValue() | 1);
+    return (CORINFO_OBJECT_HANDLE)((size_t)handle.Detach() | 1);
 }
 
 OBJECTREF CEEInfo::getObjectFromJitHandle(CORINFO_OBJECT_HANDLE handle)
@@ -4456,6 +4457,16 @@ static bool isExactTypeHelper(TypeHandle th)
 
     // Use conservative answer for equivalent and variant types.
     if (pMT->HasTypeEquivalence() || pMT->HasVariance())
+        return false;
+
+    // SZArrayHelper is a phantom dispatch target: the VM maps generic
+    // array interface methods (IList<T>.set_Item, etc.) to sealed
+    // SZArrayHelper methods, but no runtime object ever has
+    // SZArrayHelper as its MethodTable - `this` inside those methods
+    // is always a T[]. Reporting it as exact would allow the JIT (e.g.
+    // VN-based invariant-load folding of GetMethodTable) to embed
+    // SZArrayHelper's MT as a constant and mis-read fields off it.
+    if (pMT == g_pSZArrayHelperClass)
         return false;
 
     return pMT->IsSealed();
@@ -7558,6 +7569,16 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
 
                 ftn->GenerateFunctionPointerCall(&cxt.TransientResolver, &cxt.Header);
             }
+            else if (CoreLibBinder::IsClass(pMT->GetTypicalMethodTable(), CLASS__STRUCTURE_MARSHALER))
+            {
+                DynamicResolver* newResolver;
+                COR_ILMETHOD_DECODER* newHeader;
+                if (StructMarshalStubs::TryGenerateStructMarshallingMethod(ftn, &newResolver, &newHeader))
+                {
+                    cxt.TransientResolver = newResolver;
+                    cxt.Header = newHeader;
+                }
+            }
         }
 
         scopeHnd = cxt.HasTransientMethodDetails()
@@ -7723,6 +7744,10 @@ CEEInfo::getMethodInfo(
     else if (ftn->IsIL() || ftn->IsDynamicMethod())
     {
         // IL methods with no IL header indicate there is no implementation defined in metadata.
+        // NOTE: P/Invoke methods are also IL methods with no IL header,
+        // but it is generally not profitable to inline the marshalling IL.
+        // As a result, we skip inlining the marshalling IL.
+        // P/Invokes that don't require marshalling can still be inlined directly by the JIT.
         getMethodInfoWorker(ftn, NULL, methInfo, context);
         result = true;
     }
@@ -8985,10 +9010,15 @@ CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
     MethodDesc* pMD = GetMethod(ftn);
     MethodDesc* pAsyncOtherVariant = NULL;
 
-    if (pMD->HasAsyncOtherVariant())
+    if (pMD->ReturnsTaskOrValueTask())
     {
-         pAsyncOtherVariant = pMD->GetAsyncOtherVariant();
+         pAsyncOtherVariant = pMD->GetAsyncVariant();
     }
+    else if (pMD->IsAsyncVariantMethod())
+    {
+        pAsyncOtherVariant = pMD->GetOrdinaryVariant();
+    }
+
     result = (CORINFO_METHOD_HANDLE)pAsyncOtherVariant;
     *variantIsThunk = pAsyncOtherVariant != NULL && pAsyncOtherVariant->IsAsyncThunkMethod();
 
@@ -11094,7 +11124,16 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
         {
             _ASSERTE(pfnHelper != NULL);
             AllocMemHolder<PortableEntryPoint> portableEntryPoint = SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) });
-            portableEntryPoint->Init((void*)pfnHelper);
+            if (ftnNum >= CORINFO_HELP_NEWFAST && ftnNum <= CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE)
+            {
+                // CoreLib calls newobj helpers via calli. Give these helpers a MethodDesc
+                // so the interpreter can find the method signature for the call cookie.
+                portableEntryPoint->Init((void*)pfnHelper, CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__NEWOBJ_HELPER_DUMMY));
+            }
+            else
+            {
+                portableEntryPoint->Init((void*)pfnHelper);
+            }
             pfnHelper = (PCODE)(PortableEntryPoint*)(portableEntryPoint);
 
             if (InterlockedCompareExchangeT<PCODE>(&hlpFuncEntryPoints[ftnNum], pfnHelper, (PCODE)NULL) == (PCODE)NULL)
@@ -11375,6 +11414,26 @@ void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
     // We receive ownership of the array
     _ASSERTE(m_pPatchpointInfoFromJit == NULL);
     m_pPatchpointInfoFromJit = patchpointInfo;
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    if (m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT))
+    {
+        uint32_t ppiSize = patchpointInfo->PatchpointInfoSize();
+
+        AllocMemTracker am;
+        void* mem = am.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(ppiSize)));
+        PatchpointInfo *newPpi = new (mem) PatchpointInfo;
+        newPpi->Initialize(patchpointInfo->NumberOfLocals(), patchpointInfo->TotalFrameSize());
+        newPpi->Copy(patchpointInfo);
+
+        HRESULT hr = m_pMethodBeingCompiled->SetMethodDescAltJitPatchpointInfo(newPpi);
+        if (SUCCEEDED(hr))
+        {
+            am.SuppressRelease();
+        }
+    }
+#endif
+
 #else
     UNREACHABLE();
 #endif
@@ -11398,6 +11457,18 @@ PatchpointInfo* CEEJitInfo::getOSRInfo(unsigned* ilOffset)
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     result = m_pPatchpointInfoFromRuntime;
     *ilOffset = m_ilOffset;
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    if (m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT))
+    {
+        PatchpointInfo* ppi = m_pMethodBeingCompiled->GetMethodDescAltJitPatchpointInfo();
+        if (ppi != NULL)
+        {
+            result = ppi;
+        }
+    }
+#endif
+
 #endif
 
     EE_TO_JIT_TRANSITION();
@@ -11419,7 +11490,7 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 #ifdef FEATURE_INTERPRETER
 
 // Forward declare the function for mapping MetaSig to a cookie.
-void* GetCookieForCalliSig(MetaSig metaSig);
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
 
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
@@ -11438,7 +11509,18 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
 
     _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
 
-    result = GetCookieForCalliSig(sig);
+    // When compiling a calli inside an IL stub for a P/Invoke, pass the target
+    // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
+    MethodDesc* pContextMD = nullptr;
+    if (m_pMethodBeingCompiled != nullptr && m_pMethodBeingCompiled->IsILStub())
+    {
+        MethodDesc* pTargetMD = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
+        if (pTargetMD != nullptr)
+        {
+            pContextMD = pTargetMD;
+        }
+    }
+    result = GetCookieForCalliSig(sig, pContextMD);
 
     EE_TO_JIT_TRANSITION();
     return result;
@@ -12685,10 +12767,15 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     } CONTRACTL_END;
 
     HRESULT hr = E_FAIL;
+    *pSchema = NULL;
     *pCountSchemaItems = 0;
     *pInstrumentationData = NULL;
     *pPgoSource = PgoSource::Unknown;
+#ifdef FEATURE_PGO
     *pDynamicPgo = g_pConfig->TieredPGO();
+#else
+    *pDynamicPgo = false;
+#endif
 
     JIT_TO_EE_TRANSITION();
 
@@ -13135,7 +13222,11 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
 
         // If we're a reverse IL stub, we need to use the TrackTransitions variant
         // so we have the target MethodDesc entrypoint to tell the debugger about.
-        if (CORProfilerTrackTransitions() || ftn->IsILStub())
+        bool trackTransitions = ftn->IsILStub();
+#ifdef PROFILING_SUPPORTED
+        trackTransitions = trackTransitions || CORProfilerTrackTransitions();
+#endif // PROFILING_SUPPORTED
+        if (trackTransitions)
         {
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
         }
@@ -13300,7 +13391,7 @@ static TADDR UnsafeJitFunctionWorker(
             QueryPerformanceCounter(&methodJitTimeStop);
 
             SString moduleName;
-            ftn->GetModule()->GetDomainAssembly()->GetPEAssembly()->GetPathOrCodeBase(moduleName);
+            ftn->GetModule()->GetAssembly()->GetPEAssembly()->GetPathOrCodeBase(moduleName);
 
             SString codeBase;
             codeBase.AppendPrintf("%s,0x%x,%d,%d\n",
@@ -14105,7 +14196,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
                 _ASSERTE(pMethod->IsPInvoke());
-                result = (size_t)(LPVOID)PInvokeMethodDesc::ResolveAndSetPInvokeTarget((PInvokeMethodDesc*)pMethod);
+                PInvoke::ResolvePInvokeTarget((PInvokeMethodDesc*)pMethod);
+                result = (size_t)(LPVOID)((PInvokeMethodDesc*)pMethod)->GetPInvokeTarget();
             }
             else
             {

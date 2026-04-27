@@ -418,18 +418,14 @@ class SyncBlock
     // If this object is exposed to unmanaged code, we keep some extra info here.
     PTR_InteropSyncBlockInfo    m_pInteropInfo;
 
+    // Next pointer for linked-list linkage (SyncBlockCache free and cleanup lists).
+    PTR_SyncBlock  m_pNext;
+
   protected:
 #ifdef FEATURE_METADATA_UPDATER
     // And if the object has new fields added via EnC, this is a list of them
     PTR_EnCSyncBlockInfo m_pEnCInfo;
 #endif // FEATURE_METADATA_UPDATER
-
-    // When the SyncBlock is released (we recycle them),
-    // the SyncBlockCache maintains a free list of SyncBlocks here.
-    //
-    // We can't afford to use an SList<> here because we only want to burn
-    // space for the minimum, which is the pointer within an SLink.
-    SLink       m_Link;
 
     // This is the hash code for the object. It can either have been transferred
     // from the header dword, in which case it will be limited to 26 bits, or
@@ -447,6 +443,7 @@ class SyncBlock
         : m_Lock((OBJECTHANDLE)NULL)
         , m_thinLock()
         , m_dwSyncIndex(indx)
+        , m_pNext(PTR_NULL)
 #ifdef FEATURE_METADATA_UPDATER
         , m_pEnCInfo(PTR_NULL)
 #endif // FEATURE_METADATA_UPDATER
@@ -604,7 +601,8 @@ struct cdac_data<SyncBlock>
     static constexpr size_t InteropInfo = offsetof(SyncBlock, m_pInteropInfo);
     static constexpr size_t Lock = offsetof(SyncBlock, m_Lock);
     static constexpr size_t ThinLock = offsetof(SyncBlock, m_thinLock);
-    static constexpr size_t LinkNext = offsetof(SyncBlock, m_Link) + offsetof(SLink, m_pNext);
+    static constexpr size_t LinkNext = offsetof(SyncBlock, m_pNext);
+    static constexpr size_t HashCode = offsetof(SyncBlock, m_dwHashCode);
 
 };
 
@@ -645,8 +643,8 @@ class SyncBlockCache
 
 
   private:
-    PTR_SLink   m_pCleanupBlockList;    // list of sync blocks that need cleanup
-    SLink*      m_FreeBlockList;        // list of free sync blocks
+    PTR_SyncBlock m_pCleanupBlockList;    // list of sync blocks that need cleanup
+    PTR_SyncBlock m_FreeBlockList;        // list of free sync blocks
     CrstStatic  m_CacheLock;            // cache lock
     DWORD       m_FreeCount;            // count of active sync blocks
     DWORD       m_ActiveCount;          // number active

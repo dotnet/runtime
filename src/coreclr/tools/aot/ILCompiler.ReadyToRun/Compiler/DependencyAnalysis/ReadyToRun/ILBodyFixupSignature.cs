@@ -13,17 +13,42 @@ using Internal.ReadyToRunConstants;
 using Internal.CorConstants;
 using Internal.JitInterface;
 
+using ILCompiler.ReadyToRun.TypeSystem;
+
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
+    /// <summary>
+    /// This fixup instructs the runtime to validate that the IL found at runtime matches the hash of the IL computed at compile time.
+    /// </summary>
+    /// <remarks>
+    /// The fixup encodes two distinct pieces of information:
+    /// <list type="bullet">
+    /// <item>The IL body hash, computed from the <see cref="ILMethod"/> (the underlying EcmaMethod whose metadata
+    /// contains the IL). This is derived from _signatureMethod via GetPrimaryMethodDesc().</item>
+    /// <item>The method identity (_signatureMethod), encoded in the fixup signature. The runtime decodes this
+    /// back to a MethodDesc via ZapSig::DecodeMethod and reads the IL at that method's RVA to compare against
+    /// the hash.</item>
+    /// </list>
+    /// For most methods, _signatureMethod is already the EcmaMethod. For runtime-async methods, the JIT inlines
+    /// an AsyncMethodVariant. The EcmaMethod for AsyncMethodVariant can be retrieved with GetPrimaryMethodDesc().
+    /// </remarks>
     public class ILBodyFixupSignature : Signature, IEquatable<ILBodyFixupSignature>
     {
         private readonly ReadyToRunFixupKind _fixupKind;
-        private readonly EcmaMethod _method;
 
-        public ILBodyFixupSignature(ReadyToRunFixupKind fixupKind, EcmaMethod ecmaMethod)
+        /// <summary>The method identity encoded in the fixup signature that the runtime decodes to locate the IL at its RVA.</summary>
+        private readonly MethodDesc _signatureMethod;
+
+        /// <summary>The underlying EcmaMethod whose IL body from metadata is hashed for the fixup validation.</summary>
+        private EcmaMethod ILMethod => (EcmaMethod)_signatureMethod.GetPrimaryMethodDesc();
+
+        public ILBodyFixupSignature(ReadyToRunFixupKind fixupKind, MethodDesc signatureMethod)
         {
+            Debug.Assert(signatureMethod.IsTypicalMethodDefinition);
+            Debug.Assert(!signatureMethod.IsCompilerGeneratedILBodyForAsync());
+            Debug.Assert(signatureMethod.GetPrimaryMethodDesc() is EcmaMethod);
             _fixupKind = fixupKind;
-            _method = ecmaMethod;
+            _signatureMethod = signatureMethod;
         }
 
         public override int ClassCode => 308579267;
@@ -44,10 +69,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private ModuleToken GetModuleToken(NodeFactory factory)
         {
-            if (factory.CompilationModuleGroup.VersionsWithMethodBody(_method))
-                return new ModuleToken(_method.Module, _method.Handle);
+            EcmaMethod ilMethod = ILMethod;
+            if (factory.CompilationModuleGroup.VersionsWithMethodBody(ilMethod))
+                return new ModuleToken(ilMethod.Module, ilMethod.Handle);
             else
-                return new ModuleToken(factory.ManifestMetadataTable._mutableModule, factory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(_method.GetTypicalMethodDefinition()).Value);
+                return new ModuleToken(factory.ManifestMetadataTable._mutableModule, factory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(ilMethod.GetTypicalMethodDefinition()).Value);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -63,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 IEcmaModule targetModule = moduleToken.Module;
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
 
-                var metadata = ReadyToRunStandaloneMethodMetadata.Compute(_method);
+                var metadata = ReadyToRunStandaloneMethodMetadata.Compute(ILMethod);
                 dataBuilder.EmitUInt(checked((uint)metadata.ConstantData.Length));
                 dataBuilder.EmitBytes(metadata.ConstantData);
                 dataBuilder.EmitUInt(checked((uint)metadata.TypeRefs.Length));
@@ -77,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     dataBuilder.EmitTypeSignature(typeRef, innerContext);
                 }
 
-                MethodWithToken method = new MethodWithToken(_method, moduleToken, null, unboxing: false, context: null);
+                MethodWithToken method = new MethodWithToken(_signatureMethod, moduleToken, null, unboxing: false, context: null);
                 dataBuilder.EmitMethodSignature(method, enforceDefEncoding: false, enforceOwningType: false, innerContext, false);
             }
 
@@ -88,7 +114,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append($@"ILBodyFixupSignature({_fixupKind.ToString()}): ");
-            sb.Append(nameMangler.GetMangledMethodName(_method));
+            sb.Append(nameMangler.GetMangledMethodName(ILMethod));
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
@@ -98,12 +124,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            return comparer.Compare(_method, otherNode._method);
+            return comparer.Compare(_signatureMethod, otherNode._signatureMethod);
         }
 
         public override string ToString()
         {
-            return $"ILBodyFixupSignature {_fixupKind} {_method}";
+            return $"ILBodyFixupSignature {_fixupKind} {_signatureMethod}";
         }
 
         public bool Equals(ILBodyFixupSignature other) => object.ReferenceEquals(other, this);

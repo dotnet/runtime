@@ -1226,7 +1226,7 @@ namespace System.Security.Cryptography
             Debug.Assert(read == source.Length);
             return slhDsa;
 
-            static void SubjectPublicKeyReader(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn identifier, out SlhDsa slhDsa)
+            static void SubjectPublicKeyReader(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn identifier, out SlhDsa slhDsa)
             {
                 SlhDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
 
@@ -1235,7 +1235,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                 }
 
-                slhDsa = SlhDsaImplementation.ImportPublicKey(algorithm, key.Span);
+                slhDsa = SlhDsaImplementation.ImportPublicKey(algorithm, key);
             }
         }
 
@@ -1288,17 +1288,16 @@ namespace System.Security.Cryptography
             KeyFormatHelper.ReadPkcs8(
                 s_knownOids,
                 source,
-                (ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn algId, out SlhDsa ret) =>
+                (ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn algId, out SlhDsa ret) =>
                 {
                     SlhDsaAlgorithm info = GetAlgorithmIdentifier(in algId);
-                    ReadOnlySpan<byte> privateKey = key.Span;
 
-                    if (privateKey.Length != info.PrivateKeySizeInBytes)
+                    if (key.Length != info.PrivateKeySizeInBytes)
                     {
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     }
 
-                    ret = ImportSlhDsaPrivateKey(info, key.Span);
+                    ret = ImportSlhDsaPrivateKey(info, key);
                 },
                 out int read,
                 out SlhDsa slhDsa);
@@ -1982,16 +1981,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static SlhDsaAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
+        private static SlhDsaAlgorithm GetAlgorithmIdentifier(ref readonly ValueAlgorithmIdentifierAsn identifier)
         {
             SlhDsaAlgorithm? algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(identifier.Algorithm);
             Debug.Assert(algorithm is not null, "Algorithm identifier should have been pre-validated by KeyFormatHelper.");
 
-            if (identifier.Parameters.HasValue)
+            if (identifier.HasParameters)
             {
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                identifier.Encode(writer);
-                throw Helpers.CreateAlgorithmUnknownException(writer);
+                throw Helpers.CreateAlgorithmUnknownException(in identifier);
             }
 
             return algorithm;

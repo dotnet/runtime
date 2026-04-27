@@ -30,7 +30,6 @@
 #include "wrappers.h"
 
 #include "appdomain.inl"
-#include "vmholder.h"
 #include "exceptmacros.h"
 #include "minipal/time.h"
 #include "minipal/thread.h"
@@ -834,7 +833,7 @@ void DestroyThread(Thread *th)
         th->UnmarkThreadForAbort();
     }
 
-    th->SetThreadState(Thread::TS_ReportDead);
+    th->SetThreadState(Thread::TS_Stopped);
     th->OnThreadTerminate(FALSE);
 }
 
@@ -912,7 +911,7 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     // We need to make sure that TLS are touched last here.
     SetThread(NULL);
 
-    SetThreadState((Thread::ThreadState)(Thread::TS_Detached | Thread::TS_ReportDead));
+    SetThreadState((Thread::ThreadState)(Thread::TS_Detached | Thread::TS_Stopped));
     // Do not touch Thread object any more.  It may be destroyed.
 
     // These detached threads will be cleaned up by finalizer thread.
@@ -1082,6 +1081,7 @@ void InitThreadManager()
 
 #define X86_WRITE_BARRIER_REGISTER(reg) \
     SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_##reg, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg)); \
+    SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg); \
     ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), W("@WriteBarrier" #reg));
 
         ENUM_X86_WRITE_BARRIER_REGISTERS()
@@ -1092,6 +1092,7 @@ void InitThreadManager()
         JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 #endif // TARGET_X86
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
+        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), "JIT_WriteBarrier");
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), W("@WriteBarrier"));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1101,8 +1102,10 @@ void InitThreadManager()
 
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
+        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), "JIT_CheckedWriteBarrier");
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
+        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), "JIT_ByRefWriteBarrier");
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
@@ -1244,6 +1247,8 @@ Thread::Thread()
 
     m_debuggerFilterContext = NULL;
     m_fInteropDebuggingHijacked = FALSE;
+
+#if defined(PROFILING_SUPPORTED)
     m_profilerCallbackState = 0;
 
     for (int i = 0; i < MAX_NOTIFICATION_PROFILERS + 1; ++i)
@@ -1252,6 +1257,7 @@ Thread::Thread()
     }
 
     m_pProfilerFilterContext = NULL;
+#endif // PROFILING_SUPPORTED
 
     m_CacheStackBase = 0;
     m_CacheStackLimit = 0;
@@ -1506,8 +1512,6 @@ void Thread::InitThread()
     // Set floating point mode to round to nearest
 #ifndef TARGET_UNIX
     (void) _controlfp_s( NULL, _RC_NEAR, _RC_CHOP|_RC_UP|_RC_DOWN|_RC_NEAR );
-
-    m_pTEB = (struct _NT_TIB*)NtCurrentTeb();
 
 #endif // !TARGET_UNIX
 
@@ -1811,9 +1815,8 @@ void Thread::InitializationForManagedThreadInNative(_In_ Thread* pThread)
 #ifdef FEATURE_OBJCMARSHAL
     {
         GCX_COOP_THREAD_EXISTS(pThread);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__AUTORELEASEPOOL__CREATEAUTORELEASEPOOL);
-        DECLARE_ARGHOLDER_ARRAY(args, 0);
-        CALL_MANAGED_METHOD_NORET(args);
+        UnmanagedCallersOnlyCaller createAutoreleasePool(METHOD__AUTORELEASEPOOL__CREATEAUTORELEASEPOOL);
+        createAutoreleasePool.InvokeThrowing();
     }
 #endif // FEATURE_OBJCMARSHAL
 }
@@ -1832,9 +1835,8 @@ void Thread::CleanUpForManagedThreadInNative(_In_ Thread* pThread)
 #ifdef FEATURE_OBJCMARSHAL
     {
         GCX_COOP_THREAD_EXISTS(pThread);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__AUTORELEASEPOOL__DRAINAUTORELEASEPOOL);
-        DECLARE_ARGHOLDER_ARRAY(args, 0);
-        CALL_MANAGED_METHOD_NORET(args);
+        UnmanagedCallersOnlyCaller drainAutoreleasePool(METHOD__AUTORELEASEPOOL__DRAINAUTORELEASEPOOL);
+        drainAutoreleasePool.InvokeThrowing();
     }
 #endif // FEATURE_OBJCMARSHAL
 }
@@ -1882,38 +1884,12 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     return hThread;
 }
 
-// Represent the value of DEFAULT_STACK_SIZE as passed in the property bag to the host during construction
-static unsigned long s_defaultStackSizeProperty = 0;
-
-void ParseDefaultStackSize(LPCWSTR valueStr)
-{
-    if (valueStr)
-    {
-        LPWSTR end;
-        errno = 0;
-        unsigned long value = u16_strtoul(valueStr, &end, 16); // Base 16 without a prefix
-
-        if ((errno == ERANGE)     // Parsed value doesn't fit in an unsigned long
-            || (valueStr == end)  // No characters parsed
-            || (end == nullptr)   // Unexpected condition (should never happen)
-            || (end[0] != 0))     // Unprocessed terminal characters
-        {
-            ThrowHR(E_INVALIDARG);
-        }
-        else
-        {
-            s_defaultStackSizeProperty = value;
-        }
-    }
-}
-
 SIZE_T GetDefaultStackSizeSetting()
 {
     static DWORD s_defaultStackSizeEnv = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_DefaultStackSize);
     static DWORD s_defaultStackSizeProp = Configuration::GetKnobDWORDValue(W("System.Threading.DefaultStackSize"), 0);
 
-    uint64_t value = s_defaultStackSizeEnv ? s_defaultStackSizeEnv
-        : (s_defaultStackSizeProperty ? s_defaultStackSizeProperty : s_defaultStackSizeProp);
+    uint64_t value = s_defaultStackSizeEnv ? s_defaultStackSizeEnv : s_defaultStackSizeProp;
 
     SIZE_T minStack = 0x10000;     // 64K - Somewhat arbitrary minimum thread stack size
     SIZE_T maxStack = 0x80000000;  //  2G - Somewhat arbitrary maximum thread stack size
@@ -2466,10 +2442,11 @@ void Thread::CleanupDetachedThreads()
         // Instead, run that clean up here when the Thread is detached,
         // which is definitely after the thread has exited.
         PTR_Thread pThread = (PTR_Thread)iter.GetElement();
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ON_THREAD_EXITING);
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(pThread->GetExposedObject());
-        CALL_MANAGED_METHOD_NORET(args);
+        OBJECTREF exposedObj = pThread->GetExposedObject();
+        GCPROTECT_BEGIN(exposedObj);
+        UnmanagedCallersOnlyCaller onThreadExiting(METHOD__THREAD__ON_THREAD_EXITING);
+        onThreadExiting.InvokeThrowing(&exposedObj);
+        GCPROTECT_END();
 
         pThread->DecExternalCount(FALSE);
     }
@@ -2596,14 +2573,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     }
     CONTRACTL_END;
 
-    // #ReportDeadOnThreadTerminate
-    // Caller should have put the TS_ReportDead bit on by now.
+    // #StoppedOnThreadTerminate
+    // Caller should have put the TS_Stopped bit on by now.
     // We don't want any windows after the exit event but before the thread is marked dead.
     // If a debugger attached during such a window (or even took a dump at the exit event),
     // then it may not realize the thread is dead.
     // So ensure we mark the thread as dead before we send the tool notifications.
-    // The TS_ReportDead bit will cause the debugger to view this as TS_Dead.
-    _ASSERTE(HasThreadState(TS_ReportDead));
+    _ASSERTE(HasThreadState(TS_Stopped));
 
     // Should not use OSThreadId:
     // OSThreadId may change for the current thread is the thread is blocked and rescheduled
@@ -3965,7 +3941,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     CONTRACTL_END;
 
     BOOL    found;
-    Thread *ret;
 
 #if 0 // This assert is not valid when failing to create background GC thread.
       // Main GC thread holds the TS lock.
@@ -3975,9 +3950,8 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     _ASSERTE(s_pThreadStore->m_Crst.GetEnterCount() > 0 ||
              IsAtProcessExit());
     _ASSERTE(s_pThreadStore->DbgFindThread(target));
-    ret = s_pThreadStore->m_ThreadList.FindAndRemove(target);
-    _ASSERTE(ret && ret == target);
-    found = (ret != NULL);
+    found = s_pThreadStore->m_ThreadList.FindAndRemove(target);
+    _ASSERTE(found);
 
     if (found)
     {
@@ -4312,33 +4286,6 @@ Thread *ThreadStore::GetThreadList(Thread *cursor)
     return GetAllThreadList(cursor, (Thread::TS_Unstarted | Thread::TS_Dead), 0);
 }
 
-//---------------------------------------------------------------------------------------
-//
-// Grab a consistent snapshot of the thread's state, for reporting purposes only.
-//
-// Return Value:
-//    the current state of the thread
-//
-
-Thread::ThreadState Thread::GetSnapshotState()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    ThreadState res = m_State;
-
-    if (res & TS_ReportDead)
-    {
-        res = (ThreadState) (res | TS_Dead);
-    }
-
-    return res;
-}
-
 #ifndef DACCESS_COMPILE
 
 BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, DWORD *pStatus)
@@ -4389,7 +4336,7 @@ void ThreadStore::WaitForOtherThreads()
     {
         TSLockHolder.Release();
 
-        pCurThread->SetThreadState(Thread::TS_ReportDead);
+        pCurThread->SetThreadState(Thread::TS_Stopped);
 
         DWORD ret = WAIT_OBJECT_0;
         while (CLREventWaitWithTry(&m_TerminationEvent, INFINITE, TRUE, &ret))
@@ -6837,10 +6784,6 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
 
     DAC_ENUM_DTHIS();
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
-    }
 
     if (m_debuggerFilterContext.IsValid())
     {
@@ -6928,11 +6871,6 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacGetThreadContext(this, &context);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
-    }
-
     FillRegDisplay(&regDisp, &context);
     frameIter.Init(this, NULL, &regDisp, 0);
     while (frameIter.IsValid())
@@ -6992,8 +6930,8 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacEnumCodeForStackwalk(callEnd);
 
         // To stackwalk through funceval frames, we need to be sure to preserve the
-        // DebuggerModule's m_pRuntimeDomainAssembly.  This is the only case that doesn't use the current
-        // vmDomainAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
+        // DebuggerModule's m_pRuntimeAssembly.  This is the only case that doesn't use the current
+        // vmAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
         // code mimics that function.
         // Allow failure, since we want to continue attempting to walk the stack regardless of the outcome.
         EX_TRY
