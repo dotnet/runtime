@@ -419,6 +419,7 @@ private:
 #ifdef TARGET_WASM
     GenTree* LowerNeg(GenTreeOp* node);
     void     LowerIndexAddr(GenTreeIndexAddr* indexAddr);
+    void     LowerPEPCall(GenTreeCall* call);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
