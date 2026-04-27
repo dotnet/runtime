@@ -167,13 +167,13 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
     (void)switchCount;
     sched_yield();
 #else
-    // No-op on single-threaded WASM — there are no other threads to yield to.
+    // No-op on single-threaded WASM - there are no other threads to yield to.
     (void)switchCount;
 #endif
 }
 
 // ============================================================================
-// Virtual Memory — WASM-specific (posix_memalign / free)
+// Virtual Memory - WASM-specific (posix_memalign / free)
 // ============================================================================
 
 // Emscripten does not provide a complete implementation of mmap and munmap:
@@ -195,7 +195,7 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 // break, the memory came from heap growth and is already zero. If it falls below,
 // it was recycled and must be explicitly zeroed.
 //
-// This is safe because WASM is single-threaded — no concurrent sbrk calls can
+// This is safe because WASM is single-threaded - no concurrent sbrk calls can
 // occur between our sbrk(0) probe and the posix_memalign call. This is the same
 // approach used by Mono's WASM mmap implementation (mono-mmap-wasm.c).
 
@@ -227,7 +227,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags)
         memset(pRetVal, 0, size);
     }
 #else
-    // The sbrk optimization is not safe with multiple threads — another thread
+    // The sbrk optimization is not safe with multiple threads - another thread
     // could call sbrk between our probe and posix_memalign, giving a false
     // "fresh memory" result. Fall back to always zeroing.
     memset(pRetVal, 0, size);
@@ -249,7 +249,7 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 
 void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
 {
-    // WASM has no large pages — just reserve+commit normally.
+    // WASM has no large pages - just reserve+commit normally.
     return VirtualReserveInner(size, OS_PAGE_SIZE, 0);
 }
 
@@ -260,7 +260,7 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
     // If previously decommitted (sentinel at page boundary), zero the range.
 #ifdef FEATURE_MULTITHREADING
     // Under MT, VirtualDecommit already zeroes the full range on decommit, and
-    // VirtualReserveInner zeroes on allocation — so commit is a no-op.
+    // VirtualReserveInner zeroes on allocation - so commit is a no-op.
     (void)address;
     (void)size;
 #else
@@ -279,7 +279,7 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // On WASM, we cannot return memory to the OS or change page protection.
 #ifdef FEATURE_MULTITHREADING
     // Under MT, VirtualCommit always zeroes unconditionally, so we just zero
-    // here immediately — no sentinel trick needed, and no races to worry about.
+    // here immediately - no sentinel trick needed, and no races to worry about.
     memset(address, 0, size);
 #else
     // Instead of zeroing the entire range here (expensive), write a non-zero

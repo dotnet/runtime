@@ -580,7 +580,7 @@ static LPVOID ReserveVirtualMemory(
     }
     (void)fAllocationType; // Large pages / executable flags are N/A on WASM.
 
-    // WASM has no virtual memory — mmap(PROT_NONE) still consumes linear memory,
+    // WASM has no virtual memory - mmap(PROT_NONE) still consumes linear memory,
     // munmap of partial ranges doesn't return memory, and MAP_FIXED is broken.
     // Use posix_memalign/free instead.
 
@@ -589,7 +589,7 @@ static LPVOID ReserveVirtualMemory(
     // block or grows the WASM linear memory via sbrk() → memory.grow. The WASM
     // spec guarantees that memory.grow zero-initializes new pages, so only
     // recycled blocks need explicit zeroing. We detect which case occurred by
-    // probing sbrk(0) before the allocation — safe because WASM is single-threaded.
+    // probing sbrk(0) before the allocation - safe because WASM is single-threaded.
     void* old_brk = sbrk(0);
 #endif
 
@@ -779,7 +779,7 @@ VIRTUALCommitMemory(
     // zero the entire range if needed.
 #ifdef FEATURE_MULTITHREADING
     // Under MT, VirtualDecommit already zeroes the full range on decommit, and
-    // reserve already zeroes on allocation — so commit is a no-op.
+    // reserve already zeroes on allocation - so commit is a no-op.
     (void)MemSize;
 #else
     if (MemSize && *(BYTE*)StartBoundary != 0)
@@ -1142,7 +1142,7 @@ VirtualFree(
 #else // TARGET_WASM
 #ifdef FEATURE_MULTITHREADING
         // Under MT, VirtualCommit always zeroes unconditionally, so just zero
-        // here immediately — no sentinel trick needed, and no races.
+        // here immediately - no sentinel trick needed, and no races.
         ZeroMemory((LPVOID) StartBoundary, MemSize);
 #else
         // We can't decommit the mapping (MAP_FIXED doesn't work in emscripten), and we can't
@@ -1183,7 +1183,7 @@ VirtualFree(
                pMemoryToBeReleased->startBoundary, pMemoryToBeReleased->memSize );
 
 #ifdef TARGET_WASM
-        // Remove the tracking entry before freeing — if list removal fails,
+        // Remove the tracking entry before freeing - if list removal fails,
         // the memory is still valid and the caller can retry.
         {
             UINT_PTR boundary = pMemoryToBeReleased->startBoundary;
