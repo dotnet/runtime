@@ -4,7 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using static System.Runtime.CompilerServices.AsyncProfilerEventSource;
+using Serializer = System.Runtime.CompilerServices.AsyncProfiler.EventBuffer.Serializer;
 
 namespace System.Runtime.CompilerServices
 {
@@ -416,6 +416,8 @@ namespace System.Runtime.CompilerServices
 
         private static partial class AsyncCallstack
         {
+            private const int MaxAsyncMethodFrameSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size;
+
             public struct CaptureRuntimeAsyncCallstackState
             {
                 public Continuation? Continuation;
@@ -430,8 +432,8 @@ namespace System.Runtime.CompilerServices
                     return false;
                 }
 
-                byte maxAsyncCallstackLength = (byte)Math.Min(byte.MaxValue, (buffer.Length - index) / ASYNC_METHOD_INFO_SIZE);
-                if (maxAsyncCallstackLength == 0)
+                byte maxAsyncCallstackFrames = (byte)Math.Min(byte.MaxValue, (buffer.Length - index) / MaxAsyncMethodFrameSize);
+                if (maxAsyncCallstackFrames == 0)
                 {
                     return false;
                 }
@@ -444,23 +446,31 @@ namespace System.Runtime.CompilerServices
                     currentNativeIP = (ulong)state.Continuation.ResumeInfo->DiagnosticIP;
                 }
 
+                Span<byte> callstackSpan = buffer.AsSpan(index, maxAsyncCallstackFrames * MaxAsyncMethodFrameSize);
+                int callstackSpanIndex = 0;
+
+                Span<byte> frameSpan = callstackSpan.Slice(callstackSpanIndex, MaxAsyncMethodFrameSize);
+                int frameSpanIndex = 0;
+
                 // First frame (Count == 0) is written as absolute; subsequent frames
                 // (including the first frame of a continuation call after overflow)
                 // are written as deltas from the previous frame.
                 if (state.Count == 0)
                 {
-                    EventBuffer.Serializer.WriteCompressedUInt64(buffer, ref index, currentNativeIP);
+                    frameSpanIndex += Serializer.WriteCompressedUInt64(frameSpan, frameSpanIndex, currentNativeIP);
                 }
                 else
                 {
-                    EventBuffer.Serializer.WriteCompressedInt64(buffer, ref index, (long)(currentNativeIP - previousNativeIP));
+                    frameSpanIndex += Serializer.WriteCompressedInt64(frameSpan, frameSpanIndex, (long)(currentNativeIP - previousNativeIP));
                 }
 
-                EventBuffer.Serializer.WriteCompressedInt32(buffer, ref index, state.Continuation.State);
+                frameSpanIndex += Serializer.WriteCompressedInt32(frameSpan, frameSpanIndex, state.Continuation.State);
+
+                callstackSpanIndex += frameSpanIndex;
                 state.Count++;
 
                 state.Continuation = state.Continuation.Next;
-                while (state.Count < maxAsyncCallstackLength && state.Continuation != null)
+                while (state.Count < maxAsyncCallstackFrames && state.Continuation != null)
                 {
                     previousNativeIP = currentNativeIP;
 
@@ -469,14 +479,20 @@ namespace System.Runtime.CompilerServices
                         currentNativeIP = (ulong)state.Continuation.ResumeInfo->DiagnosticIP;
                     }
 
-                    EventBuffer.Serializer.WriteCompressedInt64(buffer, ref index, (long)(currentNativeIP - previousNativeIP));
-                    EventBuffer.Serializer.WriteCompressedInt32(buffer, ref index, state.Continuation.State);
+                    frameSpan = callstackSpan.Slice(callstackSpanIndex, MaxAsyncMethodFrameSize);
+                    frameSpanIndex = 0;
+
+                    frameSpanIndex += Serializer.WriteCompressedInt64(frameSpan, frameSpanIndex, (long)(currentNativeIP - previousNativeIP));
+                    frameSpanIndex += Serializer.WriteCompressedInt32(frameSpan, frameSpanIndex, state.Continuation.State);
+
+                    callstackSpanIndex += frameSpanIndex;
 
                     state.Count++;
                     state.Continuation = state.Continuation.Next;
                 }
 
                 state.LastNativeIP = currentNativeIP;
+                index += callstackSpanIndex;
 
                 return state.Continuation == null || state.Count == byte.MaxValue;
             }
@@ -507,19 +523,19 @@ namespace System.Runtime.CompilerServices
 
                     // Max callstack data that can fit in the buffer after flush.
                     int maxCallstackBytes = Math.Min(
-                        byte.MaxValue * ASYNC_METHOD_INFO_SIZE,
+                        byte.MaxValue * MaxAsyncMethodFrameSize,
                         eventBuffer.Data.Length);
 
                     CaptureRuntimeAsyncCallstackState state = default;
                     state.Continuation = asyncCallstack;
 
-                    // Callstack envelope: id (max 10 bytes compressed) + type (1) + callstackId (1) + frameCount (1)
-                    const int maxEnvelopeSize = EventBuffer.Serializer.MaxCompressedUInt64Size + sizeof(byte) + sizeof(byte) + sizeof(byte);
+                    // Static callstack payload: type (1) + callstackId (1) + frameCount (1) + id (max 10 bytes compressed).
+                    const int MaxStaticEventPayloadSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
 
-                    int savedAsyncEventHeaderIndex = EventBuffer.Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, maxEnvelopeSize);
+                    int savedAsyncEventHeaderIndex = Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, MaxStaticEventPayloadSize);
                     if (savedAsyncEventHeaderIndex >= 0)
                     {
-                        EventBuffer.Serializer.CallstackHeader(ref eventBuffer, id, type, 0);
+                        int frameCountOffset = CallstackHeader(ref eventBuffer, id, type, 0);
 
                         byte[] buffer = eventBuffer.Data;
                         int startIndex = eventBuffer.Index;
@@ -537,15 +553,15 @@ namespace System.Runtime.CompilerServices
                                 CaptureRuntimeAsyncCallstack(rentedArray, ref index, ref state);
 
                                 // Remove async event header from the event buffer before flushing.
-                                EventBuffer.Serializer.RemoveAsyncEventHeader(context, savedAsyncEventHeaderIndex);
+                                Serializer.RemoveAsyncEventHeader(context, savedAsyncEventHeaderIndex);
                                 context.Flush();
 
                                 // Write the callstack again.
-                                savedAsyncEventHeaderIndex = EventBuffer.Serializer.AsyncEventHeader(context, ref eventBuffer, context.LastEventTimestamp, 0, eventID, maxEnvelopeSize + index);
+                                savedAsyncEventHeaderIndex = Serializer.AsyncEventHeader(context, ref eventBuffer, context.LastEventTimestamp, 0, eventID, MaxStaticEventPayloadSize + index);
                                 if (savedAsyncEventHeaderIndex >= 0)
                                 {
-                                    EventBuffer.Serializer.CallstackHeader(ref eventBuffer, id, type, state.Count);
-                                    EventBuffer.Serializer.CallstackData(ref eventBuffer, rentedArray, index);
+                                    CallstackHeader(ref eventBuffer, id, type, state.Count);
+                                    CallstackData(ref eventBuffer, rentedArray, index);
                                 }
 
                                 ArrayPool<byte>.Shared.Return(rentedArray);
@@ -553,17 +569,48 @@ namespace System.Runtime.CompilerServices
                             else
                             {
                                 // Remove async event header from the event buffer since we can't write the callstack.
-                                EventBuffer.Serializer.RemoveAsyncEventHeader(context, savedAsyncEventHeaderIndex);
+                                Serializer.RemoveAsyncEventHeader(context, savedAsyncEventHeaderIndex);
                             }
                         }
                         else
                         {
-                            // Patch frame count in the event buffer.
-                            eventBuffer.Data[eventBuffer.Index - 1] = state.Count;
+                            // Patch frame count in the event buffer using the offset from CallstackHeader.
+                            eventBuffer.Data[frameCountOffset] = state.Count;
                             eventBuffer.Index += currentIndex - startIndex;
                         }
                     }
                 }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static int CallstackHeader(ref EventBuffer eventBuffer, ulong id, AsyncCallstackType type, byte callstackFrameCount)
+            {
+                // Callstack header layout: type (1 byte) + callstackId (1 byte, reserved for future use) + frameCount (1 byte) + id (max 10 bytes compressed).
+                const int MaxCallstackHeaderSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
+
+                ref int index = ref eventBuffer.Index;
+
+                Span<byte> callstackHeaderSpan = eventBuffer.Data.AsSpan(index, MaxCallstackHeaderSize);
+                int spanIndex = 0;
+
+                callstackHeaderSpan[spanIndex++] = (byte)type;
+                callstackHeaderSpan[spanIndex++] = 0; // Reserved callstack ID for future callstack interning.
+
+                int frameCountOffset = index + spanIndex;
+                callstackHeaderSpan[spanIndex++] = callstackFrameCount;
+
+                spanIndex += Serializer.WriteCompressedUInt64(callstackHeaderSpan, spanIndex, id);
+                eventBuffer.Index += spanIndex;
+
+                return frameCountOffset;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static void CallstackData(ref EventBuffer eventBuffer, byte[] callstackData, int callstackDataByteCount)
+            {
+                ref int index = ref eventBuffer.Index;
+                Buffer.BlockCopy(callstackData, 0, eventBuffer.Data, index, callstackDataByteCount);
+                index += callstackDataByteCount;
             }
 
             private static byte[]? RentArray(int minimumLength)
