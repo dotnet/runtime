@@ -341,9 +341,31 @@ namespace System.Numerics.Tensors.Tests
     public class IntPtrGenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<nint> { }
     public class Int128GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<Int128> { }
 
-    public class ByteGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<byte> { }
+    public class ByteGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<byte>
+    {
+        [Fact]
+        public void IndexOfMax_IndexAboveMaxValue()
+        {
+            using BoundedMemory<byte> tensor = CreateTensor(260);
+            tensor.Span.Fill(0);
+            tensor.Span[258] = 10;
+            int actual = TensorPrimitives.IndexOfMax(tensor.Span);
+            Assert.Equal(258, actual);
+        }
+    }
     [OuterLoop]
-    public class UInt16GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<ushort> { }
+    public class UInt16GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<ushort>
+    {
+        [Fact]
+        public void IndexOfMax_IndexAboveMaxValue()
+        {
+            using BoundedMemory<ushort> tensor = CreateTensor(65540);
+            tensor.Span.Fill(0);
+            tensor.Span[65538] = 10;
+            int actual = TensorPrimitives.IndexOfMax(tensor.Span);
+            Assert.Equal(65538, actual);
+        }
+    }
     [OuterLoop]
     public class CharGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<char> { }
     public class UInt32GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<uint> { }
