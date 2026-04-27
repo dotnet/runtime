@@ -6,6 +6,7 @@
 // ===========================================================================
 
 #include "common.h"
+#include <inttypes.h>
 #include "jitinterface.h"
 #include "codeman.h"
 #include "method.hpp"
@@ -12205,8 +12206,8 @@ void CEEJitInfo::recordRelocation(void *       location,
 
         bool isStype = (fRelocType == CorInfoReloc::RISCV64_PCREL_S);
         PutRiscV64AuipcCombo((UINT32 *)locationRW, delta, isStype);
-        LOG((LF_JIT, LL_INFO100000, "Fixed up an auipc + %c-type relocation at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%08x\n",
-            (isStype ? 'S' : 'I'), DBG_ADDR(location), DBG_ADDR(target), delta));
+        LOG((LF_JIT, LL_INFO100000, "Fixed up an auipc + %c-type relocation at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%08" PRIx64 "\n",
+            (isStype ? 'S' : 'I'), DBG_ADDR(location), DBG_ADDR(target), (uint64_t)delta));
         break;
     }
 #endif // TARGET_RISCV64

@@ -3384,7 +3384,7 @@ void Module::FixupVTables()
 #ifdef _DEBUG
                     if (pMD->IsPInvoke())
                     {
-                        LOG((LF_INTEROP, LL_INFO10, "[0x%lx] <-- PINV thunk for \"%s\" (target = 0x%lx)\n",
+                        LOG((LF_INTEROP, LL_INFO10, "[0x%zx] <-- PINV thunk for \"%s\" (target = 0x%zx)\n",
                             (size_t)&(pPointers[iMethod]), pMD->m_pszDebugMethodName,
                             (size_t)(((PInvokeMethodDesc*)pMD)->GetPInvokeTarget())));
                     }
