@@ -221,7 +221,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         public void Ctor_Default()
         {
             var stackTrace = new StackTrace();
@@ -229,7 +229,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_FNeedFileInfo(bool fNeedFileInfo)
@@ -239,7 +239,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0)]
         [InlineData(1)]
         public void Ctor_SkipFrames(int skipFrames)
@@ -263,7 +263,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0, true)]
         [InlineData(1, true)]
         [InlineData(0, false)]
@@ -291,7 +291,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         public void Ctor_ThrownException_GetFramesReturnsExpected()
         {
             var stackTrace = new StackTrace(InvokeException());
@@ -309,7 +309,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_Bool_ThrownException_GetFramesReturnsExpected(bool fNeedFileInfo)
@@ -332,7 +332,7 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31796", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0)]
         [InlineData(1)]
         public void Ctor_Exception_SkipFrames(int skipFrames)

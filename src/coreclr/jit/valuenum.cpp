@@ -8591,14 +8591,13 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     }
                 }
 #elif defined(TARGET_ARM64)
-                CorInfoType auxJitType = tree->GetAuxiliaryJitType();
-                if (auxJitType != CORINFO_TYPE_UNDEF &&
-                    genTypeSize(JITtype2varType(auxJitType)) != genTypeSize(baseType))
+                var_types auxType = tree->GetAuxiliaryType();
+                if (auxType != TYP_UNKNOWN && genTypeSize(auxType) != genTypeSize(baseType))
                 {
                     // Handle the "wide elements" variant of shift, where arg1 is a vector of ulongs,
                     // which is looped over to read the shift values. The values can safely be narrowed
                     // to the result type.
-                    assert(auxJitType == CORINFO_TYPE_ULONG);
+                    assert(auxType == TYP_ULONG);
                     assert(tree->TypeIs(TYP_SIMD16));
 
                     simd16_t arg1 = GetConstantSimd16(arg1VN);

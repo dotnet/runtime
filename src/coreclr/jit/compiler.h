@@ -8041,15 +8041,19 @@ public:
             INDEBUG(const Compiler* m_compiler);
             optOp2Kind m_kind;
             bool       m_checkedBoundIsNeverNegative; // only meaningful for O2K_CHECKED_BOUND_ADD_CNS kind
-            uint16_t   m_encodedIconFlags;            // encoded icon gtFlags
-            ValueNum   m_vn;
+            union
+            {
+                uint16_t m_encodedIconFlags; // encoded icon gtFlags; only meaningful for O2K_CONST_INT.
+                uint8_t  m_simdSize;         // SIMD constant size in bytes; only meaningful for O2K_CONST_VEC.
+            };
+            ValueNum m_vn;
             union
             {
                 unsigned      m_lclNum;
                 double        m_dconVal;
                 IntegralRange m_range;
-                simd16_t m_simdVal; // for O2K_CONST_VEC (TYP_SIMD8/12/16 only). TODO-CQ: support wider SIMD via heap
-                                    // allocation.
+                simd16_t      m_simdVal;    // for O2K_CONST_VEC, inline storage for TYP_SIMD8/12/16.
+                simd_t*       m_bigSimdVal; // for O2K_CONST_VEC, heap-allocated storage for TYP_SIMD32/64.
                 struct
                 {
                     ssize_t   m_iconVal;
@@ -8082,10 +8086,22 @@ public:
                 return m_dconVal;
             }
 
-            const simd16_t& GetSimdConstant() const
+            // Returns a pointer to the SIMD constant payload. The valid byte length is GetSimdSize().
+            // For TYP_SIMD8/12/16 the storage is inline; for TYP_SIMD32/64 it is heap-allocated.
+            const void* GetSimdConstant() const
             {
                 assert(KindIs(O2K_CONST_VEC));
-                return m_simdVal;
+                if (m_simdSize <= sizeof(simd16_t))
+                {
+                    return &m_simdVal;
+                }
+                return m_bigSimdVal;
+            }
+
+            unsigned GetSimdSize() const
+            {
+                assert(KindIs(O2K_CONST_VEC));
+                return m_simdSize;
             }
 
             ssize_t GetIntConstant() const
@@ -8441,7 +8457,12 @@ public:
 
                 case O2K_CONST_VEC:
                     // memcmp the full stored payload; GenTreeVecCon zero-inits gtSimdVal before populating.
-                    return (memcmp(&GetOp2().m_simdVal, &that.GetOp2().m_simdVal, sizeof(simd16_t)) == 0);
+                    if (GetOp2().GetSimdSize() != that.GetOp2().GetSimdSize())
+                    {
+                        return false;
+                    }
+                    return (memcmp(GetOp2().GetSimdConstant(), that.GetOp2().GetSimdConstant(),
+                                   GetOp2().GetSimdSize()) == 0);
 
                 case O2K_ZEROOBJ:
                     return true;
@@ -8482,14 +8503,14 @@ public:
 
         // Create a generic "lclNum ==/!= constant" or "vn ==/!= constant" assertion
         template <typename T>
-        static AssertionDsc CreateConstLclVarAssertion(const Compiler* comp,
-                                                       unsigned        lclNum,
-                                                       ValueNum        vn,
-                                                       const T&        cns,
-                                                       ValueNum        cnsVN,
-                                                       bool            equals,
-                                                       GenTreeFlags    iconFlags = GTF_EMPTY,
-                                                       FieldSeq*       fldSeq    = nullptr)
+        static AssertionDsc CreateConstLclVarAssertion(Compiler*    comp,
+                                                       unsigned     lclNum,
+                                                       ValueNum     vn,
+                                                       const T&     cns,
+                                                       ValueNum     cnsVN,
+                                                       bool         equals,
+                                                       GenTreeFlags iconFlags = GTF_EMPTY,
+                                                       FieldSeq*    fldSeq    = nullptr)
         {
             AssertionDsc dsc    = CreateEmptyAssertion(comp);
             dsc.m_assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
@@ -8534,14 +8555,33 @@ public:
                 assert(iconFlags == GTF_EMPTY); // no flags expected for double constants
                 assert(fldSeq == nullptr);      // no fieldSeq expected for double constants
             }
-            else if constexpr (std::is_same_v<T, simd16_t>)
+#if defined(FEATURE_SIMD)
+            else if constexpr (std::is_same_v<T, GenTreeVecCon*>)
             {
-                dsc.m_op2.m_kind    = O2K_CONST_VEC;
-                dsc.m_op2.m_simdVal = {};
-                memcpy(&dsc.m_op2.m_simdVal, &cns, sizeof(simd16_t));
+                dsc.m_op2.m_kind = O2K_CONST_VEC;
+
+                assert(varTypeIsSIMD(cns));
+                const unsigned simdSize = genTypeSize(cns->TypeGet());
+                dsc.m_op2.m_simdSize    = static_cast<uint8_t>(simdSize);
+
+                if (simdSize <= sizeof(simd16_t))
+                {
+                    dsc.m_op2.m_simdVal = {};
+                    memcpy(&dsc.m_op2.m_simdVal, &cns->gtSimdVal, simdSize);
+                }
+                else
+                {
+                    // Heap-allocate storage for SIMD32/SIMD64 constants. The AssertionProp allocator uses the
+                    // compiler arena, so the lifetime matches the assertion table.
+                    simd_t* heapVal = new (comp, CMK_AssertionProp) simd_t();
+                    memset(heapVal, 0, sizeof(simd_t));
+                    memcpy(heapVal, &cns->gtSimdVal, simdSize);
+                    dsc.m_op2.m_bigSimdVal = heapVal;
+                }
                 assert(iconFlags == GTF_EMPTY); // no flags expected for vector constants
                 assert(fldSeq == nullptr);      // no fieldSeq expected for vector constants
             }
+#endif // FEATURE_SIMD
             else if constexpr (std::is_same_v<T, optOp2Kind>)
             {
                 dsc.m_op2.m_kind           = static_cast<optOp2Kind>(cns);
@@ -8558,7 +8598,7 @@ public:
         }
 
         // Create "lclNum != null" assertion
-        static AssertionDsc CreateLclNonNullAssertion(const Compiler* comp, unsigned lclNum)
+        static AssertionDsc CreateLclNonNullAssertion(Compiler* comp, unsigned lclNum)
         {
             assert(comp->optLocalAssertionProp);
             return CreateConstLclVarAssertion(comp, lclNum, ValueNumStore::NoVN, 0, ValueNumStore::VNForNull(),
@@ -8566,7 +8606,7 @@ public:
         }
 
         // Create "vn != null" assertion
-        static AssertionDsc CreateVNNonNullAssertion(const Compiler* comp, ValueNum vn)
+        static AssertionDsc CreateVNNonNullAssertion(Compiler* comp, ValueNum vn)
         {
             assert(!comp->optLocalAssertionProp);
             return CreateConstLclVarAssertion(comp, BAD_VAR_NUM, vn, 0, ValueNumStore::VNForNull(),
@@ -9812,13 +9852,6 @@ private:
     var_types getBaseTypeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd)
     {
         return getBaseTypeAndSizeOfSIMDType(typeHnd, nullptr);
-    }
-
-    CorInfoType getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
-
-    CorInfoType getBaseJitTypeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd)
-    {
-        return getBaseJitTypeAndSizeOfSIMDType(typeHnd, nullptr);
     }
 
     GenTree* impSIMDPopStack();
