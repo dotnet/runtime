@@ -2097,8 +2097,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 //    newStmt   - updated with the new statement
 //    callDI    - debug info for the call
 //
-void Compiler::fgInsertInlineeArgument(
-    const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI)
+void Compiler::fgInsertInlineeArgument(const InlArgInfo& argInfo,
+                                       BasicBlock*       block,
+                                       Statement**       afterStmt,
+                                       Statement**       newStmt,
+                                       const DebugInfo&  callDI,
+                                       bool*             bashedInPlace)
 {
     const bool argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
     CallArg*   arg            = argInfo.arg;
@@ -2129,6 +2133,7 @@ void Compiler::fgInsertInlineeArgument(
             // We currently do not support this for struct arguments, so it must not be a GT_BLK.
             assert(!argNode->OperIs(GT_BLK));
             argSingleUseNode->ReplaceWith(argNode, this);
+            *bashedInPlace = true;
             return;
         }
         else
@@ -2329,7 +2334,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     }
 #endif
 
-    unsigned ilArgNum = 0;
+    unsigned ilArgNum      = 0;
+    bool     bashedInPlace = false;
     for (CallArg& arg : call->gtArgs.Args())
     {
         InlArgInfo* argInfo = nullptr;
@@ -2350,7 +2356,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         }
 
         assert(argInfo != nullptr);
-        fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
+        fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI, &bashedInPlace);
     }
 
     // Argument insertion above may have bashed single-use temps in-place
@@ -2358,12 +2364,17 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     // flags on parent nodes within the inlinee body (e.g. GTF_EXCEPT on a
     // parent whose former IND child has been replaced with a non-faulting
     // IND or a non-null expression). Refresh side-effect flags on every
-    // inlinee statement so the resulting IR is consistent.
-    for (BasicBlock* const inlineeBlock : InlineeCompiler->Blocks())
+    // inlinee statement so the resulting IR is consistent. If no in-place
+    // bashing occurred, the inlinee body is unchanged from import and no
+    // refresh is needed.
+    if (bashedInPlace)
     {
-        for (Statement* const stmt : inlineeBlock->Statements())
+        for (BasicBlock* const inlineeBlock : InlineeCompiler->Blocks())
         {
-            gtUpdateStmtSideEffects(stmt);
+            for (Statement* const stmt : inlineeBlock->Statements())
+            {
+                gtUpdateStmtSideEffects(stmt);
+            }
         }
     }
 
