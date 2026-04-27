@@ -34,8 +34,6 @@ public virtual IEnumerable<ILCodeVersionHandle> GetILCodeVersions(TargetPointer 
 public virtual IEnumerable<NativeCodeVersionHandle> GetNativeCodeVersions(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle);
 // Return a handle to the version of the native code that includes the given instruction pointer
 public virtual NativeCodeVersionHandle GetNativeCodeVersionForIP(TargetCodePointer ip);
-// Return a handle to the native code version for a specific method descriptor and code start address
-public virtual NativeCodeVersionHandle GetSpecificNativeCodeVersion(TargetPointer methodDesc, TargetCodePointer codeAddress);
 // Return a handle to the active version of the native code for a given method descriptor and IL code version. The IL code version and method descriptor must represent the same method
 public virtual NativeCodeVersionHandle GetActiveNativeCodeVersionForILCodeVersion(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle);
 
@@ -321,21 +319,6 @@ IEnumerable<NativeCodeVersionHandle> ICodeVersions.GetNativeCodeVersions(TargetP
     {
         yield return nativeCodeVersion;
     }
-}
-```
-
-### Finding the native code version for a specific method descriptor and code start address
-
-Given a method descriptor and code start address, find the corresponding native code version.
-If the method's first native code matches the given address, the synthetic native code version is returned.
-Otherwise, searches the explicit native code version nodes for a match.
-
-```csharp
-NativeCodeVersionHandle ICodeVersions.GetSpecificNativeCodeVersion(TargetPointer methodDesc, TargetCodePointer codeAddress)
-{
-    IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-    MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
-    return GetSpecificNativeCodeVersion(md, codeAddress);
 }
 ```
 
