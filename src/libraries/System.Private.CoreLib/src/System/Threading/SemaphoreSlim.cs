@@ -395,9 +395,9 @@ namespace System.Threading
                     // count between our wait/check and TryDecrementCount. With m_waitCount visibly > 0 the fast
                     // path defers, so the loop typically runs once; the residual race during m_waitCount's
                     // publication makes the retry necessary for correctness.
-                    OperationCanceledException? oce = null;
                     while (true)
                     {
+                        OperationCanceledException? oce = null;
                         bool timedOut = false;
                         if (m_currentCount == 0)
                         {
