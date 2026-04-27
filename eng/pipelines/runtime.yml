@@ -1543,8 +1543,8 @@ extends:
 
       #
       # Installer Build and Test
-      # These are always built since they only take like 15 minutes
-      # we expect these to be done before we finish libraries or coreclr testing.
+      # Only when installer-relevant paths change (or on rolling builds).
+      # osx_arm64 also runs on coreclr changes to catch single-file issues.
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1574,7 +1574,7 @@ extends:
                   creator: dotnet-bot
             condition:
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1583,7 +1583,6 @@ extends:
           buildConfig: release
           platforms:
             - windows_x64
-            - osx_arm64
             - linux_x64
           helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
@@ -1606,7 +1605,39 @@ extends:
                   creator: dotnet-bot
             condition:
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      # osx_arm64 installer tests also run on coreclr changes to catch single-file issues
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+            - osx_arm64
+          helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
+          jobParameters:
+            nameSuffix: Installer_Build_And_Test
+            buildArgs: -s host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} -rc Release
+            dependsOnGlobalBuilds:
+              - nameSuffix: CoreCLR_Libraries
+                buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+                  artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  displayName: 'unified artifacts'
+            timeoutInMinutes: 150
+            postBuildSteps:
+              - template: /eng/pipelines/installer/helix.yml
+                parameters:
+                  creator: dotnet-bot
+            condition:
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #

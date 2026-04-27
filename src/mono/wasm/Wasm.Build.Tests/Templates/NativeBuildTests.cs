@@ -19,6 +19,8 @@ namespace Wasm.Build.Templates.Tests
         {
         }
 
+        // Excluded on CoreCLR via the `category=native` trait filter: WasmAllowUndefinedSymbols=false
+        // is not honored on the CoreCLR native-build path. See https://github.com/dotnet/runtime/pull/127073.
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -57,6 +59,10 @@ namespace Wasm.Build.Templates.Tests
             }
         }
 
+        // Excluded on CoreCLR via the `category=native` trait filter: the default template's main.js calls
+        // getAssemblyExports() which throws on CoreCLR when the user assembly has no [JSExport]
+        // (JSHostImplementation.CoreCLR.BindAssemblyExports uses throwOnError: true, while Mono's native
+        // path is tolerant). See https://github.com/dotnet/runtime/pull/127073.
         [Theory]
         [InlineData(Configuration.Debug)]
         [InlineData(Configuration.Release)]

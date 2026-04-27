@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Json;
 using System.Xml;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.CommandLine.Mvid;
 using Mono.Linker.Tests.Cases.CommandLine.Mvid.Individual;
@@ -17,15 +16,15 @@ using Mono.Linker.Tests.Cases.Tracing.Individual;
 using Mono.Linker.Tests.Cases.Warnings.Individual;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner;
+using Xunit;
 
 namespace Mono.Linker.Tests.TestCases
 {
-    [TestClass]
     public class IndividualTests
     {
         private static NPath TestsDirectory => TestDatabase.TestCasesRootDirectory.Parent.Combine("Mono.Linker.Tests");
 
-        [TestMethod]
+        [Fact]
         public void CanSkipUnresolved()
         {
             var testcase = CreateIndividualCase(typeof(CanSkipUnresolved));
@@ -38,7 +37,7 @@ namespace Mono.Linker.Tests.TestCases
                 Assert.Fail($"The linked assembly is missing.  Should have existed at {result.OutputAssemblyPath}");
         }
 
-        [TestMethod]
+        [Fact]
         public void CanOutputPInvokes()
         {
             var testcase = CreateIndividualCase(typeof(CanOutputPInvokes));
@@ -57,12 +56,12 @@ namespace Mono.Linker.Tests.TestCases
                 var expected = jsonSerializer.ReadObject(fsExpected) as List<PInvokeInfo>;
                 foreach (var pinvokePair in Enumerable.Zip(actual, expected, (fst, snd) => Tuple.Create(fst, snd)))
                 {
-                    Assert.AreEqual(0, pinvokePair.Item1.CompareTo(pinvokePair.Item2));
+                    Assert.Equal(0, pinvokePair.Item1.CompareTo(pinvokePair.Item2));
                 }
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void CanGenerateWarningSuppressionFileCSharp()
         {
             var testcase = CreateIndividualCase(typeof(CanGenerateWarningSuppressionFileCSharp));
@@ -75,13 +74,13 @@ namespace Mono.Linker.Tests.TestCases
                 if (!outputPath.Exists())
                     Assert.Fail($"A cs file with a list of UnconditionalSuppressMessage attributes was expected to exist at {outputPath}");
 
-                CollectionAssert.AreEquivalent(
-                    File.ReadAllLines(outputPath),
-                    File.ReadAllLines(TestsDirectory.Combine($"TestCases/Dependencies/WarningSuppressionExpectations{i + 1}.cs")));
+                Assert.Equal(
+                    File.ReadAllLines(TestsDirectory.Combine($"TestCases/Dependencies/WarningSuppressionExpectations{i + 1}.cs")).OrderBy(l => l),
+                    File.ReadAllLines(outputPath).OrderBy(l => l));
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void CanGenerateWarningSuppressionFileXml()
         {
             var testcase = CreateIndividualCase(typeof(CanGenerateWarningSuppressionFileXml));
@@ -90,12 +89,12 @@ namespace Mono.Linker.Tests.TestCases
             if (!outputPath.Exists())
                 Assert.Fail($"An XML file with a list of UnconditionalSuppressMessage attributes was expected to exist at {outputPath}");
 
-            CollectionAssert.AreEquivalent(
-                File.ReadAllLines(outputPath),
-                File.ReadAllLines(TestsDirectory.Combine($"TestCases/Dependencies/WarningSuppressionExpectations3.xml")));
+            Assert.Equal(
+                File.ReadAllLines(TestsDirectory.Combine($"TestCases/Dependencies/WarningSuppressionExpectations3.xml")).OrderBy(l => l),
+                File.ReadAllLines(outputPath).OrderBy(l => l));
         }
 
-        [TestMethod]
+        [Fact]
         public void WarningsAreSorted()
         {
             var testcase = CreateIndividualCase(typeof(WarningsAreSorted));
@@ -104,12 +103,12 @@ namespace Mono.Linker.Tests.TestCases
                 .Where(lm => lm.Category != MessageCategory.Info && lm.Category != MessageCategory.Diagnostic).ToList();
             loggedMessages.Sort();
 
-            CollectionAssert.AreEquivalent(
-                loggedMessages.Select(m => m.ToString()).ToArray(),
-                File.ReadAllLines(TestsDirectory.Combine($"TestCases/Dependencies/SortedWarnings.txt")));
+            Assert.Equal(
+                File.ReadAllLines(TestsDirectory.Combine($"TestCases/Dependencies/SortedWarnings.txt")).OrderBy(l => l),
+                loggedMessages.Select(m => m.ToString()).OrderBy(l => l));
         }
 
-        [TestMethod]
+        [Fact]
         public void InvalidWarningCodeThrows()
         {
             var testcase = CreateIndividualCase(typeof(CustomStepWithWarnings));
@@ -119,12 +118,12 @@ namespace Mono.Linker.Tests.TestCases
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual("The provided code '2500' does not fall into the permitted range for external warnings. To avoid possible " +
+                Assert.Equal("The provided code '2500' does not fall into the permitted range for external warnings. To avoid possible " +
                     "collisions with existing and future ILLink warnings, external messages should use codes starting from 6001. (Parameter 'code')", ex.Message);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void CanEnableDependenciesDump()
         {
             var testcase = CreateIndividualCase(typeof(CanEnableDependenciesDump));
@@ -135,7 +134,7 @@ namespace Mono.Linker.Tests.TestCases
                 Assert.Fail($"The dependency dump file is missing.  Expected it to exist at {outputPath}");
         }
 
-        [TestMethod]
+        [Fact]
         public void CanDumpDependenciesToUncompressedXml()
         {
             var testcase = CreateIndividualCase(typeof(CanDumpDependenciesToUncompressedXml));
@@ -151,11 +150,11 @@ namespace Mono.Linker.Tests.TestCases
                 reader.Read();
                 reader.Read();
                 reader.Read();
-                Assert.AreEqual("dependencies", reader.Name, $"Expected to be at the dependencies element, but the current node name is `{reader.Name}`");
+                Assert.Equal("dependencies", reader.Name);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void CandumpDependenciesToUncompressedDgml()
         {
             var testcase = CreateIndividualCase(typeof(CanDumpDependenciesToUncompressedDgml));
@@ -170,11 +169,11 @@ namespace Mono.Linker.Tests.TestCases
                 reader.Read();
                 reader.Read();
                 reader.Read();
-                Assert.AreEqual("DirectedGraph", reader.Name, $"Expected to be at the DirectedGraph element, but the current node name is `{reader.Name}`");
+                Assert.Equal("DirectedGraph", reader.Name);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void CanEnableReducedTracing()
         {
             var testcase = CreateIndividualCase(typeof(CanEnableReducedTracing));
@@ -195,10 +194,10 @@ namespace Mono.Linker.Tests.TestCases
             // With reduced tracing there should be less than 65, but to be safe, we'll check for less than 200.
             // Reduced tracing on System.Private.CoreLib.dll produces about 130 lines just for NullableAttribute usages.
             const int expectedMaxLines = 200;
-            Assert.IsLessThan(expectedMaxLines, lineCount, $"There were `{lineCount}` lines in the dump file.  This is more than expected max of {expectedMaxLines} and likely indicates reduced tracing was not enabled.  Dump file can be found at: {outputPath}");
+            Assert.True(lineCount < expectedMaxLines, $"There were `{lineCount}` lines in the dump file.  This is more than expected max of {expectedMaxLines} and likely indicates reduced tracing was not enabled.  Dump file can be found at: {outputPath}");
         }
 
-        [TestMethod]
+        [Fact]
         public void DeterministicMvidWorks()
         {
             var testCase = CreateIndividualCase(typeof(DeterministicMvidWorks));
@@ -207,17 +206,17 @@ namespace Mono.Linker.Tests.TestCases
 
             var originalMvid = GetMvid(result.InputAssemblyPath);
             var firstOutputMvid = GetMvid(result.OutputAssemblyPath);
-            Assert.AreNotEqual(firstOutputMvid, originalMvid);
+            Assert.NotEqual(firstOutputMvid, originalMvid);
 
             var result2 = runner.Relink(result);
 
             var secondOutputMvid = GetMvid(result2.OutputAssemblyPath);
-            Assert.AreNotEqual(secondOutputMvid, originalMvid);
+            Assert.NotEqual(secondOutputMvid, originalMvid);
             // The id should match the first output since we relinked the same assembly
-            Assert.AreEqual(secondOutputMvid, firstOutputMvid);
+            Assert.Equal(firstOutputMvid, secondOutputMvid);
         }
 
-        [TestMethod]
+        [Fact]
         public void NewMvidWorks()
         {
             var testCase = CreateIndividualCase(typeof(NewMvidWorks));
@@ -226,16 +225,16 @@ namespace Mono.Linker.Tests.TestCases
 
             var originalMvid = GetMvid(result.InputAssemblyPath);
             var firstOutputMvid = GetMvid(result.OutputAssemblyPath);
-            Assert.AreNotEqual(firstOutputMvid, originalMvid);
+            Assert.NotEqual(firstOutputMvid, originalMvid);
 
             var result2 = runner.Relink(result);
 
             var secondOutputMvid = GetMvid(result2.OutputAssemblyPath);
-            Assert.AreNotEqual(secondOutputMvid, originalMvid);
-            Assert.AreNotEqual(secondOutputMvid, firstOutputMvid);
+            Assert.NotEqual(secondOutputMvid, originalMvid);
+            Assert.NotEqual(secondOutputMvid, firstOutputMvid);
         }
 
-        [TestMethod]
+        [Fact]
         public void RetainMvidWorks()
         {
             var testCase = CreateIndividualCase(typeof(RetainMvid));
@@ -244,13 +243,13 @@ namespace Mono.Linker.Tests.TestCases
 
             var originalMvid = GetMvid(result.InputAssemblyPath);
             var firstOutputMvid = GetMvid(result.OutputAssemblyPath);
-            Assert.AreEqual(firstOutputMvid, originalMvid);
+            Assert.Equal(firstOutputMvid, originalMvid);
 
             var result2 = runner.Relink(result);
 
             var secondOutputMvid = GetMvid(result2.OutputAssemblyPath);
-            Assert.AreEqual(secondOutputMvid, originalMvid);
-            Assert.AreEqual(secondOutputMvid, firstOutputMvid);
+            Assert.Equal(originalMvid, secondOutputMvid);
+            Assert.Equal(firstOutputMvid, secondOutputMvid);
         }
 
         protected static Guid GetMvid(NPath assemblyPath)
