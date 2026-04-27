@@ -152,9 +152,7 @@ void emitter::emitAddressConstant(void* address)
     // Load our module base from __r2r_start, then load our address constant, then sum them.
     // FIXME-WASM: Make this a named constant or a reloc that crossgen2 fills in.
     emitIns_I(INS_global_get, EA_4BYTE, 1 /* __r2r_start */);
-    // emitIns_I(INS_i32_const_address, EA_PTRSIZE, address);
-    // FIXME-WASM: Just a hack for now because const_address relocations throw in crossgen2.
-    emitIns_I(INS_i32_const, EA_PTRSIZE, (int32_t)(((size_t)address) & 0xFFFFFFFFu));
+    emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
     emitIns(INS_i32_add);
 }
 
@@ -220,28 +218,34 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 }
 
 //------------------------------------------------------------------------
-// GetWasmArgsCount: Get WASM argument count for the root method.
+// GetWasmArgsCount: Get WASM argument count for the method or a funclet.
 //
 // Arguments:
 //    compiler - The compiler object
 //
 // Return Value:
-//    The number of arguments in the WASM signature of the method being compiled.
+//    The number of arguments in the WASM signature of the method or funclet being compiled.
 //
 static unsigned GetWasmArgsCount(Compiler* compiler)
 {
-    assert(compiler->funCurrentFunc()->funKind == FUNC_ROOT);
-
-    unsigned count = 0;
-    for (unsigned argLclNum = 0; argLclNum < compiler->info.compArgsCount; argLclNum++)
+    if (compiler->funCurrentFunc()->funKind == FUNC_ROOT)
     {
-        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(argLclNum);
-        for (const ABIPassingSegment& segment : abiInfo.Segments())
+        unsigned count = 0;
+        for (unsigned argLclNum = 0; argLclNum < compiler->info.compArgsCount; argLclNum++)
         {
-            count = max(count, WasmRegToIndex(segment.GetRegister()) + 1);
+            const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(argLclNum);
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
+            {
+                count = max(count, WasmRegToIndex(segment.GetRegister()) + 1);
+            }
         }
+        return count;
     }
-    return count;
+    else
+    {
+        EHblkDsc* const ehDsc = compiler->ehGetDsc(compiler->funCurrentFunc()->funEHIndex);
+        return ehDsc->HasCatchHandler() ? 3 : 2;
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -723,7 +727,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMADDR:
         {
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_MEMORY_ADDR_SLEB);
+            // TODO-WASM: The below reloc we're emitting here is specific to R2R and assumes the address we want
+            // is an offset from __image_base
+            dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB);
             break;
         }
         case IF_FUNCPTR:
@@ -1137,3 +1143,32 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 {
 }
 #endif // DEBUG
+
+//----------------------------------------------------------------------------------------
+// emitUpdateFuncletLocations: update the start and end locations of each funclet
+//
+void emitter::emitUpdateFuncletLocations()
+{
+    insGroup* ig   = emitIGlist;
+    insGroup* prev = nullptr;
+
+    while (ig != nullptr)
+    {
+        FuncInfoDsc* const func = m_compiler->funGetFunc(ig->igFuncIdx);
+
+        if ((prev == nullptr) || (prev->igFuncIdx != ig->igFuncIdx))
+        {
+            func->startLoc = new (m_compiler, CMK_UnwindInfo) emitLocation(ig);
+        }
+
+        insGroup* const next = ig->igNext;
+
+        if ((next == nullptr) || (next->igFuncIdx != ig->igFuncIdx))
+        {
+            func->endLoc = new (m_compiler, CMK_UnwindInfo) emitLocation(ig, ig->igInsCnt);
+        }
+
+        prev = ig;
+        ig   = next;
+    }
+}

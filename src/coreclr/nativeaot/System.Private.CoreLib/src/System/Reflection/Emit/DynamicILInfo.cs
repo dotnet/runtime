@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Reflection.Emit
 {
     public class DynamicILInfo
@@ -15,16 +17,19 @@ namespace System.Reflection.Emit
         public void SetCode(byte[] code, int maxStackSize) { }
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize) { }
 
         public void SetExceptions(byte[] exceptions) { }
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe void SetExceptions(byte* exceptions, int exceptionsSize) { }
 
         public void SetLocalSignature(byte[] localSignature) { }
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe void SetLocalSignature(byte* localSignature, int signatureSize) { }
 
         public int GetTokenFor(RuntimeMethodHandle method)

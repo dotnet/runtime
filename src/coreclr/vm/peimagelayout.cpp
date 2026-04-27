@@ -210,6 +210,8 @@ void PEImageLayout::InitDecoders(void* data, COUNT_T size)
     {
         m_format = FORMAT_WEBCIL;
         m_webcilDecoder.Init(data, size);
+        if (HasBaseRelocations())
+            ApplyBaseRelocations(true);
         m_peDecoder.Init(data, size); // Initialize base/size/flags for cDAC
     }
     else
@@ -233,7 +235,8 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(IsPEFormat());
+    _ASSERTE(IsPEFormat() || IsWebcilFormat());
+
     SetRelocated();
 
     //
@@ -243,9 +246,19 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
     SSIZE_T delta = (SIZE_T) GetBase() - (SIZE_T) GetPreferredBase();
 
-    // Nothing to do - image is loaded at preferred base
-    if (delta == 0)
+#ifdef FEATURE_WEBCIL
+    SSIZE_T tableBaseDelta = GetTableBaseOffset();
+#endif // FEATURE_WEBCIL
+
+    // Nothing to do - image is loaded at preferred base and no table base offset
+    if (delta == 0
+#ifdef FEATURE_WEBCIL
+        && tableBaseDelta == 0
+#endif // FEATURE_WEBCIL
+        )
+    {
         return;
+    }
 
     LOG((LF_LOADER, LL_INFO100, "PEImage: Applying base relocations (preferred: %x, actual: %x)\n",
         GetPreferredBase(), GetBase()));
@@ -264,11 +277,25 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     const SIZE_T cbPageSize = 4096;
 
     COUNT_T dirPos = 0;
+#ifdef TARGET_WASM
+    // WASM will pad out the reloc size to the next 16 byte boundary, so we need to validate we can safely read the IMAGE_BASE_RELOCATION struct before processing each entry.
+    while (dirPos + sizeof(IMAGE_BASE_RELOCATION) <= dirSize)
+#else
     while (dirPos < dirSize)
+#endif
     {
         PIMAGE_BASE_RELOCATION r = (PIMAGE_BASE_RELOCATION)(dir + dirPos);
 
         COUNT_T fixupsSize = VAL32(r->SizeOfBlock);
+
+#ifdef TARGET_WASM
+        if (fixupsSize == 0)
+        {
+            // Since WASM will pad the reloc block to the next 16 byte boundary with 0's we need to allow for a SizeOfBlock being zero.
+            // This can only happen for the last block in the relocation list, so we can break here instead of continue.
+            break;
+        }
+#endif
 
         USHORT *fixups = (USHORT *) (r + 1);
 
@@ -283,8 +310,9 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
         BYTE * pageAddress = (BYTE *)GetBase() + rva;
 
-        // Check whether the page is outside the unprotected region
-        if ((SIZE_T)(pageAddress - pWriteableRegion) >= cbWriteableRegion)
+        // Check whether the page is outside the unprotected region.
+        // Webcil data is already writable, so skip memory protection management.
+        if (IsPEFormat() && (SIZE_T)(pageAddress - pWriteableRegion) >= cbWriteableRegion)
         {
             // Restore the protection
             if (dwOldProtection != 0)
@@ -361,6 +389,16 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 break;
 #endif
 
+#ifdef FEATURE_WEBCIL
+            case IMAGE_REL_BASED_WASM32_TABLE:
+                *(uint32_t *)address += (uint32_t)tableBaseDelta;
+                break;
+
+            case IMAGE_REL_BASED_WASM64_TABLE:
+                *(uint64_t *)address += (uint64_t)tableBaseDelta;
+                break;
+#endif // FEATURE_WEBCIL
+
             case IMAGE_REL_BASED_ABSOLUTE:
                 //no adjustment
                 break;
@@ -370,27 +408,30 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             }
         }
 
-        BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
-            PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
-
-        if (bExecRegion && pEndAddressToFlush != NULL)
+        if (IsPEFormat())
         {
-            // If the current page is not next to the pending region to flush, flush the current pending region and start a new one
-            if (pageAddress >= pFlushRegion + cbFlushRegion + cbPageSize || pageAddress < pFlushRegion)
-            {
-                if (pFlushRegion != NULL)
-                {
-                    ClrFlushInstructionCache(pFlushRegion, cbFlushRegion);
-                }
-                pFlushRegion = pageAddress;
-            }
+            BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
+                PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
 
-            cbFlushRegion = pEndAddressToFlush - pFlushRegion;
+            if (bExecRegion && pEndAddressToFlush != NULL)
+            {
+                // If the current page is not next to the pending region to flush, flush the current pending region and start a new one
+                if (pageAddress >= pFlushRegion + cbFlushRegion + cbPageSize || pageAddress < pFlushRegion)
+                {
+                    if (pFlushRegion != NULL)
+                    {
+                        ClrFlushInstructionCache(pFlushRegion, cbFlushRegion);
+                    }
+                    pFlushRegion = pageAddress;
+                }
+
+                cbFlushRegion = pEndAddressToFlush - pFlushRegion;
+            }
         }
 
         dirPos += fixupsSize;
     }
-    _ASSERTE(dirSize == dirPos);
+    _ASSERTE(dirSize == dirPos || !IsPEFormat());
 
     if (dwOldProtection != 0)
     {
@@ -408,9 +449,9 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             ThrowLastError();
 #endif // __APPLE__ && HOST_ARM64
     }
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
     PAL_LOADMarkSectionAsNotNeeded((void*)dir);
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !TARGET_WASM
 
     if (pFlushRegion != NULL)
     {

@@ -12,7 +12,7 @@ internal sealed class ReadyToRunSection : IData<ReadyToRunSection>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunSection);
 
-        Type = target.Read<uint>(address + (ulong)type.Fields[nameof(Type)].Offset);
+        Type = target.ReadField<uint>(address, type, nameof(Type));
         Section = target.ProcessedData.GetOrAdd<ImageDataDirectory>(address + (ulong)type.Fields[nameof(Section)].Offset);
     }
 

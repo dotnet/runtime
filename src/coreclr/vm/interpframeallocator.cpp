@@ -14,7 +14,7 @@ FrameDataAllocator::FrameDataFragment::FrameDataFragment(size_t size)
         size = INTERP_STACK_FRAGMENT_SIZE;
     }
 
-    pFrameStart = (uint8_t*)malloc(size);
+    pFrameStart = (uint8_t*)VMToOSInterface::AlignedAllocate(INTERP_STACK_ALIGNMENT, size);
     if (pFrameStart != nullptr)
     {
         pFrameEnd = pFrameStart + size;
@@ -25,7 +25,7 @@ FrameDataAllocator::FrameDataFragment::FrameDataFragment(size_t size)
 
 FrameDataAllocator::FrameDataFragment::~FrameDataFragment()
 {
-    free(pFrameStart);
+    VMToOSInterface::AlignedFree(pFrameStart);
 }
 
 FrameDataAllocator::FrameDataAllocator()
@@ -83,7 +83,7 @@ bool FrameDataAllocator::PushInfo(InterpMethodContextFrame *pFrame)
 
 void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
 {
-    size = ALIGN_UP(size, sizeof(void*));
+    size = ALIGN_UP(size, INTERP_STACK_ALIGNMENT);
 
     if (pFirst == nullptr)
     {

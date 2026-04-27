@@ -130,7 +130,13 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
     genDefineTempLabel(gsCheckBlk);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+//------------------------------------------------------------------------
+// genCallFinally: Generate a call to a finally.
+//
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
@@ -181,17 +187,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         GetEmitter()->emitEnableGC();
     }
-
-    // The BBJ_CALLFINALLYRET is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbTargetEdge - that is already used to point
-    // to the finally block. So just skip past the BBJ_CALLFINALLYRET unless the
-    // block is RETLESS.
-    if (!block->HasFlag(BBF_RETLESS_CALL))
-    {
-        assert(block->isBBCallFinallyPair());
-        block = nextBlock;
-    }
-    return block;
 }
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
@@ -752,7 +747,6 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
         // Move the result to the desired register, if necessary
         if (treeNode->OperIs(GT_MULHI))
         {
-            assert(targetReg == REG_RDX);
             inst_Mov(targetType, targetReg, REG_RDX, /* canSkip */ true);
         }
     }
@@ -1931,10 +1925,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // SWIFT_SUPPORT
 
-        case GT_RETURN_SUSPEND:
-            genReturnSuspend(treeNode->AsUnOp());
-            break;
-
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());
@@ -2109,28 +2099,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CATCH_ARG:
-
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
-
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
-
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
-            break;
-
-        case GT_ASYNC_CONTINUATION:
-            genCodeForAsyncContinuation(treeNode);
-            break;
-
-        case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
-                          ~fullIntArgRegMask(m_compiler->info.compCallConv)) == 0);
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-            // the runtime side requires the codegen here to be consistent
-            emit->emitDisableRandomNops();
-#endif // PSEUDORANDOM_NOP_INSERTION
+            genCodeForCatchArg(treeNode);
             break;
 
         case GT_LABEL:
@@ -2138,8 +2107,28 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
             break;
 
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
         case GT_ASYNC_RESUME_INFO:
             genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
+            break;
+
+        case GT_FTN_ENTRY:
+            genFtnEntry(treeNode);
+            break;
+
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
             break;
 
         case GT_STORE_BLK:
@@ -2163,10 +2152,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_IL_OFFSET:
             // Do nothing; this node is a marker for debug info.
-            break;
-
-        case GT_RECORD_ASYNC_RESUME:
-            genRecordAsyncResume(treeNode->AsVal());
             break;
 
 #if defined(TARGET_AMD64)
@@ -4284,6 +4269,18 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     GetEmitter()->emitIns_R(INS_i_jmp, emitTypeSize(TYP_I_IMPL), baseReg);
 }
 
+//------------------------------------------------------------------------
+// genNonLocalJmp: Emit jump to the specified address.
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    genConsumeOperands(tree->AsOp());
+    inst_TT(INS_i_jmp, EA_PTRSIZE, tree->gtGetOp1());
+}
+
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
@@ -4306,6 +4303,18 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {
     GetEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), treeNode->GetRegNum(),
                               genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1), 0);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genFtnEntry: emits address of the current function being compiled
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
     genProduceReg(treeNode);
 }
 
@@ -4399,9 +4408,6 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
             // When value is used (it's the original value of the memory location)
             // we fallback to cmpxchg-loop idiom.
 
-            // for cmpxchg we need to keep the original value in RAX
-            assert(node->GetRegNum() == REG_RAX);
-
             //    mov     RAX, dword ptr [addrReg]
             //.LOOP:
             //    mov     tmp, RAX
@@ -4425,6 +4431,8 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
             inst_JMP(EJ_jne, loop);
 
             gcInfo.gcMarkRegSetNpt(genRegMask(addr->GetRegNum()));
+            inst_Mov(node->TypeGet(), node->GetRegNum(), REG_RAX, /* canSkip */ true);
+
             genProduceReg(node);
         }
         return;
@@ -5620,6 +5628,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_X86Base_Extract:
                         case NI_X86Base_X64_Extract:
                         case NI_AVX_ExtractVector128:
+                        case NI_AVX2_ConvertToVector128Half:
+                        case NI_AVX2_ConvertToVector256Half:
                         case NI_AVX2_ExtractVector128:
                         case NI_AVX512_ExtractVector128:
                         case NI_AVX512_ExtractVector256:
@@ -5876,9 +5886,6 @@ void CodeGen::genCall(GenTreeCall* call)
 {
     genAlignStackBeforeCall(call);
 
-    // all virtuals should have been expanded into a control expression
-    assert(!call->IsVirtual() || call->gtControlExpr || call->gtCallAddr);
-
     genCallPlaceRegArgs(call);
 
 #if defined(TARGET_X86)
@@ -5997,7 +6004,7 @@ void CodeGen::genCall(GenTreeCall* call)
     regMaskTP killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
-        CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+        CorInfoHelpFunc helpFunc = call->GetHelperNum();
         killMask                 = m_compiler->compHelperCallKillSet(helpFunc);
     }
 
@@ -6054,7 +6061,7 @@ void CodeGen::genCall(GenTreeCall* call)
             else
             {
 #ifdef TARGET_X86
-                if (call->IsHelperCall(m_compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+                if (call->IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
                 {
                     // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
                     // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
@@ -6233,9 +6240,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             if (target->isContainedIndir())
         {
             // When CFG is enabled we should not be emitting any non-register indirect calls.
-            assert(!m_compiler->opts.IsCFGEnabled() ||
-                   call->IsHelperCall(m_compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
-                   call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL));
+            assert(!m_compiler->opts.IsCFGEnabled() || call->IsHelperCall(CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
+                   call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL));
 
             if (target->AsIndir()->HasBase() && target->AsIndir()->Base()->isContainedIntOrIImmed())
             {
@@ -6294,7 +6300,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             }
             else
             {
-                GenTree* tlsGetAddr = (GenTree*)call->gtCallMethHnd;
+                GenTree* tlsGetAddr = call->gtControlExpr;
 
                 // NativeAOT code needs special code sequence prefix of call so the
                 // linker will do the fixup and emit accurate TLS access information.
@@ -9879,11 +9885,11 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #ifdef TARGET_AMD64
 
 //------------------------------------------------------------------------
-// genOSRRecordTier0CalleeSavedRegistersAndFrame: for OSR methods, record the
+// genOSRHandleTier0CalleeSavedRegistersAndFrame: for OSR methods, record the
 //  subset of callee saves already saved by the Tier0 method, and the frame
 //  created by Tier0.
 //
-void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
     assert(m_compiler->compGeneratingProlog);
     assert(m_compiler->opts.IsOSR());
@@ -9935,13 +9941,14 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     // We must account for the post-callee-saves push SP movement
     // done by the Tier0 frame and by the OSR transition.
     //
-    // tier0FrameSize is the Tier0 FP-SP delta plus the fake call slot added by
-    // JIT_Patchpoint. We add one slot to account for the saved FP.
+    // tier0FrameSize is the Tier0 FP-SP delta plus the fake call slot we push in genFnProlog.
+    // We subtract the fake call slot since we will add it as unwind after the instruction itself.
+    // We then add back one slot to account for the saved FP.
     //
     // We then need to subtract off the size the Tier0 callee saves as SP
     // adjusts for those will have been modelled by the unwind pushes above.
     //
-    int const tier0FrameSize = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
+    int const tier0FrameSize = patchpointInfo->TotalFrameSize() - REGSIZE_BYTES + REGSIZE_BYTES;
     int const tier0NetSize   = tier0FrameSize - tier0IntCalleeSaveUsedSize;
     m_compiler->unwindAllocStack(tier0NetSize);
 }
@@ -10025,18 +10032,29 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
         osrAdditionalIntCalleeSaves &= ~regBit;
     }
 }
+#else
+
+//------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Not called for x86 without OSR support.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
+}
+
 #endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
 //
-void CodeGen::genPushCalleeSavedRegisters()
+void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
     assert(m_compiler->compGeneratingProlog);
 
 #if DEBUG
     // OSR root frames must handle this differently. See
-    //   genOSRRecordTier0CalleeSavedRegisters()
+    //   genOSRHandleTier0CalleeSavedRegistersAndFrame()
     //   genOSRSaveRemainingCalleeSavedRegisters()
     //
     if (m_compiler->opts.IsOSR())
@@ -10880,7 +10898,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Note that we don't do anything with unwind codes, because AMD64 only cares about unwind codes for the prolog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
@@ -11007,7 +11025,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Generates code for an EH funclet epilog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
