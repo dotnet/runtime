@@ -1023,7 +1023,12 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
 #if HAVE_OPENSSL_EC2M
         if (fieldTypeNID == NID_X9_62_characteristic_two_field)
         {
-            group = EC_GROUP_new_curve_GF2m(pBn, aBn, bBn, NULL);
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+            if (API_EXISTS(EC_GROUP_new_curve_GF2m))
+#endif
+            {
+                group = EC_GROUP_new_curve_GF2m(pBn, aBn, bBn, NULL);
+            }
         }
         else
 #endif
@@ -1236,7 +1241,13 @@ int32_t CryptoNative_EvpPKeyCreateByEcKeyParameters(
     if (!API_EXISTS(EVP_PKEY_fromdata) ||
         !API_EXISTS(EVP_PKEY_fromdata_init) ||
         !API_EXISTS(EVP_PKEY_CTX_new_from_name) ||
-        !API_EXISTS(OSSL_PARAM_BLD_new))
+        !API_EXISTS(OSSL_PARAM_BLD_new) ||
+        !API_EXISTS(OSSL_PARAM_BLD_free) ||
+        !API_EXISTS(OSSL_PARAM_BLD_push_utf8_string) ||
+        !API_EXISTS(OSSL_PARAM_BLD_push_octet_string) ||
+        !API_EXISTS(OSSL_PARAM_BLD_push_BN) ||
+        !API_EXISTS(OSSL_PARAM_BLD_to_param) ||
+        !API_EXISTS(OSSL_PARAM_free))
     {
         return 0;
     }
@@ -1400,7 +1411,13 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
         !API_EXISTS(EVP_PKEY_CTX_new_from_name) ||
         !API_EXISTS(EVP_PKEY_CTX_new_from_pkey) ||
         !API_EXISTS(EVP_PKEY_generate) ||
-        !API_EXISTS(OSSL_PARAM_BLD_new))
+        !API_EXISTS(OSSL_PARAM_BLD_new) ||
+        !API_EXISTS(OSSL_PARAM_BLD_free) ||
+        !API_EXISTS(OSSL_PARAM_BLD_push_utf8_string) ||
+        !API_EXISTS(OSSL_PARAM_BLD_push_octet_string) ||
+        !API_EXISTS(OSSL_PARAM_BLD_push_BN) ||
+        !API_EXISTS(OSSL_PARAM_BLD_to_param) ||
+        !API_EXISTS(OSSL_PARAM_free))
     {
         return NULL;
     }
@@ -1425,6 +1442,7 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
     EC_GROUP* group = NULL;
     EC_POINT* G = NULL;
     EC_POINT* pubPoint = NULL;
+    int32_t fieldBits = 0;
     int32_t fieldSize = 0;
     int32_t genLen = 0;
 
@@ -1461,7 +1479,15 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
     if (!OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_EC_B, bBn))
         goto error;
 
-    fieldSize = BN_num_bytes(pBn);
+    // For prime curves, BN_num_bits(pBn) is the bit-length of the prime.
+    // For characteristic-2 curves, p is the irreducible polynomial of degree m,
+    // so BN_num_bits(pBn) = m + 1. The field size (coordinate length) is ceil(m/8).
+    fieldBits = BN_num_bits(pBn);
+
+    if (curveType == Characteristic2)
+        fieldBits--;
+
+    fieldSize = (fieldBits + 7) / 8;
 
     // Generator as uncompressed point: 0x04 || gx || gy, padded to field size.
     generatorBuf = EncodeEcPointFromCoordinates(gx, gxLength, gy, gyLength, fieldSize, &genLen);
@@ -1517,7 +1543,12 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateByEcExplicitParameters(
 #if HAVE_OPENSSL_EC2M
         if (curveType == Characteristic2)
         {
-            group = EC_GROUP_new_curve_GF2m(pBn, aBn, bBn, NULL);
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+            if (API_EXISTS(EC_GROUP_new_curve_GF2m))
+#endif
+            {
+                group = EC_GROUP_new_curve_GF2m(pBn, aBn, bBn, NULL);
+            }
         }
         else
 #endif
