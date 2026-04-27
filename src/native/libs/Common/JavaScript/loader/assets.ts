@@ -656,16 +656,19 @@ export async function prefetchAllResources(): Promise<void> {
 
 export function prefetchJSModuleLinks(modules: JsAsset[]): void {
     if (!ENVIRONMENT_IS_WEB) return;
+    const document = globalThis.document;
+    const documentHead = document?.head;
+    if (!document || !documentHead) return;
     for (const mod of modules) {
         if (!mod.resolvedUrl && mod.name) {
             mod.resolvedUrl = locateFile(mod.name, true);
         }
         if (mod.resolvedUrl) {
-            const link = globalThis.document.createElement("link");
+            const link = document.createElement("link");
             link.rel = "prefetch";
             link.href = mod.resolvedUrl;
             link.as = "script";
-            globalThis.document.head.appendChild(link);
+            documentHead.appendChild(link);
         }
     }
 }
