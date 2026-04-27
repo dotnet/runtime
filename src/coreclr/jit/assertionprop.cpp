@@ -2694,9 +2694,9 @@ GenTree* Compiler::optVNBasedFoldExpr_AddSub(BasicBlock* block, GenTree* parent,
         return tree->gtGetOp1();
     }
     else if (!vnStore->GetVNFunc(vnOp1, &vnFuncAppOp1) ||
-             !vnFuncAppOp1.FuncIs(VNF_InitVal, VNF_MemOpaque, VNF_ADD, VNF_SUB) ||
+             !vnFuncAppOp1.FuncIs(VNF_InitVal, VNF_MemOpaque, VNF_ADD, VNF_SUB, VNF_LSH, VNF_XOR, VNF_MUL) ||
              !vnStore->GetVNFunc(vnOp2, &vnFuncAppOp2) ||
-             !vnFuncAppOp2.FuncIs(VNF_InitVal, VNF_MemOpaque, VNF_ADD, VNF_SUB))
+             !vnFuncAppOp2.FuncIs(VNF_InitVal, VNF_MemOpaque, VNF_ADD, VNF_SUB, VNF_LSH, VNF_XOR, VNF_MUL))
     {
         return nullptr;
     }
