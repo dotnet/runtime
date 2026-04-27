@@ -18,9 +18,8 @@ internal readonly struct Exception_1 : IException
     {
         Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exceptionInfoAddr);
         nextNestedExceptionInfo = exceptionInfo.PreviousNestedInfo;
-        thrownObjectHandle = exceptionInfo.ThrownObjectHandle;
-        Data.ObjectHandle throwableObject = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(exceptionInfo.ThrownObjectHandle);
-        return throwableObject.Object;
+        thrownObjectHandle = exceptionInfo.ThrownObjectHandle.Handle;
+        return exceptionInfo.ThrownObjectHandle.Object;
     }
 
     ExceptionData IException.GetExceptionData(TargetPointer exceptionAddr)

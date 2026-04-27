@@ -28,22 +28,40 @@ namespace Microsoft.Win32.SafeHandles
 
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
+        private readonly ProcessWaitState.Holder? _waitStateHolder;
 
-        private SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
+        internal SafeProcessHandle(ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
-            ProcessId = processId;
-
-            _handle = waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
+            _waitStateHolder = waitStateHolder;
+            _handle = _waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
             _handle.DangerousAddRef(ref _releaseRef);
             SetHandle(_handle.DangerousGetHandle());
         }
 
-        internal SafeProcessHandle(int processId, SafeWaitHandle handle) :
-            this(handle.DangerousGetHandle(), ownsHandle: true)
+        /// <summary>
+        /// Gets the process ID.
+        /// </summary>
+        public int ProcessId
         {
-            ProcessId = processId;
-            _handle = handle;
-            handle.DangerousAddRef(ref _releaseRef);
+            get
+            {
+                Validate();
+
+                if (_waitStateHolder is null)
+                {
+                    throw new InvalidOperationException(SR.InvalidProcessHandle);
+                }
+
+                return _waitStateHolder._state._processId;
+            }
+        }
+
+        /// <summary>
+        /// Sets a value indicating whether the process has been terminated due to timeout or cancellation.
+        /// </summary>
+        private bool Canceled
+        {
+            set => GetWaitState()._canceled = value;
         }
 
         protected override bool ReleaseHandle()
@@ -53,33 +71,120 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_handle != null);
                 _handle.DangerousRelease();
             }
+            _waitStateHolder?.Dispose();
             return true;
         }
 
-        // On Unix, we don't use process descriptors yet, so we can't get PID.
-        private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
-
-        private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        private bool SignalCore(PosixSignal signal)
         {
-            SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
-
-            // For standalone SafeProcessHandle.Start, we dispose the wait state holder immediately.
-            // The DangerousAddRef on the SafeWaitHandle (Unix) keeps the OS handle alive.
-            waitStateHolder?.Dispose();
-
-            return startedProcess;
-        }
-
-        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
-        {
-            waitStateHolder = null;
-
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
 
+            int signalNumber = Interop.Sys.GetPlatformSignalNumber(signal);
+            if (signalNumber == 0)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            int killResult = Interop.Sys.Kill(ProcessId, signalNumber);
+            if (killResult != 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                // Return false if the process has already exited (or never existed).
+                if (errorInfo.Error == Interop.Error.ESRCH)
+                {
+                    return false;
+                }
+
+                throw new Win32Exception(errorInfo.RawErrno); // same exception as on Windows
+            }
+
+            return true;
+        }
+
+        private ProcessExitStatus WaitForExitCore()
+        {
+            ProcessWaitState waitState = GetWaitState();
+            waitState.WaitForExit(Timeout.Infinite);
+
+            return GetExitStatus(waitState);
+        }
+
+        private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            ProcessWaitState waitState = GetWaitState();
+            if (!waitState.WaitForExit(milliseconds))
+            {
+                exitStatus = null;
+                return false;
+            }
+
+            exitStatus = GetExitStatus(waitState);
+            return true;
+        }
+
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
+        {
+            ProcessWaitState waitState = GetWaitState();
+
+            if (!waitState.WaitForExit(milliseconds))
+            {
+                waitState._canceled = true;
+                SignalCore(PosixSignal.SIGKILL);
+                waitState.WaitForExit(Timeout.Infinite);
+            }
+
+            return GetExitStatus(waitState);
+        }
+
+        private ManualResetEvent GetWaitHandle() => GetWaitState().EnsureExitedEvent();
+
+        private ProcessWaitState GetWaitState()
+        {
+            if (_waitStateHolder is null)
+            {
+                throw new InvalidOperationException(SR.InvalidProcessHandle);
+            }
+
+            if (!_waitStateHolder._state._isChild)
+            {
+                throw new PlatformNotSupportedException(SR.NotSupportedForNonChildProcess);
+            }
+
+            return _waitStateHolder._state;
+        }
+
+        private ProcessExitStatus GetExitStatus() => GetExitStatus(GetWaitState());
+
+        private static ProcessExitStatus GetExitStatus(ProcessWaitState waitState)
+        {
+            // GetWaitState ensures the process is a child process, so obtaining the exit status should never fail.
+            bool exited = waitState.GetExited(out ProcessExitStatus? exitStatus, refresh: false);
+            Debug.Assert(exited);
+            Debug.Assert(exitStatus is not null);
+            return exitStatus ?? throw new InvalidOperationException();
+        }
+
+        private delegate SafeProcessHandle StartWithShellExecuteDelegate(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
+        private static StartWithShellExecuteDelegate? s_startWithShellExecute;
+
+        private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandlesSnapshot = null)
+            => StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandlesSnapshot, out _);
+
+        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
+            SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder)
+        {
+            waitStateHolder = null;
+
             ProcessUtils.EnsureInitialized();
+
+            if (startInfo.UseShellExecute)
+            {
+                return s_startWithShellExecute!(startInfo, stdinHandle, stdoutHandle, stderrHandle, out waitStateHolder);
+            }
 
             string? filename;
             string[] argv;
@@ -96,80 +201,101 @@ namespace Microsoft.Win32.SafeHandles
                 (userId, groupId, groups) = ProcessUtils.GetUserAndGroupIds(startInfo);
             }
 
-            // .NET applications don't echo characters unless there is a Console.Read operation.
-            // Unix applications expect the terminal to be in an echoing state by default.
-            // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
-            // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
-            // Handle can be null only for UseShellExecute or platforms that don't support Console.Open* methods like Android.
-            bool usesTerminal = (stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
-                || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
-                || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle));
+            bool usesTerminal = UsesTerminal(stdinHandle, stdoutHandle, stderrHandle);
 
-            if (startInfo.UseShellExecute)
+            filename = ProcessUtils.ResolvePath(startInfo.FileName);
+            argv = ProcessUtils.ParseArgv(startInfo);
+            if (Directory.Exists(filename))
             {
-                string verb = startInfo.Verb;
-                if (verb != string.Empty &&
-                    !string.Equals(verb, "open", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION);
-                }
-
-                // On Windows, UseShellExecute of executables and scripts causes those files to be executed.
-                // To achieve this on Unix, we check if the file is executable (x-bit).
-                // Some files may have the x-bit set even when they are not executable. This happens for example
-                // when a Windows filesystem is mounted on Linux. To handle that, treat it as a regular file
-                // when exec returns ENOEXEC (file format cannot be executed).
-                filename = ProcessUtils.ResolveExecutableForShellExecute(startInfo.FileName, cwd);
-                if (filename != null)
-                {
-                    argv = ProcessUtils.ParseArgv(startInfo);
-
-                    SafeProcessHandle processHandle = ForkAndExecProcess(
-                        startInfo, filename, argv, env, cwd,
-                        setCredentials, userId, groupId, groups,
-                        stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                        out waitStateHolder,
-                        throwOnNoExec: false); // return invalid handle instead of throwing on ENOEXEC
-
-                    if (!processHandle.IsInvalid)
-                    {
-                        return processHandle;
-                    }
-                }
-
-                // use default program to open file/url
-                filename = Process.GetPathToOpenFile();
-                argv = ProcessUtils.ParseArgv(startInfo, filename, ignoreArguments: true);
-
-                return ForkAndExecProcess(
-                    startInfo, filename, argv, env, cwd,
-                    setCredentials, userId, groupId, groups,
-                    stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                    out waitStateHolder);
+                throw new Win32Exception(SR.DirectoryNotValidAsInput);
             }
-            else
-            {
-                filename = ProcessUtils.ResolvePath(startInfo.FileName);
-                argv = ProcessUtils.ParseArgv(startInfo);
-                if (Directory.Exists(filename))
-                {
-                    throw new Win32Exception(SR.DirectoryNotValidAsInput);
-                }
 
-                return ForkAndExecProcess(
-                    startInfo, filename, argv, env, cwd,
-                    setCredentials, userId, groupId, groups,
-                    stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                    out waitStateHolder);
-            }
+            return ForkAndExecProcess(
+                startInfo, filename, argv, env, cwd,
+                setCredentials, userId, groupId, groups,
+                stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
+                inheritedHandles,
+                out waitStateHolder);
         }
+
+        private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
+            SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
+        {
+            IDictionary<string, string?> env = startInfo.Environment;
+            string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
+
+            bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
+            uint userId = 0;
+            uint groupId = 0;
+            uint[]? groups = null;
+            if (setCredentials)
+            {
+                (userId, groupId, groups) = ProcessUtils.GetUserAndGroupIds(startInfo);
+            }
+
+            bool usesTerminal = UsesTerminal(stdinHandle, stdoutHandle, stderrHandle);
+
+            string verb = startInfo.Verb;
+            if (verb != string.Empty &&
+                !string.Equals(verb, "open", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION);
+            }
+
+            // On Windows, UseShellExecute of executables and scripts causes those files to be executed.
+            // To achieve this on Unix, we check if the file is executable (x-bit).
+            // Some files may have the x-bit set even when they are not executable. This happens for example
+            // when a Windows filesystem is mounted on Linux. To handle that, treat it as a regular file
+            // when exec returns ENOEXEC (file format cannot be executed).
+            string? filename = ProcessUtils.ResolveExecutableForShellExecute(startInfo.FileName, cwd);
+            if (filename != null)
+            {
+                string[] argv = ProcessUtils.ParseArgv(startInfo);
+
+                SafeProcessHandle processHandle = ForkAndExecProcess(
+                    startInfo, filename, argv, env, cwd,
+                    setCredentials, userId, groupId, groups,
+                    stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
+                    null,
+                    out waitStateHolder,
+                    throwOnNoExec: false); // return invalid handle instead of throwing on ENOEXEC
+
+                if (!processHandle.IsInvalid)
+                {
+                    return processHandle;
+                }
+
+                // ENOEXEC: the process was not started on this path; dispose the holder and try the fallback.
+                waitStateHolder?.Dispose();
+            }
+
+            // use default program to open file/url
+            filename = Process.GetPathToOpenFile();
+            string[] openFileArgv = ProcessUtils.ParseArgv(startInfo, filename, ignoreArguments: true);
+
+            SafeProcessHandle result = ForkAndExecProcess(
+                startInfo, filename, openFileArgv, env, cwd,
+                setCredentials, userId, groupId, groups,
+                stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
+                null,
+                out waitStateHolder);
+
+            return result;
+        }
+
+        // .NET applications don't echo characters unless there is a Console.Read operation.
+        // Unix applications expect the terminal to be in an echoing state by default.
+        // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
+        // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
+        private static bool UsesTerminal(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+            => ProcessUtils.IsTerminal(stdinHandle) || ProcessUtils.IsTerminal(stdoutHandle) || ProcessUtils.IsTerminal(stderrHandle);
 
         private static SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
             IDictionary<string, string?> env, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
             SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
-            bool usesTerminal, out ProcessWaitState.Holder? waitStateHolder, bool throwOnNoExec = true)
+            bool usesTerminal, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder, bool throwOnNoExec = true)
         {
             waitStateHolder = null;
 
@@ -199,7 +325,8 @@ namespace Microsoft.Win32.SafeHandles
                 errno = Interop.Sys.ForkAndExecProcess(
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
-                    out childPid, stdinHandle, stdoutHandle, stderrHandle);
+                    out childPid, stdinHandle, stdoutHandle, stderrHandle,
+                    startInfo.StartDetached, inheritedHandles);
 
                 if (errno == 0)
                 {
@@ -236,7 +363,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
 
-            return new SafeProcessHandle(childPid, waitStateHolder!);
+            return new SafeProcessHandle(waitStateHolder!);
         }
     }
 }

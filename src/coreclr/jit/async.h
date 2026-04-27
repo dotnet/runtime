@@ -53,7 +53,7 @@ struct ContinuationLayoutBuilder
 {
 private:
     Compiler* m_compiler;
-    bool      m_needsOSRILOffset         = false;
+    bool      m_needsOSRAddress          = false;
     bool      m_needsException           = false;
     bool      m_needsContinuationContext = false;
     bool      m_needsKeepAlive           = false;
@@ -70,13 +70,13 @@ public:
     {
     }
 
-    void SetNeedsOSRILOffset()
+    void SetNeedsOSRAddress()
     {
-        m_needsOSRILOffset = true;
+        m_needsOSRAddress = true;
     }
-    bool NeedsOSRILOffset() const
+    bool NeedsOSRAddress() const
     {
-        return m_needsOSRILOffset;
+        return m_needsOSRAddress;
     }
     void SetNeedsException()
     {
@@ -128,7 +128,7 @@ public:
 struct ContinuationLayout
 {
     unsigned                      Size                      = 0;
-    unsigned                      OSRILOffset               = UINT_MAX;
+    unsigned                      OSRAddressOffset          = UINT_MAX;
     unsigned                      ExceptionOffset           = UINT_MAX;
     unsigned                      ContinuationContextOffset = UINT_MAX;
     unsigned                      KeepAliveOffset           = UINT_MAX;
@@ -349,6 +349,12 @@ class AsyncTransformation
     BasicBlock*                m_lastResumptionBB        = nullptr;
     BasicBlock*                m_sharedReturnBB          = nullptr;
 
+    void FindAwaits(ArrayStack<BasicBlock*>& blocksWithNormalAwaits,
+                    ArrayStack<BasicBlock*>& blocksWithTailAwaits,
+                    int*                     numNormalAwaits,
+                    int*                     numTailAwaits);
+
+    void        TransformTailAwaits(ArrayStack<BasicBlock*>& blocksWithTailAwaits);
     void        TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** remainder);
     BasicBlock* CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call);
 
@@ -443,17 +449,16 @@ class AsyncTransformation
                                    var_types    storeType,
                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    void        CreateDebugInfoForSuspensionPoint(const ContinuationLayout&        layout,
-                                                  const ContinuationLayoutBuilder& subLayout);
-    unsigned    GetReturnedContinuationVar();
-    unsigned    GetNewContinuationVar();
-    unsigned    GetResultBaseVar();
-    unsigned    GetExceptionVar();
-    BasicBlock* GetSharedReturnBB();
-
-    bool ReuseContinuations();
-    void CreateResumptionsAndSuspensions();
-    void CreateResumptionSwitch();
+    void     CreateDebugInfoForSuspensionPoint(const ContinuationLayout&        layout,
+                                               const ContinuationLayoutBuilder& subLayout);
+    unsigned GetReturnedContinuationVar();
+    unsigned GetNewContinuationVar();
+    unsigned GetResultBaseVar();
+    unsigned GetExceptionVar();
+    void     CreateSharedReturnBB();
+    bool     ReuseContinuations();
+    void     CreateResumptionsAndSuspensions();
+    void     CreateResumptionSwitch();
 
 public:
     AsyncTransformation(Compiler* comp)

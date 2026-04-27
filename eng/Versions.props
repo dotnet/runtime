@@ -15,7 +15,7 @@
     <PackageVersionNet7>7.0.20</PackageVersionNet7>
     <PackageVersionNet6>6.0.36</PackageVersionNet6>
     <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration>3</PreReleaseVersionIteration>
+    <PreReleaseVersionIteration>4</PreReleaseVersionIteration>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
@@ -134,7 +134,7 @@
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
-    <DNNEVersion>2.0.5</DNNEVersion>
+    <DNNEVersion>2.1.1</DNNEVersion>
     <MicrosoftBuildVersion>17.11.48</MicrosoftBuildVersion>
     <MicrosoftBuildTasksCoreVersion>17.11.48</MicrosoftBuildTasksCoreVersion>
     <MicrosoftBuildFrameworkVersion>17.11.48</MicrosoftBuildFrameworkVersion>
@@ -155,7 +155,7 @@
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <NewtonsoftJsonBsonVersion>1.0.2</NewtonsoftJsonBsonVersion>
     <MoqVersion>4.18.4</MoqVersion>
-    <MicrosoftDiagnosticsRuntimeVersion>3.1.512801</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>4.0.0-beta.26210.1</MicrosoftDiagnosticsRuntimeVersion>
     <AwesomeAssertionsVersion>8.0.2</AwesomeAssertionsVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
     <CommandLineParserVersion>2.9.1</CommandLineParserVersion>
@@ -166,7 +166,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>10.0.0-preview-20251006.1</MicrosoftPrivateIntellisenseVersion>
     <!-- MsQuic -->
-    <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.16</MicrosoftNativeQuicMsQuicSchannelVersion>
+    <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.7</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten workload package when testing workloads -->
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <EmsdkPackageVersion>10.0.0</EmsdkPackageVersion>
@@ -180,12 +180,12 @@
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- WiX 5+ dependencies for MSI generation -->
-    <MicrosoftWixVersion>5.0.2-dotnet.2811440</MicrosoftWixVersion>
-    <MicrosoftWixToolsetUIWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetUIWixextVersion>
-    <MicrosoftWixToolsetDependencyWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetDependencyWixextVersion>
-    <MicrosoftWixToolsetUtilWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetUtilWixextVersion>
-    <MicrosoftWixToolsetBalWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetBalWixextVersion>
-    <MicrosoftWixToolsetHeatVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetHeatVersion>
+    <MicrosoftWixVersion>6.0.3-dotnet.4</MicrosoftWixVersion>
+    <MicrosoftWixToolsetUIWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetUIWixextVersion>
+    <MicrosoftWixToolsetDependencyWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetDependencyWixextVersion>
+    <MicrosoftWixToolsetUtilWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetUtilWixextVersion>
+    <MicrosoftWixToolsetBalWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetBalWixextVersion>
+    <MicrosoftWixToolsetHeatVersion>6.0.3-dotnet.4</MicrosoftWixToolsetHeatVersion>
   </PropertyGroup>
 
 </Project>

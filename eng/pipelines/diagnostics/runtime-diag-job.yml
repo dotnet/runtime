@@ -38,6 +38,8 @@ parameters:
   disableComponentGovernance: ''
   liveRuntimeDir: ''
   useCdac: false
+  noFallback: false
+  classFilter: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -88,6 +90,8 @@ jobs:
       - _TestArgs: '-test'
       - _Cross: ''
       - _CdacArgs: ''
+      - _NoFallbackArgs: ''
+      - _ClassFilterArgs: ''
 
       - _buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
 
@@ -102,6 +106,12 @@ jobs:
 
       - ${{ if eq(parameters.useCdac, 'true') }}:
         - _CdacArgs: '-useCdac'
+
+      - ${{ if eq(parameters.noFallback, 'true') }}:
+        - _NoFallbackArgs: '-noFallback'
+
+      - ${{ if ne(parameters.classFilter, '') }}:
+        - _ClassFilterArgs: '-classfilter ${{ parameters.classFilter }}'
 
       # For testing msrc's and service releases. The RuntimeSourceVersion is either "default" or the service release version to test
       - _InternalInstallArgs: ''
@@ -196,10 +206,12 @@ jobs:
           -architecture ${{ parameters.archType }}
           -privatebuild
           $(_CdacArgs)
+          $(_NoFallbackArgs)
           -liveRuntimeDir ${{ parameters.liveRuntimeDir }}
           $(_TestArgs)
           $(_Cross)
           $(_InternalInstallArgs)
+          $(_ClassFilterArgs)
           /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
       ${{ if eq(parameters.testOnly, 'true') }}:
         displayName: Test

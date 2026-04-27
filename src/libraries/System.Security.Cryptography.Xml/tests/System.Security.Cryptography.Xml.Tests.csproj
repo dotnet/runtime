@@ -4,6 +4,9 @@
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
@@ -68,6 +71,7 @@
     <Compile Include="XmlDecryptionTransformTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="EncryptedXmlSample4.xml" />
     <EmbeddedResource Include="EncryptedXmlSample3.xml" />
     <EmbeddedResource Include="EncryptedXmlSample2.xml" />
     <EmbeddedResource Include="EncryptedXmlSample1.xml" />
@@ -79,7 +83,7 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
   </ItemGroup>
-    <ItemGroup>
+  <ItemGroup>
     <!-- Apple mobile trimming descriptor for Mono runtime -->
     <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>

@@ -10,9 +10,10 @@ Module Name:
 Abstract:
     Read the memory limit for the current process
 --*/
-#ifdef __FreeBSD__
-#define _WITH_GETLINE
-#endif
+#include "cgroup.h"
+#include <cstddef>
+
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 
 #include <cstdint>
 #include <cassert>
@@ -21,18 +22,11 @@ Abstract:
 #include <stdio.h>
 #include <string.h>
 #include <sys/resource.h>
-#if defined(__APPLE__) || defined(__FreeBSD__)
-#include <sys/param.h>
-#include <sys/mount.h>
-#elif !defined(__HAIKU__)
 #include <sys/vfs.h>
-#endif
 #include <errno.h>
 #include <limits>
 
 #include "config.gc.h"
-
-#include "cgroup.h"
 
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX (~(size_t)0)
@@ -122,10 +116,6 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
-#if !HAVE_NON_LEGACY_STATFS || TARGET_WASM
-        return 0;
-#else
-
         struct statfs stats;
         int result = statfs("/sys/fs/cgroup", &stats);
         if (result != 0)
@@ -142,7 +132,6 @@ private:
             // been seen in the wild.
             return 1;
         }
-#endif
     }
 
     static bool IsCGroup1MemorySubsystem(const char *strTok){
@@ -510,6 +499,9 @@ private:
 
     static bool GetCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFileFieldName)
     {
+        if (s_memory_cgroup_path == nullptr)
+            return false;
+
         // Use the same way to calculate memory load as popular container tools (Docker, Kubernetes, Containerd etc.)
         // For cgroup v1: value of 'memory.usage_in_bytes' minus 'total_inactive_file' value of 'memory.stat'
         // For cgroup v2: value of 'memory.current' minus 'inactive_file' value of 'memory.stat'
@@ -533,9 +525,6 @@ private:
 
         if (!result)
             return result;
-
-        if (s_memory_cgroup_path == nullptr)
-            return false;
 
         uint64_t inactiveFileValue = 0;
         if (GetCGroupMemoryStatField(inactiveFileFieldName, &inactiveFileValue))
@@ -656,3 +645,25 @@ bool GetPhysicalMemoryUsed(size_t* val)
     free(line);
     return result;
 }
+
+#else // !(TARGET_LINUX || TARGET_ANDROID)
+
+void InitializeCGroup()
+{
+}
+
+void CleanupCGroup()
+{
+}
+
+size_t GetRestrictedPhysicalMemoryLimit()
+{
+    return 0;
+}
+
+bool GetPhysicalMemoryUsed(size_t* val)
+{
+    return false;
+}
+
+#endif // TARGET_LINUX || TARGET_ANDROID

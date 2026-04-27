@@ -44,14 +44,14 @@ internal readonly struct GC_1 : IGC
     private readonly uint _handleMaxInternalTypes;
     private readonly uint _handleSegmentSize;
 
-    internal GC_1(Target target, uint handlesPerBlock, byte blockInvalid, TargetPointer debugDestroyedHandleValue, uint handleMaxInternalTypes, uint handleSegmentSize)
+    internal GC_1(Target target)
     {
         _target = target;
-        _handlesPerBlock = handlesPerBlock;
-        _blockInvalid = blockInvalid;
-        _debugDestroyedHandleValue = debugDestroyedHandleValue;
-        _handleMaxInternalTypes = handleMaxInternalTypes;
-        _handleSegmentSize = handleSegmentSize;
+        _handlesPerBlock = target.ReadGlobal<uint>(Constants.Globals.HandlesPerBlock);
+        _blockInvalid = target.ReadGlobal<byte>(Constants.Globals.BlockInvalid);
+        _debugDestroyedHandleValue = target.ReadGlobalPointer(Constants.Globals.DebugDestroyedHandleValue);
+        _handleMaxInternalTypes = target.ReadGlobal<uint>(Constants.Globals.HandleMaxInternalTypes);
+        _handleSegmentSize = target.ReadGlobal<uint>(Constants.Globals.HandleSegmentSize);
     }
 
     string[] IGC.GetGCIdentifiers()
