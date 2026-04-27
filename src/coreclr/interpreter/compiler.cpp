@@ -1123,7 +1123,7 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
         if (InterpOpIsEmitNop(ins->opcode))
         {
             ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
-            if (prevWasCall)
+            if (prevWasCall && m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
             {
                 // Emit a real NOP so the return address after a call lands within
                 // the call's native offset range, not on the next statement boundary.
