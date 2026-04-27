@@ -229,22 +229,6 @@ public:
         RETURN m_pMD->GetSlot();
     }
 
-    // get num stack bytes to pop
-    UINT16 GetNumStackBytes()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            PRECONDITION(m_flags & enum_NativeInfoInitialized);
-            SUPPORTS_DAC;
-        }
-        CONTRACTL_END;
-
-        return m_StackBytes;
-    }
-
     //get call sig
     PCCOR_SIGNATURE GetSig(DWORD *pcbSigSize = NULL)
     {
@@ -292,29 +276,27 @@ private:
 
     PCODE m_pILStub;        // IL stub for COM to CLR call, invokes GetCallMethodDesc()
 
-    // Platform specific data needed for efficient IL stub invocation:
 #ifdef TARGET_X86
-    union
-    {
-        struct
-        {
-            // Index of the stack slot that gets stuffed into EDX when calling the stub.
-            UINT16  m_wSourceSlotEDX;
-
-            // Number of stack slots expected by the IL stub.
-            UINT16  m_wStubStackSlotCount;
-        };
-        // Combination of m_wSourceSlotEDX and m_wStubStackSlotCount for atomic updates.
-        UINT32 m_dwSlotInfo;
-    };
-
-    // This is an array of m_wStubStackSlotCount numbers where each element is the offset
-    // on the source stack where the particular stub stack slot should be copied from.
-    UINT16  *m_pwStubStackSlotOffsets;
-#endif // TARGET_X86
-
     // Number of stack bytes pushed by the unmanaged caller.
     UINT16  m_StackBytes;
+
+public:
+    // get num stack bytes to pop
+    UINT16 GetNumStackBytes()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(m_flags & enum_NativeInfoInitialized);
+            SUPPORTS_DAC;
+        }
+        CONTRACTL_END;
+
+        return m_StackBytes;
+    }
+#endif // TARGET_X86
 };
 
 extern "C" void ComCallPreStub();
