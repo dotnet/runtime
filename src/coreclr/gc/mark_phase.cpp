@@ -273,7 +273,7 @@ static size_t target_mark_count_for_heap (size_t total_mark_count, int heap_coun
 NOINLINE
 uint8_t** gc_heap::equalize_mark_lists (size_t total_mark_list_size)
 {
-    size_t local_mark_count[MAX_SUPPORTED_CPUS];
+    size_t local_mark_count[MAX_SUPPORTED_HEAPS];
     size_t total_mark_count = 0;
 
     // compute mark count per heap into a local array
@@ -674,9 +674,9 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
     int source_number = (size_t)heap_number;
 #endif //USE_REGIONS
 
-    uint8_t** source[MAX_SUPPORTED_CPUS];
-    uint8_t** source_end[MAX_SUPPORTED_CPUS];
-    int source_heap[MAX_SUPPORTED_CPUS];
+    uint8_t** source[MAX_SUPPORTED_HEAPS];
+    uint8_t** source_end[MAX_SUPPORTED_HEAPS];
+    int source_heap[MAX_SUPPORTED_HEAPS];
     int source_count = 0;
 
     for (int i = 0; i < n_heaps; i++)
@@ -687,7 +687,7 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
             source[source_count] = heap->mark_list_piece_start[source_number];
             source_end[source_count] = heap->mark_list_piece_end[source_number];
             source_heap[source_count] = i;
-            if (source_count < MAX_SUPPORTED_CPUS)
+            if (source_count < MAX_SUPPORTED_HEAPS)
                 source_count++;
         }
     }
@@ -1141,7 +1141,7 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
         //  compute total promoted bytes per gen
         size_t total_surv = 0;
         size_t max_surv_per_heap = 0;
-        size_t surv_per_heap[MAX_SUPPORTED_CPUS];
+        size_t surv_per_heap[MAX_SUPPORTED_HEAPS];
         for (int i = 0; i < n_heaps; i++)
         {
             surv_per_heap[i] = 0;
@@ -1282,7 +1282,7 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
             surplus_regions_by_size_class[size_class] = region;
         }
 
-        int next_heap_in_size_class[MAX_SUPPORTED_CPUS];
+        int next_heap_in_size_class[MAX_SUPPORTED_HEAPS];
         int heaps_by_deficit_size_class[NUM_SIZE_CLASSES];
         for (int i = 0; i < NUM_SIZE_CLASSES; i++)
         {

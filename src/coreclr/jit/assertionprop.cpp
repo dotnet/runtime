@@ -887,6 +887,10 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             }
             break;
 
+        case O2K_CONST_VEC:
+            printf("VecCns");
+            break;
+
         case O2K_ZEROOBJ:
             printf("ZeroObj");
             break;
@@ -1137,6 +1141,30 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
                 AssertionDsc dsc = AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, dblCns, op2VN, equals);
                 return optAddAssertion(dsc);
             }
+
+#if defined(FEATURE_HW_INTRINSICS)
+            case GT_CNS_VEC:
+            {
+                // Support all SIMD constants. SIMD8/12/16 are stored inline in the assertion;
+                // SIMD32/64 are heap-allocated.
+                if (!varTypeIsSIMD(op1) || (op1->TypeGet() != op2->TypeGet()))
+                {
+                    return NO_ASSERTION_INDEX;
+                }
+
+                ValueNum op1VN = optConservativeNormalVN(op1);
+                ValueNum op2VN = optConservativeNormalVN(op2);
+                if (!optLocalAssertionProp && (op1VN == ValueNumStore::NoVN || op2VN == ValueNumStore::NoVN))
+                {
+                    // GlobalAP requires valid VNs.
+                    return NO_ASSERTION_INDEX;
+                }
+
+                AssertionDsc dsc =
+                    AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, op2->AsVecCon(), op2VN, equals);
+                return optAddAssertion(dsc);
+            }
+#endif // FEATURE_HW_INTRINSICS
 
             case GT_CNS_INT:
             {
@@ -1827,6 +1855,65 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     GenTree* op1 = relop->AsOp()->gtOp1->gtCommaStoreVal();
     GenTree* op2 = relop->AsOp()->gtOp2->gtCommaStoreVal();
 
+#if defined(FEATURE_HW_INTRINSICS)
+    if (op1->OperIsHWIntrinsic() && (op2->IsIntegralConst(0) || op2->IsIntegralConst(1)))
+    {
+        // We have ==/!= 0/1, we need to normalize it to ==/!= 1
+        if (op2->IsIntegralConst(0))
+        {
+            equals = !equals;
+        }
+
+        GenTreeHWIntrinsic* hwi = op1->AsHWIntrinsic();
+        switch (hwi->GetHWIntrinsicId())
+        {
+#if defined(TARGET_XARCH)
+            case NI_Vector128_op_Equality:
+            case NI_Vector256_op_Equality:
+            case NI_Vector512_op_Equality:
+#elif defined(TARGET_ARM64)
+            case NI_Vector64_op_Equality:
+            case NI_Vector128_op_Equality:
+#endif
+                break;
+#if defined(TARGET_XARCH)
+            case NI_Vector128_op_Inequality:
+            case NI_Vector256_op_Inequality:
+            case NI_Vector512_op_Inequality:
+#elif defined(TARGET_ARM64)
+            case NI_Vector64_op_Inequality:
+            case NI_Vector128_op_Inequality:
+#endif
+                equals = !equals;
+                break;
+
+            default:
+                return NO_ASSERTION_INDEX;
+        }
+
+        // SIMD floating-point equality is not bitwise equality (+0 == -0, NaN != NaN),
+        // Only enable for integral SIMD base types.
+        if (varTypeIsIntegral(hwi->GetSimdBaseType()))
+        {
+            assert(hwi->GetOperandCount() == 2);
+            op1 = hwi->Op(1);
+            op2 = hwi->Op(2);
+
+            if (!op2->IsCnsVec())
+            {
+                return NO_ASSERTION_INDEX;
+            }
+
+            assert(varTypeIsSIMD(op1));
+            assert(op1->TypeIs(op2->TypeGet()));
+        }
+        else
+        {
+            return NO_ASSERTION_INDEX;
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     // Avoid creating local assertions for float types.
     //
     if (optLocalAssertionProp && varTypeIsFloating(op1))
@@ -1936,7 +2023,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     // Also note The CASTCLASS helpers won't appear in predicates as they throw on failure.
     // So the helper list here is smaller than the one in optAssertionProp_Call.
     //
-    CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+    CorInfoHelpFunc helper = call->GetHelperNum();
     if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
         (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY))
     {
@@ -2110,7 +2197,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                 //
                 // arr[idx] = value; - creates idx is within bounds of arr assertion
                 //
-                CorInfoHelpFunc helperId = eeGetHelperNum(call->gtCallMethHnd);
+                CorInfoHelpFunc helperId = call->GetHelperNum();
                 if ((helperId == CORINFO_HELP_ARRADDR_ST) || (helperId == CORINFO_HELP_LDELEMA_REF))
                 {
                     assert(call->gtArgs.CountUserArgs() == 3);
@@ -2493,8 +2580,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
 GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 {
     JITDUMP("See if we can optimize NI_System_SpanHelpers_Memmove with help of VN...\n")
-    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) ||
-           call->IsHelperCall(this, CORINFO_HELP_MEMCPY));
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(CORINFO_HELP_MEMCPY));
 
     CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
     CallArg* srcArg = call->gtArgs.GetUserArgByIndex(1);
@@ -2637,7 +2723,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
             break;
     }
 
-    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(this, CORINFO_HELP_MEMCPY))
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(CORINFO_HELP_MEMCPY))
     {
         return optVNBasedFoldExpr_Call_Memmove(call);
     }
@@ -3175,6 +3261,24 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
             newTree->BashToConst(curAssertion.GetOp2().GetDoubleConstant(), tree->TypeGet());
             break;
 
+#if defined(FEATURE_HW_INTRINSICS)
+        case O2K_CONST_VEC:
+        {
+            // The assertion was created from a LCL_VAR == CNS_VEC where types matched.
+            if (!varTypeIsSIMD(tree) || !tree->TypeIs(lvaGetDesc(lclNum)->TypeGet()))
+            {
+                return nullptr;
+            }
+            assert(genTypeSize(tree->TypeGet()) == curAssertion.GetOp2().GetSimdSize());
+
+            // We can't bash a LCL_VAR into a GenTreeVecCon (different node size), so allocate a fresh node.
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
+            memcpy(&vecCon->gtSimdVal, curAssertion.GetOp2().GetSimdConstant(), genTypeSize(tree->TypeGet()));
+            newTree = vecCon;
+            break;
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         case O2K_CONST_INT:
 
             // Don't propagate non-nulll non-static handles if we need to report relocs.
@@ -3494,9 +3598,9 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    // There are no constant assertions for structs in global propagation.
+    // There are no constant assertions for structs in global propagation (except SIMD vector constants).
     //
-    if ((!optLocalAssertionProp && varTypeIsStruct(tree)) || !optCanPropLclVar)
+    if ((!optLocalAssertionProp && varTypeIsStruct(tree) && !varTypeIsSIMD(tree)) || !optCanPropLclVar)
     {
         return nullptr;
     }
@@ -3553,9 +3657,9 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
             continue;
         }
 
-        // There are no constant assertions for structs.
+        // There are no constant assertions for structs (except SIMD vector constants).
         //
-        if (varTypeIsStruct(tree))
+        if (varTypeIsStruct(tree) && !varTypeIsSIMD(tree))
         {
             continue;
         }
@@ -4206,10 +4310,10 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
     // Check if we have an assertion that exactly matches the relop.
     ValueNum relopVN = optConservativeNormalVN(tree);
+    ValueNum op1VN   = optConservativeNormalVN(op1);
+    ValueNum op2VN   = optConservativeNormalVN(op2);
     if (!BitVecOps::IsEmpty(apTraits, assertions))
     {
-        ValueNum op1VN   = optConservativeNormalVN(op1);
-        ValueNum op2VN   = optConservativeNormalVN(op2);
         ValueNum falseVN = vnStore->VNZeroForType(TYP_INT);
 
         BitVecOps::Iter iter(apTraits, assertions);
@@ -4263,6 +4367,25 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         Range relopRange = RangeCheck::GetRangeFromAssertions(this, relopVN, assertions);
 
         int relopResult;
+        if (!relopRange.IsSingleValueConstant(&relopResult))
+        {
+            // Retry by obtaining operand ranges individually. This accounts for cases where the
+            // relopVN's operands differ from the physical op1 and op2 due to optimization passes.
+            VNFuncApp relopFuncApp;
+            if (vnStore->IsVNRelop(relopVN, &relopFuncApp) &&
+                (((relopFuncApp.m_args[0] == op1VN) && (relopFuncApp.m_args[1] == op2VN)) ||
+                 ((relopFuncApp.m_args[0] == op2VN) && (relopFuncApp.m_args[1] == op1VN))))
+            {
+                // VNs match - we'll find nothing new by looking at individual operand ranges.
+            }
+            else
+            {
+                Range op1Range = RangeCheck::GetRangeFromAssertions(this, op1VN, assertions);
+                Range op2Range = RangeCheck::GetRangeFromAssertions(this, op2VN, assertions);
+                relopRange     = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Range, op2Range);
+            }
+        }
+
         if (relopRange.IsSingleValueConstant(&relopResult))
         {
             assert((relopResult == 0) || (relopResult == 1));
@@ -5133,7 +5256,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
 
     if (!optLocalAssertionProp && call->IsHelperCall())
     {
-        const CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+        const CorInfoHelpFunc helper = call->GetHelperNum();
         if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
             (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY) ||
             (helper == CORINFO_HELP_CHKCASTINTERFACE) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
@@ -5334,9 +5457,31 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         Range lenRng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
         if (idxRng.IsConstantRange() && lenRng.IsConstantRange())
         {
-            // idx.lo >= 0 && idx.hi < len.lo --> drop bounds check
-            if (idxRng.LowerLimit().GetConstant() >= 0 &&
-                idxRng.UpperLimit().GetConstant() < lenRng.LowerLimit().GetConstant())
+            int idxLo = idxRng.LowerLimit().GetConstant();
+            int idxHi = idxRng.UpperLimit().GetConstant();
+            int lenLo = lenRng.LowerLimit().GetConstant();
+
+            // GT_BOUNDS_CHECK node has an implicit contract - the length node must always be non-negative.
+            // So we additionally tighten the lower bound of lenLo to be ">= 1" when we also have a
+            // "length != 0" assertion for it.
+            if ((idxLo == 0) && (idxHi == 0) && (lenLo <= 0))
+            {
+                BitVecOps::Iter iter(apTraits, assertions);
+                unsigned        bvIndex = 0;
+                while (iter.NextElem(&bvIndex))
+                {
+                    const AssertionDsc& assertion = optGetAssertion(GetAssertionIndex(bvIndex));
+                    if (assertion.IsConstantInt32Assertion() && assertion.KindIs(OAK_NOT_EQUAL) &&
+                        (assertion.GetOp1().GetVN() == vnCurLen) && (assertion.GetOp2().GetIntConstant() == 0))
+                    {
+                        lenLo = 1;
+                        break;
+                    }
+                }
+            }
+
+            // index is always within [0..lenLo) --> drop bounds check
+            if ((idxLo >= 0) && (idxHi < lenLo))
             {
                 return dropBoundsCheck(INDEBUG("upper bound of index is less than lower bound of length"));
             }

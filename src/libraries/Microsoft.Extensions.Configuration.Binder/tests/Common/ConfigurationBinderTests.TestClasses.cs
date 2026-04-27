@@ -157,6 +157,13 @@ namespace Microsoft.Extensions
             public int Length { get; } = length;
         }
 
+        public class ClassWithPrimaryCtorAndIgnoredProperty(string color, int length)
+        {
+            [ConfigurationIgnore]
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+        }
+
         public class ClassWithPrimaryCtorDefaultValues(string color = "blue", int length = 15, decimal height = 5.946238490567943927384M, EditorBrowsableState eb = EditorBrowsableState.Never)
         {
             public string Color { get; } = color;
@@ -1190,5 +1197,15 @@ namespace Microsoft.Extensions
             public NestedWithIEnumerable? Source { get; set; }
         }
         internal sealed record NestedWithIEnumerable(string Name, IEnumerable<string> Addresses);
+
+        public class ClassWithArrayConstructorParameter
+        {
+            public ClassWithArrayConstructorParameter(string[] arrayField = null)
+            {
+                ArrayField = arrayField;
+            }
+
+            public string[] ArrayField { get; }
+        }
     }
 }

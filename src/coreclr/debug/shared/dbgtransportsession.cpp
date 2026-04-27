@@ -394,7 +394,6 @@ void MarshalDCBTransportToDCB(DebuggerIPCControlBlockTransport* pIn, DebuggerIPC
     pOut->m_verMajor =                        pIn->m_verMajor;
     pOut->m_verMinor =                        pIn->m_verMinor;
     pOut->m_checkedBuild =                    pIn->m_checkedBuild;
-    pOut->m_bHostingInFiber =                 pIn->m_bHostingInFiber;
     pOut->padding2 =                          pIn->padding2;
     pOut->padding3 =                          pIn->padding3;
 
@@ -448,7 +447,6 @@ void MarshalDCBToDCBTransport(DebuggerIPCControlBlock* pIn, DebuggerIPCControlBl
     pOut->m_verMajor =                        pIn->m_verMajor;
     pOut->m_verMinor =                        pIn->m_verMinor;
     pOut->m_checkedBuild =                    pIn->m_checkedBuild;
-    pOut->m_bHostingInFiber =                 pIn->m_bHostingInFiber;
     pOut->padding2 =                          pIn->padding2;
     pOut->padding3 =                          pIn->padding3;
 
@@ -2125,7 +2123,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_THREAD_ATTACH:
     case DB_IPCE_THREAD_DETACH:
     case DB_IPCE_USER_BREAKPOINT:
-    case DB_IPCE_EXIT_APP_DOMAIN:
     case DB_IPCE_SET_DEBUG_STATE_RESULT:
     case DB_IPCE_FUNC_EVAL_ABORT_RESULT:
     case DB_IPCE_CONTROL_C_EVENT:

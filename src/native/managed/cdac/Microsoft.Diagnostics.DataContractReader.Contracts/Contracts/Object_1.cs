@@ -19,20 +19,17 @@ internal readonly struct Object_1 : IObject
     private readonly uint _syncBlockHashCodeMask;
     private readonly uint _syncBlockIndexMask;
 
-    internal Object_1(Target target, ulong methodTableOffset, byte objectToMethodTableUnmask,
-        TargetPointer stringMethodTable, TargetPointer syncTableEntries,
-        uint syncBlockIsHashOrSyncBlockIndex, uint syncBlockIsHashCode,
-        uint syncBlockHashCodeMask, uint syncBlockIndexMask)
+    internal Object_1(Target target)
     {
         _target = target;
-        _methodTableOffset = methodTableOffset;
-        _stringMethodTable = stringMethodTable;
-        _objectToMethodTableUnmask = objectToMethodTableUnmask;
-        _syncTableEntries = syncTableEntries;
-        _syncBlockIsHashOrSyncBlockIndex = syncBlockIsHashOrSyncBlockIndex;
-        _syncBlockIsHashCode = syncBlockIsHashCode;
-        _syncBlockHashCodeMask = syncBlockHashCodeMask;
-        _syncBlockIndexMask = syncBlockIndexMask;
+        _methodTableOffset = (ulong)target.GetTypeInfo(DataType.Object).Fields["m_pMethTab"].Offset;
+        _objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
+        _stringMethodTable = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
+        _syncTableEntries = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
+        _syncBlockIsHashOrSyncBlockIndex = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex);
+        _syncBlockIsHashCode = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashCode);
+        _syncBlockHashCodeMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockHashCodeMask);
+        _syncBlockIndexMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIndexMask);
     }
 
     public TargetPointer GetMethodTableAddress(TargetPointer address)

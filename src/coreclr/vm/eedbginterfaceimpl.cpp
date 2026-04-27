@@ -1432,7 +1432,7 @@ CorDebugUserState EEDbgInterfaceImpl::GetPartialUserState(Thread *pThread)
     }
     CONTRACTL_END;
 
-    Thread::ThreadState ts = pThread->GetSnapshotState();
+    Thread::ThreadState ts = pThread->GetState();
     unsigned ret = 0;
 
     if (ts & Thread::TS_Background)
@@ -1446,7 +1446,7 @@ CorDebugUserState EEDbgInterfaceImpl::GetPartialUserState(Thread *pThread)
     }
 
     // Don't report a StopRequested if the thread has actually stopped.
-    if (ts & Thread::TS_Dead)
+    if (ts & Thread::TS_Stopped)
     {
         ret |= (unsigned)USER_STOPPED;
     }

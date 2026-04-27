@@ -288,6 +288,10 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_IsForceInlineKnown = true;
                 break;
 
+            case InlineObservation::CALLEE_IS_INTRINSIC_TYPE:
+                m_IsIntrinsicType = value;
+                break;
+
             case InlineObservation::CALLEE_IS_INSTANCE_CTOR:
                 m_IsInstanceCtor = value;
                 break;
@@ -503,6 +507,18 @@ bool DefaultPolicy::BudgetCheck() const
         {
             // We don't want to give up on various getters/setters if we're running out of budget
             JITDUMP("Allowing over-budget for small methods\n")
+            allowOverBudget = true;
+        }
+
+        if (!allowOverBudget && m_IsIntrinsicType &&
+            (strategy->GetOverBudgetIntrinsicInlineCount() < InlineStrategy::MAX_OVER_BUDGET_INTRINSIC_INLINES))
+        {
+            // Callees from [Intrinsic]-marked types (e.g. Span<T>, Vector<T>, hardware intrinsic
+            // ISA classes) need to be inlined for codegen quality even when we're out of budget.
+            // Cap the number of such admissions per root method to keep JIT throughput bounded.
+            JITDUMP("Allowing over-budget for intrinsic types (count: %u)\n",
+                    strategy->GetOverBudgetIntrinsicInlineCount());
+            strategy->NoteOverBudgetIntrinsicInline();
             allowOverBudget = true;
         }
 
@@ -1027,6 +1043,7 @@ void DefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_IsNoReturn)
     XATTR_B(m_IsNoReturnKnown)
     XATTR_B(m_InsideThrowBlock)
+    XATTR_B(m_IsIntrinsicType)
 }
 #endif
 
@@ -1855,14 +1872,25 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         const double profileTrustCoef = (double)JitConfig.JitExtDefaultPolicyProfTrust() / 10.0;
         const double profileScale     = (double)JitConfig.JitExtDefaultPolicyProfScale() / 10.0;
 
+        double profileBoost;
         if (m_RootCompiler->fgHaveTrustedProfileWeights())
         {
-            multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
+            profileBoost = (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
         }
         else
         {
-            multiplier *= min(m_ProfileFrequency, 1.0) * profileScale;
+            profileBoost = min(m_ProfileFrequency, 1.0) * profileScale;
         }
+
+        if ((profileBoost < 1.0) && m_IsIntrinsicType)
+        {
+            // Don't apply the profile-frequency-based penalty for callees from [Intrinsic]-marked types
+            // (e.g. Span<T>, Vector<T>) - JIT relies on inlining these for codegen quality regardless
+            // of how cold the call site is.
+            profileBoost = 1.0;
+        }
+        multiplier *= profileBoost;
+
         JITDUMP("\nCallsite has profile data: %g.  Multiplier limited to %g.", m_ProfileFrequency, multiplier);
     }
 

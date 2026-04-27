@@ -946,10 +946,26 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                         {
                             // These relocs should be for cases of the form:
-                            //  global.get __image_base
+                            //  global.get $imageBase
                             //  i32.const <reloc>
                             //  i32.add
                             //  i32.load 0
+                            // So, the relocated address value should always represent an offset relative to image base. 
+                            // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
+                            // flag mapping
+                            if (symbolWebcilSection is null)
+                            {
+                                throw new InvalidDataException();
+                            }
+
+                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
+                            break;
+                        }
+                        case RelocType.WASM_MEMORY_ADDR_REL_LEB:
+                        {
+                            // These relocs should be for cases of the form:
+                            //  global.get $imageBase
+                            //  i32.load <reloc>
                             // So, the relocated address value should always represent an offset relative to image base. 
                             // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
                             // flag mapping

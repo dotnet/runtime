@@ -52,13 +52,13 @@ inline DebuggerModuleTable * Debugger::GetModuleTable()
 // @dbgtodo inspection - get rid of this entire class as we move things out-of-proc.
 //-----------------------------------------------------------------------------
 inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
-                                      DomainAssembly *  pDomainAssembly) :
+                                      Assembly *    pAssembly) :
         m_enableClassLoadCallbacks(FALSE),
         m_pRuntimeModule(pRuntimeModule),
-        m_pRuntimeDomainAssembly(pDomainAssembly)
+        m_pRuntimeAssembly(pAssembly)
 {
-    LOG((LF_CORDB,LL_INFO10000, "DM::DM this:%p Module:%p DF:%p\n",
-        this, pRuntimeModule, pDomainAssembly));
+    LOG((LF_CORDB,LL_INFO10000, "DM::DM this:%p Module:%p Asm:%p\n",
+        this, pRuntimeModule, pAssembly));
 
     // Dynamic modules must receive ClassLoad callbacks in order to receive metadata updates as the module
     // evolves. So we force this on here and refuse to change it for all dynamic modules.
