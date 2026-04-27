@@ -3182,15 +3182,21 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.LeadingZeroCount(value._sign);
+                // For small values stored in _sign, use 32-bit counting to match the
+                // behavior when _bits was uint[] (where each limb was always 32-bit).
+                return uint.LeadingZeroCount((uint)value._sign);
             }
 
-            // When the value is positive, we just need to get the lzcnt of the most significant bits.
             // When negative, two's complement has infinite sign-extension of 1-bits, so LZC is always 0.
+            if (value._sign < 0)
+            {
+                return 0;
+            }
 
-            return (value._sign >= 0)
-                ? BitOperations.LeadingZeroCount(value._bits[^1])
-                : 0;
+            // When positive, count leading zeros in the most significant 32-bit word.
+            // The & 31 maps the result to 32-bit word semantics: on 64-bit, when the
+            // upper half is zero, LZC is 32 + uint_lzc, and (32 + x) & 31 == x.
+            return BitOperations.LeadingZeroCount(value._bits[^1]) & 31;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
@@ -3198,7 +3204,7 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.PopCount(value._sign);
+                return int.PopCount(value._sign);
             }
 
             ulong result = 0;
@@ -3215,30 +3221,33 @@ namespace System.Numerics
             }
             else
             {
-                // When the value is negative, we need to popcount the two's complement representation
-                // We'll do this "inline" to avoid needing to unnecessarily allocate.
+                // When the value is negative, we need to PopCount the two's complement
+                // representation. We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                int i = 0;
+                int firstNonZero = value._bits.AsSpan().IndexOfAnyExcept((nuint)0);
+
+                int i = firstNonZero;
                 nuint part;
 
-                do
-                {
-                    // Simply process bits, adding the carry while the previous value is zero
-
-                    part = ~value._bits[i] + 1;
-                    result += (ulong)BitOperations.PopCount(part);
-
-                    i++;
-                }
-                while ((part == 0) && (i < value._bits.Length));
+                // Negate the first non-zero limb (two's complement start).
+                part = ~value._bits[i] + 1;
+                result += (ulong)BitOperations.PopCount(part);
+                i++;
 
                 while (i < value._bits.Length)
                 {
-                    // Then process the remaining bits only utilizing the one's complement
-
+                    // Then process the remaining limbs using ones' complement.
                     part = ~value._bits[i];
                     result += (ulong)BitOperations.PopCount(part);
                     i++;
+                }
+
+                // On 64-bit, when the MSL's upper 32 bits are zero, complementing
+                // produces 0xFFFFFFFF in those bits, adding 32 phantom 1-bits.
+                // Subtract them to maintain 32-bit word semantics.
+                if (Environment.Is64BitProcess && (uint)(value._bits[^1] >> BitsPerUInt32) == 0)
+                {
+                    result -= BitsPerUInt32;
                 }
             }
 
@@ -3257,9 +3266,9 @@ namespace System.Numerics
 
             if (value._bits is null)
             {
-                nuint rs = BitOperations.RotateLeft((nuint)value._sign, rotateAmount);
+                uint rs = uint.RotateLeft((uint)value._sign, rotateAmount);
                 return neg
-                    ? new BigInteger((nint)rs)
+                    ? new BigInteger((int)rs)
                     : new BigInteger(rs);
             }
 
@@ -3278,9 +3287,9 @@ namespace System.Numerics
 
             if (value._bits is null)
             {
-                nuint rs = BitOperations.RotateRight((nuint)value._sign, rotateAmount);
+                uint rs = uint.RotateRight((uint)value._sign, rotateAmount);
                 return neg
-                    ? new BigInteger((nint)rs)
+                    ? new BigInteger((int)rs)
                     : new BigInteger(rs);
             }
 
@@ -3292,18 +3301,223 @@ namespace System.Numerics
             Debug.Assert(bits.Length > 0);
             Debug.Assert(Math.Abs(rotateLeftAmount) <= 0x80000000);
 
+            if (!Environment.Is64BitProcess)
+            {
+                // On 32-bit, nuint and uint are the same width so the standard nuint
+                // rotation algorithm (with BitsPerLimb = 32) is directly correct.
+                return RotateNuint(bits, negative, rotateLeftAmount);
+            }
+
+            // On 64-bit, each nuint limb is 64 bits, but the rotation ring width must
+            // be a multiple of 32 bits for platform-independent results. The last limb
+            // may hold only one significant 32-bit word (upper 32 bits zero).
+
+            // Count effective 32-bit words.
+            int wordCount = bits.Length * 2;
+            bool halfLimb = (uint)(bits[^1] >> BitsPerUInt32) == 0;
+            if (halfLimb) wordCount--;
+
+            // Determine if sign extension adds a 32-bit word.
+            int zWordCount = wordCount;
+            int firstNonZeroLimb = negative ? bits.IndexOfAnyExcept((nuint)0) : 0;
+
+            if (negative)
+            {
+                // The MSW's sign bit indicates whether two's complement needs an extra word.
+                bool mswSignBitSet = halfLimb
+                    ? (int)(uint)bits[^1] < 0               // bit 31 of lower half
+                    : (nint)bits[^1] < 0;                    // bit 63 (= MSW bit 31)
+
+                if (mswSignBitSet)
+                {
+                    // Sign extension needed unless value is exactly -2^(wordCount*32-1).
+                    bool isMinValue = halfLimb
+                        ? ((uint)bits[^1] == UInt32HighBit && firstNonZeroLimb == bits.Length - 1)
+                        : (bits[^1] == ((nuint)UInt32HighBit << BitsPerUInt32) && firstNonZeroLimb == bits.Length - 1);
+
+                    if (!isMinValue)
+                        ++zWordCount;
+                }
+            }
+
+            // Allocate result buffer sized for zWordCount 32-bit words.
+            int zLimbCount = (zWordCount + 1) / 2;
+            bool resultHalfLimb = (zWordCount & 1) != 0;
+
+            Span<nuint> zd = RentedBuffer.Create(zLimbCount, out RentedBuffer zdBuffer);
+            zd.Slice(bits.Length).Clear();
+            bits.CopyTo(zd);
+
+            // Two's complement conversion at nuint level.
+            if (negative)
+            {
+                NumericsHelpers.DangerousMakeTwosComplement(zd);
+
+                if (resultHalfLimb)
+                {
+                    // Complementing the zero padding in the upper 32 of the last limb
+                    // produces phantom 0xFFFFFFFF; clear it.
+                    zd[^1] = (nuint)(uint)zd[^1];
+                }
+            }
+
+            // Decompose the rotation amount at 32-bit word granularity.
+            int digitShift32 = (int)(0x80000000 / BitsPerUInt32);
+            int smallShift32 = 0;
+            bool rotateRight;
+
+            if (rotateLeftAmount < 0)
+            {
+                rotateRight = true;
+                if (rotateLeftAmount != -0x80000000)
+                    (digitShift32, smallShift32) = Math.DivRem(-(int)rotateLeftAmount, BitsPerUInt32);
+            }
+            else
+            {
+                rotateRight = false;
+                if (rotateLeftAmount != 0x80000000)
+                    (digitShift32, smallShift32) = Math.DivRem((int)rotateLeftAmount, BitsPerUInt32);
+            }
+
+            // Perform the rotation.
+            if (!resultHalfLimb)
+            {
+                // Even word count: the ring fills all nuint limbs completely.
+                // An odd 32-bit digit shift is absorbed into the nuint small shift (0..63).
+                int nuintSmallShift = (digitShift32 & 1) * BitsPerUInt32 + smallShift32;
+                int nuintDigitShift = digitShift32 >> 1;
+
+                if (rotateRight)
+                {
+                    BigIntegerCalculator.RightShiftSelf(zd, nuintSmallShift, out nuint carry);
+                    zd[^1] |= carry;
+
+                    nuintDigitShift %= zd.Length;
+                    if (nuintDigitShift != 0)
+                        BigIntegerCalculator.SwapUpperAndLower(zd, nuintDigitShift);
+                }
+                else
+                {
+                    BigIntegerCalculator.LeftShiftSelf(zd, nuintSmallShift, out nuint carry);
+                    zd[0] |= carry;
+
+                    nuintDigitShift %= zd.Length;
+                    if (nuintDigitShift != 0)
+                        BigIntegerCalculator.SwapUpperAndLower(zd, zd.Length - nuintDigitShift);
+                }
+            }
+            else
+            {
+                // Odd word count: the last limb's upper 32 bits are not part of the ring.
+                // The SIMD-accelerated nuint shift handles the bit-level rotation; a carry
+                // fixup accounts for the half-used last limb. The digit swap operates at
+                // uint granularity via MemoryMarshal.Cast because the swap boundary may
+                // fall mid-nuint.
+                if (rotateRight)
+                {
+                    if (smallShift32 != 0)
+                    {
+                        BigIntegerCalculator.RightShiftSelf(zd, smallShift32, out nuint carry);
+                        // The nuint carry is at bit positions (64-shift)..63.
+                        // For the half-limb ring, it wraps to bit (32-shift)..31 of the last word.
+                        zd[^1] |= carry >> BitsPerUInt32;
+                    }
+
+                    int effectiveDigitShift = digitShift32 % zWordCount;
+                    if (effectiveDigitShift != 0)
+                    {
+                        if (!BitConverter.IsLittleEndian)
+                            SwapHalvesWithinLimbs(zd);
+
+                        Span<uint> words = MemoryMarshal.Cast<nuint, uint>(zd).Slice(0, zWordCount);
+                        BigIntegerCalculator.SwapUpperAndLower(words, effectiveDigitShift);
+
+                        if (!BitConverter.IsLittleEndian)
+                            SwapHalvesWithinLimbs(zd);
+                    }
+                }
+                else
+                {
+                    if (smallShift32 != 0)
+                    {
+                        BigIntegerCalculator.LeftShiftSelf(zd, smallShift32, out _);
+                        // Bits that overflowed into the upper 32 of the last limb should wrap.
+                        // The nuint carry is 0 since the upper 32 were zero and shift < 32.
+                        nuint overflow = zd[^1] >> BitsPerUInt32;
+                        zd[^1] = (nuint)(uint)zd[^1];
+                        zd[0] |= overflow;
+                    }
+
+                    int effectiveDigitShift = digitShift32 % zWordCount;
+                    if (effectiveDigitShift != 0)
+                    {
+                        if (!BitConverter.IsLittleEndian)
+                            SwapHalvesWithinLimbs(zd);
+
+                        Span<uint> words = MemoryMarshal.Cast<nuint, uint>(zd).Slice(0, zWordCount);
+                        BigIntegerCalculator.SwapUpperAndLower(words, zWordCount - effectiveDigitShift);
+
+                        if (!BitConverter.IsLittleEndian)
+                            SwapHalvesWithinLimbs(zd);
+                    }
+                }
+            }
+
+            // Check sign bit and convert back from two's complement if needed.
+            bool resultNeg = resultHalfLimb
+                ? negative && (int)(uint)zd[^1] < 0
+                : negative && (nint)zd[^1] < 0;
+
+            if (resultNeg)
+            {
+                NumericsHelpers.DangerousMakeTwosComplement(zd);
+
+                if (resultHalfLimb)
+                {
+                    // Clear phantom bits from complementing the zero padding.
+                    zd[^1] = (nuint)(uint)zd[^1];
+                }
+            }
+            else
+            {
+                negative = false;
+            }
+
+            BigInteger result = new(zd, negative);
+
+            zdBuffer.Dispose();
+
+            return result;
+        }
+
+        /// <summary>
+        /// Swaps the upper and lower 32-bit halves within each nuint limb.
+        /// Used on big-endian 64-bit before/after MemoryMarshal.Cast&lt;nuint, uint&gt;
+        /// to ensure correct 32-bit word ordering.
+        /// </summary>
+        private static void SwapHalvesWithinLimbs(Span<nuint> limbs)
+        {
+            for (int i = 0; i < limbs.Length; i++)
+            {
+                nuint v = limbs[i];
+                limbs[i] = ((v & 0xFFFFFFFF) << BitsPerUInt32) | (v >> BitsPerUInt32);
+            }
+        }
+
+        /// <summary>
+        /// Rotation using the standard nuint algorithm. Only correct on 32-bit where
+        /// nuint and uint have the same width (BitsPerLimb = 32).
+        /// </summary>
+        private static BigInteger RotateNuint(ReadOnlySpan<nuint> bits, bool negative, long rotateLeftAmount)
+        {
+            Debug.Assert(!Environment.Is64BitProcess);
+
             int zLength = bits.Length;
-            int leadingZeroCount = negative ? bits.IndexOfAnyExcept(0u) : 0;
+            int leadingZeroCount = negative ? bits.IndexOfAnyExcept((nuint)0) : 0;
 
             if (negative && (nint)bits[^1] < 0
                 && (leadingZeroCount != bits.Length - 1 || bits[^1] != ((nuint)1 << (BigIntegerCalculator.BitsPerLimb - 1))))
             {
-                // For a shift of N x BitsPerLimb bit,
-                // We check for a special case where its sign bit could be outside the nuint array after 2's complement conversion.
-                // For example given [nuint.MaxValue, nuint.MaxValue, nuint.MaxValue], its 2's complement is [0x01, 0x00, 0x00]
-                // After a BitsPerLimb bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
-                // The expected result is [0x00, 0x00, nuint.MaxValue] (2's complement) or [0x00, 0x00, 0x01] when converted back
-                // If the 2's component's last element is a 0, we will track the sign externally
                 ++zLength;
             }
 
@@ -3316,8 +3530,6 @@ namespace System.Numerics
             {
                 Debug.Assert((uint)leadingZeroCount < (uint)zd.Length);
 
-                // Same as NumericsHelpers.DangerousMakeTwosComplement(zd);
-                // Leading zero count is already calculated.
                 zd[leadingZeroCount] = (nuint)(-(nint)zd[leadingZeroCount]);
                 NumericsHelpers.DangerousMakeOnesComplement(zd.Slice(leadingZeroCount + 1));
             }
@@ -3345,7 +3557,7 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.TrailingZeroCount(value._sign);
+                return int.TrailingZeroCount(value._sign);
             }
 
             ulong result = 0;

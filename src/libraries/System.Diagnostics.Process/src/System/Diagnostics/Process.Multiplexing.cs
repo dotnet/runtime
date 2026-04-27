@@ -386,7 +386,7 @@ namespace System.Diagnostics
             ref int errorBytesRead)
         {
             int timeoutMs = timeout.HasValue
-                ? ToTimeoutMilliseconds(timeout.Value)
+                ? ProcessUtils.ToTimeoutMilliseconds(timeout.Value)
                 : Timeout.Infinite;
 
             var outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
