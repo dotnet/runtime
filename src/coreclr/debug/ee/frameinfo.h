@@ -108,7 +108,6 @@ public:
     // Helpers for initializing a FrameInfo for a chain or a stub frame.
     void InitForM2UInternalFrame(CrawlFrame * pCF);
     void InitForU2MInternalFrame(CrawlFrame * pCF);
-    void InitForADTransition(CrawlFrame * pCF);
     void InitForDynamicMethod(CrawlFrame * pCF);
     void InitForFuncEval(CrawlFrame * pCF);
     void InitForThreadStart(Thread *thread, REGDISPLAY * pRDSrc);

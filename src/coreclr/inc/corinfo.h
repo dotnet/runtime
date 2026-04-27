@@ -55,13 +55,6 @@ method or field of the class. 'beforeFieldInit' semantics guarantees only that t
 time before the first static field access (note that calling methods (static or instance) or accessing
 instance fields does not cause .cctors to be run).
 
-Next you need to know that there are two kinds of code generation that can happen in the JIT: appdomain
-neutral and appdomain specialized. The difference between these two kinds of code is how statics are handled.
-For appdomain specific code, the address of a particular static variable is embedded in the code. This makes
-it usable only for one appdomain (since every appdomain gets a own copy of its statics). Appdomain neutral
-code calls a helper that looks up static variables off of a thread local variable. Thus the same code can be
-used by multiple appdomains in the same process.
-
 Generics also introduce a similar issue. Code for generic classes might be specialized for a particular set
 of type arguments, or it could use helpers to access data that depends on type parameters and thus be shared
 across several instantiations of the generic type.

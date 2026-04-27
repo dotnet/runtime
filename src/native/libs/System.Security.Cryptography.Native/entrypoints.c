@@ -26,6 +26,7 @@
 #include "pal_evp_pkey_rsa.h"
 #include "pal_evp_pkey_ml_dsa.h"
 #include "pal_evp_pkey_slh_dsa.h"
+#include "pal_evp_pkey_x25519.h"
 #include "pal_hmac.h"
 #include "pal_ocsp.h"
 #include "pal_pkcs7.h"
@@ -367,9 +368,12 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslCtxDestroy)
     DllImportEntry(CryptoNative_SslCtxGetData)
     DllImportEntry(CryptoNative_SslCtxSetAlpnSelectCb)
+    DllImportEntry(CryptoNative_SslCtxSetCertVerifyCallback)
     DllImportEntry(CryptoNative_SslCtxSetData)
     DllImportEntry(CryptoNative_SslCtxSetProtocolOptions)
     DllImportEntry(CryptoNative_SslCtxSetQuietShutdown)
+    DllImportEntry(CryptoNative_X509StoreCtxGetSslPtr)
+    DllImportEntry(CryptoNative_X509StoreCtxSetError)
     DllImportEntry(CryptoNative_SslCtxUseCertificate)
     DllImportEntry(CryptoNative_SslCtxUsePrivateKey)
     DllImportEntry(CryptoNative_SslAddExtraChainCert)
@@ -379,10 +383,12 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslGetClientCAList)
     DllImportEntry(CryptoNative_SslGetCurrentCipherId)
     DllImportEntry(CryptoNative_SslGetData)
+    DllImportEntry(CryptoNative_SslGetSslCtx)
     DllImportEntry(CryptoNative_SslGetError)
     DllImportEntry(CryptoNative_SslGetFinished)
     DllImportEntry(CryptoNative_SslGetPeerCertChain)
     DllImportEntry(CryptoNative_SslGetPeerCertificate)
+    DllImportEntry(CryptoNative_SslUpdateOcspStaple)
     DllImportEntry(CryptoNative_SslGetCertificate)
     DllImportEntry(CryptoNative_SslGetPeerFinished)
     DllImportEntry(CryptoNative_SslGetServerName)
@@ -415,6 +421,12 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslV2_3Method)
     DllImportEntry(CryptoNative_SslWrite)
     DllImportEntry(CryptoNative_Tls13Supported)
+    DllImportEntry(CryptoNative_X25519Available)
+    DllImportEntry(CryptoNative_X25519ExportPrivateKey)
+    DllImportEntry(CryptoNative_X25519ExportPublicKey)
+    DllImportEntry(CryptoNative_X25519GenerateKey)
+    DllImportEntry(CryptoNative_X25519ImportPrivateKey)
+    DllImportEntry(CryptoNative_X25519ImportPublicKey)
     DllImportEntry(CryptoNative_X509DecodeOcspToExpiration)
     DllImportEntry(CryptoNative_X509Duplicate)
     DllImportEntry(CryptoNative_SslGet0AlpnSelected)

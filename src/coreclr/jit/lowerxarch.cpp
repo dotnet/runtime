@@ -1337,8 +1337,6 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
     {
         case NI_X86Base_COMIS:
         case NI_X86Base_UCOMIS:
-        case NI_AVX10v1_VCOMISH:
-        case NI_AVX10v1_VUCOMISH:
             // In some cases we can generate better code if we swap the operands:
             //   - If the condition is not one of the "preferred" floating point conditions we can swap
             //     the operands and change the condition to avoid generating an extra JP/JNP branch.
@@ -2794,43 +2792,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
         }
-        case NI_AVX10v1_CompareScalarOrderedEqual:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FEQ);
-            break;
-        case NI_AVX10v1_CompareScalarOrderedNotEqual:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FNEU);
-            break;
-        case NI_AVX10v1_CompareScalarOrderedLessThan:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FLT);
-            break;
-        case NI_AVX10v1_CompareScalarOrderedLessThanOrEqual:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FLE);
-            break;
-        case NI_AVX10v1_CompareScalarOrderedGreaterThan:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FGT);
-            break;
-        case NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FGE);
-            break;
-
-        case NI_AVX10v1_CompareScalarUnorderedEqual:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FEQ);
-            break;
-        case NI_AVX10v1_CompareScalarUnorderedNotEqual:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FNEU);
-            break;
-        case NI_AVX10v1_CompareScalarUnorderedLessThan:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FLT);
-            break;
-        case NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FLE);
-            break;
-        case NI_AVX10v1_CompareScalarUnorderedGreaterThan:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FGT);
-            break;
-        case NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual:
-            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FGE);
-            break;
 
         default:
             break;
@@ -6344,7 +6305,7 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 
     assert(HWIntrinsicInfo::IsVectorToScalar(intrinsicId));
     assert(varTypeIsSIMD(simdType));
-    assert(varTypeIsArithmetic(simdBaseType) || TypeGet(simdBaseType) == TYP_HALF);
+    assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
 
     GenTree* op1 = node->Op(1);
@@ -7445,6 +7406,26 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
 }
 
 //------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   Check if we can contain the memory operand of a GT_NONLOCAL_JMP.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
+{
+    GenTree* addr = node->gtGetOp1();
+    if (IsContainableMemoryOp(addr) && IsSafeToContainMem(node, addr))
+    {
+        MakeSrcContained(node, addr);
+    }
+    else if (IsSafeToMarkRegOptional(node, addr))
+    {
+        MakeSrcRegOptional(node, addr);
+    }
+}
+
+//------------------------------------------------------------------------
 // ContainCheckStoreIndir: determine whether the sources of a STOREIND node should be contained.
 //
 // Arguments:
@@ -7683,6 +7664,22 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     {
                         isContainable = true;
                     }
+                    break;
+                }
+
+                case NI_AVX2_ConvertToVector128Half:
+                case NI_AVX2_ConvertToVector256Half:
+                {
+                    // These intrinsics are "ins xmm/mem, xmm, imm8"
+                    // and store half the width of the input vector
+
+                    size_t   numArgs  = hwintrinsic->GetOperandCount();
+                    GenTree* lastOp   = hwintrinsic->Op(numArgs);
+                    unsigned simdSize = hwintrinsic->GetSimdSize();
+                    unsigned memSize  = (simdSize / 2);
+
+                    isContainable = HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI() &&
+                                    (genTypeSize(node) == memSize);
                     break;
                 }
 
@@ -9834,7 +9831,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512_GetMantissaScalar:
                         case NI_AVX512_RoundScaleScalar:
                         case NI_AVX512_ReduceScalar:
-                        case NI_AVX10v1_RoundScaleScalar:
                         {
                             // These intrinsics have both 2 and 3-operand overloads.
                             //
@@ -9853,6 +9849,14 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             assert(isContainedImm);
                             return;
+                        }
+
+                        case NI_AVX2_ConvertToVector128Half:
+                        case NI_AVX2_ConvertToVector256Half:
+                        {
+                            // These intrinsics are "ins xmm/mem, xmm, imm8" and get
+                            // contained by the relevant store operation instead.
+                            break;
                         }
 
                         default:
@@ -10515,7 +10519,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AES_CarrylessMultiply:
                         case NI_AES_V256_CarrylessMultiply:
                         case NI_AES_V512_CarrylessMultiply:
-                        case NI_AVX10v1_RoundScaleScalar:
                         case NI_AVX10v2_MinMax:
                         case NI_AVX10v2_MinMaxScalar:
                         case NI_AVX10v2_MultipleSumAbsoluteDifferences:

@@ -60,10 +60,7 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
 
-#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
-#define FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
-#endif
-
+// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None.
 enum class AsyncMethodFlags
 {
     // Method uses CORINFO_CALLCONV_ASYNCCALL call convention.
@@ -270,6 +267,9 @@ struct MethodDescCodeData final
 #ifdef FEATURE_INTERPRETER
     void* CalliCookie;
 #endif // FEATURE_INTERPRETER
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    PatchpointInfo *AltJitPatchpointInfo;
+#endif // _DEBUG && ALLOW_SXS_JIT
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
@@ -877,12 +877,6 @@ public:
     // Returns the # of bytes of stack used by arguments. Does not include
     // arguments passed in registers.
     UINT SizeOfArgStack();
-
-#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
-    // Returns the # of bytes of stack used by arguments in a call from native to this function.
-    // Does not include arguments passed in registers.
-    UINT SizeOfNativeArgStack();
-#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 
     // Returns the # of bytes to pop after a call. Not necessary the
     // same as SizeOfArgStack()!
@@ -1634,6 +1628,7 @@ public:
     PCODE GetPortableEntryPointIfExists();
 
     void ResetPortableEntryPoint();
+    void SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *portableEntry);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     //*******************************************************************************
@@ -1997,6 +1992,11 @@ public:
 #ifndef DACCESS_COMPILE
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
     void SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier);
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    HRESULT SetMethodDescAltJitPatchpointInfo(PatchpointInfo* pInfo);
+    PatchpointInfo* GetMethodDescAltJitPatchpointInfo();
+#endif
 #endif // !DACCESS_COMPILE
     PTR_MethodDescVersioningState GetMethodDescVersionState();
     NativeCodeVersion::OptimizationTier GetMethodDescOptimizationTier();
@@ -2280,7 +2280,6 @@ public:
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
 
 private:
-    PCODE PrepareILBasedCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
@@ -2681,6 +2680,12 @@ public:
         m_next = chunk;
     }
 
+    void SetNextChunkVolatile(MethodDescChunk *chunk)
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&m_next, dac_cast<PTR_MethodDescChunk>(chunk));
+    }
+
     void SetLoaderModuleAttachedToChunk(Module* pModule)
     {
         m_flagsAndTokenRange |= enum_flag_LoaderModuleAttachedToChunk;
@@ -2692,7 +2697,11 @@ public:
     PTR_MethodDescChunk GetNextChunk()
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef DACCESS_COMPILE
         return m_next;
+#else
+        return VolatileLoad(&m_next);
+#endif
     }
 
     UINT32 GetCount()
@@ -3007,7 +3016,7 @@ public:
         return asMetadata;
     }
 
-#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
+#if defined(TARGET_X86)
     WORD GetNativeStackArgSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -3024,7 +3033,7 @@ public:
 #endif
         m_dwExtendedFlags = (m_dwExtendedFlags & ~StackArgSizeMask) | ((DWORD)cbArgSize << 16);
     }
-#endif // TARGET_X86 || FEATURE_COMINTEROP
+#endif // TARGET_X86
 
     bool IsReversePInvokeStub() const
     {
@@ -3286,9 +3295,6 @@ public:
 
         kPInvokePopulated               = 0x8000, // Indicate if the PInvoke has been fully populated.
     };
-
-    // Resolve the import to the PInvoke target and set it on the PInvokeMethodDesc.
-    static void* ResolveAndSetPInvokeTarget(_In_ PInvokeMethodDesc* pMD);
 
     // Attempt to get a resolved PInvoke target. This will return true for already resolved
     // targets and methods that are resolved at JIT time, such as those marked SuppressGCTransition

@@ -21,7 +21,7 @@
 #include "arraylist.h"
 #include "comreflectioncache.hpp"
 #include "comutilnative.h"
-#include "domainassembly.h"
+#include "assembly.hpp"
 #include "fptrstubs.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
@@ -40,7 +40,7 @@ class AppDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
 class FrozenObjectHeapManager;
-class DomainAssembly;
+class Assembly;
 class TypeEquivalenceHashTable;
 
 #ifdef FEATURE_COMINTEROP
@@ -267,7 +267,7 @@ typedef PEFileListLock::Holder PEFileListLockHolder;
 
 // Loading infrastructure:
 //
-// a DomainAssembly is a file being loaded.  Files are loaded in layers to enable loading in the
+// an Assembly is a file being loaded.  Files are loaded in layers to enable loading in the
 // presence of dependency loops.
 //
 // FileLoadLevel describes the various levels available.  These are implemented slightly
@@ -466,7 +466,7 @@ enum AssemblyIterationFlags
                                         // (all m_level values)
     kIncludeAvailableToProfilers
                           = 0x00000020, // include assemblies available to profilers
-                                        // See comment at code:DomainAssembly::IsAvailableToProfilers
+                                        // See comment at code:Assembly::IsAvailableToProfilers
 
     // Execution / introspection flags
     kIncludeExecution     = 0x00000004, // include assemblies that are loaded for execution only
@@ -541,16 +541,6 @@ public:
     }
 
 private:
-    LoaderAllocator * GetLoaderAllocator(DomainAssembly * pDomainAssembly)
-    {
-        WRAPPER_NO_CONTRACT;
-        return pDomainAssembly->GetAssembly()->GetLoaderAllocator();
-    }
-    BOOL IsCollectible(DomainAssembly * pDomainAssembly)
-    {
-        WRAPPER_NO_CONTRACT;
-        return pDomainAssembly->GetAssembly()->IsCollectible();
-    }
     LoaderAllocator * GetLoaderAllocator(Assembly * pAssembly)
     {
         WRAPPER_NO_CONTRACT;
@@ -568,7 +558,7 @@ private:
 // Holder of assembly reference which keeps collectible assembly alive while the holder is valid.
 //
 // Collectible assembly can be collected at any point when GC happens. Almost instantly all native data
-// structures of the assembly (e.g. code:DomainAssembly, code:Assembly) could be deallocated.
+// structures of the assembly (e.g. code:Assembly) could be deallocated.
 // Therefore any usage of (collectible) assembly data structures from native world, has to prevent the
 // deallocation by increasing ref-count on the assembly / associated loader allocator.
 //
@@ -821,7 +811,7 @@ private:
 
 protected:
     // Multi-thread safe access to the list of assemblies
-    class DomainAssemblyList
+    class AssemblyList
     {
     private:
         ArrayList m_array;
@@ -888,7 +878,7 @@ protected:
             return m_array.GetCount();
         }
 
-        void Get(AppDomain * pAppDomain, DWORD index, CollectibleAssemblyHolder<DomainAssembly *> * pAssemblyHolder)
+        void Get(AppDomain * pAppDomain, DWORD index, CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
         {
             CONTRACTL {
                 NOTHROW;
@@ -901,7 +891,7 @@ protected:
             CrstHolder ch(pAppDomain->GetAssemblyListLock());
             Get_Unlocked(index, pAssemblyHolder);
         }
-        void Get_Unlocked(DWORD index, CollectibleAssemblyHolder<DomainAssembly *> * pAssemblyHolder)
+        void Get_Unlocked(DWORD index, CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
         {
             CONTRACTL {
                 NOTHROW;
@@ -910,11 +900,11 @@ protected:
             } CONTRACTL_END;
 
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
-            *pAssemblyHolder = dac_cast<PTR_DomainAssembly>(m_array.Get(index));
+            *pAssemblyHolder = dac_cast<PTR_Assembly>(m_array.Get(index));
         }
         // Doesn't lock the assembly list (caller has to hold the lock already).
         // Doesn't AddRef the returned assembly (if collectible).
-        DomainAssembly * Get_UnlockedNoReference(DWORD index)
+        Assembly * Get_UnlockedNoReference(DWORD index)
         {
             CONTRACTL {
                 NOTHROW;
@@ -926,11 +916,11 @@ protected:
 #ifndef DACCESS_COMPILE
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
 #endif
-            return dac_cast<PTR_DomainAssembly>(m_array.Get(index));
+            return dac_cast<PTR_Assembly>(m_array.Get(index));
         }
 
 #ifndef DACCESS_COMPILE
-        void Set(AppDomain * pAppDomain, DWORD index, DomainAssembly * pAssembly)
+        void Set(AppDomain * pAppDomain, DWORD index, Assembly * pAssembly)
         {
             CONTRACTL {
                 NOTHROW;
@@ -943,7 +933,7 @@ protected:
             CrstHolder ch(pAppDomain->GetAssemblyListLock());
             return Set_Unlocked(index, pAssembly);
         }
-        void Set_Unlocked(DWORD index, DomainAssembly * pAssembly)
+        void Set_Unlocked(DWORD index, Assembly * pAssembly)
         {
             CONTRACTL {
                 NOTHROW;
@@ -955,7 +945,7 @@ protected:
             m_array.Set(index, pAssembly);
         }
 
-        HRESULT Append_Unlocked(DomainAssembly * pAssembly)
+        HRESULT Append_Unlocked(Assembly * pAssembly)
         {
             CONTRACTL {
                 NOTHROW;
@@ -983,10 +973,10 @@ protected:
         }
 
         friend struct cdac_data<AppDomain>;
-    };  // class DomainAssemblyList
+    };  // class AssemblyList
 
     // Conceptually a list of code:Assembly structures, protected by lock code:GetAssemblyListLock
-    DomainAssemblyList m_Assemblies;
+    AssemblyList m_Assemblies;
 
 public:
     // Note that this lock switches thread into GC_NOTRIGGER region as GC can take it too.
@@ -1104,7 +1094,7 @@ private:
     // unless the call is guaranteed to succeed or you don't need the caching
     // (e.g. if you will FailFast or tear down the AppDomain anyway)
     // The main point that you should not bypass caching if you might try to load the same file again,
-    // resulting in multiple DomainAssembly objects that share the same PEAssembly for ngen image
+    // resulting in multiple Assembly objects that share the same PEAssembly for ngen image
     //which is violating our internal assumptions
     Assembly *LoadAssemblyInternal(AssemblySpec* pIdentity,
                                    PEAssembly *pPEAssembly,
@@ -1142,8 +1132,8 @@ public:
     NATIVE_LIBRARY_HANDLE FindUnmanagedImageInCache(LPCWSTR libraryName);
 
     // Adds or removes an assembly to the domain.
-    void AddAssembly(DomainAssembly * assem);
-    void RemoveAssembly(DomainAssembly * pAsm);
+    void AddAssembly(Assembly * assem);
+    void RemoveAssembly(Assembly * pAsm);
 
     BOOL ContainsAssembly(Assembly * assem);
 
@@ -1577,7 +1567,7 @@ template<>
 struct cdac_data<AppDomain>
 {
     static constexpr size_t RootAssembly = offsetof(AppDomain, m_pRootAssembly);
-    static constexpr size_t DomainAssemblyList = offsetof(AppDomain, m_Assemblies) + offsetof(AppDomain::DomainAssemblyList, m_array);
+    static constexpr size_t AssemblyList = offsetof(AppDomain, m_Assemblies) + offsetof(AppDomain::AssemblyList, m_array);
     static constexpr size_t FriendlyName = offsetof(AppDomain, m_friendlyName);
 };
 

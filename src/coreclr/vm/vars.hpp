@@ -546,14 +546,8 @@ inline bool CORDebuggerAttached()
     return (g_CORDebuggerControlFlags & DBCF_ATTACHED) && !IsAtProcessExit();
 }
 
-// This only check debugger bits. However JIT optimizations can be disabled by other ways on a module
-// In most cases Module::AreJITOptimizationsDisabled() should be the prefered for checking if JIT optimizations
-// are disabled for a module (it does check both debugger bits and profiler jit deoptimization flag)
 #define CORDebuggerAllowJITOpts(dwDebuggerBits)           \
-    (((dwDebuggerBits) & DACF_ALLOW_JIT_OPTS)             \
-     ||                                                   \
-     ((g_CORDebuggerControlFlags & DBCF_ALLOW_JIT_OPT) && \
-      !((dwDebuggerBits) & DACF_USER_OVERRIDE)))
+    (((dwDebuggerBits) & DACF_ALLOW_JIT_OPTS) != 0)
 
 #define CORDebuggerEnCMode(dwDebuggerBits)                         \
     ((dwDebuggerBits) & DACF_ENC_ENABLED)

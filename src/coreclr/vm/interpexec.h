@@ -130,6 +130,8 @@ struct ManagedMethodParam
     Object** pContinuationRet;
 };
 
+void InvokeManagedMethod(ManagedMethodParam *pParam);
+
 #ifdef FEATURE_INTERPRETER
 struct CalliStubParam
 {

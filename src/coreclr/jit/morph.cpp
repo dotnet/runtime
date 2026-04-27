@@ -2926,7 +2926,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     }
 
 #ifdef FEATURE_SIMD
-    if (varTypeIsStruct(elemTyp) && structSizeMightRepresentAcceleratedType(elemSize))
+    if (varTypeIsStruct(elemTyp) && structSizeMightRepresentSIMDType(elemSize))
     {
         elemTyp = impNormStructType(elemStructType);
     }
@@ -6439,13 +6439,22 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
-    if (opts.OptimizationEnabled() && call->IsHelperCall(CORINFO_HELP_ARRADDR_ST))
+    if (opts.OptimizationEnabled() && call->IsHelperCallOrUserEquivalent(this, CORINFO_HELP_ARRADDR_ST))
     {
         assert(call->gtArgs.CountUserArgs() == 3);
 
         GenTree* arr   = call->gtArgs.GetUserArgByIndex(0)->GetNode();
         GenTree* index = call->gtArgs.GetUserArgByIndex(1)->GetNode();
         GenTree* value = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+
+        if (!call->IsHelperCall())
+        {
+            // Convert back to helper call if it wasn't inlined.
+            // Currently, only helper calls are eligible to be direct calls if the target has reached
+            // its final tier. TODO: remove this workaround and convert this user call to direct as well.
+            call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_ARRADDR_ST);
+            call->gtCallType    = CT_HELPER;
+        }
 
         if (gtCanSkipCovariantStoreCheck(value, arr))
         {
@@ -11447,6 +11456,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     innerOp = fgMorphHWIntrinsicOptional(innerOp->AsHWIntrinsic());
                 }
+                innerOp->SetMorphed(this);
 
                 tree->Op(opIndex) = innerOp;
             }
@@ -11591,6 +11601,12 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                         if (op1Type != retType)
                         {
                             newNode = fgMorphHWIntrinsicRequired(newNode->AsHWIntrinsic());
+
+                            if (newNode->OperIsHWIntrinsic())
+                            {
+                                newNode = fgMorphHWIntrinsicOptional(newNode->AsHWIntrinsic());
+                            }
+                            newNode->SetMorphed(this);
 
                             if (retType == TYP_MASK)
                             {
@@ -11765,9 +11781,14 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     tree->ChangeHWIntrinsicId(addIntrinsic, op2, op1);
 
                     op2 = fgMorphHWIntrinsicRequired(op2->AsHWIntrinsic());
-                    op2->SetMorphed(this);
-                    tree->Op(1) = op2;
 
+                    if (op2->OperIsHWIntrinsic())
+                    {
+                        op2 = fgMorphHWIntrinsicOptional(op2->AsHWIntrinsic());
+                    }
+                    op2->SetMorphed(this);
+
+                    tree->Op(1) = op2;
                     return fgMorphHWIntrinsicRequired(tree);
                 }
             }
@@ -14974,7 +14995,7 @@ PhaseStatus Compiler::fgPromoteStructs()
             }
             tooManyLocalsReported = true;
         }
-        else if (varTypeIsStruct(varDsc) && TypeGet(varDsc) != TYP_HALF)
+        else if (varTypeIsStruct(varDsc))
         {
             assert(structPromotionHelper != nullptr);
             promotedVar = structPromotionHelper->TryPromoteStructVar(lclNum);
