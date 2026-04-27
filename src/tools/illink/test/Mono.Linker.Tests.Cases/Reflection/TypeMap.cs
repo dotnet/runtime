@@ -85,6 +85,15 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMapAssemblyTarget<UsedTypeMapUniverse>("library")]
 [assembly: TypeMapAssemblyTarget<UnusedTypeMap2>("library")] // Should be removed
 
+// Verify that when a TypeMapAttribute's target type is instantiated by TypeMap processing,
+// the associated TypeMapAssociation entry is also kept. Without the fix, only MarkInstantiated
+// was called (not MarkRequirementsForInstantiatedTypes), preventing ProcessInstantiated from
+// being called and leaving TypeMapAssociation entries unmarked.
+[assembly: TypeMap<UsedTypeMap>("BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTrimTarget))] // Kept
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))] // Kept
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTrimTarget))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))]
+
 namespace Mono.Linker.Tests.Cases.Reflection
 {
     [SetupLinkerAction("link", "System.Private.CoreLib")] // Needed to get the RemoveAttributeInstances in embedded xml
@@ -234,6 +243,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
             _ = new int();
             _ = TypeMapping.GetOrCreateExternalTypeMapping<string>();
             _ = TypeMapping.GetOrCreateProxyTypeMapping<string>();
+
+            // Instantiate BothInExternalAndProxyTrimTarget to trigger the TypeMap entry for BothInExternalAndProxy.
+            // BothInExternalAndProxy is only instantiated via TypeMap processing (not directly), which verifies
+            // that MarkRequirementsForInstantiatedTypes is called to propagate instantiation to TypeMapAssociation.
+            _ = new BothInExternalAndProxyTrimTarget();
         }
 
         [ExpectBodyModified]
@@ -572,4 +586,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
     class ArrayTypeTrimTargetUnusedTarget;
 
     class ArrayTypeTrimTargetUnusedClass;
+
+    [Kept]
+    [KeptMember(".ctor()")]
+    class BothInExternalAndProxyTrimTarget;
+    [Kept]
+    class BothInExternalAndProxy;
+    [Kept]
+    class BothInExternalAndProxyTarget;
 }

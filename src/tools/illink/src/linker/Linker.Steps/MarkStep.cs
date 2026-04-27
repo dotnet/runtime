@@ -3515,7 +3515,7 @@ namespace Mono.Linker.Steps
             return false;
         }
 
-        protected virtual void MarkRequirementsForInstantiatedTypes(TypeDefinition type)
+        protected internal virtual void MarkRequirementsForInstantiatedTypes(TypeDefinition type)
         {
             if (Annotations.IsInstantiated(type))
                 return;
