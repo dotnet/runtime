@@ -89,6 +89,14 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         EnsureWasmTemplatesInstalled();
 
+        // [diag] Log DOTNET_CLI_HOME inherited by the `dotnet new <template>` invocation.
+        // The template engine reads installed templates from this location; if it differs
+        // from the DOTNET_CLI_HOME used by EnsureWasmTemplatesInstalled, the template
+        // won't be found.
+        string inheritedCliHome = Environment.GetEnvironmentVariable("DOTNET_CLI_HOME") ?? "<unset>";
+        string envVarsCliHome = s_buildEnv.EnvVars.TryGetValue("DOTNET_CLI_HOME", out string? evCliHome) ? evCliHome : "<unset-in-EnvVars>";
+        Console.WriteLine($"[diag] DOTNET_CLI_HOME inherited by `dotnet new {template.ToString().ToLower()}`: '{inheritedCliHome}' (buildEnv.EnvVars: '{envVarsCliHome}')");
+
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
         CommandResult result = cmd.WithWorkingDirectory(_projectDir)
             .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
@@ -215,12 +223,18 @@ public class WasmTemplateTestsBase : BuildTestBase
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
-            // Isolate the template cache so the install doesn't touch the default user profile
-            // and can't collide across Helix jobs/agents. Always place it in TmpPath — the
-            // test harness's writable scratch dir — because the nupkg can live under the
-            // Helix correlation payload, which is read-only on Linux agents.
-            string dotnetCliHome = Path.Combine(BuildEnvironment.TmpPath, ".dotnet-cli-home");
+            // Use the inherited DOTNET_CLI_HOME if set (Helix workitems set this to a
+            // writable workitem path); otherwise fall back to TmpPath. Aligning with
+            // the inherited value ensures `dotnet new install` and the subsequent
+            // `dotnet new <template>` invocation share the same template cache —
+            // those `dotnet new <template>` calls (via DotNetCommand with
+            // useDefaultArgs:false) inherit DOTNET_CLI_HOME from the test process.
+            string? inheritedCliHome = Environment.GetEnvironmentVariable("DOTNET_CLI_HOME");
+            string dotnetCliHome = !string.IsNullOrWhiteSpace(inheritedCliHome)
+                ? inheritedCliHome
+                : Path.Combine(BuildEnvironment.TmpPath, ".dotnet-cli-home");
             Directory.CreateDirectory(dotnetCliHome);
+            Console.WriteLine($"[diag] DOTNET_CLI_HOME used by EnsureWasmTemplatesInstalled: '{dotnetCliHome}' (process inherited: '{inheritedCliHome ?? "<unset>"}')");
 
             // Use the same isolated environment as the rest of the test suite
             // (DOTNET_ROOT/DOTNET_INSTALL_DIR/PATH/NUGET_PACKAGES overrides), so
