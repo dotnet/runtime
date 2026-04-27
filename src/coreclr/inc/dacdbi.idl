@@ -214,7 +214,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetMetadata([in] VMPTR_Module vmModule, [out] struct TargetBuffer * pTargetBuffer);
     HRESULT GetSymbolsBuffer([in] VMPTR_Module vmModule, [out] struct TargetBuffer * pTargetBuffer, [out] SymbolFormat * pSymbolFormat);
     HRESULT GetModuleData([in] VMPTR_Module vmModule, [out] struct ModuleInfo * pData);
-    HRESULT GetAssemblyInfo([in] VMPTR_Assembly vmAssembly, [out] struct AssemblyInfo * pData);
     HRESULT GetModuleForAssembly([in] VMPTR_Assembly vmAssembly, [out] VMPTR_Module * pModule);
 
     // Address
