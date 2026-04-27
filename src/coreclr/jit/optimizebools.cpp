@@ -1199,9 +1199,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     GenTree* cmpOp1 = m_foldOp == GT_NONE ? m_c1 : m_compiler->gtNewOperNode(m_foldOp, m_foldType, m_c1, m_c2);
 
     // There may be new opportunities for distributive arithmetic optimization
-    if (m_foldOp == GT_OR || m_foldOp == GT_AND)
+    if (m_foldOp != GT_NONE)
     {
-        cmpOp1 = m_compiler->fgOptimizeDistributiveArithmetic(cmpOp1->AsOp());
+        cmpOp1 = m_compiler->gtFoldExpr(cmpOp1);
     }
 
     GenTree* t1Comp = m_testInfo1.compTree;
