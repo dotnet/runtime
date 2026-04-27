@@ -1183,34 +1183,10 @@ VirtualFree(
                pMemoryToBeReleased->startBoundary, pMemoryToBeReleased->memSize );
 
 #ifdef TARGET_WASM
-        // Remove the tracking entry before freeing - if list removal fails,
-        // the memory is still valid and the caller can retry.
-        {
-            UINT_PTR boundary = pMemoryToBeReleased->startBoundary;
-            if ( VIRTUALReleaseMemory( pMemoryToBeReleased ) == FALSE )
-            {
-                ASSERT( "Unable to remove the PCMI entry from the list.\n" );
-                pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
-                bRetVal = FALSE;
-                goto VirtualFreeExit;
-            }
-            pMemoryToBeReleased = NULL;
-            free( (LPVOID)boundary );
-        }
+        free( (LPVOID)pMemoryToBeReleased->startBoundary );
 #else // !TARGET_WASM
         if ( munmap( (LPVOID)pMemoryToBeReleased->startBoundary,
-                     pMemoryToBeReleased->memSize ) == 0 )
-        {
-            if ( VIRTUALReleaseMemory( pMemoryToBeReleased ) == FALSE )
-            {
-                ASSERT( "Unable to remove the PCMI entry from the list.\n" );
-                pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
-                bRetVal = FALSE;
-                goto VirtualFreeExit;
-            }
-            pMemoryToBeReleased = NULL;
-        }
-        else
+                     pMemoryToBeReleased->memSize ) != 0 )
         {
             ASSERT( "Unable to unmap the memory, munmap() returned an abnormal value.\n" );
             pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
@@ -1218,6 +1194,14 @@ VirtualFree(
             goto VirtualFreeExit;
         }
 #endif // !TARGET_WASM
+        if ( VIRTUALReleaseMemory( pMemoryToBeReleased ) == FALSE )
+        {
+            ASSERT( "Unable to remove the PCMI entry from the list.\n" );
+            pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
+            bRetVal = FALSE;
+            goto VirtualFreeExit;
+        }
+        pMemoryToBeReleased = NULL;
     }
 
 VirtualFreeExit:
