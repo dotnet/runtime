@@ -38,7 +38,7 @@ namespace System.Numerics
             }
         }
 
-        public static void RotateLeft(Span<nuint> bits, int digitShift, int smallShift)
+        private static void RotateLeft(Span<nuint> bits, int digitShift, int smallShift)
         {
             Debug.Assert(bits.Length > 0);
 
@@ -53,7 +53,7 @@ namespace System.Numerics
             SwapUpperAndLower(bits, bits.Length - digitShift);
         }
 
-        public static void RotateRight(Span<nuint> bits, int digitShift, int smallShift)
+        private static void RotateRight(Span<nuint> bits, int digitShift, int smallShift)
         {
             Debug.Assert(bits.Length > 0);
 
@@ -68,7 +68,7 @@ namespace System.Numerics
             SwapUpperAndLower(bits, digitShift);
         }
 
-        private static void SwapUpperAndLower(Span<nuint> bits, int lowerLength)
+        public static void SwapUpperAndLower(Span<nuint> bits, int lowerLength)
         {
             Debug.Assert(lowerLength > 0);
             Debug.Assert(lowerLength < bits.Length);
@@ -82,6 +82,44 @@ namespace System.Numerics
 
             int tmpLength = Math.Min(lowerLength, upperLength);
             Span<nuint> tmp = BigInteger.RentedBuffer.Create(tmpLength, out BigInteger.RentedBuffer tmpBuffer);
+
+            if (upperLength < lowerLength)
+            {
+                upper.CopyTo(tmp);
+                lower.CopyTo(lowerDst);
+                tmp.CopyTo(bits);
+            }
+            else
+            {
+                lower.CopyTo(tmp);
+                upper.CopyTo(bits);
+                tmp.CopyTo(lowerDst);
+            }
+
+            tmpBuffer.Dispose();
+        }
+
+        // 32-bit word digit-swap for the partial-limb edge case on 64-bit.
+        // When the rotation ring has an odd number of 32-bit words, the digit-swap
+        // boundary may fall mid-nuint, so the swap must operate at uint granularity.
+
+        public static void SwapUpperAndLower(Span<uint> bits, int lowerLength)
+        {
+            Debug.Assert(lowerLength > 0);
+            Debug.Assert(lowerLength < bits.Length);
+
+            int upperLength = bits.Length - lowerLength;
+
+            Span<uint> lower = bits.Slice(0, lowerLength);
+            Span<uint> upper = bits.Slice(lowerLength);
+
+            Span<uint> lowerDst = bits.Slice(upperLength);
+
+            int tmpLength = Math.Min(lowerLength, upperLength);
+            int wordsPerLimb = nint.Size / sizeof(uint);
+            int nuintCount = (tmpLength + wordsPerLimb - 1) / wordsPerLimb;
+            Span<nuint> tmpNuint = BigInteger.RentedBuffer.Create(nuintCount, out BigInteger.RentedBuffer tmpBuffer);
+            Span<uint> tmp = MemoryMarshal.Cast<nuint, uint>(tmpNuint).Slice(0, tmpLength);
 
             if (upperLength < lowerLength)
             {

@@ -9121,6 +9121,68 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     emitCurIGsize += sz;
 }
 
+//--------------------------------------------------------------------
+// emitIns_R_L: Emit an instruction with a label operand.
+//
+// Arguments:
+//   ins - The instruction
+//   attr - Size of the instruction
+//   dst - Instruction group
+//   reg - Register destination
+//
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(ins == INS_lea);
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idReg1(reg);
+    id->idInsFmt(IF_RWR_LABEL);
+    id->idOpSize(EA_SIZE(attr)); // emitNewInstrJmp() sets the size (incorrectly) to EA_1BYTE
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound();
+
+    /* The label reference is always long */
+
+    id->idjShort    = 0;
+    id->idjKeepLong = 1;
+
+    /* Record the current IG and offset within it */
+
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this instruction to this IG's jump list */
+
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#ifdef DEBUG
+    // Mark the catch return
+    if (m_compiler->compCurBB->KindIs(BBJ_EHCATCHRET))
+    {
+        id->idDebugOnlyInfo()->idCatchRet = true;
+    }
+#endif // DEBUG
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    // Set the relocation flags - these give hint to zap to perform
+    // relocation of the specified 32bit address.
+    //
+    // Note the relocation flags influence the size estimate.
+    id->idSetRelocFlags(attr);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
 /*****************************************************************************
  *
  *  The following adds instructions referencing address modes.
@@ -12677,86 +12739,6 @@ void emitter::emitDispIns(
 
 #define ID_INFO_DSP_RELOC ((bool)(id->idIsDspReloc()))
 
-    /* Display a constant value if the instruction references one */
-
-    if (!isNew && id->idHasMemGen())
-    {
-        /* Is this actually a reference to a data section? */
-        int offs = Compiler::eeGetJitDataOffs(id->idAddr()->iiaFieldHnd);
-
-        if (offs >= 0)
-        {
-            void* addr;
-
-            /* Display a data section reference */
-
-            assert((unsigned)offs < emitConsDsc.dsdOffs);
-            addr = emitDataOffsetToPtr((UNATIVE_OFFSET)offs);
-
-#if 0
-            // TODO-XArch-Cleanup: Fix or remove this code.
-            /* Is the operand an integer or floating-point value? */
-
-            bool isFP = false;
-
-            if  (CodeGen::instIsFP(id->idIns()))
-            {
-                switch (id->idIns())
-                {
-                case INS_fild:
-                case INS_fildl:
-                    break;
-
-                default:
-                    isFP = true;
-                    break;
-                }
-            }
-
-            if (offs & 1)
-                printf("@CNS%02u", offs);
-            else
-                printf("@RWD%02u", offs);
-
-            printf("      ");
-
-            if  (addr)
-            {
-                addr = 0;
-                // TODO-XArch-Bug?:
-                //          This was busted by switching the order
-                //          in which we output the code block vs.
-                //          the data blocks -- when we get here,
-                //          the data block has not been filled in
-                //          yet, so we'll display garbage.
-
-                if  (isFP)
-                {
-                    if  (id->idOpSize() == EA_4BYTE)
-                        printf("DF      %f \n", addr ? *(float   *)addr : 0);
-                    else
-                        printf("DQ      %lf\n", addr ? *(double  *)addr : 0);
-                }
-                else
-                {
-                    if  (id->idOpSize() <= EA_4BYTE)
-                        printf("DD      %d \n", addr ? *(int     *)addr : 0);
-                    else
-                        printf("DQ      %D \n", addr ? *(int64_t *)addr : 0);
-                }
-            }
-#endif
-        }
-    }
-
-    // printf("[F=%s] "   , emitIfName(id->idInsFmt()));
-    // printf("INS#%03u: ", id->idDebugOnlyInfo()->idNum);
-    // printf("[S=%02u] " , emitCurStackLvl); if (isNew) printf("[M=%02u] ", emitMaxStackDepth);
-    // printf("[S=%02u] " , emitCurStackLvl/sizeof(INT32));
-    // printf("[A=%08X] " , emitSimpleStkMask);
-    // printf("[A=%08X] " , emitSimpleByrefStkMask);
-    // printf("[L=%02u] " , id->idCodeSize());
-
     if (!isNew && !asmfm)
     {
         doffs = true;
@@ -16202,15 +16184,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     else
     {
         // Special case: mov reg, fs:[ddd] or mov reg, [ddd]
-        if (jitStaticFldIsGlobAddr(fldh))
-        {
-            addr = nullptr;
-        }
-        else
-        {
-            assert(jitStaticFldIsGlobAddr(fldh));
-            addr = nullptr;
-        }
+        assert(jitStaticFldIsGlobAddr(fldh));
+        addr = nullptr;
     }
 
     BYTE* target = (addr + offs);

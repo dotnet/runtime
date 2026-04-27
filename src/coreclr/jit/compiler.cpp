@@ -5030,6 +5030,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     stackLevelSetter.Run();
     m_pLowering->FinalizeOutgoingArgSpace();
 
+#ifdef TARGET_WASM
+    // Determine if a Virtual IP is needed and add code as needed to
+    // keep the Virtual IP updated.
+    //
+    DoPhase(this, PHASE_WASM_VIRTUAL_IP, &Compiler::fgWasmVirtualIP);
+#endif
+
     FinalizeEH();
 
     // We can not add any new tracked variables after this point.
@@ -5615,8 +5622,8 @@ void Compiler::generatePatchpointInfo()
     // offset.
 
 #if defined(TARGET_AMD64)
-    // We add +TARGET_POINTER_SIZE here is to account for the slot that Jit_Patchpoint
-    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
+    // We add +TARGET_POINTER_SIZE here to account for the return address slot that the OSR method prolog
+    // pushes on entry (the "pseudo return address" slot) to make the stack unaligned.
     // This is effectively a new slot at the bottom of the Tier0 frame.
     //
     const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;

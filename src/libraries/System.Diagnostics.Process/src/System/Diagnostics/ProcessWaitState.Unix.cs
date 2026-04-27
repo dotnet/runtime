@@ -213,7 +213,7 @@ namespace System.Diagnostics
         /// <summary>Associated process is a child that can use the terminal.</summary>
         private readonly bool _usesTerminal;
         /// <summary>A value indicating whether the process has been terminated due to timeout or cancellation.</summary>
-        internal volatile bool _canceled;
+        internal bool _canceled;
 
         /// <summary>An in-progress or completed wait operation.</summary>
         /// <remarks>A completed task does not mean the process has exited.</remarks>

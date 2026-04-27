@@ -33,23 +33,15 @@ enum DebuggerLaunchSetting
 enum DebuggerControlFlag
 {
     DBCF_NORMAL_OPERATION           = 0x0000,
-
-    DBCF_USER_MASK                  = 0x00FF,
-    DBCF_GENERATE_DEBUG_CODE        = 0x0001,
-    DBCF_PROFILER_ENABLED           = 0x0020,
-//    DBCF_ACTIVATE_REMOTE_DEBUGGING  = 0x0040,  Deprecated.  DO NOT USE
-
-    DBCF_INTERNAL_MASK              = 0xFF00,
-    DBCF_PENDING_ATTACH             = 0x0100,
-    DBCF_ATTACHED                   = 0x0200,
-    DBCF_FIBERMODE                  = 0x0400
+    DBCF_PENDING_ATTACH             = 0x0100, // [cDAC] [Debugger] : Contract depends on this value.
+    DBCF_ATTACHED                   = 0x0200, // [cDAC] [Debugger] : Contract depends on this value.
 };
 
 //
 // Flags used to control the debuggable state of modules and
 // assemblies.
 //
-// [cDAC] [Loader]: Contract depends on DACF_NONE, DACF_ALLOW_JIT_OPTS, DACF_ENC_ENABLED, DACF_CONTROL_FLAGS_MASK.
+// [cDAC] [Loader]: Contract depends on DACF_NONE, DACF_ALLOW_JIT_OPTS, DACF_ENC_ENABLED, DACF_IGNORE_PDBS, DACF_CONTROL_FLAGS_MASK.
 enum DebuggerAssemblyControlFlags
 {
     DACF_NONE                       = 0x00,
