@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Net.Test.Common;
@@ -269,6 +270,41 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public async Task SslStream_NoCallback_UntrustedCert_SendsUnknownCAAlert_OSX()
+        {
+            X509Certificate2 cert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (RecordingReadStream recordingServerStream = new RecordingReadStream(serverStream))
+            using (SslStream client = new SslStream(clientStream))
+            using (SslStream server = new SslStream(recordingServerStream))
+            using (cert)
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = cert,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = cert.GetNameInfo(X509NameType.DnsName, false),
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                };
+
+                Task serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+
+                await Assert.ThrowsAsync<AuthenticationException>(() => clientTask).WaitAsync(TestConfiguration.PassingTestTimeout);
+                await ObservePeerAlertAsync(serverTask, server);
+
+                Assert.True(recordingServerStream.ContainsAlert(TlsAlertDescription.UnknownCA), recordingServerStream.GetRecordedAlerts());
+            }
+        }
+
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux))]
@@ -345,6 +381,46 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public async Task SslStream_NoCallback_UntrustedClientCert_ServerSendsUnknownCAAlert_OSX()
+        {
+            X509Certificate2 serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            X509Certificate2 clientCert = Configuration.Certificates.GetSelfSignedClientCertificate();
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (RecordingReadStream recordingClientStream = new RecordingReadStream(clientStream))
+            using (serverStream)
+            using (SslStream client = new SslStream(recordingClientStream))
+            using (SslStream server = new SslStream(serverStream))
+            using (serverCert)
+            using (clientCert)
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    ClientCertificateRequired = true,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverCert.GetNameInfo(X509NameType.DnsName, false),
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    RemoteCertificateValidationCallback = delegate { return true; },
+                    ClientCertificates = new X509CertificateCollection { clientCert },
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                };
+
+                Task serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+
+                await Assert.ThrowsAsync<AuthenticationException>(() => serverTask).WaitAsync(TestConfiguration.PassingTestTimeout);
+                await ObservePeerAlertAsync(clientTask, client);
+
+                Assert.True(recordingClientStream.ContainsAlert(TlsAlertDescription.UnknownCA), recordingClientStream.GetRecordedAlerts());
+            }
+        }
+
         private bool FailClientCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             return false;
@@ -357,6 +433,139 @@ namespace System.Net.Security.Tests
             SslPolicyErrors sslPolicyErrors)
         {
             return true;
+        }
+
+        private static async Task ObservePeerAlertAsync(Task handshakeTask, SslStream stream)
+        {
+            try
+            {
+                await handshakeTask.WaitAsync(TestConfiguration.PassingTestTimeout);
+                byte[] buffer = new byte[1];
+                await stream.ReadAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
+            }
+            catch (Exception ex) when (ex is AuthenticationException or IOException or TimeoutException)
+            {
+            }
+        }
+
+        private sealed class RecordingReadStream : DelegatingStream
+        {
+            private readonly List<byte> _readBytes = new List<byte>();
+
+            public RecordingReadStream(Stream innerStream)
+                : base(innerStream)
+            {
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                int bytesRead = base.Read(buffer, offset, count);
+                Record(new ReadOnlySpan<byte>(buffer, offset, bytesRead));
+                return bytesRead;
+            }
+
+            public override int Read(Span<byte> buffer)
+            {
+                int bytesRead = base.Read(buffer);
+                Record(buffer.Slice(0, bytesRead));
+                return bytesRead;
+            }
+
+            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                int bytesRead = await base.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+                Record(new ReadOnlySpan<byte>(buffer, offset, bytesRead));
+                return bytesRead;
+            }
+
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                int bytesRead = await base.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                Record(buffer.Span.Slice(0, bytesRead));
+                return bytesRead;
+            }
+
+            public bool ContainsAlert(TlsAlertDescription expectedDescription)
+            {
+                ReadOnlySpan<byte> remaining = GetRecordedBytes();
+                while (remaining.Length >= TlsFrameHelper.HeaderSize)
+                {
+                    TlsFrameHeader header = default;
+                    if (!TlsFrameHelper.TryGetFrameHeader(remaining, ref header) ||
+                        header.Length <= 0 ||
+                        header.Length > remaining.Length)
+                    {
+                        return false;
+                    }
+
+                    ReadOnlySpan<byte> frame = remaining.Slice(0, header.Length);
+                    if (header.Type == TlsContentType.Alert)
+                    {
+                        TlsAlertLevel level = default;
+                        TlsAlertDescription description = default;
+                        if (TlsFrameHelper.TryGetAlertInfo(frame, ref level, ref description) &&
+                            level == TlsAlertLevel.Fatal &&
+                            description == expectedDescription)
+                        {
+                            return true;
+                        }
+                    }
+
+                    remaining = remaining.Slice(header.Length);
+                }
+
+                return false;
+            }
+
+            public string GetRecordedAlerts()
+            {
+                List<string> alerts = new List<string>();
+                ReadOnlySpan<byte> remaining = GetRecordedBytes();
+                while (remaining.Length >= TlsFrameHelper.HeaderSize)
+                {
+                    TlsFrameHeader header = default;
+                    if (!TlsFrameHelper.TryGetFrameHeader(remaining, ref header) ||
+                        header.Length <= 0 ||
+                        header.Length > remaining.Length)
+                    {
+                        break;
+                    }
+
+                    ReadOnlySpan<byte> frame = remaining.Slice(0, header.Length);
+                    if (header.Type == TlsContentType.Alert)
+                    {
+                        TlsAlertLevel level = default;
+                        TlsAlertDescription description = default;
+                        if (TlsFrameHelper.TryGetAlertInfo(frame, ref level, ref description))
+                        {
+                            alerts.Add($"{level}:{description}");
+                        }
+                    }
+
+                    remaining = remaining.Slice(header.Length);
+                }
+
+                return alerts.Count == 0 ? "No TLS alerts recorded." : "Recorded TLS alerts: " + string.Join(", ", alerts);
+            }
+
+            private void Record(ReadOnlySpan<byte> bytes)
+            {
+                lock (_readBytes)
+                {
+                    foreach (byte b in bytes)
+                    {
+                        _readBytes.Add(b);
+                    }
+                }
+            }
+
+            private byte[] GetRecordedBytes()
+            {
+                lock (_readBytes)
+                {
+                    return _readBytes.ToArray();
+                }
+            }
         }
     }
 }

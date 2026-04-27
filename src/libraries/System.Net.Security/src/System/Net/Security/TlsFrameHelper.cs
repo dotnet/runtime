@@ -336,7 +336,7 @@ namespace System.Net.Security
                 return CreateProtocolVersionAlert(version);
             }
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
-            else if ((int)version > (int)SslProtocols.Tls)
+            else if ((int)version >= (int)SslProtocols.Tls)
 #pragma warning restore SYSLIB0039
             {
                 // Create TLS1.2 alert

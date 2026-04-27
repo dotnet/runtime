@@ -897,6 +897,13 @@ namespace System.Net.Security
                                        _sslAuthenticationOptions);
                         }
                     }
+
+#if TARGET_APPLE
+                    if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CertValidationNeeded)
+                    {
+                        token = VerifyRemoteCertificateAndGenerateNextToken(token);
+                    }
+#endif
                 } while (cachedCreds && _credentialsHandle == null);
             }
             finally
@@ -932,6 +939,24 @@ namespace System.Net.Security
 
             return token;
         }
+
+#if TARGET_APPLE
+        private ProtocolToken VerifyRemoteCertificateAndGenerateNextToken(ProtocolToken token)
+        {
+            token.ReleasePayload();
+
+            ProtocolToken alertToken = default;
+
+            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+            {
+                _handshakeCompleted = false;
+                alertToken.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, CreateCertificateValidationException(_sslAuthenticationOptions, sslPolicyErrors, chainStatus));
+                return alertToken;
+            }
+
+            return GenerateToken(ReadOnlySpan<byte>.Empty, out _);
+        }
+#endif
 
         internal ProtocolToken Renegotiate()
         {
@@ -1173,7 +1198,7 @@ namespace System.Net.Security
             if (!success)
             {
 #pragma warning disable CS0162 // unreachable code detected (compile time const)
-                if (SslStreamPal.CanGenerateCustomAlerts && !SslStreamPal.CertValidationInCallback)
+                if (SslStreamPal.CanGenerateCustomAlertsForContext(_securityContext) && !SslStreamPal.CertValidationInCallback)
                 {
                     CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
                 }
@@ -1227,6 +1252,17 @@ namespace System.Net.Security
                 }
             }
 
+#if TARGET_APPLE
+            if (_lastFrame.Header.Version != SslProtocols.Tls13)
+            {
+                byte[] alertFrame = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, (TlsAlertDescription)alertMessage);
+                if (alertFrame.Length != 0)
+                {
+                    alertToken.SetPayload(alertFrame);
+                    return;
+                }
+            }
+#endif
             alertToken = GenerateAlertToken();
         }
 
