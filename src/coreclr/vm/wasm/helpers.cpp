@@ -1090,16 +1090,6 @@ namespace
 #ifdef _DEBUG
         if (thunk == NULL)
         {
-            // WASM-TODO: The R2R compiler will be generating these for all necessary signatures, but the implementation
-            // will need to be clever here. Notably, R2R files can be dynamically loaded after the initial load, so we can't
-            // just drop a NULL here if the R2R to interpreter thunk isn't found. Instead, we'll need to keep a list of
-            // MethodDescs associated with a given signature and as we load R2R files, find the relevant thunks and update the
-            // PortableEntryPoint fields on them to be the right R2R to intepreter thunk. This list needs to be stored on the
-            // LoaderAllocator of the associated MethodDesc for proper lifetime management.
-
-            // For debugging purposes, engineers working on R2R for WASM may wish to enable this log to see which signatures
-            // are missing R2R to interpreter thunks. Once the R2R to interpreter thunk generation and dynamic updating is implemented,
-            // we'll want to put registration of missing thunks somewhere around here.
             LOG((LF_STUBS, LL_INFO100000, "WASM R2R to interpreter call missing for key: %s\n", keyBuffer));
         }
 #endif

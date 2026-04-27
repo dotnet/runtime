@@ -114,6 +114,16 @@ public:
         ClearFlagsInterlocked(kPrefersInterpreterEntryPoint);
     }
 
+    // Atomically install an interpreter thunk if _pActualCode is still NULL.
+    // Returns true if the thunk was installed, false if _pActualCode was already set.
+    bool TrySetInterpreterThunk(void* thunk)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        _ASSERTE(thunk != nullptr);
+        return InterlockedCompareExchangeT(&_pActualCode, thunk, (void*)nullptr) == nullptr;
+    }
+
     friend struct ::cdac_data<PortableEntryPoint>;
 };
 template<>

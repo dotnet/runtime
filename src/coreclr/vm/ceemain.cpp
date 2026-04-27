@@ -680,6 +680,10 @@ void EEStartupHelper()
 
         InitializePregeneratedStringThunkHash();
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        InitializePendingThunkResolutionLock();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 #ifdef TARGET_WASM
         InitializeWasmThunkCaches();
 #endif // TARGET_WASM

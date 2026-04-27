@@ -2949,10 +2949,6 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
         MODE_ANY;
     } CONTRACTL_END;
 
-    // WASM-TODO! This only handling the R2R to interpreter case for well known signatures.
-    // Eventually we will need to handle arbitrary signatures by looking in the loaded list of R2R modules
-    // as well as recording when we couldn't find something, in case another R2R module might be loaded
-    // later which has an R2R to interpreter stub for that given signature.
     void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
 
     if (pPortableEntryPointToInterpreter != nullptr)
@@ -2962,6 +2958,14 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
     else
     {
         portableEntry->Init(this);
+
+        // The R2R-to-interpreter thunk wasn't found yet. This can happen when an R2R module
+        // containing the thunk hasn't been loaded yet. Register this method for deferred
+        // resolution so it gets updated when new R2R thunks are injected.
+        if (!ContainsGenericVariables())
+        {
+            GetLoaderAllocator()->AddPendingPortableEntryPointThunk(this);
+        }
     }
     // If we find actual code, we will remove this flag, but we want to prefer the interpreter entry point
     // until then to allow helpers to work for methods that haven't tried to get an entry point yet.

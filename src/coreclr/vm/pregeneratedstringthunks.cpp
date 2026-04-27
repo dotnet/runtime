@@ -5,6 +5,12 @@
 #include "common.h"
 #include "pregeneratedstringthunks.h"
 #include "stringthunkhash.h"
+#include "loaderallocator.hpp"
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#include "wasm/helpers.hpp"
+#include "precode_portable.hpp"
+#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -110,6 +116,9 @@ void ProcessInjectStringThunksFixup(TADDR moduleBase, PCCOR_SIGNATURE pBlob)
         {
             // Success. The old table is intentionally leaked - it may still be in use
             // by concurrent readers via VolatileLoadWithoutBarrier.
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            ResolvePendingPortableEntryPointThunksGlobal();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
             return;
         }
 
@@ -117,5 +126,145 @@ void ProcessInjectStringThunksFixup(TADDR moduleBase, PCCOR_SIGNATURE pBlob)
         delete newTable;
     }
 }
+
+// =====================================================================
+// Pending portable entrypoint thunk resolution
+// =====================================================================
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+
+// s_pendingThunkResolutionLock protects BOTH the global LA list AND the
+// per-LoaderAllocator m_pendingPortableEntryPointThunks arrays. This avoids
+// any lock-ordering issues and keeps LAs alive during the scan (Destroy
+// takes the same lock to unregister).
+
+static CrstStatic s_pendingThunkResolutionLock;
+static SArray<LoaderAllocator*> s_pendingThunkLoaderAllocators;
+
+void InitializePendingThunkResolutionLock()
+{
+    WRAPPER_NO_CONTRACT;
+    s_pendingThunkResolutionLock.Init(CrstLeafLock, CRST_DEFAULT);
+}
+
+void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator* pLoaderAllocator, MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    CrstHolder holder(&s_pendingThunkResolutionLock);
+
+    pLoaderAllocator->m_pendingPortableEntryPointThunks.Append(pMD);
+
+    if (!pLoaderAllocator->m_registeredForPendingThunkResolution)
+    {
+        s_pendingThunkLoaderAllocators.Append(pLoaderAllocator);
+        pLoaderAllocator->m_registeredForPendingThunkResolution = true;
+    }
+}
+
+void UnregisterLoaderAllocatorForPendingThunkResolution(LoaderAllocator* pLoaderAllocator)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    CrstHolder holder(&s_pendingThunkResolutionLock);
+
+    if (!pLoaderAllocator->m_registeredForPendingThunkResolution)
+        return;
+
+    // Remove from the global array by finding and replacing with the last element.
+    COUNT_T count = s_pendingThunkLoaderAllocators.GetCount();
+    for (COUNT_T i = 0; i < count; i++)
+    {
+        if (s_pendingThunkLoaderAllocators[i] == pLoaderAllocator)
+        {
+            if (i < count - 1)
+            {
+                s_pendingThunkLoaderAllocators[i] = s_pendingThunkLoaderAllocators[count - 1];
+            }
+            s_pendingThunkLoaderAllocators.SetCount(count - 1);
+            break;
+        }
+    }
+
+    pLoaderAllocator->m_registeredForPendingThunkResolution = false;
+    pLoaderAllocator->m_pendingPortableEntryPointThunks.Clear();
+}
+
+void ResolvePendingPortableEntryPointThunksGlobal()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    CrstHolder holder(&s_pendingThunkResolutionLock);
+
+    COUNT_T laCount = s_pendingThunkLoaderAllocators.GetCount();
+    for (COUNT_T laIdx = 0; laIdx < laCount; laIdx++)
+    {
+        LoaderAllocator* pLA = s_pendingThunkLoaderAllocators[laIdx];
+        SArray<MethodDesc*>& pending = pLA->m_pendingPortableEntryPointThunks;
+        COUNT_T count = pending.GetCount();
+        COUNT_T nullCount = 0;
+
+        for (COUNT_T i = 0; i < count; i++)
+        {
+            MethodDesc* pMD = pending[i];
+            if (pMD == nullptr)
+            {
+                nullCount++;
+                continue;
+            }
+
+            void* thunk = GetPortableEntryPointToInterpreterThunk(pMD);
+            if (thunk != nullptr)
+            {
+                PCODE portableEntry = pMD->GetPortableEntryPointIfExists();
+                if (portableEntry != (PCODE)NULL)
+                {
+                    PortableEntryPoint* pep = PortableEntryPoint::ToPortableEntryPoint(portableEntry);
+                    pep->TrySetInterpreterThunk(thunk);
+                }
+                pending[i] = nullptr;
+                nullCount++;
+            }
+        }
+
+        // Compact: move non-null entries to the front, then truncate.
+        if (nullCount > 0 && nullCount < count)
+        {
+            COUNT_T dest = 0;
+            for (COUNT_T src = 0; src < count; src++)
+            {
+                if (pending[src] != nullptr)
+                {
+                    pending[dest] = pending[src];
+                    dest++;
+                }
+            }
+            pending.SetCount(dest);
+        }
+        else if (nullCount == count)
+        {
+            pending.Clear();
+        }
+    }
+}
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif // !DACCESS_COMPILE
