@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for GC measurement accuracy: test captures GC indices and asserts no ephemeral GC
+         occurred between measurements; other tests in a merged runner can trigger ephemeral GCs,
+         violating that assumption. Also needed for GCStressIncompatible (see [SkipOnCoreClr] in .cs). -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>

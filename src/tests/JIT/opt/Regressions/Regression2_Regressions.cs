@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 using Xunit;
 
 public class Program
@@ -61,6 +62,7 @@ public class Program
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/pull/126108", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void TestEntryPoint()
