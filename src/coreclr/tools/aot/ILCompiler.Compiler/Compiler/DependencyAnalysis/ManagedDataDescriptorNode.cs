@@ -64,16 +64,16 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitUInt(flags);
 
             // uint32_t descriptor_size
-            builder.EmitInt(jsonBytes.Length);
+            builder.EmitUInt((uint)jsonBytes.Length);
 
             // char* descriptor — points to inline JSON after the header
             builder.EmitPointerReloc(this, headerSize);
 
             // uint32_t pointer_data_count = 0
-            builder.EmitInt(0);
+            builder.EmitUInt(0);
 
             // uint32_t pad0
-            builder.EmitInt(0);
+            builder.EmitUInt(0);
 
             // void** pointer_data = null
             builder.EmitZeroPointer();
@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (!ecmaType.HasCustomAttribute(DataContractAttributeNamespace, DataContractAttributeName))
                         continue;
 
-                    WriteType(writer, ecmaType);
+                    WriteType(writer, ecmaType, factory.NameMangler);
                 }
                 writer.WriteEndObject();
 
@@ -120,9 +120,9 @@ namespace ILCompiler.DependencyAnalysis
             return stream.ToArray();
         }
 
-        private static void WriteType(Utf8JsonWriter writer, EcmaType type)
+        private static void WriteType(Utf8JsonWriter writer, EcmaType type, NameMangler nameMangler)
         {
-            writer.WriteStartObject(GetMangledTypeName(type));
+            writer.WriteStartObject(nameMangler.GetMangledTypeName(type).ToString());
 
             if (type.IsValueType)
             {
@@ -141,21 +141,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             writer.WriteEndObject();
-        }
-
-        /// <summary>
-        /// Returns a mangled fully-qualified type name matching the NativeAOT symbol convention
-        /// (e.g., System.Threading.Thread → System_Threading_Thread).
-        /// </summary>
-        private static string GetMangledTypeName(MetadataType type)
-        {
-            string ns = type.GetNamespace();
-            string name = type.GetName();
-
-            if (string.IsNullOrEmpty(ns))
-                return name;
-
-            return $"{ns}.{name}".Replace('.', '_');
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
