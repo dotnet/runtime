@@ -16,6 +16,7 @@ if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     add_compile_options(-Wno-documentation)
     add_compile_options(-Wno-documentation-unknown-command)
     add_compile_options(-Wno-reserved-identifier)
+    add_compile_options(-Wno-c++-keyword)
 
     # Workaround for https://unicode-org.atlassian.net/browse/ICU-20601
     add_compile_options(-Wno-extra-semi-stmt)
