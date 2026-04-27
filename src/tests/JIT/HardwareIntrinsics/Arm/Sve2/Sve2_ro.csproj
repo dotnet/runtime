@@ -8,7 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.Sve2.cs" />
-    <Compile Include="CreateWhileRWMask.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
     <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.cs" />
