@@ -34,6 +34,7 @@ namespace TestApp
                     ConstructorParameterMetadataInitializer = PointCtorParamInit,
                     ConstructorAttributeProviderFactory = static () => typeof(global::TestApp.Point).GetConstructor(InstanceMemberBindingFlags, binder: null, new[] {typeof(int), typeof(int)}, modifiers: null),
                     SerializeHandler = PointSerializeHandler,
+                    DerivedTypes = null,
                 };
                 
                 jsonTypeInfo = global::System.Text.Json.Serialization.Metadata.JsonMetadataServices.CreateObjectInfo<global::TestApp.Point>(options, objectInfo);
