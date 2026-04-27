@@ -6,6 +6,7 @@
 #include <interpexec.h>
 #include "callhelpers.hpp"
 #include "stringthunkhash.h"
+#include "pregeneratedstringthunks.h"
 #include "callingconvention.h"
 #include "cgensys.h"
 #include "readytorun.h"
@@ -979,8 +980,14 @@ namespace
         StringToWasmSigThunkHash* table = thunkCache;
         _ASSERTE(table != nullptr && "Wasm thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
         void* thunk;
-        bool success = table->Lookup(key, &thunk);
-        return success ? thunk : nullptr;
+        if (table->Lookup(key, &thunk))
+            return thunk;
+
+        PCODE r2rThunk = LookupPregeneratedThunkByString(key);
+        if (r2rThunk != NULL)
+            return (void*)(size_t)r2rThunk;
+
+        return nullptr;
     }
 
     void* LookupPortableEntryPointThunk(const char* key)
@@ -988,8 +995,14 @@ namespace
         StringToWasmSigThunkHash* table = portableEntrypointThunkCache;
         _ASSERTE(table != nullptr && "Wasm portable entrypoint thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
         void* thunk;
-        bool success = table->Lookup(key, &thunk);
-        return success ? thunk : nullptr;
+        if (table->Lookup(key, &thunk))
+            return thunk;
+
+        PCODE r2rThunk = LookupPregeneratedThunkByString(key);
+        if (r2rThunk != NULL)
+            return (void*)(size_t)r2rThunk;
+
+        return nullptr;
     }
 
     // This is a simple signature computation routine for signatures currently supported in the wasm environment.
