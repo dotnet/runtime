@@ -7471,13 +7471,14 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         // The dispatch cell is still passed via the VirtualStubCell arg in r11.
 
         // For CT_INDIRECT calls (shared generic code with dictionary lookup),
-        // gtCallAddr is a tree node in the LIR that computes the dispatch cell address.
+        // gtControlExpr is a tree node in the LIR that computes the dispatch cell address.
         // We're converting to a direct call, so remove it from the LIR.
         // The VirtualStubCell arg (a deep clone of this tree) still passes
         // the dispatch cell address in the VSD param register.
         if (call->gtCallType == CT_INDIRECT)
         {
-            BlockRange().Remove(call->gtCallAddr, /* markOperandsUnused */ true);
+            BlockRange().Remove(call->gtControlExpr, /* markOperandsUnused */ true);
+            call->gtControlExpr = nullptr;
         }
 
         CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT);
