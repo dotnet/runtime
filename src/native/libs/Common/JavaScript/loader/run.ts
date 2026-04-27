@@ -19,6 +19,7 @@ let downloadMode: DownloadMode = "none";
 let downloadDeferred: PromiseCompletionSource<void> | undefined;
 let downloadedIntoMemory = false;
 let configInitialized = false;
+let modulesAfterConfigLoadedCache: [JsAsset, Promise<any>][] = [];
 
 // many things happen in parallel here, but order matters for performance!
 // ideally we want to utilize network and CPU at the same time
@@ -48,10 +49,10 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             }
 
             const resources = loaderConfig.resources;
-            // modulesAfterConfigLoaded were already loaded and had onRuntimeConfigLoaded called during download(). They don't need onRuntimeReady.
             // modulesAfterRuntimeReady were only prefetched during download(), now load and call onRuntimeReady.
             const modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = normalizeCollection(resources.modulesAfterRuntimeReady).map((a) => [a, loadJSModule(a)]);
-            await Promise.all(modulesAfterRuntimeReadyPromises.map(callLibraryInitializerOnRuntimeReady));
+            // modulesAfterConfigLoaded were loaded during download() — call onRuntimeReady for them too.
+            await Promise.all([...modulesAfterConfigLoadedCache, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
             return;
         }
 
@@ -61,8 +62,6 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         // This must happen before any asset fetches so that URL overrides take effect.
         let modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = [];
         if (!configInitialized) {
-            configInitialized = true;
-
             await validateEngineFeatures();
 
             if (typeof Module.onConfigLoaded === "function") {
@@ -92,6 +91,9 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
 
             // after onConfigLoaded hooks that could install polyfills, our polyfills can be initialized
             await initPolyfills();
+
+            configInitialized = true;
+            modulesAfterConfigLoadedCache = modulesAfterConfigLoadedPromises;
         }
 
         // HTTP cache only path: just fetch all resources into browser cache and discard

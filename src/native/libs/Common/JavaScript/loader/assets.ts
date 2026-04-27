@@ -592,7 +592,7 @@ export async function prefetchAllResources(): Promise<void> {
     const resources = loaderConfig.resources;
     if (!resources) return;
 
-    const maxParallel = loaderConfig.maxParallelDownloads || 1000000;
+    const maxParallel = loaderConfig.maxParallelDownloads ?? 16;
     const pending: Promise<void>[] = [];
     const queue: { url: string; hash?: string | null | ""; name: string; behavior: AssetBehaviors }[] = [];
 
@@ -619,6 +619,9 @@ export async function prefetchAllResources(): Promise<void> {
     if (loaderConfig.loadAllSatelliteResources && resources.satelliteResources) {
         for (const culture of Object.keys(resources.satelliteResources)) {
             for (const asset of resources.satelliteResources[culture]) {
+                if (!asset.resolvedUrl && asset.name) {
+                    asset.resolvedUrl = locateFile(`${culture}/${asset.name}`);
+                }
                 enqueueAsset(asset, "assembly");
             }
         }
@@ -698,8 +701,7 @@ async function prefetchUrl(url: string, hash?: string | null | "", name?: string
     if (!loaderConfig.disableIntegrityCheck && hash) {
         fetchOptions.integrity = hash;
     }
-    // Use globalThis.fetch directly because this runs before initPolyfills()
-    const response = await globalThis.fetch(url, fetchOptions);
+    const response = await fetchLike(url, fetchOptions);
     if (response.ok) {
         // Read the body to ensure the response is fully received into cache
         await response.arrayBuffer();
