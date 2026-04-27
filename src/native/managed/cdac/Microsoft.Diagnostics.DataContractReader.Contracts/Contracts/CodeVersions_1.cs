@@ -143,14 +143,6 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         }
     }
 
-    NativeCodeVersionHandle ICodeVersions.GetSpecificNativeCodeVersion(TargetPointer methodDesc, TargetCodePointer codeAddress)
-    {
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
-
-        return GetSpecificNativeCodeVersion(rts, md, codeAddress);
-    }
-
     bool ICodeVersions.CodeVersionManagerSupportsMethod(TargetPointer methodDescAddress)
     {
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;

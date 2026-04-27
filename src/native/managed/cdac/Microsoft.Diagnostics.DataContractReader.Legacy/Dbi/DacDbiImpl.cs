@@ -1208,6 +1208,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             *pVmILCodeVersionNode = 0;
 
+            if (!_target.Contracts.TryGetContract<IReJIT>(out IReJIT rejit))
+                return hr;
+
             ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
             ModuleLookupTables lookupTables = loader.GetLookupTables(module);
@@ -1224,7 +1227,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 ICodeVersions codeVersions = _target.Contracts.CodeVersions;
                 ILCodeVersionHandle ilCodeVersion = codeVersions.GetActiveILCodeVersion(methodDesc);
-                if (ilCodeVersion.IsValid && ilCodeVersion.IsExplicit && _target.Contracts.TryGetContract<IReJIT>(out IReJIT rejit) && rejit.GetRejitState(ilCodeVersion) == RejitState.Active)
+                if (ilCodeVersion.IsValid
+                    && ilCodeVersion.IsExplicit
+                    && rejit.GetRejitState(ilCodeVersion) == RejitState.Active)
                 {
                     *pVmILCodeVersionNode = ilCodeVersion.ILCodeVersionNode.Value;
                 }
@@ -1259,11 +1264,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             *pVmNativeCodeVersionNode = 0;
 
-            TargetPointer methodDesc = new TargetPointer(vmMethod);
             TargetCodePointer codeAddress = new TargetCodePointer(codeStartAddress);
             ICodeVersions codeVersions = _target.Contracts.CodeVersions;
 
-            NativeCodeVersionHandle nativeCodeVersion = codeVersions.GetSpecificNativeCodeVersion(methodDesc, codeAddress);
+            NativeCodeVersionHandle nativeCodeVersion = codeVersions.GetNativeCodeVersionForIP(codeAddress);
             if (nativeCodeVersion.Valid && nativeCodeVersion.IsExplicit)
             {
                 *pVmNativeCodeVersionNode = nativeCodeVersion.CodeVersionNodeAddress.Value;
