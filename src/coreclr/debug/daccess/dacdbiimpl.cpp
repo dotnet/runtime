@@ -2351,7 +2351,7 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedElementType(CorElementType elementType
 //
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetArrayTypeInfo(TypeHandle                      typeHandle,
-                                           ExpandedTypeData * pTypeInfo)
+                                           ExpandedTypeData_DebuggerSide * pTypeInfo)
 {
     _ASSERTE(typeHandle.IsArray());
     pTypeInfo->ArrayTypeData.arrayRank = typeHandle.GetRank();
@@ -2373,7 +2373,7 @@ void DacDbiInterfaceImpl::GetArrayTypeInfo(TypeHandle                      typeH
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetPtrTypeInfo(AreValueTypesBoxed              boxed,
                                          TypeHandle                      typeHandle,
-                                         ExpandedTypeData * pTypeInfo)
+                                         ExpandedTypeData_DebuggerSide * pTypeInfo)
 {
     if (boxed == AllBoxed)
     {
@@ -2401,7 +2401,7 @@ void DacDbiInterfaceImpl::GetPtrTypeInfo(AreValueTypesBoxed              boxed,
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetFnPtrTypeInfo(AreValueTypesBoxed              boxed,
                                            TypeHandle                      typeHandle,
-                                           ExpandedTypeData * pTypeInfo)
+                                           ExpandedTypeData_DebuggerSide * pTypeInfo)
 {
     if (boxed == AllBoxed)
     {
@@ -2425,7 +2425,7 @@ void DacDbiInterfaceImpl::GetFnPtrTypeInfo(AreValueTypesBoxed              boxed
 //
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeHandle,
-                                           ExpandedTypeData * pTypeInfo)
+                                           ExpandedTypeData_DebuggerSide * pTypeInfo)
 {
     typeHandle = typeHandle.UpCastTypeIfNeeded();
     Module * pModule = typeHandle.GetModule();
@@ -2486,7 +2486,7 @@ CorElementType DacDbiInterfaceImpl::GetElementType (TypeHandle typeHandle)
 //
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                   typeHandle,
-                                                    BasicTypeData * pTypeInfo)
+                                                    BasicTypeData_DebuggerSide * pTypeInfo)
 {
     pTypeInfo->elementType = GetElementType(typeHandle);
 
@@ -2533,7 +2533,7 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
 } // DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT ExpandedTypeData * pTypeInfo)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT ExpandedTypeData_DebuggerSide * pTypeInfo)
 {
     DD_ENTER_MAY_THROW;
 
@@ -2547,7 +2547,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfoFromID(A
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT ExpandedTypeData * pTypeInfo)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT ExpandedTypeData_DebuggerSide * pTypeInfo)
 {
     DD_ENTER_MAY_THROW;
 
@@ -2563,7 +2563,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValu
 }
 
 // DacDbi API: use a type handle to get the information needed to create the corresponding RS CordbType instance
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, ExpandedTypeData * pTypeInfo)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, ExpandedTypeData_DebuggerSide * pTypeInfo)
 {
     DD_ENTER_MAY_THROW;
 
@@ -2582,7 +2582,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreV
 
 void DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
                                                         TypeHandle                      typeHandle,
-                                                        ExpandedTypeData * pTypeInfo)
+                                                        ExpandedTypeData_DebuggerSide * pTypeInfo)
 {
     pTypeInfo->elementType = GetElementType(typeHandle);
 
@@ -2688,7 +2688,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetApproxTypeHandle(TypeInfoList 
 }
 
 // DacDbiInterface API: Get the exact type handle from type data
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetExactTypeHandle(ExpandedTypeData * pTypeData,
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetExactTypeHandle(ExpandedTypeData_DebuggerSide * pTypeData,
                                                 ArgInfoList *   pArgInfo,
                                                 VMPTR_TypeHandle * pVmTypeHandle)
 {
@@ -2827,7 +2827,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
 //     input: pData - contains the metadata token and assembly
 // Return value: the type handle for the corresponding type
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::GetClassOrValueTypeHandle(BasicTypeData * pData)
+TypeHandle DacDbiInterfaceImpl::GetClassOrValueTypeHandle(BasicTypeData_DebuggerSide * pData)
 {
     TypeHandle typeHandle;
 
@@ -2867,7 +2867,7 @@ TypeHandle DacDbiInterfaceImpl::GetClassOrValueTypeHandle(BasicTypeData * pData)
 //                                       effectively a one-element list. These are the actual parameters
 // Return Value: the exact type handle for the type
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::GetExactArrayTypeHandle(ExpandedTypeData * pTopLevelTypeData,
+TypeHandle DacDbiInterfaceImpl::GetExactArrayTypeHandle(ExpandedTypeData_DebuggerSide * pTopLevelTypeData,
                                                         ArgInfoList *                   pArgInfo)
 {
     TypeHandle typeArg;
@@ -2895,7 +2895,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactArrayTypeHandle(ExpandedTypeData * pTopL
 //                                       effectively a one-element list. These are the actual parameters
 // Return Value: the exact type handle for the type
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::GetExactPtrOrByRefTypeHandle(ExpandedTypeData * pTopLevelTypeData,
+TypeHandle DacDbiInterfaceImpl::GetExactPtrOrByRefTypeHandle(ExpandedTypeData_DebuggerSide * pTopLevelTypeData,
                                                              ArgInfoList *                   pArgInfo)
 {
     TypeHandle typeArg;
@@ -2920,7 +2920,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactPtrOrByRefTypeHandle(ExpandedTypeData * 
 //                                       are the actual parameters
 // Return Value: the exact type handle for the type
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::GetExactClassTypeHandle(ExpandedTypeData * pTopLevelTypeData,
+TypeHandle DacDbiInterfaceImpl::GetExactClassTypeHandle(ExpandedTypeData_DebuggerSide * pTopLevelTypeData,
                                                         ArgInfoList *                   pArgInfo)
 {
     Module * pModule = pTopLevelTypeData->ClassTypeData.vmAssembly.GetDacPtr()->GetModule();
@@ -3021,7 +3021,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactFnPtrTypeHandle(ArgInfoList * pArgInfo)
 //     input: pArgTypeData - basic type information for the type.
 // Return Value: the type handle for the type.
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::BasicTypeInfoToTypeHandle(BasicTypeData * pArgTypeData)
+TypeHandle DacDbiInterfaceImpl::BasicTypeInfoToTypeHandle(BasicTypeData_DebuggerSide * pArgTypeData)
 {
     LOG((LF_CORDB, LL_INFO10000,
         "D::BTITTH: expanding basic right-side type to left-side type, ELEMENT_TYPE: %d.\n",
@@ -3070,7 +3070,7 @@ TypeHandle DacDbiInterfaceImpl::BasicTypeInfoToTypeHandle(BasicTypeData * pArgTy
 // Return Value: the exact type handle corresponding to the type represented by
 //            pTopLevelTypeData
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::ExpandedTypeInfoToTypeHandle(ExpandedTypeData * pTopLevelTypeData,
+TypeHandle DacDbiInterfaceImpl::ExpandedTypeInfoToTypeHandle(ExpandedTypeData_DebuggerSide * pTopLevelTypeData,
                                                              ArgInfoList *                   pArgInfo)
 {
     WRAPPER_NO_CONTRACT;

@@ -618,57 +618,6 @@ DEFINE_RSPTR_TYPE(CordbEval,               RSPTR_CORDBEVAL);
 typedef CORDB_ADDRESS GENERICS_TYPE_TOKEN;
 
 
-//-----------------------------------------------------------------------------
-// We pass some fixed size strings in the IPC block.
-// Helper class to wrap the buffer and protect against buffer overflows.
-// This should be binary compatible w/ a wchar[] array.
-//-----------------------------------------------------------------------------
-
-template <int nMaxLengthIncludingNull>
-class MSLAYOUT EmbeddedIPCString
-{
-public:
-    // Set, caller responsibility that u16_strlen(pData) < nMaxLengthIncludingNull
-    void SetString(const WCHAR * pData)
-    {
-        // If the string doesn't fit into the buffer, that's an issue (and so this is a real
-        // assert, not just a simplifying assumption). To fix it, either:
-        // - make the buffer larger
-        // - don't pass the string as an embedded string in the IPC block.
-        // This will truncate (rather than AV on the RS).
-        int ret;
-        ret = SafeCopy(pData);
-
-        // See comment above - caller should guarantee that buffer is large enough.
-        _ASSERTE(ret != STRUNCATE);
-    }
-
-    // Set a string from a substring. This will truncate if necessary.
-    void SetStringTruncate(const WCHAR * pData)
-    {
-        // ignore return value because truncation is ok.
-        SafeCopy(pData);
-    }
-
-    const WCHAR * GetString()
-    {
-        // For a null-termination just in case an issue in the debuggee process
-        // yields a malformed string.
-        m_data[nMaxLengthIncludingNull - 1] = W('\0');
-        return &m_data[0];
-    }
-    int GetMaxSize() const { return nMaxLengthIncludingNull; }
-
-private:
-    int SafeCopy(const WCHAR * pData)
-    {
-        return wcsncpy_s(
-            m_data, nMaxLengthIncludingNull,
-            pData, _TRUNCATE);
-    }
-    WCHAR m_data[nMaxLengthIncludingNull];
-};
-
 //
 // Types of events that can be sent between the Runtime Controller and
 // the Debugger Interface. Some of these events are one way only, while
@@ -1066,7 +1015,7 @@ inline bool IsEqualOrCloserToRoot(FramePointer fp1, FramePointer fp2)
 }
 
 
-// struct DebuggerIPCE_FuncData:   DebuggerIPCE_FuncData holds data
+// struct FuncData:   FuncData holds data
 // to describe a given function, its
 // class, and a little bit about the code for the function. This is used
 // in the stack trace result data to pass function information back that
@@ -1082,7 +1031,7 @@ inline bool IsEqualOrCloserToRoot(FramePointer fp1, FramePointer fp2)
 //
 // SIZE_T nVersion: The version of the code that this instance of the
 //          function is using.
-struct MSLAYOUT DebuggerIPCE_FuncData
+struct MSLAYOUT FuncData
 {
     mdMethodDef funcMetadataToken;
     VMPTR_Assembly vmAssembly;
@@ -1099,7 +1048,7 @@ struct MSLAYOUT DebuggerIPCE_FuncData
 
 };
 
-// struct DebuggerIPCE_JITFuncData:   DebuggerIPCE_JITFuncData holds
+// struct JITFuncData:   JITFuncData holds
 // a little bit about the JITted code for the function.
 //
 // void* nativeStartAddressPtr: Ptr to CORDB_ADDRESS, which is
@@ -1132,7 +1081,7 @@ struct MSLAYOUT DebuggerIPCE_FuncData
 //          an address somewhere inside [call IL_Throw] instruction.
 // void *ilToNativeMapAddr etc.: If nativeCodeJITInfoToken is not NULL then these
 //          specify the table giving the mapping of IPs.
-struct MSLAYOUT DebuggerIPCE_JITFuncData
+struct MSLAYOUT JITFuncData // Rachel: remove IPC
 {
     TADDR       nativeStartAddressPtr;
     SIZE_T      nativeHotSize;
@@ -1161,14 +1110,14 @@ struct MSLAYOUT DebuggerIPCE_JITFuncData
 };
 
 //
-// DebuggerIPCE_STRData holds data for each stack frame or chain. This data is passed
+// STRData holds data for each stack frame or chain. This data is passed
 // from the RC to the DI during a stack walk.
 //
 #if defined(_MSC_VER)
 #pragma warning( push )
 #pragma warning( disable:4324 ) // the compiler pads a structure to comply with alignment requirements
 #endif                          // ARM context structures have a 16-byte alignment requirement
-struct MSLAYOUT DebuggerIPCE_STRData
+struct MSLAYOUT STRData // Rachel: remove IPC
 {
     FramePointer            fp;
     // @dbgtodo  stackwalker/shim- Ideally we should be able to get rid of the DebuggerREGDISPLAY and just use the CONTEXT.
@@ -1199,8 +1148,8 @@ struct MSLAYOUT DebuggerIPCE_STRData
         // Data for a Method
         struct MSLAYOUT
         {
-            struct DebuggerIPCE_FuncData funcData;
-            struct DebuggerIPCE_JITFuncData jitFuncData;
+            struct FuncData funcData;
+            struct JITFuncData jitFuncData;
             SIZE_T                       ILOffset;
             CorDebugMappingResult        mapping;
 
@@ -1235,12 +1184,12 @@ struct MSLAYOUT DebuggerIPCE_STRData
 #endif
 
 //
-// DebuggerIPCE_BasicTypeData and DebuggerIPCE_ExpandedTypeData
+// BasicTypeData_RuntimeSide and ExpandedTypeData_RuntimeSide
 // hold data for each type sent across the
 // boundary, whether it be a constructed type List<String> or a non-constructed
 // type such as String, Foo or Object.
 //
-// Logically speaking DebuggerIPCE_BasicTypeData might just be "typeHandle", as
+// Logically speaking BasicTypeData_RuntimeSide might just be "typeHandle", as
 // we could then send further events to ask what the elementtype, typeToken and moduleToken
 // are for the type handle.  But as
 // nearly all types are non-generic we send across even the basic type information in
@@ -1262,7 +1211,7 @@ struct MSLAYOUT DebuggerIPCE_STRData
 // types or function-pointer types (the latter are too complexe to transfer over in one hit).
 //
 
-struct MSLAYOUT DebuggerIPCE_BasicTypeData
+struct MSLAYOUT BasicTypeData_RuntimeSide
 {
     CorElementType  elementType;
     mdTypeDef       metadataToken;
@@ -1270,18 +1219,18 @@ struct MSLAYOUT DebuggerIPCE_BasicTypeData
     VMPTR_TypeHandle vmTypeHandle;
 };
 
-// DebuggerIPCE_ExpandedTypeData contains more information showing further
+// ExpandedTypeData_RuntimeSide contains more information showing further
 // details for array types, byref types etc.
 // Whenever you fetch type information from the left-side
 // you get back one of these.  These in turn contain further
-// DebuggerIPCE_BasicTypeData's and typeHandles which you can
+// BasicTypeData_RuntimeSide's and typeHandles which you can
 // then query to get further information about the type parameters.
 // This copes with the nested cases, e.g. jagged arrays,
 // String ****, &(String*), Pair<String,Pair<String>>
 // and so on.
 //
 // So this type information is not "fully expanded", it's just a little
-// more detail then DebuggerIPCE_BasicTypeData.  For type
+// more detail then BasicTypeData_RuntimeSide.  For type
 // instantiatons (e.g. List<int>) and
 // function pointer types you will need to make further requests for
 // information about the type parameters.
@@ -1289,7 +1238,7 @@ struct MSLAYOUT DebuggerIPCE_BasicTypeData
 // we include that as part of the expanded data.
 //
 //
-struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
+struct MSLAYOUT ExpandedTypeData_RuntimeSide
 {
     CorElementType  elementType; // Note this is _never_ E_T_VAR, E_T_WITH or E_T_MVAR
     union MSLAYOUT
@@ -1308,14 +1257,14 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
         // used for E_T_PTR, E_T_BYREF etc.
         struct MSLAYOUT
          {
-            DebuggerIPCE_BasicTypeData unaryTypeArg;  // used only when sending back to debugger
+            BasicTypeData_RuntimeSide unaryTypeArg;  // used only when sending back to debugger
         } UnaryTypeData;
 
 
         // used for E_T_ARRAY etc.
         struct MSLAYOUT
         {
-          DebuggerIPCE_BasicTypeData arrayTypeArg; // used only when sending back to debugger
+          BasicTypeData_RuntimeSide arrayTypeArg; // used only when sending back to debugger
             DWORD           arrayRank;
         } ArrayTypeData;
 
@@ -1329,16 +1278,16 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
 };
 
 // DebuggerIPCE_TypeArgData is used when sending type arguments
-// across to a funceval.  It contains the DebuggerIPCE_ExpandedTypeData describing the
+// across to a funceval.  It contains the ExpandedTypeData_RuntimeSide describing the
 // essence of the type, but the typeHandle and other
 // BasicTypeData fields should be zero and will be ignored.
-// The DebuggerIPCE_ExpandedTypeData is then followed
+// The ExpandedTypeData_RuntimeSide is then followed
 // by the required number of type arguments, each of which
 // will be a further DebuggerIPCE_TypeArgData record in the stream of
 // flattened type argument data.
-struct MSLAYOUT DebuggerIPCE_TypeArgData
+struct MSLAYOUT DebuggerIPCE_TypeArgData // Rachel: split & add another serialization type for funceval args
 {
-    DebuggerIPCE_ExpandedTypeData  data;
+    ExpandedTypeData_RuntimeSide  data;
     unsigned int                   numTypeArgs; // number of immediate children on the type tree
 };
 
@@ -1349,7 +1298,7 @@ struct MSLAYOUT DebuggerIPCE_TypeArgData
 // Right Side would need to access it. (This include array, string,
 // and nstruct info.)
 //
-struct MSLAYOUT DebuggerIPCE_ObjectData
+struct MSLAYOUT DebuggerIPCE_ObjectData // Rachel: remove IPC
 {
     void           *objRef;
     bool            objRefBad;
@@ -1359,7 +1308,7 @@ struct MSLAYOUT DebuggerIPCE_ObjectData
     SIZE_T          objOffsetToVars;
 
     // The type of the object....
-    struct DebuggerIPCE_ExpandedTypeData objTypeData;
+    struct ExpandedTypeData_RuntimeSide objTypeData;
 
     union MSLAYOUT
     {
@@ -1381,7 +1330,7 @@ struct MSLAYOUT DebuggerIPCE_ObjectData
 
         struct MSLAYOUT
         {
-            struct DebuggerIPCE_BasicTypeData typedByrefType; // the type of the thing contained in a typedByref...
+            struct BasicTypeData_RuntimeSide typedByrefType; // the type of the thing contained in a typedByref...
         } typedByrefInfo;
     };
 };
@@ -1452,7 +1401,7 @@ enum NameChangeType
 // DebuggerIPCE_FuncEvalArgData holds data for each argument to a
 // function evaluation.
 //
-struct MSLAYOUT DebuggerIPCE_FuncEvalArgData
+struct MSLAYOUT DebuggerIPCE_FuncEvalArgData // Rachel: split
 {
     RemoteAddress     argHome;  // enregistered variable home
     void             *argAddr;  // address if not enregistered
@@ -1469,7 +1418,7 @@ struct MSLAYOUT DebuggerIPCE_FuncEvalArgData
 // DebuggerIPCE_FuncEvalInfo holds info necessary to setup a func eval
 // operation.
 //
-struct MSLAYOUT DebuggerIPCE_FuncEvalInfo
+struct MSLAYOUT DebuggerIPCE_FuncEvalInfo // Rachel: split
 {
     VMPTR_Thread               vmThreadToken;
     DebuggerIPCE_FuncEvalType  funcEvalType;
@@ -1520,128 +1469,6 @@ struct MSLAYOUT DebuggerIPCSecondChanceData
     DT_CONTEXT       threadContext;
 };
 
-
-
-//-----------------------------------------------------------------------------
-// This struct holds pointer from the LS and needs to copy to
-// the RS. We have to free the memory on the RS.
-// The transfer function is called when the RS first reads the event. At this point,
-// the LS is stopped while sending the event. Thus the LS pointers only need to be
-// valid while the LS is in SendIPCEvent.
-//
-// Since this data is in an IPC/Marshallable block, it can't have any Ctors (holders)
-// in it.
-//-----------------------------------------------------------------------------
-struct MSLAYOUT Ls_Rs_BaseBuffer
-{
-#ifdef RIGHT_SIDE_COMPILE
-protected:
-    // copy data can happen on both LS and RS. In LS case,
-    // ReadProcessMemory is really reading from its own process memory.
-    //
-    void CopyLSDataToRSWorker(ICorDebugDataTarget * pTargethProcess);
-
-    // retrieve the RS data and own it
-    BYTE *TransferRSDataWorker()
-    {
-        BYTE *pbRS = m_pbRS;
-        m_pbRS = NULL;
-        return pbRS;
-    }
-public:
-
-
-    void CleanUp()
-    {
-        if (m_pbRS != NULL)
-        {
-            delete [] m_pbRS;
-            m_pbRS = NULL;
-        }
-    }
-#else
-public:
-    // Only LS can call this API
-    void SetLsData(BYTE *pbLS, DWORD cbSize)
-    {
-        m_pbRS = NULL;
-        m_pbLS = pbLS;
-        m_cbSize = cbSize;
-    }
-#endif // RIGHT_SIDE_COMPILE
-
-public:
-    // Common APIs.
-    DWORD  GetSize() { return m_cbSize; }
-
-
-
-protected:
-    // Size of data in bytes
-    DWORD  m_cbSize;
-
-    // If this is non-null, pointer into LS for buffer.
-    // LS can free this after the debug event is continued.
-    BYTE  *m_pbLS; // @dbgtodo  cross-plat- for cross-platform purposes, this should be a TADDR
-
-    // If this is non-null, pointer into RS for buffer. RS must then free this.
-    // This buffer was copied from the LS (via CopyLSDataToRSWorker).
-    BYTE  *m_pbRS;
-};
-
-//-----------------------------------------------------------------------------
-// Byte wrapper around the buffer.
-//-----------------------------------------------------------------------------
-struct MSLAYOUT Ls_Rs_ByteBuffer : public Ls_Rs_BaseBuffer
-{
-#ifdef RIGHT_SIDE_COMPILE
-    BYTE *GetRSPointer()
-    {
-        return m_pbRS;
-    }
-
-    void CopyLSDataToRS(ICorDebugDataTarget * pTarget);
-    BYTE *TransferRSData()
-    {
-        return TransferRSDataWorker();
-    }
-#endif
-};
-
-//-----------------------------------------------------------------------------
-// Wrapper around a Ls_rS_Buffer to get it as a string.
-// This can also do some sanity checking.
-//-----------------------------------------------------------------------------
-struct MSLAYOUT Ls_Rs_StringBuffer : public Ls_Rs_BaseBuffer
-{
-#ifdef RIGHT_SIDE_COMPILE
-    const WCHAR * GetString()
-    {
-        return reinterpret_cast<const WCHAR*> (m_pbRS);
-    }
-
-    // Copy over the string.
-    void CopyLSDataToRS(ICorDebugDataTarget * pTarget);
-
-    // Caller will pick up ownership.
-    // Since caller will delete this data, we can't give back a constant pointer.
-    WCHAR * TransferStringData()
-    {
-        return reinterpret_cast<WCHAR*> (TransferRSDataWorker());
-    }
-#endif
-};
-
-
-// Data for an Managed Debug Assistant Probe (MDA).
-struct MSLAYOUT DebuggerMDANotification
-{
-    Ls_Rs_StringBuffer szName;
-    Ls_Rs_StringBuffer szDescription;
-    Ls_Rs_StringBuffer szXml;
-    DWORD        dwOSThreadId;
-    CorDebugMDAFlags flags;
-};
 
 
 // The only remaining problem is that register number mappings are different for each platform. It turns out
@@ -1706,7 +1533,6 @@ static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 //
 struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
 {
-    DebuggerIPCEvent_RuntimeSide*       next;
     DebuggerIPCEventType    type;
     DWORD             processId;
     DWORD             threadId;
@@ -1719,12 +1545,6 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
 
     union MSLAYOUT
     {
-        struct MSLAYOUT
-        {
-            // Pointer to a BOOL in the target.
-            CORDB_ADDRESS pfBeingDebugged;
-        } LeftSideStartupData;
-
         struct MSLAYOUT
         {
             // Module whose metadata is being updated
@@ -1755,7 +1575,6 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
         struct MSLAYOUT
         {
             VMPTR_Assembly vmAssembly;
-            LSPTR_ASSEMBLY debuggerAssemblyToken;
         } UnloadModuleData;
 
 
@@ -1765,8 +1584,6 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
         {
             VMPTR_Assembly vmAssembly;
         } UpdateModuleSymsData;
-
-        DebuggerMDANotification MDANotification;
 
         struct MSLAYOUT
         {
@@ -1826,24 +1643,8 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
             CorDebugUnmappedStop rgfMappingStop;
             CorDebugIntercept    rgfInterceptStop;
             unsigned int         rangeCount;
-            COR_DEBUG_STEP_RANGE range; //note that this is an array
+            COR_DEBUG_STEP_RANGE range[5]; //note that this is an array
         } StepData;
-
-        struct MSLAYOUT
-        {
-            // An unvalidated GC-handle
-            VMPTR_OBJECTHANDLE GCHandle;
-        } GetGCHandleInfo;
-
-        struct MSLAYOUT
-        {
-            // An unvalidated GC-handle for which we're returning the results
-            LSPTR_OBJECTHANDLE GCHandle;
-
-            // The following are initialized by the LS in response to our query:
-            VMPTR_AppDomain vmAppDomain; // AD that handle is in (only applicable if fValid).
-            bool            fValid; // Did the LS determine the GC handle to be valid?
-        } GetGCHandleInfoResult;
 
         // Allocate memory on the left-side
         struct MSLAYOUT
@@ -1890,14 +1691,12 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
         {
             mdTypeDef   classMetadataToken;
             VMPTR_Assembly vmAssembly;
-            LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } LoadClass;
 
         struct MSLAYOUT
         {
             mdTypeDef   classMetadataToken;
             VMPTR_Assembly vmAssembly;
-            LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } UnloadClass;
 
         struct MSLAYOUT
@@ -1912,11 +1711,6 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
             bool        firstChance;
             bool        continuable;
         } Exception;
-
-        struct MSLAYOUT
-        {
-            VMPTR_Thread   vmThreadToken;
-        } ClearException;
 
         struct MSLAYOUT
         {
@@ -1938,24 +1732,19 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
             VMPTR_MethodDesc vmMethodDesc;
             SIZE_T           offset;
             bool             fIsIL;
-            void *           firstExceptionHandler;
         } SetIP; // this is also used for CanSetIP
 
         struct MSLAYOUT
         {
             int iLevel;
 
-            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szCategory;
-            Ls_Rs_StringBuffer szContent;
+            CORDB_ADDRESS szCategory;
+            CORDB_ADDRESS szContent;
         } FirstLogMessage;
 
         struct MSLAYOUT
         {
             int iLevel;
-            int iReason;
-
-            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szSwitchName;
-            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szParentSwitchName;
         } LogSwitchSettingMessage;
 
         // information needed to send to the RS as part of a custom notification from the target
@@ -1993,7 +1782,7 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
             VMPTR_AppDomain vmAppDomain;
 
             VMPTR_OBJECTHANDLE vmObjectHandle;
-            DebuggerIPCE_ExpandedTypeData resultType;
+            ExpandedTypeData_RuntimeSide resultType;
         } FuncEvalComplete;
 
         struct MSLAYOUT
@@ -2024,13 +1813,6 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
             VMPTR_AppDomain vmAppDomain;
             VMPTR_Thread    vmThread;
         } NameChange;
-
-        struct MSLAYOUT
-        {
-            VMPTR_Assembly vmAssembly;
-            BOOL             fAllowJitOpts;
-            BOOL             fEnableEnC;
-        } JitDebugInfo;
 
         // EnC Remap opportunity
         struct MSLAYOUT
@@ -2067,7 +1849,7 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
         {
             void      *oldData;
             void      *newData;
-            DebuggerIPCE_BasicTypeData type;
+            BasicTypeData_RuntimeSide type;
         } SetValueClass;
 
 
@@ -2080,27 +1862,6 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
             mdMethodDef     funcMetadataToken;
             DWORD           dwStatus;
         } SetJMCFunctionStatus;
-
-        struct MSLAYOUT
-        {
-            TASKID      taskid;
-        } GetThreadForTaskId;
-
-        struct MSLAYOUT
-        {
-            VMPTR_Thread vmThreadToken;
-        } GetThreadForTaskIdResult;
-
-        struct MSLAYOUT
-        {
-            CONNID     connectionId;
-        } ConnectionChange;
-
-        struct MSLAYOUT
-        {
-            CONNID     connectionId;
-            EmbeddedIPCString<MAX_LONGPATH> wzConnectionName;
-        } CreateConnection;
 
         struct MSLAYOUT
         {
@@ -2149,7 +1910,6 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
         } MetadataUpdateRequest;
     };
 };
-
 // When using a network transport rather than shared memory buffers CorDBIPC_BUFFER_SIZE is the upper bound
 // for a single DebuggerIPCEvent_DebuggerSide structure. This now relates to the maximal size of a network message and is
 // orthogonal to the host's page size. Round the buffer size up to a multiple of 8 since MSVC seems more
@@ -2159,8 +1919,5 @@ struct MSLAYOUT DebuggerIPCEvent_RuntimeSide
 // A DebuggerIPCEvent_RuntimeSide must fit in the send & receive buffers, which are CorDBIPC_BUFFER_SIZE bytes.
 static_assert(sizeof(DebuggerIPCEvent_RuntimeSide) <= CorDBIPC_BUFFER_SIZE);
 static_assert(CorDBIPC_TRANSPORT_BUFFER_SIZE <= CorDBIPC_BUFFER_SIZE);
-
-// 2*sizeof(WCHAR) for the two string terminating characters in the FirstLogMessage
-#define LOG_MSG_PADDING         4
 
 #endif /* _DbgIPCEvents_h_ */

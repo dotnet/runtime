@@ -326,6 +326,7 @@ bool DbgTransportSession::StopUsingAsDebugger(DebugTicket * pTicket)
 HRESULT DbgTransportSession::SendEvent(BYTE *pEvent, UINT cbEvent, DebuggerIPCEventType eventType)
 {
     DBG_TRANSPORT_INC_STAT(SentEvent);
+    DbgTransportLog(LC_Events, "Sending '%s'", IPCENames::GetName(eventType));
 
     return SendEventWorker(pEvent, IPCET_OldStyle, eventType, cbEvent);
 }
@@ -335,6 +336,7 @@ HRESULT DbgTransportSession::SendEvent(BYTE *pEvent, UINT cbEvent, DebuggerIPCEv
 HRESULT DbgTransportSession::SendDebugEvent(BYTE * pEvent, UINT cbEvent, DebuggerIPCEventType eventType)
 {
     DBG_TRANSPORT_INC_STAT(SentEvent);
+    DbgTransportLog(LC_Events, "Sending debug event '%s'", IPCENames::GetName(eventType));
 
     return SendEventWorker(pEvent, IPCET_DebugEvent, eventType, cbEvent);
 }
@@ -2108,6 +2110,37 @@ void DbgTransportSession::TransportWorker()
     Release();
 }
 
+#ifdef _DEBUG
+// Debug helper which returns the name associated with a MessageType.
+const char *DbgTransportSession::MessageName(MessageType eType)
+{
+    switch (eType)
+    {
+    case MT_SessionRequest:
+        return "SessionRequest";
+    case MT_SessionAccept:
+        return "SessionAccept";
+    case MT_SessionReject:
+        return "SessionReject";
+    case MT_SessionResync:
+        return "SessionResync";
+    case MT_SessionClose:
+        return "SessionClose";
+    case MT_Event:
+        return "Event";
+    case MT_ReadMemory:
+        return "ReadMemory";
+    case MT_WriteMemory:
+        return "WriteMemory";
+    case MT_GetDCB:
+        return "GetDCB";
+    case MT_SetDCB:
+        return "SetDCB";
+    default:
+        _ASSERTE(!"Unknown message type");
+        return NULL;
+    }
+}
 
 // Debug logging helper which logs an incoming message of any type (as long as logging for that message
 // class is currently enabled).

@@ -2177,7 +2177,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
         // We always copy over the whole buffer size which is bigger than sizeof(DebuggerIPCEvent_DebuggerSide)
         // This seems ugly, in this case we know the exact size of the event we want to read
         // why copy over all the extra data?
-        DebuggerIPCEvent_DebuggerSide *retEvent = (DebuggerIPCEvent_DebuggerSide *) _alloca(CorDBIPC_BUFFER_SIZE);
+        DebuggerIPCEvent_DebuggerSide retEvent;
 
         {
             //
@@ -2188,49 +2188,49 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
             {
                 hr = GetProcess()->m_cordb->WaitForIPCEventFromProcess(GetProcess(),
                                                                        GetAppDomain(),
-                                                                       retEvent);
+                                                                       &retEvent);
                 IfFailThrow(hr);
 
-                if (retEvent->type == DB_IPCE_APPLY_CHANGES_RESULT)
+                if (retEvent.type == DB_IPCE_APPLY_CHANGES_RESULT)
                 {
                     // Done receiving update events
-                    hr = retEvent->ApplyChangesResult.hr;
+                    hr = retEvent.ApplyChangesResult.hr;
                     LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC apply changes result %8.8x.\n", hr));
                     break;
                 }
 
-                _ASSERTE(retEvent->type == DB_IPCE_ENC_UPDATE_FUNCTION ||
-                                  retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ||
-                                  retEvent->type == DB_IPCE_ENC_ADD_FIELD);
+                _ASSERTE(retEvent.type == DB_IPCE_ENC_UPDATE_FUNCTION ||
+                                  retEvent.type == DB_IPCE_ENC_ADD_FUNCTION ||
+                                  retEvent.type == DB_IPCE_ENC_ADD_FIELD);
                 LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC %s %8.8x to version %d.\n",
                         GetCurrentThreadId(),
-                        retEvent->type == DB_IPCE_ENC_UPDATE_FUNCTION ? "Update function" :
-                        retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ? "Add function" : "Add field",
-                        retEvent->EnCUpdate.memberMetadataToken, retEvent->EnCUpdate.newVersionNumber));
+                        retEvent.type == DB_IPCE_ENC_UPDATE_FUNCTION ? "Update function" :
+                        retEvent.type == DB_IPCE_ENC_ADD_FUNCTION ? "Add function" : "Add field",
+                        retEvent.EnCUpdate.memberMetadataToken, retEvent.EnCUpdate.newVersionNumber));
 
                 CordbAppDomain *pAppDomain = GetAppDomain();
                 _ASSERTE(NULL != pAppDomain);
                 CordbModule* pModule = NULL;
 
 
-                pModule = pAppDomain->LookupOrCreateModule(retEvent->EnCUpdate.vmAssembly); // throws
+                pModule = pAppDomain->LookupOrCreateModule(retEvent.EnCUpdate.vmAssembly); // throws
                 _ASSERTE(pModule != NULL);
 
                 // update to the newest version
 
-                if (retEvent->type == DB_IPCE_ENC_UPDATE_FUNCTION ||
-                     retEvent->type == DB_IPCE_ENC_ADD_FUNCTION)
+                if (retEvent.type == DB_IPCE_ENC_UPDATE_FUNCTION ||
+                     retEvent.type == DB_IPCE_ENC_ADD_FUNCTION)
                 {
                     // Update the function collection to reflect this edit
-                    hr = pModule->UpdateFunction(retEvent->EnCUpdate.memberMetadataToken, retEvent->EnCUpdate.newVersionNumber, NULL);
+                    hr = pModule->UpdateFunction(retEvent.EnCUpdate.memberMetadataToken, retEvent.EnCUpdate.newVersionNumber, NULL);
 
                 }
                 // mark the class and relevant type as old so we update it next time we try to query it
-                if (retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ||
-                     retEvent->type == DB_IPCE_ENC_ADD_FIELD)
+                if (retEvent.type == DB_IPCE_ENC_ADD_FUNCTION ||
+                     retEvent.type == DB_IPCE_ENC_ADD_FIELD)
                 {
                     RSLockHolder lockHolder(GetProcess()->GetProcessLock()); // @dbgtodo  synchronization -  push this up
-                    CordbClass* pClass = pModule->LookupClass(retEvent->EnCUpdate.classMetadataToken);
+                    CordbClass* pClass = pModule->LookupClass(retEvent.EnCUpdate.classMetadataToken);
                     // if don't find class, that is fine because it hasn't been loaded yet so doesn't
                     // need to be updated
                     if (pClass)

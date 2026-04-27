@@ -557,13 +557,13 @@ CodeBlobRegion & operator++(CodeBlobRegion & rs)
 // using the former type to gather information.
 // Arguments:
 //     Input:
-//            source - an initialized instance of DebuggerIPCE_JITFuncData containing the information to
+//            source - an initialized instance of JITFuncData containing the information to
 //                     be copied into this instance of NativeCodeFunctionData
 // @dbgtodo dlaw: Once CordbThread::RefreshStack is fully DAC-ized, we can change the data structure that it uses
 // to have a member of type NativeCodeFunctionData which we can pass without copying. At that point,
 // this method can disappear.
 inline
-NativeCodeFunctionData::NativeCodeFunctionData(DebuggerIPCE_JITFuncData * source)
+NativeCodeFunctionData::NativeCodeFunctionData(JITFuncData * source)
 {
     // copy the code region information
     m_rgCodeRegions[kHot].Init(CORDB_ADDRESS(source->nativeStartAddressPtr), (ULONG)source->nativeHotSize);

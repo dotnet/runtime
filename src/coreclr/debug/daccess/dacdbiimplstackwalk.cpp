@@ -394,7 +394,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       v
 }
 
 // Retrieve information about the current frame from the stackwalker.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL DebuggerIPCE_STRData * pFrameData, OUT FrameType * pRetVal)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL STRData * pFrameData, OUT FrameType * pRetVal)
 {
     DD_ENTER_MAY_THROW;
 
@@ -572,7 +572,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
     EX_TRY
     {
 
-        DebuggerIPCE_STRData frameData;
+        STRData frameData;
 
         Thread *    pThread    = vmThread.GetDacPtr();
         Frame *     pFrame     = pThread->GetFrame();
@@ -581,7 +581,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
         // This used to be only true for Enter-Managed chains.
         // Since we don't have chains anymore, this can always be false.
         frameData.quicklyUnwound = false;
-        frameData.eType = DebuggerIPCE_STRData::cStubFrame;
+        frameData.eType = STRData::cStubFrame;
 
         while (pFrame != FRAME_TOP)
         {
@@ -788,12 +788,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ConvertContextToDebuggerRegDispla
 
 void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
                                         FrameType              ft,
-                                        DebuggerIPCE_STRData * pFrameData)
+                                        STRData * pFrameData)
 {
     CrawlFrame * pCF = &(pIter->m_crawl);
 
     //
-    // do common initialization of DebuggerIPCE_STRData for both managed stack frames and explicit frames
+    // do common initialization of STRData for both managed stack frames and explicit frames
     //
 
     pFrameData->fp = GetFramePointerWorker(pIter);
@@ -806,7 +806,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
 
     if (ft == kNativeRuntimeUnwindableStackFrame)
     {
-        pFrameData->eType = DebuggerIPCE_STRData::cRuntimeNativeFrame;
+        pFrameData->eType = STRData::cRuntimeNativeFrame;
 
         GetStackWalkCurrentContext(pIter, &(pFrameData->ctx));
     }
@@ -833,17 +833,17 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         _ASSERTE(pModule != NULL);
 
         //
-        // initialize the rest of the DebuggerIPCE_STRData
+        // initialize the rest of the STRData
         //
 
-        pFrameData->eType = DebuggerIPCE_STRData::cMethodFrame;
+        pFrameData->eType = STRData::cMethodFrame;
 
         SetDebuggerREGDISPLAYFromREGDISPLAY(&(pFrameData->rd), pCF->GetRegisterSet());
 
         GetStackWalkCurrentContext(pIter, &(pFrameData->ctx));
 
         //
-        // initialize the fields in DebuggerIPCE_STRData::v
+        // initialize the fields in STRData::v
         //
 
         // These fields will be filled in later.  We don't have the sequence point mapping information here.
@@ -891,14 +891,14 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         }
 
         //
-        // initialize the DebuggerIPCE_FuncData and DebuggerIPCE_JITFuncData
+        // initialize the FuncData and JITFuncData
         //
 
-        DebuggerIPCE_FuncData *    pFuncData    = &(pFrameData->v.funcData);
-        DebuggerIPCE_JITFuncData * pJITFuncData = &(pFrameData->v.jitFuncData);
+        FuncData *    pFuncData    = &(pFrameData->v.funcData);
+        JITFuncData * pJITFuncData = &(pFrameData->v.jitFuncData);
 
         //
-        // initialize the "easy" fields of DebuggerIPCE_FuncData
+        // initialize the "easy" fields of FuncData
         //
 
         pFuncData->funcMetadataToken = pMD->GetMemberDef();
@@ -909,7 +909,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         pFuncData->classMetadataToken = mdTokenNil;
 
         //
-        // initialize the remaining fields of DebuggerIPCE_FuncData to the default values
+        // initialize the remaining fields of FuncData to the default values
         //
 
         pFuncData->ilStartAddress = NULL;
@@ -918,7 +918,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         pFuncData->localVarSigToken = mdSignatureNil;
 
         //
-        // inititalize the fields of DebuggerIPCE_JITFuncData
+        // inititalize the fields of JITFuncData
         //
 
         // For MiniDumpNormal, we do not guarantee method region info for all JIT tokens
@@ -993,7 +993,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
 //
 
 void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      taStartAddr,
-                                                    DebuggerIPCE_JITFuncData * pJITFuncData)
+                                                    JITFuncData * pJITFuncData)
 {
     PTR_CORDB_ADDRESS_TYPE pAddr = dac_cast<PTR_CORDB_ADDRESS_TYPE>(taStartAddr);
     CodeRegionInfo crInfo = CodeRegionInfo::GetCodeRegionInfo(NULL, NULL, pAddr);
@@ -1007,7 +1007,7 @@ void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      t
 
 //---------------------------------------------------------------------------------------
 //
-// Initialize the funclet-related fields of DebuggerIPCE_JITFuncData.  This is an nop on non-WIN64 platforms.
+// Initialize the funclet-related fields of JITFuncData.  This is an nop on non-WIN64 platforms.
 //
 // Arguments:
 //    pCF          - the CrawlFrame for the current frame
@@ -1015,7 +1015,7 @@ void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      t
 //
 
 void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
-                                              DebuggerIPCE_JITFuncData * pJITFuncData)
+                                              JITFuncData * pJITFuncData)
 {
     pJITFuncData->fIsFilterFrame = pCF->IsFilterFunclet();
 

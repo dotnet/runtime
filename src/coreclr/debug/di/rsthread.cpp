@@ -2288,7 +2288,7 @@ HRESULT CordbThread::CreateStackWalk(ICorDebugStackWalk ** ppStackWalk)
 //
 
 // static
-void CordbThread::GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * pFrameData,
+void CordbThread::GetActiveInternalFramesCallback(const STRData * pFrameData,
                                                   void *                 pUserData)
 {
     // Retrieve the CordbThread.
@@ -2297,7 +2297,7 @@ void CordbThread::GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * p
     INTERNAL_DAC_CALLBACK(pThis->GetProcess());
 
     // Make sure we are getting invoked for internal frames.
-    _ASSERTE(pFrameData->eType == DebuggerIPCE_STRData::cStubFrame);
+    _ASSERTE(pFrameData->eType == STRData::cStubFrame);
 
     // Look up the CordbAppDomain.
     CordbAppDomain * pAppDomain = NULL;
@@ -5075,7 +5075,7 @@ HRESULT CordbValueEnum::Next(ULONG celt, ICorDebugValue *values[], ULONG *pceltF
 CordbInternalFrame::CordbInternalFrame(CordbThread *          pThread,
                                        FramePointer           fp,
                                        CordbAppDomain *       pCurrentAppDomain,
-                                       const DebuggerIPCE_STRData * pData)
+                                       const STRData * pData)
   : CordbFrame(pThread, fp, 0, pCurrentAppDomain)
 {
     CONTRACTL
@@ -5470,7 +5470,7 @@ CordbMiscFrame::CordbMiscFrame()
 }
 
 // the real constructor which stores the funclet-related information in the CordbMiscFrame
-CordbMiscFrame::CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData)
+CordbMiscFrame::CordbMiscFrame(JITFuncData * pJITFuncData)
 {
     this->parentIP       = pJITFuncData->parentNativeOffset;
     this->fpParentOrSelf = pJITFuncData->fpParentOrSelf;
@@ -7666,7 +7666,7 @@ void CordbJITILFrame::LoadGenericArgs()
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
     UINT32 cGenericClassTypeParams = 0;
-    DacDbiArrayList<ExpandedTypeData> rgGenericTypeParams;
+    DacDbiArrayList<ExpandedTypeData_DebuggerSide> rgGenericTypeParams;
 
     IfFailThrow(pDAC->GetMethodDescParams(m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
                               m_frameParamsToken,
@@ -9458,7 +9458,7 @@ HRESULT CordbEval::SendFuncEval(unsigned int genericArgsCount,
     {
         EX_TRY
         {
-            CORDB_ADDRESS argdata = event->FuncEvalSetupComplete.argDataArea;
+            CORDB_ADDRESS argdata = event->FuncEvalSetupComplete.argDataArea; // Rachel
 
             if ((tyargData != NULL) && (tyargDataSize != 0))
             {
@@ -11526,7 +11526,7 @@ void CordbAsyncFrame::LoadGenericArgs()
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
     UINT32 cGenericClassTypeParams = 0;
-    DacDbiArrayList<ExpandedTypeData> rgGenericTypeParams;
+    DacDbiArrayList<ExpandedTypeData_DebuggerSide> rgGenericTypeParams;
 
     UINT32 genericArgIndex;
     HRESULT result = pDAC->GetGenericArgTokenIndex(

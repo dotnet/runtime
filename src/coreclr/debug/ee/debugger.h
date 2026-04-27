@@ -776,8 +776,6 @@ public:
 #endif
 
         _ASSERTE(m_pDCB != NULL);
-        // In case this turns into a continuation event
-        GetRCThreadSendBuffer()->next = NULL;
         LOG((LF_CORDB,LL_EVERYTHING, "GIPCESBuffer: got event %p\n", GetRCThreadSendBuffer()));
 
         return GetRCThreadSendBuffer();
@@ -2136,27 +2134,23 @@ public:
     //HRESULT GetAndSendJITFunctionData(DebuggerRCThread* rcThread,
     //                               mdMethodDef methodToken,
     //                               void* functionModuleToken);
-    HRESULT GetFuncData(mdMethodDef funcMetadataToken,
-                        DebuggerModule* pDebuggerModule,
-                        SIZE_T nVersion,
-                        DebuggerIPCE_FuncData *data);
 
 
     // The following four functions convert between type handles and the data that is
     // shipped for types to and from the right-side.
     //
     // I'm heading toward getting rid of the first two - they are almost never used.
-    static HRESULT ExpandedTypeInfoToTypeHandle(DebuggerIPCE_ExpandedTypeData *data,
+    static HRESULT ExpandedTypeInfoToTypeHandle(ExpandedTypeData_RuntimeSide *data,
                                                 unsigned int genericArgsCount,
-                                                DebuggerIPCE_BasicTypeData *genericArgs,
+                                                BasicTypeData_RuntimeSide *genericArgs,
                                                 TypeHandle *pRes);
-    static HRESULT BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicTypeData *data,
+    static HRESULT BasicTypeInfoToTypeHandle(BasicTypeData_RuntimeSide *data,
                                              TypeHandle *pRes);
     void TypeHandleToBasicTypeInfo(AppDomain *pAppDomain,
                                    TypeHandle th,
-                                   DebuggerIPCE_BasicTypeData *res);
+                                   BasicTypeData_RuntimeSide *res);
 
-    // TypeHandleToExpandedTypeInfo returns different DebuggerIPCE_ExpandedTypeData objects
+    // TypeHandleToExpandedTypeInfo returns different ExpandedTypeData_RuntimeSide objects
     // depending on whether the object value that the TypeData corresponds to is
     // boxed or not.  Different parts of the API transfer objects in slightly different ways.
     // AllBoxed:
@@ -2174,7 +2168,7 @@ public:
     void TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
                                       AppDomain *pAppDomain,
                                       TypeHandle th,
-                                      DebuggerIPCE_ExpandedTypeData *res);
+                                      ExpandedTypeData_RuntimeSide *res);
 
     class TypeDataWalk
     {
@@ -2200,11 +2194,6 @@ public:
 
     };
 
-
-
-    HRESULT GetMethodDescData(MethodDesc *pFD,
-                              DebuggerJitInfo *pJITInfo,
-                              DebuggerIPCE_JITFuncData *data);
 
     void GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress);
 
@@ -2484,11 +2473,6 @@ public:
                          SString * pSwitchName,
                          SString * pMessage);
 
-    void SendLogSwitchSetting (int iLevel,
-                               int iReason,
-                               _In_z_ LPCWSTR pLogSwitchName,
-                               _In_z_ LPCWSTR pParentSwitchName);
-
     bool IsLoggingEnabled (void)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2557,12 +2541,6 @@ public:
                                  BYTE                      **rgpVCs);
 
     BOOL IsThreadContextInvalid(Thread *pThread, T_CONTEXT *pCtx);
-
-    // notification for SQL fiber debugging support
-    void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName);
-    void DestroyConnection(CONNID dwConnectionId);
-    void ChangeConnection(CONNID dwConnectionId);
-
     //
     // This function is used to identify the helper thread.
     //
@@ -2593,7 +2571,7 @@ public:
     HRESULT FuncEvalCleanup(DebuggerEval *debuggerEvalKey);
 
     HRESULT SetReference(void *objectRefAddress, VMPTR_OBJECTHANDLE vmObjectHandle, void *newReference);
-    HRESULT SetValueClass(void *oldData, void *newData, DebuggerIPCE_BasicTypeData *type);
+    HRESULT SetValueClass(void *oldData, void *newData, BasicTypeData_RuntimeSide *type);
 
     HRESULT SetILInstrumentedCodeMap(MethodDesc *fd,
                                      BOOL fStartJit,

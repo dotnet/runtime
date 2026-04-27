@@ -1750,9 +1750,8 @@ HRESULT DebuggerRCThread::SendIPCReply()
 {
     HRESULT hr = S_OK;
 
-#ifdef LOGGING
     DebuggerIPCEvent_RuntimeSide* event = GetIPCEventReceiveBuffer();
-
+#ifdef LOGGING
     LOG((LF_CORDB, LL_INFO10000, "D::SIPCR: replying with %s.\n",
          IPCENames::GetName(event->type)));
 #endif

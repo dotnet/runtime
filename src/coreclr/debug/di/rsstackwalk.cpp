@@ -575,7 +575,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     }
 
     IDacDbiInterface * pDAC = NULL;
-    DebuggerIPCE_STRData frameData;
+    STRData frameData;
     ZeroMemory(&frameData, sizeof(frameData));
     IDacDbiInterface::FrameType ft = IDacDbiInterface::kInvalid;
 
@@ -616,7 +616,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     }
     else if (ft == IDacDbiInterface::kManagedStackFrame)
     {
-        _ASSERTE(frameData.eType == DebuggerIPCE_STRData::cMethodFrame);
+        _ASSERTE(frameData.eType == STRData::cMethodFrame);
 
         HRESULT hr = S_OK;
 
@@ -634,11 +634,11 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // currentFuncData contains general information about the method.
         // It has no information about any particular jitted instance of the method.
-        DebuggerIPCE_FuncData * pFuncData = &(frameData.v.funcData);
+        FuncData * pFuncData = &(frameData.v.funcData);
 
         // currentJITFuncData contains information about the current jitted instance of the method
         // on the stack.
-        DebuggerIPCE_JITFuncData * pJITFuncData = &(frameData.v.jitFuncData);
+        JITFuncData * pJITFuncData = &(frameData.v.jitFuncData);
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
@@ -803,7 +803,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     } // kManagedStackFrame
     else if (ft == IDacDbiInterface::kNativeRuntimeUnwindableStackFrame)
     {
-        _ASSERTE(frameData.eType == DebuggerIPCE_STRData::cRuntimeNativeFrame);
+        _ASSERTE(frameData.eType == STRData::cRuntimeNativeFrame);
 
         // In order to find the FramePointer on x86, we need to unwind to the next frame.
         // Technically, only x86 needs to do this, because the x86 runtime stackwalker doesn't uwnind

@@ -1238,12 +1238,12 @@ public:
                          const DT_CONTEXT * pContext) = 0;
 
     //
-    // Fill in the DebuggerIPCE_STRData structure with information about the current frame
+    // Fill in the STRData structure with information about the current frame
     // where the stackwalker is stopped at.
     //
     // Arguments:
     //    pSFIHandle - the handle to the stackwalker
-    //    pFrameData - the DebuggerIPCE_STRData to be filled out;
+    //    pFrameData - the STRData to be filled out;
     //                 it can be NULL if you just want to know the frame type
     //    pRetVal - [out] The type of the current frame.
     //
@@ -1251,7 +1251,7 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL DebuggerIPCE_STRData * pFrameData, OUT FrameType * pRetVal) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL STRData * pFrameData, OUT FrameType * pRetVal) = 0;
 
     //
     // Get the number of internal frames on the specified thread.
@@ -1278,7 +1278,7 @@ public:
 
     //
     // Enumerate the internal frames on the specified thread and invoke the provided callback on each of
-    // them.  Information about the internal frame is stored in the DebuggerIPCE_STRData.
+    // them.  Information about the internal frame is stored in the STRData.
     //
     // Arguments:
     //    vmThread - the thread to be walked fpCallback - callback function invoked on each internal frame
@@ -1290,7 +1290,7 @@ public:
     //    to find out more about internal frames.
     //
 
-    typedef void (*FP_INTERNAL_FRAME_ENUMERATION_CALLBACK)(const DebuggerIPCE_STRData * pFrameData, CALLBACK_DATA pUserData);
+    typedef void (*FP_INTERNAL_FRAME_ENUMERATION_CALLBACK)(const STRData * pFrameData, CALLBACK_DATA pUserData);
 
     virtual HRESULT STDMETHODCALLTYPE EnumerateInternalFrames(VMPTR_Thread vmThread, FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
@@ -1582,12 +1582,12 @@ public:
     //             vmTypeHandle - type handle for the type
     //     output: pTypeInfo    - holds information needed to build the corresponding CordbType
     //
-    virtual HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, ExpandedTypeData * pTypeInfo) = 0;
+    virtual HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, ExpandedTypeData_DebuggerSide * pTypeInfo) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT ExpandedTypeData * pTypeInfo) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT ExpandedTypeData_DebuggerSide * pTypeInfo) = 0;
 
 
-    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT ExpandedTypeData * pTypeInfo) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT ExpandedTypeData_DebuggerSide * pTypeInfo) = 0;
 
 
     // Get type handle for a TypeDef token, if one exists. For generics this returns the open type.
@@ -1634,7 +1634,7 @@ public:
     //            pVmTypeHandle    - [out] the exact type handle derived from the type information
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    virtual HRESULT STDMETHODCALLTYPE GetExactTypeHandle(ExpandedTypeData * pTypeData,
+    virtual HRESULT STDMETHODCALLTYPE GetExactTypeHandle(ExpandedTypeData_DebuggerSide * pTypeData,
                                ArgInfoList *   pArgInfo,
                                VMPTR_TypeHandle * pVmTypeHandle) = 0;
 
@@ -1710,7 +1710,7 @@ public:
     // for "Dict<String,List<int>>", and sends it back to the right side.
     // Arguments:
     //    input:  vmTypeHandle - type handle for the type
-    //    output: pParams      - list of instances of ExpandedTypeData,
+    //    output: pParams      - list of instances of ExpandedTypeData_DebuggerSide,
     //                           one for each type parameter. These will be used on the
     //                           RS to build up an instantiation which will allow
     //                           building an instance of CordbType for the top-level

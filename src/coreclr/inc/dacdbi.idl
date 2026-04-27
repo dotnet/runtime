@@ -19,13 +19,13 @@ struct AssemblyInfo;
 struct DacThreadAllocInfo;
 struct NativeVarData;
 struct SequencePoints;
-struct DebuggerIPCE_STRData;
+struct STRData;
 struct DebuggerREGDISPLAY;
 struct NativeCodeFunctionData;
 struct ClassInfo;
 struct FieldData;
-struct DebuggerIPCE_ExpandedTypeData;
-struct DebuggerIPCE_BasicTypeData;
+struct ExpandedTypeData_DebuggerSide;
+struct BasicTypeData_DebuggerSide;
 struct EnCHangingFieldInfo;
 struct DacExceptionCallStackData;
 struct DebuggerIPCE_ObjectData;
@@ -281,7 +281,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT SetStackWalkCurrentContext([in] VMPTR_Thread vmThread, [in] StackWalkHandle pSFIHandle, [in] CorDebugSetContextFlag flag, [in] DT_CONTEXT * pContext);
     HRESULT UnwindStackWalkFrame([in] StackWalkHandle pSFIHandle, [out] BOOL * pResult);
     HRESULT CheckContext([in] VMPTR_Thread vmThread, [in] const DT_CONTEXT * pContext);
-    HRESULT GetStackWalkCurrentFrameInfo([in] StackWalkHandle pSFIHandle, [out] struct DebuggerIPCE_STRData * pFrameData, [out] FrameType * pRetVal);
+    HRESULT GetStackWalkCurrentFrameInfo([in] StackWalkHandle pSFIHandle, [out] struct STRData * pFrameData, [out] FrameType * pRetVal);
     HRESULT GetCountOfInternalFrames([in] VMPTR_Thread vmThread, [out] ULONG32 * pRetVal);
     HRESULT EnumerateInternalFrames([in] VMPTR_Thread vmThread, [in] FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
     HRESULT GetStackParameterSize([in] CORDB_ADDRESS controlPC, [out] ULONG32 * pRetVal);
@@ -313,12 +313,12 @@ interface IDacDbiInterface : IUnknown
         [in] VMPTR_TypeHandle vmThApprox,
         [out] DacDbiArrayList_FieldData * pFieldList,
         [out] SIZE_T * pObjectSize);
-    HRESULT TypeHandleToExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] VMPTR_TypeHandle vmTypeHandle, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
-    HRESULT GetObjectExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] CORDB_ADDRESS addr, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
-    HRESULT GetObjectExpandedTypeInfoFromID([in] AreValueTypesBoxed boxed, [in] COR_TYPEID id, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT TypeHandleToExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] VMPTR_TypeHandle vmTypeHandle, [out] struct ExpandedTypeData_DebuggerSide * pTypeInfo);
+    HRESULT GetObjectExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] CORDB_ADDRESS addr, [out] struct ExpandedTypeData_DebuggerSide * pTypeInfo);
+    HRESULT GetObjectExpandedTypeInfoFromID([in] AreValueTypesBoxed boxed, [in] COR_TYPEID id, [out] struct ExpandedTypeData_DebuggerSide * pTypeInfo);
     HRESULT GetTypeHandle([in] VMPTR_Module vmModule, [in] mdTypeDef metadataToken, [out] VMPTR_TypeHandle * pRetVal);
     HRESULT GetApproxTypeHandle([in] TypeInfoList * pTypeData, [out] VMPTR_TypeHandle * pRetVal);
-    HRESULT GetExactTypeHandle([in] struct DebuggerIPCE_ExpandedTypeData * pTypeData, [in] ArgInfoList * pArgInfo, [out] VMPTR_TypeHandle * pVmTypeHandle);
+    HRESULT GetExactTypeHandle([in] struct ExpandedTypeData_DebuggerSide * pTypeData, [in] ArgInfoList * pArgInfo, [out] VMPTR_TypeHandle * pVmTypeHandle);
     HRESULT GetMethodDescParams(
         [in] VMPTR_MethodDesc vmMethodDesc,
         [in] GENERICS_TYPE_TOKEN genericsToken,

@@ -496,7 +496,7 @@ public:
 
     // conversion constructor to convert from an instance of DebuggerIPCE_JITFUncData to an instance of
     // NativeCodeFunctionData.
-    NativeCodeFunctionData(DebuggerIPCE_JITFuncData * source);
+    NativeCodeFunctionData(JITFuncData * source);
 
     // The hot region start address could be NULL in the following circumstances:
     // 1. We haven't yet tried to get the information
@@ -633,13 +633,13 @@ public:
               mdTypeDef        metadataToken,
               VMPTR_Assembly vmAssembly);
 
-    BasicTypeData GetObjectTypeData() const { return m_objectTypeData; };
+    BasicTypeData_DebuggerSide GetObjectTypeData() const { return m_objectTypeData; };
     mdFieldDef GetFieldToken() const { return m_fldToken; };
     VMPTR_Object GetVmObject() const { return m_vmObject; };
     SIZE_T GetOffsetToVars() const { return m_offsetToVars; };
 
 private:
-    BasicTypeData m_objectTypeData; // type data for the EnC field
+    BasicTypeData_DebuggerSide m_objectTypeData; // type data for the EnC field
     VMPTR_Object               m_vmObject;        // object instance to which the field has been added--if the field is
                                                  // static, this will be NULL instead of pointing to an instance
     SIZE_T                     m_offsetToVars;   // offset to the beginning of variable storage in the object
@@ -647,7 +647,7 @@ private:
 
 }; // EnCHangingFieldInfo
 
-// TypeHandleToExpandedTypeInfo returns different ExpandedTypeData objects
+// TypeHandleToExpandedTypeInfo returns different ExpandedTypeData_DebuggerSide objects
 // depending on whether the object value that the TypeData corresponds to is
 // boxed or not.  Different parts of the API transfer objects in slightly different ways.
 // AllBoxed:
@@ -678,10 +678,10 @@ typedef DacDbiArrayList<DebuggerIPCE_TypeArgData> TypeInfoList;
 
 // ArgInfoList encapsulates a list of type data instances for arguments for a top-level
 // type and the length of the list.
-typedef DacDbiArrayList<BasicTypeData> ArgInfoList;
+typedef DacDbiArrayList<BasicTypeData_DebuggerSide> ArgInfoList;
 
 // TypeParamsList encapsulate a list of type parameters and the length of the list
-typedef DacDbiArrayList<ExpandedTypeData> TypeParamsList;
+typedef DacDbiArrayList<ExpandedTypeData_DebuggerSide> TypeParamsList;
 
 // A struct for passing version information from DBI to DAC.
 // See code:CordbProcess::CordbProcess#DBIVersionChecking for more information.
@@ -783,12 +783,12 @@ struct MSLAYOUT DacThreadAllocInfo
 };
 
 //
-// BasicTypeData and ExpandedTypeData
+// BasicTypeData_DebuggerSide and ExpandedTypeData_DebuggerSide
 // hold data for each type sent across the
 // boundary, whether it be a constructed type List<String> or a non-constructed
 // type such as String, Foo or Object.
 //
-// Logically speaking BasicTypeData might just be "typeHandle", as
+// Logically speaking BasicTypeData_DebuggerSide might just be "typeHandle", as
 // we could then send further events to ask what the elementtype, typeToken and moduleToken
 // are for the type handle.  But as
 // nearly all types are non-generic we send across even the basic type information in
@@ -810,7 +810,7 @@ struct MSLAYOUT DacThreadAllocInfo
 // types or function-pointer types (the latter are too complexe to transfer over in one hit).
 //
 
-struct MSLAYOUT BasicTypeData
+struct MSLAYOUT BasicTypeData_DebuggerSide
 {
     CorElementType  elementType;
     mdTypeDef       metadataToken;
@@ -819,7 +819,7 @@ struct MSLAYOUT BasicTypeData
 };
 
 // So this type information is not "fully expanded", it's just a little
-// more detail then BasicTypeData.  For type
+// more detail then BasicTypeData_DebuggerSide.  For type
 // instantiatons (e.g. List<int>) and
 // function pointer types you will need to make further requests for
 // information about the type parameters.
@@ -827,7 +827,7 @@ struct MSLAYOUT BasicTypeData
 // we include that as part of the expanded data.
 //
 //
-struct MSLAYOUT ExpandedTypeData
+struct MSLAYOUT ExpandedTypeData_DebuggerSide
 {
     CorElementType  elementType; // Note this is _never_ E_T_VAR, E_T_WITH or E_T_MVAR
     union MSLAYOUT
@@ -846,14 +846,14 @@ struct MSLAYOUT ExpandedTypeData
         // used for E_T_PTR, E_T_BYREF etc.
         struct MSLAYOUT
         {
-            BasicTypeData unaryTypeArg;  // used only when sending back to debugger
+            BasicTypeData_DebuggerSide unaryTypeArg;  // used only when sending back to debugger
         } UnaryTypeData;
 
 
         // used for E_T_ARRAY etc.
         struct MSLAYOUT
         {
-          BasicTypeData arrayTypeArg; // used only when sending back to debugger
+          BasicTypeData_DebuggerSide arrayTypeArg; // used only when sending back to debugger
             DWORD           arrayRank;
         } ArrayTypeData;
 

@@ -9351,7 +9351,6 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         DebuggerIPCEvent_RuntimeSide* ipce = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce, DB_IPCE_UNLOAD_MODULE, thread);
         ipce->UnloadModuleData.vmAssembly.SetRawPtr((module ? module->GetAssembly() : NULL));
-        ipce->UnloadModuleData.debuggerAssemblyToken.Set(pRuntimeModule->GetClassLoader()->GetAssembly());
         m_pRCThread->SendIPCEvent();
 
         //
@@ -9516,8 +9515,6 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
 
         pEvent->LoadClass.classMetadataToken = classMetadataToken;
         pEvent->LoadClass.vmAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetAssembly() : NULL));
-        pEvent->LoadClass.classDebuggerAssemblyToken.Set(pAssembly);
-
 
         // For class loads in dynamic modules, RS knows that the metadata has now grown and is invalid.
         // RS will re-fetch new metadata from out-of-process.
@@ -9528,7 +9525,6 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
 
         pEvent->UnloadClass.classMetadataToken = classMetadataToken;
         pEvent->UnloadClass.vmAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetAssembly() : NULL));
-        pEvent->UnloadClass.classDebuggerAssemblyToken.Set(pAssembly);
     }
 
     m_pRCThread->SendIPCEvent();
@@ -10466,39 +10462,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent_RuntimeSide * pEvent)
         }
         break;
 
-    case DB_IPCE_GET_GCHANDLE_INFO:
-        // Given an unvalidated GC-handle, find out all the info about it to view the object
-        // at the other end
-        {
-            OBJECTHANDLE objectHandle = pEvent->GetGCHandleInfo.GCHandle.GetRawPtr();
-
-            DebuggerIPCEvent_RuntimeSide * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
-
-            _ASSERTE(pIPCResult != NULL);
-
-            InitIPCEvent(pIPCResult, DB_IPCE_GET_GCHANDLE_INFO_RESULT, NULL);
-
-            bool fValid = SUCCEEDED(ValidateGCHandle(objectHandle));
-
-            AppDomain * pAppDomain = NULL;
-
-            if(fValid)
-            {
-                // Get the appdomain
-                pAppDomain = AppDomain::GetCurrentDomain();
-
-                _ASSERTE(pAppDomain != NULL);
-            }
-
-            pIPCResult->hr = S_OK;
-            pIPCResult->GetGCHandleInfoResult.vmAppDomain.SetRawPtr(pAppDomain);
-            pIPCResult->GetGCHandleInfoResult.fValid = fValid;
-
-            m_pRCThread->SendIPCReply();
-
-        }
-        break;
-
     case DB_IPCE_GET_BUFFER:
         {
             GetAndSendBuffer(m_pRCThread, pEvent->GetBuffer.bufSize);
@@ -10547,12 +10510,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent_RuntimeSide * pEvent)
 
     case DB_IPCE_IS_TRANSITION_STUB:
         GetAndSendTransitionStubInfo((CORDB_ADDRESS_TYPE*)pEvent->IsTransitionStub.address);
-        break;
-
-    case DB_IPCE_MODIFY_LOGSWITCH:
-        g_pEEInterface->DebuggerModifyingLogSwitch (pEvent->LogSwitchSettingMessage.iLevel,
-                                                    pEvent->LogSwitchSettingMessage.szSwitchName.GetString());
-
         break;
 
     case DB_IPCE_ENABLE_LOG_MESSAGES:
@@ -10757,22 +10714,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent_RuntimeSide * pEvent)
 
             // Send the result of how the set reference went.
             m_pRCThread->SendIPCReply();
-        }
-        break;
-
-    case DB_IPCE_GET_THREAD_FOR_TASKID:
-        {
-             Thread *pThreadRet = NULL;
-
-             // This is a synchronous event (reply required)
-             pEvent = m_pRCThread->GetIPCEventReceiveBuffer();
-
-             InitIPCReply(pEvent, DB_IPCE_GET_THREAD_FOR_TASKID_RESULT);
-
-             pEvent->GetThreadForTaskIdResult.vmThreadToken.SetRawPtr(pThreadRet);
-             pEvent->hr = S_OK;
-
-             m_pRCThread->SendIPCReply();
         }
         break;
 
@@ -11438,7 +11379,7 @@ void Debugger::PollWaitingForHelper()
 
 
 
-void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, DebuggerIPCE_BasicTypeData *res)
+void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, BasicTypeData_RuntimeSide *res)
 {
     CONTRACTL
     {
@@ -11502,7 +11443,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
 void Debugger::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
                                             AppDomain *pAppDomain,
                                             TypeHandle th,
-                                            DebuggerIPCE_ExpandedTypeData *res)
+                                            ExpandedTypeData_RuntimeSide *res)
 {
     CONTRACTL
     {
@@ -11596,7 +11537,7 @@ treatAllValuesAsBoxed:
 }
 
 
-HRESULT Debugger::BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicTypeData *data, TypeHandle *pRes)
+HRESULT Debugger::BasicTypeInfoToTypeHandle(BasicTypeData_RuntimeSide *data, TypeHandle *pRes)
 {
     CONTRACTL
     {
@@ -13884,23 +13825,7 @@ Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
     return hr;
 }
 
-//-----------------------------------------------------------------------------
-// Helper to get an SString through the IPC buffer.
-// We do this by putting the SString data into a LS_RS_buffer object,
-// and then the RS reads it out as soon as it's queued.
-// It's very very important that the SString's buffer is around while we send the event.
-// So we pass the SString by reference in case there's an implicit conversion (because
-// we don't want to do the conversion on a temporary object and then lose that object).
-//-----------------------------------------------------------------------------
-void SetLSBufferFromSString(Ls_Rs_StringBuffer * pBuffer, SString & str)
-{
-    // Copy string contents (+1 for null terminator) into a LS_RS_Buffer.
-    // Then the RS can pull it out as a null-terminated string.
-    pBuffer->SetLsData(
-        (BYTE*) str.GetUnicode(),
-        (str.GetCount() +1)* sizeof(WCHAR)
-    );
-}
+
 
 //*************************************************************
 // This method sends a log message over to the right side for the debugger to log it.
@@ -13987,74 +13912,10 @@ void Debugger::SendRawLogMessage(
                  pThread);
 
     ipce->FirstLogMessage.iLevel = iLevel;
-    ipce->FirstLogMessage.szCategory.SetString(pCategory->GetUnicode());
-    SetLSBufferFromSString(&ipce->FirstLogMessage.szContent, *pMessage);
+    ipce->FirstLogMessage.szCategory = PTR_TO_CORDB_ADDRESS(pCategory->GetUnicode());
+    ipce->FirstLogMessage.szContent = PTR_TO_CORDB_ADDRESS(pMessage->GetUnicode());
 
     m_pRCThread->SendIPCEvent();
-}
-
-
-// This function sends a message to the right side informing it about
-// the creation/modification of a LogSwitch
-void Debugger::SendLogSwitchSetting(int iLevel,
-                                    int iReason,
-                                    _In_z_ LPCWSTR pLogSwitchName,
-                                    _In_z_ LPCWSTR pParentSwitchName)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-#ifdef LOGGING
-    MAKE_UTF8PTR_FROMWIDE(pLogSwitchNameUtf8, pLogSwitchName);
-    MAKE_UTF8PTR_FROMWIDE(pParentSwitchNameUtf8, pParentSwitchName);
-    LOG((LF_CORDB, LL_INFO1000, "D::SLSS: Sending log switch message switch=%s parent=%s.\n",
-        pLogSwitchNameUtf8, pParentSwitchNameUtf8));
-#endif // LOGGING
-
-    // Send the message only if the debugger is attached to this appdomain.
-    if (!CORDebuggerAttached())
-    {
-        return;
-    }
-
-    Thread *pThread = g_pEEInterface->GetThread();
-    SENDIPCEVENT_BEGIN(this, pThread);
-
-    if (CORDebuggerAttached())
-    {
-        DebuggerIPCEvent_RuntimeSide* ipce = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce,
-                     DB_IPCE_LOGSWITCH_SET_MESSAGE,
-                     pThread);
-
-        ipce->LogSwitchSettingMessage.iLevel = iLevel;
-        ipce->LogSwitchSettingMessage.iReason = iReason;
-
-
-        ipce->LogSwitchSettingMessage.szSwitchName.SetString(pLogSwitchName);
-
-        if (pParentSwitchName == NULL)
-        {
-            pParentSwitchName = W("");
-        }
-
-        ipce->LogSwitchSettingMessage.szParentSwitchName.SetString(pParentSwitchName);
-
-        m_pRCThread->SendIPCEvent();
-
-        // Stop all Runtime threads
-        TrapAllRuntimeThreads();
-    }
-    else
-    {
-        LOG((LF_CORDB,LL_INFO1000, "D::SLSS: Skipping SendIPCEvent because RS detached."));
-    }
-
-    SENDIPCEVENT_END;
 }
 
 // send a custom debugger notification to the RS
@@ -14517,7 +14378,7 @@ HRESULT Debugger::SetReference(void *objectRefAddress,
 // SetValueClass sets a value class for the Right Side, respecting the write barrier for references that are embedded
 // within in the value class.
 //
-HRESULT Debugger::SetValueClass(void *oldData, void *newData, DebuggerIPCE_BasicTypeData * type)
+HRESULT Debugger::SetValueClass(void *oldData, void *newData, BasicTypeData_RuntimeSide * type)
 {
     CONTRACTL
     {
@@ -15037,130 +14898,6 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
 
     return invalid;
 }
-
-
-// notification when a SQL connection begins
-void Debugger::CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB,LL_INFO1000, "D::CreateConnection %d\n.", dwConnectionId));
-
-    if (CORDBUnrecoverableError(this))
-        return;
-
-    Thread *pThread = g_pEEInterface->GetThread();
-    SENDIPCEVENT_BEGIN(this, pThread);
-
-    if (CORDebuggerAttached())
-    {
-        DebuggerIPCEvent_RuntimeSide* ipce;
-
-        // Send a update module syns event to the Right Side.
-        ipce = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce, DB_IPCE_CREATE_CONNECTION,
-                     pThread);
-        ipce->CreateConnection.connectionId = dwConnectionId;
-        _ASSERTE(wzName != NULL);
-        ipce->CreateConnection.wzConnectionName.SetString(wzName);
-
-        m_pRCThread->SendIPCEvent();
-    }
-    else
-    {
-        LOG((LF_CORDB,LL_INFO1000, "D::CreateConnection: Skipping SendIPCEvent because RS detached."));
-    }
-
-    // Stop all Runtime threads if we actually sent an event
-    if (CORDebuggerAttached())
-    {
-        TrapAllRuntimeThreads();
-    }
-
-    SENDIPCEVENT_END;
-}
-
-// notification when a SQL connection ends
-void Debugger::DestroyConnection(CONNID dwConnectionId)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB,LL_INFO1000, "D::DestroyConnection %d\n.", dwConnectionId));
-
-    if (CORDBUnrecoverableError(this))
-        return;
-
-    Thread *thread = g_pEEInterface->GetThread();
-    // Note that the debugger lock is reentrant, so we may or may not hold it already.
-    SENDIPCEVENT_BEGIN(this, thread);
-
-    // Send a update module syns event to the Right Side.
-    DebuggerIPCEvent_RuntimeSide* ipce = m_pRCThread->GetIPCEventSendBuffer();
-    InitIPCEvent(ipce, DB_IPCE_DESTROY_CONNECTION,
-                 thread);
-    ipce->ConnectionChange.connectionId = dwConnectionId;
-
-    // IPC event is now initialized, so we can send it over.
-    SendSimpleIPCEventAndBlock();
-
-    // This will block on the continue
-    SENDIPCEVENT_END;
-
-}
-
-// notification for SQL connection changes
-void Debugger::ChangeConnection(CONNID dwConnectionId)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB,LL_INFO1000, "D::ChangeConnection %d\n.", dwConnectionId));
-
-    if (CORDBUnrecoverableError(this))
-        return;
-
-    Thread *pThread = g_pEEInterface->GetThread();
-    SENDIPCEVENT_BEGIN(this, pThread);
-
-    if (CORDebuggerAttached())
-    {
-        DebuggerIPCEvent_RuntimeSide* ipce;
-
-        // Send a update module syns event to the Right Side.
-        ipce = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce, DB_IPCE_CHANGE_CONNECTION,
-                     pThread);
-        ipce->ConnectionChange.connectionId = dwConnectionId;
-        m_pRCThread->SendIPCEvent();
-    }
-    else
-    {
-        LOG((LF_CORDB,LL_INFO1000, "D::ChangeConnection: Skipping SendIPCEvent because RS detached."));
-    }
-
-    // Stop all Runtime threads if we actually sent an event
-    if (CORDebuggerAttached())
-    {
-        TrapAllRuntimeThreads();
-    }
-
-    SENDIPCEVENT_END;
-}
-
 
 //
 // Are we the helper thread?

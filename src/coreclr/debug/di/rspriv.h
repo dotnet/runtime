@@ -66,7 +66,6 @@ struct MachineInfo;
 //
 struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
 {
-    DebuggerIPCEvent_DebuggerSide*       next;
     DebuggerIPCEventType    type;
     DWORD             processId;
     DWORD             threadId;
@@ -79,12 +78,6 @@ struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
 
     union MSLAYOUT
     {
-        struct MSLAYOUT
-        {
-            // Pointer to a BOOL in the target.
-            CORDB_ADDRESS pfBeingDebugged;
-        } LeftSideStartupData;
-
         struct MSLAYOUT
         {
             // Module whose metadata is being updated
@@ -115,18 +108,15 @@ struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
         struct MSLAYOUT
         {
             VMPTR_Assembly vmAssembly;
-            LSPTR_ASSEMBLY debuggerAssemblyToken;
         } UnloadModuleData;
 
 
         // The given module's pdb has been updated.
-        // Queury PDB from OOP
+        // Query PDB from OOP
         struct MSLAYOUT
         {
             VMPTR_Assembly vmAssembly;
         } UpdateModuleSymsData;
-
-        DebuggerMDANotification MDANotification;
 
         struct MSLAYOUT
         {
@@ -186,24 +176,8 @@ struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
             CorDebugUnmappedStop rgfMappingStop;
             CorDebugIntercept    rgfInterceptStop;
             unsigned int         rangeCount;
-            COR_DEBUG_STEP_RANGE range; //note that this is an array
+            COR_DEBUG_STEP_RANGE range[5]; //note that this is an array
         } StepData;
-
-        struct MSLAYOUT
-        {
-            // An unvalidated GC-handle
-            VMPTR_OBJECTHANDLE GCHandle;
-        } GetGCHandleInfo;
-
-        struct MSLAYOUT
-        {
-            // An unvalidated GC-handle for which we're returning the results
-            LSPTR_OBJECTHANDLE GCHandle;
-
-            // The following are initialized by the LS in response to our query:
-            VMPTR_AppDomain vmAppDomain; // AD that handle is in (only applicable if fValid).
-            bool            fValid; // Did the LS determine the GC handle to be valid?
-        } GetGCHandleInfoResult;
 
         // Allocate memory on the left-side
         struct MSLAYOUT
@@ -250,14 +224,12 @@ struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
         {
             mdTypeDef   classMetadataToken;
             VMPTR_Assembly vmAssembly;
-            LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } LoadClass;
 
         struct MSLAYOUT
         {
             mdTypeDef   classMetadataToken;
             VMPTR_Assembly vmAssembly;
-            LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } UnloadClass;
 
         struct MSLAYOUT
@@ -272,11 +244,6 @@ struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
             bool        firstChance;
             bool        continuable;
         } Exception;
-
-        struct MSLAYOUT
-        {
-            VMPTR_Thread   vmThreadToken;
-        } ClearException;
 
         struct MSLAYOUT
         {
@@ -298,24 +265,19 @@ struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
             VMPTR_MethodDesc vmMethodDesc;
             SIZE_T           offset;
             bool             fIsIL;
-            void *           firstExceptionHandler;
         } SetIP; // this is also used for CanSetIP
 
         struct MSLAYOUT
         {
             int iLevel;
 
-            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szCategory;
-            Ls_Rs_StringBuffer szContent;
+            CORDB_ADDRESS szCategory;
+            CORDB_ADDRESS szContent;
         } FirstLogMessage;
 
         struct MSLAYOUT
         {
             int iLevel;
-            int iReason;
-
-            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szSwitchName;
-            EmbeddedIPCString<MAX_LOG_SWITCH_NAME_LEN + 1> szParentSwitchName;
         } LogSwitchSettingMessage;
 
         // information needed to send to the RS as part of a custom notification from the target
@@ -353,7 +315,7 @@ struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
             VMPTR_AppDomain vmAppDomain;
 
             VMPTR_OBJECTHANDLE vmObjectHandle;
-            DebuggerIPCE_ExpandedTypeData resultType;
+            ExpandedTypeData_DebuggerSide resultType;
         } FuncEvalComplete;
 
         struct MSLAYOUT
@@ -384,13 +346,6 @@ struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
             VMPTR_AppDomain vmAppDomain;
             VMPTR_Thread    vmThread;
         } NameChange;
-
-        struct MSLAYOUT
-        {
-            VMPTR_Assembly vmAssembly;
-            BOOL             fAllowJitOpts;
-            BOOL             fEnableEnC;
-        } JitDebugInfo;
 
         // EnC Remap opportunity
         struct MSLAYOUT
@@ -427,7 +382,7 @@ struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
         {
             void      *oldData;
             void      *newData;
-            DebuggerIPCE_BasicTypeData type;
+            BasicTypeData_DebuggerSide type;
         } SetValueClass;
 
 
@@ -440,27 +395,6 @@ struct MSLAYOUT DebuggerIPCEvent_DebuggerSide
             mdMethodDef     funcMetadataToken;
             DWORD           dwStatus;
         } SetJMCFunctionStatus;
-
-        struct MSLAYOUT
-        {
-            TASKID      taskid;
-        } GetThreadForTaskId;
-
-        struct MSLAYOUT
-        {
-            VMPTR_Thread vmThreadToken;
-        } GetThreadForTaskIdResult;
-
-        struct MSLAYOUT
-        {
-            CONNID     connectionId;
-        } ConnectionChange;
-
-        struct MSLAYOUT
-        {
-            CONNID     connectionId;
-            EmbeddedIPCString<MAX_LONGPATH> wzConnectionName;
-        } CreateConnection;
 
         struct MSLAYOUT
         {
@@ -3692,6 +3626,10 @@ public:
     // This marshals a managed debug event from the
     void MarshalManagedEvent(DebuggerIPCEvent_DebuggerSide * pManagedEvent);
 
+    // Read a null-terminated WCHAR string from the target process.
+    // Caller owns the returned buffer (use NewArrayHolder for RAII cleanup).
+    _Ret_maybenull_ WCHAR * ReadTargetNullTerminatedString(CORDB_ADDRESS targetAddr);
+
     // This copies a managed debug event from the IPC block and to pManagedEvent.
     // The event still needs to be marshalled.
     void CopyRCEventFromIPCBlock(DebuggerIPCEvent_DebuggerSide * pManagedEvent);
@@ -3887,9 +3825,7 @@ public:
         memset( ipce, 0, sizeof(DebuggerIPCEvent_DebuggerSide) );
 
         _ASSERTE((!vmAppDomain.IsNull()) ||
-                 type == DB_IPCE_GET_GCHANDLE_INFO ||
                  type == DB_IPCE_ENABLE_LOG_MESSAGES ||
-                 type == DB_IPCE_MODIFY_LOGSWITCH ||
                  type == DB_IPCE_ASYNC_BREAK ||
                  type == DB_IPCE_CONTINUE ||
                  type == DB_IPCE_GET_BUFFER ||
@@ -3900,7 +3836,6 @@ public:
                  type == DB_IPCE_CONTROL_C_EVENT_RESULT ||
                  type == DB_IPCE_SET_REFERENCE ||
                  type == DB_IPCE_SET_ALL_DEBUG_STATE ||
-                 type == DB_IPCE_GET_THREAD_FOR_TASKID ||
                  type == DB_IPCE_DETACH_FROM_PROCESS ||
                  type == DB_IPCE_INTERCEPT_EXCEPTION ||
                  type == DB_IPCE_GET_NGEN_COMPILER_FLAGS ||
@@ -3914,7 +3849,6 @@ public:
         ipce->vmThread = VMPTR_Thread::NullPtr();
         ipce->replyRequired = twoWay;
         ipce->asyncSend = false;
-        ipce->next = NULL;
     }
 
     // Looks up a previously constructed CordbClass instance without creating. May return NULL if the
@@ -5021,7 +4955,7 @@ public:
 //   like getting the type from an Object the LS handed back).
 // The RightSide CordbType corresponds to a Left-Side TypeHandle.
 // CordbTypes are communicated across the LS/RS boundary by marshalling
-// to BasicTypeData + ExpandedTypeData IPC events.
+// to BasicTypeData_DebuggerSide + ExpandedTypeData_DebuggerSide IPC events.
 //
 //
 // Invariants on CordbType
@@ -5196,8 +5130,8 @@ public:
     static HRESULT SigToType(CordbModule * pModule, SigParser * pSigParser, const Instantiation * pInst, CordbType ** ppResultType);
 
     // Create a type from from the data received from the left-side
-    static HRESULT TypeDataToType(CordbAppDomain *appdomain, ExpandedTypeData *data, CordbType **pRes);
-    static HRESULT TypeDataToType(CordbAppDomain *appdomain, BasicTypeData *data, CordbType **pRes);
+    static HRESULT TypeDataToType(CordbAppDomain *appdomain, ExpandedTypeData_DebuggerSide *data, CordbType **pRes);
+    static HRESULT TypeDataToType(CordbAppDomain *appdomain, BasicTypeData_DebuggerSide *data, CordbType **pRes);
     static HRESULT InstantiateFromTypeHandle(CordbAppDomain * appdomain,
                                              VMPTR_TypeHandle vmTypeHandle,
                                              CorElementType et,
@@ -5206,8 +5140,8 @@ public:
 
     // Prepare data to send back to left-side during Init() and FuncEval.  Fail if the exact
     // type data is requested but was not fetched correctly during Init()
-    HRESULT TypeToBasicTypeData(BasicTypeData *data);
-    void TypeToExpandedTypeData(ExpandedTypeData *data);
+    HRESULT TypeToBasicTypeData(BasicTypeData_DebuggerSide *data);
+    void TypeToExpandedTypeData(ExpandedTypeData_DebuggerSide *data);
     void TypeToTypeArgData(DebuggerIPCE_TypeArgData *data);
 
     void CountTypeDataNodes(unsigned int *count);
@@ -6520,7 +6454,7 @@ public:
     //-----------------------------------------------------------
 
     // callback used to enumerate the internal frames on a thread
-    static void GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * pFrameData,
+    static void GetActiveInternalFramesCallback(const STRData * pFrameData,
                                                 void *                 pUserData);
 
     CorDebugUserState GetUserState();
@@ -7006,7 +6940,7 @@ public:
     CordbInternalFrame(CordbThread *          pThread,
                        FramePointer           fp,
                        CordbAppDomain *       pCurrentAppDomain,
-                       const DebuggerIPCE_STRData * pData);
+                       const STRData * pData);
 
     CordbInternalFrame(CordbThread *             pThread,
                        FramePointer              fp,
@@ -7287,7 +7221,7 @@ public:
     CordbMiscFrame();
 
     // new-style constructor
-    CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData);
+    CordbMiscFrame(JITFuncData * pJITFuncData);
 
     SIZE_T             parentIP;
     FramePointer       fpParentOrSelf;
@@ -10408,7 +10342,7 @@ public:
     // on a NeuterAtWill sweep.
     RSExtSmartPtr<CordbHandleValue> m_pHandleValue;
 
-    ExpandedTypeData m_resultType;
+    ExpandedTypeData_DebuggerSide m_resultType;
     VMPTR_AppDomain            m_resultAppDomainToken;
 
     // Left-side memory that needs to be freed.

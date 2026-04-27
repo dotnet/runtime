@@ -2461,7 +2461,7 @@ HRESULT CordbProcess::GetTypeForTypeID(COR_TYPEID id, ICorDebugType **ppType)
 
     EX_TRY
     {
-        ExpandedTypeData data;
+        ExpandedTypeData_DebuggerSide data;
         IfFailThrow(GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, id, &data));
 
         CordbType *type = 0;
@@ -2649,7 +2649,7 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, C
 
         _ASSERTE(cdbAppDomain);
 
-        ExpandedTypeData data;
+        ExpandedTypeData_DebuggerSide data;
         IfFailThrow(GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, addr, &data));
 
         CordbType *type = 0;
@@ -5140,42 +5140,6 @@ void CordbProcess::RawDispatchEvent(
         }
         break;
 
-    case DB_IPCE_CREATE_CONNECTION:
-        {
-            STRESS_LOG1(LF_CORDB, LL_INFO100,
-                "RCET::HRCE: Connection change %d \n",
-                pEvent->CreateConnection.connectionId);
-
-            // pass back the connection id and the connection name.
-            PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-            pCallback2->CreateConnection(
-                this,
-                pEvent->CreateConnection.connectionId,
-                const_cast<WCHAR*> (pEvent->CreateConnection.wzConnectionName.GetString()));
-        }
-        break;
-
-    case DB_IPCE_DESTROY_CONNECTION:
-        {
-            STRESS_LOG1(LF_CORDB, LL_INFO100,
-                 "RCET::HRCE: Connection destroyed %d \n",
-                 pEvent->ConnectionChange.connectionId);
-            PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-            pCallback2->DestroyConnection(this, pEvent->ConnectionChange.connectionId);
-        }
-        break;
-
-    case DB_IPCE_CHANGE_CONNECTION:
-        {
-            STRESS_LOG1(LF_CORDB, LL_INFO100,
-                 "RCET::HRCE: Connection changed %d \n",
-                 pEvent->ConnectionChange.connectionId);
-
-            PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-            pCallback2->ChangeConnection(this, pEvent->ConnectionChange.connectionId);
-        }
-        break;
-
     case DB_IPCE_UNLOAD_MODULE:
         {
             STRESS_LOG3(LF_CORDB, LL_INFO100, "RCET::HRCE: unload module on thread %#x Mod:0x%x AD:0x%08x\n",
@@ -5215,11 +5179,10 @@ void CordbProcess::RawDispatchEvent(
             CordbClass *pClass = NULL;
 
             LOG((LF_CORDB, LL_INFO10000,
-                 "RCET::HRCE: load class on thread %#x Tok:0x%08x Mod:0x%08x Asm:0x%08x AD:0x%08x\n",
+                 "RCET::HRCE: load class on thread %#x Tok:0x%08x Mod:0x%08x AD:0x%08x\n",
                  dwVolatileThreadId,
                  pEvent->LoadClass.classMetadataToken,
                  VmPtrToCookie(pEvent->LoadClass.vmAssembly),
-                 LsPtrToCookie(pEvent->LoadClass.classDebuggerAssemblyToken),
                  VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
@@ -5307,49 +5270,26 @@ void CordbProcess::RawDispatchEvent(
             _ASSERTE(pThread != NULL);
             _ASSERTE(pAppDomain != NULL);
 
-            const WCHAR * pszContent = pEvent->FirstLogMessage.szContent.GetString();
+            // szCategory and szContent are CORDB_ADDRESS pointers into the target.
+            // Read the null-terminated strings via ReadVirtual. The NewArrayHolders
+            // ensure cleanup when this block exits.
+            NewArrayHolder<WCHAR> wszCategory(
+                ReadTargetNullTerminatedString(pEvent->FirstLogMessage.szCategory));
+            NewArrayHolder<WCHAR> wszContent(
+                ReadTargetNullTerminatedString(pEvent->FirstLogMessage.szContent));
+
             {
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
                 pCallback1->LogMessage(
                    pAppDomain,
                    pThread,
                    pEvent->FirstLogMessage.iLevel,
-                   const_cast<WCHAR*> (pEvent->FirstLogMessage.szCategory.GetString()),
-                   const_cast<WCHAR*> (pszContent));
+                   wszCategory,
+                   wszContent);
             }
         }
         break;
 
-    case DB_IPCE_LOGSWITCH_SET_MESSAGE:
-        {
-
-            LOG((LF_CORDB, LL_INFO10000,
-                "[%x] RCET::DRCE: Log Switch Setting Message.\n",
-                 GetCurrentThreadId()));
-
-            _ASSERTE(pThread != NULL);
-
-            const WCHAR *pstrLogSwitchName = pEvent->LogSwitchSettingMessage.szSwitchName.GetString();
-            const WCHAR *pstrParentName = pEvent->LogSwitchSettingMessage.szParentSwitchName.GetString();
-
-            // from the thread object get the appdomain object
-            _ASSERTE(pAppDomain == pThread->m_pAppDomain);
-            _ASSERTE (pAppDomain != NULL);
-
-            {
-                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                pCallback1->LogSwitch(
-                    pAppDomain,
-                    pThread,
-                    pEvent->LogSwitchSettingMessage.iLevel,
-                    pEvent->LogSwitchSettingMessage.iReason,
-                    const_cast<WCHAR*> (pstrLogSwitchName),
-                    const_cast<WCHAR*> (pstrParentName));
-
-            }
-        }
-
-        break;
     case DB_IPCE_CUSTOM_NOTIFICATION:
         {
             _ASSERTE(pThread != NULL);
@@ -8484,19 +8424,6 @@ COM_METHOD CordbProcess::ModifyLogSwitch(_In_z_ WCHAR *pLogSwitchName, LONG lLev
 
     HRESULT hr = S_OK;
 
-    _ASSERTE (pLogSwitchName != NULL);
-
-    DebuggerIPCEvent_DebuggerSide *event = (DebuggerIPCEvent_DebuggerSide*) _alloca(CorDBIPC_BUFFER_SIZE);
-    InitIPCEvent(event, DB_IPCE_MODIFY_LOGSWITCH, false, VMPTR_AppDomain::NullPtr());
-    event->LogSwitchSettingMessage.iLevel = lLevel;
-    event->LogSwitchSettingMessage.szSwitchName.SetStringTruncate(pLogSwitchName);
-
-    hr = m_cordb->SendIPCEvent(this, event);
-    hr = WORST_HR(hr, event->hr);
-
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CP::ModifyLogSwitch: ModifyLogSwitch sent.\n",
-         GetCurrentThreadId()));
-
     return hr;
 }
 
@@ -9298,94 +9225,69 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
 
 
 //---------------------------------------------------------------------------------------
-// Marshals over a string buffer in a managed event
+// Read a null-terminated WCHAR string from the target process.
+// The caller owns the returned buffer and should free it with delete[] (or wrap
+// it in a NewArrayHolder<WCHAR> for automatic cleanup).
 //
 // Arguments:
-//    pTarget - data-target for read the buffer from the LeftSide.
+//    targetAddr - CORDB_ADDRESS of the null-terminated WCHAR string in the target.
 //
-// Throws on error
-void Ls_Rs_BaseBuffer::CopyLSDataToRSWorker(ICorDebugDataTarget * pTarget)
-{
-    //
-    const DWORD cbCacheSize = m_cbSize;
-
-    // SHOULD not happen for more than once in well-behaved case.
-    if (m_pbRS != NULL)
-    {
-        SIMPLIFYING_ASSUMPTION(!"m_pbRS is non-null; is this a corrupted event?");
-        ThrowHR(E_INVALIDARG);
-    }
-
-    NewArrayHolder<BYTE> pData(new BYTE[cbCacheSize]);
-
-    ULONG32 cbRead;
-    HRESULT hrRead = pTarget->ReadVirtual(PTR_TO_CORDB_ADDRESS(m_pbLS), pData, cbCacheSize , &cbRead);
-
-    if(FAILED(hrRead))
-    {
-        hrRead = CORDBG_E_READVIRTUAL_FAILURE;
-    }
-
-    if (SUCCEEDED(hrRead) && (cbCacheSize != cbRead))
-    {
-        hrRead = HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY);
-    }
-    IfFailThrow(hrRead);
-
-    // Now do Transfer
-    m_pbRS = pData;
-    pData.SuppressRelease();
-}
-
+// Returns:
+//    A heap-allocated WCHAR* copy of the string, or NULL if targetAddr is 0.
+//
+// Throws on ReadVirtual failure.
 //---------------------------------------------------------------------------------------
-// Marshals over a Byte buffer in a managed event
-//
-// Arguments:
-//    pTarget - data-target for read the buffer from the LeftSide.
-//
-// Throws on error
-void Ls_Rs_ByteBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
+WCHAR * CordbProcess::ReadTargetNullTerminatedString(CORDB_ADDRESS targetAddr)
 {
-    CopyLSDataToRSWorker(pTarget);
-}
-
-//---------------------------------------------------------------------------------------
-// Marshals over a string buffer in a managed event
-//
-// Arguments:
-//    pTarget - data-target for read the buffer from the LeftSide.
-//
-// Throws on error
-void Ls_Rs_StringBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
-{
-    CopyLSDataToRSWorker(pTarget);
-
-    // Ensure we're a valid, well-formed string.
-    // @dbgtodo - this should only happen in corrupted scenarios. Perhaps a better HR here?
-    // - null terminated.
-    // - no embedded nulls.
-
-    const WCHAR * pString = GetString();
-    SIZE_T dwExpectedLenWithNull = m_cbSize / sizeof(WCHAR);
-
-    // Should at least have 1 character for the null-terminator.
-    if (dwExpectedLenWithNull == 0)
+    if (targetAddr == 0)
     {
-        ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
+        return NULL;
     }
 
-    // Ensure that there's a null where we expect it to be.
-    if (pString[dwExpectedLenWithNull-1] != 0)
-    {
-        ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
-    }
+    // Read the string in chunks to find the null terminator, similar to DacInstantiateStringW.
+    const ULONG32 chunkSize = 256;
+    const ULONG32 maxChars = 512 * 1024; // 1 MB cap to prevent unbounded allocation from corrupt targets
+    NewArrayHolder<WCHAR> buffer(NULL);
+    ULONG32 totalChars = 0;
 
-    // Now we know it's safe to call u16_strlen. The buffer is local, so we know the pages are there.
-    // And we know there's a null capping the max length of the string.
-    SIZE_T dwActualLenWithNull = u16_strlen(pString) + 1;
-    if (dwActualLenWithNull != dwExpectedLenWithNull)
+    for (;;)
     {
-        ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
+        if (totalChars >= maxChars)
+        {
+            ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
+        }
+
+        ULONG32 newSize = totalChars + chunkSize;
+        WCHAR * newBuffer = new WCHAR[newSize];
+        if (buffer != NULL)
+        {
+            memcpy(newBuffer, (WCHAR *)buffer, totalChars * sizeof(WCHAR));
+        }
+        buffer = newBuffer;
+
+        ULONG32 cbRead;
+        HRESULT hr = m_pDACDataTarget->ReadVirtual(
+            targetAddr + totalChars * sizeof(WCHAR),
+            reinterpret_cast<BYTE *>(buffer.GetValue() + totalChars),
+            chunkSize * sizeof(WCHAR),
+            &cbRead);
+        IfFailThrow(hr);
+
+        ULONG32 charsRead = cbRead / sizeof(WCHAR);
+        for (ULONG32 i = 0; i < charsRead; i++)
+        {
+            if (buffer[totalChars + i] == W('\0'))
+            {
+                buffer.SuppressRelease();
+                return (WCHAR *)buffer;
+            }
+        }
+        totalChars += charsRead;
+
+        if (charsRead < chunkSize)
+        {
+            ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
+        }
     }
 }
 
@@ -9434,12 +9336,6 @@ void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent_DebuggerSide * pManagedE
     // Do a pre-processing on the event
     switch (pManagedEvent->type & DB_IPCE_TYPE_MASK)
     {
-        case DB_IPCE_FIRST_LOG_MESSAGE:
-        {
-            pManagedEvent->FirstLogMessage.szContent.CopyLSDataToRS(this->m_pDACDataTarget);
-            break;
-        }
-
         default:
             break;
     }

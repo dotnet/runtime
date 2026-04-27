@@ -1124,21 +1124,21 @@ CordbType::SigToType(CordbModule * pModule,
 } // CordbType::SigToType
 
 //-----------------------------------------------------------------------------
-// Marshal a BasicTypeData --> CordbType.
+// Marshal a BasicTypeData_DebuggerSide --> CordbType.
 //
-// This will build up a ExpandedTypeData and convert that into
+// This will build up a ExpandedTypeData_DebuggerSide and convert that into
 //  a CordbType. This may send additional IPC events if needed to
 // go from Basic --> Expanded data. Note that this is designed to handle generics.
 //
 // Parameters:
 //   pAppDomain - the AppDomain the type lives in.
-//   data - BasicTypeData from Left-Side containing type description.
+//   data - BasicTypeData_DebuggerSide from Left-Side containing type description.
 //   pRes - OUT: out-parameter to hold built type.
 //
 // Returns:
 //    S_OK on success.
 //-----------------------------------------------------------------------------
-HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, BasicTypeData *data, CordbType **pRes)
+HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, BasicTypeData_DebuggerSide *data, CordbType **pRes)
 {
     FAIL_IF_NEUTERED(pAppDomain);
     INTERNAL_SYNC_API_ENTRY(pAppDomain->GetProcess()); //
@@ -1158,7 +1158,7 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, BasicTypeData *dat
             {
                 EX_TRY
                 {
-                    ExpandedTypeData typeInfo;
+                    ExpandedTypeData_DebuggerSide typeInfo;
                     CordbProcess * pProcess = pAppDomain->GetProcess();
 
                     {
@@ -1177,7 +1177,7 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, BasicTypeData *dat
 
         case ELEMENT_TYPE_FNPTR:
             {
-                ExpandedTypeData e;
+                ExpandedTypeData_DebuggerSide e;
                 e.elementType = et;
                 e.NaryTypeData.typeHandle = data->vmTypeHandle;
                 return CordbType::TypeDataToType(pAppDomain, &e, pRes);
@@ -1186,7 +1186,7 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, BasicTypeData *dat
             // For all other element types the "Basic" view of a type
             // contains the same information as the "expanded"
             // view, so just reuse the code for the Expanded view...
-            ExpandedTypeData e;
+            ExpandedTypeData_DebuggerSide e;
             e.elementType = et;
             e.ClassTypeData.metadataToken = data->metadataToken;
             e.ClassTypeData.vmAssembly = data->vmAssembly;
@@ -1196,8 +1196,8 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, BasicTypeData *dat
 }
 
 //-----------------------------------------------------------------------------
-// Marshal ExpandedTypeData --> CordbType
-// The ExpandedTypeData just contains top level generic info, and so
+// Marshal ExpandedTypeData_DebuggerSide --> CordbType
+// The ExpandedTypeData_DebuggerSide just contains top level generic info, and so
 // the RS may need to send more IPC events to fill out details.
 //
 // Parameters:
@@ -1208,7 +1208,7 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, BasicTypeData *dat
 // Returns:
 //   S_OK on success.
 //-----------------------------------------------------------------------------
-HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, ExpandedTypeData *data, CordbType **pRes)
+HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, ExpandedTypeData_DebuggerSide *data, CordbType **pRes)
 {
     INTERNAL_SYNC_API_ENTRY(pAppDomain->GetProcess()); //
 
@@ -1534,10 +1534,10 @@ HRESULT CordbType::InitInstantiationTypeHandle(BOOL fForceInit)
 
     HRESULT hr = S_OK;
 
-    // Create an array of BasicTypeData structures from the array of type parameters.
+    // Create an array of BasicTypeData_DebuggerSide structures from the array of type parameters.
     // First, get a buffer to hold the information
     CordbProcess *pProcess = GetProcess();
-    S_UINT32 bufferSize = S_UINT32(sizeof(BasicTypeData)) *
+    S_UINT32 bufferSize = S_UINT32(sizeof(BasicTypeData_DebuggerSide)) *
                                    S_UINT32(m_inst.m_cClassTyPars);
     EX_TRY
     {
@@ -1545,7 +1545,7 @@ HRESULT CordbType::InitInstantiationTypeHandle(BOOL fForceInit)
         {
             ThrowHR(E_INVALIDARG);
         }
-        NewArrayHolder<BasicTypeData> pArgTypeData(new BasicTypeData[bufferSize.Value()]);
+        NewArrayHolder<BasicTypeData_DebuggerSide> pArgTypeData(new BasicTypeData_DebuggerSide[bufferSize.Value()]);
 
         // We will have already called Init on each of the type parameters further above. Now we build a
         // list of type information for each type parameter.
@@ -1556,7 +1556,7 @@ HRESULT CordbType::InitInstantiationTypeHandle(BOOL fForceInit)
             IfFailThrow(m_inst.m_ppInst[i]->TypeToBasicTypeData(&pArgTypeData[i]));
         }
 
-        ExpandedTypeData typeData;
+        ExpandedTypeData_DebuggerSide typeData;
 
         // get the top-level type information
         TypeToExpandedTypeData(&typeData);
@@ -1911,17 +1911,17 @@ VMPTR_Module CordbType::GetModule()
     }
 }
 //-----------------------------------------------------------------------------
-// Internal method to Marshal:  CordbType --> BasicTypeData
+// Internal method to Marshal:  CordbType --> BasicTypeData_DebuggerSide
 // Nb. CordbType::Init will call this.  The operation
 // fails if the exact type information has been requested but was not available
 //
 // Parameters:
-//   data - OUT: BasicTypeData instance to fill out.
+//   data - OUT: BasicTypeData_DebuggerSide instance to fill out.
 //
 // Returns:
 //   S_OK on success, CORDBG_E_CLASS_NOT_LOADED on failure
 //-----------------------------------------------------------------------------
-HRESULT CordbType::TypeToBasicTypeData(BasicTypeData *data)
+HRESULT CordbType::TypeToBasicTypeData(BasicTypeData_DebuggerSide *data)
 {
     switch (m_elementType)
     {
@@ -1963,16 +1963,16 @@ HRESULT CordbType::TypeToBasicTypeData(BasicTypeData *data)
 }
 
 //-----------------------------------------------------------------------------
-// Internal method to marshal: CordbType --> ExpandedTypeData
+// Internal method to marshal: CordbType --> ExpandedTypeData_DebuggerSide
 //
 // Nb. CordbType::Init need NOT have been called before this...
 // Also, this does not write the type arguments.  How this is done depends
 // depends on where this is called from.
 //
 // Parameters:
-//     data - OUT: outgoing ExpandedTypeData to fill in with stats about CordbType.
+//     data - OUT: outgoing ExpandedTypeData_DebuggerSide to fill in with stats about CordbType.
 //-----------------------------------------------------------------------------
-void CordbType::TypeToExpandedTypeData(ExpandedTypeData *data)
+void CordbType::TypeToExpandedTypeData(ExpandedTypeData_DebuggerSide *data)
 {
 
     switch (m_elementType)
