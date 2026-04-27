@@ -7406,6 +7406,26 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
 }
 
 //------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   Check if we can contain the memory operand of a GT_NONLOCAL_JMP.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
+{
+    GenTree* addr = node->gtGetOp1();
+    if (IsContainableMemoryOp(addr) && IsSafeToContainMem(node, addr))
+    {
+        MakeSrcContained(node, addr);
+    }
+    else if (IsSafeToMarkRegOptional(node, addr))
+    {
+        MakeSrcRegOptional(node, addr);
+    }
+}
+
+//------------------------------------------------------------------------
 // ContainCheckStoreIndir: determine whether the sources of a STOREIND node should be contained.
 //
 // Arguments:

@@ -35,7 +35,7 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Atom10FeedFormatter(Type feedTypeToCreate) : base()
+        public Atom10FeedFormatter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type feedTypeToCreate) : base()
         {
             ArgumentNullException.ThrowIfNull(feedTypeToCreate);
 
@@ -66,6 +66,7 @@ namespace System.ServiceModel.Syndication
 
         public override string Version => SyndicationVersions.Atom10;
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         protected Type FeedType { get; }
 
         public override bool CanRead(XmlReader reader)
