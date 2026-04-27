@@ -29,10 +29,18 @@ internal readonly struct CodeNotifications_1 : ICodeNotifications
             {
                 Data.JITNotification entry = v.GetEntry(foundIndex);
                 entry.Clear();
-                if (foundIndex == v.Length - 1)
+
+                // Trim all trailing free entries so Length stays the smallest value satisfying
+                // "Length > index of every active entry". A single decrement is insufficient
+                // because earlier clears can leave an interior hole adjacent to the just-cleared
+                // tail entry (e.g., set A,B,C; clear B, then clear C should land at Length=1).
+                uint newLength = v.Length;
+                while (newLength > 0 && v.GetEntry(newLength - 1).IsFree)
                 {
-                    v.Length--;
+                    newLength--;
                 }
+
+                v.Length = newLength;
             }
 
             return;

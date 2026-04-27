@@ -307,7 +307,12 @@ public class CodeNotificationsTests
             (Constants.Globals.JITNotificationTableSize, TableCapacity)
         );
         builder.AddContract<ICodeNotifications>(version: "c1");
-        builder.UseAllocateMemory((size) => new TargetPointer(AllocatedTableAddress));
+        uint? requestedAllocationSize = null;
+        builder.UseAllocateMemory((size) =>
+        {
+            requestedAllocationSize = size;
+            return new TargetPointer(AllocatedTableAddress);
+        });
 
         var target = builder.Build();
         ICodeNotifications contract = target.Contracts.CodeNotifications;
@@ -319,5 +324,6 @@ public class CodeNotificationsTests
 
         CodeNotificationKind result = contract.GetCodeNotification(module, token);
         Assert.Equal(CodeNotificationKind.Generated, result);
+        Assert.Equal((uint)(EntrySize * (TableCapacity + 1)), requestedAllocationSize);
     }
 }
