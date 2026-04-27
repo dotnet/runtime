@@ -72,7 +72,7 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
     JITDUMP("Creating new local variable for PEP");
     unsigned int   callTargetLclNum    = callTargetUse.ReplaceWithLclVar(m_compiler);
     GenTreeLclVar* callTargetLclForArg = m_compiler->gtNewLclvNode(callTargetLclNum, TYP_I_IMPL);
-    DISPTREE(call)
+    DISPTREE(call);
 
     JITDUMP("Add new arg to call arg list corresponding to PEP target");
     NewCallArg pepTargetArg =
