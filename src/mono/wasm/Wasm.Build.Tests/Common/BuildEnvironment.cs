@@ -195,11 +195,19 @@ namespace Wasm.Build.Tests
                     : throw new ArgumentException($"No runtime pack version found for tfm={tfm} .");
 
         public string GetRuntimePackDir(string tfm, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
-            => Path.Combine(WorkloadPacksDir,
-                    runtimeType is RuntimeVariant.SingleThreaded
-                        ? $"Microsoft.NETCore.App.Runtime.Mono.{DefaultRuntimeIdentifier}"
-                        : $"Microsoft.NETCore.App.Runtime.Mono.multithread.{DefaultRuntimeIdentifier}",
-                    GetRuntimePackVersion(tfm));
+            => Path.Combine(WorkloadPacksDir, GetRuntimePackName(runtimeType), GetRuntimePackVersion(tfm));
+
+        private string GetRuntimePackName(RuntimeVariant runtimeType)
+        {
+            // CoreCLR ships browser-wasm via Microsoft.NETCore.App.Runtime.{rid} (no flavor segment).
+            // Mono uses Microsoft.NETCore.App.Runtime.Mono.{rid}, with a separate .multithread. variant.
+            if (IsCoreClrRuntime)
+                return $"Microsoft.NETCore.App.Runtime.{DefaultRuntimeIdentifier}";
+
+            return runtimeType is RuntimeVariant.SingleThreaded
+                ? $"Microsoft.NETCore.App.Runtime.Mono.{DefaultRuntimeIdentifier}"
+                : $"Microsoft.NETCore.App.Runtime.Mono.multithread.{DefaultRuntimeIdentifier}";
+        }
         public string GetRuntimeNativeDir(string tfm, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
             => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");
         public bool IsMultiThreadingRuntimePackAvailableFor(string tfm)

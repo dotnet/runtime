@@ -23,6 +23,9 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        // The "warning ... native function ... varargs" check is emitted by Mono's PInvokeTableGenerator.
+        // CoreCLR's PInvokeTableGenerator does not emit that warning, so this test is Mono-only.
+        [TestCategory("mono")]
         public async Task NativeLibraryWithVariadicFunctions(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "variadic");
