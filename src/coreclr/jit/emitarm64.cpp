@@ -10750,7 +10750,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         size_t sz          = 4;
         int    distValSize = id->idjShort ? 4 : 8;
         printf("; %s jump [%p/%03u] from %0*zX to %0*X: dist = 0x%08zX\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
-               dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs, (size_t)distVal);
+               dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs,
+               (size_t)distVal);
     }
 #endif
 

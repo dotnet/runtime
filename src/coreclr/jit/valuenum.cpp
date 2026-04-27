@@ -10249,9 +10249,9 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case TYP_SIMD32:
             {
                 simd32_t cnsVal = GetConstantSimd32(vn);
-                  printf("Simd32Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]", (unsigned long long)cnsVal.u64[0],
-                      (unsigned long long)cnsVal.u64[1], (unsigned long long)cnsVal.u64[2],
-                      (unsigned long long)cnsVal.u64[3]);
+                printf("Simd32Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]", (unsigned long long)cnsVal.u64[0],
+                       (unsigned long long)cnsVal.u64[1], (unsigned long long)cnsVal.u64[2],
+                       (unsigned long long)cnsVal.u64[3]);
                 break;
             }
 
@@ -15219,7 +15219,7 @@ void Compiler::JitTestCheckVN()
                     printf(", with value number " FMT_VN ", was declared in VN class %d,\n", nodeVN, (int)tlAndN.m_num);
                     printf("but this value number " FMT_VN
                            " has already been associated with a different SSA name class: %d.\n",
-                              vn, (int)num2);
+                           vn, (int)num2);
                     assert(false);
                 }
                 // And the current node must be of the specified SSA family.

@@ -17723,9 +17723,9 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             }
             printf("[3] Jump  block is at %08zX - %02X = %08zX\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
             printf("[3] Jump        is at %08zX - %02X = %08zX\n", (size_t)srcOffs, emitOffsAdj,
-                (size_t)(srcOffs - emitOffsAdj));
+                   (size_t)(srcOffs - emitOffsAdj));
             printf("[3] Label block is at %08zX - %02X = %08zX\n", (size_t)dstOffs, emitOffsAdj,
-                (size_t)(dstOffs - emitOffsAdj));
+                   (size_t)(dstOffs - emitOffsAdj));
         }
 #endif
 
@@ -17767,9 +17767,9 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 printf("[4] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
             }
             printf("[4] Jump  block is at %08zX\n", blkOffs);
-                 printf("[4] Jump        is at %08zX\n", (size_t)srcOffs);
-                 printf("[4] Label block is at %08zX - %02X = %08zX\n", (size_t)(dstOffs + emitOffsAdj), emitOffsAdj,
-                     (size_t)dstOffs);
+            printf("[4] Jump        is at %08zX\n", (size_t)srcOffs);
+            printf("[4] Label block is at %08zX - %02X = %08zX\n", (size_t)(dstOffs + emitOffsAdj), emitOffsAdj,
+                   (size_t)dstOffs);
         }
 #endif
 
@@ -17791,9 +17791,9 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = id->idjShort ? ssz : lsz;
         int    distValSize = id->idjShort ? 4 : 8;
-         printf("; %s jump [%p/%03u] from %0*zX to %0*zX: dist = 0x%08zX\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
-             m_compiler->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize,
-             (size_t)dstOffs, (size_t)distVal);
+        printf("; %s jump [%p/%03u] from %0*zX to %0*zX: dist = 0x%08zX\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+               m_compiler->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize,
+               (size_t)dstOffs, (size_t)distVal);
     }
 #endif
 

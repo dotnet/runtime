@@ -3364,7 +3364,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
                 printTreeID(origExpr);
                 printf(" was declared as hoistable from loop at nesting depth %d; actually hoisted from loop at depth "
                        "%d.\n",
-                      (int)tlAndN.m_num, (int)depth);
+                       (int)tlAndN.m_num, (int)depth);
                 assert(false);
             }
             else

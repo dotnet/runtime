@@ -5355,8 +5355,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             if (INTERESTING_JUMP_NUM == 0)
                 printf("[3] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
-            printf("[3] Jump  block is at %08X - %02X = %08X\n", (unsigned)blkOffs, emitOffsAdj, (unsigned)(blkOffs - emitOffsAdj));
-            printf("[3] Jump        is at %08X - %02X = %08X\n", (unsigned)srcOffs, emitOffsAdj, (unsigned)(srcOffs - emitOffsAdj));
+            printf("[3] Jump  block is at %08X - %02X = %08X\n", (unsigned)blkOffs, emitOffsAdj,
+                   (unsigned)(blkOffs - emitOffsAdj));
+            printf("[3] Jump        is at %08X - %02X = %08X\n", (unsigned)srcOffs, emitOffsAdj,
+                   (unsigned)(srcOffs - emitOffsAdj));
             printf("[3] Label block is at %08X - %02X = %08X\n", dstOffs, emitOffsAdj, dstOffs - emitOffsAdj);
         }
 #endif
@@ -5419,7 +5421,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         size_t sz          = 4; // Thumb-2 pretends all instructions are 4-bytes long for computing jump offsets?
         int    distValSize = id->idjShort ? 4 : 8;
         printf("; %s jump [%p/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
-               dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, (unsigned)(srcOffs + sz), distValSize, dstOffs, (int)distVal);
+               dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, (unsigned)(srcOffs + sz), distValSize, dstOffs,
+               (int)distVal);
     }
 #endif
 

@@ -12421,11 +12421,11 @@ void Compiler::gtDispConst(GenTree* tree)
 
                 case TYP_SIMD64:
                 {
-                          printf("<0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx>",
-                              (unsigned long long)vecCon->gtSimdVal.u64[0], (unsigned long long)vecCon->gtSimdVal.u64[1],
-                              (unsigned long long)vecCon->gtSimdVal.u64[2], (unsigned long long)vecCon->gtSimdVal.u64[3],
-                              (unsigned long long)vecCon->gtSimdVal.u64[4], (unsigned long long)vecCon->gtSimdVal.u64[5],
-                              (unsigned long long)vecCon->gtSimdVal.u64[6], (unsigned long long)vecCon->gtSimdVal.u64[7]);
+                    printf("<0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx>",
+                           (unsigned long long)vecCon->gtSimdVal.u64[0], (unsigned long long)vecCon->gtSimdVal.u64[1],
+                           (unsigned long long)vecCon->gtSimdVal.u64[2], (unsigned long long)vecCon->gtSimdVal.u64[3],
+                           (unsigned long long)vecCon->gtSimdVal.u64[4], (unsigned long long)vecCon->gtSimdVal.u64[5],
+                           (unsigned long long)vecCon->gtSimdVal.u64[6], (unsigned long long)vecCon->gtSimdVal.u64[7]);
                     break;
                 }
 

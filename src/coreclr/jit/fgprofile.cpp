@@ -2979,8 +2979,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
             default:
                 JITDUMP("Unknown PGO record type 0x%x in schema entry %u (offset 0x%x count 0x%x other 0x%x)\n",
-                    static_cast<unsigned>(fgPgoSchema[iSchema].InstrumentationKind), iSchema, fgPgoSchema[iSchema].ILOffset,
-                        fgPgoSchema[iSchema].Count, fgPgoSchema[iSchema].Other);
+                        static_cast<unsigned>(fgPgoSchema[iSchema].InstrumentationKind), iSchema,
+                        fgPgoSchema[iSchema].ILOffset, fgPgoSchema[iSchema].Count, fgPgoSchema[iSchema].Other);
                 otherRecords++;
                 break;
         }

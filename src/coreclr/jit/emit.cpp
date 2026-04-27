@@ -950,8 +950,8 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         // If there's an error during emission, we may want to connect the post-copy address
         // of an instrDesc with the pre-copy address (the one that was originally created).  This
         // printing enables that.
-         printf("copying instruction group from [%p..%p) to [%p..%p).\n", dspPtr(emitCurIGfreeBase),
-             dspPtr(emitCurIGfreeBase + sz), dspPtr(id), dspPtr(id + sz));
+        printf("copying instruction group from [%p..%p) to [%p..%p).\n", dspPtr(emitCurIGfreeBase),
+               dspPtr(emitCurIGfreeBase + sz), dspPtr(id), dspPtr(id + sz));
     }
 #endif
 
@@ -5258,7 +5258,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                  printf("Estimate of fwd jump [%p/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of fwd jump [%p/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -5301,7 +5301,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                  printf("Estimate of bwd jump [%p/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of bwd jump [%p/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -7363,7 +7363,8 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                             unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & jccAlignBoundaryMask);
                             printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %zu ; jcc erratum) %zuB boundary "
                                    "...............................\n",
-                                   codeGen->genInsDisplayName(curInstrDesc), (size_t)bytesCrossedBoundary, (size_t)jccAlignBoundary);
+                                   codeGen->genInsDisplayName(curInstrDesc), (size_t)bytesCrossedBoundary,
+                                   (size_t)jccAlignBoundary);
                         }
                     }
 
@@ -7406,7 +7407,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 #ifdef DEBUG
         if (m_compiler->opts.disAsm || m_compiler->verbose)
         {
-                 printf("\t\t\t\t\t\t;; size=%zd bbWeight=%s PerfScore %.2f", (cp - bp), refCntWtd2str(ig->igWeight),
+            printf("\t\t\t\t\t\t;; size=%zd bbWeight=%s PerfScore %.2f", (cp - bp), refCntWtd2str(ig->igWeight),
                    ig->igPerfScore);
         }
         *instrCount += ig->igInsCnt;
@@ -8560,7 +8561,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                     }
                     else
                     {
-                        printf("\tdq\t%016" PRIX64 "h", (uint64_t)reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
+                        printf("\tdq\t%016" PRIX64 "h",
+                               (uint64_t) reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
                     }
 #endif // TARGET_64BIT
                 }

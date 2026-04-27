@@ -2513,7 +2513,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         }
         else
         {
-                 printf("  Call returns %s as %zu primitive(s) in registers\n",
+            printf("  Call returns %s as %zu primitive(s) in registers\n",
                    typGetObjLayout(sig->retTypeClass)->GetClassName(), lowering->numLoweredElements);
             for (size_t i = 0; i < lowering->numLoweredElements; i++)
             {
@@ -7182,7 +7182,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
         for (UINT32 i = 0; i < numberOfClasses; i++)
         {
             const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
-                JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, (void*)likelyClasses[i].handle, className,
+            JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, (void*)likelyClasses[i].handle, className,
                     likelyClasses[i].likelihood);
         }
     }

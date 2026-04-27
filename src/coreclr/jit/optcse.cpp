@@ -4316,16 +4316,16 @@ void CSE_Heuristic::SortCandidates()
 
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
             {
-                  printf(FMT_CSE ", {$%-3zx, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
-                       dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
+                printf(FMT_CSE ", {$%-3zx, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ",
+                       dsc->csdIndex, dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                  printf(FMT_CSE ", {K_%p} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
-                      (void*)(size_t)dspPtr(kVal), dsc->csdUseCount, def, use, cost,
-                      dsc->csdLiveAcrossCall ? ", call" : "      ");
+                printf(FMT_CSE ", {K_%p} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
+                       (void*)(size_t)dspPtr(kVal), dsc->csdUseCount, def, use, cost,
+                       dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
 
             m_compiler->gtDispTree(expr, nullptr, nullptr, true);
@@ -4978,7 +4978,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             if (isSharedConst)
             {
                 printf("\nWe have shared Const CSE's and selected " FMT_VN " with a value of 0x%p as the base.\n",
-                      dsc->csdConstDefVN, (void*)(size_t)dspPtr(dsc->csdConstDefValue));
+                       dsc->csdConstDefVN, (void*)(size_t)dspPtr(dsc->csdConstDefValue));
             }
             else // !isSharedConst
             {
@@ -5360,7 +5360,7 @@ void CSE_HeuristicCommon::ConsiderCandidates()
         {
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
             {
-                  printf("\nConsidering " FMT_CSE " {$%-3zx, $%-3x} [def=%3f, use=%3f, cost=%3u%s]\n",
+                printf("\nConsidering " FMT_CSE " {$%-3zx, $%-3x} [def=%3f, use=%3f, cost=%3u%s]\n",
                        candidate.CseIndex(), dsc->csdHashKey, dsc->defExcSetPromise, candidate.DefCount(),
                        candidate.UseCount(), candidate.Cost(), dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
@@ -5368,7 +5368,7 @@ void CSE_HeuristicCommon::ConsiderCandidates()
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
                 printf("\nConsidering " FMT_CSE " {K_%p} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
-                      (void*)(size_t)dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
+                       (void*)(size_t)dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             printf("CSE Expression : \n");

@@ -323,8 +323,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             return;
         }
 
-        JITDUMP("[RangeCheck::OptimizeRangeCheck] Is index %zd in <0, arrLenVn " FMT_VN " sz:%d>.\n", idxVal,
-            arrLenVn,
+        JITDUMP("[RangeCheck::OptimizeRangeCheck] Is index %zd in <0, arrLenVn " FMT_VN " sz:%d>.\n", idxVal, arrLenVn,
                 arrSize);
         if ((idxVal < arrSize) && (idxVal >= 0))
         {

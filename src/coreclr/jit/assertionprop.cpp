@@ -4357,12 +4357,13 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 }
                 else
                 {
-                    printf("%zd (gcref)\n", (ssize_t)static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                    printf("%zd (gcref)\n",
+                           (ssize_t) static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
                 }
             }
             else if (op1->TypeIs(TYP_BYREF))
             {
-                printf("%zd (byref)\n", (ssize_t)static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                printf("%zd (byref)\n", (ssize_t) static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
             }
             else
             {
