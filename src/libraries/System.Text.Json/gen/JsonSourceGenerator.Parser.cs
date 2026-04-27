@@ -731,7 +731,7 @@ namespace System.Text.Json.SourceGeneration
                     GenerationMode = typeToGenerate.Mode ?? options?.GenerationMode ?? JsonSourceGenerationMode.Default,
                     ClassType = classType,
                     PrimitiveTypeKind = primitiveTypeKind,
-                    ResolvedDerivedTypes = resolvedDerivedTypes?.ToImmutableEquatableArray(),
+                    ResolvedDerivedTypes = resolvedDerivedTypes?.OrderBy(d => d.DerivedType.FullyQualifiedName).ToImmutableEquatableArray(),
                     NumberHandling = numberHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
                     PreferredPropertyObjectCreationHandling = preferredPropertyObjectCreationHandling,
