@@ -67,6 +67,10 @@ namespace System.IO.Hashing
                 }
 
                 crc = UpdateVectorizedCore(crc, source, out bytesConsumed);
+                crc = UpdateVectorizedCore(crc, source, out _);
+                crc = UpdateVectorizedCore(crc, source, out _);
+                crc = UpdateVectorizedCore(crc, source, out _);
+                crc = UpdateVectorizedCore(crc, source, out _);
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
