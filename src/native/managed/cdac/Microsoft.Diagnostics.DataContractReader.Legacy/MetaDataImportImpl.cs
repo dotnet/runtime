@@ -156,7 +156,29 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     }
 
     int IMetaDataImport.EnumTypeDefs(nint* phEnum, uint* rTypeDefs, uint cMax, uint* pcTypeDefs)
-        => _legacyImport is not null ? _legacyImport.EnumTypeDefs(phEnum, rTypeDefs, cMax, pcTypeDefs) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (phEnum is not null && *phEnum != 0)
+            {
+                hr = FillEnum(phEnum, GetEnum(*phEnum).Tokens, rTypeDefs, cMax, pcTypeDefs);
+            }
+            else
+            {
+                List<uint> tokens = new();
+                foreach (TypeDefinitionHandle h in _reader.TypeDefinitions)
+                    tokens.Add((uint)MetadataTokens.GetToken(h));
+                hr = FillEnum(phEnum, tokens, rTypeDefs, cMax, pcTypeDefs);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
 
     int IMetaDataImport.EnumInterfaceImpls(nint* phEnum, uint td, uint* rImpls, uint cMax, uint* pcImpls)
     {
@@ -192,7 +214,31 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         => _legacyImport is not null ? _legacyImport.EnumMembers(phEnum, cl, rMembers, cMax, pcTokens) : HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumMethods(nint* phEnum, uint cl, uint* rMethods, uint cMax, uint* pcTokens)
-        => _legacyImport is not null ? _legacyImport.EnumMethods(phEnum, cl, rMethods, cMax, pcTokens) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (phEnum is not null && *phEnum != 0)
+            {
+                hr = FillEnum(phEnum, GetEnum(*phEnum).Tokens, rMethods, cMax, pcTokens);
+            }
+            else
+            {
+                TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(cl & 0x00FFFFFF));
+                TypeDefinition typeDef = _reader.GetTypeDefinition(typeHandle);
+                List<uint> tokens = new();
+                foreach (MethodDefinitionHandle h in typeDef.GetMethods())
+                    tokens.Add((uint)MetadataTokens.GetToken(h));
+                hr = FillEnum(phEnum, tokens, rMethods, cMax, pcTokens);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
 
     int IMetaDataImport.EnumFields(nint* phEnum, uint cl, uint* rFields, uint cMax, uint* pcTokens)
     {
@@ -1633,7 +1679,63 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
 
     int IMetaDataAssemblyImport.GetExportedTypeProps(uint mdct, char* szName, uint cchName, uint* pchName,
         uint* ptkImplementation, uint* ptkTypeDef, uint* pdwExportedTypeFlags)
-        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.GetExportedTypeProps(mdct, szName, cchName, pchName, ptkImplementation, ptkTypeDef, pdwExportedTypeFlags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            ExportedTypeHandle handle = MetadataTokens.ExportedTypeHandle((int)(mdct & 0x00FFFFFF));
+            ExportedType exportedType = _reader.GetExportedType(handle);
+
+            string name = _reader.GetString(exportedType.Name);
+            string ns = _reader.GetString(exportedType.Namespace);
+            string fullName = string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
+            OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, fullName, out bool truncated);
+
+            if (ptkImplementation is not null)
+            {
+                EntityHandle impl = exportedType.Implementation;
+                *ptkImplementation = impl.IsNil ? 0 : (uint)MetadataTokens.GetToken(impl);
+            }
+
+            if (ptkTypeDef is not null)
+                *ptkTypeDef = (uint)exportedType.GetTypeDefinitionId();
+
+            if (pdwExportedTypeFlags is not null)
+                *pdwExportedTypeFlags = (uint)exportedType.Attributes;
+
+            hr = truncated ? CldbHResults.CLDB_S_TRUNCATION : HResults.S_OK;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyAssemblyImport is not null)
+        {
+            char* szNameLocal = stackalloc char[(int)cchName];
+            uint pchNameLocal = 0;
+            uint tkImplementationLocal = 0;
+            uint tkTypeDefLocal = 0;
+            uint dwExportedTypeFlagsLocal = 0;
+            int hrLegacy = _legacyAssemblyImport.GetExportedTypeProps(mdct, szNameLocal, cchName, &pchNameLocal,
+                &tkImplementationLocal, &tkTypeDefLocal, &dwExportedTypeFlagsLocal);
+            Debug.ValidateHResult(hr, hrLegacy);
+            if (hr >= 0 && hrLegacy >= 0)
+            {
+                if (pchName is not null)
+                    Debug.Assert(*pchName == pchNameLocal, $"ExportedType name length mismatch: cDAC={*pchName}, DAC={pchNameLocal}");
+                if (ptkImplementation is not null)
+                    Debug.Assert(*ptkImplementation == tkImplementationLocal, $"ExportedType implementation mismatch: cDAC=0x{*ptkImplementation:X}, DAC=0x{tkImplementationLocal:X}");
+                if (ptkTypeDef is not null)
+                    Debug.Assert(*ptkTypeDef == tkTypeDefLocal, $"ExportedType typeDef mismatch: cDAC=0x{*ptkTypeDef:X}, DAC=0x{tkTypeDefLocal:X}");
+                if (pdwExportedTypeFlags is not null)
+                    Debug.Assert(*pdwExportedTypeFlags == dwExportedTypeFlagsLocal, $"ExportedType flags mismatch: cDAC=0x{*pdwExportedTypeFlags:X}, DAC=0x{dwExportedTypeFlagsLocal:X}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     int IMetaDataAssemblyImport.GetManifestResourceProps(uint mdmr, char* szName, uint cchName, uint* pchName,
         uint* ptkImplementation, uint* pdwOffset, uint* pdwResourceFlags)
@@ -1671,7 +1773,60 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     }
 
     int IMetaDataAssemblyImport.FindExportedTypeByName(char* szName, uint mdtExportedType, uint* ptkExportedType)
-        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.FindExportedTypeByName(szName, mdtExportedType, ptkExportedType) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ptkExportedType is not null)
+                *ptkExportedType = 0;
+
+            string targetName = new string(szName);
+
+            bool found = false;
+            foreach (ExportedTypeHandle eth in _reader.ExportedTypes)
+            {
+                ExportedType exportedType = _reader.GetExportedType(eth);
+                string name = _reader.GetString(exportedType.Name);
+                string ns = _reader.GetString(exportedType.Namespace);
+                string fullName = string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
+
+                if (!string.Equals(fullName, targetName, StringComparison.Ordinal))
+                    continue;
+
+                if (mdtExportedType != 0)
+                {
+                    EntityHandle impl = exportedType.Implementation;
+                    if (impl.IsNil || (uint)MetadataTokens.GetToken(impl) != mdtExportedType)
+                        continue;
+                }
+
+                if (ptkExportedType is not null)
+                    *ptkExportedType = (uint)MetadataTokens.GetToken(eth);
+
+                found = true;
+                break;
+            }
+
+            if (!found)
+                hr = CldbHResults.CLDB_E_RECORD_NOTFOUND;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyAssemblyImport is not null)
+        {
+            uint tkExportedTypeLocal = 0;
+            int hrLegacy = _legacyAssemblyImport.FindExportedTypeByName(szName, mdtExportedType, &tkExportedTypeLocal);
+            Debug.ValidateHResult(hr, hrLegacy);
+            if (hr >= 0 && hrLegacy >= 0 && ptkExportedType is not null)
+                Debug.Assert(*ptkExportedType == tkExportedTypeLocal, $"ExportedType mismatch: cDAC=0x{*ptkExportedType:X}, DAC=0x{tkExportedTypeLocal:X}");
+        }
+#endif
+        return hr;
+    }
 
     int IMetaDataAssemblyImport.FindManifestResourceByName(char* szName, uint* ptkManifestResource)
         => _legacyAssemblyImport is not null ? _legacyAssemblyImport.FindManifestResourceByName(szName, ptkManifestResource) : HResults.E_NOTIMPL;
