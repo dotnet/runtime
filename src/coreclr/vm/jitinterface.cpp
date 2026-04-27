@@ -11444,11 +11444,11 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 #ifdef FEATURE_INTERPRETER
 
 // Forward declare the function for mapping MetaSig to a cookie.
-void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
+InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
 
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
-    void* result = NULL;
+    InterpreterCalliCookie result = NULL;
     JIT_TO_EE_TRANSITION();
 
     // When compiling a calli inside an IL stub for a P/Invoke, pass the target
@@ -11460,7 +11460,7 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
         if (pTargetMD != nullptr)
         {
             pContextMD = pTargetMD;
-            result = (void*)pTargetMD->GetCalliCookie();
+            result = pTargetMD->GetCalliCookie();
         }
     }
 
@@ -11483,12 +11483,12 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
         if (pContextMD != nullptr)
         {
             pContextMD->SetCalliCookie((InterpreterCalliCookie)result);
-            result = (void*)pContextMD->GetCalliCookie();
+            result = pContextMD->GetCalliCookie();
         }
     }
 
     EE_TO_JIT_TRANSITION();
-    return result;
+    return (void*)result;
 }
 
 void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
