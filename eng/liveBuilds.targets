@@ -244,6 +244,11 @@
         $(LibrariesSharedFrameworkDir)*.js;
         $(LibrariesSharedFrameworkDir)*.a;
         $(LibrariesSharedFrameworkDir)*.dat;
+        "
+        IsNative="true" />
+
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and Exists('$(HostSharedFrameworkDir)libBrowserHost.a')"
+                             Include="
         $(HostSharedFrameworkDir)libBrowserHost.a;
         $(HostSharedFrameworkDir)dotnet.native.js;
         $(HostSharedFrameworkDir)dotnet.native.wasm;
