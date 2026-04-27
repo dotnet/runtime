@@ -272,10 +272,10 @@
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
 
       <!-- All declarations needed by ManagedToNativeGenerator output (pinvoke-table.cpp,
-           wasm_m2n_invoke.g.cpp) are provided by the auto-generated coreclr_compat.h that is
-           pre-included below. This avoids relying on the in-repo coreclr/vm/wasm and
+           wasm_m2n_invoke.g.cpp) are provided by coreclr_compat.h, which ships next to this
+           targets file. This avoids relying on the in-repo coreclr/vm/wasm and
            native/minipal headers, which are not present in the WBT Helix payload. -->
-      <_EmccCFlags Include="-include &quot;$(_WasmIntermediateOutputPath)coreclr_compat.h&quot;" />
+      <_EmccCFlags Include="-include &quot;$(MSBuildThisFileDirectory)coreclr_compat.h&quot;" />
     </ItemGroup>
 
     <!-- Source files: user NativeFileReference sources -->
@@ -284,7 +284,7 @@
       <_WasmSourceFileToCompile Include="@(NativeFileReference)" Condition="'%(Extension)' == '.c' or '%(Extension)' == '.cpp'" />
       <_WasmSourceFileToCompile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
       <!-- Add compile RSP and compat header as dependencies for incremental build -->
-      <_WasmSourceFileToCompile Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
+      <_WasmSourceFileToCompile Dependencies="$(_WasmCompileRsp);$(MSBuildThisFileDirectory)coreclr_compat.h" />
     </ItemGroup>
 
     <!-- Native .a files to link: any NativeFileReference that are archives -->
@@ -363,63 +363,6 @@
   <!-- ======================== Write Compile RSP ======================== -->
 
   <Target Name="_CoreCLRWriteCompileRsp" Condition="@(_WasmSourceFileToCompile->Count()) > 0">
-    <!-- Generate a compatibility header with type/macro stubs for compiling
-         ManagedToNativeGenerator output outside the full CoreCLR build context -->
-    <PropertyGroup>
-      <_WasmCoreclrCompatHeader>$(_WasmIntermediateOutputPath)coreclr_compat.h</_WasmCoreclrCompatHeader>
-    </PropertyGroup>
-    <ItemGroup>
-      <_CompatHeaderLines Include="// Auto-generated CoreCLR compat header for app native build" />
-      <_CompatHeaderLines Include="#pragma once" />
-      <_CompatHeaderLines Include="#include &lt;stddef.h&gt;" />
-      <_CompatHeaderLines Include="#include &lt;stdint.h&gt;" />
-      <_CompatHeaderLines Include="#include &lt;stdlib.h&gt;" />
-      <_CompatHeaderLines Include="#include &lt;stdio.h&gt;" />
-      <_CompatHeaderLines Include="// CoreCLR type stubs" />
-      <_CompatHeaderLines Include="#ifndef _CORECLR_COMPAT_TYPES" />
-      <_CompatHeaderLines Include="#define _CORECLR_COMPAT_TYPES" />
-      <_CompatHeaderLines Include="typedef void MethodDesc%3B" />
-      <_CompatHeaderLines Include="typedef uintptr_t PCODE%3B" />
-      <_CompatHeaderLines Include="typedef uint32_t ULONG%3B" />
-      <_CompatHeaderLines Include="#define INTERP_STACK_SLOT_SIZE 8u" />
-      <_CompatHeaderLines Include="#endif" />
-      <_CompatHeaderLines Include="// CoreCLR logging stubs" />
-      <_CompatHeaderLines Include="#define LF_INTEROP 0" />
-      <_CompatHeaderLines Include="#define LL_INFO1000 0" />
-      <_CompatHeaderLines Include="#define LOG(x)" />
-      <_CompatHeaderLines Include="// CoreCLR assertion stubs" />
-      <_CompatHeaderLines Include="#define PORTABILITY_ASSERT(msg) do { fprintf(stderr, &quot;PORTABILITY_ASSERT: %25s&quot;, msg)%3B fprintf(stderr, &quot;\n&quot;)%3B abort()%3B } while(0)" />
-      <!-- Mirrors of declarations from src/coreclr/vm/wasm/callhelpers.hpp. The actual definitions
-           live in the runtime's libcoreclr_static.a (linked in later) or in the same generated
-           cpp (e.g. g_wasmThunks/g_ReverseThunks are defined by the generated tables themselves). -->
-      <_CompatHeaderLines Include="#define TERMINATE_R2R_STACK_WALK 1" />
-      <_CompatHeaderLines Include="struct StringToWasmSigThunk { const char* key%3B void* value%3B }%3B" />
-      <_CompatHeaderLines Include="extern const StringToWasmSigThunk g_wasmThunks[]%3B" />
-      <_CompatHeaderLines Include="extern const size_t g_wasmThunksCount%3B" />
-      <_CompatHeaderLines Include="struct ReverseThunkMapValue { MethodDesc** Target%3B void* EntryPoint%3B }%3B" />
-      <_CompatHeaderLines Include="struct ReverseThunkMapEntry { ULONG hashCode%3B const char* Source%3B ReverseThunkMapValue value%3B }%3B" />
-      <_CompatHeaderLines Include="extern const ReverseThunkMapEntry g_ReverseThunks[]%3B" />
-      <_CompatHeaderLines Include="extern const size_t g_ReverseThunksCount%3B" />
-      <!-- Mirrors of declarations from src/native/minipal/entrypoints.h, used by pinvoke-table.cpp.
-           minipal_resolve_dllimport is marked static inline (rather than the upstream 'static') so
-           cpp files that #include this compat header but don't call it don't trigger
-           -Wunused-function. -->
-      <_CompatHeaderLines Include="#include &lt;string.h&gt;" />
-      <_CompatHeaderLines Include="typedef struct { const char* name%3B const void* method%3B } Entry%3B" />
-      <_CompatHeaderLines Include="#define DllImportEntry(impl) {#impl, (void*)&amp;impl}," />
-      <_CompatHeaderLines Include="static inline const void* minipal_resolve_dllimport(const Entry* resolutionTable, size_t tableLength, const char* name) {" />
-      <_CompatHeaderLines Include="    for (size_t i = 0%3B i &lt; tableLength%3B i++) {" />
-      <_CompatHeaderLines Include="        if (strcmp(name, resolutionTable[i].name) == 0) { return resolutionTable[i].method%3B }" />
-      <_CompatHeaderLines Include="    }" />
-      <_CompatHeaderLines Include="    return nullptr%3B" />
-      <_CompatHeaderLines Include="}" />
-    </ItemGroup>
-
-    <WriteLinesToFile Lines="@(_CompatHeaderLines)" File="$(_WasmCoreclrCompatHeader)" Overwrite="true" WriteOnlyWhenDifferent="true" />
-    <ItemGroup>
-      <FileWrites Include="$(_WasmCoreclrCompatHeader)" />
-    </ItemGroup>
-
     <ItemGroup>
       <_WasmCFlags Include="@(_EmccCFlags)" />
     </ItemGroup>
