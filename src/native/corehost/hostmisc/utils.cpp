@@ -501,22 +501,13 @@ pal::string_t to_upper(const pal::char_t* in) {
     return ret;
 }
 
-#define TEST_ONLY_MARKER "d38cc827-e34f-4453-9df4-1e796e9f1d07"
-
 // Retrieves environment variable which is only used for testing.
 // This will return the value of the variable only if the product binary is stamped
-// with test-only marker.
+// with test-only marker. The marker itself lives in `is_test_only_enabled` (utils.c)
+// to ensure there is only a single embedded copy in the binary.
 bool test_only_getenv(const pal::char_t* name, pal::string_t* recv)
 {
-    // This is a static variable which is embedded in the product binary (somewhere).
-    // The marker values is a GUID so that it's unique and can be found by doing a simple search on the file
-    // The first character is used as the decider:
-    //  - Default value is 'd' (stands for disabled) - test only behavior is disabled
-    //  - To enable test-only behaviors set it to 'e' (stands for enabled)
-    constexpr size_t EMBED_SIZE = sizeof(TEST_ONLY_MARKER) / sizeof(TEST_ONLY_MARKER[0]);
-    volatile static char embed[EMBED_SIZE] = TEST_ONLY_MARKER;
-
-    if (embed[0] != 'e')
+    if (!is_test_only_enabled())
     {
         return false;
     }

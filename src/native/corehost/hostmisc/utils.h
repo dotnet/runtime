@@ -129,6 +129,12 @@ void utils_get_runtime_id(pal_char_t* out_rid, size_t out_rid_len);
 // Get the dotnet root env var name for the current architecture.
 void utils_get_dotnet_root_env_var_for_arch(pal_char_t* out_name, size_t out_name_len);
 
+// Returns true if this product binary has been stamped to enable test-only behaviors.
+// The marker that controls this is embedded by `is_test_only_enabled` itself; there
+// must be exactly one definition of this function in the binary so that the test
+// infrastructure (`TestOnlyProductBehavior`) only has to flip a single byte.
+bool is_test_only_enabled(void);
+
 #ifdef __cplusplus
 }
 #endif

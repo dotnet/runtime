@@ -343,6 +343,21 @@ static bool get_file_path_from_env(const pal_char_t* env_key, pal_char_t* recv, 
     return false;
 }
 
+#define TEST_ONLY_MARKER "d38cc827-e34f-4453-9df4-1e796e9f1d07"
+
+// Single source of truth for the test-only marker.
+// The marker is a GUID embedded in the product binary so it can be located by tests
+// (via a simple byte-pattern search) and switched between disabled ('d') and enabled ('e').
+// Keep this in exactly one place so `BinaryUtils.SearchAndReplace` only ever needs to
+// flip a single byte; otherwise some `test_only_getenv` callers would observe a stale
+// state and the test infrastructure's backup/restore lifecycle would get out of sync.
+bool is_test_only_enabled(void)
+{
+    enum { EMBED_SIZE = sizeof(TEST_ONLY_MARKER) / sizeof(TEST_ONLY_MARKER[0]) };
+    volatile static char embed[EMBED_SIZE] = TEST_ONLY_MARKER;
+    return embed[0] == 'e';
+}
+
 bool utils_get_dotnet_root_from_env(pal_char_t* out_env_var_name, size_t env_var_name_len, pal_char_t* recv, size_t recv_len)
 {
     pal_char_t env_var_name[256];

@@ -3,6 +3,7 @@
 
 #include "pal.h"
 #include "trace.h"
+#include "utils.h"
 
 #include <ctype.h>
 #include <dlfcn.h>
@@ -183,17 +184,13 @@ void pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_fn
     closedir(dir);
 }
 
-#define TEST_ONLY_MARKER "d38cc827-e34f-4453-9df4-1e796e9f1d07"
-
 // Retrieves environment variable which is only used for testing.
 // This will return the value of the variable only if the product binary is stamped
-// with test-only marker.
+// with test-only marker. The marker itself lives in `is_test_only_enabled` (utils.c)
+// to ensure there is only a single embedded copy in the binary.
 static bool test_only_getenv(const pal_char_t* name, pal_char_t* recv, size_t recv_len)
 {
-    enum { EMBED_SIZE = sizeof(TEST_ONLY_MARKER) / sizeof(TEST_ONLY_MARKER[0]) };
-    volatile static char embed[EMBED_SIZE] = TEST_ONLY_MARKER;
-
-    if (embed[0] != 'e')
+    if (!is_test_only_enabled())
         return false;
 
     return pal_getenv(name, recv, recv_len);
