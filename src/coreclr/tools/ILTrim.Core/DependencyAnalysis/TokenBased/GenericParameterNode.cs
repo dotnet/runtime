@@ -29,10 +29,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             GenericParameter genericParam = _module.MetadataReader.GetGenericParameter(Handle);
 
-            DependencyList dependencies = new DependencyList();
+            DependencyList dependencies = null;
 
             foreach (var genericParamConstrain in genericParam.GetConstraints())
             {
+                dependencies ??= new DependencyList();
                 dependencies.Add(factory.GenericParameterConstraint(_module, genericParamConstrain), "Generic Parameter Constraint of Generic Parameter");
             }
 
