@@ -427,7 +427,7 @@ void InvokeCalliStub(CalliStubParam* pParam)
     ((void(*)(PCODE, int8_t*, int8_t*))pParam->cookie)(actualFtn, pParam->pArgs, pParam->pRet);
 }
 
-void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
+void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet)
 {
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
@@ -775,7 +775,7 @@ void InvokeManagedMethod(ManagedMethodParam *pParam)
         cookie = pParam->pMD->GetCalliCookie();
     }
 
-    CalliStubParam param = { pParam->target == NULL ? pParam->pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : pParam->target, (void*)cookie, pParam->pArgs, pParam->pRet, pParam->pContinuationRet };
+    CalliStubParam param = { pParam->target == NULL ? pParam->pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : pParam->target, cookie, pParam->pArgs, pParam->pRet, pParam->pContinuationRet };
     InvokeCalliStub(&param);
 }
 

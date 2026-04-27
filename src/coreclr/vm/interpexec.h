@@ -133,7 +133,7 @@ struct ManagedMethodParam
 struct CalliStubParam
 {
     PCODE ftn;
-    void* cookie;
+    InterpreterCalliCookie cookie;
     int8_t *pArgs;
     int8_t *pRet;
     Object** pContinuationRet;

@@ -206,9 +206,9 @@ static size_t CreateDispatchTokenForMethod(MethodDesc* pMD)
 void InvokeManagedMethod(ManagedMethodParam *pParam);
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
 void InvokeCalliStub(CalliStubParam* pParam);
-void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet);
+void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam);
-void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
+InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
 // Filter to ignore SEH exceptions representing C++ exceptions.
@@ -287,7 +287,7 @@ void InvokeUnmanagedMethodWithTransition(UnmanagedMethodWithTransitionParam *pPa
 }
 
 NOINLINE
-void InvokeUnmanagedCalliWithTransition(PCODE ftn, void *cookie, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet)
+void InvokeUnmanagedCalliWithTransition(PCODE ftn, InterpreterCalliCookie cookie, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet)
 {
     CONTRACTL
     {
@@ -490,7 +490,7 @@ void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam)
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
 }
 
-void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
+void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet)
 {
     CONTRACTL
     {
@@ -549,7 +549,7 @@ void InvokeCalliStub(CalliStubParam* pParam)
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
 }
 
-void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
+InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -3029,7 +3029,7 @@ SWITCH_OPCODE:
                     int32_t calliCookie = ip[4];
                     int32_t flags = ip[5];
 
-                    void* cookie = pMethod->pDataItems[calliCookie];
+                    InterpreterCalliCookie cookie = (InterpreterCalliCookie)pMethod->pDataItems[calliCookie];
                     ip += 6;
 
                     // Save current execution state for when we return from called method
@@ -3073,14 +3073,14 @@ SWITCH_OPCODE:
                         if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
                             goto CALL_INTERP_METHOD;
 
-                        cookie = (void*)targetMethod->GetCalliCookie();
+                        cookie = targetMethod->GetCalliCookie();
                         if (cookie == NULL)
                         {
                             MetaSig sig(targetMethod);
                             cookie = GetCookieForCalliSig(sig, NULL);
                             _ASSERTE(cookie != NULL);
                             targetMethod->SetCalliCookie((InterpreterCalliCookie)cookie);
-                            cookie = (void*)targetMethod->GetCalliCookie();
+                            cookie = targetMethod->GetCalliCookie();
                         }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
                         frameNeedsTailcallUpdate = false;
