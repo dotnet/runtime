@@ -7331,8 +7331,9 @@ void CodeGen::genPatchpoint(GenTreeOp* treeNode)
     genEmitHelperCall(helper, 0, EA_UNKNOWN);
 
     // On non-x64 targets, mark the method as having tail calls so that
-    // return-address hijacking is disabled — the hijacker cannot know
-    // whether the return address has been modified by the patchpoint helper.
+    // return-address hijacking is disabled — after the jump the return
+    // address may have moved in the frame and unhijacking will write
+    // to the wrong slot.
     // On x64 this is unnecessary because the return address is always at
     // the same stack slot regardless of tail calls.
 #ifndef TARGET_XARCH
