@@ -5737,7 +5737,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         JITDUMP("--- delta bump %d for FP frame\n", codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta());
         delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
     }
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
     else
     {
         // FP is used.
@@ -5766,7 +5766,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         JITDUMP("--- delta bump %d for FP frame\n", delta);
     }
-#endif // !TARGET_LOONGARCH64 || !TARGET_RISCV64
+#endif // !TARGET_LOONGARCH64 || !TARGET_RISCV64 || TARGET_POWERPC64
 
     if (opts.IsOSR())
     {

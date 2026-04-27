@@ -242,3 +242,8 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 
 #endif
+#ifdef DEBUG
+const char* emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
+#endif
+
+size_t emitInsSize(instrDesc* id);

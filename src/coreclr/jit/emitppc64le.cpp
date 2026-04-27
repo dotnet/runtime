@@ -694,18 +694,36 @@ void emitter::emitIns_R_I(instruction ins,
                           insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */
                               DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
-    //TODO POWERPC64 vikas
-    //_ASSERTE(!"NYI POWERPC64");
-    
     instrDesc* id = emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
     id->idReg1(reg);
+    
+    // Set instruction format based on instruction type
+    insFormat fmt = IF_NONE;
+    switch (ins)
+    {
+        case INS_li:
+            fmt = IF_RI_1A;  // li rD, imm16
+            break;
+        case INS_lis:
+            fmt = IF_RI_1B;  // lis rD, imm16
+            break;
+        case INS_cmpwi:
+            fmt = IF_RRI_1A; // cmpwi crD, rA, imm16
+            break;
+        default:
+            fmt = IF_RI_1C;  // Generic register-immediate (addi, etc.)
+            break;
+    }
+    id->idInsFmt(fmt);
+    
     appendToCurIG(id);
 }
 
-/*****************************************************************************
- *
+
+
+ /*
  *  Add an instruction referencing two registers
  */
 
@@ -727,18 +745,19 @@ void emitter::emitIns_R_R(instruction     ins,
     {
         case INS_mov:
             // Move register - mr rA, rS (actually or rA, rS, rS)
-            fmt = IF_NONE;  // Will set proper format later
+            fmt = IF_RR_1A;  // Will set proper format later
             break;
             
 	case INS_cmpd:
     	case INS_cmpw:
             // Comparison instructions - these are X-form instructions
             // cmpd rA, rB compares two registers
-            fmt = IF_NONE;  // Will set proper format later
+            fmt = IF_RR_2B;  // Will set proper format later
             break;
             
 	default:
-	    abort();
+	    fmt = IF_RR_2A;
+	    break;
     }
 
     // Create instruction descriptor AFTER the switch (like ARM64 does)
@@ -749,7 +768,7 @@ void emitter::emitIns_R_R(instruction     ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
     // TODO TARGET_POWERPC64 - Not using Instruction Formats yet
-    //id->idInsFmt(fmt);
+    id->idInsFmt(fmt);
     
     dispIns(id);
     appendToCurIG(id);
@@ -766,7 +785,14 @@ void emitter::emitIns_R_R_I(instruction ins,
                             regNumber   reg2,
                             ssize_t     imm,
                             insOpts     opt /* = INS_OPTS_NONE */)
-{
+{   
+	
+    // Debug: Print when we see negative offsets with r31
+    if (reg2 == REG_R31 && imm < 0 && (ins == INS_stw || ins == INS_lwz))
+    {
+        printf("DEBUG: %s with negative offset %d from r31\n", 
+               ins == INS_stw ? "stw" : "lwz", (int)imm);
+    }
     // Validate registers
     assert(isGeneralRegister(reg1));
     assert(isGeneralRegister(reg2));
@@ -792,7 +818,42 @@ void emitter::emitIns_R_R_I(instruction ins,
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
+    // Set instruction format based on instruction type
+    insFormat fmt = IF_NONE;
+    switch (ins)
+    {
+        case INS_lwz:
+            fmt = IF_LS_2A;  // lwz rD, disp(rA)
+            break;
+        case INS_stw:
+            fmt = IF_LS_2B;  // stw rS, disp(rA)
+            break;
+        case INS_ld:
+            fmt = IF_LS_2C;  // ld rD, disp(rA)
+            break;
+        case INS_std:
+            fmt = IF_LS_2D;  // std rS, disp(rA)
+            break;
+        case INS_lwa:
+            fmt = IF_LS_2E;  // lwa rD, disp(rA)
+            break;
+        case INS_stdu:
+            fmt = IF_LS_2F;  // stdu rS, disp(rA)
+            break;
+        case INS_addi:
+            fmt = IF_RI_1C;  // addi rD, rA, imm16
+            break;
+        case INS_ori:
+        case INS_oris:
+            fmt = IF_RI_1D;  // ori rD, rA, imm16
+            break;
+        default:
+            fmt = IF_RI_1C;  // Generic register-register-immediate
+            break;
+    }
+    id->idInsFmt(fmt);
     appendToCurIG(id);
+
 }
 
 void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
@@ -806,12 +867,27 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNu
     //TODO POWERPC64 vikas
     _ASSERTE(!"NYI POWERPC64");
 }
-
 void emitter::emitIns(instruction ins)
 {
     instrDesc* id = emitNewInstr(EA_8BYTE);
 
     id->idIns(ins);
+    
+    // Set instruction format
+    insFormat fmt = IF_NONE;
+    switch (ins)
+    {
+        case INS_nop:
+            fmt = IF_SR_1D;  // nop
+            break;
+        case INS_blr:
+            fmt = IF_SR_1C;  // blr
+            break;
+        default:
+            fmt = IF_NONE;
+            break;
+    }
+    id->idInsFmt(fmt);
 
     appendToCurIG(id);
 }
@@ -833,17 +909,33 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt /* = INS_OPTS_NONE */)
 {
-
     // For now, just create the instruction descriptor
     // We'll implement actual encoding later
     instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
     id->idReg1(reg);
-    // TODO TARGET_POWERPC64 - Not using Instruction Formats yet
-    //id->idInsFmt(IF_NONE);
+    
+    // Set instruction format based on instruction type
+    insFormat fmt = IF_NONE;
+    switch (ins)
+    {
+        case INS_mflr:
+            fmt = IF_SR_1A;  // mflr rD
+            break;
+        case INS_mtlr:
+            fmt = IF_SR_1B;  // mtlr rS
+            break;
+        case INS_blr:
+            fmt = IF_SR_1C;  // blr
+            break;
+        default:
+            fmt = IF_NONE;
+            break;
+    }
+    id->idInsFmt(fmt);
+    
     appendToCurIG(id);
 }
-
 // clang-format off 
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
@@ -1211,7 +1303,44 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     *dp = dst;
     return emitSizeOfInsDsc(id);
 }
-
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// emitDisInsName: Display the instruction name for the given instruction.
+//
+const char* emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
+{
+    instruction ins = id->idIns();
+    
+    switch (ins)
+    {
+        case INS_li:      return "li      ";
+        case INS_lis:     return "lis     ";
+        case INS_ori:     return "ori     ";
+        case INS_addi:    return "addi    ";
+        case INS_mov:     return "mr      ";
+        case INS_stw:     return "stw     ";
+        case INS_lwz:     return "lwz     ";
+        case INS_lwa:     return "lwa     ";
+        case INS_std:     return "std     ";
+        case INS_ld:      return "ld      ";
+        case INS_stdu:    return "stdu    ";
+        case INS_cmpw:    return "cmpw    ";
+        case INS_cmpwi:   return "cmpwi   ";
+        case INS_beq:     return "beq     ";
+        case INS_bne:     return "bne     ";
+        case INS_b:       return "b       ";
+        case INS_bl:      return "bl      ";
+        case INS_blr:     return "blr     ";
+        case INS_mflr:    return "mflr    ";
+        case INS_mtlr:    return "mtlr    ";
+        case INS_nop:     return "nop     ";
+        case INS_sldi:    return "sldi    ";
+        case INS_oris:    return "oris    ";
+        
+        default:
+            return "???     ";
+    }
+}
 void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 {
     insFormat fmt = IF_NONE;
@@ -1317,7 +1446,107 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 void emitter::emitDispIns(
 		    instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    //_ASSERTE(!"NYI");
+    if (!emitComp->verbose)
+        return;
+
+    code_t code = 0;
+    if (pCode != nullptr && sz == 4)
+    {
+        code = *((code_t*)pCode);
+    }
+
+    if (doffs)
+    {
+        printf(" ?????????");
+    }
+    else
+    {
+        printf("            ");
+    }
+
+    if (code != 0)
+    {
+        printf("  %08X", code);
+    }
+    else
+    {
+        printf("          ");
+    }
+
+    const char* insName = emitDisInsName(code, pCode, id);
+    printf("  %s", insName);
+
+    instruction ins = id->idIns();
+    
+    switch (ins)
+    {
+        case INS_li:
+        case INS_lis:
+            printf("r%d, %d", id->idReg1(), (int)emitGetInsSC(id));
+            break;
+            
+        case INS_ori:
+        case INS_addi:
+        case INS_oris:
+        case INS_sldi:
+            printf("r%d, r%d, %d", id->idReg1(), id->idReg2(), (int)emitGetInsSC(id));
+            break;
+            
+        case INS_mov:
+        case INS_cmpw:
+            printf("r%d, r%d", id->idReg1(), id->idReg2());
+            break;
+            
+        case INS_stw:
+        case INS_lwz:
+        case INS_lwa:
+        case INS_std:
+        case INS_ld:
+        case INS_stdu:
+            printf("r%d, %d(r%d)", id->idReg1(), (int)emitGetInsSC(id), id->idReg2());
+            break;
+            
+        case INS_cmpwi:
+            printf("cr0, r%d, %d", id->idReg1(), (int)emitGetInsSC(id));
+            break;
+            
+        case INS_beq:
+        case INS_bne:
+        case INS_b:
+            if (id->idIsBound())
+            {
+                instrDescJmp* jmp = (instrDescJmp*)id;
+                printf("%+d", (int)jmp->idjOffs);
+            }
+            else
+            {
+                printf("<unbound>");
+            }
+            break;
+            
+        case INS_mflr:
+        case INS_mtlr:
+            printf("r%d", id->idReg1());
+            break;
+            
+        case INS_blr:
+        case INS_nop:
+            break;
+            
+        default:
+            printf("???");
+            break;
+    }
+    
+    printf("\n");
+}
+
+//------------------------------------------------------------------------
+// emitInsSize: Returns the size in bytes of the given instruction descriptor
+//
+size_t emitter::emitInsSize(instrDesc* id)
+{
+    return 4; // All PowerPC instructions are 4 bytes
 }
 
 /*****************************************************************************
@@ -1489,5 +1718,5 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     _ASSERTE(!"NYI");
 }
 #endif // FEATURE_SIMD
-
+#endif
 #endif //TARGET_POWERPC64
