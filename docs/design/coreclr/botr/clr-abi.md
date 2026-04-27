@@ -720,6 +720,126 @@ Structs are generally returned via hidden buffers, whose address is supplied by 
 
 (TBD: ABI for vector types)
 
+### Type Lowering
+
+Managed types are lowered to WebAssembly value types according to the following rules
+(implemented in `WasmLowering.LowerToAbiType` and `WasmLowering.LowerType`):
+
+| Managed type | Wasm value type |
+|---|---|
+| `bool`, `char`, `sbyte`, `byte`, `short`, `ushort`, `int`, `uint` | `i32` |
+| `long`, `ulong` | `i64` |
+| `float` | `f32` |
+| `double` | `f64` |
+| `nint`, `nuint`, pointer, byref, function pointer | `i32` (pointer-sized) |
+| Reference types (class, string, array, szarray, interface) | `i32` (pointer-sized) |
+| Value type (struct) — single primitive field, no padding | Unwrap recursively to the field's wasm type |
+| Value type (struct) — single field with padding, or multiple fields | Passed by reference (`i32` pointer) |
+| Empty struct (zero instance fields) | Elided from the signature entirely |
+
+**Struct unwrapping** is recursive: a struct containing a single struct field, where the inner struct
+has the same size as the outer, is unwrapped until a primitive is reached or the rule no longer applies.
+For example, a struct `Wrapper { Inner value; }` where `Inner { int x; }` is unwrapped all the way
+to `i32`.
+
+A struct is **not** unwrapped when:
+- It has more than one instance field.
+- It has exactly one instance field but the field's size differs from the struct's size (i.e., the
+  struct has padding due to explicit layout or alignment attributes).
+
+Structs that cannot be unwrapped are passed by reference. The caller allocates space on the linear
+stack and passes a pointer. For return values, the caller provides a hidden return buffer pointer
+(see Signature Encoding below).
+
+### Signature String Encoding
+
+Every managed method signature is encoded as a compact string that uniquely identifies its
+lowered Wasm calling convention. This encoding is shared across three codebases:
+
+- **crossgen2** (`WasmLowering.GetSignature`): reference implementation, produces the string
+  during R2R compilation.
+- **WasmAppBuilder** (`SignatureMapper`): MSBuild task that generates interpreter-to-native
+  thunk tables from reflection metadata.
+- **CoreCLR runtime** (`helpers.cpp`, `GetSignatureKey`): runtime signature computation for
+  calli and portable entrypoint thunks.
+
+The string format is:
+
+```
+<return> [<this>] [<hidden-params>...] <explicit-params>... [p]
+```
+
+**Return type** (first character):
+
+| Encoding | Meaning |
+|---|---|
+| `v` | void return, or empty struct return (no return buffer) |
+| `i` | returns `i32` |
+| `l` | returns `i64` |
+| `f` | returns `f32` |
+| `d` | returns `f64` |
+| `S<N>` | struct return via hidden buffer, `N` is the struct size in bytes |
+
+**This pointer** (if the method has a `this` parameter):
+
+| Encoding | Meaning |
+|---|---|
+| `T` | `this` pointer (managed instance methods) |
+
+**Hidden parameters** (inserted between `this` and explicit parameters, in order):
+
+1. **Generic context** (`i`): present when the method requires an inst method desc or
+   method table argument.
+2. **Async continuation** (`i`): present for async calls.
+
+Note: the hidden return buffer pointer is **not** encoded in the signature string. Its
+presence is implied by the return type being `S<N>` — when the caller sees a struct return,
+it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
+
+**Explicit parameters** (one token per parameter, in declaration order):
+
+| Encoding | Meaning |
+|---|---|
+| `i` | `i32` parameter |
+| `l` | `i64` parameter |
+| `f` | `f32` parameter |
+| `d` | `f64` parameter |
+| `S<N>` | struct parameter passed by reference, `N` is the struct size in bytes |
+| `e` | empty struct parameter — elided from Wasm args but present in the string |
+
+**Suffix**:
+
+| Encoding | Meaning |
+|---|---|
+| `p` | managed call with portable entrypoint (the `&pe` argument is implicit) |
+| *(absent)* | unmanaged callers only (reverse P/Invoke) |
+
+**Prefix** (applied by the caller, not part of the core encoding):
+
+When storing signature strings in thunk lookup tables, callers prepend a single-character
+prefix to distinguish thunk categories:
+
+| Prefix | Meaning |
+|---|---|
+| `M` | Calli thunk or interpreter-to-native thunk |
+| `I` | Portable entrypoint-to-interpreter thunk |
+
+**Examples**:
+
+| Method | Signature string (no prefix) |
+|---|---|
+| `static void F()` | `vp` |
+| `static int F(int x)` | `iip` |
+| `void F(int x)` (instance) | `vTip` |
+| `static MyStruct F()` where `MyStruct` is 16 bytes | `S16p` |
+| `static void F(MyStruct s)` where `MyStruct` is 8 bytes | `vS8p` |
+| `static int F(float x, double y)` | `ifdp` |
+| `[UnmanagedCallersOnly] static int F(int x)` | `ii` |
+
+**Slot sizing for structs**: When computing interpreter stack layout, struct parameters
+(`S<N>`) consume `max(N / 8, 1)` interpreter stack slots, while all other parameter types
+consume exactly 1 slot.
+
 ### Prolog
 
 The prolog will decrement the stack pointer by the fixed frame size, home any arguments that are stored on the linear stack, and zero initialize slots on the linear stack as appropriate. It will establish a frame pointer if one is needed.

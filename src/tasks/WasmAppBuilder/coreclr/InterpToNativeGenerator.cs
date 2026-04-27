@@ -140,7 +140,7 @@ internal sealed class InterpToNativeGenerator
                 bool isPortableEntryPointCall = IsPortableEntryPointCall(tokens);
                 if (isPortableEntryPointCall)
                     tokens.RemoveAt(tokens.Count - 1);
-                return $"    {{ \"{initialSignature}\", (void*)&{CallFuncName(Args(tokens), SignatureMapper.TokenToNameType(tokens[0]), isPortableEntryPointCall)} }}";
+                return $"    {{ \"M{initialSignature}\", (void*)&{CallFuncName(Args(tokens), SignatureMapper.TokenToNameType(tokens[0]), isPortableEntryPointCall)} }}";
             }
             )}}
             };

@@ -151,7 +151,7 @@ internal static class SignatureMapper
 
         if (includeThis && !method.IsStatic)
         {
-            sb.Append('i');
+            sb.Append('T');
         }
 
         foreach (var parameter in method.GetParameters())
@@ -203,6 +203,7 @@ internal static class SignatureMapper
         'f' => "float",
         'd' => "double",
         'S' => "int32_t",
+        'T' => "int32_t",
         'p' => "PCODE",
         _ => throw new InvalidSignatureCharException(token[0])
     };
@@ -215,6 +216,7 @@ internal static class SignatureMapper
         'f' => "F32",
         'd' => "F64",
         'S' => token, // e.g. "S8", "S64" — encodes size in the name
+        'T' => "I32",
         'p' => "PE",
         _ => throw new InvalidSignatureCharException(token[0])
     };
@@ -226,6 +228,7 @@ internal static class SignatureMapper
         'f' => "ARG_F32",
         'd' => "ARG_F64",
         'S' => "ARG_IND",
+        'T' => "ARG_I32",
         _ => throw new InvalidSignatureCharException(token[0])
     };
 

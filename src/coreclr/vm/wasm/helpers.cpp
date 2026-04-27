@@ -286,20 +286,20 @@ namespace
 }
 
 const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
-    { "vp", (void*)&CallInterpreter_RetVoid },
-    { "vip", (void*)&CallInterpreter_I32_RetVoid },
-    { "viip", (void*)&CallInterpreter_I32_I32_RetVoid },
-    { "viiip", (void*)&CallInterpreter_I32_I32_I32_RetVoid },
-    { "viiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetVoid },
-    { "ip", (void*)&CallInterpreter_RetI32 },
-    { "iip", (void*)&CallInterpreter_I32_RetI32 },
-    { "iiip", (void*)&CallInterpreter_I32_I32_RetI32 },
-    { "iiiip", (void*)&CallInterpreter_I32_I32_I32_RetI32 },
-    { "iiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetI32 },
-    { "iiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_RetI32 },
-    { "iiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "iiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "iiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
+    { "Ivp", (void*)&CallInterpreter_RetVoid },
+    { "Ivip", (void*)&CallInterpreter_I32_RetVoid },
+    { "Iviip", (void*)&CallInterpreter_I32_I32_RetVoid },
+    { "Iviiip", (void*)&CallInterpreter_I32_I32_I32_RetVoid },
+    { "Iviiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetVoid },
+    { "Iip", (void*)&CallInterpreter_RetI32 },
+    { "Iiip", (void*)&CallInterpreter_I32_RetI32 },
+    { "Iiiip", (void*)&CallInterpreter_I32_I32_RetI32 },
+    { "Iiiiip", (void*)&CallInterpreter_I32_I32_I32_RetI32 },
+    { "Iiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetI32 },
+    { "Iiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_RetI32 },
+    { "Iiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32 },
+    { "Iiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32 },
+    { "Iiiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
 };
 
 const size_t g_wasmPortableEntryPointThunksCount = sizeof(g_wasmPortableEntryPointThunks) / sizeof(g_wasmPortableEntryPointThunks[0]);
@@ -759,12 +759,73 @@ namespace
         NotConvertible,
         ToI32,
         ToI64,
-        ToI32Indirect,
         ToF32,
-        ToF64
+        ToF64,
+        ToStruct,   // S<N> — multi-field struct passed by pointer, structSize holds the size
+        ToEmpty,    // e — empty struct, takes no wasm argument
     };
 
-    ConvertType ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
+    struct ConvertResult
+    {
+        ConvertType type;
+        uint32_t structSize; // only meaningful when type == ToStruct
+    };
+
+    // Lowers a TypeHandle to a ConvertResult, unwrapping single-field structs
+    // per the BasicCABI spec.
+    ConvertResult LowerTypeHandle(TypeHandle th)
+    {
+        uint32_t size = th.GetSize();
+
+        if (th.IsTypeDesc() || !th.AsMethodTable()->IsValueType())
+        {
+            // Non-valuetype or TypeDesc — fall through to element type mapping
+            CorElementType elemType = th.GetSignatureCorElementType();
+            switch (elemType)
+            {
+                case ELEMENT_TYPE_I4: case ELEMENT_TYPE_U4:
+                case ELEMENT_TYPE_I2: case ELEMENT_TYPE_U2:
+                case ELEMENT_TYPE_I1: case ELEMENT_TYPE_U1:
+                case ELEMENT_TYPE_BOOLEAN: case ELEMENT_TYPE_CHAR:
+                case ELEMENT_TYPE_I: case ELEMENT_TYPE_U:
+                case ELEMENT_TYPE_PTR: case ELEMENT_TYPE_BYREF:
+                case ELEMENT_TYPE_FNPTR:
+                case ELEMENT_TYPE_CLASS: case ELEMENT_TYPE_STRING:
+                case ELEMENT_TYPE_ARRAY: case ELEMENT_TYPE_SZARRAY:
+                    return { ConvertType::ToI32, 0 };
+                case ELEMENT_TYPE_I8: case ELEMENT_TYPE_U8:
+                    return { ConvertType::ToI64, 0 };
+                case ELEMENT_TYPE_R4:
+                    return { ConvertType::ToF32, 0 };
+                case ELEMENT_TYPE_R8:
+                    return { ConvertType::ToF64, 0 };
+                default:
+                    return { ConvertType::NotConvertible, 0 };
+            }
+        }
+
+        MethodTable* pMT = th.AsMethodTable();
+        uint32_t numInstanceFields = pMT->GetNumInstanceFields();
+
+        // WASM-TODO: Empty structs should return ToEmpty once .NET
+        // stops padding them to size 1. See runtime issue #127361.
+
+        if (numInstanceFields == 1)
+        {
+            FieldDesc* pField = pMT->GetApproxFieldDescListRaw();
+            TypeHandle fieldType = pField->GetApproxFieldTypeHandleThrowing();
+            if (fieldType.GetSize() == size)
+            {
+                // Single field, no padding — unwrap recursively
+                return LowerTypeHandle(fieldType);
+            }
+            // One field with padding — treat as multi-field struct
+        }
+
+        return { ConvertType::ToStruct, size };
+    }
+
+    ConvertResult ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
     {
         // See https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
         switch (argType)
@@ -786,61 +847,69 @@ namespace
             case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_FNPTR:
             case ELEMENT_TYPE_SZARRAY:
-                return ConvertType::ToI32;
+                return { ConvertType::ToI32, 0 };
             case ELEMENT_TYPE_I8:
             case ELEMENT_TYPE_U8:
-                return ConvertType::ToI64;
+                return { ConvertType::ToI64, 0 };
             case ELEMENT_TYPE_R4:
-                return ConvertType::ToF32;
+                return { ConvertType::ToF32, 0 };
             case ELEMENT_TYPE_R8:
-                return ConvertType::ToF64;
+                return { ConvertType::ToF64, 0 };
             case ELEMENT_TYPE_TYPEDBYREF:
-                // Typed references are passed indirectly in WASM since they are larger than pointer size.
-                return ConvertType::ToI32Indirect;
             case ELEMENT_TYPE_VALUETYPE:
             {
-                // In WASM, values types that are larger than pointer size or have multiple fields are passed indirectly.
-                // WASM-TODO: Single fields may not always be passed as i32. Floats and doubles are passed as f32 and f64 respectively.
                 TypeHandle vt = isReturn
                     ? sig.GetRetTypeHandleThrowing()
                     : sig.GetLastTypeHandleThrowing();
-
-                if (!vt.IsTypeDesc()
-                    && vt.AsMethodTable()->GetNumInstanceFields() >= 2)
-                {
-                    return ConvertType::ToI32Indirect;
-                }
-
-                return vt.GetSize() <= sizeof(uint32_t)
-                    ? ConvertType::ToI32
-                    : ConvertType::ToI32Indirect;
+                return LowerTypeHandle(vt);
             }
             default:
-                return ConvertType::NotConvertible;
+                return { ConvertType::NotConvertible, 0 };
         }
     }
 
-    char GetTypeCode(ConvertType type)
+    // Appends the encoding for a ConvertResult to keyBuffer.
+    // Returns the number of characters that would be written (even if pos >= maxSize).
+    // Only writes characters while pos < maxSize.
+    uint32_t AppendTypeCode(ConvertResult cr, char* keyBuffer, uint32_t pos, uint32_t maxSize)
     {
-        switch (type)
+        char c;
+        switch (cr.type)
         {
-            case ConvertType::ToI32:
-                return 'i';
-            case ConvertType::ToI64:
-                return 'l';
-            case ConvertType::ToF32:
-                return 'f';
-            case ConvertType::ToF64:
-                return 'd';
-            case ConvertType::ToI32Indirect:
-                return 'n';
+            case ConvertType::ToI32:       c = 'i'; break;
+            case ConvertType::ToI64:       c = 'l'; break;
+            case ConvertType::ToF32:       c = 'f'; break;
+            case ConvertType::ToF64:       c = 'd'; break;
+            case ConvertType::ToEmpty:     c = 'e'; break;
+            case ConvertType::ToStruct:
+            {
+                // Encode as S<N> where N is the struct size in decimal
+                char sizeBuf[16];
+                int len = sprintf_s(sizeBuf, sizeof(sizeBuf), "S%u", cr.structSize);
+                for (int j = 0; j < len; j++)
+                {
+                    if (pos + (uint32_t)j < maxSize)
+                        keyBuffer[pos + (uint32_t)j] = sizeBuf[j];
+                }
+                return (uint32_t)len;
+            }
             default:
                 PORTABILITY_ASSERT("Unknown type");
-                return '?';
+                c = '?';
+                break;
         }
+
+        if (pos < maxSize)
+            keyBuffer[pos] = c;
+
+        return 1;
     }
 
-    bool GetSignatureKey(MetaSig& sig, char* keyBuffer, uint32_t maxSize)
+    // Computes the signature key string for a MetaSig.
+    // Returns the total number of characters needed (excluding null terminator).
+    // Only writes characters while pos < maxSize, so the buffer is never overflowed.
+    // Callers should check if the return value >= maxSize and retry with a larger buffer.
+    uint32_t GetSignatureKey(MetaSig& sig, char prefix, char* keyBuffer, uint32_t maxSize)
     {
         CONTRACTL
         {
@@ -852,43 +921,53 @@ namespace
 
         uint32_t pos = 0;
 
+        if (pos < maxSize)
+            keyBuffer[pos] = prefix;
+        pos++;
+
         if (sig.IsReturnTypeVoid())
         {
-            keyBuffer[pos++] = 'v';
+            if (pos < maxSize)
+                keyBuffer[pos] = 'v';
+            pos++;
         }
         else
         {
-            keyBuffer[pos++] = GetTypeCode(ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */));
+            ConvertResult cr = ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */);
+            if (cr.type == ConvertType::NotConvertible)
+                return UINT32_MAX;
+            pos += AppendTypeCode(cr, keyBuffer, pos, maxSize);
         }
 
         if (sig.HasThis())
-            keyBuffer[pos++] = 'i';
+        {
+            if (pos < maxSize)
+                keyBuffer[pos] = 'T';
+            pos++;
+        }
 
         for (CorElementType argType = sig.NextArg();
             argType != ELEMENT_TYPE_END;
             argType = sig.NextArg())
         {
-            if (pos >= maxSize)
-                return false;
-
-            keyBuffer[pos++] = GetTypeCode(ConvertibleTo(argType, sig, false /* isReturn */));
+            ConvertResult cr = ConvertibleTo(argType, sig, false /* isReturn */);
+            if (cr.type == ConvertType::NotConvertible)
+                return UINT32_MAX;
+            pos += AppendTypeCode(cr, keyBuffer, pos, maxSize);
         }
 
         // Add the portable entrypoint parameter
         if (sig.GetCallingConvention() == IMAGE_CEE_CS_CALLCONV_DEFAULT)
         {
-            if (pos >= maxSize)
-                return false;
-
-            keyBuffer[pos++] = 'p';
+            if (pos < maxSize)
+                keyBuffer[pos] = 'p';
+            pos++;
         }
 
-        if (pos >= maxSize)
-            return false;
+        if (pos < maxSize)
+            keyBuffer[pos] = 0;
 
-        keyBuffer[pos] = 0;
-
-        return true;
+        return pos;
     }
 
     typedef StringToThunkHash StringToWasmSigThunkHash;
@@ -932,10 +1011,21 @@ namespace
                 return NULL;
         }
 
-        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2 + ((callConv == IMAGE_CEE_CS_CALLCONV_DEFAULT) ? 1 : 0);
+        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2 + ((callConv == IMAGE_CEE_CS_CALLCONV_DEFAULT) ? 1 : 0) + 1; // +1 for prefix
         char* keyBuffer = (char*)alloca(keyBufferLen);
-        if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
+        uint32_t needed = GetSignatureKey(sig, 'M', keyBuffer, keyBufferLen);
+        if (needed == UINT32_MAX)
             return NULL;
+        if (needed >= keyBufferLen)
+        {
+            // S<N> tokens made the key longer than the initial estimate — retry with exact size
+            keyBufferLen = needed + 1;
+            keyBuffer = (char*)alloca(keyBufferLen);
+            sig.Reset();
+            needed = GetSignatureKey(sig, 'M', keyBuffer, keyBufferLen);
+            if (needed == UINT32_MAX || needed >= keyBufferLen)
+                return NULL;
+        }
 
         void* thunk = LookupThunk(keyBuffer);
 #ifdef _DEBUG
@@ -966,10 +1056,21 @@ namespace
             default:
                 return NULL;
         }
-        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2 + 1; // +1 for the 'p' suffix to indicate portable entry point
+        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2 + 1 + 1; // +1 for 'p' suffix, +1 for prefix
         char* keyBuffer = (char*)alloca(keyBufferLen);
-        if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
+        uint32_t needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+        if (needed == UINT32_MAX)
             return NULL;
+        if (needed >= keyBufferLen)
+        {
+            // S<N> tokens made the key longer than the initial estimate — retry with exact size
+            keyBufferLen = needed + 1;
+            keyBuffer = (char*)alloca(keyBufferLen);
+            sig.Reset();
+            needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+            if (needed == UINT32_MAX || needed >= keyBufferLen)
+                return NULL;
+        }
 
         void* thunk = LookupPortableEntryPointThunk(keyBuffer);
 #ifdef _DEBUG
