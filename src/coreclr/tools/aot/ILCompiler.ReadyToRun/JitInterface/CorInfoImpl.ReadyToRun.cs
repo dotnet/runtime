@@ -3558,7 +3558,12 @@ namespace Internal.JitInterface
 
                 WasmSignature wasmSig = WasmLowering.GetSignature(sig, flags);
 
-                AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                // Only create R2R-to-interpreter thunks for managed calls.
+                // Unmanaged calls don't go through the interpreter transition.
+                if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
+                {
+                    AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                }
             }
         }
     }

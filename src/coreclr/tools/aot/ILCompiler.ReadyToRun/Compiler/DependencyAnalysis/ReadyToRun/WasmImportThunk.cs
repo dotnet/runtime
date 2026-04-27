@@ -183,7 +183,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // This allows us to:
             //   - Skip empty struct params (no wasm local exists)
             //   - Zero-fill indirect struct params instead of copying the byref pointer
+            bool hasThis = !methodSignature.IsStatic;
             int wasmLocalIndex = 1; // local 0 is $sp
+
+            // Store 'this' pointer if present — it occupies a wasm local but is not in the raised MethodSignature params
+            if (hasThis)
+            {
+                expressions.Add(Local.Get(0));
+                expressions.Add(Local.Get(wasmLocalIndex));
+                expressions.Add(I32.Store((ulong)transitionBlock.ThisOffset));
+                wasmLocalIndex++;
+            }
+
             for (int i = 0; i < methodSignature.Length; i++)
             {
                 TypeDesc paramType = methodSignature[i];
@@ -282,6 +293,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // In the calling convention, the first arg is the sp arg, and the last is the portable entrypoint arg. Each of those are treated specially
             // Iterate over the raised MethodSignature params to handle indirect/empty structs correctly
             wasmLocalIndex = 1;
+
+            // Restore 'this' pointer if present
+            if (hasThis)
+            {
+                expressions.Add(Local.Get(0));
+                expressions.Add(I32.Load((ulong)transitionBlock.ThisOffset));
+                wasmLocalIndex++;
+            }
+
             for (int i = 0; i < methodSignature.Length; i++)
             {
                 TypeDesc paramType = methodSignature[i];

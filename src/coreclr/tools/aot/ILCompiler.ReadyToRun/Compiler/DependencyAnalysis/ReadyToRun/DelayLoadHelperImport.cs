@@ -41,7 +41,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _useJumpableStub = useJumpableStub;
             if (factory.Target.Architecture == TargetArchitecture.Wasm32)
             {
-                _delayLoadHelper = factory.WasmImportThunkPortableEntrypoint(this);
+                if (instanceSignature is GenericLookupSignature)
+                {
+                    // Generic lookups are resolved via eager fixups and don't need import thunks
+                    _delayLoadHelper = null;
+                }
+                else
+                {
+                    _delayLoadHelper = factory.WasmImportThunkPortableEntrypoint(this);
+                }
             }
             else
             {
@@ -74,10 +82,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
-            // This needs to be an empty target pointer since it will be filled in with Module*
-            // when loaded by CoreCLR
-            dataBuilder.EmitReloc(_delayLoadHelper,
-                factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64, factory.Target.CodeDelta);
+            if (_delayLoadHelper is not null)
+            {
+                // This needs to be an empty target pointer since it will be filled in with Module*
+                // when loaded by CoreCLR
+                dataBuilder.EmitReloc(_delayLoadHelper,
+                    factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64, factory.Target.CodeDelta);
+            }
+            else
+            {
+                // Eager fixups don't need a delay load helper thunk — emit a zero pointer
+                dataBuilder.EmitNaturalInt(0);
+            }
 
             if (Table.EntrySize == (factory.Target.PointerSize * 2))
             {
@@ -91,9 +107,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            return new DependencyListEntry[] 
+            if (_delayLoadHelper is not null)
             {
-                new DependencyListEntry(_delayLoadHelper, "Delay load helper thunk for ready-to-run fixup import"),
+                return new DependencyListEntry[]
+                {
+                    new DependencyListEntry(_delayLoadHelper, "Delay load helper thunk for ready-to-run fixup import"),
+                    new DependencyListEntry(ImportSignature, "Signature for ready-to-run fixup import"),
+                };
+            }
+
+            return new DependencyListEntry[]
+            {
                 new DependencyListEntry(ImportSignature, "Signature for ready-to-run fixup import"),
             };
         }

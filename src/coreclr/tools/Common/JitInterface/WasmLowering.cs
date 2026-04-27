@@ -173,6 +173,7 @@ namespace Internal.JitInterface
 
             // Parse return type
             TypeDesc returnType;
+            bool hasReturnBuffer = false;
             if (sig[pos] == 'v')
             {
                 returnType = context.GetWellKnownType(WellKnownType.Void);
@@ -181,7 +182,9 @@ namespace Internal.JitInterface
             else if (sig[pos] == 'S')
             {
                 int structSize = ParseStructSize(sig, ref pos);
-                returnType = ((CompilerTypeSystemContext)context).GetValueTupleStructOfSize(structSize);
+                returnType = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize);
+                Debug.Assert(returnType is not null, $"No cached struct of size {structSize} for return type in signature '{sig}'");
+                hasReturnBuffer = true;
             }
             else
             {
@@ -192,6 +195,7 @@ namespace Internal.JitInterface
             // Parse parameters (everything until 'p' suffix or end of string)
             List<TypeDesc> parameters = new List<TypeDesc>();
             bool hasThis = false;
+
             while (pos < sig.Length && sig[pos] != 'p')
             {
                 char c = sig[pos];
@@ -199,6 +203,13 @@ namespace Internal.JitInterface
                 {
                     // 'this' parameter — not added as explicit param, sets hasThis flag
                     hasThis = true;
+                    pos++;
+                }
+                else if (hasReturnBuffer)
+                {
+                    // The hidden retbuf pointer follows 'T' (or comes first if no 'T').
+                    // Skip it — GetSignature will re-add it based on the struct return type.
+                    hasReturnBuffer = false;
                     pos++;
                 }
                 else if (c == 'e')
@@ -212,7 +223,9 @@ namespace Internal.JitInterface
                 else if (c == 'S')
                 {
                     int structSize = ParseStructSize(sig, ref pos);
-                    parameters.Add(((CompilerTypeSystemContext)context).GetValueTupleStructOfSize(structSize));
+                    TypeDesc cachedStruct = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize);
+                    Debug.Assert(cachedStruct is not null, $"No cached struct of size {structSize} for parameter in signature '{sig}'");
+                    parameters.Add(cachedStruct);
                 }
                 else
                 {
@@ -231,8 +244,9 @@ namespace Internal.JitInterface
             MethodSignature result = new MethodSignature(flags, 0, returnType, parameters.ToArray());
 
             LoweringFlags relowerFlags = isManaged ? LoweringFlags.None : LoweringFlags.IsUnmanagedCallersOnly;
-            Debug.Assert(GetSignature(result, relowerFlags).Equals(wasmSignature),
-                "RaiseSignature produced a signature that does not roundtrip back to the same WasmSignature");
+            WasmSignature roundtripped = GetSignature(result, relowerFlags);
+            Debug.Assert(roundtripped.Equals(wasmSignature),
+                $"RaiseSignature roundtrip failed: input='{wasmSignature.SignatureString}', roundtripped='{roundtripped.SignatureString}'");
 
             return result;
         }
@@ -311,6 +325,7 @@ namespace Internal.JitInterface
                     int returnSize = returnType.GetElementSize().AsInt;
                     sigBuilder.Append('S');
                     sigBuilder.Append(returnSize);
+                    ((CompilerTypeSystemContext)returnType.Context).CacheStructBySize(returnType);
                 }
             }
             else if (loweredReturnType.IsVoid)
@@ -394,6 +409,7 @@ namespace Internal.JitInterface
                     sigBuilder.Append('S');
                     sigBuilder.Append(paramSize);
                     result.Add(pointerType);
+                    ((CompilerTypeSystemContext)paramType.Context).CacheStructBySize(paramType);
                 }
                 else
                 {

@@ -5,6 +5,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.ReadyToRunConstants;
 using Internal.Text;
 using Internal.JitInterface;
+using Internal.TypeSystem;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -81,7 +82,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else
             {
-                wasmSignature = WasmLowering.GetSignature(((MethodFixupSignature)(_import.Signature)).Method);
+                MethodDesc method = ((MethodFixupSignature)(_import.Signature)).Method;
+                // The import thunk always uses managed calling convention ($sp + PE entrypoint)
+                // even if the underlying method is UnmanagedCallersOnly, because the thunk is
+                // called from R2R-generated managed code.
+                WasmLowering.LoweringFlags flags = WasmLowering.GetLoweringFlags(method) & ~WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
+                wasmSignature = WasmLowering.GetSignature(method.Signature, flags);
             }
             builder.EmitReloc(factory.WasmImportThunk(wasmSignature, HelperId, _import.Table, UseVirtualCall, UseJumpableStub), tableIndexPointerRelocType);
             builder.EmitReloc(_import, RelocType.IMAGE_REL_BASED_ADDR32NB);

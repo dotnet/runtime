@@ -160,6 +160,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Store all arguments into the transition block area
             int wasmLocalIndex = 1; // local 0 is $sp
+
+            // Handle 'this' pointer — it occupies a wasm local but is not in methodSignature.Length
+            if (hasThis)
+            {
+                int thisOffset = transitionBlock.ThisOffset + argOffsetAdjustment;
+                expressions.Add(Local.Get(0));
+                expressions.Add(Local.Get(wasmLocalIndex));
+                expressions.Add(I32.Store((ulong)thisOffset));
+                wasmLocalIndex++;
+            }
+
+            // Hidden retbuf pointer occupies a wasm local but is not in methodSignature params
+            if (hasRetBuffArg)
+            {
+                wasmLocalIndex++;
+            }
+
             for (int i = 0; i < methodSignature.Length; i++)
             {
                 TypeDesc paramType = methodSignature[i];

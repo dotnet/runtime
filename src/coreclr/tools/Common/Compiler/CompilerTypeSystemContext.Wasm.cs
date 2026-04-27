@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Threading;
+using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
@@ -10,7 +9,8 @@ namespace ILCompiler
 {
     public partial class CompilerTypeSystemContext
     {
-        private volatile TypeDesc[] _valueTupleStructsBySize = Array.Empty<TypeDesc>();
+        private readonly object _structCacheLock = new object();
+        private readonly Dictionary<int, TypeDesc> _structsBySize = new Dictionary<int, TypeDesc>();
         private volatile TypeDesc _cachedEmptyStruct;
 
         /// <summary>
@@ -28,62 +28,35 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Gets or creates a value type of the specified byte size, constructed from
-        /// nested ValueTuple&lt;byte, ...&gt; types. Used by WasmLowering to represent
-        /// struct parameters/returns in raised signatures.
+        /// Caches a struct type by its element size, so RaiseSignature can retrieve a real
+        /// type of that size. Only the first struct encountered for a given size is retained.
         /// </summary>
-        /// <remarks>
-        /// Size 1 returns <c>byte</c>.
-        /// Size 2 returns <c>ValueTuple&lt;byte, byte&gt;</c>.
-        /// Size 5 returns <c>ValueTuple&lt;ValueTuple&lt;byte, byte&gt;, ValueTuple&lt;byte, ValueTuple&lt;byte, byte&gt;&gt;&gt;</c>.
-        /// Size N is split into halves: <c>ValueTuple&lt;(size N/2), (size N - N/2)&gt;</c>.
-        /// </remarks>
-        public TypeDesc GetValueTupleStructOfSize(int size)
+        public void CacheStructBySize(TypeDesc type)
         {
-            TypeDesc[] array = _valueTupleStructsBySize;
+            int size = type.GetElementSize().AsInt;
+            if (size <= 0)
+                return;
 
-            if (size < array.Length && array[size] is not null)
+            lock (_structCacheLock)
             {
-                return array[size];
+                _structsBySize.TryAdd(size, type);
             }
-
-            return GetValueTupleStructOfSizeSlow(size);
         }
 
-        private TypeDesc GetValueTupleStructOfSizeSlow(int size)
+        /// <summary>
+        /// Gets a previously cached struct type of the specified byte size.
+        /// Returns null if no struct of that size has been cached.
+        /// Used by RaiseSignature to produce a roundtrippable type for the 'S&lt;N&gt;' encoding.
+        /// </summary>
+        public TypeDesc GetCachedStructOfSize(int size)
         {
-            TypeDesc[] array = _valueTupleStructsBySize;
-
-            if (size >= array.Length)
+            lock (_structCacheLock)
             {
-                TypeDesc[] newArray = new TypeDesc[size + 1];
-                Array.Copy(array, newArray, array.Length);
-                _valueTupleStructsBySize = newArray;
-                array = newArray;
+                if (_structsBySize.TryGetValue(size, out TypeDesc result))
+                    return result;
             }
 
-            TypeDesc result = BuildValueTupleStructOfSize(size);
-            array[size] = result;
-
-            return result;
-        }
-
-        private TypeDesc BuildValueTupleStructOfSize(int size)
-        {
-            TypeDesc byteType = GetWellKnownType(WellKnownType.Byte);
-
-            if (size == 1)
-            {
-                return byteType;
-            }
-
-            MetadataType valueTuple2 = SystemModule.GetType("System"u8, "ValueTuple`2"u8);
-            int leftSize = size / 2;
-            int rightSize = size - leftSize;
-            TypeDesc left = GetValueTupleStructOfSize(leftSize);
-            TypeDesc right = GetValueTupleStructOfSize(rightSize);
-
-            return valueTuple2.MakeInstantiatedType(left, right);
+            return null;
         }
     }
 }
