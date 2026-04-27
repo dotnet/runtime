@@ -2392,9 +2392,21 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         {
             _ASSERTE(pMD->IsPInvoke());
             PInvokeMethodDesc* pTargetMD = (PInvokeMethodDesc*)pMD;
-            pcsEmit->EmitLDC((DWORD_PTR)&pTargetMD->m_pPInvokeTarget);
-            pcsEmit->EmitCONV_I();
-            pcsEmit->EmitLDIND_I();
+
+            // Resolve the P/Invoke target now if our P/Invoke is one that must be resolved eagerly
+            // (ie SuppressGCTransition)
+            void* pInvokeTarget = nullptr;
+            if (PInvokeMethodDesc::TryGetResolvedPInvokeTarget(pTargetMD, &pInvokeTarget))
+            {
+                pcsEmit->EmitLDC((DWORD_PTR)pInvokeTarget);
+                pcsEmit->EmitCONV_I();
+            }
+            else
+            {
+                pcsEmit->EmitLDC((DWORD_PTR)&pTargetMD->m_pPInvokeTarget);
+                pcsEmit->EmitCONV_I();
+                pcsEmit->EmitLDIND_I();
+            }
         }
     }
     else // native-to-managed
@@ -4760,17 +4772,6 @@ COR_ILMETHOD_DECODER* PInvoke::CreatePInvokeMethodIL(PInvokeMethodDesc* pMD, Dyn
     pResolver->SetStubMethodDesc(pMD);
 
     COR_ILMETHOD_DECODER* pIL = CreatePInvokeStubWorker(&stubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), stubState.GetFlags(), pMD, pParamTokenArray, iLCIDArg);
-
-    // By now, we've generated the marshaling IL and we will have thrown any exception for invalid marshaling.
-    // We can now safely resolve the P/Invoke target.
-    // We need to resolve the P/Invoke target here in the following cases:
-    // - SuppressGCTransition
-    //  - The logic to resolve the P/Invoke target does not meet the requirements for SuppressGCTransition usage.
-    // - No P/Invoke import thunk
-    //  - If there's no P/Invoke import thunk, then there's no later time to resolve the P/Invoke target.
-    //
-    // For simplicity, we will resolve all P/Invoke targets here for non-inlined P/Invokes.
-    PInvoke::ResolvePInvokeTarget(pMD);
 
     *ppResolver = pResolver.Extract();
     return pIL;
