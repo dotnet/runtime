@@ -97,10 +97,10 @@ variables:
 
   # Oldest: Ubuntu 22.04
   - name: helix_linux_x64_oldest
-    value: Ubuntu.2204.Amd64.Open
+    value: (Ubuntu.2204.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-amd64
 
   - name: helix_linux_x64_oldest_internal
-    value: Ubuntu.2204.Amd64
+    value: (Ubuntu.2204.Amd64)AzureLinux.3.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-amd64
 
   # Ubuntu x64
   # Latest: 26.04
@@ -109,34 +109,34 @@ variables:
 
   # Oldest: 22.04
   - name: helix_linux_x64_ubuntu_oldest
-    value: Ubuntu.2204.Amd64.Open
+    value: (Ubuntu.2204.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-amd64
 
   # Debian x64
   # Latest: 13
   - name: helix_linux_x64_debian_latest
     value: (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
 
-  # Oldest: 12
+  # Oldest: 13
   - name: helix_linux_x64_debian_oldest
-    value: (Debian.12.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-amd64
+    value: (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
 
   # Fedora x64
-  # Latest: 43
+  # Latest: 44
   - name: helix_linux_x64_fedora_latest
-    value: (Fedora.43.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-43-helix-amd64
+    value: (Fedora.44.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-44-helix-amd64
 
-  # Oldest: 42
+  # Oldest: 43
   - name: helix_linux_x64_fedora_oldest
-    value: (Fedora.42.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-42-helix-amd64
+    value: (Fedora.43.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-43-helix-amd64
 
   # openSUSE x64
   # Latest: 16.0
   - name: helix_linux_x64_opensuse_latest
     value: (openSUSE.16.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64
 
-  # Oldest: 15.5
+  # Oldest: 16.0
   - name: helix_linux_x64_opensuse_oldest
-    value: (openSUSE.15.5.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.5-helix-amd64
+    value: (openSUSE.16.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64
 
   # CentOS Stream x64
   # Latest: 10
@@ -150,26 +150,26 @@ variables:
   # Linux ARM32
   # Latest: Debian 13
   - name: helix_linux_arm32_latest
-    value: (Debian.13.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+    value: (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   - name: helix_linux_arm32_latest_internal
-    value: (Debian.13.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+    value: (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
-  # Oldest: Debian 12
+  # Oldest: Debian 13
   - name: helix_linux_arm32_oldest
-    value: (Debian.12.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
+    value: (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   - name: helix_linux_arm32_oldest_internal
-    value: (Debian.12.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
+    value: (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   # Linux ARM64
   # Latest: Ubuntu 26.04
   - name: helix_linux_arm64_latest
-    value: (Ubuntu.2604.ArmArch.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8
+    value: (Ubuntu.2604.ArmArch.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8
 
   # Oldest: Ubuntu 22.04
   - name: helix_linux_arm64_oldest
-    value: Ubuntu.2204.ArmArch.Open
+    value: (Ubuntu.2204.ArmArch.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-arm64v8
 
   # Linux musl x64
   # Latest: Alpine edge
@@ -183,32 +183,32 @@ variables:
   # Linux musl ARM32
   # Latest: Alpine 3.23
   - name: helix_linux_musl_arm32_latest
-    value: (Alpine.323.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.323.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
   - name: helix_linux_musl_arm32_latest_internal
-    value: (Alpine.323.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.323.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
   # Oldest: Alpine 3.23
   - name: helix_linux_musl_arm32_oldest
-    value: (Alpine.323.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.323.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
   - name: helix_linux_musl_arm32_oldest_internal
-    value: (Alpine.323.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.323.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
   # Linux musl ARM64
   # Latest: Alpine 3.23
   - name: helix_linux_musl_arm64_latest
-    value: (Alpine.323.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.323.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
   - name: helix_linux_musl_arm64_latest_internal
-    value: (Alpine.323.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.323.Arm64)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
   # Oldest: Alpine 3.23
   - name: helix_linux_musl_arm64_oldest
-    value: (Alpine.323.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.323.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
   - name: helix_linux_musl_arm64_oldest_internal
-    value: (Alpine.323.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.323.Arm64)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
   # ===========================================
   # Windows Platforms
@@ -262,13 +262,13 @@ variables:
   # ===========================================
 
   # Browser WASM
-  # Latest: Ubuntu 24.04
+  # Latest: Ubuntu 26.04
   - name: helix_browser_wasm_latest
-    value: (Ubuntu.2404.Amd64)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-webassembly-amd64
+    value: (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64
 
   # Oldest: Ubuntu 22.04
   - name: helix_browser_wasm_oldest
-    value: (Ubuntu.2204.Amd64)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly-amd64
+    value: (Ubuntu.2204.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly-amd64
 
   # ===========================================
   # Android Platforms
@@ -288,9 +288,9 @@ variables:
   - name: helix_android_ubuntu_latest
     value: Ubuntu.2204.Amd64.Android.29.Open
 
-  # Oldest: API 21
+  # Oldest: API 24
   - name: helix_android_ubuntu_oldest
-    value: Ubuntu.2204.Amd64.Android.21.Open
+    value: Ubuntu.2204.Amd64.Android.24.Open
 
   # ===========================================
   # Common Aliases (default to latest)

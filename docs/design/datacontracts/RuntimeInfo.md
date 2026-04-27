@@ -21,6 +21,8 @@ public enum RuntimeInfoOperatingSystem : uint
     Unknown = 0,
     Win,
     Unix,
+    Browser,
+    Apple,
 }
 ```
 
@@ -49,6 +51,12 @@ Global variables used:
 
 The contract implementation returns the architecture and operating system global values parsed as the
 respective enum case-insensitively. If these globals are not available, the contract returns Unknown.
+
+`Apple` covers all Apple platforms (macOS, iOS, tvOS, MacCatalyst) — i.e. any target where the
+runtime is compiled with `TARGET_APPLE` defined. It is distinct from `Unix` so that consumers which
+need to apply Apple-specific ABI or platform rules (for example, the Apple ARM64 stack-argument
+alignment) can detect the target reliably. Apple platforms are still POSIX and will behave like
+`Unix` for the purposes of any `GetTargetOperatingSystem() != Windows` check.
 
 ### Reader versioning scheme
 

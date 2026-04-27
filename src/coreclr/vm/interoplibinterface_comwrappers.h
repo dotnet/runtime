@@ -84,6 +84,7 @@ template<>
 struct cdac_data<ManagedObjectWrapperHolderObject>
 {
     static constexpr size_t WrappedObject = offsetof(ManagedObjectWrapperHolderObject, _wrappedObject);
+    static constexpr size_t Wrapper = offsetof(ManagedObjectWrapperHolderObject, _wrapper);
 };
 
 class NativeObjectWrapperObject : public Object

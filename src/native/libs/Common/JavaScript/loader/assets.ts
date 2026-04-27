@@ -43,7 +43,7 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
         if (typeof loadBootResourceCallback === "function") {
             const blazorType = behaviorToBlazorAssetTypeMap[assetInternal.behavior];
             dotnetAssert.check(blazorType, `Unsupported asset behavior: ${assetInternal.behavior}`);
-            const customLoadResult = loadBootResourceCallback(blazorType, assetInternal.name, asset.resolvedUrl!, assetInternal.integrity!, assetInternal.behavior);
+            const customLoadResult = loadBootResourceCallback(blazorType, assetInternal.name, asset.resolvedUrl!, assetInternal.hash ?? "", assetInternal.behavior);
             dotnetAssert.check(typeof customLoadResult === "string", "loadBootResourceCallback for JS modules must return string URL");
             asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(customLoadResult);
         }
@@ -108,6 +108,9 @@ export async function instantiateMainWasm(imports: WebAssembly.Imports, successC
         const result = await dotnetBrowserHostExports.instantiateWasm(wasmBinaryPromise!, imports);
         instance = result.instance;
         module = result.module;
+    } catch (err) {
+        dotnetApi.exit(1, err);
+        throw err;
     } finally {
         onDownloadedAsset(assetInternal);
     }
@@ -476,7 +479,7 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
     if (typeof loadBootResourceCallback === "function") {
         const blazorType = behaviorToBlazorAssetTypeMap[asset.behavior];
         dotnetAssert.check(blazorType, `Unsupported asset behavior: ${asset.behavior}`);
-        const customLoadResult = loadBootResourceCallback(blazorType, asset.name, asset.resolvedUrl!, asset.integrity!, asset.behavior);
+        const customLoadResult = loadBootResourceCallback(blazorType, asset.name, asset.resolvedUrl!, asset.hash ?? "", asset.behavior);
         if (typeof customLoadResult === "string") {
             asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(customLoadResult);
         } else if (typeof customLoadResult === "object") {

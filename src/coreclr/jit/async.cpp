@@ -459,11 +459,18 @@ void ContinuationLayoutBuilder::AddReturn(const ReturnTypeInfo& info)
 {
     for (const ReturnTypeInfo& ret : m_returns)
     {
-        if ((ret.ReturnType == info.ReturnType) && (ret.ReturnLayout == info.ReturnLayout))
+        if (ret.ReturnType != info.ReturnType)
         {
-            // This return type is already in the layout, no need to add another slot for it.
-            return;
+            continue;
         }
+
+        if ((ret.ReturnType == TYP_STRUCT) && !ClassLayout::AreCompatible(ret.ReturnLayout, info.ReturnLayout))
+        {
+            continue;
+        }
+
+        // This return type is already in the layout, no need to add another slot for it.
+        return;
     }
 
     m_returns.push_back(info);
@@ -496,581 +503,6 @@ void ContinuationLayoutBuilder::AddLocal(unsigned lclNum)
 bool ContinuationLayoutBuilder::ContainsLocal(unsigned lclNum) const
 {
     return BinarySearch(m_locals.data(), (int)m_locals.size(), lclNum) != nullptr;
-}
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis:
-//   Computes which tracked locals have their default (zero) value at each
-//   basic block entry. A tracked local that still has its default value at a
-//   suspension point does not need to be hoisted into the continuation.
-//
-//   The analysis has two phases:
-//     1. Per-block: compute which tracked locals are mutated (assigned a
-//        non-default value or have their address taken) in each block.
-//     2. Inter-block: forward dataflow to propagate default value information
-//        across blocks. At merge points the sets are unioned (a local is mutated
-//        if it is mutated on any incoming path).
-//
-class DefaultValueAnalysis
-{
-    Compiler*  m_compiler;
-    VARSET_TP* m_mutatedVars;   // Per-block set of locals mutated to non-default.
-    VARSET_TP* m_mutatedVarsIn; // Per-block set of locals mutated to non-default on entry.
-
-    // DataFlow::ForwardAnalysis callback used in Phase 2.
-    class DataFlowCallback
-    {
-        DefaultValueAnalysis& m_analysis;
-        Compiler*             m_compiler;
-        VARSET_TP             m_preMergeIn;
-
-    public:
-        DataFlowCallback(DefaultValueAnalysis& analysis, Compiler* compiler)
-            : m_analysis(analysis)
-            , m_compiler(compiler)
-            , m_preMergeIn(VarSetOps::UninitVal())
-        {
-        }
-
-        void StartMerge(BasicBlock* block)
-        {
-            // Save the current in set for change detection later.
-            VarSetOps::Assign(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
-        }
-
-        void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
-        {
-            // The out set of a predecessor is its in set plus the locals
-            // mutated in that block: mutatedOut = mutatedIn | mutated.
-            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                              m_analysis.m_mutatedVarsIn[predBlock->bbNum]);
-            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                              m_analysis.m_mutatedVars[predBlock->bbNum]);
-        }
-
-        void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
-        {
-            // A handler can be reached from any point in the try region.
-            // A local is mutated at handler entry if it was mutated at try
-            // entry or mutated anywhere within the try region.
-            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
-            {
-                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                                  m_analysis.m_mutatedVarsIn[tryBlock->bbNum]);
-                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                                  m_analysis.m_mutatedVars[tryBlock->bbNum]);
-            }
-        }
-
-        bool EndMerge(BasicBlock* block)
-        {
-            return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
-        }
-    };
-
-public:
-    DefaultValueAnalysis(Compiler* compiler)
-        : m_compiler(compiler)
-        , m_mutatedVars(nullptr)
-        , m_mutatedVarsIn(nullptr)
-    {
-    }
-
-    void             Run();
-    const VARSET_TP& GetMutatedVarsIn(BasicBlock* block) const;
-
-private:
-    void ComputePerBlockMutatedVars();
-    void ComputeInterBlockDefaultValues();
-
-#ifdef DEBUG
-    void DumpMutatedVars();
-    void DumpMutatedVarsIn();
-#endif
-};
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::Run:
-//   Run the default value analysis: compute per-block mutation sets, then
-//   propagate default value information forward through the flow graph.
-//
-void DefaultValueAnalysis::Run()
-{
-#ifdef DEBUG
-    static ConfigMethodRange s_range;
-    s_range.EnsureInit(JitConfig.JitAsyncDefaultValueAnalysisRange());
-
-    if (!s_range.Contains(m_compiler->info.compMethodHash()))
-    {
-        JITDUMP("Default value analysis disabled because of method range\n");
-        m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
-        for (BasicBlock* block : m_compiler->Blocks())
-        {
-            VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[block->bbNum], VarSetOps::MakeFull(m_compiler));
-        }
-
-        return;
-    }
-
-#endif
-    ComputePerBlockMutatedVars();
-    ComputeInterBlockDefaultValues();
-}
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::GetMutatedVarsIn:
-//   Get the set of tracked locals that have been mutated to a non-default
-//   value on entry to the specified block.
-//
-// Parameters:
-//   block - The basic block.
-//
-// Returns:
-//   The VARSET_TP of tracked locals mutated on entry. A local NOT in this
-//   set is guaranteed to have its default value.
-//
-const VARSET_TP& DefaultValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
-{
-    assert(m_mutatedVarsIn != nullptr);
-    return m_mutatedVarsIn[block->bbNum];
-}
-
-//------------------------------------------------------------------------
-// IsDefaultValue:
-//   Check if a node represents a default (zero) value.
-//
-// Parameters:
-//   node - The node to check.
-//
-// Returns:
-//   True if the node is a constant zero value (integral, floating-point, or
-//   vector).
-//
-static bool IsDefaultValue(GenTree* node)
-{
-    return node->IsIntegralConst(0) || node->IsFloatPositiveZero() || node->IsVectorZero();
-}
-
-//------------------------------------------------------------------------
-// UpdateMutatedLocal:
-//   If the given node is a local store or LCL_ADDR, and the local is tracked,
-//   mark it as mutated in the provided set. Stores of a default (zero) value
-//   are not considered mutations.
-//
-// Parameters:
-//   compiler - The compiler instance.
-//   node     - The IR node to check.
-//   mutated  - [in/out] The set to update.
-//
-static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
-{
-    if (node->OperIsLocalStore())
-    {
-        // If this is a zero initialization then we do not need to consider it
-        // mutated if we know the prolog will zero it anyway (otherwise we
-        // could be skipping this explicit zero init on resumption).
-        // We could improve this a bit by still skipping it but inserting
-        // explicit zero init on resumption, but these cases seem to be rare
-        // and that would require tracking additional information.
-        if (IsDefaultValue(node->AsLclVarCommon()->Data()) &&
-            !compiler->fgVarNeedsExplicitZeroInit(node->AsLclVarCommon()->GetLclNum(), /* bbInALoop */ false,
-                                                  /* bbIsReturn */ false))
-        {
-            return;
-        }
-    }
-    else if (node->OperIs(GT_LCL_ADDR))
-    {
-        // Fall through
-    }
-    else
-    {
-        return;
-    }
-
-    LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVarCommon());
-
-    if (varDsc->lvTracked)
-    {
-        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
-        return;
-    }
-
-    // For promoted structs the parent may not be tracked but the field locals
-    // are. When the parent is mutated, all tracked fields must be marked as
-    // mutated as well.
-    if (varDsc->lvPromoted)
-    {
-        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-            if (fieldDsc->lvTracked)
-            {
-                VarSetOps::AddElemD(compiler, mutated, fieldDsc->lvVarIndex);
-            }
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::ComputePerBlockMutatedVars:
-//   Phase 1: For each reachable basic block compute the set of tracked locals
-//   that are mutated to a non-default value.
-//
-//   A tracked local is considered mutated if:
-//     - It has a store (STORE_LCL_VAR / STORE_LCL_FLD) whose data operand is
-//       not a zero constant.
-//     - It has a LCL_ADDR use (address taken that we cannot reason about).
-//
-void DefaultValueAnalysis::ComputePerBlockMutatedVars()
-{
-    m_mutatedVars = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
-
-    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
-    {
-        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVars[i], VarSetOps::MakeEmpty(m_compiler));
-    }
-
-    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
-    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
-    {
-        BasicBlock* block   = dfsTree->GetPostOrder(i);
-        VARSET_TP&  mutated = m_mutatedVars[block->bbNum];
-
-        for (GenTree* node : LIR::AsRange(block))
-        {
-            UpdateMutatedLocal(m_compiler, node, mutated);
-        }
-    }
-
-    JITDUMP("Default value analysis: per-block mutated vars\n");
-    DBEXEC(m_compiler->verbose, DumpMutatedVars());
-}
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::ComputeInterBlockDefaultValues:
-//   Phase 2: Forward dataflow to compute for each block the set of tracked
-//   locals that have been mutated to a non-default value on entry.
-//
-//   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
-//   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
-//
-//   At entry, only parameters and OSR locals are considered mutated.
-//
-void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
-{
-    m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
-
-    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
-    {
-        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
-    }
-
-    // Parameters and OSR locals are considered mutated at method entry.
-    for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
-    {
-        unsigned   lclNum = m_compiler->lvaTrackedToVarNum[i];
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-
-        if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
-        {
-            VarSetOps::AddElemD(m_compiler, m_mutatedVarsIn[m_compiler->fgFirstBB->bbNum], varDsc->lvVarIndex);
-        }
-    }
-
-    DataFlowCallback callback(*this, m_compiler);
-    DataFlow         flow(m_compiler);
-    flow.ForwardAnalysis(callback);
-
-    JITDUMP("Default value analysis: per-block mutated vars on entry\n");
-    DBEXEC(m_compiler->verbose, DumpMutatedVarsIn());
-}
-
-#ifdef DEBUG
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::DumpMutatedVars:
-//   Debug helper to print the per-block mutated variable sets.
-//
-void DefaultValueAnalysis::DumpMutatedVars()
-{
-    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
-    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
-    {
-        BasicBlock* block = dfsTree->GetPostOrder(i);
-        if (!VarSetOps::IsEmpty(m_compiler, m_mutatedVars[block->bbNum]))
-        {
-            printf("  " FMT_BB " mutated: ", block->bbNum);
-            VarSetOps::Iter iter(m_compiler, m_mutatedVars[block->bbNum]);
-            unsigned        varIndex = 0;
-            const char*     sep      = "";
-            while (iter.NextElem(&varIndex))
-            {
-                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
-                printf("%sV%02u", sep, lclNum);
-                sep = " ";
-            }
-            printf("\n");
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::DumpMutatedVarsIn:
-//   Debug helper to print the per-block mutated-on-entry variable sets.
-//
-void DefaultValueAnalysis::DumpMutatedVarsIn()
-{
-    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
-    for (unsigned i = dfsTree->GetPostOrderCount(); i > 0; i--)
-    {
-        BasicBlock* block = dfsTree->GetPostOrder(i - 1);
-        printf("  " FMT_BB " mutated on entry: ", block->bbNum);
-
-        if (VarSetOps::IsEmpty(m_compiler, m_mutatedVarsIn[block->bbNum]))
-        {
-            printf("<none>");
-        }
-        else
-        {
-            VarSetOps::Iter iter(m_compiler, m_mutatedVarsIn[block->bbNum]);
-            unsigned        varIndex = 0;
-            const char*     sep      = "";
-            while (iter.NextElem(&varIndex))
-            {
-                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
-                printf("%sV%02u", sep, lclNum);
-                sep = " ";
-            }
-        }
-        printf("\n");
-    }
-}
-#endif
-
-class AsyncLiveness
-{
-    Compiler*              m_compiler;
-    TreeLifeUpdater<false> m_updater;
-    unsigned               m_numVars;
-    DefaultValueAnalysis&  m_defaultValueAnalysis;
-    VARSET_TP              m_mutatedValues;
-
-public:
-    AsyncLiveness(Compiler* comp, DefaultValueAnalysis& defaultValueAnalysis)
-        : m_compiler(comp)
-        , m_updater(comp)
-        , m_numVars(comp->lvaCount)
-        , m_defaultValueAnalysis(defaultValueAnalysis)
-        , m_mutatedValues(VarSetOps::MakeEmpty(comp))
-    {
-    }
-
-    void StartBlock(BasicBlock* block);
-    void Update(GenTree* node);
-    bool IsLive(unsigned lclNum);
-    template <typename Functor>
-    void GetLiveLocals(ContinuationLayoutBuilder* layoutBuilder, Functor includeLocal);
-
-private:
-    bool IsLocalCaptureUnnecessary(unsigned lclNum);
-};
-
-//------------------------------------------------------------------------
-// AsyncLiveness::StartBlock:
-//   Indicate that we are now starting a new block, and do relevant liveness
-//   updates for it.
-//
-// Parameters:
-//   block - The block that we are starting.
-//
-void AsyncLiveness::StartBlock(BasicBlock* block)
-{
-    VarSetOps::Assign(m_compiler, m_compiler->compCurLife, block->bbLiveIn);
-    VarSetOps::Assign(m_compiler, m_mutatedValues, m_defaultValueAnalysis.GetMutatedVarsIn(block));
-}
-
-//------------------------------------------------------------------------
-// AsyncLiveness::Update:
-//   Update liveness to be consistent with the specified node having been
-//   executed.
-//
-// Parameters:
-//   node - The node.
-//
-void AsyncLiveness::Update(GenTree* node)
-{
-    m_updater.UpdateLife<true>(node);
-    UpdateMutatedLocal(m_compiler, node, m_mutatedValues);
-}
-
-//------------------------------------------------------------------------
-// AsyncLiveness::IsLocalCaptureUnnecessary:
-//   Check if capturing a specified local can be skipped.
-//
-// Parameters:
-//   lclNum - The local
-//
-// Returns:
-//   True if the local should not be captured. Even without liveness
-//
-bool AsyncLiveness::IsLocalCaptureUnnecessary(unsigned lclNum)
-{
-#if FEATURE_FIXED_OUT_ARGS
-    if (lclNum == m_compiler->lvaOutgoingArgSpaceVar)
-    {
-        return true;
-    }
-#endif
-
-    if (lclNum == m_compiler->info.compRetBuffArg)
-    {
-        return true;
-    }
-
-    if (lclNum == m_compiler->lvaGSSecurityCookie)
-    {
-        // Initialized in prolog
-        return true;
-    }
-
-    if (lclNum == m_compiler->info.compLvFrameListRoot)
-    {
-        return true;
-    }
-
-    if (lclNum == m_compiler->lvaInlinedPInvokeFrameVar)
-    {
-        return true;
-    }
-
-    if (lclNum == m_compiler->lvaRetAddrVar)
-    {
-        return true;
-    }
-
-    if (lclNum == m_compiler->lvaAsyncContinuationArg)
-    {
-        return true;
-    }
-
-    return false;
-}
-
-//------------------------------------------------------------------------
-// AsyncLiveness::IsLive:
-//   Check if the specified local is live at this point and should be captured.
-//
-// Parameters:
-//   lclNum - The local
-//
-// Returns:
-//   True if the local is live and capturing it is necessary.
-//
-bool AsyncLiveness::IsLive(unsigned lclNum)
-{
-    if (IsLocalCaptureUnnecessary(lclNum))
-    {
-        return false;
-    }
-
-    LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
-
-    if (dsc->TypeIs(TYP_BYREF) && !dsc->IsImplicitByRef())
-    {
-        // Even if these are address exposed we expect them to be dead at
-        // suspension points. TODO: It would be good to somehow verify these
-        // aren't obviously live, if the JIT creates live ranges that span a
-        // suspension point then this makes it quite hard to diagnose that.
-        return false;
-    }
-
-    if ((dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef()) && dsc->GetLayout()->HasGCByRef())
-    {
-        // Same as above
-        return false;
-    }
-
-    if (m_compiler->opts.compDbgCode && (lclNum < m_compiler->info.compLocalsCount))
-    {
-        // Keep all IL locals in debug codegen
-        return true;
-    }
-
-    if (dsc->lvRefCnt(RCS_NORMAL) == 0)
-    {
-        return false;
-    }
-
-    Compiler::lvaPromotionType promoType = m_compiler->lvaGetPromotionType(dsc);
-    if (promoType == Compiler::PROMOTION_TYPE_INDEPENDENT)
-    {
-        // Independently promoted structs are handled only through their
-        // fields.
-        return false;
-    }
-
-    if (promoType == Compiler::PROMOTION_TYPE_DEPENDENT)
-    {
-        // Dependently promoted structs are handled only through the base
-        // struct local.
-        //
-        // A dependently promoted struct is live if any of its fields are live.
-
-        bool anyLive    = false;
-        bool anyMutated = false;
-        for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
-            anyLive |=
-                !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, fieldDsc->lvVarIndex);
-            anyMutated |=
-                !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_mutatedValues, fieldDsc->lvVarIndex);
-        }
-
-        return anyLive && anyMutated;
-    }
-
-    if (dsc->lvIsStructField && (m_compiler->lvaGetParentPromotionType(dsc) == Compiler::PROMOTION_TYPE_DEPENDENT))
-    {
-        return false;
-    }
-
-    if (!dsc->lvTracked)
-    {
-        return true;
-    }
-
-    if (!VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, dsc->lvVarIndex))
-    {
-        return false;
-    }
-
-    if (!VarSetOps::IsMember(m_compiler, m_mutatedValues, dsc->lvVarIndex))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------
-// AsyncLiveness::GetLiveLocals:
-//   Get live locals that should be captured at this point.
-//
-// Parameters:
-//   builder      - Layout builder to add local into
-//   includeLocal - Functor to check if a local should be included
-//
-template <typename Functor>
-void AsyncLiveness::GetLiveLocals(ContinuationLayoutBuilder* builder, Functor includeLocal)
-{
-    for (unsigned lclNum = 0; lclNum < m_numVars; lclNum++)
-    {
-        if (includeLocal(lclNum) && IsLive(lclNum))
-        {
-            builder->AddLocal(lclNum);
-        }
-    }
 }
 
 //------------------------------------------------------------------------
@@ -1110,43 +542,41 @@ PhaseStatus Compiler::TransformAsync()
 PhaseStatus AsyncTransformation::Run()
 {
     PhaseStatus             result = PhaseStatus::MODIFIED_NOTHING;
-    ArrayStack<BasicBlock*> worklist(m_compiler->getAllocator(CMK_Async));
+    ArrayStack<BasicBlock*> blocksWithNormalAwaits(m_compiler->getAllocator(CMK_Async));
+    ArrayStack<BasicBlock*> blocksWithTailAwaits(m_compiler->getAllocator(CMK_Async));
+    int                     numNormalAwaits = 0;
+    int                     numTailAwaits   = 0;
+    FindAwaits(blocksWithNormalAwaits, blocksWithTailAwaits, &numNormalAwaits, &numTailAwaits);
 
-    // First find all basic blocks with awaits in them. We'll have to track
-    // liveness in these basic blocks, so it does not help to record the calls
-    // ahead of time.
-    BasicBlock* nextBlock;
-    for (BasicBlock* block = m_compiler->fgFirstBB; block != nullptr; block = nextBlock)
+    if (numNormalAwaits + numTailAwaits > 1)
     {
-        bool hasAwait = false;
-        nextBlock     = block->Next();
-        for (GenTree* tree : LIR::AsRange(block))
-        {
-            if (!tree->IsCall() || !tree->AsCall()->IsAsync() || tree->AsCall()->IsTailCall())
-            {
-                continue;
-            }
-
-            if (tree->AsCall()->GetAsyncInfo().IsTailAwait)
-            {
-                TransformTailAwait(block, tree->AsCall(), &nextBlock);
-                result = PhaseStatus::MODIFIED_EVERYTHING;
-                break;
-            }
-
-            JITDUMP(FMT_BB " contains await(s)\n", block->bbNum);
-            hasAwait = true;
-        }
-
-        if (hasAwait)
-        {
-            worklist.Push(block);
-        }
+        CreateSharedReturnBB();
     }
 
-    JITDUMP("Found %d blocks with awaits\n", worklist.Height());
+    // Transform all tail awaits first. They will not require running all of
+    // our analyses.
+    if (numTailAwaits > 0)
+    {
+        JITDUMP("Found %d tail awaits in %d blocks\n", numTailAwaits, blocksWithTailAwaits.Height());
+        TransformTailAwaits(blocksWithTailAwaits);
+        m_compiler->fgInvalidateDfsTree();
 
-    if (worklist.Height() <= 0)
+        if (numNormalAwaits > 0)
+        {
+            // This may have changed blocks, so refind the normal awaits.
+            blocksWithNormalAwaits.Reset();
+            blocksWithTailAwaits.Reset();
+            numNormalAwaits = 0;
+            numTailAwaits   = 0;
+            FindAwaits(blocksWithNormalAwaits, blocksWithTailAwaits, &numNormalAwaits, &numTailAwaits);
+        }
+
+        result = PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    JITDUMP("Found %d awaits in %d blocks\n", numNormalAwaits, blocksWithNormalAwaits.Height());
+
+    if (numNormalAwaits <= 0)
     {
         return result;
     }
@@ -1157,9 +587,6 @@ PhaseStatus AsyncTransformation::Run()
         jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>(m_compiler->getAllocator(CMK_Async));
 
     m_asyncInfo = m_compiler->eeGetAsyncInfo();
-
-    // Create the shared return BB now to put it in the right place in the block order.
-    GetSharedReturnBB();
 
     // Compute liveness to be used for determining what must be captured on
     // suspension.
@@ -1173,21 +600,28 @@ PhaseStatus AsyncTransformation::Run()
     INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
     VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
 
+    // Compute locals unchanged from their default values
     DefaultValueAnalysis defaultValues(m_compiler);
     defaultValues.Run();
-    AsyncLiveness liveness(m_compiler, defaultValues);
+
+    // Compute locals unchanged if we reuse a continuation
+    PreservedValueAnalysis preservedValues(m_compiler);
+    preservedValues.Run(blocksWithNormalAwaits);
+
+    AsyncAnalysis analyses(m_compiler, defaultValues, preservedValues);
 
     // Now walk the IR for all the blocks that contain async calls. Keep track
-    // of liveness and outstanding LIR edges as we go; the LIR edges that cross
-    // async calls are additional live variables that must be spilled.
+    // the state of the analyses and outstanding LIR edges as we go; the LIR
+    // edges that cross async calls are additional live variables that must be
+    // spilled.
     jitstd::vector<GenTree*> defs(m_compiler->getAllocator(CMK_Async));
 
-    for (int i = 0; i < worklist.Height(); i++)
+    for (int i = 0; i < blocksWithNormalAwaits.Height(); i++)
     {
         assert(defs.size() == 0);
 
-        BasicBlock* block = worklist.Bottom(i);
-        liveness.StartBlock(block);
+        BasicBlock* block = blocksWithNormalAwaits.Bottom(i);
+        analyses.StartBlock(block);
 
         bool any;
         do
@@ -1214,18 +648,22 @@ PhaseStatus AsyncTransformation::Run()
                     return GenTree::VisitResult::Continue;
                 });
 
-                if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall())
+                if (tree->IsCall())
                 {
-                    // Transform call; continue with the remainder block.
-                    // Transform takes care to update liveness.
-                    Transform(block, tree->AsCall(), defs, liveness, &block);
-                    defs.clear();
-                    any = true;
-                    break;
+                    GenTreeCall* call = tree->AsCall();
+                    if (call->IsAsync() && !call->IsTailCall() && !call->GetAsyncInfo().IsTailAwait)
+                    {
+                        // Transform call; continue with the remainder block.
+                        // Transform takes care to update analyses.
+                        Transform(block, tree->AsCall(), defs, analyses, &block);
+                        defs.clear();
+                        any = true;
+                        break;
+                    }
                 }
 
-                // Update liveness to reflect state after this node.
-                liveness.Update(tree);
+                // Update analyses to reflect state after this node.
+                analyses.Update(tree);
 
                 // Push a new definition if necessary; this defined value is
                 // now a live LIR edge.
@@ -1235,6 +673,23 @@ PhaseStatus AsyncTransformation::Run()
                 }
             }
         } while (any);
+    }
+
+    if (ReuseContinuations())
+    {
+        // Set up the local containing the continuation we can reuse. For OSR
+        // things are special: we can transition to the OSR method after having
+        // resumed in the tier0 method. In that case we end up with the tier0
+        // continuation in the OSR method, but we cannot reuse it.
+        if (m_compiler->opts.IsOSR())
+        {
+            m_reuseContinuationVar = m_compiler->lvaGrabTemp(false DEBUGARG("OSR reusable continuation"));
+            m_compiler->lvaGetDesc(m_reuseContinuationVar)->lvType = TYP_REF;
+        }
+        else
+        {
+            m_reuseContinuationVar = m_compiler->lvaAsyncContinuationArg;
+        }
     }
 
     CreateResumptionsAndSuspensions();
@@ -1271,6 +726,88 @@ PhaseStatus AsyncTransformation::Run()
 }
 
 //------------------------------------------------------------------------
+// AsyncTransformation::FindAwaits:
+//   Find the blocks that have awaits in them and do some accounting of how
+//   many awaits there are.
+//
+// Parameters:
+//   blocksWithNormalAwaits - [out] Blocks with normal awaits are pushed onto this stack
+//   blocksWithTailAwaits   - [out] Blocks with tail awaits are pushed onto this stack
+//   numNormalAwaits        - [out] Number of normal awaits found
+//   numTailAwaits          - [out] Number of tail awaits found
+//
+void AsyncTransformation::FindAwaits(ArrayStack<BasicBlock*>& blocksWithNormalAwaits,
+                                     ArrayStack<BasicBlock*>& blocksWithTailAwaits,
+                                     int*                     numNormalAwaits,
+                                     int*                     numTailAwaits)
+{
+    for (BasicBlock* block : m_compiler->Blocks())
+    {
+        bool hasNormalAwait = false;
+        bool hasTailAwait   = false;
+        for (GenTree* tree : LIR::AsRange(block))
+        {
+            if (!tree->IsCall() || !tree->AsCall()->IsAsync() || tree->AsCall()->IsTailCall())
+            {
+                continue;
+            }
+
+            if (tree->AsCall()->GetAsyncInfo().IsTailAwait)
+            {
+                hasTailAwait = true;
+                (*numTailAwaits)++;
+            }
+            else
+            {
+                hasNormalAwait = true;
+                (*numNormalAwaits)++;
+            }
+        }
+
+        if (hasNormalAwait)
+        {
+            blocksWithNormalAwaits.Push(block);
+        }
+
+        if (hasTailAwait)
+        {
+            blocksWithTailAwaits.Push(block);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::TransformTailAwaits:
+//   Transform all tail awaits in the specified blocks.
+//
+// Parameters:
+//   blocksWithTailAwaits   - Blocks containing tail awaits
+//
+void AsyncTransformation::TransformTailAwaits(ArrayStack<BasicBlock*>& blocksWithTailAwaits)
+{
+    for (int i = 0; i < blocksWithTailAwaits.Height(); i++)
+    {
+        BasicBlock* block = blocksWithTailAwaits.Bottom(i);
+
+        bool any;
+        do
+        {
+            any = false;
+            for (GenTree* tree : LIR::AsRange(block))
+            {
+                if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall() &&
+                    tree->AsCall()->GetAsyncInfo().IsTailAwait)
+                {
+                    TransformTailAwait(block, tree->AsCall(), &block);
+                    any = true;
+                    break;
+                }
+            }
+        } while (any);
+    }
+}
+
+//------------------------------------------------------------------------
 // AsyncTransformation::TransformTailAwait:
 //   Transform an await that was marked as a tail await.
 //
@@ -1304,7 +841,7 @@ void AsyncTransformation::TransformTailAwait(BasicBlock* block, GenTreeCall* cal
 //
 BasicBlock* AsyncTransformation::CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call)
 {
-    BasicBlock* sharedReturnBB = GetSharedReturnBB();
+    BasicBlock* sharedReturnBB = m_sharedReturnBB;
 
     if (m_lastSuspensionBB == nullptr)
     {
@@ -1348,11 +885,14 @@ BasicBlock* AsyncTransformation::CreateTailAwaitSuspension(BasicBlock* block, Ge
 //   block     - The block containing the async call
 //   call      - The async call
 //   defs      - Current live LIR edges
-//   life      - Liveness information about live locals
+//   analyses  - Analysis information about the async method
 //   remainder - [out] Remainder block after the transformation
 //
-void AsyncTransformation::Transform(
-    BasicBlock* block, GenTreeCall* call, jitstd::vector<GenTree*>& defs, AsyncLiveness& life, BasicBlock** remainder)
+void AsyncTransformation::Transform(BasicBlock*               block,
+                                    GenTreeCall*              call,
+                                    jitstd::vector<GenTree*>& defs,
+                                    AsyncAnalysis&            analyses,
+                                    BasicBlock**              remainder)
 {
 #ifdef DEBUG
     if (m_compiler->verbose)
@@ -1374,13 +914,23 @@ void AsyncTransformation::Transform(
     }
 #endif
 
+    bool      resumeReachable = analyses.IsResumeReachable();
+    VARSET_TP mutatedSinceResumption(VarSetOps::MakeCopy(m_compiler, analyses.GetMutatedSinceResumption()));
+
+    JITDUMP("  This suspension point is%s resume-reachable\n", resumeReachable ? "" : " NOT");
+    if (resumeReachable)
+    {
+        JITDUMP("  Locals mutated since previous resumption: ");
+        JITDUMPEXEC(AsyncAnalysis::PrintVarSet(m_compiler, mutatedSinceResumption));
+    }
+
     ContinuationLayoutBuilder* layoutBuilder = new (m_compiler, CMK_Async) ContinuationLayoutBuilder(m_compiler);
 
-    CreateLiveSetForSuspension(block, call, defs, life, layoutBuilder);
+    CreateLiveSetForSuspension(block, call, defs, analyses, layoutBuilder);
 
-    BuildContinuation(block, call, ContinuationNeedsKeepAlive(life), layoutBuilder);
+    BuildContinuation(block, call, ContinuationNeedsKeepAlive(analyses), layoutBuilder);
 
-    CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, &life);
+    CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, &analyses);
 
     unsigned stateNum = (unsigned)m_states.size();
     JITDUMP("  Assigned state %u\n", stateNum);
@@ -1391,7 +941,8 @@ void AsyncTransformation::Transform(
 
     BasicBlock* resumeBB = CreateResumptionBlock(*remainder, stateNum);
 
-    m_states.push_back(AsyncState(stateNum, layoutBuilder, block, call, callDefInfo, suspendBB, resumeBB));
+    m_states.push_back(AsyncState(stateNum, layoutBuilder, block, call, callDefInfo, suspendBB, resumeBB,
+                                  resumeReachable, mutatedSinceResumption));
 
     JITDUMP("\n");
 }
@@ -1405,13 +956,13 @@ void AsyncTransformation::Transform(
 //   block         - The block containing the async call
 //   call          - The async call
 //   defs          - Current live LIR edges
-//   life          - Liveness information about live locals
+//   analyses      - Async analyses state, including liveness and default-value info for locals
 //   layoutBuilder - Layout being built
 //
 void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                     block,
                                                      GenTreeCall*                    call,
                                                      const jitstd::vector<GenTree*>& defs,
-                                                     AsyncLiveness&                  life,
+                                                     AsyncAnalysis&                  analyses,
                                                      ContinuationLayoutBuilder*      layoutBuilder)
 {
     SmallHashTable<unsigned, bool> excludedLocals(m_compiler->getAllocator(CMK_Async));
@@ -1447,7 +998,7 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         excludedLocals.AddOrUpdate(m_compiler->lvaAsyncExecutionContextVar, true);
     }
 
-    life.GetLiveLocals(layoutBuilder, [&](unsigned lclNum) {
+    analyses.GetLiveLocals(layoutBuilder, [&](unsigned lclNum) {
         return !excludedLocals.Contains(lclNum);
     });
     LiftLIREdges(block, defs, layoutBuilder);
@@ -1547,13 +1098,13 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
 //   Check whether we need to allocate a "KeepAlive" field in the continuation.
 //
 // Parameters:
-//   life - Live locals
+//   analyses - Information about analyses, used for liveness
 //
 // Returns:
 //   True if we need to keep a LoaderAllocator for generic context or
 //   collectible method alive.
 //
-bool AsyncTransformation::ContinuationNeedsKeepAlive(AsyncLiveness& life)
+bool AsyncTransformation::ContinuationNeedsKeepAlive(AsyncAnalysis& analyses)
 {
     if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
@@ -1563,7 +1114,7 @@ bool AsyncTransformation::ContinuationNeedsKeepAlive(AsyncLiveness& life)
 
     const unsigned GENERICS_CTXT_FROM = CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
     if (((m_compiler->info.compMethodInfo->options & GENERICS_CTXT_FROM) != 0) &&
-        life.IsLive(m_compiler->info.compTypeCtxtArg))
+        analyses.IsLive(m_compiler->info.compTypeCtxtArg))
     {
         return true;
     }
@@ -1650,16 +1201,15 @@ void AsyncTransformation::BuildContinuation(BasicBlock*                block,
         JITDUMP("  Call has return; continuation will have return value\n");
     }
 
-    // For OSR, we store the IL offset that inspired the OSR method at the
-    // beginning of the data (and store -1 in the tier0 version). This must be
-    // at the beginning because the tier0 and OSR versions need to agree on
-    // this.
+    // For OSR, we store the address of the OSR function at the beginning of
+    // the data (and store 0 in the tier0 version). This must be at the
+    // beginning because the tier0 and OSR versions need to agree on this.
     if (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR())
     {
-        JITDUMP("  Method %s; keeping IL offset that inspired OSR method at the beginning of non-GC data\n",
+        JITDUMP("  Method %s; keeping OSR address at the beginning of non-GC data\n",
                 m_compiler->doesMethodHavePatchpoints() ? "has patchpoints" : "is an OSR method");
         // Must be pointer sized for compatibility with Continuation methods that access fields
-        layoutBuilder->SetNeedsOSRILOffset();
+        layoutBuilder->SetNeedsOSRAddress();
     }
 
     if (HasNonContextRestoreExceptionalFlow(block))
@@ -1701,9 +1251,9 @@ void AsyncTransformation::BuildContinuation(BasicBlock*                block,
 void ContinuationLayout::Dump(int indent)
 {
     printf("%*sContinuation layout (%u bytes):\n", indent, "", Size);
-    if (OSRILOffset != UINT_MAX)
+    if (OSRAddressOffset != UINT_MAX)
     {
-        printf("%*s  +%03u OSR IL offset\n", indent, "", OSRILOffset);
+        printf("%*s  +%03u OSR address\n", indent, "", OSRAddressOffset);
     }
 
     if (ExceptionOffset != UINT_MAX)
@@ -1745,17 +1295,19 @@ void ContinuationLayout::Dump(int indent)
 //   Find the return info entry matching the specified call's return type.
 //
 // Parameters:
+//   comp - Compiler instance to use for looking up struct return layouts.
 //   call - The async call whose return type to look up.
 //
 // Returns:
 //   Pointer to the matching ReturnInfo entry.
 //
-const ReturnInfo* ContinuationLayout::FindReturn(GenTreeCall* call) const
+const ReturnInfo* ContinuationLayout::FindReturn(Compiler* comp, GenTreeCall* call) const
 {
+    ClassLayout* layout = call->gtReturnType == TYP_STRUCT ? comp->typGetObjLayout(call->gtRetClsHnd) : nullptr;
     for (const ReturnInfo& ret : Returns)
     {
         if ((ret.Type.ReturnType == call->gtReturnType) &&
-            ((call->gtReturnType != TYP_STRUCT) || (ret.Type.ReturnLayout->GetClassHandle() == call->gtRetClsHnd)))
+            ((call->gtReturnType != TYP_STRUCT) || ClassLayout::AreCompatible(ret.Type.ReturnLayout, layout)))
         {
             return &ret;
         }
@@ -1862,10 +1414,10 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
         return offset;
     };
 
-    if (m_needsOSRILOffset)
+    if (m_needsOSRAddress)
     {
         // Must be pointer sized for compatibility with Continuation methods that access fields
-        layout->OSRILOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+        layout->OSRAddressOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
     if (m_needsException)
@@ -1878,10 +1430,12 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
         layout->ContinuationContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
-    // Now allocate all  returns
+    // Now allocate all returns
     for (ReturnInfo& ret : layout->Returns)
     {
-        ret.Offset = allocLayout(ret.HeapAlignment(), ret.Size);
+        // All returns must be pointer aligned because of the offset encoding in Continuation::Flags.
+        layout->Size = roundUp(layout->Size, TARGET_POINTER_SIZE);
+        ret.Offset   = allocLayout(ret.HeapAlignment(), ret.Size);
     }
 
     if (m_needsKeepAlive)
@@ -1977,21 +1531,21 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
 
 //------------------------------------------------------------------------
 // AsyncTransformation::CanonicalizeCallDefinition:
-//   Put the call definition in a canonical form and update liveness for it.
+//   Put the call definition in a canonical form and update analyses for it.
 //   This ensures that either the value is defined by a LCL_ADDR retbuffer or
 //   by a STORE_LCL_VAR/STORE_LCL_FLD that follows the call node.
 //
 // Parameters:
-//   block - The block containing the async call
-//   call  - The async call
-//   life  - Liveness information about live locals
+//   block    - The block containing the async call
+//   call     - The async call
+//   analyses - Analysis information that is updated from the async call/a potential new store
 //
 // Returns:
 //   Information about the definition after canonicalization.
 //
 CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*    block,
                                                                    GenTreeCall*   call,
-                                                                   AsyncLiveness* life)
+                                                                   AsyncAnalysis* analyses)
 {
     CallDefinitionInfo callDefInfo;
 
@@ -1999,9 +1553,9 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
 
     CallArg* retbufArg = call->gtArgs.GetRetBufferArg();
 
-    if (life != nullptr)
+    if (analyses != nullptr)
     {
-        life->Update(call);
+        analyses->Update(call);
     }
 
     if (!call->TypeIs(TYP_VOID) && !call->IsUnusedValue())
@@ -2051,10 +1605,10 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
         }
         else
         {
-            if (life != nullptr)
+            if (analyses != nullptr)
             {
-                // We will split after the store, but we still have to update liveness for it.
-                life->Update(call->gtNext);
+                // We will split after the store, but we still have to update analyses for it.
+                analyses->Update(call->gtNext);
             }
         }
 
@@ -2125,13 +1679,18 @@ BasicBlock* AsyncTransformation::CreateSuspensionBlock(BasicBlock* block, unsign
 //   stateNum  - State number assigned to this suspension point.
 //   layout    - Layout information for the continuation object.
 //   subLayout - Per-call layout builder indicating which fields are needed.
+//   resumeReachable - Whether or not this suspension point is reachable from a previous resumption
+//   mutatedSinceResumption - If this suspension point is reachable from a previous resumption
+//                            then this indicates the set of tracked variables that may have been mutated since then.
 //
 void AsyncTransformation::CreateSuspension(BasicBlock*                      callBlock,
                                            GenTreeCall*                     call,
                                            BasicBlock*                      suspendBB,
                                            unsigned                         stateNum,
                                            const ContinuationLayout&        layout,
-                                           const ContinuationLayoutBuilder& subLayout)
+                                           const ContinuationLayoutBuilder& subLayout,
+                                           bool                             resumeReachable,
+                                           VARSET_VALARG_TP                 mutatedSinceResumption)
 {
     GenTreeILOffset* ilOffsetNode =
         m_compiler->gtNewILOffsetNode(call->GetAsyncInfo().CallAsyncDebugInfo DEBUGARG(BAD_IL_OFFSET));
@@ -2153,11 +1712,64 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, allocContinuation));
 
-    GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(GetNewContinuationVar(), allocContinuation);
+    unsigned newContinuationVar   = GetNewContinuationVar();
+    GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(newContinuationVar, allocContinuation);
     LIR::AsRange(suspendBB).InsertAtEnd(storeNewContinuation);
 
+    SaveSet tailSaveSet = SaveSet::All;
+    if (ReuseContinuations() && resumeReachable)
+    {
+        // Split suspendBB into suspendBB -> [reuse continuation with Next store] -> [allocNewBlock with allocation
+        // call] -> suspendBBTail [empty]
+        BasicBlock* allocNewBB          = m_compiler->fgSplitBlockAfterNode(suspendBB, recordOffset);
+        BasicBlock* reuseContinuationBB = m_compiler->fgSplitBlockAtEnd(suspendBB);
+        BasicBlock* suspendTailBB       = m_compiler->fgSplitBlockAtEnd(allocNewBB);
+
+        m_compiler->fgRemoveRefPred(reuseContinuationBB->GetTargetEdge());
+        FlowEdge* toSuspendTail = m_compiler->fgAddRefPred(suspendTailBB, reuseContinuationBB);
+        reuseContinuationBB->SetTargetEdge(toSuspendTail);
+
+        FlowEdge* toAllocNew = m_compiler->fgAddRefPred(allocNewBB, suspendBB);
+        suspendBB->SetCond(suspendBB->GetTargetEdge(), toAllocNew);
+        suspendBB->GetTrueEdge()->setLikelihood(1.0);
+        suspendBB->GetFalseEdge()->setLikelihood(0.0);
+
+        JITDUMP("Continuation reuse is active. Split suspendBB into suspendBB " FMT_BB
+                " -> reuseContinuationBlock " FMT_BB " -> allocNewBlock " FMT_BB " -> suspendBBTail " FMT_BB "\n",
+                suspendBB->bbNum, reuseContinuationBB->bbNum, allocNewBB->bbNum, suspendTailBB->bbNum);
+
+        // Store newContinuationVar = reusableContinuation in suspendBB
+        GenTree* reusableContinuation   = m_compiler->gtNewLclvNode(m_reuseContinuationVar, TYP_REF);
+        GenTree* storeContinuationParam = m_compiler->gtNewStoreLclVarNode(newContinuationVar, reusableContinuation);
+        LIR::AsRange(suspendBB).InsertAtEnd(reusableContinuation, storeContinuationParam);
+
+        // Check if newContinuationVar != null, jump to reuseContinuationBlock
+        GenTree* reusedContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
+        GenTree* null               = m_compiler->gtNewNull();
+        GenTree* neNull             = m_compiler->gtNewOperNode(GT_NE, TYP_INT, reusedContinuation, null);
+        GenTree* jtrue              = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
+        LIR::AsRange(suspendBB).InsertAtEnd(reusedContinuation, null, neNull, jtrue);
+
+        // Fill in 'Next' in reuseContinuationBB
+        GenTree* newContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
+        unsigned nextOffset      = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationNextFldHnd);
+        returnedContinuation     = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
+        GenTree* storeNext       = StoreAtOffset(returnedContinuation, nextOffset, newContinuation, TYP_REF);
+        LIR::AsRange(reuseContinuationBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeNext));
+
+        // In the path where we allocated a new continuation we save only locals that we know to be unmutated since the
+        // last resumption.
+        FillInDataOnSuspension(call, layout, subLayout, allocNewBB, mutatedSinceResumption, SaveSet::UnmutatedLocals);
+
+        // We can skip saving unmutated locals in the shared path -- we only need to save locals that may have been
+        // mutated since the last resumption.
+        tailSaveSet = SaveSet::MutatedLocals;
+
+        suspendBB = suspendTailBB;
+    }
+
     // Fill in 'ResumeInfo'
-    GenTree* newContinuation  = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    GenTree* newContinuation  = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned resumeInfoOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeInfoFldHnd);
     GenTree* resumeInfoAddr =
         new (m_compiler, GT_ASYNC_RESUME_INFO) GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, (ssize_t)stateNum);
@@ -2165,7 +1777,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResume));
 
     // Fill in 'state'
-    newContinuation       = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    newContinuation       = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned stateOffset  = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
     GenTree* stateNumNode = m_compiler->gtNewIconNode((ssize_t)stateNum, TYP_INT);
     GenTree* storeState   = StoreAtOffset(newContinuation, stateOffset, stateNumNode, TYP_INT);
@@ -2174,33 +1786,49 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     // Fill in 'flags'
     const AsyncCallInfo& callInfo          = call->GetAsyncInfo();
     unsigned             continuationFlags = 0;
-    if (subLayout.NeedsOSRILOffset())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_OSR_ILOFFSET;
+    auto                 encodeIndex = [&continuationFlags](unsigned offset, unsigned firstBit, unsigned numBits) {
+        assert(numBits < 32);
+        assert((offset % TARGET_POINTER_SIZE) == 0);
+        unsigned index = 1 + offset / TARGET_POINTER_SIZE;
+        unsigned mask  = (1u << numBits) - 1;
+
+        if ((index & mask) != index)
+        {
+            IMPL_LIMITATION("Cannot encode continuation offset in flags");
+        }
+
+        continuationFlags |= index << firstBit;
+    };
+
     if (subLayout.NeedsException())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_EXCEPTION;
+        encodeIndex(layout.ExceptionOffset, CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
     if (subLayout.NeedsContinuationContext())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
+        encodeIndex(layout.ContinuationContextOffset, CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS);
     if (call->gtReturnType != TYP_VOID)
-        continuationFlags |= CORINFO_CONTINUATION_HAS_RESULT;
+    {
+        const ReturnInfo* returnInfo = layout.FindReturn(m_compiler, call);
+        assert(returnInfo != nullptr);
+        encodeIndex(returnInfo->Offset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
+    }
     if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
         continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
 
-    newContinuation      = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    newContinuation      = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
     GenTree* flagsNode   = m_compiler->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);
     GenTree* storeFlags  = StoreAtOffset(newContinuation, flagsOffset, flagsNode, TYP_INT);
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeFlags));
 
-    if (layout.Size > 0)
-    {
-        FillInDataOnSuspension(call, layout, subLayout, suspendBB);
-    }
+    FillInDataOnSuspension(call, layout, subLayout, suspendBB, mutatedSinceResumption, tailSaveSet);
 
     RestoreContexts(callBlock, call, suspendBB);
 
     if (suspendBB->KindIs(BBJ_RETURN))
     {
-        newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        newContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
         GenTree* ret    = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
         LIR::AsRange(suspendBB).InsertAtEnd(newContinuation, ret);
     }
@@ -2247,7 +1875,7 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(bool              
 //------------------------------------------------------------------------
 // AsyncTransformation::FillInDataOnSuspension:
 //   Create IR that fills the data array of the continuation object with
-//   live local values, OSR IL offset, continuation context, and execution
+//   live local values, OSR address, continuation context, and execution
 //   context.
 //
 // Parameters:
@@ -2259,23 +1887,29 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(bool              
 void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                     call,
                                                  const ContinuationLayout&        layout,
                                                  const ContinuationLayoutBuilder& subLayout,
-                                                 BasicBlock*                      suspendBB)
+                                                 BasicBlock*                      suspendBB,
+                                                 VARSET_VALARG_TP                 mutatedSinceResumption,
+                                                 SaveSet                          saveSet)
 {
-    if (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR())
+    if ((saveSet != SaveSet::MutatedLocals) && (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR()))
     {
-        GenTree* ilOffsetToStore;
+        GenTree* osrAddressToStore;
         if (m_compiler->doesMethodHavePatchpoints())
-            ilOffsetToStore = m_compiler->gtNewIconNode(-1);
+        {
+            osrAddressToStore = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+        }
         else
-            ilOffsetToStore = m_compiler->gtNewIconNode((int)m_compiler->info.compILEntry);
+        {
+            osrAddressToStore = new (m_compiler, GT_FTN_ENTRY) GenTree(GT_FTN_ENTRY, TYP_I_IMPL);
+        }
 
-        // OSR IL offset needs to be at offset 0 because OSR and tier0 methods
+        // OSR address needs to be at offset 0 because OSR and tier0 methods
         // need to agree on that.
-        assert(layout.OSRILOffset == 0);
+        assert(layout.OSRAddressOffset == 0);
         GenTree* newContinuation       = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned offset                = OFFSETOF__CORINFO_Continuation__data;
-        GenTree* storePatchpointOffset = StoreAtOffset(newContinuation, offset, ilOffsetToStore, TYP_INT);
-        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storePatchpointOffset));
+        GenTree* storeOSRAddressOffset = StoreAtOffset(newContinuation, offset, osrAddressToStore, TYP_I_IMPL);
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeOSRAddressOffset));
     }
 
     // Fill in data
@@ -2287,6 +1921,11 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         }
 
         LclVarDsc* dsc = m_compiler->lvaGetDesc(inf.LclNum);
+
+        if ((saveSet != SaveSet::All) && (GetLocalSaveSet(dsc, mutatedSinceResumption) != saveSet))
+        {
+            continue;
+        }
 
         GenTree* newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned offset          = OFFSETOF__CORINFO_Continuation__data + inf.Offset;
@@ -2325,7 +1964,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         m_compiler->compLongUsed |= dsc->TypeIs(TYP_LONG);
     }
 
-    if (subLayout.NeedsContinuationContext())
+    if ((saveSet != SaveSet::UnmutatedLocals) && subLayout.NeedsContinuationContext())
     {
         // Insert call
         //   AsyncHelpers.CaptureContinuationContext(
@@ -2376,7 +2015,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         LIR::AsRange(suspendBB).Remove(flagsPlaceholder);
     }
 
-    if (subLayout.NeedsExecutionContext())
+    if ((saveSet != SaveSet::UnmutatedLocals) && subLayout.NeedsExecutionContext())
     {
         GenTreeCall* captureExecContext =
             m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureExecutionContextMethHnd, TYP_REF);
@@ -2390,6 +2029,45 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         GenTree* store           = StoreAtOffset(newContinuation, offset, captureExecContext, TYP_REF);
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
     }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::GetLocalSaveSet:
+//   Get the save set that a local should be saved as part of.
+//
+// Parameters:
+//   dsc - The local
+//   mutatedSinceResumption - Set of locals that may have been mutated since a resumption
+//
+// Returns:
+//   The set to save the local as part of.
+//
+SaveSet AsyncTransformation::GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption)
+{
+    if (dsc->lvPromoted)
+    {
+        for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+        {
+            LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
+            if (!fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, fieldDsc->lvVarIndex))
+            {
+                return SaveSet::MutatedLocals;
+            }
+        }
+
+        return SaveSet::UnmutatedLocals;
+    }
+
+    // We should only see struct fields for independently promoted structs
+    assert(!dsc->lvIsStructField ||
+           (m_compiler->lvaGetPromotionType(dsc->lvParentLcl) == Compiler::PROMOTION_TYPE_INDEPENDENT));
+
+    if (!dsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, dsc->lvVarIndex))
+    {
+        return SaveSet::MutatedLocals;
+    }
+
+    return SaveSet::UnmutatedLocals;
 }
 
 //------------------------------------------------------------------------
@@ -2441,10 +2119,10 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
 
     GenTree* continuation = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
     GenTree* null         = m_compiler->gtNewNull();
-    GenTree* started      = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    GenTree* resumed      = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
 
-    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_compiler, started));
-    use.ReplaceWith(started);
+    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_compiler, resumed));
+    use.ReplaceWith(resumed);
     LIR::AsRange(suspendBB).Remove(resumedPlaceholder);
 
     // Replace execContextPlaceholder with actual value
@@ -2780,6 +2458,16 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     GenTree* storeException  = m_compiler->gtNewStoreLclVarNode(exceptionLclNum, exceptionInd);
     LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeException));
 
+    if (ReuseContinuations())
+    {
+        // If we may reuse this continuation later then make sure we don't see the same exception again.
+        GenTree* continuation    = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned exceptionOffset = OFFSETOF__CORINFO_Continuation__data + layout.ExceptionOffset;
+        GenTree* null            = m_compiler->gtNewNull();
+        GenTree* nullException   = StoreAtOffset(continuation, exceptionOffset, null, TYP_REF);
+        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, nullException));
+    }
+
     GenTree* exception = m_compiler->gtNewLclVarNode(exceptionLclNum, TYP_REF);
     GenTree* null      = m_compiler->gtNewNull();
     GenTree* neNull    = m_compiler->gtNewOperNode(GT_NE, TYP_INT, exception, null);
@@ -2817,7 +2505,7 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
                                                       const ContinuationLayout& layout,
                                                       BasicBlock*               storeResultBB)
 {
-    const ReturnInfo* retInfo = layout.FindReturn(call);
+    const ReturnInfo* retInfo = layout.FindReturn(m_compiler, call);
     assert(retInfo != nullptr);
     GenTree* resultBase   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
     unsigned resultOffset = OFFSETOF__CORINFO_Continuation__data + retInfo->Offset;
@@ -3072,21 +2760,11 @@ unsigned AsyncTransformation::GetExceptionVar()
 }
 
 //------------------------------------------------------------------------
-// AsyncTransformation::GetSharedReturnBB:
-//   Create the shared return BB, if one is needed.
+// AsyncTransformation::CreateSharedReturnBB:
+//   Create the shared return BB.
 //
-// Returns:
-//   Basic block or nullptr.
-//
-BasicBlock* AsyncTransformation::GetSharedReturnBB()
+void AsyncTransformation::CreateSharedReturnBB()
 {
-#ifdef JIT32_GCENCODER
-    if (m_sharedReturnBB != nullptr)
-    {
-        return m_sharedReturnBB;
-    }
-
-    // Due to a hard cap on epilogs we need a shared return here.
     m_sharedReturnBB = m_compiler->fgNewBBafter(BBJ_RETURN, m_compiler->fgLastBBInMainFunction(), false);
     m_sharedReturnBB->bbSetRunRarely();
     m_sharedReturnBB->clearTryIndex();
@@ -3106,10 +2784,6 @@ BasicBlock* AsyncTransformation::GetSharedReturnBB()
     JITDUMP("Created shared return BB " FMT_BB "\n", m_sharedReturnBB->bbNum);
 
     DISPRANGE(LIR::AsRange(m_sharedReturnBB));
-    return m_sharedReturnBB;
-#else
-    return nullptr;
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -3119,18 +2793,111 @@ BasicBlock* AsyncTransformation::GetSharedReturnBB()
 //
 void AsyncTransformation::CreateResumptionsAndSuspensions()
 {
+    bool useSharedLayout = (m_states.size() > 1) && ReuseContinuations();
+
+    ContinuationLayout* sharedLayout = nullptr;
+    if (useSharedLayout)
+    {
+        JITDUMP("Creating shared layout:\n");
+        ContinuationLayoutBuilder* sharedLayoutBuilder =
+            ContinuationLayoutBuilder::CreateSharedLayout(m_compiler, m_states);
+        sharedLayout = sharedLayoutBuilder->Create();
+    }
+
     JITDUMP("Creating suspensions and resumptions for %zu states\n", m_states.size());
     for (const AsyncState& state : m_states)
     {
         JITDUMP("State %u suspend @ " FMT_BB ", resume @ " FMT_BB "\n", state.Number, state.SuspensionBB->bbNum,
                 state.ResumptionBB->bbNum);
-        ContinuationLayout* layout = state.Layout->Create();
-        CreateSuspension(state.CallBlock, state.Call, state.SuspensionBB, state.Number, *layout, *state.Layout);
+        ContinuationLayout* layout = sharedLayout == nullptr ? state.Layout->Create() : sharedLayout;
+        CreateSuspension(state.CallBlock, state.Call, state.SuspensionBB, state.Number, *layout, *state.Layout,
+                         state.ResumeReachable, state.MutatedSincePreviousResumption);
         CreateResumption(state.CallBlock, state.Call, state.ResumptionBB, state.CallDefInfo, *layout, *state.Layout);
         CreateDebugInfoForSuspensionPoint(*layout, *state.Layout);
 
         JITDUMP("\n");
     }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::ReuseContinuations:
+//   Returns true if continuation reuse is enabled.
+//
+// Returns:
+//   True if so.
+//
+bool AsyncTransformation::ReuseContinuations()
+{
+#ifdef DEBUG
+    static ConfigMethodRange s_range;
+    s_range.EnsureInit(JitConfig.JitAsyncReuseContinuationsRange());
+
+    if (!s_range.Contains(m_compiler->info.compMethodHash()))
+    {
+        return false;
+    }
+#endif
+
+    return JitConfig.JitAsyncReuseContinuations() != 0;
+}
+
+//------------------------------------------------------------------------
+// ContinuationLayoutBuilder::CreateSharedLayout:
+//   Create a shared continuation layout that is the union of all per-call
+//   layouts. The shared layout contains every local, return type, and
+//   optional field needed by any individual suspension point.
+//
+// Parameters:
+//   comp   - The compiler instance.
+//   states - The vector of async states to merge.
+//
+// Returns:
+//   A new ContinuationLayoutBuilder representing the merged layout.
+//
+ContinuationLayoutBuilder* ContinuationLayoutBuilder::CreateSharedLayout(Compiler*                         comp,
+                                                                         const jitstd::vector<AsyncState>& states)
+{
+    unsigned maxLocalStored = 0;
+    for (const AsyncState& state : states)
+    {
+        jitstd::vector<unsigned>& locals = state.Layout->m_locals;
+        if (locals.size() > 0)
+        {
+            maxLocalStored = std::max(maxLocalStored, locals[locals.size() - 1]);
+        }
+    }
+
+    ContinuationLayoutBuilder* sharedLayout = new (comp, CMK_Async) ContinuationLayoutBuilder(comp);
+    BitVecTraits               traits(maxLocalStored + 1, comp);
+    BitVec                     locals(BitVecOps::MakeEmpty(&traits));
+
+    for (const AsyncState& state : states)
+    {
+        ContinuationLayoutBuilder* layout = state.Layout;
+        sharedLayout->m_needsOSRAddress |= layout->m_needsOSRAddress;
+        sharedLayout->m_needsException |= layout->m_needsException;
+        sharedLayout->m_needsContinuationContext |= layout->m_needsContinuationContext;
+        sharedLayout->m_needsKeepAlive |= layout->m_needsKeepAlive;
+        sharedLayout->m_needsExecutionContext |= layout->m_needsExecutionContext;
+
+        for (unsigned local : layout->m_locals)
+        {
+            assert(local <= maxLocalStored);
+            BitVecOps::AddElemD(&traits, locals, local);
+        }
+
+        for (const ReturnTypeInfo& ret : layout->m_returns)
+        {
+            sharedLayout->AddReturn(ret);
+        }
+    }
+
+    BitVecOps::VisitBits(&traits, locals, [=](unsigned localNum) {
+        sharedLayout->AddLocal(localNum);
+        return true;
+    });
+
+    return sharedLayout;
 }
 
 //------------------------------------------------------------------------
@@ -3240,55 +3007,50 @@ void AsyncTransformation::CreateResumptionSwitch()
     {
         JITDUMP("  Method has patch points...\n");
         // If we have patchpoints then first check if we need to resume in the OSR version.
-        BasicBlock* callHelperBB = m_compiler->fgNewBBafter(BBJ_THROW, m_compiler->fgLastBBInMainFunction(), false);
-        callHelperBB->bbSetRunRarely();
-        callHelperBB->clearTryIndex();
-        callHelperBB->clearHndIndex();
+        BasicBlock* jmpOSR = m_compiler->fgNewBBafter(BBJ_THROW, m_compiler->fgLastBBInMainFunction(), false);
+        jmpOSR->bbSetRunRarely();
+        jmpOSR->clearTryIndex();
+        jmpOSR->clearHndIndex();
 
-        JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", callHelperBB->bbNum);
+        JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", jmpOSR->bbNum);
 
-        BasicBlock* onContinuationBB = newEntryBB->GetTrueTarget();
-        BasicBlock* checkILOffsetBB  = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
+        BasicBlock* onContinuationBB        = newEntryBB->GetTrueTarget();
+        BasicBlock* checkOSRAddressOffsetBB = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
 
         JITDUMP("    Created " FMT_BB " to check whether we should transition immediately to OSR\n",
-                checkILOffsetBB->bbNum);
+                checkOSRAddressOffsetBB->bbNum);
 
-        // Redirect newEntryBB -> onContinuationBB into newEntryBB -> checkILOffsetBB -> onContinuationBB
-        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkILOffsetBB);
+        // Redirect newEntryBB -> onContinuationBB into newEntryBB -> checkOSRAddressOffsetBB -> onContinuationBB
+        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkOSRAddressOffsetBB);
         newEntryBB->GetTrueEdge()->setLikelihood(0);
-        checkILOffsetBB->inheritWeightPercentage(newEntryBB, 0);
+        checkOSRAddressOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
-        FlowEdge* toOnContinuationBB = m_compiler->fgAddRefPred(onContinuationBB, checkILOffsetBB);
-        FlowEdge* toCallHelperBB     = m_compiler->fgAddRefPred(callHelperBB, checkILOffsetBB);
-        checkILOffsetBB->SetCond(toCallHelperBB, toOnContinuationBB);
-        toCallHelperBB->setLikelihood(0);
+        FlowEdge* toOnContinuationBB = m_compiler->fgAddRefPred(onContinuationBB, checkOSRAddressOffsetBB);
+        FlowEdge* toJmpOSRBB         = m_compiler->fgAddRefPred(jmpOSR, checkOSRAddressOffsetBB);
+        checkOSRAddressOffsetBB->SetCond(toJmpOSRBB, toOnContinuationBB);
+        toJmpOSRBB->setLikelihood(0);
         toOnContinuationBB->setLikelihood(1);
-        callHelperBB->inheritWeightPercentage(checkILOffsetBB, 0);
+        jmpOSR->inheritWeightPercentage(checkOSRAddressOffsetBB, 0);
 
-        // We need to dispatch to the OSR version if the IL offset is non-negative.
-        continuationArg           = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
-        unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Continuation__data;
-        GenTree* ilOffset         = LoadFromOffset(continuationArg, offsetOfIlOffset, TYP_INT);
-        unsigned ilOffsetLclNum   = m_compiler->lvaGrabTemp(false DEBUGARG("IL offset for tier0 OSR method"));
-        m_compiler->lvaGetDesc(ilOffsetLclNum)->lvType = TYP_INT;
-        GenTree* storeIlOffset                         = m_compiler->gtNewStoreLclVarNode(ilOffsetLclNum, ilOffset);
-        LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeIlOffset));
+        // We need to dispatch to the OSR version if the OSR address is non-zero.
+        continuationArg                   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfOSRAddressOffset = OFFSETOF__CORINFO_Continuation__data;
+        GenTree* osrAddress               = LoadFromOffset(continuationArg, offsetOfOSRAddressOffset, TYP_I_IMPL);
+        unsigned osrAddressLclNum         = m_compiler->lvaGrabTemp(false DEBUGARG("OSR address for tier0 OSR method"));
+        m_compiler->lvaGetDesc(osrAddressLclNum)->lvType = TYP_I_IMPL;
+        GenTree* storeOsrAddress = m_compiler->gtNewStoreLclVarNode(osrAddressLclNum, osrAddress);
+        LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeOsrAddress));
 
-        ilOffset        = m_compiler->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
-        GenTree* zero   = m_compiler->gtNewIconNode(0);
-        GenTree* geZero = m_compiler->gtNewOperNode(GT_GE, TYP_INT, ilOffset, zero);
-        GenTree* jtrue  = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, geZero);
-        LIR::AsRange(checkILOffsetBB).InsertAtEnd(ilOffset, zero, geZero, jtrue);
+        osrAddress      = m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL);
+        GenTree* zero   = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+        GenTree* neZero = m_compiler->gtNewOperNode(GT_NE, TYP_INT, osrAddress, zero);
+        GenTree* jtrue  = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neZero);
+        LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(osrAddress, zero, neZero, jtrue);
 
-        ilOffset = m_compiler->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
+        osrAddress = m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL);
 
-        GenTreeCall* callHelper = m_compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffset);
-        callHelper->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-
-        m_compiler->compCurBB = callHelperBB;
-        m_compiler->fgMorphTree(callHelper);
-
-        LIR::AsRange(callHelperBB).InsertAtEnd(LIR::SeqTree(m_compiler, callHelper));
+        GenTree* jmpOsr = m_compiler->gtNewOperNode(GT_NONLOCAL_JMP, TYP_VOID, osrAddress);
+        LIR::AsRange(jmpOSR).InsertAtEnd(LIR::SeqTree(m_compiler, jmpOsr));
     }
     else if (m_compiler->opts.IsOSR())
     {
@@ -3297,32 +3059,40 @@ void AsyncTransformation::CreateResumptionSwitch()
         // version by normal means then we will see a non-zero continuation
         // here that belongs to the tier0 method. In that case we should just
         // ignore it, so create a BB that jumps back.
-        BasicBlock* onContinuationBB   = newEntryBB->GetTrueTarget();
-        BasicBlock* onNoContinuationBB = newEntryBB->GetFalseTarget();
-        BasicBlock* checkILOffsetBB    = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
+        BasicBlock* onContinuationBB        = newEntryBB->GetTrueTarget();
+        BasicBlock* onNoContinuationBB      = newEntryBB->GetFalseTarget();
+        BasicBlock* checkOSRAddressOffsetBB = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
 
-        // Switch newEntryBB -> onContinuationBB into newEntryBB -> checkILOffsetBB
-        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkILOffsetBB);
+        // Switch newEntryBB -> onContinuationBB into newEntryBB -> checkOSRAddressOffsetBB
+        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkOSRAddressOffsetBB);
         newEntryBB->GetTrueEdge()->setLikelihood(0);
-        checkILOffsetBB->inheritWeightPercentage(newEntryBB, 0);
+        checkOSRAddressOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
-        // Make checkILOffsetBB ->(true)  onNoContinuationBB
-        //                      ->(false) onContinuationBB
+        // Make checkOSRAddressOffsetBB ->(true)  onNoContinuationBB
+        //                        ->(false) onContinuationBB
 
-        FlowEdge* toOnContinuationBB   = m_compiler->fgAddRefPred(onContinuationBB, checkILOffsetBB);
-        FlowEdge* toOnNoContinuationBB = m_compiler->fgAddRefPred(onNoContinuationBB, checkILOffsetBB);
-        checkILOffsetBB->SetCond(toOnNoContinuationBB, toOnContinuationBB);
+        FlowEdge* toOnContinuationBB   = m_compiler->fgAddRefPred(onContinuationBB, checkOSRAddressOffsetBB);
+        FlowEdge* toOnNoContinuationBB = m_compiler->fgAddRefPred(onNoContinuationBB, checkOSRAddressOffsetBB);
+        checkOSRAddressOffsetBB->SetCond(toOnNoContinuationBB, toOnContinuationBB);
         toOnContinuationBB->setLikelihood(0);
         toOnNoContinuationBB->setLikelihood(1);
 
-        JITDUMP("    Created " FMT_BB " to check for Tier-0 continuations\n", checkILOffsetBB->bbNum);
+        JITDUMP("    Created " FMT_BB " to check for Tier-0 continuations\n", checkOSRAddressOffsetBB->bbNum);
 
-        continuationArg           = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
-        unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Continuation__data;
-        GenTree* ilOffset         = LoadFromOffset(continuationArg, offsetOfIlOffset, TYP_INT);
-        GenTree* zero             = m_compiler->gtNewIconNode(0);
-        GenTree* ltZero           = m_compiler->gtNewOperNode(GT_LT, TYP_INT, ilOffset, zero);
-        GenTree* jtrue            = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, ltZero);
-        LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, jtrue));
+        continuationArg                   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfOSRAddressOffset = OFFSETOF__CORINFO_Continuation__data;
+        GenTree* osrAddress               = LoadFromOffset(continuationArg, offsetOfOSRAddressOffset, TYP_I_IMPL);
+        GenTree* zero                     = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+        GenTree* eqZero                   = m_compiler->gtNewOperNode(GT_EQ, TYP_INT, osrAddress, zero);
+        GenTree* jtrue                    = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, eqZero);
+        LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, jtrue));
+
+        if (ReuseContinuations())
+        {
+            // Also, save the fact that we have a reusable continuation
+            continuationArg        = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+            GenTree* storeReusable = m_compiler->gtNewStoreLclVarNode(m_reuseContinuationVar, continuationArg);
+            LIR::AsRange(onContinuationBB).InsertAtBeginning(continuationArg, storeReusable);
+        }
     }
 }

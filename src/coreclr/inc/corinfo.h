@@ -55,13 +55,6 @@ method or field of the class. 'beforeFieldInit' semantics guarantees only that t
 time before the first static field access (note that calling methods (static or instance) or accessing
 instance fields does not cause .cctors to be run).
 
-Next you need to know that there are two kinds of code generation that can happen in the JIT: appdomain
-neutral and appdomain specialized. The difference between these two kinds of code is how statics are handled.
-For appdomain specific code, the address of a particular static variable is embedded in the code. This makes
-it usable only for one appdomain (since every appdomain gets a own copy of its statics). Appdomain neutral
-code calls a helper that looks up static variables off of a thread local variable. Thus the same code can be
-used by multiple appdomains in the same process.
-
 Generics also introduce a similar issue. Code for generic classes might be specialized for a particular set
 of type arguments, or it could use helpers to access data that depends on type parameters and thus be shared
 across several instantiations of the generic type.
@@ -924,8 +917,12 @@ enum class CorInfoReloc
                                            //  e.g. directly loading from or storing to a C++ global.
     WASM_MEMORY_ADDR_SLEB,               // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
                                            //  e.g. taking the address of a C++ global.
+    WASM_MEMORY_ADDR_REL_SLEB,          // Wasm: a relative linear memory index encoded as a 5-byte varint32. Used as the immediate argument of an i32.const instruction,
+                                           // e.g. in R2R scenarios as an offset from __image_base
     WASM_TYPE_INDEX_LEB,                 // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
     WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
+    WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
+                                           // e.g. in R2R scenarios as an offset from __image_base
 };
 
 enum CorInfoGCType
@@ -1792,31 +1789,32 @@ struct CORINFO_EE_INFO
 // Keep in sync with ContinuationFlags enum in BCL sources
 enum CorInfoContinuationFlags
 {
-    // Note: the following 'Has' members determine the members present at
-    // the beginning of the continuation's data chunk. Each field is
-    // pointer sized when present, apart from the result that has variable
-    // size.
-
-    // Whether or not the continuation starts with an OSR IL offset.
-    CORINFO_CONTINUATION_HAS_OSR_ILOFFSET = 1,
-    // If this bit is set the continuation resumes inside a try block and
-    // thus if an exception is being propagated, needs to be resumed.
-    CORINFO_CONTINUATION_HAS_EXCEPTION = 2,
-    // If this bit is set the continuation has space for a continuation
-    // context.
-    CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 4,
-    // If this bit is set the continuation has space to store a result
-    // returned by the callee.
-    CORINFO_CONTINUATION_HAS_RESULT = 8,
     // If this bit is set the continuation should continue on the thread
     // pool.
-    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 16,
+    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 1 << 0,
     // If this bit is set the continuation context is a
     // SynchronizationContext that we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 32,
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 1 << 1,
     // If this bit is set the continuation context is a TaskScheduler that
     // we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 64,
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 1 << 2,
+
+    // The flags encode where in the continuation various members are stored.
+    // If the encoded index is 0, it means no such member is present.
+    // Otherwise the exact offset of the member is computed as
+    //   OFFSETOF__CORINFO_Continuation__data + (index - 1) * PointerSize
+    //
+    CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 3,
+    CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS = 2,
+
+    CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT = 5,
+    CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS = 2,
+
+    // For JIT, the continuation stores space for every possible type of
+    // async callee's result. We need to represent the offset to each of
+    // these, so we allocate the rest of the bits for this.
+    CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 7,
+    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 25,
 };
 
 struct CORINFO_ASYNC_INFO

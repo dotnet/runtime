@@ -30,6 +30,7 @@
 //
 
 #if MONO_FEATURE_SRE
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -109,6 +110,7 @@ namespace System.Reflection.Emit
         }
 
         [CLSCompliantAttribute(false)]
+        [RequiresUnsafe]
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(codeSize);
@@ -126,6 +128,7 @@ namespace System.Reflection.Emit
 
         // FIXME:
         [CLSCompliantAttribute(false)]
+        [RequiresUnsafe]
         public unsafe void SetExceptions(byte* exceptions, int exceptionsSize)
         {
             throw new NotImplementedException();
@@ -138,6 +141,7 @@ namespace System.Reflection.Emit
         }
 
         [CLSCompliantAttribute(false)]
+        [RequiresUnsafe]
         public unsafe void SetLocalSignature(byte* localSignature, int signatureSize)
         {
             byte[] b = new byte[signatureSize];

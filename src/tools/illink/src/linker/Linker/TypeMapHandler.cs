@@ -107,42 +107,9 @@ namespace Mono.Linker
             _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
 
             // Mark the target type as instantiated
-            if (entry.TargetType is { } targetType && _context.Resolve(targetType) is TypeDefinition targetTypeDef)
-            {
-                _context.Annotations.MarkInstantiated(targetTypeDef);
-                if (entry.Attribute.AttributeType is GenericInstanceType { Name: "TypeMapAttribute`1", GenericArguments: [TypeReference typeMapGroup] })
-                    MarkAssociatedProxyTypeMapAttributes(targetTypeDef, typeMapGroup);
-            }
-        }
-
-        void MarkAssociatedProxyTypeMapAttributes(TypeDefinition sourceType, TypeReference typeMapGroup)
-        {
-            if (_unmarkedProxyTypeMapEntries.TryGetValue(sourceType, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entriesByGroup) &&
-                entriesByGroup.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? unmarkedAttributes))
-            {
-                foreach (var attr in unmarkedAttributes)
-                    MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, sourceType));
-
-                if (entriesByGroup.Count == 0)
-                    _unmarkedProxyTypeMapEntries.Remove(sourceType);
-            }
-
-            if (_pendingProxyTypeMapEntries.TryGetValue(typeMapGroup, out List<CustomAttributeWithOrigin>? pendingAttributes))
-            {
-                for (int i = pendingAttributes.Count - 1; i >= 0; i--)
-                {
-                    CustomAttributeWithOrigin attr = pendingAttributes[i];
-                    if (attr.Attribute.ConstructorArguments is [{ Value: TypeReference pendingSourceType }, _] &&
-                        _context.Resolve(pendingSourceType) == sourceType)
-                    {
-                        pendingAttributes.RemoveAt(i);
-                        MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, sourceType));
-                    }
-                }
-
-                if (pendingAttributes.Count == 0)
-                    _pendingProxyTypeMapEntries.Remove(typeMapGroup);
-            }
+            if (entry.TargetType is { } targetType
+                && _context.Resolve(UnwrapToResolvableType(targetType)) is TypeDefinition targetTypeDef)
+                _markStep.MarkRequirementsForInstantiatedTypes(targetTypeDef);
         }
 
         public void ProcessType(TypeDefinition definition)
@@ -190,7 +157,7 @@ namespace Mono.Linker
         {
             if (attr.Attribute.ConstructorArguments is [_, _, { Value: TypeReference trimTarget }])
             {
-                RecordTypeMapEntry(attr, group, trimTarget, _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
+                RecordTypeMapEntry(attr, group, UnwrapToResolvableType(trimTarget), _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
             }
             else if (attr.Attribute.ConstructorArguments is [_, { Value: TypeReference }])
             {
@@ -205,12 +172,24 @@ namespace Mono.Linker
         {
             if (attr.Attribute.ConstructorArguments is [{ Value: TypeReference sourceType }, _])
             {
-                // This is a TypeMapAssociationAttribute, which has a single type argument.
-                RecordTypeMapEntry(attr, group, sourceType, _unmarkedProxyTypeMapEntries, _referencedProxyTypeMaps, _pendingProxyTypeMapEntries);
+                // This is a TypeMapAssociationAttribute with two constructor type arguments (source and proxy).
+                RecordTypeMapEntry(attr, group, UnwrapToResolvableType(sourceType), _unmarkedProxyTypeMapEntries, _referencedProxyTypeMaps, _pendingProxyTypeMapEntries);
                 return;
             }
             // Invalid attribute, skip it.
             // Let the runtime handle the failure.
+        }
+
+        /// <summary>
+        /// Strips non-resolvable <see cref="TypeSpecification"/> wrappers (array, pointer, byref, etc.)
+        /// from <paramref name="type"/> until a <see cref="TypeDefinition"/> or <see cref="GenericInstanceType"/>
+        /// is reached. Both of those are resolvable by <see cref="LinkContext.Resolve"/>.
+        /// </summary>
+        static TypeReference UnwrapToResolvableType(TypeReference type)
+        {
+            while (type is TypeSpecification { ElementType: var elementType } and not GenericInstanceType)
+                type = elementType;
+            return type;
         }
 
         private void AddAssemblyTarget(TypeReference typeMapGroup, CustomAttributeWithOrigin attr)

@@ -19,6 +19,7 @@ public:
 void emitIns(instruction ins);
 void emitIns_BlockTy(instruction ins, WasmValueType valType = WasmValueType::Invalid);
 void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm);
+void emitIns_Ty_I(instruction ins, WasmValueType ty, unsigned int imm);
 void emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs);
 void emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* tgtBlock);
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
@@ -41,6 +42,10 @@ instrDesc*           emitNewInstrLclVarDecl(emitAttr attr, unsigned int localCou
 static WasmValueType emitGetLclVarDeclType(const instrDesc* id);
 static unsigned int  emitGetLclVarDeclCount(const instrDesc* id);
 
+instrDesc*           emitNewInstrValTypeImm(emitAttr attr, WasmValueType type, unsigned int localCount);
+static WasmValueType emitGetValTypeImmType(const instrDesc* id);
+static unsigned int  emitGetValTypeImmImm(const instrDesc* id);
+
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
 /************************************************************************/
@@ -61,3 +66,5 @@ size_t emitOutputOpcode(BYTE* dst, instruction ins);
 size_t emitOutputPaddedReloc(uint8_t* destination);
 size_t emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType);
 size_t emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype);
+
+void emitUpdateFuncletLocations();

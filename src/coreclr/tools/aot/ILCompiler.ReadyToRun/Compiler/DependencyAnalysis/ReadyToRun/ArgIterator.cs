@@ -13,6 +13,7 @@ using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.CorConstants;
 using Internal;
+using ILCompiler.DependencyAnalysis.Wasm;
 
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -645,6 +646,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else
             {
+                if (_transitionBlock.IsWasm32)
+                {
+                    if (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE)
+                    {
+                        return _transitionBlock.IsArgPassedByRef(_argTypeHandle);
+                    }
+                }
                 return false;
             }
         }
@@ -679,15 +687,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // VaSig cookie is after this and retbuf arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
 
                 if (HasThis)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 return ret;
@@ -721,15 +730,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // The hidden arg is after this and retbuf arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
 
                 if (HasThis)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 return ret;
@@ -770,20 +780,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // The hidden arg is after this, retbuf and param type arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
 
                 if (HasThis)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasParamType)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 return ret;
@@ -857,6 +868,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         {
                             _x64WindowsCurOfs = _transitionBlock.OffsetOfArgs + numRegistersUsed * _transitionBlock.PointerSize;
                         }
+                        break;
+
+                    case TargetArchitecture.Wasm32:
+                        _wasmOfsStack = numRegistersUsed * _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
                         break;
 
                     case TargetArchitecture.ARM:
@@ -1056,6 +1071,63 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             int idxFpReg = argOfs / _transitionBlock.PointerSize;
                             return _transitionBlock.OffsetOfFloatArgumentRegisters + idxFpReg * TransitionBlock.SizeOfM128A;
                         }
+                    }
+
+                case TargetArchitecture.Wasm32:
+                    {
+                        bool isValueType = (argType == CorElementType.ELEMENT_TYPE_VALUETYPE);
+                        WasmValueType actualWasmAbiType = default(WasmValueType);
+
+                        switch (argType)
+                        {
+                            case CorElementType.ELEMENT_TYPE_VALUETYPE:
+                                actualWasmAbiType = WasmLowering.LowerType(_argTypeHandle.GetRuntimeTypeHandle());
+                                break;
+
+                            case CorElementType.ELEMENT_TYPE_I8:
+                            case CorElementType.ELEMENT_TYPE_U8:
+                                actualWasmAbiType = WasmValueType.I64;
+                                break;
+                            case CorElementType.ELEMENT_TYPE_R8:
+                                actualWasmAbiType = WasmValueType.F64;
+                                break;
+                            case CorElementType.ELEMENT_TYPE_R4:
+                                actualWasmAbiType = WasmValueType.F32;
+                                break;
+                            default:
+                                actualWasmAbiType = WasmValueType.I32;
+                                break;
+                        }
+
+                        int cbArg;
+                        int align;
+                        switch (actualWasmAbiType)
+                        {
+                        case WasmValueType.I64:
+                        case WasmValueType.F64:
+                            cbArg = 8;
+                            align = 8;
+                            break;
+                        case WasmValueType.I32:
+                        case WasmValueType.F32:
+                            cbArg = 8;
+                            align = 8;
+                            break;
+                        case WasmValueType.V128:
+                            cbArg = 16;
+                            align = 16;
+                            break;
+                        default:
+                            throw new Exception(); // These are the only WasmValueTypes defined in our transition block handling
+                        }
+
+                        _wasmOfsStack = ALIGN_UP(_wasmOfsStack, align);
+                        argOfs = _transitionBlock.OffsetOfArgs + _wasmOfsStack;
+
+                        // Advance the stack pointer over the argument just placed.
+                        _wasmOfsStack += cbArg;
+
+                        return argOfs;
                     }
 
                 case TargetArchitecture.ARM:
@@ -1635,7 +1707,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         stackElemSize = _transitionBlock.StackElemSize(GetArgSize(), IsValueType(), IsFloatHfa());
 
                         if (IsArgPassedByRef())
-                            stackElemSize = _transitionBlock.PointerSize;
+                            stackElemSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
                     }
 
                     int endOfs = ofs + stackElemSize;
@@ -1648,6 +1720,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         maxOffset = endOfs;
                     }
                 }
+
+                if (maxOffset == 0 && _transitionBlock.IsWasm32)
+                {
+                    // Wasm puts all arguments on the stack, even the unnamed ones like the param registers, this pointer and async continuation. If we didn't see any named arguments, then we need to account for the unnamed ones here.
+                    maxOffset = _wasmOfsStack;
+                }
+
                 // Clear the iterator started flag
                 _ITERATION_STARTED = false;
 
@@ -1660,8 +1739,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            // arg stack size is rounded to the pointer size on all platforms.
-            nSizeOfArgStack = ALIGN_UP(nSizeOfArgStack, _transitionBlock.PointerSize);
+            // arg stack size is rounded to the stack slot size on all platforms.
+            nSizeOfArgStack = ALIGN_UP(nSizeOfArgStack, _transitionBlock.StackElemSize(_transitionBlock.PointerSize));
 
             // Cache the result
             _nSizeOfArgStack = nSizeOfArgStack;
@@ -1675,6 +1754,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             switch (_transitionBlock.Architecture)
             {
+                case TargetArchitecture.Wasm32:
+                    {
+                        ArgLocDesc pLoc = new ArgLocDesc();
+                        int byteArgSize = GetArgSize();
+
+                        if (IsArgPassedByRef())
+                            byteArgSize = _transitionBlock.PointerSize;
+                        pLoc.m_byteStackIndex = _transitionBlock.GetStackArgumentByteIndexFromOffset(argOffset);
+                        pLoc.m_byteStackSize = _transitionBlock.StackElemSize(byteArgSize);
+                        return pLoc;
+                    }
                 case TargetArchitecture.ARM:
                     {
                         //        LIMITED_METHOD_CONTRACT;
@@ -1894,6 +1984,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private ushort _armWFPRegs;          // Bitmask of available floating point argument registers (s0-s15/d0-d7)
         private bool _armRequires64BitAlignment; // Cached info about the current arg
+
+        private int _wasmOfsStack;          // Cached info about the current arg for Wasm32
 
         private int _arm64IdxGenReg;        // Next general register to be assigned a value
         private int _arm64OfsStack;         // Offset of next stack location to be assigned a value

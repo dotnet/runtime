@@ -58,12 +58,12 @@ namespace System.Runtime.InteropServices
         private static readonly Guid IID_IInspectable = new Guid(0xAF86E2E0, 0xB12D, 0x4c6a, 0x9C, 0x5A, 0xD7, 0xAA, 0x65, 0x10, 0x1E, 0x90);
         private static readonly Guid IID_IWeakReferenceSource = new Guid(0x00000038, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 
-        private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_nativeObjectWrapperTable = [];
+        private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_nativeObjectWrapperTable = []; // [cDAC] [ComWrappers] : Contract depends on this exact name
 
         /// <summary>
         /// Associates an object with all the <see cref="ManagedObjectWrapperHolder"/>s that were created for it.
         /// </summary>
-        private static readonly ConditionalWeakTable<object, List<ManagedObjectWrapperHolder>> s_allManagedObjectWrapperTable = [];
+        private static readonly ConditionalWeakTable<object, List<ManagedObjectWrapperHolder>> s_allManagedObjectWrapperTable = []; // [cDAC] [ComWrappers] : Contract depends on this exact name
 
         /// <summary>
         /// Associates a managed object with the <see cref="ManagedObjectWrapperHolder"/> that was created for it by this <see cref="ComWrappers" /> instance.
@@ -129,12 +129,14 @@ namespace System.Runtime.InteropServices
             /// <typeparam name="T">Desired type.</typeparam>
             /// <param name="dispatchPtr">Pointer supplied to Vtable function entry.</param>
             /// <returns>Instance of type associated with dispatched function call.</returns>
+            [RequiresUnsafe]
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
                 ManagedObjectWrapper* comInstance = ToManagedObjectWrapper(dispatchPtr);
                 return Unsafe.As<T>(comInstance->Holder!.WrappedObject);
             }
 
+            [RequiresUnsafe]
             internal static unsafe ManagedObjectWrapper* ToManagedObjectWrapper(ComInterfaceDispatch* dispatchPtr)
             {
                 InternalComInterfaceDispatch* dispatch = (InternalComInterfaceDispatch*)unchecked((nuint)dispatchPtr & (nuint)InternalComInterfaceDispatch.DispatchAlignmentMask);
@@ -486,6 +488,7 @@ namespace System.Runtime.InteropServices
 
             private readonly ManagedObjectWrapper* _wrapper;
 
+            [RequiresUnsafe]
             public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper, object wrappedObject)
             {
                 _wrapper = wrapper;
@@ -502,6 +505,7 @@ namespace System.Runtime.InteropServices
 
             public bool IsActivated => _wrapper->Flags.HasFlag(CreateComInterfaceFlagsEx.IsComActivated);
 
+            [RequiresUnsafe]
             internal ManagedObjectWrapper* Wrapper => _wrapper;
         }
 
@@ -509,6 +513,7 @@ namespace System.Runtime.InteropServices
         {
             private ManagedObjectWrapper* _wrapper;
 
+            [RequiresUnsafe]
             public ManagedObjectWrapperReleaser(ManagedObjectWrapper* wrapper)
             {
                 _wrapper = wrapper;
@@ -826,6 +831,7 @@ namespace System.Runtime.InteropServices
             return (nuint)((value + alignMask) & ~alignMask);
         }
 
+        [RequiresUnsafe]
         private unsafe ManagedObjectWrapper* CreateManagedObjectWrapper(object instance, CreateComInterfaceFlags flags)
         {
             ComInterfaceEntry* userDefined = ComputeVtables(instance, flags, out int userDefinedCount);
@@ -985,13 +991,14 @@ namespace System.Runtime.InteropServices
             return obj;
         }
 
+        [RequiresUnsafe]
         private static unsafe ComInterfaceDispatch* TryGetComInterfaceDispatch(IntPtr comObject)
         {
             // If the first Vtable entry is part of a ManagedObjectWrapper impl,
             // we know how to interpret the IUnknown.
             IntPtr knownQI = ((IntPtr*)((IntPtr*)comObject)[0])[0];
             if (knownQI != ((IntPtr*)DefaultIUnknownVftblPtr)[0]
-                || knownQI != ((IntPtr*)DefaultIReferenceTrackerTargetVftblPtr)[0])
+                && knownQI != ((IntPtr*)DefaultIReferenceTrackerTargetVftblPtr)[0])
             {
                 // It is possible the user has defined their own IUnknown impl so
                 // we fallback to the tagged interface approach to be sure.
@@ -1291,6 +1298,11 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        internal void RemoveWrappersFromCache(IEnumerable<NativeObjectWrapper> wrappers)
+        {
+            _rcwCache.RemoveAll(wrappers);
+        }
+
         private sealed class RcwCache
         {
             private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
@@ -1399,22 +1411,45 @@ namespace System.Runtime.InteropServices
                 _lock.EnterWriteLock();
                 try
                 {
-                    // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
-                    // in the time between the GC cleared the contents of the GC handle but before the
-                    // NativeObjectWrapper finalizer ran.
-                    // Only remove the entry if the target of the GC handle is the NativeObjectWrapper
-                    // or is null (indicating that the corresponding NativeObjectWrapper has been scheduled for finalization).
-                    if (_cache.TryGetValue(comPointer, out GCHandle cachedRef)
-                        && (wrapper == cachedRef.Target
-                            || cachedRef.Target is null))
+                    Remove_Locked(comPointer, wrapper);
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
+                }
+            }
+
+            public void RemoveAll(IEnumerable<NativeObjectWrapper> wrappers)
+            {
+                _lock.EnterWriteLock();
+                try
+                {
+                    foreach (NativeObjectWrapper wrapper in wrappers)
                     {
-                        _cache.Remove(comPointer);
-                        cachedRef.Free();
+                        Remove_Locked(wrapper.ExternalComObject, wrapper);
                     }
                 }
                 finally
                 {
                     _lock.ExitWriteLock();
+                }
+            }
+
+            private void Remove_Locked(IntPtr comPointer, NativeObjectWrapper wrapper)
+            {
+                Debug.Assert(_lock.IsWriteLockHeld);
+                // This method is used in a scenario where we already have a lock on the cache, so we can skip acquiring the lock again.
+                // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
+                // in the time between the GC cleared the contents of the GC handle but before the
+                // NativeObjectWrapper finalizer ran.
+                // Only remove the entry if the target of the GC handle is the NativeObjectWrapper
+                // or is null (indicating that the corresponding NativeObjectWrapper has been scheduled for finalization).
+                if (_cache.TryGetValue(comPointer, out GCHandle cachedRef)
+                    && (wrapper == cachedRef.Target
+                        || cachedRef.Target is null))
+                {
+                    _cache.Remove(comPointer);
+                    cachedRef.Free();
                 }
             }
         }
@@ -1473,11 +1508,12 @@ namespace System.Runtime.InteropServices
         /// <returns><see cref="ComInterfaceEntry" /> pointer containing memory for all COM interface entries.</returns>
         /// <remarks>
         /// All memory returned from this function must either be unmanaged memory, pinned managed memory, or have been
-        /// allocated with the <see cref="CompilerServices.RuntimeHelpers.AllocateTypeAssociatedMemory(Type, int)"/> API.
+        /// allocated with the <see cref="RuntimeHelpers.AllocateTypeAssociatedMemory(Type, int)"/> API.
         ///
         /// If the interface entries cannot be created and a negative <paramref name="count" /> or <code>null</code> and a non-zero <paramref name="count" /> are returned,
         /// the call to <see cref="GetOrCreateComInterfaceForObject(object, CreateComInterfaceFlags)"/> will throw a <see cref="ArgumentException"/>.
         /// </remarks>
+        [RequiresUnsafe]
         protected abstract unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
         /// <summary>
