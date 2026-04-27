@@ -3084,7 +3084,7 @@ SWITCH_OPCODE:
                         }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
                         frameNeedsTailcallUpdate = false;
-                        CalliStubParam param = { calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr() };
+                        CalliStubParam param = { calliFunctionPointer, (void*)cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr() };
                         InvokeCalliStub(&param);
                     }
 

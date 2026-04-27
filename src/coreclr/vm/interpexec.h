@@ -6,7 +6,6 @@
 
 #include <interpretershared.h>
 #include "interpframeallocator.h"
-#include "method.hpp"
 
 #define INTERP_STACK_SIZE 1024*1024
 #define INTERP_STACK_FRAGMENT_SIZE 4096
@@ -134,7 +133,7 @@ struct ManagedMethodParam
 struct CalliStubParam
 {
     PCODE ftn;
-    InterpreterCalliCookie cookie;
+    void* cookie;
     int8_t *pArgs;
     int8_t *pRet;
     Object** pContinuationRet;

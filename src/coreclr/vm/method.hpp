@@ -253,11 +253,11 @@ enum MethodDescFlags
 
 // Used for storing additional items related to native code
 #ifdef FEATURE_INTERPRETER
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef TARGET_WASM
 typedef void(*InterpreterCalliCookie)(PCODE, int8_t*, int8_t*);
 #else
 typedef CallStubHeader* InterpreterCalliCookie;
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif // TARGET_WASM
 #endif // FEATURE_INTERPRETER
 
 struct MethodDescCodeData final

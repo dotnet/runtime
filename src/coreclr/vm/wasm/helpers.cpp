@@ -775,7 +775,7 @@ void InvokeManagedMethod(ManagedMethodParam *pParam)
         cookie = pParam->pMD->GetCalliCookie();
     }
 
-    CalliStubParam param = { pParam->target == NULL ? pParam->pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : pParam->target, cookie, pParam->pArgs, pParam->pRet, pParam->pContinuationRet };
+    CalliStubParam param = { pParam->target == NULL ? pParam->pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : pParam->target, (void*)cookie, pParam->pArgs, pParam->pRet, pParam->pContinuationRet };
     InvokeCalliStub(&param);
 }
 
