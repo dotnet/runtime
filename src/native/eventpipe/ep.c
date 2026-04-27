@@ -1499,10 +1499,8 @@ ep_init (void)
 
 	// Allow overriding the sampling rate via DOTNET_EventPipeCpuSamplingRate (in milliseconds).
 	uint32_t configured_rate_ms = ep_rt_config_value_get_sampling_rate ();
-	if (configured_rate_ms > 0) {
-		if (configured_rate_ms > 1000) configured_rate_ms = 1000;
+	if (configured_rate_ms > 0)
 		ep_sample_profiler_set_sampling_rate ((uint64_t)configured_rate_ms * 1000000);
-	}
 	else
 		ep_sample_profiler_set_sampling_rate (default_profiler_sample_rate_in_nanoseconds);
 
