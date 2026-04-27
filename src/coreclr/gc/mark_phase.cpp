@@ -2881,7 +2881,7 @@ void gc_heap::record_mark_time (uint64_t& mark_time,
     {
         current_mark_time = GetHighPrecisionTimeStamp();
         mark_time = limit_time_to_uint32 (current_mark_time - last_mark_time);
-        dprintf (3, ("%zd - %zd = %zd",
+        dprintf (3, ("%" PRIu64 " - %" PRIu64 " = %" PRIu64,
             current_mark_time, last_mark_time, (current_mark_time - last_mark_time)));
         last_mark_time = current_mark_time;
     }

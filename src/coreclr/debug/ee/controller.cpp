@@ -1545,7 +1545,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
 
         CORDbgInsertBreakpoint((CORDB_ADDRESS_TYPE *)patch->address);
         LOG((LF_CORDB, LL_EVERYTHING, "DC::ApplyPatch Breakpoint was inserted at %p for opcode %zx\n",
-            patch->address, patch->opcode));
+            patch->address, (size_t)patch->opcode));
 
 #if !defined(HOST_OSX) || !defined(HOST_ARM64)
         if (!VirtualProtect(baseAddress,
@@ -2758,7 +2758,7 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
             _ASSERTE(pExecControl != NULL);
 
             pExecControl->BypassPatch(patch, thread);
-            LOG((LF_CORDB,LL_INFO10000, "DC::APS: Interpreter patch at PC=0x%p - bypass via ExecutionControl with opcode 0x%zx\n", PC, patch->opcode));
+            LOG((LF_CORDB,LL_INFO10000, "DC::APS: Interpreter patch at PC=0x%p - bypass via ExecutionControl with opcode 0x%zx\n", PC, (size_t)patch->opcode));
             return NULL;
         }
 #endif // FEATURE_INTERPRETER
@@ -4867,7 +4867,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
         if (context ==(T_CONTEXT*) &c)
             thread->SetThreadContext(&c);
 
-        LOG((LF_CORDB, LL_INFO10000, "DPS::DPS Bypass at %p for opcode 0x%zx \n", patchBypassRX, patch->opcode));
+        LOG((LF_CORDB, LL_INFO10000, "DPS::DPS Bypass at %p for opcode 0x%zx \n", patchBypassRX, (size_t)patch->opcode));
     }
 
     //

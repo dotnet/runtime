@@ -1184,7 +1184,7 @@ size_t gc_heap::get_gen0_min_size()
         }
 #endif //DYNAMIC_HEAP_COUNT
 
-        dprintf (1, ("gen0size: %zd * %d = %zd, physical mem: %zd / 6 = %zd",
+        dprintf (1, ("gen0size: %zu * %d = %zu, physical mem: %" PRIu64 " / 6 = %" PRIu64,
                 gen0size, n_heaps, (gen0size * n_heaps),
                 gc_heap::total_physical_mem,
                 gc_heap::total_physical_mem / 6));

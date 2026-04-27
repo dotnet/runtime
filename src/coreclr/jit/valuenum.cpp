@@ -10186,7 +10186,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                     printf("LngCns");
                     if ((val > -1000) && (val < 1000))
                     {
-                        printf(" %ld", val);
+                        printf(" %lld", (long long)val);
                     }
                     else if ((val & 0xFFFFFFFF00000000LL) == 0)
                     {

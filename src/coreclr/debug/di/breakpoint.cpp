@@ -608,8 +608,8 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
     m_id = LsPtrToCookie(pEvent->StepData.stepperToken);
 
     LOG((LF_CORDB,LL_INFO10000, "CS::SR: m_id:0x%zx | 0x%zx \n",
-         m_id,
-         LsPtrToCookie(pEvent->StepData.stepperToken)));
+         (size_t)m_id,
+         (size_t)LsPtrToCookie(pEvent->StepData.stepperToken)));
 
 #ifdef _DEBUG
     CordbAppDomain *pAppDomain = GetAppDomain();

@@ -3653,7 +3653,7 @@ HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainTo
     event = (DebuggerIPCEvent*) _alloca(CorDBIPC_BUFFER_SIZE);
     InitIPCEvent(event, DB_IPCE_ASYNC_BREAK, false, pAppDomainToken);
 
-    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::S: sending async stop to appd 0x%zx.\n", VmPtrToCookie(pAppDomainToken));
+    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::S: sending async stop to appd 0x%zx.\n", (size_t)VmPtrToCookie(pAppDomainToken));
 
     hr = m_cordb->SendIPCEvent(this, event, CorDBIPC_BUFFER_SIZE);
     hr = WORST_HR(hr, event->hr);
@@ -3664,7 +3664,7 @@ HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainTo
         return hr;
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "CP::S: sent async stop to appd 0x%zx.\n", VmPtrToCookie(pAppDomainToken)));
+    LOG((LF_CORDB, LL_INFO1000, "CP::S: sent async stop to appd 0x%zx.\n", (size_t)VmPtrToCookie(pAppDomainToken)));
 
     // Wait for the sync complete message to come in. Note: when the sync complete message arrives to the RCEventThread,
     // it will mark the process as synchronized and _not_ dispatch any events. Instead, it will set m_stopWaitEvent
@@ -4258,7 +4258,7 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
     }
     else if (fWasSynchronized)
     {
-        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Sending continue to AppD:0x%zx.\n", VmPtrToCookie(pAppDomainToken)));
+        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Sending continue to AppD:0x%zx.\n", (size_t)VmPtrToCookie(pAppDomainToken)));
 #ifdef FEATURE_INTEROP_DEBUGGING
         STRESS_LOG2(LF_CORDB, LL_INFO1000, "Continue flags:special=%d, dowin32=%d\n", m_specialDeferment, fDoWin32Continue);
 #endif
@@ -4280,7 +4280,7 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
         }
         _ASSERTE(SUCCEEDED(pEvent->hr));
 
-        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Continue sent to AppD:0x%zx.\n", VmPtrToCookie(pAppDomainToken)));
+        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Continue sent to AppD:0x%zx.\n", (size_t)VmPtrToCookie(pAppDomainToken)));
     }
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -5197,8 +5197,8 @@ void CordbProcess::RawDispatchEvent(
             LOG((LF_CORDB, LL_INFO100,
                 "RCET::HRCE: load module (includes assembly loading) on thread %#x Asm:0x%08zx AD:0x%08zx \n",
                 dwVolatileThreadId,
-                VmPtrToCookie(pEvent->LoadModuleData.vmDomainAssembly),
-                VmPtrToCookie(pEvent->vmAppDomain)));
+                (size_t)VmPtrToCookie(pEvent->LoadModuleData.vmDomainAssembly),
+                (size_t)VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -5264,8 +5264,8 @@ void CordbProcess::RawDispatchEvent(
         {
             STRESS_LOG3(LF_CORDB, LL_INFO100, "RCET::HRCE: unload module on thread %#x Mod:0x%zx AD:0x%08zx\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->UnloadModuleData.vmDomainAssembly),
-                 VmPtrToCookie(pEvent->vmAppDomain));
+                 (size_t)VmPtrToCookie(pEvent->UnloadModuleData.vmDomainAssembly),
+                 (size_t)VmPtrToCookie(pEvent->vmAppDomain));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -5302,9 +5302,9 @@ void CordbProcess::RawDispatchEvent(
                  "RCET::HRCE: load class on thread %#x Tok:0x%08x Mod:0x%08zx Asm:0x%08zx AD:0x%08zx\n",
                  dwVolatileThreadId,
                  pEvent->LoadClass.classMetadataToken,
-                 VmPtrToCookie(pEvent->LoadClass.vmDomainAssembly),
-                 LsPtrToCookie(pEvent->LoadClass.classDebuggerAssemblyToken),
-                 VmPtrToCookie(pEvent->vmAppDomain)));
+                 (size_t)VmPtrToCookie(pEvent->LoadClass.vmDomainAssembly),
+                 (size_t)LsPtrToCookie(pEvent->LoadClass.classDebuggerAssemblyToken),
+                 (size_t)VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -5360,8 +5360,8 @@ void CordbProcess::RawDispatchEvent(
                  "RCET::HRCE: unload class on thread %#x Tok:0x%08x Mod:0x%08zx AD:0x%08zx\n",
                  dwVolatileThreadId,
                  pEvent->UnloadClass.classMetadataToken,
-                 VmPtrToCookie(pEvent->UnloadClass.vmDomainAssembly),
-                 VmPtrToCookie(pEvent->vmAppDomain)));
+                 (size_t)VmPtrToCookie(pEvent->UnloadClass.vmDomainAssembly),
+                 (size_t)VmPtrToCookie(pEvent->vmAppDomain)));
 
             // get the appdomain object
             _ASSERTE (pAppDomain != NULL);
@@ -5464,7 +5464,7 @@ void CordbProcess::RawDispatchEvent(
             STRESS_LOG2(LF_CORDB, LL_INFO100,
                  "RCET::HRCE: create appdomain on thread %#x AD:0x%08zx \n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->vmAppDomain));
+                 (size_t)VmPtrToCookie(pEvent->vmAppDomain));
 
 
             // Enumerate may have prepopulated the appdomain, so check if it already exists.
@@ -5487,7 +5487,7 @@ void CordbProcess::RawDispatchEvent(
         {
             STRESS_LOG2(LF_CORDB, LL_INFO100, "RCET::HRCE: exit appdomain on thread %#x AD:0x%08zx \n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->vmAppDomain));
+                 (size_t)VmPtrToCookie(pEvent->vmAppDomain));
 
             // In debug-only builds, assert that the appdomain is indeed deleted and not discoverable.
             INDEBUG(DbgAssertAppDomainDeleted(pEvent->vmAppDomain));
@@ -5529,8 +5529,8 @@ void CordbProcess::RawDispatchEvent(
         {
             LOG((LF_CORDB, LL_INFO100, "RCET::DRCE: unload assembly on thread %#x Asm:0x%zx AD:0x%zx\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->AssemblyData.vmDomainAssembly),
-                 VmPtrToCookie(pEvent->vmAppDomain)));
+                 (size_t)VmPtrToCookie(pEvent->AssemblyData.vmDomainAssembly),
+                 (size_t)VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -10060,7 +10060,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
         return E_INVALIDARG;
 
     STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: sending %s to AD 0x%zx, proc 0x%zx(%zu)\n",
-         IPCENames::GetName(event->type), VmPtrToCookie(event->vmAppDomain), process->m_id, process->m_id);
+         IPCENames::GetName(event->type), (size_t)VmPtrToCookie(event->vmAppDomain), (size_t)process->m_id, (size_t)process->m_id);
 
     // For 2-way events, this check is unnecessary (since we already check for LS exit)
     // But for async events, we need this.
@@ -10409,7 +10409,7 @@ void CordbProcess::HandleRCEvent(
     MarshalManagedEvent(pManagedEvent);
 
     STRESS_LOG4(LF_CORDB, LL_INFO1000, "RCET::TP: Got %s for AD 0x%zx, proc 0x%zx(%zu)\n",
-        IPCENames::GetName(pManagedEvent->type), VmPtrToCookie(pManagedEvent->vmAppDomain), this->m_id, this->m_id);
+        IPCENames::GetName(pManagedEvent->type), (size_t)VmPtrToCookie(pManagedEvent->vmAppDomain), (size_t)this->m_id, (size_t)this->m_id);
 
     RSExtSmartPtr<ICorDebugManagedCallback2> pCallback2;
     pCallback->QueryInterface(IID_ICorDebugManagedCallback2, reinterpret_cast<void **> (&pCallback2));
@@ -10822,9 +10822,9 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
 
             STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: Got %s for AD 0x%zx, proc 0x%zx(%zu)\n",
                         IPCENames::GetName(pEvent->type),
-                        VmPtrToCookie(pEvent->vmAppDomain),
-                        pProcess->m_id,
-                        pProcess->m_id);
+                        (size_t)VmPtrToCookie(pEvent->vmAppDomain),
+                        (size_t)pProcess->m_id,
+                        (size_t)pProcess->m_id);
 
         }
         EX_CATCH_HRESULT(hr)

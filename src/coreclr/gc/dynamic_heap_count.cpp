@@ -485,9 +485,9 @@ void gc_heap::calculate_new_heap_count ()
             assert (throughput_cost_percents[i] >= 0.0);
             if (throughput_cost_percents[i] > 100.0)
                 throughput_cost_percents[i] = 100.0;
-            dprintf (6666, ("sample %d in GC#%zd msl %" PRIu64 " / %d + pause %" PRIu64 " / elapsed %" PRIu64 " = tcp: %.3f, surv %zd, gc speed %zd/ms", i,
+            dprintf (6666, ("sample %d in GC#%zu msl %" PRIu64 " / %d + pause %" PRIu64 " / elapsed %" PRIu64 " = tcp: %.3f, surv %zu, gc speed %" PRIu64 "/ms", i,
                 sample.gc_index, sample.msl_wait_time, n_heaps, sample.gc_pause_time, sample.elapsed_between_gcs, throughput_cost_percents[i],
-                sample.gc_survived_size, (sample.gc_pause_time ? (sample.gc_survived_size * 1000 / sample.gc_pause_time) : 0)));
+                sample.gc_survived_size, (sample.gc_pause_time ? (sample.gc_survived_size * 1000 / sample.gc_pause_time) : (uint64_t)0)));
         }
     }
 

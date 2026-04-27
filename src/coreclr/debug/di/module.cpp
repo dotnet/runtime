@@ -5099,8 +5099,8 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
              LL_INFO10000,
              "R:CT::RSCreating code w/ ver:0x%zx, md:0x%zx, nativeStart=0x%08zx, nativeSize=0x%08x\n",
              codeInfo.encVersion,
-             VmPtrToCookie(codeInfo.vmNativeCodeMethodDescToken),
-             codeInfo.m_rgCodeRegions[kHot].pAddress,
+             (size_t)VmPtrToCookie(codeInfo.vmNativeCodeMethodDescToken),
+             (size_t)codeInfo.m_rgCodeRegions[kHot].pAddress,
              codeInfo.m_rgCodeRegions[kHot].cbSize));
 
         // Lookup the function object that this code should be bound to

@@ -96,7 +96,7 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     IfFailThrow(pProcess->GetDAC()->GetUniqueThreadID(vmThread, &m_dwUniqueID)); // may throw
 
     LOG((LF_CORDB, LL_INFO1000, "CT::CT new thread 0x%p vmptr=0x%zx id=0x%x\n",
-        this, VmPtrToCookie(m_vmThreadToken), m_dwUniqueID));
+        this, (size_t)VmPtrToCookie(m_vmThreadToken), m_dwUniqueID));
 
     // Unique ID should never be 0.
     _ASSERTE(m_dwUniqueID != 0);
@@ -1663,8 +1663,8 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
     LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: Info:thread:0x%zx"
         "mod:0x%zx  MethodDef:0x%x offset:0x%zx  il?:0x%x\n",
          GetCurrentThreadId(),
-         VmPtrToCookie(m_vmThreadToken),
-         VmPtrToCookie(vmDomainAssembly),
+         (size_t)VmPtrToCookie(m_vmThreadToken),
+         (size_t)VmPtrToCookie(vmDomainAssembly),
          pNativeCode->GetMetadataToken(),
          offset,
          fIsIL));
