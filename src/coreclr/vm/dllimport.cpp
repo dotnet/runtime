@@ -4760,6 +4760,18 @@ COR_ILMETHOD_DECODER* PInvoke::CreatePInvokeMethodIL(PInvokeMethodDesc* pMD, Dyn
     pResolver->SetStubMethodDesc(pMD);
 
     COR_ILMETHOD_DECODER* pIL = CreatePInvokeStubWorker(&stubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), stubState.GetFlags(), pMD, pParamTokenArray, iLCIDArg);
+
+    // By now, we've generated the marshaling IL and we will have thrown any exception for invalid marshaling.
+    // We can now safely resolve the P/Invoke target.
+    // We need to resolve the P/Invoke target here in the following cases:
+    // - SuppressGCTransition
+    //  - The logic to resolve the P/Invoke target does not meet the requirements for SuppressGCTransition usage.
+    // - No P/Invoke import thunk
+    //  - If there's no P/Invoke import thunk, then there's no later time to resolve the P/Invoke target.
+    //
+    // For simplicity, we will resolve all P/Invoke targets here for non-inlined P/Invokes.
+    PInvoke::ResolvePInvokeTarget(pMD);
+
     *ppResolver = pResolver.Extract();
     return pIL;
 }
@@ -5998,7 +6010,7 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
     }
     CONTRACTL_END;
 
-    VolatileStore(&m_pPInvokeTarget, pTarget);
+    m_pPInvokeTarget = pTarget;
 }
 
 //==========================================================================
