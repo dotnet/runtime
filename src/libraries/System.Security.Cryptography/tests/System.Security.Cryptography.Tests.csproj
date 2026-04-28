@@ -715,6 +715,7 @@
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">
     <Compile Include="MLKemOpenSslTests.NotSupported.cs" />
     <Compile Include="SlhDsaOpenSslConstructionTests.NotSupported.cs" />
+    <Compile Include="X25519DiffieHellmanOpenSslTests.NotSupported.cs" />
     <Compile Include="X509Certificates\X509StoreMutableTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
@@ -845,6 +846,7 @@
 
     <Compile Include="MLKemOpenSslTests.NotSupported.cs" />
     <Compile Include="SlhDsaOpenSslConstructionTests.NotSupported.cs" />
+    <Compile Include="X25519DiffieHellmanOpenSslTests.NotSupported.cs" />
     <Compile Include="X509Certificates\InteropTests.Windows.cs" />
     <Compile Include="X509Certificates\X509FilesystemTests.Windows.cs" />
   </ItemGroup>

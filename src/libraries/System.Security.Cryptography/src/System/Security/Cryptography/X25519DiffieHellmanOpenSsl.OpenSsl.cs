@@ -46,6 +46,10 @@ namespace System.Security.Cryptography
             {
                 written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(_key, x25519OpenSsl._key, destination);
             }
+            else if (otherParty is X25519DiffieHellmanImplementation x25519Impl)
+            {
+                written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(_key, x25519Impl.Key, destination);
+            }
             else
             {
                 Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
