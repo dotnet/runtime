@@ -1114,7 +1114,7 @@ void DynamicHelperFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 //--------------------------------------------------------------------
 // This constructor pushes a new GCFrame on the frame chain.
 //--------------------------------------------------------------------
-GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
+GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags)
 {
     CONTRACTL
     {
@@ -1130,7 +1130,7 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
 #endif
 
 #ifdef USE_CHECKED_OBJECTREFS
-    if (!maybeInterior) {
+    if (!gcFlags) {
         UINT i;
         for(i = 0; i < numObjRefs; i++)
             Thread::ObjectRefProtected(&pObjRefs[i]);
@@ -1159,7 +1159,7 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
 
     m_pObjRefs      = pObjRefs;
     m_numObjRefs    = numObjRefs;
-    m_MaybeInterior = maybeInterior;
+    m_gcFlags       = gcFlags;
 
     Push(pThread);
 }
@@ -1314,9 +1314,10 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
     for (UINT i = 0; i < m_numObjRefs; i++)
     {
         auto fromAddress = OBJECTREF_TO_UNCHECKED_OBJECTREF(m_pObjRefs[i]);
-        if (m_MaybeInterior)
+        if (m_gcFlags != 0)
         {
-            PromoteCarefully(fn, pRefs + i, sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
+            _ASSERTE(m_gcFlags & GC_CALL_INTERIOR);
+            PromoteCarefully(fn, pRefs + i, sc, m_gcFlags | CHECK_APP_DOMAIN);
         }
         else
         {

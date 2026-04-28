@@ -6,6 +6,14 @@
 
   <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
 
-  <Target Name="Build" DependsOnTargets="AcquireEmscriptenSdkUnconditional" />
+  <!--
+    Microsoft.Build.NoTargets' 'Build' target would override a <Target Name="Build" ...>
+    definition here, so hook via BeforeTargets instead to guarantee that
+    AcquireEmscriptenSdkUnconditional runs when this project is built (e.g. via
+    './build.sh -s provision.emsdk -os browser').
+  -->
+  <Target Name="_AcquireEmscriptenSdkOnBuild"
+          BeforeTargets="Build"
+          DependsOnTargets="AcquireEmscriptenSdkUnconditional" />
 
 </Project>

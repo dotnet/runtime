@@ -15,7 +15,9 @@ public static class Constants
         public const string GCThread = nameof(GCThread);
         public const string Debugger = nameof(Debugger);
         public const string CLRJitAttachState = nameof(CLRJitAttachState);
+        public const string CORDebuggerControlFlags = nameof(CORDebuggerControlFlags);
         public const string MetadataUpdatesApplied = nameof(MetadataUpdatesApplied);
+        public const string EEConfig = nameof(EEConfig);
 
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
         public const string FeatureComWrappers = nameof(FeatureComWrappers);

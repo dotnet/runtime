@@ -777,7 +777,11 @@ HCIMPLEND
 /*************************************************************/
 
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
+#ifdef TARGET_WASM
+void IL_Throw_Impl(Object* obj, TransitionBlock* transitionBlock)
+#else
 EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -803,12 +807,18 @@ EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionB
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
+#ifndef TARGET_WASM
 HCIMPLEND
+#endif
 
 /*************************************************************/
 
 EXTERN_C FCDECL0(void, IL_Rethrow);
+#ifdef TARGET_WASM
+void IL_Rethrow_Impl(TransitionBlock* transitionBlock)
+#else
 EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -825,10 +835,17 @@ EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
+#ifndef TARGET_WASM
 HCIMPLEND
+#endif
+
 
 EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
+#ifdef TARGET_WASM
+void IL_ThrowExact_Impl(Object* obj, TransitionBlock* transitionBlock)
+#else
 EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -850,29 +867,47 @@ EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transi
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
+#ifndef TARGET_WASM
 HCIMPLEND
+#endif
+
 
 #ifdef TARGET_WASM
-// WASM doesn't have assembly stubs, so provide thin wrapper entry points
-// that call the _Impl functions with NULL (which zeros the context)
+// WASM doesn't have assembly stubs, but the FCALL calling convention passes the callersStackPointer in as a hidden argument.
+// WASM-TODO At the moment actual handling of the R2R stack walk isn't implemented, so if there isn't an actual R2R stack
+// just pass NULL for the transition block, but the check is left in place for future implementation of R2R stack walking on WASM.
 HCIMPL1(void, IL_Throw, Object* obj)
 {
     FCALL_CONTRACT;
-    IL_Throw_Impl(obj, NULL);
+
+    TransitionBlock block;
+    block.m_ReturnAddress = 0;
+    block.m_StackPointer = callersStackPointer;
+
+    IL_Throw_Impl(obj, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block);
 }
 HCIMPLEND
 
 HCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
-    IL_Rethrow_Impl(NULL);
+
+    TransitionBlock block;
+    block.m_ReturnAddress = 0;
+    block.m_StackPointer = callersStackPointer;
+
+    IL_Rethrow_Impl((callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block);
 }
 HCIMPLEND
 
 HCIMPL1(void, IL_ThrowExact, Object* obj)
 {
     FCALL_CONTRACT;
-    IL_ThrowExact_Impl(obj, NULL);
+    TransitionBlock block;
+    block.m_ReturnAddress = 0;
+    block.m_StackPointer = callersStackPointer;
+
+    IL_ThrowExact_Impl(obj, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block);
 }
 HCIMPLEND
 #endif // TARGET_WASM
@@ -1709,11 +1744,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         // use that to adjust the stack, likely saving some stack space.
 
 #if defined(TARGET_AMD64)
-        // If calls push the return address, we need to simulate that here, so the OSR
-        // method sees the "expected" SP misalgnment on entry.
-        _ASSERTE(currentSP % 16 == 0);
-        currentSP -= 8;
-
 #if defined(TARGET_WINDOWS)
         DWORD64 ssp = GetSSP(pFrameContext);
         if (ssp != 0)
@@ -1721,11 +1751,10 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
             SetSSP(pFrameContext, ssp - 8);
         }
 #endif // TARGET_WINDOWS
-
-        pFrameContext->Rbp = currentFP;
-#endif // TARGET_AMD64
+#endif  // TARGET_AMD64
 
         SetSP(pFrameContext, currentSP);
+        SetFP(pFrameContext, currentFP);
 
         // Note we can get here w/o triggering, if there is an existing OSR method and
         // we hit the patchpoint.

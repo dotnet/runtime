@@ -20,7 +20,7 @@ public class RuntimeInfoTests
             builder.AddGlobals(globals);
         return builder
             .AddGlobalStrings(globalStrings)
-            .AddContract<IRuntimeInfo>(version: 1)
+            .AddContract<IRuntimeInfo>(version: "c1")
             .Build();
     }
 
