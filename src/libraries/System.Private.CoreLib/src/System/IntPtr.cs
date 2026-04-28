@@ -395,11 +395,7 @@ namespace System
                 if (source.Length >= sizeof(nint_t))
                 {
                     // We have at least 4/8 bytes, so just read the ones we need directly
-#if TARGET_64BIT
-                    result = (nint)BinaryPrimitives.ReadInt64BigEndian(source.Slice(source.Length - sizeof(nint_t)));
-#else
-                    result = BinaryPrimitives.ReadInt32BigEndian(source.Slice(source.Length - sizeof(nint_t)));
-#endif
+                    result = BinaryPrimitives.ReadIntPtrBigEndian(source.Slice(source.Length - sizeof(nint_t)));
                 }
                 else
                 {
