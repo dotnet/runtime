@@ -34,39 +34,30 @@ These instructions are written assuming the current *Ubuntu LTS*.
 
 The packages you need to install are shown in the following list:
 
-**NOTE:** Keep this package list in sync with the Linux-based *Dockerfile* [over here](/.devcontainer/Dockerfile).
-
 - `build-essential`
 - `clang` (see the [Clang for WASM](#clang-for-wasm) section if you plan on doing work on *Web Assembly (Wasm)*)
 - `cmake` (version 3.26 or newer)
 - `cpio`
 - `curl`
-- `gettext`
 - `git`
 - `libicu-dev`
 - `libkrb5-dev`
-- `liblldb-dev`
 - `liblttng-ust-dev`
 - `libssl-dev`
-- `libunwind8`
-- `libunwind8-dev`
 - `lld`
 - `lldb`
 - `llvm`
 - `ninja-build`
 - `pigz` (Optional. Enables parallel gzip compression for tarball creation in `packs` subset)
 - `python-is-python3`
-- `python3`
-- `tzdata`
 
 **NOTE:** If you are running on *Ubuntu* older than version *22.04 LTS*, or *Debian* older than version 12, then don't install `cmake` using `apt` directly. Follow the instructions in the [CMake on Older Versions of Ubuntu and Debian section](#cmake-on-older-versions-of-ubuntu-and-debian) later down in this doc.
 
 ```bash
 # requires sudo for non-root user
-apt install -y build-essential clang cmake cpio curl gettext git \
-  libicu-dev libkrb5-dev liblldb-dev liblttng-ust-dev libssl-dev \
-  libunwind8 libunwind8-dev lld lldb llvm ninja-build pigz \
-  python-is-python3 python3 tzdata
+apt install -y cmake llvm lld clang build-essential \
+  python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
+  libssl-dev libkrb5-dev ninja-build pigz cpio
 ```
 
 #### CMake on Older Versions of Ubuntu and Debian
