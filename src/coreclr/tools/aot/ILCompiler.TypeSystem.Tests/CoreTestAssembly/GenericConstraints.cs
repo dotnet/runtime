@@ -68,10 +68,4 @@ namespace GenericConstraints
 
         public static void ComplexGenericConstraintMethod<T, U>() where T : U where U : IGen<T> { }
     }
-
-    public interface INonVariantGen<T> { }
-
-    public class NonVariantGenImpl<T> : INonVariantGen<T> { }
-
-    public class NonVariantInterfaceConstraint<T, U> where T : INonVariantGen<U> { }
 }
