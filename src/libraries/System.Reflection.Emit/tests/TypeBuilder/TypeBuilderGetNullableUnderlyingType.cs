@@ -1,0 +1,44 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Xunit;
+
+namespace System.Reflection.Emit.Tests
+{
+    public class TypeBuilderGetNullableUnderlyingType
+    {
+        [Fact]
+        public void TypeBuilder_ReturnsNull()
+        {
+            TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
+            Assert.Null(tb.GetNullableUnderlyingType());
+        }
+
+        [Fact]
+        public void EnumBuilder_ReturnsNull()
+        {
+            EnumBuilder eb = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
+            Assert.Null(eb.GetNullableUnderlyingType());
+        }
+
+        [Fact]
+        public void GenericTypeParameterBuilder_ReturnsNull()
+        {
+            TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
+            GenericTypeParameterBuilder[] gps = tb.DefineGenericParameters("T");
+            Assert.Null(gps[0].GetNullableUnderlyingType());
+        }
+
+        [Fact]
+        public void TypeBuilderInstantiation_ReturnsNull()
+        {
+            // A TypeBuilderInstantiation is produced when MakeGenericType is called on a
+            // generic TypeBuilder. The open generic definition is a TypeBuilder (never
+            // typeof(Nullable<>)), so the override always returns null in practice.
+            TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
+            tb.DefineGenericParameters("T");
+            Type instantiation = tb.MakeGenericType(typeof(int));
+            Assert.Null(instantiation.GetNullableUnderlyingType());
+        }
+    }
+}
