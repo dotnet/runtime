@@ -7968,7 +7968,7 @@ const CORINFO_FPSTRUCT_LOWERING* Compiler::GetFpStructLowering(CORINFO_CLASS_HAN
 #ifdef DEBUG
         if (verbose)
         {
-            printf("**** getFpStructInRegistersInfo(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
+            printf("**** getFpStructInRegistersInfo(%p (%s, %u bytes)) =>\n", (void*)dspPtr(structHandle),
                    eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
 
             if (lowering->byIntegerCallConv)

@@ -280,7 +280,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
 
     #ifdef TARGET_X86
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM EIP = %p &EIP = %p\n",
-                pMD, GetControlPC(pCF->GetRegisterSet()), GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
+                pMD, (void*)(size_t)GetControlPC(pCF->GetRegisterSet()), (void*)(size_t)GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
     #else
             STRESS_LOG2(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM ControlPC = %p\n",
                 pMD, (void*)GetControlPC(pCF->GetRegisterSet()));

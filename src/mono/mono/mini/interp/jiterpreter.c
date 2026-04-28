@@ -1400,7 +1400,7 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 
 		if (average_penalty <= threshold) {
 			if ((int)thunk < mono_jiterp_first_trace_fn_ptr)
-				g_error ("thunk ptr %d below start of trace table %d\n", thunk, mono_jiterp_first_trace_fn_ptr);
+				g_error ("thunk ptr %d below start of trace table %d\n", (int)(gsize)thunk, mono_jiterp_first_trace_fn_ptr);
 			guint16 new_relative_fn_ptr = (int)thunk - mono_jiterp_first_trace_fn_ptr;
 
 #ifdef DISABLE_THREADS

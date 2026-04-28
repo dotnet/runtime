@@ -549,7 +549,7 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
     {
         // Preserve errno for the ELF dump writer call
         g_readProcessMemoryErrno = errno;
-        TRACE_VERBOSE("ReadProcessMemory FAILED addr: %" PRIA PRIx " size: %zu error: %s (%d)\n", address, size, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
+        TRACE_VERBOSE("ReadProcessMemory FAILED addr: %" PRIA PRIx64 " size: %zu error: %s (%d)\n", address, size, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
         return false;
     }
     return true;

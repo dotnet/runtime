@@ -8366,7 +8366,7 @@ retry_emit:
 				/*stackval_from_data (signature->ret, frame->retval, sp->data.vt, signature->pinvoke);*/
 
 				if (td->sp > td->stack)
-					g_warning ("CEE_MONO_RETOBJ: more values on stack: %d", td->sp-td->stack);
+					g_warning ("CEE_MONO_RETOBJ: more values on stack: %d", (int)(td->sp-td->stack));
 				break;
 			case CEE_MONO_LDNATIVEOBJ: {
 				token = read32 (td->ip + 1);
@@ -8443,7 +8443,7 @@ retry_emit:
 				break;
 			}
 			default:
-				g_error ("transform.c: Unimplemented opcode: 0xF0 %02x at 0x%x\n", *td->ip, td->ip-header->code);
+				g_error ("transform.c: Unimplemented opcode: 0xF0 %02x at 0x%x\n", *td->ip, (int)(td->ip-header->code));
 			}
 			break;
 #if 0
@@ -8845,7 +8845,7 @@ retry_emit:
 				++td->ip;
 				break;
 			default:
-				g_error ("transform.c: Unimplemented opcode: 0xFE %02x (%s) at 0x%x\n", *td->ip, mono_opcode_name (256 + *td->ip), td->ip-header->code);
+				g_error ("transform.c: Unimplemented opcode: 0xFE %02x (%s) at 0x%x\n", *td->ip, mono_opcode_name (256 + *td->ip), (int)(td->ip-header->code));
 			}
 			break;
 		default: {
