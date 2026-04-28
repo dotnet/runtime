@@ -279,9 +279,7 @@ REGDEF(STK,    8+KBASE,    0x0000,       "STK"  )
 
 /*****************************************************************************/
 #undef  GPRMASK
-#undef  XMMBASE
 #undef  XMMMASK
-#undef  KBASE
 #undef  KMASK
 #undef  REGDEF
 #undef  REGALIAS
