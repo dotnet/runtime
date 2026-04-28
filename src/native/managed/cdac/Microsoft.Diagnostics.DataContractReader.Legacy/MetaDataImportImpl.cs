@@ -191,7 +191,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             }
             else
             {
-                TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(td & 0x00FFFFFF));
+                TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)EcmaMetadataUtils.GetRowId(td));
                 TypeDefinition typeDef = _reader.GetTypeDefinition(typeHandle);
                 List<uint> tokens = new();
                 foreach (InterfaceImplementationHandle h in typeDef.GetInterfaceImplementations())
@@ -224,7 +224,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             }
             else
             {
-                TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(cl & 0x00FFFFFF));
+                TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)EcmaMetadataUtils.GetRowId(cl));
                 TypeDefinition typeDef = _reader.GetTypeDefinition(typeHandle);
                 List<uint> tokens = new();
                 foreach (MethodDefinitionHandle h in typeDef.GetMethods())
@@ -251,7 +251,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             }
             else
             {
-                TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(cl & 0x00FFFFFF));
+                TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)EcmaMetadataUtils.GetRowId(cl));
                 TypeDefinition typeDef = _reader.GetTypeDefinition(typeHandle);
                 List<uint> tokens = new();
                 foreach (FieldDefinitionHandle h in typeDef.GetFields())
@@ -312,7 +312,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(td & 0x00FFFFFF));
+            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)EcmaMetadataUtils.GetRowId(td));
             TypeDefinition typeDef = _reader.GetTypeDefinition(typeHandle);
 
             string fullName = GetTypeDefFullName(typeDef);
@@ -359,7 +359,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            TypeReferenceHandle refHandle = MetadataTokens.TypeReferenceHandle((int)(tr & 0x00FFFFFF));
+            TypeReferenceHandle refHandle = MetadataTokens.TypeReferenceHandle((int)EcmaMetadataUtils.GetRowId(tr));
             TypeReference typeRef = _reader.GetTypeReference(refHandle);
 
             string fullName = GetTypeRefFullName(typeRef);
@@ -402,7 +402,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            MethodDefinitionHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)(mb & 0x00FFFFFF));
+            MethodDefinitionHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(mb));
             MethodDefinition methodDef = _reader.GetMethodDefinition(methodHandle);
 
             string name = _reader.GetString(methodDef.Name);
@@ -473,7 +473,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            FieldDefinitionHandle fieldHandle = MetadataTokens.FieldDefinitionHandle((int)(mb & 0x00FFFFFF));
+            FieldDefinitionHandle fieldHandle = MetadataTokens.FieldDefinitionHandle((int)EcmaMetadataUtils.GetRowId(mb));
             FieldDefinition fieldDef = _reader.GetFieldDefinition(fieldHandle);
 
             string name = _reader.GetString(fieldDef.Name);
@@ -592,13 +592,13 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            InterfaceImplementationHandle implHandle = MetadataTokens.InterfaceImplementationHandle((int)(iiImpl & 0x00FFFFFF));
+            InterfaceImplementationHandle implHandle = MetadataTokens.InterfaceImplementationHandle((int)EcmaMetadataUtils.GetRowId(iiImpl));
             InterfaceImplementation impl = _reader.GetInterfaceImplementation(implHandle);
 
             if (pClass is not null)
             {
                 _interfaceImplToTypeDef ??= BuildInterfaceImplLookup();
-                *pClass = _interfaceImplToTypeDef.TryGetValue((int)(iiImpl & 0x00FFFFFF), out uint ownerToken)
+                *pClass = _interfaceImplToTypeDef.TryGetValue((int)EcmaMetadataUtils.GetRowId(iiImpl), out uint ownerToken)
                     ? ownerToken : 0;
             }
 
@@ -635,7 +635,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(tdNestedClass & 0x00FFFFFF));
+            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)EcmaMetadataUtils.GetRowId(tdNestedClass));
             TypeDefinition typeDef = _reader.GetTypeDefinition(typeHandle);
             TypeDefinitionHandle declaringType = typeDef.GetDeclaringType();
 
@@ -668,7 +668,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            GenericParameterHandle gpHandle = MetadataTokens.GenericParameterHandle((int)(gp & 0x00FFFFFF));
+            GenericParameterHandle gpHandle = MetadataTokens.GenericParameterHandle((int)EcmaMetadataUtils.GetRowId(gp));
             GenericParameter genericParam = _reader.GetGenericParameter(gpHandle);
 
             if (pulParamSeq is not null)
@@ -721,7 +721,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             uint tableIndex = tk >> 24;
             if (tableIndex == 0x06) // MethodDef
             {
-                MethodDefinitionHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)(tk & 0x00FFFFFF));
+                MethodDefinitionHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(tk));
                 MethodDefinition methodDef = _reader.GetMethodDefinition(methodHandle);
                 if (pulCodeRVA is not null)
                     *pulCodeRVA = (uint)methodDef.RelativeVirtualAddress;
@@ -730,7 +730,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             }
             else if (tableIndex == 0x04) // FieldDef
             {
-                FieldDefinitionHandle fieldHandle = MetadataTokens.FieldDefinitionHandle((int)(tk & 0x00FFFFFF));
+                FieldDefinitionHandle fieldHandle = MetadataTokens.FieldDefinitionHandle((int)EcmaMetadataUtils.GetRowId(tk));
                 FieldDefinition fieldDef = _reader.GetFieldDefinition(fieldHandle);
                 if (pulCodeRVA is not null)
                     *pulCodeRVA = (uint)fieldDef.GetRelativeVirtualAddress();
@@ -770,7 +770,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            StandaloneSignatureHandle sigHandle = MetadataTokens.StandaloneSignatureHandle((int)(mdSig & 0x00FFFFFF));
+            StandaloneSignatureHandle sigHandle = MetadataTokens.StandaloneSignatureHandle((int)EcmaMetadataUtils.GetRowId(mdSig));
             StandaloneSignature sig = _reader.GetStandaloneSignature(sigHandle);
             BlobReader blobReader = _reader.GetBlobReader(sig.Signature);
 
@@ -864,7 +864,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
 
     int IMetaDataImport.IsValidToken(uint tk)
     {
-        int rid = (int)(tk & 0x00FFFFFF);
+        int rid = (int)EcmaMetadataUtils.GetRowId(tk);
         int tokenType = (int)(tk >> 24);
 
         if (rid == 0)
@@ -1012,7 +1012,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            MemberReferenceHandle refHandle = MetadataTokens.MemberReferenceHandle((int)(mr & 0x00FFFFFF));
+            MemberReferenceHandle refHandle = MetadataTokens.MemberReferenceHandle((int)EcmaMetadataUtils.GetRowId(mr));
             MemberReference memberRef = _reader.GetMemberReference(refHandle);
 
             string name = _reader.GetString(memberRef.Name);
@@ -1082,7 +1082,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(td & 0x00FFFFFF));
+            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)EcmaMetadataUtils.GetRowId(td));
             TypeDefinition typeDef = _reader.GetTypeDefinition(typeHandle);
             TypeLayout layout = typeDef.GetLayout();
 
@@ -1156,7 +1156,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            ModuleReferenceHandle modRefHandle = MetadataTokens.ModuleReferenceHandle((int)(mur & 0x00FFFFFF));
+            ModuleReferenceHandle modRefHandle = MetadataTokens.ModuleReferenceHandle((int)EcmaMetadataUtils.GetRowId(mur));
             ModuleReference modRef = _reader.GetModuleReference(modRefHandle);
 
             string name = _reader.GetString(modRef.Name);
@@ -1190,7 +1190,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            TypeSpecificationHandle tsHandle = MetadataTokens.TypeSpecificationHandle((int)(typespec & 0x00FFFFFF));
+            TypeSpecificationHandle tsHandle = MetadataTokens.TypeSpecificationHandle((int)EcmaMetadataUtils.GetRowId(typespec));
             TypeSpecification typeSpec = _reader.GetTypeSpecification(tsHandle);
             BlobReader blobReader = _reader.GetBlobReader(typeSpec.Signature);
 
@@ -1241,7 +1241,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             // Using raw bytes avoids potential discrepancies with MetadataReader.GetUserString().
             int heapMetadataOffset = _reader.GetHeapMetadataOffset(HeapIndex.UserString);
             int heapSize = _reader.GetHeapSize(HeapIndex.UserString);
-            int handleOffset = (int)(stk & 0x00FFFFFF);
+            int handleOffset = (int)EcmaMetadataUtils.GetRowId(stk);
 
             byte* heapBase = _reader.MetadataPointer + heapMetadataOffset;
             int remaining = heapSize - handleOffset;
@@ -1316,7 +1316,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             if (ppd is not null)
                 *ppd = 0;
 
-            MethodDefinitionHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)(md & 0x00FFFFFF));
+            MethodDefinitionHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(md));
             MethodDefinition methodDef = _reader.GetMethodDefinition(methodHandle);
 
             bool found = false;
@@ -1371,7 +1371,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            ParameterHandle paramHandle = MetadataTokens.ParameterHandle((int)(tk & 0x00FFFFFF));
+            ParameterHandle paramHandle = MetadataTokens.ParameterHandle((int)EcmaMetadataUtils.GetRowId(tk));
             Parameter param = _reader.GetParameter(paramHandle);
 
             string name = _reader.GetString(param.Name);
@@ -1574,7 +1574,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            AssemblyReferenceHandle refHandle = MetadataTokens.AssemblyReferenceHandle((int)(mdar & 0x00FFFFFF));
+            AssemblyReferenceHandle refHandle = MetadataTokens.AssemblyReferenceHandle((int)EcmaMetadataUtils.GetRowId(mdar));
             AssemblyReference assemblyRef = _reader.GetAssemblyReference(refHandle);
             string name = _reader.GetString(assemblyRef.Name);
 
@@ -1683,7 +1683,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         int hr = HResults.S_OK;
         try
         {
-            ExportedTypeHandle handle = MetadataTokens.ExportedTypeHandle((int)(mdct & 0x00FFFFFF));
+            ExportedTypeHandle handle = MetadataTokens.ExportedTypeHandle((int)EcmaMetadataUtils.GetRowId(mdct));
             ExportedType exportedType = _reader.GetExportedType(handle);
 
             string name = _reader.GetString(exportedType.Name);
