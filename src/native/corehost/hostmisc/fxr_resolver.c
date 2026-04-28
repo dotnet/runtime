@@ -214,7 +214,7 @@ bool fxr_resolver_try_get_path(
             free(app_relative_resolved);
         }
     }
-    else if (search_env)
+    if (dotnet_root == NULL && search_env)
     {
         pal_char_t env_value[APPHOST_PATH_MAX];
         if (utils_get_dotnet_root_from_env(dotnet_root_env_var_name, ARRAY_SIZE(dotnet_root_env_var_name),
