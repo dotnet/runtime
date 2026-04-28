@@ -8,19 +8,19 @@ namespace System.Security.Cryptography.Tests
     [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
     public sealed class X25519DiffieHellmanOpenSslTests : X25519DiffieHellmanBaseTests
     {
-        public override X25519DiffieHellman GenerateKey()
+        public override X25519DiffieHellmanOpenSsl GenerateKey()
         {
             using SafeEvpPKeyHandle key = Interop.Crypto.X25519GenerateKey();
             return new X25519DiffieHellmanOpenSsl(key);
         }
 
-        public override X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source)
+        public override X25519DiffieHellmanOpenSsl ImportPrivateKey(ReadOnlySpan<byte> source)
         {
             using SafeEvpPKeyHandle key = Interop.Crypto.X25519ImportPrivateKey(source);
             return new X25519DiffieHellmanOpenSsl(key);
         }
 
-        public override X25519DiffieHellman ImportPublicKey(ReadOnlySpan<byte> source)
+        public override X25519DiffieHellmanOpenSsl ImportPublicKey(ReadOnlySpan<byte> source)
         {
             using SafeEvpPKeyHandle key = Interop.Crypto.X25519ImportPublicKey(source);
             return new X25519DiffieHellmanOpenSsl(key);
@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void DeriveRawSecretAgreement_OpenSslKeyWithCreateKey_Symmetric()
         {
-            using X25519DiffieHellmanOpenSsl openSslKey = (X25519DiffieHellmanOpenSsl)GenerateKey();
+            using X25519DiffieHellmanOpenSsl openSslKey = GenerateKey();
             using X25519DiffieHellman createKey = X25519DiffieHellman.GenerateKey();
 
             byte[] secret1 = openSslKey.DeriveRawSecretAgreement(createKey);
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void DeriveRawSecretAgreement_OpenSslKeyWithCreateKey_ExactBuffers()
         {
-            using X25519DiffieHellmanOpenSsl openSslKey = (X25519DiffieHellmanOpenSsl)GenerateKey();
+            using X25519DiffieHellmanOpenSsl openSslKey = GenerateKey();
             using X25519DiffieHellman createKey = X25519DiffieHellman.GenerateKey();
 
             byte[] secret1 = new byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
@@ -93,15 +93,15 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void DeriveRawSecretAgreement_OpenSslKeyWithImportedCreateKey()
         {
-            using X25519DiffieHellmanOpenSsl openSslKey = (X25519DiffieHellmanOpenSsl)GenerateKey();
+            using X25519DiffieHellmanOpenSsl openSslKey = GenerateKey();
 
             byte[] openSslPublicKey = openSslKey.ExportPublicKey();
             using X25519DiffieHellman createKeyFromPublic = X25519DiffieHellman.ImportPublicKey(openSslPublicKey);
 
             using X25519DiffieHellman createKey = X25519DiffieHellman.GenerateKey();
 
-            byte[] secret1 = openSslKey.DeriveRawSecretAgreement(createKey);
-            byte[] secret2 = createKey.DeriveRawSecretAgreement(openSslKey);
+            byte[] secret1 = createKey.DeriveRawSecretAgreement(openSslKey);
+            byte[] secret2 = createKey.DeriveRawSecretAgreement(createKeyFromPublic);
 
             AssertExtensions.SequenceEqual(secret1, secret2);
         }
@@ -112,12 +112,12 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellman createKey = X25519DiffieHellman.GenerateKey();
 
             byte[] createPublicKey = createKey.ExportPublicKey();
-            using X25519DiffieHellmanOpenSsl openSslPublicOnly = (X25519DiffieHellmanOpenSsl)ImportPublicKey(createPublicKey);
+            using X25519DiffieHellmanOpenSsl openSslPublicOnly = ImportPublicKey(createPublicKey);
 
-            using X25519DiffieHellmanOpenSsl openSslPrivate = (X25519DiffieHellmanOpenSsl)GenerateKey();
+            using X25519DiffieHellmanOpenSsl openSslPrivate = GenerateKey();
 
             byte[] secret1 = openSslPrivate.DeriveRawSecretAgreement(createKey);
-            byte[] secret2 = createKey.DeriveRawSecretAgreement(openSslPrivate);
+            byte[] secret2 = openSslPrivate.DeriveRawSecretAgreement(openSslPublicOnly);
 
             AssertExtensions.SequenceEqual(secret1, secret2);
         }
@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void DeriveRawSecretAgreement_PrivateKeyRoundtripBetweenOpenSslAndCreate()
         {
-            using X25519DiffieHellmanOpenSsl openSslKey = (X25519DiffieHellmanOpenSsl)GenerateKey();
+            using X25519DiffieHellmanOpenSsl openSslKey = GenerateKey();
             byte[] privateKey = openSslKey.ExportPrivateKey();
 
             using X25519DiffieHellman createFromPrivate = X25519DiffieHellman.ImportPrivateKey(privateKey);
@@ -140,7 +140,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void DeriveRawSecretAgreement_Pkcs8RoundtripBetweenOpenSslAndCreate()
         {
-            using X25519DiffieHellmanOpenSsl openSslKey = (X25519DiffieHellmanOpenSsl)GenerateKey();
+            using X25519DiffieHellmanOpenSsl openSslKey = GenerateKey();
             byte[] pkcs8 = openSslKey.ExportPkcs8PrivateKey();
 
             using X25519DiffieHellman createFromPkcs8 = X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8);
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void ExportPublicKey_ConsistentBetweenOpenSslAndCreate()
         {
-            using X25519DiffieHellmanOpenSsl openSslKey = (X25519DiffieHellmanOpenSsl)GenerateKey();
+            using X25519DiffieHellmanOpenSsl openSslKey = GenerateKey();
             byte[] privateKey = openSslKey.ExportPrivateKey();
 
             using X25519DiffieHellman createKey = X25519DiffieHellman.ImportPrivateKey(privateKey);
