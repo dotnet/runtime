@@ -781,7 +781,7 @@ public unsafe class MetaDataImportImplTests
         uint nameLen;
 
         int hr = assemblyImport.GetAssemblyProps(0x20000001, null, null, null, nameBuf, 5, &nameLen, null, null);
-        Assert.Equal(0x00131106, hr); // CLDB_S_TRUNCATION
+        Assert.Equal(CldbHResults.CLDB_S_TRUNCATION, hr);
         // Full name is "TestAssembly" (12 chars + null = 13)
         Assert.Equal(13u, nameLen);
         // Buffer should contain "Test\0"
@@ -814,7 +814,7 @@ public unsafe class MetaDataImportImplTests
 
             // Pass an invalid assembly token (wrong RID)
             int hr = assemblyImport.GetAssemblyProps(0x20000002, null, null, null, null, 0, null, null, null);
-            Assert.Equal(unchecked((int)0x80131130), hr); // CLDB_E_RECORD_NOTFOUND
+            Assert.Equal(CldbHResults.CLDB_E_RECORD_NOTFOUND, hr);
         }
     }
 
@@ -1023,7 +1023,7 @@ public unsafe class MetaDataImportImplTests
                     var fn = (delegate* unmanaged[Stdcall]<nint, nint*, uint, uint*, uint, uint*, int>)enumGenericParams;
                     hr = fn(pImportAgain, &hEnum, 0x02000002, null, 0, &count);
                     // Should succeed (or return no results) without AV
-                    Assert.True(hr >= 0 || hr == unchecked((int)0x80131130)); // S_OK or CLDB_E_RECORD_NOTFOUND
+                    Assert.True(hr >= 0 || hr == CldbHResults.CLDB_E_RECORD_NOTFOUND);
                 }
                 finally
                 {
@@ -1276,7 +1276,7 @@ public unsafe class MetaDataImportImplTests
 
         int hr = assemblyImport.GetExportedTypeProps(0x27000001, szName, 5, &pchName,
             &tkImplementation, &tkTypeDef, &dwFlags);
-        Assert.Equal(0x00131106, hr); // CLDB_S_TRUNCATION
+        Assert.Equal(CldbHResults.CLDB_S_TRUNCATION, hr);
     }
 
     [Fact]
