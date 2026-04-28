@@ -267,7 +267,6 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitCaseEnd()
 }
 
 //------------------------------------------------------------------------
-//------------------------------------------------------------------------
 // Emit helper for SVE+SVE2 WHILE* intrinsics - these set the width
 // (emitSize) based on the scalar operand
 //
