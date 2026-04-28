@@ -4,15 +4,15 @@
 
 #include "common.h"
 #include "pregeneratedstringthunks.h"
-#include "stringthunkhash.h"
-#include "loaderallocator.hpp"
-
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-#include "wasm/helpers.hpp"
-#include "precode_portable.hpp"
-#endif
 
 #ifndef DACCESS_COMPILE
+
+#ifdef TARGET_WASM
+
+#include "stringthunkhash.h"
+#include "loaderallocator.hpp"
+#include "wasm/helpers.hpp"
+#include "precode_portable.hpp"
 
 static StringToThunkHash* s_pPregeneratedStringThunks = nullptr;
 
@@ -284,5 +284,19 @@ void ResolvePendingPortableEntryPointThunksGlobal()
 }
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+#else // !TARGET_WASM
+
+void InitializePregeneratedStringThunkHash()
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+void ProcessInjectStringThunksFixup(ReadyToRunInfo * pR2RInfo, PCCOR_SIGNATURE pBlob)
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+#endif // TARGET_WASM
 
 #endif // !DACCESS_COMPILE

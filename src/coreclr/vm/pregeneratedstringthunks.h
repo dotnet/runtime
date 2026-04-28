@@ -9,13 +9,17 @@ class LoaderAllocator;
 
 // Initialize the global pregenerated string thunk hash table.
 // Must be called during EE startup before any R2R module loading.
+// No-op on non-WASM platforms.
 void InitializePregeneratedStringThunkHash();
 
+#ifdef TARGET_WASM
 // Look up a pregenerated thunk by its string key.
 // Returns NULL if the string is not found in the table.
 PCODE LookupPregeneratedThunkByString(const char* str);
+#endif // TARGET_WASM
 
 // Process a READYTORUN_FIXUP_InjectStringThunks fixup, adding new entries to the global hash.
+// On non-WASM platforms this is a no-op.
 // moduleBase is the base address of the R2R image.
 // pBlob points to the first byte after the fixup kind byte in the signature.
 void ProcessInjectStringThunksFixup(ReadyToRunInfo * pR2RInfo, PCCOR_SIGNATURE pBlob);
