@@ -315,7 +315,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_IsValueType(TestConfiguration config)
-    {        
+    {
         InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         ILoader loader = Target.Contracts.Loader;
