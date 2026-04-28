@@ -40,6 +40,8 @@
     <Compile Include="TransportContextTest.cs" />
     <!-- NegotiateAuthentication Tests -->
     <Compile Include="NegotiateAuthenticationKerberosTest.cs" />
+    <Compile Include="NegotiateAuthenticationKerberosTest.ChannelBindings.cs"
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'" />
     <!-- NegotiateStream Tests -->
     <Compile Include="NegotiateStreamConformanceTests.cs" />
     <Compile Include="NegotiateStreamInvalidOperationTest.cs" />
@@ -113,6 +115,12 @@
              Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
              Link="src\TlsFrameHelper.cs" />
+    <Compile Include="..\..\src\System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs"
+             Link="ProductionCode\System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs"
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
+             Link="ProductionCode\Common\System\Net\Security\Unix\SecChannelBindings.cs"
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'" />
     <Compile Include="TlsFrameHelperTests.cs" />
     <Compile Include="SslAuthenticationOptionsTest.cs" />
     <Compile Include="SslStreamAlertsTest.cs" />
