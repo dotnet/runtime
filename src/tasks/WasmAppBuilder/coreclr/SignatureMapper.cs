@@ -242,7 +242,7 @@ internal static class SignatureMapper
             return 1;
 
         int size = int.Parse(token.Substring(1));
-        return Math.Max(size / 8, 1);
+        return Math.Max((size + 7) / 8, 1);
     }
 
     // Legacy single-char overloads — still used by consumers that don't encounter S<N> tokens.
