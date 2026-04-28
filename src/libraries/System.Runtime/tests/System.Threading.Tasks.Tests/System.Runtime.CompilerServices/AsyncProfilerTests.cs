@@ -69,6 +69,12 @@ namespace System.Threading.Tasks.Tests
             ResumeAsyncContextKeyword | ResumeAsyncCallstackKeyword | CompleteAsyncContextKeyword |
             CompleteAsyncMethodKeyword | UnwindAsyncExceptionKeyword;
 
+        private static readonly MethodInfo s_getMethodFromNativeIP =
+            typeof(StackFrame).GetMethod("GetMethodFromNativeIP", BindingFlags.Static | BindingFlags.NonPublic)!;
+
+        private static MethodBase? GetMethodFromNativeIP(ulong nativeIP)
+            => (MethodBase?)s_getMethodFromNativeIP.Invoke(null, new object[] { (IntPtr)nativeIP });
+
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         static async Task Func()
         {
@@ -1295,13 +1301,10 @@ namespace System.Threading.Tasks.Tests
             Assert.True(chainStack.HasValue, "No callstack found after scenario timestamp on scenario thread");
             Assert.True(chainStack.Value.FrameCount == 4, $"Expected callstack with 4 frames, got {chainStack.Value.FrameCount}");
 
-            MethodInfo getMethodFromIP = typeof(System.Diagnostics.StackFrame).GetMethod("GetMethodFromNativeIP", BindingFlags.Static | BindingFlags.NonPublic)!;
-            Assert.NotNull(getMethodFromIP);
-
             var resolvedNames = new List<string>();
             foreach (var (nativeIP, _) in chainStack.Value.Frames)
             {
-                var method = (MethodBase?)getMethodFromIP.Invoke(null, new object[] { (IntPtr)nativeIP });
+                var method = GetMethodFromNativeIP(nativeIP);
                 resolvedNames.Add(method?.Name ?? "<unknown>");
             }
 
@@ -1402,7 +1405,9 @@ namespace System.Threading.Tasks.Tests
 
                 thread.IsBackground = true;
                 thread.Start();
-                thread.Join(TimeSpan.FromSeconds(10));
+                bool joined = thread.Join(TimeSpan.FromSeconds(10));
+
+                Assert.True(joined, "Expected worker thread to terminate within timeout before waiting for orphaned buffer flush");
 
                 // Do NOT send a flush command.
                 // Wait for the periodic flush timer to detect the dead thread and flush its orphaned buffer.
@@ -1592,6 +1597,66 @@ namespace System.Threading.Tasks.Tests
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
+        public void RuntimeAsync_CallstackNativeIPDeltaRoundtrip()
+        {
+            // Verify that delta-encoded NativeIPs in callstacks roundtrip correctly,
+            // including both positive and negative deltas. With multiple distinct async
+            // methods at different JIT-assigned addresses, the deltas between consecutive
+            // NativeIPs will naturally span both directions. This exercises the full
+            // zigzag + LEB128 encode/decode path through the production serializer.
+            var events = CollectEvents(CallstackKeywords, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    // Run several different call chains to maximize address variation.
+                    await FuncChained();
+                    await DeepOuterCatches();
+                    await RecursiveFunc(10);
+                });
+            });
+
+            var callstacks = CollectCallstacks(events);
+            Assert.NotEmpty(callstacks);
+
+            // Find callstacks with 3+ frames — enough depth for meaningful deltas.
+            var deepCallstacks = callstacks.Where(cs => cs.FrameCount >= 3).ToList();
+            Assert.True(deepCallstacks.Count > 0,
+                "Expected at least one callstack with 3+ frames for delta verification");
+
+            bool hasPositiveDelta = false;
+            bool hasNegativeDelta = false;
+
+            foreach (var cs in deepCallstacks)
+            {
+                for (int i = 0; i < cs.Frames.Count; i++)
+                {
+                    var (nativeIP, _) = cs.Frames[i];
+                    Assert.True(nativeIP != 0, $"Frame {i} has zero NativeIP");
+                    var method = GetMethodFromNativeIP(nativeIP);
+                    Assert.True(method is not null,
+                        $"Frame {i}: NativeIP 0x{nativeIP:X} does not resolve to a managed method");
+
+                    if (i > 0)
+                    {
+                        long delta = (long)(cs.Frames[i].NativeIP - cs.Frames[i - 1].NativeIP);
+                        if (delta > 0)
+                            hasPositiveDelta = true;
+                        else if (delta < 0)
+                            hasNegativeDelta = true;
+                    }
+                }
+            }
+
+            // With multiple distinct async methods at different addresses, we expect
+            // both positive and negative deltas. If the JIT happens to lay out all
+            // methods monotonically (extremely unlikely), at minimum we must see
+            // non-zero deltas proving the encoding works.
+            Assert.True(hasPositiveDelta || hasNegativeDelta,
+                "Expected at least one non-zero NativeIP delta across all callstack frames");
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_CallstackStressWithVaryingDepths()
         {
             // Stress test: run many async calls with varying callstack depths.
@@ -1635,9 +1700,6 @@ namespace System.Threading.Tasks.Tests
             callstacksWithTimestamp.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
 
             // Verify all callstacks have valid frame data that resolves to managed methods.
-            MethodInfo getMethodFromIP = typeof(System.Diagnostics.StackFrame).GetMethod("GetMethodFromNativeIP", BindingFlags.Static | BindingFlags.NonPublic)!;
-            Assert.NotNull(getMethodFromIP);
-
             foreach (var cs in callstacksWithTimestamp)
             {
                 Assert.True(cs.FrameCount > 0, "Callstack has 0 frames");
@@ -1646,7 +1708,7 @@ namespace System.Threading.Tasks.Tests
                 {
                     var (nativeIP, _) = cs.Frames[f];
                     Assert.True(nativeIP != 0, $"Frame {f} has zero NativeIP");
-                    var method = (MethodBase?)getMethodFromIP.Invoke(null, new object[] { (IntPtr)nativeIP });
+                    var method = GetMethodFromNativeIP(nativeIP);
                     Assert.True(method is not null,
                         $"Frame {f}: NativeIP 0x{nativeIP:X} does not resolve to a managed method");
                 }
@@ -1681,9 +1743,6 @@ namespace System.Threading.Tasks.Tests
             // The overflow path fires when a large callstack doesn't fit inline in the
             // remaining buffer space — the code rewinds, flushes, and re-writes the
             // callstack as the first event in a fresh buffer.
-            MethodInfo getMethodFromIP = typeof(System.Diagnostics.StackFrame).GetMethod("GetMethodFromNativeIP", BindingFlags.Static | BindingFlags.NonPublic)!;
-            Assert.NotNull(getMethodFromIP);
-
             bool overflowDetected = false;
             var rng = new Random(42);
 
@@ -1730,7 +1789,7 @@ namespace System.Threading.Tasks.Tests
                     {
                         var (nativeIP, _) = frames[f];
                         Assert.True(nativeIP != 0, $"Overflow callstack frame {f} has zero NativeIP");
-                        var method = (MethodBase?)getMethodFromIP.Invoke(null, new object[] { (IntPtr)nativeIP });
+                        var method = GetMethodFromNativeIP(nativeIP);
                         Assert.True(method is not null,
                             $"Overflow callstack frame {f}: NativeIP 0x{nativeIP:X} does not resolve to a managed method");
                     }
@@ -1772,13 +1831,10 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(deepest.FrameCount, deepest.Frames.Count);
 
             // Verify all frames are valid.
-            MethodInfo getMethodFromIP = typeof(System.Diagnostics.StackFrame).GetMethod("GetMethodFromNativeIP", BindingFlags.Static | BindingFlags.NonPublic)!;
-            Assert.NotNull(getMethodFromIP);
-
             foreach (var (nativeIP, _) in deepest.Frames)
             {
                 Assert.True(nativeIP != 0, "Frame has zero NativeIP");
-                var method = (MethodBase?)getMethodFromIP.Invoke(null, new object[] { (IntPtr)nativeIP });
+                var method = GetMethodFromNativeIP(nativeIP);
                 Assert.True(method is not null,
                     $"NativeIP 0x{nativeIP:X} does not resolve to a managed method");
             }
