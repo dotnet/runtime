@@ -906,7 +906,6 @@ namespace
     {
         StringToWasmSigThunkHash* table = thunkCache;
         _ASSERTE(table != nullptr && "Wasm thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
-        InterpreterCalliCookie thunk;
         void* thunk;
         bool success = table->Lookup(key, &thunk);
         return success ? (InterpreterCalliCookie)thunk : nullptr;
