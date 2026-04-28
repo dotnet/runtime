@@ -1597,7 +1597,8 @@ public:
     static bool OperIsRMWMemOp(genTreeOps gtOper)
     {
         // Return if binary op is one of the supported operations for RMW of memory.
-        static_assert(AreContiguous(GT_NOT, GT_NEG, GT_OR, GT_XOR, GT_AND, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR, GT_ADD, GT_SUB));
+        static_assert(AreContiguous(GT_NOT, GT_NEG, GT_OR, GT_XOR, GT_AND, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR,
+                                    GT_ADD, GT_SUB));
         return ((GT_NOT <= gtOper) && (gtOper <= GT_SUB)) || OperIsShiftLong(gtOper);
     }
     bool OperIsRMWMemOp() const
@@ -1892,7 +1893,8 @@ public:
     bool OperConsumesFlags() const
     {
 #if defined(TARGET_ARM64)
-        static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC));
+        static_assert(
+            AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC));
         return (GT_JCC <= gtOper) && (gtOper <= GT_SELECT_NEGCC);
 #elif defined(TARGET_AMD64)
         static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
