@@ -831,6 +831,10 @@ def run_tests(args,
         os.environ["RunningIlasmRoundTrip"] = "1"
 
     if args.use_managed_ilasm:
+        if not args.ilasmroundtrip:
+            print("--use_managed_ilasm implies --ilasmroundtrip; enabling ilasm round trip.")
+            print("Setting RunningIlasmRoundTrip=1")
+            os.environ["RunningIlasmRoundTrip"] = "1"
         print("Using managed ILasm for round trip.")
         print("Setting IlasmRoundTripUseManagedIlasm=1")
         os.environ["IlasmRoundTripUseManagedIlasm"] = "1"

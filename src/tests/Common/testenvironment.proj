@@ -7,8 +7,10 @@
 
 
   <!-- DOTNET_* variables that can be specified for a test scenario -->
-  <!-- There is a non-DOTNET variable here: RunningIlasmRoundTrip. When set to 1, this triggers CoreCLR round-trip testing.
-       The value is read in the test wrapper scripts. When set in a __TestEnv script, it is set before it is read.
+  <!-- There are non-DOTNET variables here: RunningIlasmRoundTrip and IlasmRoundTripUseManagedIlasm.
+       RunningIlasmRoundTrip, when set to 1, triggers CoreCLR round-trip testing.
+       IlasmRoundTripUseManagedIlasm, when set to 1, uses the managed ilasm for round-trip testing.
+       Both values are read in the test wrapper scripts. When set in a __TestEnv script, they are set before they are read.
        The DOTNET_ processing handling below allows for variables not prefixed by 'DOTNET_'.
   -->
   <PropertyGroup>
