@@ -105,9 +105,14 @@ namespace System.Threading
 
                 while (true)
                 {
-                    while (semaphore.Wait(timeoutMs, threadPoolInstance._separated.counts.NumProcessingWork))
+                    bool spuriousRequest = false;
+                    while (true)
                     {
-                        WorkerDoWork(threadPoolInstance);
+                        bool signaled = spuriousRequest ? semaphore.WaitNoSpin(timeoutMs) : semaphore.Wait(timeoutMs);
+                        if (!signaled)
+                            break;
+
+                        WorkerDoWork(threadPoolInstance, out spuriousRequest);
                     }
 
                     // We've timed out waiting on the semaphore. Time to exit.
@@ -119,7 +124,7 @@ namespace System.Threading
                 }
             }
 
-            private static void WorkerDoWork(PortableThreadPool threadPoolInstance)
+            private static void WorkerDoWork(PortableThreadPool threadPoolInstance, out bool spuriousRequest)
             {
                 do
                 {
@@ -131,11 +136,25 @@ namespace System.Threading
                     {
                         // We took the request, now we must Dispatch some work items.
                         threadPoolInstance.NotifyDispatchProgress(Environment.TickCount);
-                        if (!ThreadPoolWorkQueue.Dispatch())
+                        switch (ThreadPoolWorkQueue.Dispatch())
                         {
-                            // We are above goal and would have already removed this working worker in the counts.
-                            return;
+                            case ThreadPoolWorkQueue.DispatchResult.Spurious:
+                                spuriousRequest = true;
+                                break;
+
+                            case ThreadPoolWorkQueue.DispatchResult.ShouldStop:
+                                spuriousRequest = false;
+                                // We are above goal and this  worker is already removed in the counts.
+                                return;
+
+                            default:
+                                spuriousRequest = false;
+                                break;
                         }
+                    }
+                    else
+                    {
+                        spuriousRequest = true;
                     }
 
                     // We could not find more work in the queue and will try to stop being active.
