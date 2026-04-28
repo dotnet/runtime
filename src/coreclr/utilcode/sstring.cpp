@@ -2068,13 +2068,13 @@ BOOL SString::ScanASCII() const
         if (c == cEnd)
         {
             const_cast<SString *>(this)->SetRepresentation(REPRESENTATION_ASCII);
-            _ASSERTE(IsRepresentation(REPRESENTATION_ASCII) || IsASCIIScanned());
+            _ASSERTE(GetRepresentation() == REPRESENTATION_ASCII || IsASCIIScanned());
             return TRUE;
         }
         else
             const_cast<SString *>(this)->SetASCIIScanned();
     }
-    _ASSERTE(IsRepresentation(REPRESENTATION_ASCII) || IsASCIIScanned());
+    _ASSERTE(GetRepresentation() == REPRESENTATION_ASCII || IsASCIIScanned());
     return FALSE;
 }
 
