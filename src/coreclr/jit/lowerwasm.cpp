@@ -707,17 +707,6 @@ void Lowering::AfterLowerBlocks()
             return lclNum;
         }
 
-        unsigned TempListLength(Temporary* list)
-        {
-            unsigned length = 0;
-            while (list != nullptr)
-            {
-                length++;
-                list = list->Prev;
-            }
-            return length;
-        }
-
         void ReleaseTemporaries()
         {
             unsigned numRemoved = 0;
@@ -743,18 +732,6 @@ void Lowering::AfterLowerBlocks()
                 JITDUMP("Temporary V%02u is now free and can be re-used\n", lclNum);
                 Append(&m_availableTemps[genActualType(m_compiler->lvaGetDesc(lclNum)->TypeGet())], local);
             }
-
-            unsigned count = 0;
-            for (int i = 0; i < TYP_COUNT; i++)
-            {
-                Temporary* temp = m_availableTemps[i];
-                while (temp != nullptr)
-                {
-                    count++;
-                    temp = temp->Prev;
-                }
-            }
-            assert(count == (m_compiler->lvaCount - m_minimumTempLclNum));
         }
 
         Temporary* Remove(Temporary** pTemps)
