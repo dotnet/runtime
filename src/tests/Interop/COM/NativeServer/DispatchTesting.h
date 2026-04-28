@@ -184,6 +184,14 @@ public: // IDispatch
                 V_UNKNOWN(pVarResult) = new Enumerator(10);
                 return S_OK;
             }
+            case 1000:
+            {
+                return GetDispIdAsString_Proxy(pVarResult);
+            }
+            case 1001:
+            {
+                return GetDispIdAsString2_Proxy(pVarResult);
+            }
             }
 
             return E_NOTIMPL;
@@ -272,6 +280,20 @@ public: // IDispatchTesting
         /* [retval][out] */ IUnknown** retval)
     {
         *retval = new Enumerator(10);
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE GetDispIdAsString(
+        /* [out,retval] */ BSTR *pRetVal)
+    {
+        *pRetVal = SysAllocString(W("1000"));
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE GetDispIdAsString2(
+        /* [out,retval] */ BSTR *pRetVal)
+    {
+        *pRetVal = SysAllocString(W("1001"));
         return S_OK;
     }
 
@@ -518,6 +540,34 @@ private:
     {
         V_VT(pVarResult) = VT_I4;
         V_I4(pVarResult) = lcid;
+        return S_OK;
+    }
+
+    HRESULT GetDispIdAsString_Proxy(_Inout_ VARIANT *pVarResult)
+    {
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        HRESULT hr = S_OK;
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        BSTR result = nullptr;
+        RETURN_IF_FAILED(GetDispIdAsString(&result));
+        V_VT(pVarResult) = VT_BSTR;
+        V_BSTR(pVarResult) = result;
+        return S_OK;
+    }
+
+    HRESULT GetDispIdAsString2_Proxy(_Inout_ VARIANT *pVarResult)
+    {
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        HRESULT hr = S_OK;
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        BSTR result = nullptr;
+        RETURN_IF_FAILED(GetDispIdAsString2(&result));
+        V_VT(pVarResult) = VT_BSTR;
+        V_BSTR(pVarResult) = result;
         return S_OK;
     }
 

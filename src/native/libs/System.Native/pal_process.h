@@ -186,8 +186,12 @@ PALEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void);
  * 2) if pid is not a child or there are no unwaited-for children, -1 is returned (errno=ECHILD)
  * 3) if the child has not yet terminated, 0 is returned
  * 4) on error, -1 is returned.
+ *
+ * exitCode: set to WEXITSTATUS on normal exit, or 128 + signal number on signal termination.
+ * terminatingSignal: set to 0 on normal exit, or the PosixSignal value on signal termination.
+ *                    For signals not in the known PosixSignal set, this is the raw signal number.
  */
-PALEXPORT int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode);
+PALEXPORT int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal);
 
 /**
  * Gets the configurable limit or variable for system path or file descriptor options.

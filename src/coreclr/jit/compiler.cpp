@@ -5030,6 +5030,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     stackLevelSetter.Run();
     m_pLowering->FinalizeOutgoingArgSpace();
 
+#ifdef TARGET_WASM
+    // Determine if a Virtual IP is needed and add code as needed to
+    // keep the Virtual IP updated.
+    //
+    DoPhase(this, PHASE_WASM_VIRTUAL_IP, &Compiler::fgWasmVirtualIP);
+#endif
+
     FinalizeEH();
 
     // We can not add any new tracked variables after this point.
@@ -5592,7 +5599,7 @@ void Compiler::SplitTreesRemoveCommas()
 //
 void Compiler::generatePatchpointInfo()
 {
-    if (!doesMethodHavePatchpoints() && !doesMethodHavePartialCompilationPatchpoints())
+    if (!doesMethodHavePatchpoints())
     {
         // Nothing to report
         return;
@@ -5615,8 +5622,8 @@ void Compiler::generatePatchpointInfo()
     // offset.
 
 #if defined(TARGET_AMD64)
-    // We add +TARGET_POINTER_SIZE here is to account for the slot that Jit_Patchpoint
-    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
+    // We add +TARGET_POINTER_SIZE here to account for the return address slot that the OSR method prolog
+    // pushes on entry (the "pseudo return address" slot) to make the stack unaligned.
     // This is effectively a new slot at the bottom of the Tier0 frame.
     //
     const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
@@ -5724,17 +5731,30 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->AsyncSynchronizationContextOffset());
     }
 
-#if defined(TARGET_AMD64)
     // Record callee save registers.
-    // Currently only needed for x64.
     //
     regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FPBASE;
-    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
-    JITDUMP("--OSR-- Tier0 callee saves: ");
-    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
-    JITDUMP("\n");
+#if defined(TARGET_ARM64)
+    rsPushRegs |= RBM_LR;
+#elif defined(TARGET_LOONGARCH64)
+    rsPushRegs |= RBM_RA;
+#elif defined(TARGET_RISCV64)
+    rsPushRegs |= RBM_RA;
 #endif
+
+#ifdef TARGET_ARM64
+    // For arm64 we communicate whether fp/lr are stored with the callee saves in this mask.
+    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters())
+    {
+        rsPushRegs &= ~(RBM_FP | RBM_LR);
+    }
+#endif
+
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs.getLow());
+    JITDUMP("--OSR-- Tier0 callee saves: ");
+    JITDUMPEXEC(dspRegMask(regMaskTP((regMaskSmall)patchpointInfo->CalleeSaveRegisters())));
+    JITDUMP("\n");
 
     // Register this with the runtime.
     info.compCompHnd->setPatchpointInfo(patchpointInfo);
@@ -6614,24 +6634,6 @@ void Compiler::compCompileFinish()
     }
 #endif // TRACK_ENREG_STATS
 
-    // Only call _DbgBreakCheck when we are jitting, not when we are generating AOT code.
-    // For AOT the int3 or breakpoint instruction will be right at the
-    // start of the AOT method and we will stop when we execute it.
-    //
-    if (!IsAot())
-    {
-        if (compJitHaltMethod())
-        {
-#if !defined(HOST_UNIX)
-            // TODO-UNIX: re-enable this when we have an OS that supports a pop-up dialog
-
-            // Don't do an assert, but just put up the dialog box so we get just-in-time debugger
-            // launching.  When you hit 'retry' it will continue and naturally stop at the INT 3
-            // that the JIT put in the code
-            _DbgBreakCheck(__FILE__, __LINE__, "JitHalt");
-#endif
-        }
-    }
 #else  // DEBUG
     if (JitConfig.JitReportMetrics())
     {

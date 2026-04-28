@@ -21,7 +21,8 @@ public enum DataType
 
     /* VM Data Types */
 
-    GCHandle,
+    ObjectHandle,
+    JITNotification,
     CodePointer,
     Thread,
     ThreadStore,
@@ -43,9 +44,12 @@ public enum DataType
     ModuleLookupMap,
     AppDomain,
     Debugger,
+    DebuggerRCThread,
     SystemDomain,
     Assembly,
     LoaderAllocator,
+    LoaderHeap,
+    LoaderHeapBlock,
     PEAssembly,
     AssemblyBinder,
     PEImage,

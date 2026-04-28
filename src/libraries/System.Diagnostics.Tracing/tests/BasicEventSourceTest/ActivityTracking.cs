@@ -52,6 +52,7 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void StartStopCreatesActivity()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -67,6 +68,7 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task ActivityFlowsAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -115,6 +117,7 @@ namespace BasicEventSourceTests
         // the future we might decide it wasn't even desirable to begin with.
         // Compare with SetCurrentActivityIdAfterEventDoesNotFlowAsync below.
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task SetCurrentActivityIdBeforeEventFlowsAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -140,6 +143,7 @@ namespace BasicEventSourceTests
         // the future we might decide it wasn't even desirable to begin with.
         // Compare with SetCurrentActivityIdBeforeEventFlowsAsync above.
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task SetCurrentActivityIdAfterEventDoesNotFlowAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
