@@ -67,27 +67,32 @@ set_target_properties(hostmisc_public PROPERTIES INTERPROCEDURAL_OPTIMIZATION OF
 
 add_library(hostmisc::public ALIAS hostmisc_public)
 
-set(HOSTMISC_C_SOURCES
-    ${CMAKE_CURRENT_LIST_DIR}/trace.c
-    ${CMAKE_CURRENT_LIST_DIR}/utils.c
-    ${CMAKE_CURRENT_LIST_DIR}/fx_ver.c
-    ${CMAKE_CURRENT_LIST_DIR}/bundle_marker.c
-)
+# hostmisc_c is the C-only subset of hostmisc consumed by C entrypoints
+# (apphost_main.c etc.). The browser host does not use it and the build
+# does not pull in dn-containers / minipal for browser, so skip it there.
+if(NOT CLR_CMAKE_TARGET_BROWSER)
+    set(HOSTMISC_C_SOURCES
+        ${CMAKE_CURRENT_LIST_DIR}/trace.c
+        ${CMAKE_CURRENT_LIST_DIR}/utils.c
+        ${CMAKE_CURRENT_LIST_DIR}/fx_ver.c
+        ${CMAKE_CURRENT_LIST_DIR}/bundle_marker.c
+    )
 
-if(CLR_CMAKE_TARGET_WIN32)
-    list(APPEND HOSTMISC_C_SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/pal.windows.c_impl.cpp)
-else()
-    list(APPEND HOSTMISC_C_SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/pal.unix.c
-        ${CMAKE_CURRENT_LIST_DIR}/fxr_resolver.c)
-endif()
+    if(CLR_CMAKE_TARGET_WIN32)
+        list(APPEND HOSTMISC_C_SOURCES
+            ${CMAKE_CURRENT_LIST_DIR}/pal.windows.c_impl.cpp)
+    else()
+        list(APPEND HOSTMISC_C_SOURCES
+            ${CMAKE_CURRENT_LIST_DIR}/pal.unix.c
+            ${CMAKE_CURRENT_LIST_DIR}/fxr_resolver.c)
+    endif()
 
-add_library(hostmisc_c OBJECT ${HOSTMISC_C_SOURCES})
-target_link_libraries(hostmisc_c PUBLIC hostmisc_interface minipal)
+    add_library(hostmisc_c OBJECT ${HOSTMISC_C_SOURCES})
+    target_link_libraries(hostmisc_c PUBLIC hostmisc_interface minipal)
 
-if(CLR_CMAKE_TARGET_WIN32)
-    target_link_libraries(hostmisc_c PUBLIC hostmisc)
-else()
-    target_link_libraries(hostmisc_c PUBLIC dn-containers)
+    if(CLR_CMAKE_TARGET_WIN32)
+        target_link_libraries(hostmisc_c PUBLIC hostmisc)
+    else()
+        target_link_libraries(hostmisc_c PUBLIC dn-containers)
+    endif()
 endif()
