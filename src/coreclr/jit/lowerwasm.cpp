@@ -530,11 +530,10 @@ void Lowering::AfterLowerBlocks()
         Compiler*             m_compiler;
         ArrayStack<GenTree**> m_stack;
         unsigned              m_minimumTempLclNum;
+        unsigned              m_maximumTempLclNum;
         Temporary*            m_availableTemps[TYP_COUNT] = {};
         Temporary*            m_unusedTempNodes           = nullptr;
         bool                  m_anyChanges                = false;
-        BitVecTraits          m_pendingReleaseTempTraits;
-        BitVec                m_pendingReleaseTemps;
 
     public:
         Stackifier(Lowering* lower)
@@ -542,9 +541,7 @@ void Lowering::AfterLowerBlocks()
             , m_compiler(lower->m_compiler)
             , m_stack(m_compiler->getAllocator(CMK_Lower))
             , m_minimumTempLclNum(m_compiler->lvaCount)
-            // initially allocate 32 temp local slots for "pending release"
-            , m_pendingReleaseTempTraits(32, m_compiler)
-            , m_pendingReleaseTemps(BitVecOps::MakeEmpty(&m_pendingReleaseTempTraits))
+            , m_maximumTempLclNum(m_compiler->lvaCount)
         {
         }
 
@@ -555,13 +552,12 @@ void Lowering::AfterLowerBlocks()
             GenTree* node    = block->lastNode();
             while (node != nullptr)
             {
-                assert(BitVecOps::IsEmpty(&m_pendingReleaseTempTraits, m_pendingReleaseTemps));
                 assert(IsDataFlowRoot(node));
                 node = StackifyTree(node);
                 // We've finished processing the current root tree, so
-                // we can release any pending temps used in stackification of the tree,
+                // we can release any temps used in stackification of the tree,
                 // since there is no more risk of interference between tree operands.
-                RemovePendingTemporaries();
+                ReleaseTemporaries();
             }
             m_lower->m_block = nullptr;
 
@@ -577,8 +573,6 @@ void Lowering::AfterLowerBlocks()
             // Simple greedy algorithm working backwards. The invariant is that the stack top must be placed right next
             // to (in normal linear order - before) the node we last stackified.
             m_stack.Push(&root);
-
-            AddTemporariesForPendingRelease(root);
 
             GenTree* lastStackified = root->gtNext;
             while (m_stack.Height() != initialDepth)
@@ -713,59 +707,32 @@ void Lowering::AfterLowerBlocks()
             return lclNum;
         }
 
-        constexpr int lvaToTempNum(unsigned lclNum)
+        unsigned TempListLength(Temporary* list)
         {
-            assert(lclNum >= m_minimumTempLclNum);
-            return lclNum - m_minimumTempLclNum;
-        }
-
-        constexpr int tmpToLvaNum(unsigned tmpNum)
-        {
-            assert(tmpNum >= 0);
-            return tmpNum + m_minimumTempLclNum;
-        }
-
-        void AddTemporariesForPendingRelease(GenTree* node)
-        {
-            // We rely in this function on the lifetime of temporaries beginning (recall this is backwards traversal)
-            // at exactly "node"'s position. This is a safe assumption, since we will already have stackified all
-            // subsequent nodes, and so any further new use of this temporary will be before this one's lifetime begins.
-            // However, we don't know precisely where the liftime ends here, because uses of locals happen at their
-            // position in tree order, and not the LIR stream. So conservatively, we wait until we've processed an
-            // entire root gentree before reusing any temporaries to avoid the possibility of reusing a temporary before
-            // its last live use in the tree order.
-
-            assert(IsDataFlowRoot(node));
-            if (!node->OperIs(GT_STORE_LCL_VAR))
+            unsigned length = 0;
+            while (list != nullptr)
             {
-                return;
+                length++;
+                list = list->Prev;
+            }
+            return length;
+        }
+
+        void ReleaseTemporaries()
+        {
+            unsigned numRemoved = 0;
+            // Recycle all available temporaries as unused nodes
+            for (int i = 0; i < TYP_COUNT; i++)
+            {
+                while (m_availableTemps[i] != nullptr)
+                {
+                    Temporary* temp = Remove(&m_availableTemps[i]);
+                    Append(&m_unusedTempNodes, temp);
+                }
             }
 
-            unsigned lclNum = node->AsLclVar()->GetLclNum();
-            if (lclNum < m_minimumTempLclNum)
+            for (unsigned lclNum = m_minimumTempLclNum; lclNum < m_compiler->lvaCount; lclNum++)
             {
-                return;
-            }
-
-            JITDUMP("Stackifier pending release of lclNum: %d temporary defined by [%06u]\n", lclNum,
-                    Compiler::dspTreeID(node));
-            EnsurePendingReleaseCapacity(lvaToTempNum(lclNum));
-            BitVecOps::AddElemD(&m_pendingReleaseTempTraits, m_pendingReleaseTemps, lvaToTempNum(lclNum));
-        }
-
-        void RemovePendingTemporaries()
-        {
-            // iterate through m_pendingReleaseTemps
-            BitVecOps::Iter iter(&m_pendingReleaseTempTraits, m_pendingReleaseTemps);
-            unsigned        tmpNum;
-            while (iter.NextElem(&tmpNum))
-            {
-                // remove from m_pendingReleaseTemps
-                BitVecOps::RemoveElemD(&m_pendingReleaseTempTraits, m_pendingReleaseTemps, tmpNum);
-
-                unsigned lclNum = tmpToLvaNum(tmpNum);
-                assert(lclNum >= m_minimumTempLclNum);
-
                 Temporary* local = Remove(&m_unusedTempNodes); // See if we have any free nodes in the pool.
                 if (local == nullptr)
                 {
@@ -776,6 +743,18 @@ void Lowering::AfterLowerBlocks()
                 JITDUMP("Temporary V%02u is now free and can be re-used\n", lclNum);
                 Append(&m_availableTemps[genActualType(m_compiler->lvaGetDesc(lclNum)->TypeGet())], local);
             }
+
+            unsigned count = 0;
+            for (int i = 0; i < TYP_COUNT; i++)
+            {
+                Temporary* temp = m_availableTemps[i];
+                while (temp != nullptr)
+                {
+                    count++;
+                    temp = temp->Prev;
+                }
+            }
+            assert(count == (m_compiler->lvaCount - m_minimumTempLclNum));
         }
 
         Temporary* Remove(Temporary** pTemps)
@@ -792,29 +771,6 @@ void Lowering::AfterLowerBlocks()
         {
             local->Prev = *pTemps;
             *pTemps     = local;
-        }
-
-        void EnsurePendingReleaseCapacity(unsigned needed)
-        {
-            if (needed < BitVecTraits::GetSize(&m_pendingReleaseTempTraits))
-            {
-                return;
-            }
-
-            unsigned     oldSize = BitVecTraits::GetSize(&m_pendingReleaseTempTraits);
-            unsigned     newSize = max(needed + 1, oldSize * 2);
-            BitVecTraits newTraits(newSize, m_compiler);
-            BitVec       newVec = BitVecOps::MakeEmpty(&newTraits);
-
-            BitVecOps::Iter iter(&m_pendingReleaseTempTraits, m_pendingReleaseTemps);
-            unsigned        elem;
-            while (iter.NextElem(&elem))
-            {
-                BitVecOps::AddElemD(&newTraits, newVec, elem);
-            }
-
-            m_pendingReleaseTempTraits = newTraits;
-            m_pendingReleaseTemps      = newVec;
         }
     };
 
