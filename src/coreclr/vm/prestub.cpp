@@ -809,7 +809,9 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 #ifdef FEATURE_INTERPRETER
         if (isInterpreterCode)
         {
-            // If this is interpreter code, we need to get the native code start address from the interpreter Precode
+            // If this is interpreter code, get the native code start address from the
+            // interpreter entrypoint data: PortableEntryPoint interpreter data when
+            // FEATURE_PORTABLE_ENTRYPOINTS is enabled, otherwise the interpreter Precode.
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(pCode);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS

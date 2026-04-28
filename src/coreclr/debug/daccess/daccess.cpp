@@ -5605,11 +5605,11 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode(), methodDesc));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(methodDesc->GetNativeCode(), methodDesc));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
@@ -5664,11 +5664,11 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode(), methodDesc));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(methodDesc->GetNativeCode(), methodDesc));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
