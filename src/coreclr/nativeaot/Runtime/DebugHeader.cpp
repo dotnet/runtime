@@ -256,12 +256,7 @@ extern "C" void PopulateDebugHeaders()
     MAKE_SIZE_ENTRY(StressMsg);
     MAKE_DEBUG_FIELD_ENTRY(StressMsg, args);
 
-    MAKE_SIZE_ENTRY(RuntimeInstance);
-
     MAKE_GLOBAL_ENTRY(g_CrashInfoBuffer);
-
-    RuntimeInstance *g_pTheRuntimeInstance = GetRuntimeInstance();
-    MAKE_GLOBAL_ENTRY(g_pTheRuntimeInstance);
 
     ThreadStore *g_pThreadStore = ThreadStore::s_pThreadStore;
     MAKE_GLOBAL_ENTRY(g_pThreadStore);
