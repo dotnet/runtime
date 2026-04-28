@@ -145,10 +145,13 @@ namespace ILCompiler.DependencyAnalysis
 
         /// <summary>
         /// Returns a fully-qualified type name for cDAC descriptors
-        /// (e.g., "System.Threading.Thread").
+        /// (e.g., "System.Threading.Thread" or "System.Foo.Outer+Inner").
         /// </summary>
         private static string GetFullTypeName(MetadataType type)
         {
+            if (type.ContainingType is not null)
+                return $"{GetFullTypeName(type.ContainingType)}+{type.GetName()}";
+
             string ns = type.GetNamespace();
             string name = type.GetName();
 
