@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if TARGET_LINUX || TARGET_WINDOWS
+#if TARGET_LINUX
 // use OS-provided compare-and-wait API.
+#define USE_FUTEX
+#elif TARGET_WINDOWS
+#define USE_FUTEX
 #else
 // fallback to monitor (condvar+mutex)
 #define USE_MONITOR
@@ -26,20 +29,29 @@ namespace System.Threading
     /// </summary>
     internal unsafe class LowLevelThreadBlocker : IDisposable
     {
+        // We keep Event based implementation for comparison/reference/fallback purposes.
+#if USE_EVENT
+        private AutoResetEvent _event;
+#else
         private int* _pState;
 
 #if USE_MONITOR
         private LowLevelMonitor _monitor;
 #endif
+#endif  // !USE_EVENT
 
         public LowLevelThreadBlocker()
         {
+#if USE_EVENT
+            _event = new AutoResetEvent(false);
+#else
             _pState = (int*)NativeMemory.AlignedAlloc(Internal.PaddingHelpers.CACHE_LINE_SIZE, Internal.PaddingHelpers.CACHE_LINE_SIZE);
             *_pState = 0;
 
 #if USE_MONITOR
             _monitor.Initialize();
 #endif
+#endif  // !USE_EVENT
         }
 
         ~LowLevelThreadBlocker()
@@ -49,6 +61,9 @@ namespace System.Threading
 
         public void Dispose()
         {
+#if USE_EVENT
+            _event.Dispose();
+#else
             if (_pState == null)
             {
                 return;
@@ -60,7 +75,7 @@ namespace System.Threading
 #if USE_MONITOR
             _monitor.Dispose();
 #endif
-
+#endif  // !USE_EVENT
             GC.SuppressFinalize(this);
         }
 
@@ -115,6 +130,22 @@ namespace System.Threading
             _monitor.Acquire();
             *_pState = *_pState + 1;
             _monitor.Signal_Release();
+        }
+#elif USE_EVENT
+        internal void Wait()
+        {
+            _event.WaitOneNoCheck(-1, true);
+        }
+
+        internal bool TimedWait(int timeoutMs)
+        {
+            Debug.Assert(timeoutMs >= -1);
+            return _event.WaitOneNoCheck(timeoutMs, true);
+        }
+
+        internal void WakeOne()
+        {
+            _event.Set();
         }
 #else
 
