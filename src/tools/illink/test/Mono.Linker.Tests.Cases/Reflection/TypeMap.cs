@@ -211,7 +211,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
             Console.WriteLine(new ArrayElement[1]);
 
-            Console.WriteLine(new ArrayTypeTrimTargetClass());
+            Console.WriteLine(new ArrayTypeTrimTargetClass[1] { new ArrayTypeTrimTargetClass() });
 
             Console.WriteLine(new ConstructedNoTypeCheckNoBoxStruct(42).Value);
 
