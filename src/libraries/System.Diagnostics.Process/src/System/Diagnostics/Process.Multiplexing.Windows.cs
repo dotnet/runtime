@@ -63,6 +63,14 @@ namespace System.Diagnostics
                 int errorCharStart = 0, errorCharEnd = 0;
                 bool outputPreambleChecked = false, errorPreambleChecked = false;
 
+                // Four-byte BOM accumulation buffers: bytes are gathered here until we have
+                // enough to unambiguously detect the encoding (needed to distinguish
+                // UTF-32 LE BOM FF FE 00 00 from a UTF-16 LE BOM FF FE when the first read
+                // delivers fewer than four bytes).
+                byte[] outputBomAccum = new byte[4];
+                byte[] errorBomAccum = new byte[4];
+                int outputBomAccumLen = 0, errorBomAccumLen = 0;
+
                 unsafe
                 {
                     outputDone = !QueueRead(outputHandle, outputPin.GetAddressOfArrayData(),
@@ -101,12 +109,12 @@ namespace System.Diagnostics
                         if (isError)
                         {
                             DecodeBytesAndParseLines(ref errorDecoder, ref errorEncoding, errorByteBuffer, bytesRead, ref errorCharBuffer, ref errorCharStart,
-                                ref errorCharEnd, ref errorPreambleChecked, isError, lines);
+                                ref errorCharEnd, ref errorPreambleChecked, errorBomAccum, ref errorBomAccumLen, isError, lines);
                         }
                         else
                         {
                             DecodeBytesAndParseLines(ref outputDecoder, ref outputEncoding, outputByteBuffer, bytesRead, ref outputCharBuffer, ref outputCharStart,
-                                ref outputCharEnd, ref outputPreambleChecked, isError, lines);
+                                ref outputCharEnd, ref outputPreambleChecked, outputBomAccum, ref outputBomAccumLen, isError, lines);
                         }
 
                         unsafe
@@ -131,10 +139,12 @@ namespace System.Diagnostics
                     {
                         if (isError)
                         {
+                            FlushBomAccumulation(ref errorDecoder, ref errorEncoding, errorBomAccum, errorBomAccumLen, ref errorPreambleChecked, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd, isError, lines);
                             errorDone = FlushDecoderAndEmitRemainingChars(errorDecoder, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd, isError, lines);
                         }
                         else
                         {
+                            FlushBomAccumulation(ref outputDecoder, ref outputEncoding, outputBomAccum, outputBomAccumLen, ref outputPreambleChecked, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd, isError, lines);
                             outputDone = FlushDecoderAndEmitRemainingChars(outputDecoder, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd, isError, lines);
                         }
 
