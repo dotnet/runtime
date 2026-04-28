@@ -3668,13 +3668,30 @@ public static partial class XmlSerializerTests
     }
 
     [Theory]
-    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description><p>text</p></Description><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test")]
-    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description /><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test")]
-    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description/><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test")]
-    public static void Xml_XmlElementMember_EmptyElement_SiblingNotConsumed(string xml, string expectedName)
+    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description><p>text</p></Description><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", true, "p", "text")]
+    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description /><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", false, null, null)]
+    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description/><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", false, null, null, false)]
+    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description></Description><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", false, null, null, false)]
+    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description><p>text</p></Description><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", true, "p", "text", true)]
+    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description /><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", null, true, "Name", "Test", true)]
+    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description></Description><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", false, null, null, true)]
+    public static void Xml_XmlElementMember_EmptyElement_SiblingNotConsumed(string xml, string? expectedName, bool expectDescription, string? expectedDescriptionName, string? expectedDescriptionInnerXml, bool? compatSwitch = null)
     {
-        var serializer = new XmlSerializer(typeof(TypeWithXmlElementMemberAndSibling));
-        TypeWithXmlElementMemberAndSibling obj = (TypeWithXmlElementMemberAndSibling)serializer.Deserialize(new StringReader(xml));
-        Assert.Equal(expectedName, obj.Name);
+        using (var appContextScope = compatSwitch.HasValue ? new XmlSerializerAppContextSwitchScope("Switch.System.Xml.UseLegacyEmptyXmlElementDeserialization", compatSwitch.Value) : null)
+        {
+            var serializer = new XmlSerializer(typeof(TypeWithXmlElementMemberAndSibling));
+            TypeWithXmlElementMemberAndSibling obj = (TypeWithXmlElementMemberAndSibling)serializer.Deserialize(new StringReader(xml));
+            Assert.Equal(expectedName, obj.Name);
+            if (expectDescription)
+            {
+                Assert.NotNull(obj.Description);
+                Assert.Equal(expectedDescriptionName, obj.Description.Name);
+                Assert.Equal(expectedDescriptionInnerXml, obj.Description.InnerXml);
+            }
+            else
+            {
+                Assert.Null(obj.Description);
+            }
+        }
     }
 }
