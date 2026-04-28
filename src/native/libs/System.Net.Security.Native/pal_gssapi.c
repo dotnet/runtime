@@ -411,23 +411,55 @@ uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
                                             uint32_t* retFlags,
                                             int32_t* isNtlmUsed)
 {
+    return NetSecurityNative_AcceptSecContextEx(minorStatus,
+                                                acceptorCredHandle,
+                                                contextHandle,
+                                                NULL,
+                                                0,
+                                                inputBytes,
+                                                inputLength,
+                                                outBuffer,
+                                                retFlags,
+                                                isNtlmUsed);
+}
+
+uint32_t NetSecurityNative_AcceptSecContextEx(uint32_t* minorStatus,
+                                              GssCredId* acceptorCredHandle,
+                                              GssCtxId** contextHandle,
+                                              void* cbt,
+                                              int32_t cbtSize,
+                                              uint8_t* inputBytes,
+                                              uint32_t inputLength,
+                                              PAL_GssBuffer* outBuffer,
+                                              uint32_t* retFlags,
+                                              int32_t* isNtlmUsed)
+{
     assert(minorStatus != NULL);
     assert(acceptorCredHandle != NULL);
     assert(contextHandle != NULL);
     assert(inputBytes != NULL || inputLength == 0);
     assert(outBuffer != NULL);
     assert(isNtlmUsed != NULL);
+    assert(cbt != NULL || cbtSize == 0);
     // Note: *contextHandle is null only in the first call and non-null in the subsequent calls
 
     GssBuffer inputToken = {.length = inputLength, .value = inputBytes};
     GssBuffer gssBuffer = {.length = 0, .value = NULL};
+
+    struct gss_channel_bindings_struct gssCbt;
+    if (cbt != NULL)
+    {
+        memset(&gssCbt, 0, sizeof(struct gss_channel_bindings_struct));
+        gssCbt.application_data.length = (size_t)cbtSize;
+        gssCbt.application_data.value = cbt;
+    }
 
     gss_OID mechType = GSS_C_NO_OID;
     uint32_t majorStatus = gss_accept_sec_context(minorStatus,
                                                   contextHandle,
                                                   acceptorCredHandle,
                                                   &inputToken,
-                                                  GSS_C_NO_CHANNEL_BINDINGS,
+                                                  (cbt != NULL) ? &gssCbt : GSS_C_NO_CHANNEL_BINDINGS,
                                                   NULL,
                                                   &mechType,
                                                   &gssBuffer,
