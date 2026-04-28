@@ -209,9 +209,10 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
 {
-    bool       m_madeChanges  = false;
-    Statement* m_curStmt      = nullptr;
-    Statement* m_firstNewStmt = nullptr;
+    bool       m_madeChanges            = false;
+    bool       m_needsSideEffectRefresh = false;
+    Statement* m_curStmt                = nullptr;
+    Statement* m_firstNewStmt           = nullptr;
 
 public:
     enum
@@ -243,9 +244,17 @@ public:
     //
     Statement* WalkStatement(Statement* stmt)
     {
-        m_curStmt      = stmt;
-        m_firstNewStmt = nullptr;
+        m_curStmt                = stmt;
+        m_firstNewStmt           = nullptr;
+        m_needsSideEffectRefresh = false;
         WalkTree(m_curStmt->GetRootNodePointer(), nullptr);
+        if (m_needsSideEffectRefresh)
+        {
+            // RET_EXPR substitution and gtSplitTree can leave stale side-effect flags
+            // on ancestors (e.g. GTF_CALL carried over from the original call, missing
+            // GTF_EXCEPT/GTF_GLOB_REF from the substituted expression). Refresh them.
+            m_compiler->gtUpdateStmtSideEffects(m_curStmt);
+        }
         return m_firstNewStmt == nullptr ? m_curStmt : m_firstNewStmt;
     }
 
@@ -416,7 +425,8 @@ private:
                 *use = inlineCandidate;
             }
 
-            m_madeChanges = true;
+            m_madeChanges            = true;
+            m_needsSideEffectRefresh = true;
 
             if (inlineeBB != nullptr)
             {
@@ -639,6 +649,9 @@ private:
                             {
                                 m_firstNewStmt = newStmt;
                             }
+                            // gtSplitTree may leave stale side-effect flags on the
+                            // ancestors of the split point in m_curStmt.
+                            m_needsSideEffectRefresh = true;
                         }
 
                         // If the call is the root expression in a statement, and it returns void,
@@ -2084,8 +2097,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 //    newStmt   - updated with the new statement
 //    callDI    - debug info for the call
 //
-void Compiler::fgInsertInlineeArgument(
-    const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI)
+void Compiler::fgInsertInlineeArgument(const InlArgInfo& argInfo,
+                                       BasicBlock*       block,
+                                       Statement**       afterStmt,
+                                       Statement**       newStmt,
+                                       const DebugInfo&  callDI,
+                                       bool*             bashedInPlace)
 {
     const bool argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
     CallArg*   arg            = argInfo.arg;
@@ -2116,6 +2133,7 @@ void Compiler::fgInsertInlineeArgument(
             // We currently do not support this for struct arguments, so it must not be a GT_BLK.
             assert(!argNode->OperIs(GT_BLK));
             argSingleUseNode->ReplaceWith(argNode, this);
+            *bashedInPlace = true;
             return;
         }
         else
@@ -2295,7 +2313,13 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     {
         // Call impInlineFetchArg to "reserve" a temp for the "this" pointer.
         GenTree* thisOp = impInlineFetchArg(inlArgInfo[0], lclVarInfo[0]);
-        if (fgAddrCouldBeNull(thisOp))
+
+        // The temp returned by impInlineFetchArg may later be bashed in-place to the
+        // original arg node (see fgInsertInlineeArgument). If the original arg cannot be
+        // null, the bashed NULLCHECK would carry stale GTF_EXCEPT. Use the underlying
+        // arg node to decide whether a null check is actually needed.
+        GenTree* const origArgNode = inlArgInfo[0].arg->GetNode();
+        if (fgAddrCouldBeNull(thisOp) && fgAddrCouldBeNull(origArgNode))
         {
             nullcheck = gtNewNullCheck(thisOp);
             // The NULL-check statement will be inserted to the statement list after those statements
@@ -2310,7 +2334,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     }
 #endif
 
-    unsigned ilArgNum = 0;
+    unsigned ilArgNum      = 0;
+    bool     bashedInPlace = false;
     for (CallArg& arg : call->gtArgs.Args())
     {
         InlArgInfo* argInfo = nullptr;
@@ -2331,7 +2356,26 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         }
 
         assert(argInfo != nullptr);
-        fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
+        fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI, &bashedInPlace);
+    }
+
+    // Argument insertion above may have bashed single-use temps in-place
+    // (see fgInsertInlineeArgument). Such bashing can leave stale side-effect
+    // flags on parent nodes within the inlinee body (e.g. GTF_EXCEPT on a
+    // parent whose former IND child has been replaced with a non-faulting
+    // IND or a non-null expression). Refresh side-effect flags on every
+    // inlinee statement so the resulting IR is consistent. If no in-place
+    // bashing occurred, the inlinee body is unchanged from import and no
+    // refresh is needed.
+    if (bashedInPlace)
+    {
+        for (BasicBlock* const inlineeBlock : InlineeCompiler->Blocks())
+        {
+            for (Statement* const stmt : inlineeBlock->Statements())
+            {
+                gtUpdateStmtSideEffects(stmt);
+            }
+        }
     }
 
     // Add the CCTOR check if asked for.

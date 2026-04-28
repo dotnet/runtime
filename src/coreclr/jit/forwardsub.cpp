@@ -874,10 +874,12 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         fgForwardSubUpdateLiveness(firstLcl, defNode->gtPrev);
     }
 
-    if ((fwdSubNode->gtFlags & GTF_ALL_EFFECT) != 0)
-    {
-        gtUpdateStmtSideEffects(nextStmt);
-    }
+    // Refresh side-effect flags on the receiving statement. Substitution
+    // can both add side effects (when fwdSubNode has effects) and remove
+    // them: replacing a local use with a known non-faulting expression may
+    // eliminate a potential fault that an ancestor node (e.g. ARR_LENGTH,
+    // FIELD_ADDR, NULLCHECK) had been carrying via GTF_EXCEPT.
+    gtUpdateStmtSideEffects(nextStmt);
 
     JITDUMP(" -- fwd subbing [%06u]; new next stmt is\n", dspTreeID(fwdSubNode));
     DISPSTMT(nextStmt);

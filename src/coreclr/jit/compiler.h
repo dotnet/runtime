@@ -5613,6 +5613,16 @@ public:
 
     bool fgGlobalMorphDone = false;
 
+#ifdef DEBUG
+    // fgRetypeImplicitByRefArgs retypes implicit byref params from TYP_STRUCT
+    // to TYP_BYREF without rewriting existing LCL_FLD/STORE_LCL_FLD references
+    // to them; that rewrite happens later in fgMorphExpandImplicitByRefArg
+    // during PHASE_MORPH_GLOBAL. During that window the
+    // 'GTF_VAR_USEASG iff IsPartialLclFld' invariant is transiently broken
+    // for affected nodes. This flag scopes the corresponding IR check relaxation.
+    bool fgImplicitByRefLclFldsStale = false;
+#endif
+
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
 
@@ -7072,7 +7082,12 @@ private:
 
     void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
     void fgInsertInlineeBlocks(InlineInfo* pInlineInfo);
-    void fgInsertInlineeArgument(const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI);
+    void fgInsertInlineeArgument(const InlArgInfo& argInfo,
+                                 BasicBlock*       block,
+                                 Statement**       afterStmt,
+                                 Statement**       newStmt,
+                                 const DebugInfo&  callDI,
+                                 bool*             bashedInPlace);
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
     void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);
 

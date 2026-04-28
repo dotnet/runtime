@@ -864,9 +864,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     };
 
     ArrayStack<Value>               m_valueStack;
-    bool                            m_stmtModified    = false;
-    bool                            m_madeChanges     = false;
-    bool                            m_propagatedAddrs = false;
+    bool                            m_stmtModified          = false;
+    bool                            m_stmtUpdateSideEffects = false;
+    bool                            m_madeChanges           = false;
+    bool                            m_propagatedAddrs       = false;
     LocalSequencer*                 m_sequencer;
     LocalEqualsLocalAddrAssertions* m_lclAddrAssertions;
 
@@ -906,7 +907,8 @@ public:
         }
 #endif // DEBUG
 
-        m_stmtModified = false;
+        m_stmtModified          = false;
+        m_stmtUpdateSideEffects = false;
 
         if (m_sequencer != nullptr)
         {
@@ -920,6 +922,14 @@ public:
 
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
+
+        if (m_stmtUpdateSideEffects)
+        {
+            // Rewrites such as IND(FIELD_ADDR(LCL_VAR)) -> LCL_FLD can remove
+            // side effects (e.g. GTF_EXCEPT) from a subtree; refresh the
+            // ancestor effect flags so CHECK_IR invariants hold.
+            m_compiler->gtUpdateStmtSideEffects(stmt);
+        }
 
         if (m_sequencer != nullptr)
         {
@@ -1176,7 +1186,8 @@ public:
                         INDEBUG(rhs.Consume());
                         PopValue();
                         PopValue();
-                        m_stmtModified = true;
+                        m_stmtModified          = true;
+                        m_stmtUpdateSideEffects = true;
                         break;
                     }
                 }
@@ -1305,9 +1316,10 @@ public:
                     (rhs.IsAddress() && lhs.Node()->IsIntegralConst(0)))
                 {
                     JITDUMP("Rewriting known address vs null comparison [%06u]\n", m_compiler->dspTreeID(node));
-                    *lhs.Use()     = m_compiler->gtNewIconNode(0);
-                    *rhs.Use()     = m_compiler->gtNewIconNode(1);
-                    m_stmtModified = true;
+                    *lhs.Use()              = m_compiler->gtNewIconNode(0);
+                    *rhs.Use()              = m_compiler->gtNewIconNode(1);
+                    m_stmtModified          = true;
+                    m_stmtUpdateSideEffects = true;
 
                     INDEBUG(TopValue(0).Consume());
                     INDEBUG(TopValue(1).Consume());
@@ -1317,10 +1329,11 @@ public:
                 else if (lhs.IsAddress() && rhs.IsAddress())
                 {
                     JITDUMP("Rewriting known address vs address comparison [%06u]\n", m_compiler->dspTreeID(node));
-                    bool isSameAddress = lhs.IsSameAddress(rhs);
-                    *lhs.Use()         = m_compiler->gtNewIconNode(0);
-                    *rhs.Use()         = m_compiler->gtNewIconNode(isSameAddress ? 0 : 1);
-                    m_stmtModified     = true;
+                    bool isSameAddress      = lhs.IsSameAddress(rhs);
+                    *lhs.Use()              = m_compiler->gtNewIconNode(0);
+                    *rhs.Use()              = m_compiler->gtNewIconNode(isSameAddress ? 0 : 1);
+                    m_stmtModified          = true;
+                    m_stmtUpdateSideEffects = true;
 
                     INDEBUG(TopValue(0).Consume());
                     INDEBUG(TopValue(1).Consume());
@@ -1349,7 +1362,8 @@ public:
                     node->gtBashToNOP();
                     INDEBUG(TopValue(0).Consume());
                     PopValue();
-                    m_stmtModified = true;
+                    m_stmtModified          = true;
+                    m_stmtUpdateSideEffects = true;
                 }
                 else
                 {
@@ -1524,6 +1538,7 @@ private:
                 m_compiler->lvaSetHiddenBufferStructArg(lclNum);
                 escapeAddr = false;
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                callUser->gtFlags |= GTF_ASG;
                 defFlag = GTF_VAR_DEF;
 
                 if ((val.Offset() != 0) ||
@@ -1612,6 +1627,12 @@ private:
 
             MorphLocalAddress(node->AsIndir()->Addr(), lclNum, offset);
             node->gtFlags |= GTF_GLOB_REF; // GLOB_REF may not be set already in the "large offset" case.
+
+            // The wide indirection's address has been rewritten to a known non-null
+            // LCL_ADDR (or ADD of LCL_VAR_ADDR + offset). The indirection's GTF_EXCEPT
+            // (if any) was tracking the possibility of faulting via a null address,
+            // and is now stale.
+            m_stmtUpdateSideEffects = true;
         }
         else
         {
@@ -1652,8 +1673,13 @@ private:
         }
 
         // Local address nodes never have side effects (nor any other flags, at least at this point).
-        addr->gtFlags  = GTF_EMPTY;
-        m_stmtModified = true;
+        GenTreeFlags const oldEffects = addr->gtFlags & GTF_ALL_EFFECT;
+        addr->gtFlags                 = GTF_EMPTY;
+        m_stmtModified                = true;
+        if (oldEffects != GTF_EMPTY)
+        {
+            m_stmtUpdateSideEffects = true;
+        }
     }
 
     //------------------------------------------------------------------------
@@ -1679,7 +1705,8 @@ private:
         {
             case IndirTransform::Nop:
                 indir->gtBashToNOP();
-                m_stmtModified = true;
+                m_stmtModified          = true;
+                m_stmtUpdateSideEffects = true;
                 return;
 
             case IndirTransform::BitCast:
@@ -1909,8 +1936,9 @@ private:
             }
         }
 
-        lclNode->gtFlags = lclNodeFlags;
-        m_stmtModified   = true;
+        lclNode->gtFlags        = lclNodeFlags;
+        m_stmtModified          = true;
+        m_stmtUpdateSideEffects = true;
     }
 
     //------------------------------------------------------------------------
@@ -2140,7 +2168,8 @@ private:
                 }
 
                 JITDUMP("Replacing the field in promoted struct with local var V%02u\n", fieldLclNum);
-                m_stmtModified = true;
+                m_stmtModified          = true;
+                m_stmtUpdateSideEffects = true;
 
                 node->ChangeOper(GT_LCL_ADDR);
                 node->AsLclFld()->SetLclNum(fieldLclNum);
@@ -2212,7 +2241,8 @@ private:
         }
         else
         {
-            m_stmtModified = true;
+            m_stmtModified          = true;
+            m_stmtUpdateSideEffects = true;
         }
     }
 

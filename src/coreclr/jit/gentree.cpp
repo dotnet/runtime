@@ -8348,6 +8348,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_KEEPALIVE:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_RET_EXPR:
         case GT_NONLOCAL_JMP:
             return true;
 
@@ -9760,7 +9761,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
 {
     GenTreeCall* node = new (this, GT_CALL) GenTreeCall(genActualType(type));
 
-    node->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+    node->gtFlags |= (GTF_CALL | GTF_EXCEPT | GTF_GLOB_REF);
 #ifdef UNIX_X86_ABI
     if (callType == CT_INDIRECT || callType == CT_HELPER)
         node->gtFlags |= GTF_CALL_POP_ARGS;
@@ -22633,6 +22634,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     // operand here in order to preserve correct evaluation order for the masked shift count.
                     std::swap(shiftCountDup, op2->AsHWIntrinsic()->Op(1));
                 }
+                op2->gtFlags |= (op2->AsHWIntrinsic()->Op(1)->gtFlags & GTF_ALL_EFFECT);
 
                 maskAmountOp = gtNewOperNode(instrOp, genActualType(simdBaseType), gtNewAllBitsSetConNode(simdBaseType),
                                              shiftCountDup);
@@ -25740,9 +25742,6 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types type,
                     }
                     else
                     {
-                        needsFixup = cnsNode->IsVectorZero();
-                    }
-                    {
                         needsFixup = cnsNode->IsVectorNegativeZero(simdBaseType);
                     }
 
@@ -25778,6 +25777,7 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types type,
                     {
                         GenTree* op2Clone               = fgMakeMultiUse(&op2);
                         retNode->AsHWIntrinsic()->Op(2) = op2;
+                        retNode->gtFlags |= (op2->gtFlags & GTF_ALL_EFFECT);
 
                         GenTreeVecCon* tblVecCon = gtNewVconNode(type);
 
