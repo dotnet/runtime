@@ -70,7 +70,7 @@ PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMa
                     }
                     pCurrent = pCurrent->pParent;
                 } while (pCurrent != NULL);
-                
+
             }
 
             pFrame = pFrame->PtrNextFrame();
@@ -1087,6 +1087,9 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
     // process the REGDISPLAY and stop at the first frame
     ProcessIp(GetControlPC(m_crawl.pRD));
+#ifdef FEATURE_INTERPRETER
+    _ASSERTE(!m_crawl.codeInfo.IsInterpretedCode());
+#endif // FEATURE_INTERPRETER
     if (m_crawl.isFrameless && !!(m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE))
     {
         m_crawl.hasFaulted = true;
@@ -1160,6 +1163,45 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
     PCODE curPc = GetControlPC(pRegDisp);
     ProcessIp(curPc);
 
+#ifdef FEATURE_INTERPRETER
+    if (m_crawl.codeInfo.IsInterpretedCode())
+    {
+        // SP points at an InterpMethodContextFrame on the interpreter stack.
+        // Locate the owning InterpreterFrame and advance past it so the iterator
+        // does not re-enter the same chain via the explicit frame link.
+        TADDR interpSP = GetRegdisplaySP(m_crawl.pRD);
+        PTR_Frame pSearch = m_crawl.pFrame;
+        PTR_Frame pOwningInterpFrame = (PTR_Frame)FRAME_TOP;
+        while (pSearch != FRAME_TOP)
+        {
+            if (pSearch->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                PTR_InterpreterFrame pInterpFrame = dac_cast<PTR_InterpreterFrame>(pSearch);
+                for (PTR_InterpMethodContextFrame pCur = pInterpFrame->GetTopInterpMethodContextFrame();
+                     pCur != NULL;
+                     pCur = pCur->pParent)
+                {
+                    if (dac_cast<TADDR>(pCur) == interpSP)
+                    {
+                        pOwningInterpFrame = pSearch;
+                        break;
+                    }
+                }
+                if (pOwningInterpFrame != FRAME_TOP)
+                {
+                    break;
+                }
+            }
+            pSearch = pSearch->PtrNextFrame();
+        }
+        _ASSERTE(pOwningInterpFrame != FRAME_TOP);
+        if (pOwningInterpFrame != FRAME_TOP)
+        {
+            m_crawl.pFrame = pOwningInterpFrame->PtrNextFrame();
+        }
+    }
+    else
+#endif // FEATURE_INTERPRETER
     // loop the frame chain to find the closet explicit frame which is lower than the specified REGDISPLAY
     // (stack grows up towards lower address)
     if (m_crawl.pFrame != FRAME_TOP)
@@ -2423,19 +2465,6 @@ void StackFrameIterator::ProcessCurrentFrame(void)
         {
             m_frameState = SFITER_INITIAL_NATIVE_CONTEXT;
             fDone = true;
-        }
-        else
-        {
-#ifdef FEATURE_INTERPRETER
-            if (m_crawl.pFrame != FRAME_TOP && m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
-            {
-                // When stack walk starts on an explicit context in interpreted code, we need to skip the related interpreter
-                // frame, because the stack frame iterator assumes that when it is walking interpreted frames, it has
-                // already processed the interpreter frame. Without this skip, the stack walk would end up walking the
-                // interpreted frames twice.
-                m_crawl.GotoNextFrame();
-            }
-#endif // FEATURE_INTERPRETER
         }
     }
     else
