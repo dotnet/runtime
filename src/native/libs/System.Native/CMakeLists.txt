@@ -57,12 +57,17 @@ else() # WASI
     )
 endif()
 
-if (HAVE_PTHREAD_MUTEXATTR_SETROBUST AND HAVE_PTHREAD_MUTEX_CONSISTENT)
-    list (APPEND NATIVE_SOURCES
-        pal_crossprocessmutex.c)
-else()
+if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI OR CLR_CMAKE_TARGET_OPENBSD OR CLR_CMAKE_TARGET_HAIKU)
+    # These platforms do not support robust mutexes.
+    # Keep an OS list instead of CMake configure checks since we also need to synchronize this with
+    # the compile-time guards on the managed code side at
+    # src/libraries/System.Private.CoreLib/src/System/Threading/NamedMutex.Unix.cs.
     list (APPEND NATIVE_SOURCES
         pal_crossprocessmutex_unsupported.c)
+else()
+    list (APPEND NATIVE_SOURCES
+        pal_crossprocessmutex.c
+    )
 endif()
 
 if (CLR_CMAKE_TARGET_APPLE)

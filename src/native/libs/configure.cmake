@@ -656,8 +656,6 @@ endif()
 if (NOT CLR_CMAKE_TARGET_WASI)
     check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
     check_library_exists(${PTHREAD_LIBRARY} pthread_mutex_clocklock "" HAVE_PTHREAD_MUTEX_CLOCKLOCK)
-    check_library_exists(${PTHREAD_LIBRARY} pthread_mutex_consistent "" HAVE_PTHREAD_MUTEX_CONSISTENT)
-    check_library_exists(${PTHREAD_LIBRARY} pthread_mutexattr_setrobust "" HAVE_PTHREAD_MUTEXATTR_SETROBUST)
 endif()
 
 check_symbol_exists(
