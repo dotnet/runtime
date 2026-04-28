@@ -22,8 +22,8 @@ namespace System.Diagnostics
         /// </summary>
         private IEnumerable<ProcessOutputLine> ReadPipesToLines(
             int timeoutMs,
-            Decoder outputDecoder,
-            Decoder errorDecoder)
+            Encoding outputEncoding,
+            Encoding errorEncoding)
         {
             SafePipeHandle outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
             SafePipeHandle errorHandle = GetSafeHandleFromStreamReader(_standardError!);
@@ -52,10 +52,12 @@ namespace System.Diagnostics
 
                 long deadline = timeoutMs >= 0 ? Environment.TickCount64 + timeoutMs : long.MaxValue;
 
+                Decoder outputDecoder = outputEncoding.GetDecoder();
+                Decoder errorDecoder = errorEncoding.GetDecoder();
                 int outputCharStart = 0, outputCharEnd = 0;
                 int errorCharStart = 0, errorCharEnd = 0;
                 bool outputDone = false, errorDone = false;
-                bool outputBomChecked = false, errorBomChecked = false;
+                bool outputPreambleChecked = false, errorPreambleChecked = false;
 
                 List<ProcessOutputLine> lines = new();
 
@@ -77,15 +79,15 @@ namespace System.Diagnostics
                         // Use explicit branching to avoid ref locals across yield points.
                         if (isError)
                         {
-                            HandlePipeLineRead(currentHandle, errorDecoder, byteBuffer,
+                            HandlePipeLineRead(currentHandle, ref errorDecoder, ref errorEncoding, byteBuffer,
                                 ref errorCharBuffer, ref errorCharStart, ref errorCharEnd,
-                                ref errorBomChecked, ref errorDone, standardError: true, lines);
+                                ref errorPreambleChecked, ref errorDone, standardError: true, lines);
                         }
                         else
                         {
-                            HandlePipeLineRead(currentHandle, outputDecoder, byteBuffer,
+                            HandlePipeLineRead(currentHandle, ref outputDecoder, ref outputEncoding, byteBuffer,
                                 ref outputCharBuffer, ref outputCharStart, ref outputCharEnd,
-                                ref outputBomChecked, ref outputDone, standardError: false, lines);
+                                ref outputPreambleChecked, ref outputDone, standardError: false, lines);
                         }
                     }
 
@@ -206,12 +208,13 @@ namespace System.Diagnostics
         /// </summary>
         private static void HandlePipeLineRead(
             SafePipeHandle handle,
-            Decoder decoder,
+            ref Decoder decoder,
+            ref Encoding encoding,
             byte[] byteBuffer,
             ref char[] charBuffer,
             ref int charStart,
             ref int charEnd,
-            ref bool bomChecked,
+            ref bool preambleChecked,
             ref bool done,
             bool standardError,
             List<ProcessOutputLine> lines)
@@ -219,7 +222,7 @@ namespace System.Diagnostics
             int bytesRead = ReadNonBlocking(handle, byteBuffer, 0);
             if (bytesRead > 0)
             {
-                DecodeBytesAndParseLines(decoder, byteBuffer, bytesRead, ref charBuffer, ref charStart, ref charEnd, ref bomChecked, standardError, lines);
+                DecodeBytesAndParseLines(ref decoder, ref encoding, byteBuffer, bytesRead, ref charBuffer, ref charStart, ref charEnd, ref preambleChecked, standardError, lines);
             }
             else if (bytesRead == 0)
             {

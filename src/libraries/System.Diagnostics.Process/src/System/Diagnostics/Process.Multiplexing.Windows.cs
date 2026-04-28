@@ -23,8 +23,8 @@ namespace System.Diagnostics
         /// </summary>
         private IEnumerable<ProcessOutputLine> ReadPipesToLines(
             int timeoutMs,
-            Decoder outputDecoder,
-            Decoder errorDecoder)
+            Encoding outputEncoding,
+            Encoding errorEncoding)
         {
             SafeFileHandle outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
             SafeFileHandle errorHandle = GetSafeHandleFromStreamReader(_standardError!);
@@ -57,9 +57,11 @@ namespace System.Diagnostics
                 // Error output gets index 0 so WaitAny services it first when both are signaled.
                 WaitHandle[] waitHandles = [errorEvent, outputEvent];
 
+                Decoder outputDecoder = outputEncoding.GetDecoder();
+                Decoder errorDecoder = errorEncoding.GetDecoder();
                 int outputCharStart = 0, outputCharEnd = 0;
                 int errorCharStart = 0, errorCharEnd = 0;
-                bool outputBomChecked = false, errorBomChecked = false;
+                bool outputPreambleChecked = false, errorPreambleChecked = false;
 
                 unsafe
                 {
@@ -98,13 +100,13 @@ namespace System.Diagnostics
                     {
                         if (isError)
                         {
-                            DecodeBytesAndParseLines(errorDecoder, errorByteBuffer, bytesRead, ref errorCharBuffer, ref errorCharStart,
-                                ref errorCharEnd, ref errorBomChecked, isError, lines);
+                            DecodeBytesAndParseLines(ref errorDecoder, ref errorEncoding, errorByteBuffer, bytesRead, ref errorCharBuffer, ref errorCharStart,
+                                ref errorCharEnd, ref errorPreambleChecked, isError, lines);
                         }
                         else
                         {
-                            DecodeBytesAndParseLines(outputDecoder, outputByteBuffer, bytesRead, ref outputCharBuffer, ref outputCharStart,
-                                ref outputCharEnd, ref outputBomChecked, isError, lines);
+                            DecodeBytesAndParseLines(ref outputDecoder, ref outputEncoding, outputByteBuffer, bytesRead, ref outputCharBuffer, ref outputCharStart,
+                                ref outputCharEnd, ref outputPreambleChecked, isError, lines);
                         }
 
                         unsafe

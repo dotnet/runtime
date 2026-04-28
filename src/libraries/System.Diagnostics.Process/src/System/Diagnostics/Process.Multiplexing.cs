@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -152,7 +153,7 @@ namespace System.Diagnostics
             Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();
             Encoding errorEncoding = _startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding();
 
-            return ReadPipesToLines(timeoutMs, outputEncoding.GetDecoder(), errorEncoding.GetDecoder());
+            return ReadPipesToLines(timeoutMs, outputEncoding, errorEncoding);
         }
 
         /// <summary>
@@ -172,10 +173,6 @@ namespace System.Diagnostics
             ref int charEndIndex)
         {
             int charCount = decoder.GetCharCount(byteBuffer, byteIndex, byteCount, flush);
-            if (charCount == 0 && byteCount == 0)
-            {
-                return;
-            }
 
             // If there isn't enough room at the end, compact the consumed space at the start first
             // so that if growth is still needed, RentLargerBuffer copies only the unconsumed data.
@@ -197,21 +194,65 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// If the first character at <paramref name="startIndex"/> is the Unicode BOM (U+FEFF),
-        /// advances <paramref name="startIndex"/> past it. Called once per stream after the first
-        /// decode that produces characters, to match <see cref="StreamReader"/> BOM-stripping behavior.
+        /// Checks for the encoding's preamble or a BOM from a different encoding at the start of
+        /// the byte buffer, mimicking <see cref="StreamReader"/> behavior.
+        /// If the encoding's own preamble is found, returns the number of bytes to skip.
+        /// If a different encoding's BOM is detected, updates <paramref name="encoding"/> and
+        /// <paramref name="decoder"/> and returns the BOM length to skip.
         /// </summary>
-        /// <param name="charBuffer">The decoded character buffer.</param>
-        /// <param name="endIndex">Exclusive upper bound of valid characters in <paramref name="charBuffer"/>.</param>
-        /// <param name="startIndex">
-        /// Current read position in <paramref name="charBuffer"/>; advanced by one if a BOM is found.
-        /// </param>
-        private static void SkipBomIfPresent(char[] charBuffer, int endIndex, ref int startIndex)
+        private static int SkipPreambleOrDetectEncoding(byte[] byteBuffer, int byteCount, ref Encoding encoding, ref Decoder decoder)
         {
-            if (startIndex < endIndex && charBuffer[startIndex] == '\uFEFF')
+            // Check for the encoding's own preamble first (like StreamReader.IsPreamble).
+            ReadOnlySpan<byte> preamble = encoding.Preamble;
+            if (preamble.Length > 0 && byteCount >= preamble.Length
+                && byteBuffer.AsSpan(0, preamble.Length).SequenceEqual(preamble))
             {
-                startIndex++;
+                return preamble.Length;
             }
+
+            // No preamble match — check for BOM from other encodings (like StreamReader.DetectEncoding).
+            if (byteCount >= 2)
+            {
+                ushort firstTwoBytes = BinaryPrimitives.ReadUInt16LittleEndian(byteBuffer);
+
+                if (firstTwoBytes == 0xFFFE)
+                {
+                    // Big Endian Unicode
+                    encoding = Encoding.BigEndianUnicode;
+                    decoder = encoding.GetDecoder();
+                    return 2;
+                }
+
+                if (firstTwoBytes == 0xFEFF)
+                {
+                    if (byteCount >= 4 && byteBuffer[2] == 0 && byteBuffer[3] == 0)
+                    {
+                        encoding = Encoding.UTF32;
+                        decoder = encoding.GetDecoder();
+                        return 4;
+                    }
+
+                    encoding = Encoding.Unicode;
+                    decoder = encoding.GetDecoder();
+                    return 2;
+                }
+
+                if (byteCount >= 3 && firstTwoBytes == 0xBBEF && byteBuffer[2] == 0xBF)
+                {
+                    encoding = Encoding.UTF8;
+                    decoder = encoding.GetDecoder();
+                    return 3;
+                }
+
+                if (byteCount >= 4 && firstTwoBytes == 0 && byteBuffer[2] == 0xFE && byteBuffer[3] == 0xFF)
+                {
+                    encoding = new UTF32Encoding(bigEndian: true, byteOrderMark: true);
+                    decoder = encoding.GetDecoder();
+                    return 4;
+                }
+            }
+
+            return 0;
         }
 
         /// <summary>
@@ -301,44 +342,17 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>
-        /// After line parsing, compacts remaining data to the front of the char buffer if it has reached
-        /// the end, or rents a larger buffer if the entire buffer is filled with a single incomplete line.
-        /// </summary>
-        private static void CompactOrGrowCharBuffer(ref char[] buffer, ref int startIndex, ref int endIndex)
+        private static void DecodeBytesAndParseLines(ref Decoder decoder, ref Encoding encoding, byte[] byteBuffer, int bytesRead, ref char[] charBuffer, ref int charStart, ref int charEnd, ref bool preambleChecked, bool standardError, List<ProcessOutputLine> lines)
         {
-            if (endIndex < buffer.Length)
+            int byteOffset = 0;
+            if (!preambleChecked)
             {
-                return;
+                preambleChecked = true;
+                byteOffset = SkipPreambleOrDetectEncoding(byteBuffer, bytesRead, ref encoding, ref decoder);
             }
 
-            int remaining = endIndex - startIndex;
-
-            if (remaining == buffer.Length)
-            {
-                // The buffer is too small to hold a single line — grow it.
-                RentLargerBuffer(ref buffer, remaining);
-            }
-            else
-            {
-                // Compact: move remaining data to the start of the buffer.
-                Array.Copy(buffer, startIndex, buffer, 0, remaining);
-            }
-
-            startIndex = 0;
-            endIndex = remaining;
-        }
-
-        private static void DecodeBytesAndParseLines(Decoder decoder, byte[] byteBuffer, int bytesRead, ref char[] charBuffer, ref int charStart, ref int charEnd, ref bool bomChecked, bool standardError, List<ProcessOutputLine> lines)
-        {
-            DecodeAndAppendChars(decoder, byteBuffer, 0, bytesRead, flush: false, ref charBuffer, ref charStart, ref charEnd);
-            if (!bomChecked && charEnd > 0)
-            {
-                SkipBomIfPresent(charBuffer, charEnd, ref charStart);
-                bomChecked = true;
-            }
+            DecodeAndAppendChars(decoder, byteBuffer, byteOffset, bytesRead - byteOffset, flush: false, ref charBuffer, ref charStart, ref charEnd);
             ParseLinesFromCharBuffer(charBuffer, ref charStart, charEnd, standardError, lines);
-            CompactOrGrowCharBuffer(ref charBuffer, ref charStart, ref charEnd);
         }
 
         private static bool FlushDecoderAndEmitRemainingChars(Decoder decoder, ref char[] charBuffer, ref int charStart, ref int charEnd, bool standardError, List<ProcessOutputLine> lines)

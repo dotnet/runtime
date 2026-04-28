@@ -474,7 +474,21 @@ namespace System.Diagnostics.Tests
         {
             Encoding encoding = Encoding.GetEncoding(encodingName);
 
-            using Process process = CreateProcessPortable(RemotelyInvokable.WriteLinesToBothStreamsWithEncoding, encodingName);
+            using Process process = CreateProcess(static (string encodingArg) =>
+            {
+                Encoding enc = Encoding.GetEncoding(encodingArg);
+                using (StreamWriter outputWriter = new(Console.OpenStandardOutput(), enc))
+                {
+                    outputWriter.WriteLine("stdout_line");
+                }
+
+                using (StreamWriter errorWriter = new(Console.OpenStandardError(), enc))
+                {
+                    errorWriter.WriteLine("stderr_line");
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }, encodingName);
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.StandardOutputEncoding = encoding;
@@ -503,7 +517,23 @@ namespace System.Diagnostics.Tests
         {
             Encoding encoding = Encoding.GetEncoding(encodingName);
 
-            using Process process = CreateProcessPortable(RemotelyInvokable.WriteMultiByteLinesToBothStreamsWithEncoding, encodingName);
+            using Process process = CreateProcess(static (string encodingArg) =>
+            {
+                Encoding enc = Encoding.GetEncoding(encodingArg);
+                // Use characters that require multiple bytes in UTF-8 and exercise decoder state across reads:
+                // CJK characters (U+4E16 U+754C = "世界") require 3 bytes each in UTF-8, 2 bytes in UTF-16, 4 bytes in UTF-32.
+                using (StreamWriter outputWriter = new(Console.OpenStandardOutput(), enc))
+                {
+                    outputWriter.WriteLine("hello_\u4e16\u754c_stdout");
+                }
+
+                using (StreamWriter errorWriter = new(Console.OpenStandardError(), enc))
+                {
+                    errorWriter.WriteLine("hello_\u4e16\u754c_stderr");
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }, encodingName);
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.StandardOutputEncoding = encoding;

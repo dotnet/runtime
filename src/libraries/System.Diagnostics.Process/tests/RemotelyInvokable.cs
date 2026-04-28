@@ -135,40 +135,6 @@ namespace System.Diagnostics.Tests
             return SuccessExitCode;
         }
 
-        public static int WriteLinesToBothStreamsWithEncoding(string encodingName)
-        {
-            Encoding encoding = Encoding.GetEncoding(encodingName);
-            using (StreamWriter outputWriter = new(Console.OpenStandardOutput(), encoding))
-            {
-                outputWriter.WriteLine("stdout_line");
-            }
-
-            using (StreamWriter errorWriter = new(Console.OpenStandardError(), encoding))
-            {
-                errorWriter.WriteLine("stderr_line");
-            }
-
-            return SuccessExitCode;
-        }
-
-        public static int WriteMultiByteLinesToBothStreamsWithEncoding(string encodingName)
-        {
-            Encoding encoding = Encoding.GetEncoding(encodingName);
-            // Use characters that require multiple bytes in UTF-8 and exercise decoder state across reads:
-            // CJK characters (U+4E16 U+754C = "世界") require 3 bytes each in UTF-8, 2 bytes in UTF-16, 4 bytes in UTF-32.
-            using (StreamWriter outputWriter = new(Console.OpenStandardOutput(), encoding))
-            {
-                outputWriter.WriteLine("hello_世界_stdout");
-            }
-
-            using (StreamWriter errorWriter = new(Console.OpenStandardError(), encoding))
-            {
-                errorWriter.WriteLine("hello_世界_stderr");
-            }
-
-            return SuccessExitCode;
-        }
-
         public static int SelfTerminate()
         {
             Process.GetCurrentProcess().Kill();
