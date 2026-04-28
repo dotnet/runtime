@@ -37,6 +37,13 @@
        dlopen("__Internal"). -->
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
     <DirectPInvoke Include="__Internal" />
+    <!-- xunit2 discovers TraitDiscoverer/DataDiscoverer types via Type.GetType from
+         attribute strings (e.g. PlatformSpecific, OuterLoop, ActiveIssue, MemberData).
+         Without rooting the entire XUnitExtensions/xunit.core assemblies, ILC trims
+         these dynamically-referenced types and trait discovery silently no-ops, so
+         category-based filters in xunit-excludes.txt do not apply. -->
+    <TrimmerRootAssembly Include="Microsoft.DotNet.XUnitExtensions" />
+    <TrimmerRootAssembly Include="xunit.core" />
   </ItemGroup>
 
   <PropertyGroup>
