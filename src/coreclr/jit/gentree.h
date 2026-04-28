@@ -1604,7 +1604,7 @@ public:
     static bool OperIsRMWMemOp(genTreeOps gtOper)
     {
         // Return if binary op is one of the supported operations for RMW of memory.
-        static_assert(AreContiguous(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
+        static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
         return StaticOperIs(gtOper, GT_ADD, GT_SUB) || ((GT_OR <= gtOper) && (gtOper <= GT_ROR)) ||
                StaticOperIs(gtOper, GT_NOT, GT_NEG) || OperIsShiftLong(gtOper);
     }
