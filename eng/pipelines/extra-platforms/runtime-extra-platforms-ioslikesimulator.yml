@@ -233,4 +233,4 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true /p:_workItemTimeout=02:00:00
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
