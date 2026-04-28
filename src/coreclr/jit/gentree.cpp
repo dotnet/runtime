@@ -23197,8 +23197,8 @@ GenTree* Compiler::gtNewSimdCvtNode(
         // mask1 contains the output either 0xFFFFFFFF or 0.
         // FixupVal zeros out any NaN values in the input by ANDing input with mask1.
         GenTree* op1Clone1 = fgMakeMultiUse(&op1);
-        GenTree* mask1     = gtNewSimdIsNaNNode(type, op1, simdSourceBaseType, simdSize);
-        fixupVal           = gtNewSimdBinOpNode(GT_AND_NOT, type, op1Clone1, mask1, simdSourceBaseType, simdSize);
+        GenTree* mask1     = gtNewSimdIsNaNNode(type, op1Clone1, simdSourceBaseType, simdSize);
+        fixupVal           = gtNewSimdBinOpNode(GT_AND_NOT, type, op1, mask1, simdSourceBaseType, simdSize);
     }
 
     if (varTypeIsSigned(simdTargetBaseType))
