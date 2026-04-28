@@ -2483,7 +2483,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     if (!call->IsHelperCall())
     {
         _ASSERTE(call->callSig == NULL || params.hasAsyncRet == call->callSig->isAsyncCall());
-        params.sigInfo = call->callSig;
+        params.sigInfo         = call->callSig;
         params.isUnmanagedCall = call->IsUnmanaged();
     }
 #endif // DEBUG

@@ -344,7 +344,7 @@ typedef ptrdiff_t ssize_t;
 #define DEBUGARG(x)
 #endif
 
-#if defined (DEBUG) || defined(TARGET_WASM)
+#if defined(DEBUG) || defined(TARGET_WASM)
 #define INDEBUG_OR_WASM(x) x
 #else
 #define INDEBUG_OR_WASM(x)
