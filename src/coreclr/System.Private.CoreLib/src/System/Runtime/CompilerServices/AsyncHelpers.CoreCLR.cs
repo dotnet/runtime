@@ -1081,7 +1081,7 @@ namespace System.Runtime.CompilerServices
 
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        AsyncDebugger.ResumeAsyncContext(task.Id);
+                        AsyncDebugger.ResumeAsyncContext(task);
                     }
                 }
             }
@@ -1241,9 +1241,9 @@ namespace System.Runtime.CompilerServices
                 TplEventSource.Log.TraceOperationBegin(task.Id, "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask", 0);
             }
 
-            public static void ResumeAsyncContext(int id)
+            public static void ResumeAsyncContext(Task task)
             {
-                TplEventSource.Log.TraceSynchronousWorkBegin(id, CausalitySynchronousWork.Execution);
+                TplEventSource.Log.TraceSynchronousWorkBegin(task.Id, CausalitySynchronousWork.Execution);
             }
 
             public static void SuspendAsyncContext(ref AsyncDispatcherInfo info, Continuation curContinuation)
