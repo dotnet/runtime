@@ -701,20 +701,35 @@ namespace System.Threading.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static async Task Release_BulkRelease_ConcurrentWithFastPath_CountStaysCorrect()
         {
-            const int Permits = 4, Workers = 8, Iterations = 500;
-            var sem = new SemaphoreSlim(Permits, Permits);
+            const int Workers = 8, Iterations = 500;
+            const int TotalPermits = Workers * Iterations;
+            var sem = new SemaphoreSlim(0);
 
-            await Task.WhenAll(Enumerable.Range(0, Workers).Select(_ => Task.Run(async () =>
+            Task[] consumers = Enumerable.Range(0, Workers).Select(_ => Task.Run(async () =>
             {
                 for (int i = 0; i < Iterations; i++)
                 {
                     await sem.WaitAsync();
-                    await sem.WaitAsync();
-                    sem.Release(2);
                 }
-            })));
+            })).ToArray();
 
-            Assert.Equal(Permits, sem.CurrentCount);
+            Task producer = Task.Run(() =>
+            {
+                int remaining = TotalPermits;
+                while (remaining >= 2)
+                {
+                    sem.Release(2);
+                    remaining -= 2;
+                }
+                if (remaining > 0)
+                {
+                    sem.Release();
+                }
+            });
+
+            await Task.WhenAll(consumers);
+            await producer;
+            Assert.Equal(0, sem.CurrentCount);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
