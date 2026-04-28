@@ -288,7 +288,7 @@ internal sealed class Xcode
         {
             predefinedExcludes.Add(".dylib");
         }
-        if (optimized && targetRuntime != TargetRuntime.CoreCLR)
+        if (optimized)
         {
             predefinedExcludes.Add(".pdb");
         }
