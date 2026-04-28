@@ -486,6 +486,11 @@ namespace Internal.IL
                 // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
                 allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
 
+                // Don't use the async variant for non-runtime-async methods. The JIT will revert to the original
+                // method in such cases (via the getAsyncOtherVariant check for direct calls), causing a mismatch
+                // between the precomputed generic dictionary entries and what the JIT looks up at compile time.
+                allowAsyncVariant = allowAsyncVariant && method.IsAsync;
+
                 if (allowAsyncVariant && MatchTaskAwaitPattern())
                 {
                     runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);

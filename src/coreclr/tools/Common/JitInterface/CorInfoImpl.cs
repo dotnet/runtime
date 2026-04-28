@@ -1903,6 +1903,12 @@ namespace Internal.JitInterface
                     // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
                     allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
 
+                    // Only use the async variant for runtime-async methods. For non-runtime-async Task-returning
+                    // methods, the JIT will revert to the original method (via the getAsyncOtherVariant check for
+                    // direct calls). Returning null here causes the JIT to treat this as a regular awaited call,
+                    // which is the correct behavior and avoids unnecessary work.
+                    allowAsyncVariant = allowAsyncVariant && method.IsAsync;
+
                     method = allowAsyncVariant
                         ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
                         : null;
