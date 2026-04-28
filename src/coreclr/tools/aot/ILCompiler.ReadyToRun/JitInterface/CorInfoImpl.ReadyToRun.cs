@@ -1485,8 +1485,12 @@ namespace Internal.JitInterface
                     resultField = resultField.GetTypicalFieldDefinition();
                     strippedInstantiation = resultField != resultDef;
 
+                    if(!(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultField.OwningType) || resultField.OwningType.IsNonVersionable()))
+                    {
+                        ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForField(resultField, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+                        return result;
+                    }
                     Debug.Assert(resultField is EcmaField);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultField.OwningType) || resultField.OwningType.IsNonVersionable());
                     token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultField).Handle);
                     module = ((EcmaField)resultField).Module;
                 }
