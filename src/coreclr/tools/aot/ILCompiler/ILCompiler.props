@@ -25,9 +25,11 @@
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
 
   <ItemGroup>
-    <Content Include="$(CoreDisToolsLibrary)" Condition="Exists('$(CoreDisToolsLibrary)') and '$(IncludeCoreDisTools)' == 'true'">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="$(CoreDisToolsLibrary)"
+      CopyToOutputDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
+      Condition="Exists('$(CoreDisToolsLibrary)') and '$(IncludeCoreDisTools)' == 'true'"
+      />
   </ItemGroup>
 
   <ItemGroup>
