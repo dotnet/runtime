@@ -152,7 +152,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_CoreCLR
       buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
-      timeoutInMinutes: 360
+      timeoutInMinutes: 240
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
