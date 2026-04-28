@@ -5372,10 +5372,26 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 
             if (!ovf)
             {
+                // x - (x + a) == -a
+                // x - (a + x) == -a
+                ValueNum arg1Op1;
+                ValueNum arg1Op2;
+                if (IsVNBinFunc(arg1VN, VNF_ADD, &arg1Op1, &arg1Op2))
+                {
+                    if (arg1Op1 == arg0VN)
+                    {
+                        return VNForFunc(typ, VNF_NEG, arg1Op2);
+                    }
+                    if (arg1Op2 == arg0VN)
+                    {
+                        return VNForFunc(typ, VNF_NEG, arg1Op1);
+                    }
+                }
+
                 // (x + a) - x == a
                 // (a + x) - x == a
                 VNFuncApp add;
-                if (GetVNFunc(arg0VN, &add) && (add.m_func == (VNFunc)GT_ADD))
+                if (GetVNFunc(arg0VN, &add) && (add.m_func == VNF_ADD))
                 {
                     if (add.m_args[0] == arg1VN)
                         return add.m_args[1];
@@ -5387,7 +5403,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                     // (x + a) - (b + x) == a - b
                     // (a + x) - (b + x) == a - b
                     VNFuncApp add2;
-                    if (GetVNFunc(arg1VN, &add2) && (add2.m_func == (VNFunc)GT_ADD))
+                    if (GetVNFunc(arg1VN, &add2) && (add2.m_func == VNF_ADD))
                     {
                         for (int a = 0; a < 2; a++)
                         {
@@ -5395,7 +5411,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                             {
                                 if (add.m_args[a] == add2.m_args[b])
                                 {
-                                    return VNForFunc(typ, (VNFunc)GT_SUB, add.m_args[1 - a], add2.m_args[1 - b]);
+                                    return VNForFunc(typ, VNF_SUB, add.m_args[1 - a], add2.m_args[1 - b]);
                                 }
                             }
                         }
