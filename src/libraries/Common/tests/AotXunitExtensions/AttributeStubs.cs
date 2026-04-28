@@ -17,6 +17,12 @@
 // ActiveIssueAttribute extends BeforeAfterTestAttribute so that tests
 // decorated with [Fact]/[Theory] + [ActiveIssue] are skipped at runtime
 // when their conditions match, rather than running and failing.
+//
+// ConditionalClassAttribute is a plain Attribute (no-op). The AOT source
+// generator does not support class-level skip logic, so tests inside
+// [ConditionalClass]-decorated classes that use [Fact]/[Theory] must add
+// method-level skip attributes (e.g. SkipUnless on [Fact]/[Theory]) to
+// ensure they are properly skipped in NativeAOT mode.
 
 #nullable enable
 
@@ -52,10 +58,21 @@ namespace Xunit
         public int Timeout { get; set; }
     }
 
+    /// <summary>
+    /// Marks a class as conditional — in the real XUnitV3Extensions package, tests
+    /// inside this class are skipped when the conditions are not met. In NativeAOT
+    /// builds, this stub is a no-op because the AOT source generator does not process
+    /// class-level attributes for skip logic. Tests in classes that use
+    /// <c>[ConditionalClass]</c> with NativeAOT-relevant conditions must additionally
+    /// use <c>SkipUnless</c>/<c>SkipWhen</c> on each <c>[Fact]</c>/<c>[Theory]</c>
+    /// method to be properly skipped in NativeAOT mode.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public sealed class ConditionalClassAttribute : Attribute
     {
-        public ConditionalClassAttribute(Type conditionType, params string[] conditionMemberNames) { }
+        public ConditionalClassAttribute(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicMethods)] Type conditionType,
+            params string[] conditionMemberNames) { }
     }
 
     /// <summary>
