@@ -124,12 +124,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             symbol = method;
                         }
 
-                        runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset + _nodeFactory.Target.CodeDelta);
-                        if (!relocsOnly && _nodeFactory.Target.Architecture == TargetArchitecture.X64)
+                        if (_nodeFactory.Target.Architecture == TargetArchitecture.Wasm32)
                         {
-                            // On Amd64, the 2nd word contains the EndOffset of the runtime function
-                            Debug.Assert(frameInfo.StartOffset != frameInfo.EndOffset);
-                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.EndOffset);
+                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.WASM_TABLE_INDEX_I32, frameIndex);
+                        }
+                        else
+                        {
+                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset + _nodeFactory.Target.CodeDelta);
+                            if (!relocsOnly && _nodeFactory.Target.Architecture == TargetArchitecture.X64)
+                            {
+                                // On Amd64, the 2nd word contains the EndOffset of the runtime function
+                                Debug.Assert(frameInfo.StartOffset != frameInfo.EndOffset);
+                                runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.EndOffset);
+                            }
                         }
                         runtimeFunctionsBuilder.EmitReloc(factory.RuntimeFunctionsGCInfo, RelocType.IMAGE_REL_BASED_ADDR32NB, funcletOffsets[frameIndex]);
                         runtimeFunctionIndex++;

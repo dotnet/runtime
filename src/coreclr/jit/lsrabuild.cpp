@@ -261,15 +261,30 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CONFLICT));
 
-    if (defRefPosition->treeNode->IsMultiRegNode())
+    // If the defRefPosition is multireg then we cannot change any of its
+    // register assignments. That could cause us to require a parallel
+    // assignment during codegen that could have cycles in it. For example,
+    // x64 DivRem always defines into RAX and RDX, so it would be a problem
+    // to change the register assignments to RDX and RAX respectively.
+    bool canChangeDef = !defRefPosition->treeNode->IsMultiRegNode();
+
+    // Avoid changing the def reg away from its assignment if that register is
+    // currently busy. The reason is that we have a number of places in LSRA
+    // that assume that BuildDef(tree, SRBM_REG) means that SRBM_REG will be
+    // spilled if necessary, so they do not bother to kill SRBM_REG explicitly.
+    // However, that spilling happens only if we actually assign the def to
+    // SRBM_REG.
+    // A slightly better way would be to also unassign the fixed reg always,
+    // but this is mostly a stress-only case because the presence of the fixed
+    // reg on the def should make most intervals prefer not to be allocated to
+    // that register.
+    if (canChangeDef && defRefPosition->isFixedRegRef)
     {
-        // If the defRefPosition is multireg then we cannot change any of its
-        // register assignments. That could cause us to require a parallel
-        // assignment during codegen that could have cycles in it. For example,
-        // x64 DivRem always defines into RAX and RDX, so it would be a problem
-        // to change the register assignments to RDX and RAX respectively.
+        RegRecord* defRegRecord = getRegisterRecord(defRefPosition->assignedReg());
+        canChangeDef = (defRegRecord->assignedInterval == nullptr) || !defRegRecord->assignedInterval->isActive;
     }
-    else
+
+    if (canChangeDef)
     {
         if (useRefPosition->isFixedRegRef)
         {
