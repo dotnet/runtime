@@ -76,6 +76,11 @@ namespace System.Xml.XslCompiledTransformApiTests
 
         static XsltApiTestCaseBase2()
         {
+            // The XSL file lives in the app bundle which is read-only on Apple mobile CoreCLR.
+            // https://github.com/dotnet/runtime/issues/124344
+            if (PlatformDetection.IsAppleMobile && PlatformDetection.IsCoreCLR)
+                return;
+
             // Replace absolute URI in xmlResolver_document_function.xml based on the environment
             string targetFile = Path.Combine(Path.GetTempPath(), typeof(XsltApiTestCaseBase2) + "_" + Path.GetRandomFileName());
             string xslFile = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApiV2", "xmlResolver_document_function_absolute_uri.xsl");
