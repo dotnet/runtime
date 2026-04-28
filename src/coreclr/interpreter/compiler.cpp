@@ -1117,24 +1117,22 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
     m_pCBB = bb;
     m_pCBB->nativeOffset = (int32_t)(ip - m_pMethodCode);
 
-    bool prevWasCall = false;
     for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
     {
         if (InterpOpIsEmitNop(ins->opcode))
         {
             ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
-            if (prevWasCall && m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+            if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
             {
-                // Emit a debug sequence point so the return address after a call
-                // lands within the call's native offset range, not on the next
-                // statement boundary.
+                // Emit a debug sequence point so that eliminated IL instructions
+                // still occupy a bytecode slot. This ensures return addresses after
+                // calls land within the call's native offset range rather than on
+                // the next statement boundary.
                 *ip++ = INTOP_DEBUG_SEQ_POINT;
-                prevWasCall = false;
             }
             continue;
         }
 
-        prevWasCall = InterpOpIsDirectCall(ins->opcode) || InterpOpIsIndirectCall(ins->opcode);
         ip = EmitCodeIns(ip, ins, relocs);
     }
 
