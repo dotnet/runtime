@@ -483,9 +483,11 @@ namespace System
         private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
+        [RequiresUnsafe]
         private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
 
         internal unsafe IntPtr GetMulticastInvoke()
@@ -503,6 +505,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe void* GetInvokeMethod(MethodTable* pMT);
 
         internal unsafe IntPtr GetInvokeMethod()

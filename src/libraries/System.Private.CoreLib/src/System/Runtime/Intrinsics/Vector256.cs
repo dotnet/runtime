@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -813,6 +814,47 @@ namespace System.Runtime.Intrinsics
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
         }
 
+        /// <inheritdoc cref="Vector128.Asin(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Asin(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinDouble<Vector256<double>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Asin(vector._lower),
+                    Vector128.Asin(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Asin(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Asin(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    return VectorMath.AsinSingle<Vector256<float>, Vector256<int>, Vector512<double>, Vector512<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AsinSingle<Vector256<float>, Vector256<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector128.Asin(vector._lower),
+                    Vector128.Asin(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector128.Cos(Vector128{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<double> Cos(Vector256<double> vector)
@@ -857,7 +899,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector128.Count{T}(Vector128{T}, T)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Count<T>(Vector256<T> vector, T value) => BitOperations.PopCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+        public static int Count<T>(Vector256<T> vector, T value) => CountMatches(Equals(vector, Create(value)));
 
         /// <inheritdoc cref="Vector128.CountWhereAllBitsSet{T}(Vector128{T})" />
         [Intrinsic]
@@ -2014,11 +2056,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector128.IndexOf{T}(Vector128{T}, T)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(Vector256<T> vector, T value)
-        {
-            int result = BitOperations.TrailingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
-            return (result != 32) ? result : -1;
-        }
+        public static int IndexOf<T>(Vector256<T> vector, T value) => IndexOfFirstMatch(Equals(vector, Create(value)));
 
         /// <inheritdoc cref="Vector128.IndexOfWhereAllBitsSet{T}(Vector128{T})" />
         [Intrinsic]
@@ -2249,7 +2287,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector128.LastIndexOf{T}(Vector128{T}, T)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(Vector256<T> vector, T value) => 31 - BitOperations.LeadingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+        public static int LastIndexOf<T>(Vector256<T> vector, T value) => IndexOfLastMatch(Equals(vector, Create(value)));
 
         /// <inheritdoc cref="Vector128.LastIndexOfWhereAllBitsSet{T}(Vector128{T})" />
         [Intrinsic]
@@ -2401,6 +2439,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector256<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
@@ -2411,6 +2450,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe Vector256<T> LoadAligned<T>(T* source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
@@ -2431,6 +2471,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector256<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
@@ -3878,6 +3919,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void Store<T>(this Vector256<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
@@ -3888,6 +3930,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe void StoreAligned<T>(this Vector256<T> source, T* destination)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
@@ -3908,6 +3951,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal<T>(this Vector256<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>
@@ -4405,11 +4449,66 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> Xor<T>(Vector256<T> left, Vector256<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int CountMatches<T>(Vector256<T> vector)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                return BitOperations.PopCount(vector.ExtractMostSignificantBits());
+            }
+            else
+            {
+                return Vector128.CountMatches(vector._lower)
+                     + Vector128.CountMatches(vector._upper);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static T GetElementUnsafe<T>(in this Vector256<T> vector, int index)
         {
             Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
             ref T address = ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector));
             return Unsafe.Add(ref address, index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfFirstMatch<T>(Vector256<T> vector)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                int result = BitOperations.TrailingZeroCount(vector.ExtractMostSignificantBits());
+                return (result != 32) ? result : -1;
+            }
+            else
+            {
+                int result = Vector128.IndexOfFirstMatch(vector._lower);
+
+                if (result >= 0)
+                {
+                    return result;
+                }
+
+                result = Vector128.IndexOfFirstMatch(vector._upper);
+                return result + ((result >= 0) ? Vector128<T>.Count : 0);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfLastMatch<T>(Vector256<T> vector)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                return 31 - BitOperations.LeadingZeroCount(vector.ExtractMostSignificantBits());
+            }
+            else
+            {
+                int result = Vector128.IndexOfLastMatch(vector._upper);
+
+                if (result >= 0)
+                {
+                    return result + Vector128<T>.Count;
+                }
+                return Vector128.IndexOfLastMatch(vector._lower);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

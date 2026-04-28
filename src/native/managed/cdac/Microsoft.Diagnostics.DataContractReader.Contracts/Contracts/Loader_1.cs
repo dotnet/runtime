@@ -7,24 +7,42 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Loader_1 : ILoader
 {
+    private const string DefaultDomainFriendlyName = "DefaultDomain";
     private const uint ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED = 0x1; // Assembly Notify Flag for profiler notification
+    private const ushort MaxWebcilSections = 16; // Must stay in sync with native WEBCIL_MAX_SECTIONS.
 
     private enum ModuleFlags_1 : uint
     {
-        Tenured = 0x1,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
-        EditAndContinue = 0x8, // Edit and Continue is enabled for this module
-        ReflectionEmit = 0x40,    // Reflection.Emit was used to create this module
+        Tenured = 0x1,                  // Set once we know for sure the Module will not be freed until the appdomain itself exits
+        JitOptimizationDisabled = 0x2,  // Cached flag: JIT optimizations are disabled
+        EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
+        ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
+        EncCapable = 0x200,             // Cached flag: module is Edit and Continue capable
     }
+
+    private const uint DebuggerInfoMask = 0x0000FC00;
+    private const int DebuggerInfoShift = 10;
+
+    private const uint DEBUGGER_ALLOW_JIT_OPTS_PRIV = 0x00000800;
 
     private enum PEImageFlags : uint
     {
         FLAG_MAPPED = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
     };
+
+    // Must stay in sync with native PEImageLayout::ImageFormat values.
+    private enum ImageFormat : uint
+    {
+        PE = 0,
+        Webcil = 1,
+    }
+
     private readonly Target _target;
 
     internal Loader_1(Target target)
@@ -57,11 +75,10 @@ internal readonly struct Loader_1 : ILoader
             throw new ArgumentNullException(nameof(appDomain));
 
         Data.AppDomain domain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(appDomain);
-        ArrayListBase arrayList = _target.ProcessedData.GetOrAdd<ArrayListBase>(domain.DomainAssemblyList);
+        ArrayListBase arrayList = _target.ProcessedData.GetOrAdd<ArrayListBase>(domain.AssemblyList);
 
-        foreach (TargetPointer domainAssembly in arrayList.Elements)
+        foreach (TargetPointer pAssembly in arrayList.Elements)
         {
-            TargetPointer pAssembly = _target.ReadPointer(domainAssembly);
             Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(pAssembly);
 
             // following logic is based on AppDomain::AssemblyIterator::Next_Unlocked in appdomain.cpp
@@ -135,7 +152,7 @@ internal readonly struct Loader_1 : ILoader
         Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
         return appDomain.FriendlyName != TargetPointer.Null
             ? _target.ReadUtf16String(appDomain.FriendlyName)
-            : string.Empty;
+            : DefaultDomainFriendlyName;
     }
 
     TargetPointer ILoader.GetModule(ModuleHandle handle)
@@ -155,22 +172,30 @@ internal readonly struct Loader_1 : ILoader
         return module.PEAssembly;
     }
 
+    private bool TryGetPEImage(ModuleHandle handle, [NotNullWhen(true)] out Data.PEImage? peImage)
+    {
+        peImage = default;
+
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.PEAssembly == TargetPointer.Null)
+            return false;
+
+        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
+        if (peAssembly.PEImage == TargetPointer.Null)
+            return false;
+
+        peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
+        return true;
+    }
+
     bool ILoader.TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags)
     {
         baseAddress = TargetPointer.Null;
         size = 0;
         imageFlags = 0;
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
 
-        if (module.PEAssembly == TargetPointer.Null)
-            return false; // no loaded PEAssembly
-
-        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
-
-        if (peAssembly.PEImage == TargetPointer.Null)
-            return false; // no loaded PEImage
-
-        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
+        if (!TryGetPEImage(handle, out Data.PEImage? peImage))
+            return false; // no PE image
 
         if (peImage.LoadedImageLayout == TargetPointer.Null)
             return false; // no loaded image layout
@@ -186,7 +211,23 @@ internal readonly struct Loader_1 : ILoader
 
     private static bool IsMapped(Data.PEImageLayout peImageLayout)
     {
+        if (peImageLayout.Format == (uint)ImageFormat.Webcil)
+            return false;
+
         return (peImageLayout.Flags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+    }
+
+    bool ILoader.IsModuleMapped(ModuleHandle handle)
+    {
+        if (!TryGetPEImage(handle, out Data.PEImage? peImage))
+            return false; // no PE image
+
+        if (peImage.LoadedImageLayout == TargetPointer.Null)
+            return false;
+
+        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+
+        return IsMapped(peImageLayout);
     }
 
     private TargetPointer FindNTHeaders(Data.PEImageLayout imageLayout)
@@ -216,6 +257,9 @@ internal readonly struct Loader_1 : ILoader
 
     private uint RvaToOffset(int rva, Data.PEImageLayout imageLayout)
     {
+        if (imageLayout.Format == (uint)ImageFormat.Webcil)
+            return WebcilRvaToOffset(rva, imageLayout);
+
         TargetPointer section = RvaToSection(rva, imageLayout);
         if (section == TargetPointer.Null)
             throw new InvalidOperationException("Failed to read from image.");
@@ -225,9 +269,44 @@ internal readonly struct Loader_1 : ILoader
         return offset;
     }
 
-    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
+    private uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
     {
-        if (rva == 0)
+        if (rva < 0)
+            throw new InvalidOperationException("Negative RVA in Webcil image.");
+
+        TargetPointer headerBase = imageLayout.Base;
+        Data.WebcilHeader webcilHeader = _target.ProcessedData.GetOrAdd<Data.WebcilHeader>(headerBase);
+
+        ushort numSections = webcilHeader.CoffSections;
+        if (numSections == 0 || numSections > MaxWebcilSections)
+            throw new InvalidOperationException("Invalid Webcil section count.");
+
+        if (webcilHeader.VersionMajor != 0 && webcilHeader.VersionMajor != 1)
+            throw new InvalidOperationException("Unsupported Webcil version.");
+        TargetPointer sectionTableBase = headerBase + webcilHeader.Size; // See docs/design/mono/webcil.md
+
+        for (int i = 0; i < numSections; i++)
+        {
+            TargetPointer sectionPtr = sectionTableBase + (uint)(i * (int)16); // See docs/design/mono/webcil.md
+            Data.WebcilSectionHeader section = _target.ProcessedData.GetOrAdd<Data.WebcilSectionHeader>(sectionPtr);
+
+            uint rvaUnsigned = (uint)rva;
+            if (rvaUnsigned >= section.VirtualAddress)
+            {
+                uint offset = rvaUnsigned - section.VirtualAddress;
+                if (offset < section.VirtualSize && offset < section.SizeOfRawData)
+                {
+                    return offset + section.PointerToRawData;
+                }
+            }
+        }
+
+        throw new InvalidOperationException("Failed to resolve RVA in Webcil image.");
+    }
+
+    private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNullOk)
+    {
+        if (rva == 0 && !isNullOk)
             return TargetPointer.Null;
         Data.PEAssembly assembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
         if (assembly.PEImage == TargetPointer.Null)
@@ -243,6 +322,10 @@ internal readonly struct Loader_1 : ILoader
             offset = RvaToOffset(rva, peImageLayout);
         return peImageLayout.Base + offset;
     }
+
+    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva) => GetRvaData(peAssemblyPtr, rva, false);
+
+    TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => GetRvaData(peAssemblyPtr, rva, true);
 
     bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
     {
@@ -287,17 +370,8 @@ internal readonly struct Loader_1 : ILoader
 
     bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle)
     {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-
-        if (module.PEAssembly == TargetPointer.Null)
-            return false; // no loaded PEAssembly
-
-        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
-
-        if (peAssembly.PEImage == TargetPointer.Null)
-            return false; // no loaded PEImage
-
-        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
+        if (!TryGetPEImage(handle, out Data.PEImage? peImage))
+            return false; // no PE image
 
         // 0 is the invalid type. See assemblyprobeextension.h for details
         return peImage.ProbeExtensionResult.Type != 0;
@@ -310,10 +384,14 @@ internal readonly struct Loader_1 : ILoader
         ModuleFlags flags = default;
         if (runtimeFlags.HasFlag(ModuleFlags_1.Tenured))
             flags |= ModuleFlags.Tenured;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.JitOptimizationDisabled))
+            flags |= ModuleFlags.JitOptimizationDisabled;
         if (runtimeFlags.HasFlag(ModuleFlags_1.EditAndContinue))
             flags |= ModuleFlags.EditAndContinue;
         if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
             flags |= ModuleFlags.ReflectionEmit;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.EncCapable))
+            flags |= ModuleFlags.EncCapable;
 
         return flags;
     }
@@ -322,6 +400,64 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return GetFlags(module);
+    }
+
+    DebuggerAssemblyControlFlags ILoader.GetDebuggerInfoBits(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return (DebuggerAssemblyControlFlags)((module.Flags & DebuggerInfoMask) >> DebuggerInfoShift);
+    }
+
+    void ILoader.SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        uint currentFlags = module.Flags;
+        uint debuggerInfoBitsMask = DebuggerInfoMask >> DebuggerInfoShift;
+        uint updatedFlags = (currentFlags & ~DebuggerInfoMask) | (((uint)newBits & debuggerInfoBitsMask) << DebuggerInfoShift);
+
+        bool jitOptDisabled = (updatedFlags & DEBUGGER_ALLOW_JIT_OPTS_PRIV) == 0 || (updatedFlags & (uint)ModuleFlags.ProfDisableOptimizations) != 0;
+        if (jitOptDisabled)
+            updatedFlags |= (uint)ModuleFlags.JitOptimizationDisabled;
+        else
+            updatedFlags &= ~(uint)ModuleFlags.JitOptimizationDisabled;
+
+        if ((updatedFlags & (uint)ModuleFlags.EncCapable) != 0)
+        {
+            TargetPointer configPtr = _target.ReadGlobalPointer(Constants.Globals.EEConfig);
+            Data.EEConfig config = _target.ProcessedData.GetOrAdd<Data.EEConfig>(configPtr);
+            ClrModifiableAssemblies modifiableAssemblies = (ClrModifiableAssemblies)config.ModifiableAssemblies;
+
+            if (modifiableAssemblies != ClrModifiableAssemblies.None)
+            {
+                bool encRequested = (newBits & DebuggerAssemblyControlFlags.DACF_ENC_ENABLED) != 0;
+                bool jitOptsDisabledForEnc = (updatedFlags & (uint)ModuleFlags.JitOptimizationDisabled) != 0;
+                bool setEnC = encRequested || (modifiableAssemblies == ClrModifiableAssemblies.Debug && jitOptsDisabledForEnc);
+
+                if (setEnC)
+                    updatedFlags |= (uint)ModuleFlags.EditAndContinue;
+            }
+        }
+
+        module.WriteFlags(_target, updatedFlags);
+    }
+
+    bool ILoader.IsReadyToRun(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.ReadyToRunInfo != TargetPointer.Null;
+    }
+
+    bool ILoader.TryGetSimpleName(ModuleHandle handle, out string simpleName)
+    {
+        simpleName = string.Empty;
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.SimpleName != TargetPointer.Null)
+        {
+            simpleName = _target.ReadUtf8String(module.SimpleName, strict: true);
+            return true;
+        }
+        else
+            return false;
     }
 
     string ILoader.GetPath(ModuleHandle handle)
@@ -357,8 +493,7 @@ internal readonly struct Loader_1 : ILoader
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
         Data.AssemblyBinder binder = _target.ProcessedData.GetOrAdd<Data.AssemblyBinder>(peAssembly.AssemblyBinder);
-        Data.ObjectHandle objectHandle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(binder.AssemblyLoadContext);
-        return objectHandle.Object;
+        return binder.AssemblyLoadContext.Object;
     }
 
     ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)
@@ -551,6 +686,22 @@ internal readonly struct Loader_1 : ILoader
         DynamicILBlobTable dynamicILBlobTable = _target.ProcessedData.GetOrAdd<DynamicILBlobTable>(module.DynamicILBlobTable);
         ISHash shashContract = _target.Contracts.SHash;
         return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
+    }
+
+    TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
+    {
+        return _target.ProcessedData.GetOrAdd<Data.LoaderHeap>(loaderHeap).FirstBlock;
+    }
+
+    LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)
+    {
+        Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
+        return new LoaderHeapBlockData
+        {
+            Address = blockData.VirtualAddress,
+            Size = blockData.VirtualSize,
+            NextBlock = blockData.Next,
+        };
     }
 
     IReadOnlyDictionary<string, TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)

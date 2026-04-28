@@ -2093,7 +2093,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::LowerHWIntrinsicCmpOp: Lowers a Vector128 or Vector256 comparison intrinsic
+// Lowering::LowerHWIntrinsicCmpOp: Lowers a Vector64 or Vector128 comparison intrinsic
 //
 //  Arguments:
 //     node  - The hardware intrinsic node.
@@ -2145,7 +2145,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     }
 
     // Special case: "vec ==/!= zero_vector"
-    if (!varTypeIsFloating(simdBaseType) && (op != nullptr) && (simdSize != 12))
+    if (!varTypeIsFloating(simdBaseType) && (op != nullptr))
     {
         GenTree* cmp = op;
         if (simdSize != 8) // we don't need compression for Vector64
@@ -2220,26 +2220,6 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     GenTree* cmp = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, cmpIntrinsic, simdBaseType, simdSize);
     BlockRange().InsertBefore(node, cmp);
     LowerNode(cmp);
-
-    if ((simdBaseType == TYP_FLOAT) && (simdSize == 12))
-    {
-        // For TYP_SIMD12 we don't want the upper bits to participate in the comparison. So, we will insert all ones
-        // into those bits of the result, "as if" the upper bits are equal. Then if all lower bits are equal, we get the
-        // expected all-ones result, and will get the expected 0's only where there are non-matching bits.
-
-        GenTree* idxCns = m_compiler->gtNewIconNode(3, TYP_INT);
-        BlockRange().InsertAfter(cmp, idxCns);
-
-        GenTree* insCns = m_compiler->gtNewIconNode(-1, TYP_INT);
-        BlockRange().InsertAfter(idxCns, insCns);
-
-        GenTree* tmp =
-            m_compiler->gtNewSimdHWIntrinsicNode(simdType, cmp, idxCns, insCns, NI_AdvSimd_Insert, TYP_INT, simdSize);
-        BlockRange().InsertAfter(insCns, tmp);
-        LowerNode(tmp);
-
-        cmp = tmp;
-    }
 
     if (simdSize != 8) // we don't need compression for Vector64
     {
@@ -2339,7 +2319,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     if (isConstant)
     {
-        assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16));
+        assert((simdSize == 8) || (simdSize == 16));
 
         for (GenTree* arg : node->Operands())
         {
@@ -2497,46 +2477,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     GenTree* tmp1 = nullptr;
     GenTree* tmp2 = nullptr;
 
-    if (simdSize == 12)
-    {
-        assert(simdBaseType == TYP_FLOAT);
-
-        // For 12 byte SIMD, we need to clear the upper 4 bytes:
-        //   idx  =    CNS_INT       int    0x03
-        //   tmp1 = *  CNS_DBL       float  0.0
-        //          /--*  op1  simd16
-        //          +--*  idx  int
-        //          +--*  tmp1 simd16
-        //   op1  = *  HWINTRINSIC   simd16 T Insert
-        //   ...
-
-        // This is roughly the following managed code:
-        //    op1 = AdvSimd.Insert(op1, 0x03, 0.0f);
-        //    ...
-
-        idx = m_compiler->gtNewIconNode(0x03, TYP_INT);
-        BlockRange().InsertAfter(op1, idx);
-
-        tmp1 = m_compiler->gtNewZeroConNode(TYP_FLOAT);
-        BlockRange().InsertAfter(idx, tmp1);
-        LowerNode(tmp1);
-
-        op1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, idx, tmp1, NI_AdvSimd_Insert, simdBaseType, simdSize);
-        BlockRange().InsertAfter(tmp1, op1);
-        LowerNode(op1);
-
-        idx = m_compiler->gtNewIconNode(0x03, TYP_INT);
-        BlockRange().InsertAfter(op2, idx);
-
-        tmp2 = m_compiler->gtNewZeroConNode(TYP_FLOAT);
-        BlockRange().InsertAfter(idx, tmp2);
-        LowerNode(tmp2);
-
-        op2 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op2, idx, tmp2, NI_AdvSimd_Insert, simdBaseType, simdSize);
-        BlockRange().InsertAfter(tmp2, op2);
-        LowerNode(op2);
-    }
-
     // We will be constructing the following parts:
     //   ...
     //          /--*  op1  simd16
@@ -2615,7 +2555,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         }
         else
         {
-            assert((simdSize == 12) || (simdSize == 16));
+            assert(simdSize == 16);
 
             // We will be constructing the following parts:
             //   ...
@@ -2957,6 +2897,17 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
     assert(node->OperIs(GT_DIV, GT_UDIV, GT_MOD));
 
     // ARM doesn't have a div instruction with an immediate operand
+}
+
+//------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   No-op for arm.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
+{
 }
 
 //------------------------------------------------------------------------

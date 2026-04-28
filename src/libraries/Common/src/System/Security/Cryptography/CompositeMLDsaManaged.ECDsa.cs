@@ -61,75 +61,68 @@ namespace System.Security.Cryptography
 #endif
             }
 
-            public static unsafe ECDsaComponent ImportPrivateKey(ECDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+            public static ECDsaComponent ImportPrivateKey(ECDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
             {
                 Helpers.ThrowIfAsnInvalidLength(source);
 
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+                ValueECPrivateKey.Decode(source, AsnEncodingRules.BER, out ValueECPrivateKey ecPrivateKey);
+
+                if (ecPrivateKey.Version != 1 || ecPrivateKey.HasPublicKey)
                 {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                    {
-                        ECPrivateKey ecPrivateKey = ECPrivateKey.Decode(manager.Memory, AsnEncodingRules.BER);
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
 
-                        if (ecPrivateKey.Version != 1 ||
-                            ecPrivateKey.PublicKey is not null)
-                        {
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                        }
+                if (!ecPrivateKey.HasParameters || ecPrivateKey.Parameters.Named != algorithm.CurveOidValue)
+                {
+                    // The curve specified must be named and match the required curve for the Composite ML-DSA algorithm.
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
 
-                        if (ecPrivateKey.Parameters?.Named != algorithm.CurveOidValue)
-                        {
-                            // The curve specified must be named and match the required curve for the Composite ML-DSA algorithm.
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                        }
+                byte[] d = new byte[ecPrivateKey.PrivateKey.Length];
 
-                        byte[] d = new byte[ecPrivateKey.PrivateKey.Length];
-
-                        using (PinAndClear.Track(d))
-                        {
-                            ecPrivateKey.PrivateKey.CopyTo(d);
+                using (PinAndClear.Track(d))
+                {
+                    ecPrivateKey.PrivateKey.CopyTo(d);
 
 #if NET || NETSTANDARD
-                            ECParameters parameters = new ECParameters
-                            {
-                                Curve = algorithm.Curve,
-                                Q = new ECPoint
-                                {
-                                    X = null,
-                                    Y = null,
-                                },
-                                D = d
-                            };
+                    ECParameters parameters = new ECParameters
+                    {
+                        Curve = algorithm.Curve,
+                        Q = new ECPoint
+                        {
+                            X = null,
+                            Y = null,
+                        },
+                        D = d
+                    };
 
-                            parameters.Validate();
+                    parameters.Validate();
 
-                            return new ECDsaComponent(ECDsa.Create(parameters), algorithm);
+                    return new ECDsaComponent(ECDsa.Create(parameters), algorithm);
 #else // NETFRAMEWORK
 #if NET472_OR_GREATER
 #error ECDsa.Create(ECParameters) is avaliable in .NET Framework 4.7.2 and later, so this workaround is not needed anymore.
 #endif
-                            Debug.Assert(!string.IsNullOrEmpty(algorithm.CurveOid.FriendlyName));
+                    Debug.Assert(!string.IsNullOrEmpty(algorithm.CurveOid.FriendlyName));
 
-                            byte[] zero = new byte[d.Length];
-                            byte[] x = zero;
-                            byte[] y = zero;
+                    byte[] zero = new byte[d.Length];
+                    byte[] x = zero;
+                    byte[] y = zero;
 
-                            if (!TryValidateNamedCurve(x, y, d))
-                            {
-                                throw new CryptographicException(SR.Cryptography_InvalidECPrivateKeyParameters);
-                            }
-
-                            return new ECDsaComponent(
-                                ECCng.EncodeEccKeyBlob(
-                                    algorithm.PrivateKeyBlobMagicNumber,
-                                    x,
-                                    y,
-                                    d,
-                                    blob => ImportKeyBlob(blob, algorithm.CurveOid.FriendlyName, includePrivateParameters: true)),
-                                algorithm);
-#endif
-                        }
+                    if (!TryValidateNamedCurve(x, y, d))
+                    {
+                        throw new CryptographicException(SR.Cryptography_InvalidECPrivateKeyParameters);
                     }
+
+                    return new ECDsaComponent(
+                        ECCng.EncodeEccKeyBlob(
+                            algorithm.PrivateKeyBlobMagicNumber,
+                            x,
+                            y,
+                            d,
+                            blob => ImportKeyBlob(blob, algorithm.CurveOid.FriendlyName, includePrivateParameters: true)),
+                        algorithm);
+#endif
                 }
             }
 

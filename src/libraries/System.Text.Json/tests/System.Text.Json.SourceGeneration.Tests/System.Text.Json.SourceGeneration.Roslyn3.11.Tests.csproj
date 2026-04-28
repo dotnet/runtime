@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <TestedRoslynVersion>3.11</TestedRoslynVersion>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <Import Project="System.Text.Json.SourceGeneration.Tests.targets" />

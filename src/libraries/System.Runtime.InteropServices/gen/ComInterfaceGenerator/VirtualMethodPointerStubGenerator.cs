@@ -4,13 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using static Microsoft.Interop.SyntaxFactoryExtensions;
-using Microsoft.CodeAnalysis;
-using System.Diagnostics;
 
 namespace Microsoft.Interop
 {
@@ -229,32 +229,6 @@ namespace Microsoft.Interop
             }
 
             return elements.ToImmutable();
-        }
-
-        public static BlockSyntax GenerateVirtualMethodTableSlotAssignments(
-            IEnumerable<SourceAvailableIncrementalMethodStubGenerationContext> vtableMethods,
-            string vtableIdentifier,
-            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
-        {
-            List<StatementSyntax> statements = new();
-            foreach (var method in vtableMethods)
-            {
-                FunctionPointerTypeSyntax functionPointerType = GenerateUnmanagedFunctionPointerTypeForMethod(method, generatorResolverCreator);
-
-                // <vtableParameter>[<index>] = (void*)(<functionPointerType>)&ABI_<methodIdentifier>;
-                statements.Add(
-                    ExpressionStatement(
-                        AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                            ElementAccessExpression(
-                                IdentifierName(vtableIdentifier))
-                            .AddArgumentListArguments(Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(method.VtableIndexData.Index)))),
-                            CastExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
-                                CastExpression(functionPointerType,
-                                    PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
-                                        IdentifierName($"ABI_{method.StubMethodSyntaxTemplate.Identifier}")))))));
-            }
-
-            return Block(statements);
         }
 
         public static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(

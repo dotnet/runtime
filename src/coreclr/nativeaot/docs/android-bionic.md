@@ -4,7 +4,7 @@ Starting with .NET 8 Preview 7, it's possible to build shared libraries and comm
 
 Not a full Android experience is available - it's only possible to publish for two Bionic RID: linux-bionic-arm64 and linux-bionic-x64. Publishing for Android RIDs (android-arm64/android-x64) is not possible. This limited experience corresponds to building with [Android NDK](https://developer.android.com/ndk) from Native code - the limitations are similar. Interop with Java needs to be done manually through JNI, if necessary.
 
-The minimum API level is 21 at the time of writing the document, but search for AndroidApiLevelMin in this repo for more up-to-date information.
+The minimum API level has been raised to 24 in .NET 11. Search for `AndroidApiLevelMin` in this repo for the current value.
 
 To build for Bionic:
 

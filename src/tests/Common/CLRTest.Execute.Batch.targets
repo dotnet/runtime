@@ -341,7 +341,7 @@ IF NOT DEFINED RunWithNodeJS (
     ECHO CLRTestExecutionArguments: %CLRTestExecutionArguments%
     ECHO Timeout in ms: !__TestTimeout!
     
-    set "__RunCmd=node "!__CoreRootWin!\corerun.js" -c "!__CoreRootUnix!" "!__ExePathUnix!" %CLRTestExecutionArguments%"
+    set "__RunCmd=node --stack-size=8192 "!__CoreRootWin!\corerun.js" -c "!__CoreRootUnix!" "!__ExePathUnix!" %CLRTestExecutionArguments%"
     ECHO Running: !__RunCmd!
     call :RunWithTimeout !__TestTimeout!
     set CLRTestExitCode=!ERRORLEVEL!

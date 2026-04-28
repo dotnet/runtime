@@ -7,6 +7,9 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    // TODO-Wasm: Some instances of AssemblyStubNode will need to implement INodeWithTypeSignature
+    // if they need to be callable from Wasm, though it may not make sense for the base
+    // class to implement INodeWithTypeSignature.
     public abstract class AssemblyStubNode : ObjectNode, ISymbolDefinitionNode
     {
         public AssemblyStubNode()
@@ -83,8 +86,7 @@ namespace ILCompiler.DependencyAnalysis
                 case TargetArchitecture.Wasm32:
                     Wasm.WasmEmitter wasmEmitter = new Wasm.WasmEmitter(factory, relocsOnly);
                     EmitCode(factory, ref wasmEmitter, relocsOnly);
-                    wasmEmitter.Builder.AddSymbol(this);
-                    return wasmEmitter.Builder.ToObjectData();
+                    return wasmEmitter.Encode(this);
 
                 default:
                     throw new NotImplementedException();

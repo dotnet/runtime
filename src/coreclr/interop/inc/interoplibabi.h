@@ -6,7 +6,7 @@
 
 #include <stddef.h>
 #include <interoplib.h>
-#include "../../vm/cdacdata.h"
+#include "cdacdata.h"
 
 namespace InteropLib
 {
@@ -87,6 +87,22 @@ template<>
 struct cdac_data<InteropLib::ABI::ManagedObjectWrapperLayout>
 {
     static constexpr size_t RefCount = offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, _refCount);
+    static constexpr size_t Flags = offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, _flags);
+    static constexpr size_t UserDefinedCount = offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, _userDefinedCount);
+    static constexpr size_t UserDefined = offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, _userDefined);
+    static constexpr size_t Dispatches = offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, _dispatches);
+};
+
+template<>
+struct cdac_data<InteropLib::ABI::ComInterfaceEntry>
+{
+    static constexpr size_t IID = offsetof(InteropLib::ABI::ComInterfaceEntry, IID);
+};
+
+template<>
+struct cdac_data<InteropLib::ABI::InternalComInterfaceDispatch>
+{
+    static constexpr size_t Entries = offsetof(InteropLib::ABI::InternalComInterfaceDispatch, _entries);
 };
 
 #endif // _INTEROP_INC_INTEROPLIBABI_H_

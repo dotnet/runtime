@@ -11,11 +11,15 @@
 #include "eventtrace.h"
 #include "virtualcallstub.h"
 #include "utilcode.h"
+#include "corelib.h"
 #include "interoplibinterface.h"
 #include "corinfo.h"
 #include "exceptionhandlingqcalls.h"
 #include "exinfo.h"
 #include "configuration.h"
+
+extern MethodDesc* g_pThreadStartCallbackMethodDesc;
+extern MethodDesc* g_pGCRunFinalizersMethodDesc;
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
@@ -139,8 +143,6 @@ void FixContext(PCONTEXT pContextRecord)
 
 #undef FIXUPREG
 }
-
-MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
 #ifdef TARGET_UNIX
 BOOL HandleHardwareException(PAL_SEHException* ex);
@@ -1417,7 +1419,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 // managed code that called the helper, otherwise the stack
                 // walker would skip all the managed frames upto the next
                 // explicit frame.
-                PAL_VirtualUnwind(ex->GetContextRecord(), NULL);
+                PAL_VirtualUnwind(ex->GetContextRecord());
                 ex->GetExceptionRecord()->ExceptionAddress = (PVOID)GetIP(ex->GetContextRecord());
             }
             else
@@ -1446,15 +1448,12 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         }
 
         GCPROTECT_BEGIN(exInfo.m_exception);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROWHW_EX);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+        UnmanagedCallersOnlyCaller throwHwEx(METHOD__EH__RH_THROWHW_EX);
 
         pThread->IncPreventAbort();
 
         //Ex.RhThrowHwEx(exceptionCode, &exInfo)
-        CALL_MANAGED_METHOD_NORET(args)
+        throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
         DispatchExSecondPass(&exInfo);
 
@@ -1623,16 +1622,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     GCPROTECT_BEGIN(exInfo.m_exception);
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROW_EX);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(throwable);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+    UnmanagedCallersOnlyCaller throwEx(METHOD__EH__RH_THROW_EX);
 
     pThread->IncPreventAbort();
 
     //Ex.RhThrowEx(throwable, &exInfo)
-    CRITICAL_CALLSITE;
-    CALL_MANAGED_METHOD_NORET(args)
+    throwEx.InvokeDirect(&throwable, &exInfo);
 
     DispatchExSecondPass(&exInfo);
 
@@ -1680,16 +1675,12 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
     ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pExceptionContext, ExKind::None);
 
     GCPROTECT_BEGIN(exInfo.m_exception);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+    UnmanagedCallersOnlyCaller rethrow(METHOD__EH__RH_RETHROW);
 
     pThread->IncPreventAbort();
 
     //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
-    CALL_MANAGED_METHOD_NORET(args)
+    rethrow.InvokeDirect(pActiveExInfo, &exInfo);
     DispatchExSecondPass(&exInfo);
 
     GCPROTECT_END();
@@ -2161,22 +2152,6 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
 }
 
 #endif // TARGET_UNIX
-
-#ifdef FEATURE_COMINTEROP
-EXTERN_C EXCEPTION_DISPOSITION __cdecl
-ReverseComUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                                  IN     PVOID               pEstablisherFrame,
-                                  IN OUT PCONTEXT            pContextRecord,
-                                  IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                                 )
-{
-    if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
-    {
-        ComMethodFrame::DoSecondPassHandlerCleanup(GetThread()->GetFrame());
-    }
-    return ExceptionContinueSearch;
-}
-#endif // FEATURE_COMINTEROP
 
 #if !defined(TARGET_UNIX) && !defined(TARGET_X86)
 EXTERN_C EXCEPTION_DISPOSITION __cdecl
@@ -3106,7 +3081,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         THROWS;
     }
     CONTRACTL_END;
-    
+
     Thread* pThread = GET_THREAD();
     pThread->DecPreventAbort();
 
@@ -3188,7 +3163,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         pThread->GetExceptionState()->GetDebuggerState()->GetDebuggerInterceptInfo(&pInterceptMD, NULL, (PBYTE*)&(sfInterceptStackFrame.SP), &ulRelOffset, NULL);
         if (sfInterceptStackFrame.SP == GetSP(pvRegDisplay->pCurrentContext))
         {
-            PCODE pStartAddress = pInterceptMD->GetNativeCode();
+            PCODE pStartAddress = pInterceptMD->GetCodeForInterpreterOrJitted();
 
             EECodeInfo codeInfo(pStartAddress);
             _ASSERTE(codeInfo.IsValid());
@@ -3226,7 +3201,9 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     {
         if (fIntercepted)
         {
-            ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
+            EECodeInfo codeInfo(GetIP(pvRegDisplay->pCurrentContext));
+            _ASSERTE(codeInfo.IsValid());
+            codeInfo.GetCodeManager()->ResumeAfterCatch(pvRegDisplay->pCurrentContext, targetSSP, /* fIntercepted */ true);
         }
 #ifdef HOST_UNIX
         if (propagateExceptionCallback)
@@ -3325,7 +3302,7 @@ void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     ExInfo::PopExInfos(pThread, (void*)targetSp);
 
-    PCODE pStartAddress = pInterceptMD->GetNativeCode();
+    PCODE pStartAddress = pInterceptMD->GetCodeForInterpreterOrJitted();
 
     EECodeInfo codeInfo(pStartAddress);
     _ASSERTE(codeInfo.IsValid());
@@ -3338,7 +3315,7 @@ void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
     SetIP(pvRegDisplay->pCurrentContext, uResumePC);
 
     STRESS_LOG2(LF_EH, LL_INFO100, "Resuming at interception location at IP=%p, SP=%p\n", uResumePC, GetSP(pvRegDisplay->pCurrentContext));
-    ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
+    codeInfo.GetCodeManager()->ResumeAfterCatch(pvRegDisplay->pCurrentContext, targetSSP, /* fIntercepted */ true);
 }
 
 void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
@@ -3542,7 +3519,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
     CLR_BOOL result = FALSE;
 
     BEGIN_QCALL;
-    
+
     Thread* pThread = GET_THREAD();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
@@ -3554,8 +3531,6 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
 }
 
 extern uint32_t g_exceptionCount;
-
-MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
 static CLR_BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterator, ExInfo *pExInfo)
 {
@@ -3643,12 +3618,6 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
             TADDR sp = GetRegdisplaySP(pRD);
             if (pMD->IsILStub())
             {
-                MethodDesc * pUserMDForILStub = NULL;
-                Frame * pILStubFrame = NULL;
-                if (!pExInfo->m_frameIter.m_crawl.IsFunclet())    // only make this callback on the main method body of IL stubs
-                {
-                    pUserMDForILStub = GetUserMethodForILStub(pThread, sp, pMD, &pILStubFrame);
-                }
                 //
                 // NotifyOfCHFFilter has two behaviors
                 //  * Notifify debugger, get interception info and unwind (function will not return)
@@ -3656,10 +3625,11 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
                 //          We NULL it out because we get the interception event after this point.
                 //  * Notifify debugger and return.
                 //      In this case the normal EH proceeds and we need to reset m_sfResumeStackFrame to the sf catch handler.
-                EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, pILStubFrame);
+                EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, NULL);
             }
             else
             {
+#ifdef PROFILING_SUPPORTED
                 BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
                 _ASSERTE(pExInfo->m_pMDToReportFunctionLeave != NULL);
                 EEToProfilerExceptionInterfaceWrapper::ExceptionSearchCatcherFound(pMD);
@@ -3669,6 +3639,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
                     pExInfo->m_pMDToReportFunctionLeave = NULL;
                 }
                 END_PROFILER_CALLBACK();
+#endif // PROFILING_SUPPORTED
 
                 // We don't need to do anything special for continuable exceptions after calling
                 // this callback.  We are going to start unwinding anyway.
@@ -3738,10 +3709,12 @@ NOINLINE static void NotifyFunctionEnterHelper(StackFrameIterator *pThis, Thread
 
 static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
 {
+#ifdef PROFILING_SUPPORTED
     BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
     // We don't need to do any notifications for the profiler if we are not tracking exceptions.
     NotifyFunctionEnterHelper(pThis, pThread, pExInfo);
     END_PROFILER_CALLBACK();
+#endif // PROFILING_SUPPORTED
 }
 
 CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
@@ -3887,7 +3860,7 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
 extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
-    
+
     CLR_BOOL result = FALSE;
     BEGIN_QCALL;
 
@@ -3993,6 +3966,17 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
 #endif // HOST_UNIX
             {
                 isPropagatingToExternalNativeCode = true;
+
+                MethodDesc* pMethodDesc = codeInfo.GetMethodDesc();
+                if ((pMethodDesc != NULL) &&
+                    (pMethodDesc == g_pEnvironmentCallEntryPointMethodDesc ||
+                     pMethodDesc == g_pThreadStartCallbackMethodDesc ||
+                     pMethodDesc == g_pGCRunFinalizersMethodDesc))
+                {
+                    // Runtime-invoked UCO entrypoint calls should behave like the
+                    // internal call path and not as external-native propagation.
+                    isPropagatingToExternalNativeCode = false;
+                }
             }
         }
         else
@@ -4017,7 +4001,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
             // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
             // If not, the exception is unhandled.
-            bool isNotHandledByRuntime = 
+            bool isNotHandledByRuntime =
                 (pFrame == FRAME_TOP) ||
                 (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions())
 #ifdef HOST_UNIX
@@ -4342,7 +4326,7 @@ void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo)
         if ((GetRegdisplaySP(pFrameIter->m_crawl.GetRegisterSet()) == handlingFrameSP)
 #if TARGET_ARM64
             && (GetControlPC(pFrameIter->m_crawl.GetRegisterSet()) == handlingFramePC)
-#endif  
+#endif
             )
         {
             // invoke only a partial second-pass here...

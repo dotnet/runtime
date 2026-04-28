@@ -58,13 +58,13 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 0 => 0,
                 1 => name[0],
-                2 => MemoryMarshal.Read<ushort>(name),
-                3 => MemoryMarshal.Read<ushort>(name) | ((ulong)name[2] << 16),
-                4 => MemoryMarshal.Read<uint>(name),
-                5 => MemoryMarshal.Read<uint>(name) | ((ulong)name[4] << 32),
-                6 => MemoryMarshal.Read<uint>(name) | ((ulong)MemoryMarshal.Read<ushort>(name.Slice(4, 2)) << 32),
-                7 => MemoryMarshal.Read<uint>(name) | ((ulong)MemoryMarshal.Read<ushort>(name.Slice(4, 2)) << 32) | ((ulong)name[6] << 48),
-                _ => MemoryMarshal.Read<ulong>(name) & 0x00ffffffffffffffUL
+                2 => BitConverter.ToUInt16(name),
+                3 => BitConverter.ToUInt16(name) | ((ulong)name[2] << 16),
+                4 => BitConverter.ToUInt32(name),
+                5 => BitConverter.ToUInt32(name) | ((ulong)name[4] << 32),
+                6 => BitConverter.ToUInt32(name) | ((ulong)BitConverter.ToUInt16(name.Slice(4, 2)) << 32),
+                7 => BitConverter.ToUInt32(name) | ((ulong)BitConverter.ToUInt16(name.Slice(4, 2)) << 32) | ((ulong)name[6] << 48),
+                _ => BitConverter.ToUInt64(name) & 0x00ffffffffffffffUL
             };
 #if DEBUG
             // Verify key contains the embedded bytes as expected.

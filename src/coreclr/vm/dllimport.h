@@ -69,6 +69,13 @@ public:
 #endif
 };
 
+enum class MarshalOperation
+{
+    ConvertToUnmanaged,
+    ConvertToManaged,
+    Free
+};
+
 //=======================================================================
 // Collects code and data pertaining to the PInvoke interface.
 //=======================================================================
@@ -106,6 +113,10 @@ public:
         _In_opt_ SigTypeContext* pTypeContext = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
 
+#ifdef TARGET_X86
+    static void CalculateStackArgumentSize(PInvokeMethodDesc* pMD);
+#endif
+
     static void PopulatePInvokeMethodDesc(_Inout_ PInvokeMethodDesc* pNMD);
     static void InitializeSigInfoAndPopulatePInvokeMethodDesc(_Inout_ PInvokeMethodDesc* pNMD, _Inout_ PInvokeStaticSigInfo* pSigInfo);
 
@@ -115,6 +126,10 @@ public:
                     CorNativeLinkFlags       nlFlags,
                     CorInfoCallConvExtension unmgdCallConv,
                     DWORD                    dwStubFlags); // PInvokeStubFlags
+
+    static COR_ILMETHOD_DECODER* CreatePInvokeMethodIL(
+                    PInvokeMethodDesc* pMD,
+                    DynamicResolver** ppResolver);
 
 #ifdef FEATURE_COMINTEROP
     static MethodDesc* CreateFieldAccessILStub(
@@ -126,8 +141,7 @@ public:
                     FieldDesc*         pFD);
 #endif // FEATURE_COMINTEROP
 
-    static MethodDesc* CreateStructMarshalILStub(MethodTable* pMT);
-    static PCODE GetEntryPointForStructMarshalStub(MethodTable* pMT);
+    static MethodDesc* CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOperation operation);
 
     static MethodDesc* CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
                              DWORD dwStubFlags,
@@ -135,6 +149,8 @@ public:
 
     static PCODE            GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
+
+    static void ResolvePInvokeTarget(PInvokeMethodDesc* pNMD);
 
 private:
     PInvoke() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
@@ -173,9 +189,7 @@ enum PInvokeStubFlags
     // unused                               = 0x00200000,
     // unused                               = 0x00400000,
     // unused                               = 0x00800000,
-
-    // internal flags -- these won't ever show up in an PInvokeStubHashBlob
-    PINVOKESTUB_FL_FOR_NUMPARAMBYTES        = 0x10000000,   // do just enough to return the right value from Marshal.NumParamBytes
+    // unused                               = 0x10000000,
 
 #ifdef FEATURE_COMINTEROP
     PINVOKESTUB_FL_COMLATEBOUND             = 0x20000000,   // we use a generic stub for late bound calls
@@ -214,7 +228,6 @@ inline bool SF_IsHRESULTSwapping       (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsReverseStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_REVERSE_INTEROP)); }
 inline bool SF_IsDebuggableStub        (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_GENERATEDEBUGGABLEIL)); }
 inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_UNMANAGED_CALLI)); }
-inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_FOR_NUMPARAMBYTES)); }
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_STRUCT_MARSHAL)); }
 inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_CHECK_PENDING_EXCEPTION)); }
 inline bool SF_IsSharedStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_SHARED_STUB)); }
@@ -477,7 +490,6 @@ public:
     void    SetCleanupNeeded();
     void    SetExceptionCleanupNeeded();
     BOOL    IsCleanupWorkListSetup();
-    void    GetCleanupFinallyOffsets(ILStubEHClause * pClause);
 
     void    SetInteropParamExceptionInfo(UINT resID, UINT paramIdx);
     bool    HasInteropParamExceptionInfo();
@@ -485,8 +497,6 @@ public:
     {
         return m_targetHasThis == TRUE;
     }
-
-    void ClearCode();
 
     enum
     {
@@ -518,7 +528,6 @@ public:
 protected:
     BOOL            IsCleanupNeeded();
     BOOL            IsExceptionCleanupNeeded();
-    void            InitCleanupCode();
     void            InitExceptionCleanupCode();
 
 
@@ -532,10 +541,6 @@ protected:
     ILCodeStream*   m_pcsCleanup;
 
 
-    ILCodeLabel*        m_pCleanupTryBeginLabel;
-    ILCodeLabel*        m_pCleanupTryEndLabel;
-    ILCodeLabel*        m_pCleanupFinallyBeginLabel;
-    ILCodeLabel*        m_pCleanupFinallyEndLabel;
     ILCodeLabel*        m_pSkipExceptionCleanupLabel;
 
 #ifdef FEATURE_COMINTEROP
@@ -573,8 +578,6 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 #endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
-void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
-void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader);
 #endif // DACCESS_COMPILE
 
