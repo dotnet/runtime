@@ -69,6 +69,8 @@
 
   <!-- Pre-commands -->
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+    <!-- Disable core dumps (ulimit -c 0) since system cores are too large and we create many intentional crashes for tests, which would fill the machine. -->
+    <HelixPreCommand Include="ulimit -c unlimited" />
     <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/dotnet" />
   </ItemGroup>
 
