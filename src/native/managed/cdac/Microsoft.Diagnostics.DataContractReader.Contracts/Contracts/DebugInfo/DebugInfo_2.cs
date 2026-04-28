@@ -31,6 +31,14 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
     private readonly Target _target = target;
     private readonly IExecutionManager _eman = target.Contracts.ExecutionManager;
 
+    bool IDebugInfo.HasDebugInfo(TargetCodePointer pCode)
+    {
+        if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
+            return false;
+
+        return _eman.GetDebugInfo(cbh, out _) != TargetPointer.Null;
+    }
+
     IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset)
     {
         // Get the method's DebugInfo
@@ -40,6 +48,9 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
 
         TargetCodePointer nativeCodeStart = _eman.GetStartAddress(cbh);
         codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
+
+        if (debugInfo == TargetPointer.Null)
+            return [];
 
         return RestoreBoundaries(debugInfo, preferUninstrumented);
     }
@@ -101,6 +112,38 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
         {
             NativeReader boundsNativeReader = new(new TargetStream(_target, addrBounds, cbBounds), _target.IsLittleEndian);
             return DebugInfoHelpers.DoBounds(boundsNativeReader, 2);
+        }
+
+        return [];
+    }
+
+    IEnumerable<DebugVarInfo> IDebugInfo.GetMethodVarInfo(TargetCodePointer pCode, out uint codeOffset)
+    {
+        if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
+            throw new InvalidOperationException($"No CodeBlockHandle found for native code {pCode}.");
+        TargetPointer debugInfo = _eman.GetDebugInfo(cbh, out bool _);
+
+        // Compute code offset from the method's native code entry point, not from the code block start.
+        // GetStartAddress returns the start of the current code block (which may be a funclet for exception
+        // handlers). Variable location offsets are always relative to the method entry point, so we must use
+        // GetNativeCode from the MethodDesc — matching the native DAC's GetMethodVarInfo which uses
+        // NativeCodeVersion::GetNativeCode() for this purpose.
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        TargetPointer methodDescAddr = _eman.GetMethodDesc(cbh);
+        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescAddr);
+        TargetCodePointer nativeCodeStart = rts.GetNativeCode(mdh);
+        codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
+
+        if (debugInfo == TargetPointer.Null)
+            return [];
+
+        DebugInfoChunks chunks = DecodeChunks(debugInfo);
+
+        if (chunks.VarsSize > 0)
+        {
+            bool isX86 = _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86;
+            NativeReader varsNativeReader = new(new TargetStream(_target, chunks.VarsStart, chunks.VarsSize), _target.IsLittleEndian);
+            return DebugInfoHelpers.DoVars(varsNativeReader, isX86);
         }
 
         return [];

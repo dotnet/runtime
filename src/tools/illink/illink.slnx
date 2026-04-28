@@ -5,7 +5,6 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/analyzer/">
-    <Project Path="src/analyzer/analyzer.csproj" />
     <Project Path="src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj" />
     <Project Path="src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj" />
   </Folder>

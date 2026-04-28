@@ -23,7 +23,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
 
     [Theory]
     [InlineData(false)]
-    [InlineData(true)]
+    // [InlineData(true)] // ActiveIssue: https://github.com/dotnet/runtime/issues/124946
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
         Configuration config = Configuration.Debug;
@@ -78,34 +78,6 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [Theory]
-    [InlineData(Configuration.Release, true)]
-    [InlineData(Configuration.Release, false)]
-    public async Task OverrideBootConfigName(Configuration config, bool isPublish)
-    {
-        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"OverrideBootConfigName_{isPublish}");
-
-        if (isPublish)
-            PublishProject(info, config, new PublishOptions(BootConfigFileName: "boot.json", UseCache: false));
-        else
-            BuildProject(info, config, new BuildOptions(BootConfigFileName: "boot.json", UseCache: false));
-
-        var runOptions = new BrowserRunOptions(
-            Configuration: config,
-            TestScenario: "OverrideBootConfigName"
-        );
-        var result = await (isPublish
-            ? RunForPublishWithWebServer(runOptions)
-            : RunForBuildWithDotnetRun(runOptions)
-        );
-
-        Assert.Collection(
-            result.TestOutput,
-            m => Assert.Equal("ConfigSrc: boot.json", m),
-            m => Assert.Equal("Managed code has run", m)
-        );
-    }
-
     [Fact, TestCategory("bundler-friendly")]
     public async Task AssetIntegrity()
     {
@@ -124,11 +96,19 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     }
 
     [Theory]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    public void SymbolMapFileEmitted(bool emitSymbolMap, bool isPublish)
+    [InlineData(false)]
+    [InlineData(true)]
+    [TestCategory("native")]
+    public void SymbolMapFileEmitted(bool isPublish)
+        => SymbolMapFileEmittedCore(emitSymbolMap: true, isPublish);
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SymbolMapFileNotEmitted(bool isPublish)
+        => SymbolMapFileEmittedCore(emitSymbolMap: false, isPublish);
+
+    private void SymbolMapFileEmittedCore(bool emitSymbolMap, bool isPublish)
     {
         Configuration config = Configuration.Release;
         string extraProperties = $"<WasmEmitSymbolMap>{emitSymbolMap.ToString().ToLowerInvariant()}</WasmEmitSymbolMap>";
@@ -140,11 +120,33 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         else
             BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
 
-        string frameworkDir = GetBinFrameworkDir(config, forPublish: isPublish);
-
-        // The file may be fingerprinted (e.g. dotnet.native.<hash>.js.symbols),
-        // so use a glob pattern to find it.
-        bool symbolsFileExists = Directory.EnumerateFiles(frameworkDir, "dotnet.native*.js.symbols").Any();
+        // Locate the emitted symbols file. With CopyToOutputDirectory=Never, framework files are
+        // no longer in bin/_framework during build: the native symbols file lives in
+        // obj/{config}/{tfm}/wasm/for-build/ (native rebuild) and the materialized copy ends up
+        // in obj/{config}/{tfm}/fx/{name}/_framework/. The publish path still has them in
+        // bin/{config}/{tfm}/publish/wwwroot/_framework/.
+        // The file may be fingerprinted (e.g. dotnet.native.<hash>.js.symbols), so use a glob.
+        const string symbolsPattern = "dotnet.native*.js.symbols";
+        bool symbolsFileExists;
+        if (isPublish)
+        {
+            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
+            symbolsFileExists = Directory.EnumerateFiles(frameworkDir, symbolsPattern).Any();
+        }
+        else
+        {
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework);
+            string fxBaseDir = Path.Combine(objDir, "fx");
+            string[] searchDirs = [
+                Path.Combine(objDir, "wasm", "for-build"),
+                .. Directory.Exists(fxBaseDir)
+                    ? Directory.GetDirectories(fxBaseDir).Select(d => Path.Combine(d, "_framework"))
+                    : Array.Empty<string>()
+            ];
+            symbolsFileExists = searchDirs
+                .Where(Directory.Exists)
+                .Any(d => Directory.EnumerateFiles(d, symbolsPattern).Any());
+        }
         Assert.Equal(emitSymbolMap, symbolsFileExists);
     }
 }

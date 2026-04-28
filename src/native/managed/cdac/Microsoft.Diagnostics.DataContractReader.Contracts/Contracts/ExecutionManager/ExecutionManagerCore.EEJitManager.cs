@@ -44,6 +44,24 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return true;
         }
 
+        public override void GetMethodRegionInfo(
+            RangeSection rangeSection,
+            TargetCodePointer jittedCodeAddress,
+            out uint hotSize,
+            out TargetPointer coldStart,
+            out uint coldSize)
+        {
+            // cold regions are not supported for JITted code
+            coldStart = TargetPointer.Null;
+            coldSize = 0;
+
+            IGCInfo gcInfo = Target.Contracts.GCInfo;
+            GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
+            IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+            hotSize = gcInfo.GetCodeLength(gcInfoHandle);
+            Debug.Assert(hotSize > 0);
+        }
+
         public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             if (rangeSection.IsRangeList)
@@ -159,6 +177,28 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
             realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
             return true;
+        }
+
+        public override void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr)
+        {
+            startAddr = TargetPointer.Null;
+            endAddr = TargetPointer.Null;
+
+            if (rangeSection.Data == null)
+                throw new ArgumentException(nameof(rangeSection));
+
+            Data.RealCodeHeader? realCodeHeader;
+            TargetPointer codeStart = FindMethodCode(rangeSection, new TargetCodePointer(codeInfoHandle.Address));
+            if (!GetRealCodeHeader(rangeSection, codeStart, out realCodeHeader) || realCodeHeader == null)
+                return;
+
+            if (realCodeHeader.EHInfo == TargetPointer.Null)
+                return;
+
+            Data.EEILException ehInfo = Target.ProcessedData.GetOrAdd<Data.EEILException>(realCodeHeader.EHInfo);
+            TargetNUInt numEHInfos = Target.ReadNUInt(ehInfo.Address - (ulong)Target.PointerSize);
+            startAddr = ehInfo.Clauses;
+            endAddr = startAddr + numEHInfos.Value * Target.GetTypeInfo(DataType.EEExceptionClause).Size!.Value;
         }
     }
 }

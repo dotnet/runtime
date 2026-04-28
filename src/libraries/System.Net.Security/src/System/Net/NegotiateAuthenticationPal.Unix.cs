@@ -22,16 +22,9 @@ namespace System.Net
         private static readonly Lazy<bool> _hasSystemNetSecurityNative = new Lazy<bool>(CheckHasSystemNetSecurityNative);
         internal static bool HasSystemNetSecurityNative => _hasSystemNetSecurityNative.Value;
 
-        [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]
-        private static bool UseManagedNtlm { get; } =
-            AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
-            useManagedNtlm :
-            OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
-            (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.OrdinalIgnoreCase));
-
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {
-            if (UseManagedNtlm)
+            if (LocalAppContextSwitches.UseManagedNtlm)
             {
                 switch (clientOptions.Package)
                 {
@@ -47,20 +40,21 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(clientOptions);
             }
-            catch (Interop.NetSecurityNative.GssApiException gex)
+            catch (Exception ex) when (ex is Interop.NetSecurityNative.GssApiException or TypeInitializationException)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
-                NegotiateAuthenticationStatusCode statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
-                if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+                NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+
+                if (ex is Interop.NetSecurityNative.GssApiException gex)
                 {
-                    statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
+                    if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                    {
+                        statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    }
                 }
+
                 return new UnsupportedNegotiateAuthenticationPal(clientOptions, statusCode);
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // GSSAPI shim may not be available on some platforms (Linux Bionic)
-                return new UnsupportedNegotiateAuthenticationPal(clientOptions);
             }
         }
 
@@ -70,20 +64,21 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(serverOptions);
             }
-            catch (Interop.NetSecurityNative.GssApiException gex)
+            catch (Exception ex) when (ex is Interop.NetSecurityNative.GssApiException or TypeInitializationException)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
-                NegotiateAuthenticationStatusCode statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
-                if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+
+                NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+
+                if (ex is Interop.NetSecurityNative.GssApiException gex)
                 {
-                    statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
+                    if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                    {
+                        statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    }
                 }
                 return new UnsupportedNegotiateAuthenticationPal(serverOptions, statusCode);
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // GSSAPI shim may not be available on some platforms (Linux Bionic)
-                return new UnsupportedNegotiateAuthenticationPal(serverOptions);
             }
         }
 

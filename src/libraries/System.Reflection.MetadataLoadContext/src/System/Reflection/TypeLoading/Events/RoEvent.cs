@@ -64,9 +64,9 @@ namespace System.Reflection.TypeLoading
         protected abstract RoMethod? ComputeEventRemoveMethod();
         protected abstract RoMethod? ComputeEventRaiseMethod();
 
-        private volatile RoMethod? _lazyAdder = Sentinels.RoMethod;
-        private volatile RoMethod? _lazyRemover = Sentinels.RoMethod;
-        private volatile RoMethod? _lazyRaiser = Sentinels.RoMethod;
+        private RoMethod? _lazyAdder = Sentinels.RoMethod;
+        private RoMethod? _lazyRemover = Sentinels.RoMethod;
+        private RoMethod? _lazyRaiser = Sentinels.RoMethod;
 
         public abstract override MethodInfo[] GetOtherMethods(bool nonPublic);
 

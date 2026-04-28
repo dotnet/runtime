@@ -189,6 +189,7 @@ namespace System.Security.Cryptography
 
             if (inputCount == 0)
             {
+                Reset();
                 return Array.Empty<byte>();
             }
 

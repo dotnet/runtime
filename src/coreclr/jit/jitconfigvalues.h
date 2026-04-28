@@ -91,6 +91,7 @@ CONFIG_INTEGER(JitHideAlignBehindJmp, "JitHideAlignBehindJmp", 1)
 
 // Track stores to locals done through return buffers.
 CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, "JitOptimizeStructHiddenBuffer", 1)
+RELEASE_CONFIG_INTEGER(JitEnableStoreLclFldCoalescing, "JitEnableStoreLclFldCoalescing", 1)
 
 CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
                "JitUnrollLoopMaxIterationCount",
@@ -400,6 +401,7 @@ RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",        
 RELEASE_CONFIG_INTEGER(EnableAVX,                   "EnableAVX",                 1) // Allows AVX and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX2,                  "EnableAVX2",                1) // Allows AVX2, BMI1, BMI2, F16C, FMA, LZCNT, MOVBE and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX512,                "EnableAVX512",              1) // Allows AVX512 F+BW+CD+DQ+VL and depdendent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512BMM,             "EnableAVX512BMM",           1) // Allows AVX10v2 and depdendent hardware intrinsics to be disabled
 
 RELEASE_CONFIG_INTEGER(EnableAVX512v2,              "EnableAVX512v2",            1) // Allows AVX512 IFMA+VBMI and depdendent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX512v3,              "EnableAVX512v3",            1) // Allows AVX512 BITALG+VBMI2+VNNI+VPOPCNTDQ and depdendent hardware intrinsics to be disabled
@@ -428,6 +430,11 @@ RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             "EnableArm64Sha1",          
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           "EnableArm64Sha256",         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sve,              "EnableArm64Sve",            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sve2,             "EnableArm64Sve2",           1) // Allows Arm64 Sve2+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Sha3,             "EnableArm64Sha3",           1) // Allows Arm64 Sha3+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Sm4,              "EnableArm64Sm4",            1) // Allows Arm64 Sm4+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64SveAes,           "EnableArm64SveAes",         1) // Allows Arm64 SveAes+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64SveSha3,          "EnableArm64SveSha3",        1) // Allows Arm64 SveSha3+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64SveSm4,           "EnableArm64SveSm4",         1) // Allows Arm64 SveSm4+ hardware intrinsics to be disabled
 #elif defined(TARGET_RISCV64)
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zba,            "EnableRiscV64Zba",          1) // Allows RiscV64 Zba hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",          1) // Allows RiscV64 Zbb hardware intrinsics to be disabled
@@ -589,6 +596,20 @@ OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions",
                                                                                     // conversions
 
 OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
+OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
+                  "JitAsyncDefaultValueAnalysisRange") // Enable async default value analysis based on method hash range
+
+// Enable async preserved value analysis based on method hash range. This
+// analysis computes state that is guaranteed to not have been changed since
+// the last time suspension happened, and skips storing them in the case where
+// a continuation is being reused.
+OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAnalysisRange")
+
+// Enable continuation reuse based on method hash range
+OPT_CONFIG_STRING(JitAsyncReuseContinuationsRange, "JitAsyncReuseContinuationsRange")
+// Save and reuse continuation instances in runtime async functions. Also
+// implies use of shared continuation layouts for all suspension points.
+RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 1)
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
@@ -607,6 +628,9 @@ RELEASE_CONFIG_STRING(AltJitExcludeAssemblies, "AltJitExcludeAssemblies")
 
 // If set, measure the IR size after some phases and report it in the time log.
 RELEASE_CONFIG_INTEGER(JitMeasureIR, "JitMeasureIR", 0)
+
+// If set, report JIT metrics back to the EE after each method compilation.
+RELEASE_CONFIG_INTEGER(JitReportMetrics, "JitReportMetrics", 0)
 
 // If set, gather JIT function info and write to this file.
 RELEASE_CONFIG_STRING(JitFuncInfoFile, "JitFuncInfoLogFile")
@@ -857,6 +881,16 @@ CONFIG_INTEGER(JitUseScalableVectorT, "JitUseScalableVectorT", 0)
 // Disable emitDispIns by default
 CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #endif // defined(TARGET_LOONGARCH64)
+
+#if defined(TARGET_WASM)
+// Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
+CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
+// Specify methods that will fail with R2R unsupported after codegen.
+// Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
+CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
+// Enable processing methods with funclets.
+RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 0)
+#endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)

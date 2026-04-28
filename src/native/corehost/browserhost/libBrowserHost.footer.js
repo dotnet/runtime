@@ -21,8 +21,9 @@ function libBrowserHostFactory() {
     let explicitDeps = [
         "wasm_load_icu_data",
         "BrowserHost_CreateHostContract",
-        "BrowserHost_InitializeCoreCLR",
-        "BrowserHost_ExecuteAssembly"
+        "BrowserHost_InitializeDotnet",
+        "BrowserHost_ExecuteAssembly",
+        "BrowserHost_ShutdownDotnet",
     ];
     let commonDeps = [
         "$DOTNET",
@@ -66,28 +67,6 @@ function libBrowserHostFactory() {
 
     autoAddDeps(mergeBrowserHost, "$BROWSER_HOST");
     addToLibrary(mergeBrowserHost);
-
-    function trim() {
-        return -1;
-    }
-
-    // TODO-WASM: fix PAL https://github.com/dotnet/runtime/issues/122506
-    if (LibraryManager.library.__syscall_pipe) {
-        LibraryManager.library.__syscall_pipe = trim;
-        delete LibraryManager.library.__syscall_pipe__deps;
-    }
-    if (LibraryManager.library.__syscall_connect) {
-        LibraryManager.library.__syscall_connect = trim;
-        delete LibraryManager.library.__syscall_connect__deps;
-    }
-    if (LibraryManager.library.__syscall_sendto) {
-        LibraryManager.library.__syscall_sendto = trim;
-        delete LibraryManager.library.__syscall_sendto__deps;
-    }
-    if (LibraryManager.library.__syscall_socket) {
-        LibraryManager.library.__syscall_socket = trim;
-        delete LibraryManager.library.__syscall_socket__deps;
-    }
 }
 
 libBrowserHostFactory();

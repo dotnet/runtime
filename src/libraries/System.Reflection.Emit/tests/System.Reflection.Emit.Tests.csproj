@@ -5,6 +5,9 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
@@ -122,6 +125,7 @@
     <Compile Include="TypeBuilder\TypeBuilderMakeArrayType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakeByRefType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakeGenericType.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderMakeFunctionPointerType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakePointerType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderName.cs" />
     <Compile Include="TypeBuilder\TypeBuilderNamespace.cs" />

@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
+    <NoWarn>$(NoWarn);CS9368</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,6 +40,10 @@
   <PropertyGroup>
     <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
     <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
   <!-- Sources -->

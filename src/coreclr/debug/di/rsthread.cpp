@@ -93,7 +93,7 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
 
     // This id must be unique for the thread. V2 uses the current OS thread id.
     // If we ever support fibers, then we need to use something more unique than that.
-    m_dwUniqueID = pProcess->GetDAC()->GetUniqueThreadID(vmThread); // may throw
+    IfFailThrow(pProcess->GetDAC()->GetUniqueThreadID(vmThread, &m_dwUniqueID)); // may throw
 
     LOG((LF_CORDB, LL_INFO1000, "CT::CT new thread 0x%p vmptr=0x%p id=0x%x\n",
         this, m_vmThreadToken, m_dwUniqueID));
@@ -227,9 +227,9 @@ void CordbThread::DbgAssertThreadDeletedCallback(VMPTR_Thread vmThread, void * p
 void CordbThread::DbgAssertThreadDeleted()
 {
     // Enumerate through all threads and ensure the deleted threads don't show up.
-    GetProcess()->GetDAC()->EnumerateThreads(
+    IfFailThrow(GetProcess()->GetDAC()->EnumerateThreads(
         DbgAssertThreadDeletedCallback,
-        this);
+        this));
 }
 #endif // _DEBUG
 
@@ -286,7 +286,8 @@ BOOL CordbThread::IsThreadExceptionManaged()
     // It's the presence of a throwable that makes the difference between a managed
     // exception event and an unmanaged exception event.
 
-    VMPTR_OBJECTHANDLE vmObject = GetProcess()->GetDAC()->GetCurrentException(m_vmThreadToken);
+    VMPTR_OBJECTHANDLE vmObject;
+    IfFailThrow(GetProcess()->GetDAC()->GetCurrentException(m_vmThreadToken, &vmObject));
 
     bool fHasThrowable = !vmObject.IsNull();
 
@@ -332,7 +333,7 @@ void CordbThread::CreateCordbRegisterSet(DT_CONTEXT *            pContext,
 
     // convert the CONTEXT to a DebuggerREGDISPLAY
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-    pDAC->ConvertContextToDebuggerRegDisplay(pContext, pDRD, fLeaf);
+    IfFailThrow(pDAC->ConvertContextToDebuggerRegDisplay(pContext, pDRD, fLeaf));
 
     // create the CordbRegisterSet
     RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pDRD,
@@ -450,7 +451,7 @@ void CordbThread::HijackForUnhandledException()
 
     // We don't bother remembering the original context. LS hijack will have the
     // context on its stack and will pass it to RS just like it does for filter-context.
-    GetProcess()->GetDAC()->Hijack(
+    IfFailThrow(GetProcess()->GetDAC()->Hijack(
             m_vmThreadToken,
             dwThreadId,
             m_pExceptionRecord,
@@ -458,7 +459,7 @@ void CordbThread::HijackForUnhandledException()
             0, // size of context
             EHijackReason::kUnhandledException,
             NULL,
-            NULL);
+            NULL));
 
     // Notify debugger to clear the exception.
     // This will invoke the data-target.
@@ -628,7 +629,8 @@ void CordbThread::RefreshHandle(HANDLE * phThread)
     *phThread = INVALID_HANDLE_VALUE;
 
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-    HANDLE hThread = pDAC->GetThreadHandle(m_vmThreadToken);
+    HANDLE hThread;
+    IfFailThrow(pDAC->GetThreadHandle(m_vmThreadToken, &hThread));
 
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
     _ASSERTE(hThread != NULL);
@@ -713,7 +715,7 @@ HRESULT CordbThread::SetDebugState(CorDebugThreadState state)
             }
 
             IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            pDAC->SetDebugState(m_vmThreadToken, state);
+            IfFailThrow(pDAC->SetDebugState(m_vmThreadToken, state));
 
             m_debugState = state;
         }
@@ -778,7 +780,7 @@ CorDebugUserState CordbThread::GetUserState()
     if (m_userState == kInvalidUserState)
     {
         IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-        m_userState = pDAC->GetUserState(m_vmThreadToken);
+        IfFailThrow(pDAC->GetUserState(m_vmThreadToken, (CorDebugUserState *)&m_userState));
     }
 
     return (CorDebugUserState)m_userState;
@@ -815,7 +817,8 @@ HRESULT CordbThread::GetCurrentException(ICorDebugValue ** ppExceptionObject)
             // Go to the LS and retrieve any exception object.
             //
             IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            VMPTR_OBJECTHANDLE vmObjHandle = pDAC->GetCurrentException(m_vmThreadToken);
+            VMPTR_OBJECTHANDLE vmObjHandle;
+            IfFailThrow(pDAC->GetCurrentException(m_vmThreadToken, &vmObjHandle));
 
             if (vmObjHandle.IsNull())
             {
@@ -826,7 +829,8 @@ HRESULT CordbThread::GetCurrentException(ICorDebugValue ** ppExceptionObject)
 #if defined(_DEBUG)
                 // Since we know an exception is in progress on this thread, our assumption about the
                 // thread's current AppDomain should be correct
-                VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain();
+                VMPTR_AppDomain vmAppDomain;
+                IfFailThrow(pDAC->GetCurrentAppDomain(&vmAppDomain));
                 _ASSERTE(GetAppDomain()->GetADToken() == vmAppDomain);
 #endif // _DEBUG
 
@@ -893,7 +897,9 @@ bool CordbThread::IsThreadWaitingOrSleeping()
         //of reading USER_UNSAFE_POINT flag.
         //We don't cache the value, because it's potentially incomplete.
         IDacDbiInterface *pDAC = GetProcess()->GetDAC();
-        userState = pDAC->GetPartialUserState(m_vmThreadToken);
+        CorDebugUserState partialState;
+        IfFailThrow(pDAC->GetPartialUserState(m_vmThreadToken, &partialState));
+        userState = partialState;
     }
 
     return (userState & USER_WAIT_SLEEP_JOIN) != 0;
@@ -906,7 +912,9 @@ bool CordbThread::IsThreadWaitingOrSleeping()
 //
 bool CordbThread::IsThreadDead()
 {
-    return GetProcess()->GetDAC()->IsThreadMarkedDead(m_vmThreadToken);
+    BOOL _isDead;
+    IfFailThrow(GetProcess()->GetDAC()->IsThreadMarkedDead(m_vmThreadToken, &_isDead));
+    return _isDead != FALSE;
 }
 
 // Helper to return CORDBG_E_BAD_THREAD_STATE if IsThreadDead
@@ -1157,7 +1165,7 @@ HRESULT CordbThread::GetRegisterSet(ICorDebugRegisterSet ** ppRegisters)
 
                 // convert the CONTEXT to a DebuggerREGDISPLAY
                 IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-                pDAC->ConvertContextToDebuggerRegDisplay(&ctx, pDRD, true);
+                IfFailThrow(pDAC->ConvertContextToDebuggerRegDisplay(&ctx, pDRD, true));
 
                 // create the CordbRegisterSet
                 RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pDRD,
@@ -1404,13 +1412,13 @@ HRESULT CordbThread::FindFrame(ICorDebugFrame ** ppFrame, FramePointer fp)
         ICorDebugFrame * pIFrame = pSSW->GetFrame(i);
         CordbFrame * pCFrame = CordbFrame::GetCordbFrameFromInterface(pIFrame);
 
-#if defined(HOST_64BIT)
-        // On 64-bit we can simply compare the FramePointer.
+#if !defined(TARGET_X86)
+        // Compare the FramePointer to determine if the frame matches
         if (pCFrame->GetFramePointer() == fp)
-#else  // !HOST_64BIT
-        // On other platforms, we need to do a more elaborate check.
+#else
+        // On x86 we need to do a more elaborate check.  The reason is that on x86, the FramePointer is always the same as the value of EBP, so we can just check if the input FramePointer is contained in the frame.  However, on other platforms, the FramePointer may not be the same as the value of RSP, so we need to check if the input FramePointer is the same as the one of the frame.
         if (pCFrame->IsContainedInFrame(fp))
-#endif // HOST_64BIT
+#endif
         {
             *ppFrame = pIFrame;
             (*ppFrame)->AddRef();
@@ -1580,7 +1588,7 @@ void CordbThread::LoadFloatState()
     INTERNAL_SYNC_API_ENTRY(GetProcess());
 
     DT_CONTEXT  tempContext;
-    GetProcess()->GetDAC()->GetContext(m_vmThreadToken, &tempContext);
+    IfFailThrow(GetProcess()->GetDAC()->GetContext(m_vmThreadToken, &tempContext));
 
 #if defined(TARGET_X86)
     Get32bitFPRegisters((CONTEXT*) &tempContext);
@@ -1631,8 +1639,8 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    VMPTR_DomainAssembly vmDomainAssembly = pNativeCode->GetModule()->m_vmDomainAssembly;
-    _ASSERTE(!vmDomainAssembly.IsNull());
+    VMPTR_Assembly vmAssembly = pNativeCode->GetModule()->m_vmAssembly;
+    _ASSERTE(!vmAssembly.IsNull());
 
     // If this thread is stopped due to an exception, never allow SetIP
     if (HasException())
@@ -1644,7 +1652,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
     GetProcess()->InitIPCEvent(&event, DB_IPCE_SET_IP, true, GetAppDomain()->GetADToken());
     event.SetIP.fCanSetIPOnly = fCanSetIPOnly;
     event.SetIP.vmThreadToken = m_vmThreadToken;
-    event.SetIP.vmDomainAssembly = vmDomainAssembly;
+    event.SetIP.vmAssembly = vmAssembly;
     event.SetIP.mdMethod = pNativeCode->GetMetadataToken();
     event.SetIP.vmMethodDesc = pNativeCode->GetVMNativeCodeMethodDescToken();
     event.SetIP.startAddress = pNativeCode->GetAddress();
@@ -1656,7 +1664,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
         "mod:0x%x  MethodDef:0x%x offset:0x%x  il?:0x%x\n",
          GetCurrentThreadId(),
          VmPtrToCookie(m_vmThreadToken),
-         VmPtrToCookie(vmDomainAssembly),
+         VmPtrToCookie(vmAssembly),
          pNativeCode->GetMetadataToken(),
          offset,
          fIsIL));
@@ -1710,7 +1718,7 @@ HRESULT CordbThread::GetManagedContext(DT_CONTEXT ** ppContext)
     if (m_fContextFresh == false)
     {
         IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-        m_vmLeftSideContext = pDAC->GetManagedStoppedContext(m_vmThreadToken);
+        IfFailThrow(pDAC->GetManagedStoppedContext(m_vmThreadToken, &m_vmLeftSideContext));
 
         if (m_vmLeftSideContext.IsNull())
         {
@@ -1752,7 +1760,7 @@ HRESULT CordbThread::SetManagedContext(DT_CONTEXT * pContext)
     HRESULT hr = S_OK;
 
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-    m_vmLeftSideContext = pDAC->GetManagedStoppedContext(m_vmThreadToken);
+    IfFailThrow(pDAC->GetManagedStoppedContext(m_vmThreadToken, &m_vmLeftSideContext));
 
     if (m_vmLeftSideContext.IsNull())
     {
@@ -1884,7 +1892,8 @@ HRESULT CordbThread::GetObject(ICorDebugValue ** ppThreadObject)
         if (SUCCEEDED(hr))
         {
             IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            VMPTR_OBJECTHANDLE vmObjHandle = pDAC->GetThreadObject(m_vmThreadToken);
+            VMPTR_OBJECTHANDLE vmObjHandle;
+            IfFailThrow(pDAC->GetThreadObject(m_vmThreadToken, &vmObjHandle));
             if (vmObjHandle.IsNull())
             {
                 ThrowHR(E_FAIL);
@@ -2210,7 +2219,9 @@ HRESULT CordbThread::HasUnhandledException()
     PUBLIC_REENTRANT_API_BEGIN(this)
     {
         IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-        if(pDAC->HasUnhandledException(m_vmThreadToken))
+        BOOL hasUnhandled;
+        IfFailThrow(pDAC->HasUnhandledException(m_vmThreadToken, &hasUnhandled));
+        if(hasUnhandled)
         {
             hr = S_OK;
         }
@@ -2289,12 +2300,7 @@ void CordbThread::GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * p
     _ASSERTE(pFrameData->eType == DebuggerIPCE_STRData::cStubFrame);
 
     // Look up the CordbAppDomain.
-    CordbAppDomain * pAppDomain = NULL;
-    VMPTR_AppDomain vmCurrentAppDomain = pFrameData->vmCurrentAppDomainToken;
-    if (!vmCurrentAppDomain.IsNull())
-    {
-        pAppDomain = pThis->GetProcess()->LookupOrCreateAppDomain(vmCurrentAppDomain);
-    }
+    CordbAppDomain * pAppDomain = pThis->GetProcess()->GetAppDomain();
 
     // Create a CordbInternalFrame.
     CordbInternalFrame * pInternalFrame = new CordbInternalFrame(pThis,
@@ -2342,7 +2348,8 @@ HRESULT CordbThread::GetActiveInternalFrames(ULONG32 cInternalFrames,
         *pcInternalFrames = 0;
 
         IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-        ULONG32 cActiveInternalFrames = pDAC->GetCountOfInternalFrames(m_vmThreadToken);
+        ULONG32 cActiveInternalFrames;
+        IfFailThrow(pDAC->GetCountOfInternalFrames(m_vmThreadToken, &cActiveInternalFrames));
 
         // Set the count.
         *pcInternalFrames = cActiveInternalFrames;
@@ -2367,9 +2374,9 @@ HRESULT CordbThread::GetActiveInternalFrames(ULONG32 cInternalFrames,
                 // caught above this frame.
                 data.pInternalFrames.EnableAutoClear();
 
-                pDAC->EnumerateInternalFrames(m_vmThreadToken,
+                IfFailThrow(pDAC->EnumerateInternalFrames(m_vmThreadToken,
                                               &CordbThread::GetActiveInternalFramesCallback,
-                                              &data);
+                                              &data));
                 _ASSERTE(cActiveInternalFrames == data.pInternalFrames.Length());
 
                 // Copy the internal frames we have accumulated in GetActiveInternalFramesData to the out
@@ -2417,12 +2424,14 @@ HRESULT CordbThread::GetCurrentCustomDebuggerNotification(ICorDebugValue ** ppNo
         // Go to the LS and retrieve any notification object.
         //
         IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-        VMPTR_OBJECTHANDLE vmObjHandle = pDAC->GetCurrentCustomDebuggerNotification(m_vmThreadToken);
+        VMPTR_OBJECTHANDLE vmObjHandle;
+        IfFailThrow(pDAC->GetCurrentCustomDebuggerNotification(m_vmThreadToken, &vmObjHandle));
 
 #if defined(_DEBUG)
         // Since we know a notification has occurred on this thread, our assumption about the
         // thread's current AppDomain should be correct
-        VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain();
+        VMPTR_AppDomain vmAppDomain;
+        IfFailThrow(pDAC->GetCurrentAppDomain(&vmAppDomain));
 
         _ASSERTE(GetAppDomain()->GetADToken() == vmAppDomain);
 #endif // _DEBUG
@@ -2464,7 +2473,7 @@ HRESULT CordbThread::GetBytesAllocated(ULONG64 *pSohAllocatedBytes,
         }
 
         IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-        pDAC->GetThreadAllocInfo(m_vmThreadToken, &threadAllocInfo);
+        IfFailThrow(pDAC->GetThreadAllocInfo(m_vmThreadToken, &threadAllocInfo));
 
         *pSohAllocatedBytes = threadAllocInfo.m_allocBytesSOH;
         *pUohAllocatedBytes = threadAllocInfo.m_allocBytesUOH;
@@ -2537,7 +2546,7 @@ HRESULT CordbThread::GetConnectionID(CONNID * pConnectionID)
         }
 
         IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-        *pConnectionID = pDAC->GetConnectionID(m_vmThreadToken);
+        IfFailThrow(pDAC->GetConnectionID(m_vmThreadToken, pConnectionID));
 
         if (*pConnectionID == INVALID_CONNECTION_ID)
         {
@@ -2595,7 +2604,9 @@ HRESULT CordbThread::GetTaskID(TASKID * pTaskID)
 TASKID CordbThread::GetTaskID()
 {
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-    return pDAC->GetTaskID(m_vmThreadToken);
+    TASKID taskId;
+    IfFailThrow(pDAC->GetTaskID(m_vmThreadToken, &taskId));
+    return taskId;
 }
 
 
@@ -2628,7 +2639,7 @@ HRESULT CordbThread::GetVolatileOSThreadID(DWORD * pdwTID)
         }
 
         IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-        *pdwTID = pDAC->TryGetVolatileOSThreadID(m_vmThreadToken);
+        IfFailThrow(pDAC->TryGetVolatileOSThreadID(m_vmThreadToken, pdwTID));
 
         if (*pdwTID == 0)
         {
@@ -2650,7 +2661,8 @@ HRESULT CordbThread::GetVolatileOSThreadID(DWORD * pdwTID)
 DWORD CordbThread::GetVolatileOSThreadID()
 {
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-    DWORD dwThreadID = pDAC->TryGetVolatileOSThreadID(m_vmThreadToken);
+    DWORD dwThreadID;
+    IfFailThrow(pDAC->TryGetVolatileOSThreadID(m_vmThreadToken, &dwThreadID));
 
     if (dwThreadID == 0)
     {
@@ -3770,14 +3782,14 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijack(EHijackReason::EHijackReaso
             ThrowHR(hr);
 #endif
         CORDB_ADDRESS LSContextAddr;
-        GetProcess()->GetDAC()->Hijack(VMPTR_Thread::NullPtr(),
+        IfFailThrow(GetProcess()->GetDAC()->Hijack(VMPTR_Thread::NullPtr(),
                                        GetOSTid(),
                                        pExceptionRecord,
                                        (T_CONTEXT*) GetHijackCtx(),
                                        sizeof(T_CONTEXT),
                                        reason,
                                        NULL,
-                                       &LSContextAddr);
+                                       &LSContextAddr));
         LOG((LF_CORDB, LL_INFO10000, "CUT::SFCH: pLeftSideContext=0x%p\n", LSContextAddr));
         m_pLeftSideContext.Set(CORDB_ADDRESS_TO_PTR(LSContextAddr));
     }
@@ -3843,7 +3855,7 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
             // Note that the data-target is not atomic, and we have no rollback mechanism.
             // We have to do several writes. If the data-target fails the writes half-way through the
             // target will be inconsistent.
-            GetProcess()->GetDAC()->Hijack(
+            IfFailThrow(GetProcess()->GetDAC()->Hijack(
                     pThread->m_vmThreadToken,
                     dwThreadId,
                     pRecord,
@@ -3851,7 +3863,7 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
                     sizeof(T_CONTEXT),
                     EHijackReason::kGenericHijack,
                     NULL,
-                    NULL);
+                    NULL));
         }
         EX_CATCH_HRESULT(hr);
         if (SUCCEEDED(hr))
@@ -4756,6 +4768,27 @@ bool CordbFrame::IsContainedInFrame(FramePointer fp)
 
     CORDB_ADDRESS sp  = PTR_TO_CORDB_ADDRESS(fp.GetSPValue());
 
+#if defined(TARGET_X86)
+    // On x86, the runtime sends CallerSP - sizeof(TADDR) as the frame pointer
+    // for exception notifications (see GetSpForDiagnosticReporting). Since this
+    // does not account for the stack parameter size, we adjust for it here.
+    if (sp > stackEnd)
+    {
+        CordbNativeFrame * pNativeFrame = GetAsNativeFrame();
+        if (pNativeFrame != NULL)
+        {
+            CORDB_ADDRESS codeAddr = pNativeFrame->GetNativeCode()->GetAddress();
+            ULONG32 stackParamSize = 0;
+            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
+            if (SUCCEEDED(pDAC->GetStackParameterSize(codeAddr + m_ip, &stackParamSize))
+                && stackParamSize > 0)
+            {
+                sp -= stackParamSize;
+            }
+        }
+    }
+#endif // TARGET_X86
+
     if ((stackStart <= sp) && (sp <= stackEnd))
     {
         return true;
@@ -5053,10 +5086,9 @@ CordbInternalFrame::CordbInternalFrame(CordbThread *          pThread,
     // Some internal frames may not have a Function associated w/ them.
     if (!IsNilToken(m_funcMetadataToken))
     {
-        // Find the module of the function.  Note that this module isn't necessarily in the same domain as our frame.
-        // FuncEval frames can point to methods they are going to invoke in another domain.
+        // Find the module of the function.
         CordbModule * pModule = NULL;
-        pModule = GetProcess()->LookupOrCreateModule(pData->stubFrame.vmDomainAssembly);
+        pModule = pCurrentAppDomain->LookupOrCreateModule(pData->stubFrame.vmAssembly);
         _ASSERTE(pModule != NULL);
 
         //
@@ -5221,7 +5253,8 @@ BOOL CordbInternalFrame::ConvertInternalFrameForILMethodWithoutMetadata(
     }
 
     // Retrieve the type of the method associated with the STUBFRAME_JIT_COMPILATION.
-    IDacDbiInterface::DynamicMethodType type = GetProcess()->GetDAC()->IsDiagnosticsHiddenOrLCGMethod(m_vmMethodDesc);
+    IDacDbiInterface::DynamicMethodType type;
+    IfFailThrow(GetProcess()->GetDAC()->IsDiagnosticsHiddenOrLCGMethod(m_vmMethodDesc, &type));
 
     // Here are the conversion rules:
     // 1)  For a normal managed method, we don't convert, and we return FALSE.
@@ -5905,9 +5938,7 @@ HRESULT CordbNativeFrame::IsMatchingParentFrame(ICorDebugNativeFrame2 * pPotenti
         {
             FramePointer fpParent  = this->m_misc.fpParentOrSelf;
             FramePointer fpToCheck = pFrameToCheck->m_misc.fpParentOrSelf;
-
-            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            *pIsParent = pDAC->IsMatchingParentFrame(fpToCheck, fpParent);
+            *pIsParent = (fpParent == fpToCheck);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -5947,7 +5978,7 @@ HRESULT CordbNativeFrame::GetStackParameterSize(ULONG32 * pSize)
 
 #if defined(TARGET_X86)
         IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-        *pSize = pDAC->GetStackParameterSize(PTR_TO_CORDB_ADDRESS(CORDbgGetIP(&m_context)));
+        IfFailThrow(pDAC->GetStackParameterSize(PTR_TO_CORDB_ADDRESS(CORDbgGetIP(&m_context)), pSize));
 #else  // !TARGET_X86
         hr = S_FALSE;
         *pSize = 0;
@@ -7222,7 +7253,9 @@ bool CordbNativeFrame::IsLeafFrame() const
         else
         {
             IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            m_optfIsLeafFrame = (pDAC->IsLeafFrame(m_pThread->m_vmThreadToken, &m_context) == TRUE);
+            BOOL isLeaf;
+            IfFailThrow(pDAC->IsLeafFrame(m_pThread->m_vmThreadToken, &m_context, &isLeaf));
+            m_optfIsLeafFrame = (isLeaf == TRUE);
         }
     }
     return m_optfIsLeafFrame.GetValue();
@@ -7299,8 +7332,9 @@ BOOL CordbNativeFrame::ConvertNativeFrameForILMethodWithoutMetadata(
     *ppInternalFrame2 = NULL;
 
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-    IDacDbiInterface::DynamicMethodType type =
-        pDAC->IsDiagnosticsHiddenOrLCGMethod(GetNativeCode()->GetVMNativeCodeMethodDescToken());
+    IDacDbiInterface::DynamicMethodType type;
+    IfFailThrow(
+        pDAC->IsDiagnosticsHiddenOrLCGMethod(GetNativeCode()->GetVMNativeCodeMethodDescToken(), &type));
 
     // Here are the conversion rules:
     // 1)  For a normal managed method, we don't convert, and we return FALSE.
@@ -7430,7 +7464,8 @@ HRESULT CordbJITILFrame::Init()
             CORDB_ADDRESS argBase;
             // Now is the time to ask DacDbi to retrieve the information based on the VASigCookie.
             IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            TargetBuffer sigTargetBuf = pDAC->GetVarArgSig(pRemoteValue, &argBase);
+            TargetBuffer sigTargetBuf;
+            IfFailThrow(pDAC->GetVarArgSig(pRemoteValue, &argBase, &sigTargetBuf));
 
             // make sure we are not leaking any memory
             _ASSERTE(m_rgbSigParserBuf == NULL);
@@ -7520,8 +7555,10 @@ HRESULT CordbJITILFrame::Init()
                     // Ask DAC to resolve the token for us.  We really don't want to deal with all the logic here.
                     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
                     // On a minidump, we'll throw if we're missing the memory.
+                    GENERICS_TYPE_TOKEN resolvedToken;
                     ALLOW_DATATARGET_MISSING_MEMORY(
-                        m_frameParamsToken = pDAC->ResolveExactGenericArgsToken(m_dwFrameParamsTokenIndex, uRawToken);
+                        IfFailThrow(pDAC->ResolveExactGenericArgsToken(m_dwFrameParamsTokenIndex, uRawToken, &resolvedToken));
+                        m_frameParamsToken = resolvedToken;
                     );
                 }
             }
@@ -7626,11 +7663,10 @@ void CordbJITILFrame::LoadGenericArgs()
     UINT32 cGenericClassTypeParams = 0;
     DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
 
-    pDAC->GetMethodDescParams(GetCurrentAppDomain()->GetADToken(),
-                              m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
+    IfFailThrow(pDAC->GetMethodDescParams(m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
                               m_frameParamsToken,
                               &cGenericClassTypeParams,
-                              &rgGenericTypeParams);
+                              &rgGenericTypeParams));
 
     UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
 
@@ -9764,7 +9800,7 @@ HRESULT CordbEval::CallParameterizedFunction(ICorDebugFunction *pFunction,
         event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
         event.FuncEval.funcEvalType = m_evalType;
         event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-        event.FuncEval.vmDomainAssembly = m_function->GetModule()->GetRuntimeDomainAssembly();
+        event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeAssembly();
         event.FuncEval.funcEvalKey = hFuncEval.Ptr();
         event.FuncEval.argCount = nArgs;
         event.FuncEval.genericArgsCount = nTypeArgs;
@@ -9947,7 +9983,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
     event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-    event.FuncEval.vmDomainAssembly = m_function->GetModule()->GetRuntimeDomainAssembly();
+    event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = nArgs;
     event.FuncEval.genericArgsCount = nTypeArgs;
@@ -10048,7 +10084,7 @@ HRESULT CordbEval::NewParameterizedObjectNoConstructor(ICorDebugClass * pClass,
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = (mdTypeDef)m_class->m_id;
-    event.FuncEval.vmDomainAssembly = m_class->GetModule()->GetRuntimeDomainAssembly();
+    event.FuncEval.vmAssembly = m_class->GetModule()->GetRuntimeAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = nTypeArgs;
@@ -10143,7 +10179,7 @@ HRESULT CordbEval::NewStringWithLength(LPCWSTR wszString, UINT iLength)
     // Note: no function or module here...
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = mdTypeDefNil;
-    event.FuncEval.vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+    event.FuncEval.vmAssembly = VMPTR_Assembly::NullPtr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = 0;
     event.FuncEval.genericArgsNodeCount = 0;
@@ -10260,7 +10296,7 @@ HRESULT CordbEval::NewParameterizedArray(ICorDebugType * pElementType,
     // Note: no function or module here...
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = mdTypeDefNil;
-    event.FuncEval.vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+    event.FuncEval.vmAssembly = VMPTR_Assembly::NullPtr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = 1;
 
@@ -10430,7 +10466,7 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
             // @dbgtodo  funceval - push this up
             RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
-            pAppDomain = m_thread->GetProcess()->LookupOrCreateAppDomain(m_resultAppDomainToken);
+            pAppDomain = m_thread->GetProcess()->GetAppDomain();
         }
         else
         {
@@ -10952,15 +10988,14 @@ HRESULT CordbAsyncFrame::Init()
         GetProcess()->GetContinueNeuterList()->Add(GetProcess(), this);
 
         // Initialize module and appdomain
-        VMPTR_DomainAssembly vmDomainAssembly;
-        IfFailThrow(GetProcess()->GetDAC()->GetDomainAssemblyFromModule(m_vmModule, &vmDomainAssembly));
-        CordbModule* pModule = GetProcess()->LookupOrCreateModule(vmDomainAssembly);
-        m_pAppDomain.Assign(pModule->GetAppDomain());
+        CordbAppDomain *pAppDomain = GetProcess()->GetAppDomain();
+        CordbModule* pModule = pAppDomain->LookupOrCreateModule(VMPTR_Assembly::NullPtr(), m_vmModule);
+        m_pAppDomain.Assign(pAppDomain);
 
         // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.
         m_pCode.Assign(pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));
         m_pCode->LoadNativeInfo();
-        GetProcess()->GetDAC()->GetAsyncLocals(m_vmMethodDesc, m_pCodeStart, m_state, &m_asyncVars);
+        IfFailThrow(GetProcess()->GetDAC()->GetAsyncLocals(m_vmMethodDesc, m_pCodeStart, m_state, &m_asyncVars));
 
         // Initialize function and IL code
         m_pFunction.Assign(m_pCode->GetFunction());
@@ -11501,20 +11536,27 @@ void CordbAsyncFrame::LoadGenericArgs()
         {
             if (m_asyncVars[i].ilVarNum == genericArgIndex)
             {
-
-                HRESULT hr = GetProcess()->SafeReadStruct(m_continuationAddress + m_asyncVars[i].offset, &genericTypeParam);
+                // Read a target-pointer-sized value. CORDB_ADDRESS is always 8 bytes (ULONG64),
+                // but on x86 targets the generic arg field is only a 4-byte pointer. Using
+                // SIZE_T (which is pointer-sized for the DBI build, matching the target here)
+                // avoids reading adjacent memory. This mirrors how CordbJITILFrame::Init()
+                // reads the raw token via GetRegisterOrStackValue (which returns SIZE_T).
+                SIZE_T rawToken = 0;
+                HRESULT hr = GetProcess()->SafeReadStruct(m_continuationAddress + m_asyncVars[i].offset, &rawToken);
+                genericTypeParam = (CORDB_ADDRESS)rawToken;
                 IfFailThrow(hr);
                 break;
             }
         }
-        genericTypeParam = pDAC->ResolveExactGenericArgsToken(genericArgIndex, genericTypeParam);
+        GENERICS_TYPE_TOKEN resolvedToken;
+        IfFailThrow(pDAC->ResolveExactGenericArgsToken(genericArgIndex, genericTypeParam, &resolvedToken));
+        genericTypeParam = resolvedToken;
     }
 
-    pDAC->GetMethodDescParams(m_pAppDomain->GetADToken(),
-                              m_vmMethodDesc,
+    IfFailThrow(pDAC->GetMethodDescParams(m_vmMethodDesc,
                               genericTypeParam,
                               &cGenericClassTypeParams,
-                              &rgGenericTypeParams);
+                              &rgGenericTypeParams));
 
     UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
 

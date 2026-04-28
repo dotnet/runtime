@@ -395,15 +395,12 @@ mono_threads_suspend_get_abort_signal (void)
 
 #if defined (HOST_WIN32)
 
-// Use default stack size on netcore.
-#define MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE 0
-
 gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *tid)
 {
 	HANDLE result;
 	DWORD thread_id;
-	gsize set_stack_size = MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE;
+	gsize set_stack_size = MONO_DEFAULT_STACKSIZE;
 
 	if (stack_size && *stack_size)
 		set_stack_size = *stack_size;
@@ -450,7 +447,7 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
-	return CreateThread (NULL, MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE, (LPTHREAD_START_ROUTINE)func, arg, 0, tid) != NULL;
+	return CreateThread (NULL, MONO_DEFAULT_STACKSIZE, (LPTHREAD_START_ROUTINE)func, arg, 0, tid) != NULL;
 }
 
 gboolean

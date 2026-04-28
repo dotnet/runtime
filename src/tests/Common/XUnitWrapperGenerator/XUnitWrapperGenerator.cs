@@ -254,10 +254,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         bool buildAsMergedRunner = configOptions.GlobalOptions.IsMergedTestRunnerAssembly() && !configOptions.GlobalOptions.BuildAsStandalone();
         configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
         string assemblyName = compData.AssemblyName;
+        string? targetOSLower = targetOS?.ToLowerInvariant();
 
         if (buildAsMergedRunner)
         {
-            if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
+            if ((targetOSLower is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android")
+                    || ((targetOSLower is "browser") && configOptions.GlobalOptions.RuntimeFlavor().ToLowerInvariant() == "mono"))
             {
                 context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName, targetOS));
             }
@@ -841,9 +843,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         continue;
                     }
 
-                    Xunit.TestPlatforms skippedTestPlatforms = Xunit.TestPlatforms.Any;
-                    Xunit.RuntimeConfiguration skippedConfigurations = Xunit.RuntimeConfiguration.Any;
-                    Xunit.RuntimeTestModes skippedTestModes = Xunit.RuntimeTestModes.Any;
+                    Xunit.TestPlatforms skippedTestPlatforms = 0;
+                    Xunit.RuntimeConfiguration skippedConfigurations = 0;
+                    Xunit.RuntimeTestModes skippedTestModes = 0;
 
                     for (int i = 1; i < filterAttribute.ConstructorArguments.Length; i++)
                     {
@@ -869,9 +871,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         }
                     }
 
-                    if (skippedTestModes == Xunit.RuntimeTestModes.Any
-                        && skippedConfigurations == Xunit.RuntimeConfiguration.Any
-                        && skippedTestPlatforms == Xunit.TestPlatforms.Any)
+                    if (skippedTestModes == 0
+                        && skippedConfigurations == 0
+                        && skippedTestPlatforms == 0)
                     {
                         testInfos = FilterForSkippedRuntime(testInfos, (int)Xunit.TestRuntimes.CoreCLR, options);
                     }

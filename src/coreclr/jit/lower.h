@@ -28,9 +28,6 @@ public:
 #ifdef TARGET_ARM64
         , m_blockIndirs(compiler->getAllocator(CMK_Lower))
 #endif
-#ifdef TARGET_WASM
-        , m_stackificationStack(compiler->getAllocator(CMK_Lower))
-#endif
     {
         m_regAlloc = static_cast<RegAllocImpl*>(regAlloc);
         assert(m_regAlloc != nullptr);
@@ -109,6 +106,7 @@ private:
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
     void ContainCheckStoreIndir(GenTreeStoreInd* indirNode);
+    void ContainCheckNonLocalJmp(GenTreeUnOp* node);
     void ContainCheckMul(GenTreeOp* node);
     void ContainCheckShiftRotate(GenTreeOp* node);
     void ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const;
@@ -142,7 +140,7 @@ private:
     unsigned TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals);
 
     void     LowerBlock(BasicBlock* block);
-    void     AfterLowerBlock();
+    void     AfterLowerBlocks();
     GenTree* LowerNode(GenTree* node);
 
     bool IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive);
@@ -211,6 +209,7 @@ private:
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
+    void     AfterLowerArgsForCall(GenTreeCall* call);
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
     void LowerSpecialCopyArgs(GenTreeCall* call);
     void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
@@ -352,32 +351,62 @@ private:
 
     struct LoadStoreCoalescingData
     {
-        var_types targetType;
-        GenTree*  baseAddr;
-        GenTree*  index;
-        GenTree*  value;
-        uint32_t  scale;
-        int       offset;
-        GenTree*  rangeStart;
-        GenTree*  rangeEnd;
+        var_types    targetType       = TYP_UNDEF;
+        GenTree*     baseAddr         = nullptr;
+        GenTree*     index            = nullptr;
+        GenTree*     value            = nullptr;
+        uint32_t     scale            = 1;
+        int          offset           = 0;
+        unsigned     accessSize       = 0;
+        unsigned     lclNum           = BAD_VAR_NUM;
+        GenTreeFlags storeFlags       = GTF_EMPTY;
+        bool         isLocalStoreNode = false;
+        bool         isAddressExposed = false;
+        GenTree*     rangeStart       = nullptr;
+        GenTree*     rangeEnd         = nullptr;
 
         bool IsStore() const
         {
             return value != nullptr;
         }
 
-        bool IsAddressEqual(const LoadStoreCoalescingData& other, bool ignoreOffset) const
+        bool IsLocalStore() const
         {
-            if ((scale != other.scale) || (targetType != other.targetType) ||
-                !GenTree::Compare(baseAddr, other.baseAddr) || !GenTree::Compare(index, other.index))
+            return isLocalStoreNode;
+        }
+
+        bool AllowsNonAtomic() const
+        {
+            return (storeFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0;
+        }
+
+        bool IsAddressEqual(const LoadStoreCoalescingData& other,
+                            bool                           ignoreOffset,
+                            bool                           allowDifferentTypes = false) const
+        {
+            if ((scale != other.scale) || (!allowDifferentTypes && (targetType != other.targetType)))
             {
                 return false;
             }
+
+            if (IsLocalStore() || other.IsLocalStore())
+            {
+                if (!IsLocalStore() || !other.IsLocalStore() || (lclNum != other.lclNum))
+                {
+                    return false;
+                }
+            }
+            else if (!GenTree::Compare(baseAddr, other.baseAddr) || !GenTree::Compare(index, other.index))
+            {
+                return false;
+            }
+
             return ignoreOffset || (offset == other.offset);
         }
     };
 
     bool GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const;
+    bool GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* data) const;
 
     // Per tree node member functions
     GenTree* LowerStoreIndirCommon(GenTreeStoreInd* ind);
@@ -390,7 +419,11 @@ private:
     void     MarkTree(GenTree* root);
     void     UnmarkTree(GenTree* root);
     GenTree* LowerStoreIndir(GenTreeStoreInd* node);
+    void     LowerStoreCoalescing(GenTree* node);
     void     LowerStoreIndirCoalescing(GenTreeIndir* node);
+    bool     LowerCheckCoalescedStoreAtomicity(GenTree*                       currStore,
+                                               const LoadStoreCoalescingData& currData,
+                                               const LoadStoreCoalescingData& prevData);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
     bool     TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
@@ -418,6 +451,7 @@ private:
 
 #ifdef TARGET_WASM
     GenTree* LowerNeg(GenTreeOp* node);
+    void     LowerIndexAddr(GenTreeIndexAddr* indexAddr);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
@@ -462,11 +496,13 @@ private:
     GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
+    bool     TryInvertMask(GenTree* node, unsigned simdSize, var_types simdBaseType);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void     LowerBswapOp(GenTreeOp* node);
+    GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_ARM64)
     bool     IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
@@ -631,10 +667,6 @@ private:
     };
     ArrayStack<SavedIndir> m_blockIndirs;
     bool                   m_ffrTrashed;
-#endif
-
-#ifdef TARGET_WASM
-    ArrayStack<GenTree*> m_stackificationStack;
 #endif
 };
 

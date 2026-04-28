@@ -57,6 +57,31 @@ public unsafe partial interface ICLRDataTarget
 }
 
 [GeneratedComInterface]
+[Guid("6d05fae3-189c-4630-a6dc-1c251e1c01ab")]
+public unsafe partial interface ICLRDataTarget2 : ICLRDataTarget
+{
+    [PreserveSig]
+    int AllocVirtual(ClrDataAddress addr, uint size, uint typeFlags, uint protectFlags, ClrDataAddress* virt);
+    [PreserveSig]
+    int FreeVirtual(ClrDataAddress addr, uint size, uint typeFlags);
+}
+
+// Note: ICLRDataTarget3 from clrdata.idl (guid a5664f95...) extends ICLRDataTarget2.
+// IXCLRDataTarget3 from xclrdata.idl (guid 59d9b5e1...) also extends ICLRDataTarget2 but is a different interface.
+// ICLRDataTarget3 is defined here; IXCLRDataTarget3 is in IXCLRData.cs.
+[GeneratedComInterface]
+[Guid("a5664f95-0af4-4a1b-960e-2f3346b4214c")]
+public unsafe partial interface ICLRDataTarget3 : ICLRDataTarget2
+{
+    [PreserveSig]
+    int GetExceptionRecord(uint bufferSize, uint* bufferUsed, byte* buffer);
+    [PreserveSig]
+    int GetExceptionContextRecord(uint bufferSize, uint* bufferUsed, byte* buffer);
+    [PreserveSig]
+    int GetExceptionThreadID(uint* threadID);
+}
+
+[GeneratedComInterface]
 [Guid("17d5b8c6-34a9-407f-af4f-a930201d4e02")]
 public unsafe partial interface ICLRContractLocator
 {

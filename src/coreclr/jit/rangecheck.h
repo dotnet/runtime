@@ -370,7 +370,13 @@ struct RangeOps
     {
         if (!r1.IsConstantRange() || !r2.IsConstantRange())
         {
-            return Limit(Limit::keUnknown);
+            Range result = Limit(Limit::keUnknown);
+            // Propagate the "dependent" property if either of the limits is dependent.
+            result.lLimit = r1.LowerLimit().IsDependent() || r2.LowerLimit().IsDependent() ? Limit(Limit::keDependent)
+                                                                                           : Limit(Limit::keUnknown);
+            result.uLimit = r1.UpperLimit().IsDependent() || r2.UpperLimit().IsDependent() ? Limit(Limit::keDependent)
+                                                                                           : Limit(Limit::keUnknown);
+            return result;
         }
 
         int r1lo = r1.LowerLimit().GetConstant();
@@ -679,7 +685,8 @@ struct RangeOps
         const Limit& yUpper = y.UpperLimit();
 
         // For unsigned comparisons, we only support non-negative ranges.
-        if (isUnsigned)
+        // NOTE: it's not applicable for EQ and NE.
+        if (isUnsigned && (relop != GT_EQ) && (relop != GT_NE))
         {
             if (!xLower.IsConstant() || !yLower.IsConstant() || (xLower.GetConstant() < 0) ||
                 (yLower.GetConstant() < 0))
@@ -768,6 +775,13 @@ private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
+
+    // Cheaper version of TryGetRange that is based only on incoming assertions.
+    static Range GetRangeFromAssertionsWorker(Compiler*                        comp,
+                                              ValueNum                         num,
+                                              ASSERT_VALARG_TP                 assertions,
+                                              int                              budget,
+                                              ValueNumStore::SmallValueNumSet* visited);
 
     int GetArrLength(ValueNum vn);
 

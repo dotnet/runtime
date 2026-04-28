@@ -100,7 +100,7 @@ namespace System.Reflection.TypeLoading
         public sealed override Type[] GetGenericArguments() => GetGenericArgumentsOrParametersNoCopy().CloneArray<Type>();
         internal RoType[] GetGenericArgumentsOrParametersNoCopy() => _lazyGenericArgumentsOrParameters ??= ComputeGenericArgumentsOrParameters();
         protected abstract RoType[] ComputeGenericArgumentsOrParameters();
-        private volatile RoType[]? _lazyGenericArgumentsOrParameters;
+        private RoType[]? _lazyGenericArgumentsOrParameters;
 
         internal abstract RoType[] GetGenericTypeParametersNoCopy();
         internal abstract RoType[] GetGenericTypeArgumentsNoCopy();

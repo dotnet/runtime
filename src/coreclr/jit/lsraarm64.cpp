@@ -45,6 +45,21 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 }
 
 //------------------------------------------------------------------------
+// getNextFPRegWraparound: Get the next consecutive register, wrapping around
+//   from REG_FP_LAST to REG_FP_FIRST.
+//
+// Arguments:
+//    reg - The current register.
+//
+// Return Value:
+//    The next consecutive register
+//
+regNumber LinearScan::getNextFPRegWraparound(regNumber reg)
+{
+    return reg == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(reg);
+}
+
+//------------------------------------------------------------------------
 // assignConsecutiveRegisters: For subsequent RefPositions, set the register
 //   requirement to be the consecutive register(s) of the register that is assigned to
 //   the firstRefPosition.
@@ -70,13 +85,19 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
     assert(consecutiveRegsInUseThisLocation == RBM_NONE);
 
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
-    regNumber    regToAssign            = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
+    regNumber    regToAssign            = getNextFPRegWraparound(firstRegAssigned);
 
     // First RefPosition should always start with RefTypeUse
     assert(firstRefPosition->refType != RefTypeUpperVectorRestore);
 
     INDEBUG(int refPosCount = 1);
-    consecutiveRegsInUseThisLocation = (((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
+    consecutiveRegsInUseThisLocation = RBM_NONE;
+    regNumber consecutiveReg         = firstRegAssigned;
+    for (int i = 0; i < firstRefPosition->regCount; i++)
+    {
+        consecutiveRegsInUseThisLocation |= genSingleTypeRegMask(consecutiveReg);
+        consecutiveReg = getNextFPRegWraparound(consecutiveReg);
+    }
 
     while (consecutiveRefPosition != nullptr)
     {
@@ -105,7 +126,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
         assert((consecutiveRefPosition->refType == RefTypeDef) || (consecutiveRefPosition->refType == RefTypeUse));
         consecutiveRefPosition->registerAssignment = genSingleTypeRegMask(regToAssign);
         consecutiveRefPosition                     = getNextConsecutiveRefPosition(consecutiveRefPosition);
-        regToAssign                                = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+        regToAssign                                = getNextFPRegWraparound(regToAssign);
     }
 
     assert(refPosCount == firstRefPosition->regCount);
@@ -136,7 +157,7 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
     do
     {
         nextRefPosition = getNextConsecutiveRefPosition(nextRefPosition);
-        regToAssign     = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+        regToAssign     = getNextFPRegWraparound(regToAssign);
         if (!isFree(getRegisterRecord(regToAssign)))
         {
             if (nextRefPosition->refType == RefTypeUpperVectorRestore)
@@ -819,6 +840,22 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildOperandUses(tree->gtGetOp1());
             break;
 
+        case GT_PATCHPOINT:
+            // Patchpoint takes two args: counter addr (x0) and IL offset (x1)
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildOperandUses(tree->gtGetOp2(), RBM_ARG_1.GetIntRegSet());
+            srcCount++;
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            // Forced patchpoint takes one arg: IL offset (x0)
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED));
+            break;
+
         case GT_JMP:
             srcCount = 0;
             assert(dstCount == 0);
@@ -1364,6 +1401,27 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     // Build any immediates
     BuildHWIntrinsicImmediate(intrinsicTree, intrin);
+
+    // Build any additional special cases
+    switch (intrin.id)
+    {
+        case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
+        case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
+        case NI_Sve2_GatherVectorNonTemporal:
+        case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
+        case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
+        case NI_Sve2_Scatter16BitNarrowingNonTemporal:
+        case NI_Sve2_Scatter32BitNarrowingNonTemporal:
+        case NI_Sve2_ScatterNonTemporal:
+            if (!varTypeIsSIMD(intrin.op2->gtType))
+            {
+                buildInternalFloatRegisterDefForNode(intrinsicTree, internalFloatRegCandidates());
+            }
+            break;
+
+        default:
+            break;
+    }
 
     // Build all Operands
     for (size_t opNum = 1; opNum <= intrin.numOperands; opNum++)

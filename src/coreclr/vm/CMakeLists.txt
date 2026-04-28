@@ -71,8 +71,8 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     debuginfostore.cpp
     decodemd.cpp
     disassembler.cpp
-    domainassembly.cpp
     dynamicmethod.cpp
+    ebr.cpp
     ecall.cpp
     eedbginterfaceimpl.cpp
     eehash.cpp
@@ -90,6 +90,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     gchandleutilities.cpp
     genericdict.cpp
     generics.cpp
+    genmeth.cpp
     hash.cpp
     ilinstrumentation.cpp
     ilstubcache.cpp
@@ -170,8 +171,8 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     debuginfostore.h
     decodemd.h
     disassembler.h
-    domainassembly.h
     dynamicmethod.h
+    ebr.h
     ecall.h
     eedbginterfaceimpl.h
     eedbginterfaceimpl.inl
@@ -330,13 +331,13 @@ set(VM_SOURCES_WKS
     finalizerthread.cpp
     floatdouble.cpp
     floatsingle.cpp
+    cdacstress.cpp
     frozenobjectheap.cpp
     gccover.cpp
     gcenv.ee.cpp
     gcenv.ee.common.cpp
     gchelpers.cpp
     genanalysis.cpp
-    genmeth.cpp
     hosting.cpp
     hostinformation.cpp
     ilmarshalers.cpp
@@ -411,9 +412,7 @@ set(VM_HEADERS_WKS
     baseassemblyspec.inl
     cachelinealloc.h
     callhelpers.h
-    callsiteinspect.h
     callconvbuilder.hpp
-    cdacdata.h
     ceemain.h
     clrconfignative.h
     clrex.h
@@ -584,14 +583,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         amsi.h
     )
 
-    # COM interop scenarios
-    list(APPEND VM_SOURCES_DAC_AND_WKS_WIN32
-        clrtocomcall.cpp
-        )
-    list(APPEND VM_HEADERS_DAC_AND_WKS_WIN32
-        clrtocomcall.h
-        )
-
     list(APPEND VM_SOURCES_WKS
         ${VM_SOURCES_DAC_AND_WKS_WIN32}
         # These should not be included for Linux
@@ -610,7 +601,6 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     # COM interop scenarios
     list(APPEND VM_SOURCES_WKS
-        callsiteinspect.cpp
         classcompat.cpp
         comcache.cpp
         comcallablewrapper.cpp
@@ -618,6 +608,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         cominterfacemarshaler.cpp
         commtmemberinfomap.cpp
         comtoclrcall.cpp
+        clrtocomcall.cpp
         dispatchinfo.cpp
         dispparammarshaler.cpp
         olecontexthelpers.cpp
@@ -633,6 +624,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         cominterfacemarshaler.h
         commtmemberinfomap.h
         comtoclrcall.h
+        clrtocomcall.h
         dispatchinfo.h
         dispparammarshaler.h
         olecontexthelpers.h
@@ -668,8 +660,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
             ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
             ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
-            ${ARCH_SOURCES_DIR}/GenericComCallStubs.asm
-            ${ARCH_SOURCES_DIR}/GenericCLRToCOMCallStubs.asm
             ${ARCH_SOURCES_DIR}/getstate.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm

@@ -15,7 +15,7 @@ namespace System.IO.Ports.Tests
         private const int numReadBytes = 32;
         private static readonly int s_numWriteBytes = TCSupport.MinimumBlockingByteCount;
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Close), nameof(HasOneSerialPort))]
         public void CloseWithoutOpen()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -32,7 +32,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Close), nameof(HasOneSerialPort))]
         public void OpenClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -49,7 +49,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(Close), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void OpenFillBuffersClose()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -96,7 +96,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Close), nameof(HasOneSerialPort))]
         public void OpenCloseNewInstanceOpen()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

@@ -447,7 +447,7 @@ namespace System.Security.Tests
 
         [OuterLoop]
         [InlineData(5)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ThreadSafe_Stress(int executionTimeSeconds) // do some minimal verification that an instance can be used concurrently
         {
             using (var ss = new SecureString())

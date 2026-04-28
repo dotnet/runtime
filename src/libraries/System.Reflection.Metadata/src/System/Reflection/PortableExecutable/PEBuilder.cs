@@ -150,23 +150,16 @@ namespace System.Reflection.PortableExecutable
             return result.MoveToImmutable();
         }
 
-        private static unsafe void WritePESignature(BlobBuilder builder)
+        private static void WritePESignature(BlobBuilder builder)
         {
             // MS-DOS stub (128 bytes)
-            ReadOnlySpan<byte> header = DosHeader;
-            Debug.Assert(DosHeader.Length == DosHeaderSize);
-            fixed (byte* ptr = header)
-            {
-                builder.WriteBytes(ptr, header.Length);
-            }
+            builder.WriteBytes(DosHeader);
 
             // PE Signature "PE\0\0"
             builder.WriteUInt32(PEHeaders.PESignature);
         }
 
-        internal const int DosHeaderSize = 0x80;
-
-        private static ReadOnlySpan<byte> DosHeader => // DosHeaderSize
+        internal static ReadOnlySpan<byte> DosHeader =>
         [
             0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00,
             0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
@@ -275,9 +268,8 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt32((uint)BitArithmetic.Align(Header.ComputeSizeOfPEHeaders(sections.Length), Header.FileAlignment));
 
             // Checksum:
-            // Shall be zero for strong name signing.
+            // Shall be zero for strong name signing, already zeroed by ReserveBytes.
             _lazyChecksum = builder.ReserveBytes(sizeof(uint));
-            new BlobWriter(_lazyChecksum).WriteUInt32(0);
 
             builder.WriteUInt16((ushort)Header.Subsystem);
             builder.WriteUInt16((ushort)Header.DllCharacteristics);

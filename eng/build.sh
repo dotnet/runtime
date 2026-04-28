@@ -175,7 +175,7 @@ useNinja=true
 
 # Check if an action is passed in
 declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
-actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
+actInt=($(LC_ALL=C comm -12 <(printf '%s\n' "${actions[@]/#/-}" | LC_ALL=C sort) <(printf '%s\n' "${@/#--/-}" | LC_ALL=C sort)))
 firstArgumentChecked=0
 
 while [[ $# -gt 0 ]]; do
@@ -278,6 +278,8 @@ while [[ $# -gt 0 ]]; do
           os="linux" ;;
         freebsd)
           os="freebsd" ;;
+        openbsd)
+          os="openbsd" ;;
         osx)
           os="osx" ;;
         maccatalyst)
@@ -462,7 +464,7 @@ while [[ $# -gt 0 ]]; do
 
      -clang*)
       compiler="${opt/#-/}" # -clang-9 => clang-9 or clang-9 => (unchanged)
-      arguments+=("/p:Compiler=$compiler" "/p:CppCompilerAndLinker=$compiler")
+      arguments+=("/p:CppCompilerAndLinker=$compiler")
       shift 1
       ;;
 
@@ -477,7 +479,7 @@ while [[ $# -gt 0 ]]; do
 
      -gcc*)
       compiler="${opt/#-/}" # -gcc-9 => gcc-9 or gcc-9 => (unchanged)
-      arguments+=("/p:Compiler=$compiler" "/p:CppCompilerAndLinker=$compiler")
+      arguments+=("/p:CppCompilerAndLinker=$compiler")
       shift 1
       ;;
 

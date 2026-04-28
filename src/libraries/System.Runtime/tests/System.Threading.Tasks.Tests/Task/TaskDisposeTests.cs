@@ -10,7 +10,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class TaskDisposeTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Dispose_BeforeComplete()
         {
             // Verify that a task can only be disposed after it has completed
@@ -32,7 +32,7 @@ namespace System.Threading.Tasks.Tests
             task.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Dispose_InContinuation()
         {
             // Verify that a task can be disposed by a continuation
@@ -50,7 +50,7 @@ namespace System.Threading.Tasks.Tests
             task2.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Dispose_ThenAddContinuation()
         {
             // Verify that a continuation can be added after a task is completed and disposed

@@ -18,6 +18,7 @@ namespace System.Formats.Tar
         private bool _isDisposed;
         private readonly bool _leaveOpen;
         private readonly Stream _archiveStream;
+        private readonly TarHardLinkMode _hardLinkMode;
         private int _nextGlobalExtendedAttributesEntryNumber;
 
         /// <summary>
@@ -60,21 +61,43 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         /// <remarks>The <see cref="TarEntryFormat.Pax"/> format is the default for the other <see cref="TarWriter"/> constructors. This is the recommended format as it is the most flexible and POSIX compatible. This is the only format  with which <see cref="TarWriter"/> reads and stores <c>atime</c> and <c>ctime</c> when creating entries from filesystem entries.</remarks>
         public TarWriter(Stream archiveStream, TarEntryFormat format = TarEntryFormat.Pax, bool leaveOpen = false)
+            : this(archiveStream, CreateOptionsForFormat(format), leaveOpen)
+        {
+        }
+
+        private static TarWriterOptions CreateOptionsForFormat(TarEntryFormat format)
+        {
+            if (format is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
+            {
+                throw new ArgumentOutOfRangeException(nameof(format));
+            }
+
+            return new TarWriterOptions() { Format = format };
+        }
+
+        /// <summary>
+        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream using the specified options,
+        /// and optionally leaves the stream open upon disposal of this instance.
+        /// </summary>
+        /// <param name="archiveStream">The stream to write to.</param>
+        /// <param name="options">The options that configure the behavior of the writer.</param>
+        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed;
+        /// <see langword="true"/> to leave the stream open. The default is <see langword="false"/>.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="archiveStream"/> is unwritable.</exception>
+        public TarWriter(Stream archiveStream, TarWriterOptions options, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(archiveStream);
+            ArgumentNullException.ThrowIfNull(options);
 
             if (!archiveStream.CanWrite)
             {
                 throw new ArgumentException(SR.IO_NotSupported_UnwritableStream);
             }
 
-            if (format is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
-            {
-                throw new ArgumentOutOfRangeException(nameof(format));
-            }
-
             _archiveStream = archiveStream;
-            Format = format;
+            Format = options.Format;
+            _hardLinkMode = options.HardLinkMode;
             _leaveOpen = leaveOpen;
             _isDisposed = false;
             _wroteEntries = false;

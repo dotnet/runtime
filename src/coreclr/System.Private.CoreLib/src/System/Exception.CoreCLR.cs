@@ -114,6 +114,20 @@ namespace System
             _stackTraceString = null;
         }
 
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void InternalPreserveStackTrace(Exception* pException, Exception* pOutException)
+        {
+            try
+            {
+                pException->InternalPreserveStackTrace();
+            }
+            catch (Exception ex)
+            {
+                *pOutException = ex;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void PrepareForForeignExceptionRaise();
 
@@ -257,6 +271,36 @@ namespace System
             return true;
         }
 
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        internal static unsafe void CreateRuntimeWrappedException(object* pThrownObject, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = new System.Runtime.CompilerServices.RuntimeWrappedException(*pThrownObject);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        internal static unsafe void CreateTypeInitializationException(char* pTypeName, Exception* pInnerException, object* pResult, Exception* pException)
+        {
+            try
+            {
+                string? typeName = pTypeName is not null ? new string(pTypeName) : null;
+                Exception? innerException = pInnerException is not null ? *pInnerException : null;
+                *pResult = new TypeInitializationException(typeName, innerException);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
 #if FEATURE_COMINTEROP
         // used by vm
         [UnmanagedCallersOnly]
@@ -338,5 +382,49 @@ namespace System
             }
         }
 #endif
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateTargetInvocationException(Exception* pInnerException, object* pResult, Exception* pException)
+        {
+            try
+            {
+                Exception? inner = pInnerException is not null ? *pInnerException : null;
+                *pResult = new System.Reflection.TargetInvocationException(inner);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        // See clrex.cpp for native version.
+        internal enum ArgumentExceptionKind
+        {
+            Argument,
+            ArgumentNull,
+            ArgumentOutOfRange
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateArgumentException(ArgumentExceptionKind kind, char* pResourceName, char* pParamName, object* pThrowable, Exception* pException)
+        {
+            try
+            {
+                string? message = pResourceName is not null ? SR.GetResourceString(new string(pResourceName)) : null;
+                string? paramName = pParamName is not null ? new string(pParamName) : null;
+
+                Debug.Assert(Enum.IsDefined(kind));
+                *pThrowable = kind switch
+                {
+                    ArgumentExceptionKind.ArgumentNull => new ArgumentNullException(paramName, message),
+                    ArgumentExceptionKind.ArgumentOutOfRange => new ArgumentOutOfRangeException(paramName, message),
+                    _ /* ArgumentExceptionKind.Argument */ => new ArgumentException(message, paramName)
+                };
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

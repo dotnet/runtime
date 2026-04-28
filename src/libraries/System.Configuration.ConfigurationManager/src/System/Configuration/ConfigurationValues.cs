@@ -8,7 +8,7 @@ namespace System.Configuration
 {
     internal sealed class ConfigurationValues : NameObjectCollectionBase
     {
-        private static volatile IEnumerable s_emptyCollection;
+        private static IEnumerable s_emptyCollection;
         private BaseConfigurationRecord _configRecord;
         private volatile bool _containsElement;
         private volatile bool _containsInvalidValue;

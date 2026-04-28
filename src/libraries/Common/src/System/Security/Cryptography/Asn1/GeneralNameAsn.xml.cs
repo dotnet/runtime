@@ -8,21 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct GeneralNameAsn
-    {
-        internal System.Security.Cryptography.Asn1.OtherNameAsn? OtherName;
-        internal string? Rfc822Name;
-        internal string? DnsName;
-        internal ReadOnlyMemory<byte>? X400Address;
-        internal ReadOnlyMemory<byte>? DirectoryName;
-        internal System.Security.Cryptography.Asn1.EdiPartyNameAsn? EdiPartyName;
-        internal string? Uri;
-        internal ReadOnlyMemory<byte>? IPAddress;
-        internal string? RegisteredId;
-
 #if DEBUG
-        static GeneralNameAsn()
+    file static class ValidateGeneralNameAsn
+    {
+        static ValidateGeneralNameAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -44,6 +33,32 @@ namespace System.Security.Cryptography.Asn1
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 6), "Uri");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 7), "IPAddress");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 8), "RegisteredId");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct GeneralNameAsn
+    {
+        internal System.Security.Cryptography.Asn1.OtherNameAsn? OtherName;
+        internal string? Rfc822Name;
+        internal string? DnsName;
+        internal ReadOnlyMemory<byte>? X400Address;
+        internal ReadOnlyMemory<byte>? DirectoryName;
+        internal System.Security.Cryptography.Asn1.EdiPartyNameAsn? EdiPartyName;
+        internal string? Uri;
+        internal ReadOnlyMemory<byte>? IPAddress;
+        internal string? RegisteredId;
+
+#if DEBUG
+        static GeneralNameAsn()
+        {
+            ValidateGeneralNameAsn.Validate();
         }
 #endif
 
@@ -174,7 +189,7 @@ namespace System.Security.Cryptography.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, encoded, out GeneralNameAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -186,7 +201,7 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out GeneralNameAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out GeneralNameAsn decoded)
         {
             try
             {
@@ -198,11 +213,11 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out GeneralNameAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out GeneralNameAsn decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            AsnValueReader explicitReader;
+            ValueAsnReader explicitReader;
             ReadOnlySpan<byte> rebindSpan = rebind.Span;
             int offset;
             ReadOnlySpan<byte> tmpSpan;

@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Moq;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -23,17 +24,25 @@ internal class TestPlaceholderTarget : Target
     private readonly (string Name, string Value)[] _globalStrings;
 
     internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
+    internal delegate int WriteToTargetDelegate(ulong address, Span<byte> buffer);
+    internal delegate TargetPointer AllocateMemoryDelegate(uint size);
 
     private readonly ReadFromTargetDelegate _dataReader;
+    private readonly WriteToTargetDelegate? _dataWriter;
+    private readonly AllocateMemoryDelegate? _allocateMemory;
+    private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
-    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null, WriteToTargetDelegate? writer = null, AllocateMemoryDelegate? allocateMemory = null)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
-        _contractRegistry = new Mock<ContractRegistry>().Object;
+        _contractRegistry = new TestContractRegistry();
         _dataCache = new DefaultDataCache(this);
         _typeInfoCache = types ?? [];
         _dataReader = reader;
+        _dataWriter = writer;
+        _allocateMemory = allocateMemory;
         _globals = globals ?? [];
         _globalStrings = globalStrings ?? [];
     }
@@ -41,6 +50,127 @@ internal class TestPlaceholderTarget : Target
     internal void SetContracts(ContractRegistry contracts)
     {
         _contractRegistry = contracts;
+    }
+
+    /// <summary>
+    /// Creates a <see cref="TestContractRegistry"/> with the given registration action
+    /// (defaulting to <see cref="CoreCLRContracts.Register"/>), and sets it as the
+    /// contract registry for this target. Returns the registry so callers can call
+    /// <see cref="TestContractRegistry.SetVersion{TContract}"/> and
+    /// <see cref="TestContractRegistry.SetMock{TContract}"/>.
+    /// </summary>
+    internal TestContractRegistry SetupContractRegistry(Action<ContractRegistry>? registrations = null)
+    {
+        var registry = new TestContractRegistry();
+        registry.SetTarget(this);
+        (registrations ?? CoreCLRContracts.Register)(registry);
+        _contractRegistry = registry;
+        return registry;
+    }
+
+    /// <summary>
+    /// Fluent builder for <see cref="TestPlaceholderTarget"/>. Accumulates types,
+    /// globals, and contract factories from mock descriptors, then materializes the
+    /// target and wires contracts in <see cref="Build"/>.
+    /// </summary>
+    internal class Builder
+    {
+        private readonly MockTarget.Architecture _arch;
+        private readonly MockMemorySpace.Builder _memBuilder;
+        private readonly Dictionary<DataType, Target.TypeInfo> _types = new();
+        private readonly List<(string Name, ulong Value)> _globals = new();
+        private readonly List<(string Name, string Value)> _globalStrings = new();
+        private readonly List<Action<TestContractRegistry>> _contractSetups = new();
+        private Action<ContractRegistry> _registrations = CoreCLRContracts.Register;
+        private ReadFromTargetDelegate? _readerOverride;
+        private AllocateMemoryDelegate? _allocateMemory;
+
+        public Builder(MockTarget.Architecture arch)
+        {
+            _arch = arch;
+            _memBuilder = new MockMemorySpace.Builder(new TargetTestHelpers(arch));
+        }
+
+        internal MockMemorySpace.Builder MemoryBuilder => _memBuilder;
+
+        public Builder AddTypes(Dictionary<DataType, Target.TypeInfo> types)
+        {
+            foreach (var kvp in types)
+                _types[kvp.Key] = kvp.Value;
+            return this;
+        }
+
+        public Builder AddGlobals(params (string Name, ulong Value)[] globals)
+        {
+            _globals.AddRange(globals);
+            return this;
+        }
+
+        public Builder AddGlobalStrings(params (string Name, string Value)[] globalStrings)
+        {
+            _globalStrings.AddRange(globalStrings);
+            return this;
+        }
+
+        public Builder UseReader(ReadFromTargetDelegate reader)
+        {
+            _readerOverride = reader;
+            return this;
+        }
+
+        public Builder UseAllocateMemory(AllocateMemoryDelegate allocateMemory)
+        {
+            _allocateMemory = allocateMemory;
+            return this;
+        }
+
+        public Builder UseRegistrations(Action<ContractRegistry> registrations)
+        {
+            _registrations = registrations;
+            return this;
+        }
+
+        public Builder AddContract<TContract>(string version) where TContract : IContract
+        {
+            _contractSetups.Add(registry => registry.SetVersion<TContract>(version));
+            return this;
+        }
+
+        public Builder AddMockContract<TContract>(TContract mock) where TContract : IContract
+        {
+            _contractSetups.Add(registry => registry.SetMock(mock));
+            return this;
+        }
+
+        public Builder AddMockContract<TContract>(Mock<TContract> mock) where TContract : class, IContract
+        {
+            _contractSetups.Add(registry => registry.SetMock(mock.Object));
+            return this;
+        }
+
+        public TestPlaceholderTarget Build()
+        {
+            var memoryContext = _memBuilder.GetMemoryContext();
+            var target = new TestPlaceholderTarget(
+                _arch,
+                _readerOverride ?? memoryContext.ReadFromTarget,
+                _types,
+                _globals.ToArray(),
+                _globalStrings.ToArray(),
+                memoryContext.WriteToTarget,
+                _allocateMemory);
+
+            var registry = new TestContractRegistry();
+            registry.SetTarget(target);
+            _registrations(registry);
+
+            foreach (var setup in _contractSetups)
+                setup(registry);
+
+            target.SetContracts(registry);
+
+            return target;
+        }
     }
 
     public override int PointerSize { get; }
@@ -77,15 +207,54 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override TargetPointer ReadPointer(ulong address) => DefaultReadPointer(address);
+    public override bool TryReadPointer(ulong address, out TargetPointer value) => DefaultTryReadPointer(address, out value);
     public override TargetCodePointer ReadCodePointer(ulong address) => DefaultReadCodePointer(address);
+    public override bool TryReadCodePointer(ulong address, out TargetCodePointer value)
+    {
+        value = default;
+        if (!DefaultTryReadPointer(address, out TargetPointer ptr))
+            return false;
+        value = new TargetCodePointer(ptr);
+        return true;
+    }
     public override void ReadBuffer(ulong address, Span<byte> buffer)
     {
         if (_dataReader(address, buffer) < 0)
             throw new VirtualReadException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
     }
-    public override void WriteBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
+    public override void WriteBuffer(ulong address, Span<byte> buffer)
+    {
+        if (_dataWriter is null)
+            throw new NotImplementedException();
+        if (_dataWriter(address, buffer) < 0)
+            throw new InvalidOperationException($"Failed to write {buffer.Length} bytes at 0x{address:x8}.");
+    }
 
-    public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
+    public override TargetPointer AllocateMemory(uint size)
+    {
+        if (_allocateMemory is null)
+            return base.AllocateMemory(size); // throws NotImplementedException
+
+        return _allocateMemory(size);
+    }
+
+    public override string ReadUtf8String(ulong address, bool strict = false)
+    {
+        // Read bytes until we find the null terminator
+        ulong end = address;
+        while (Read<byte>(end) != 0)
+        {
+            end += sizeof(byte);
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = new byte[length];
+        ReadBuffer(address, span);
+        return strict ? strictUTF8Encoding.GetString(span) : looseUTF8Encoding.GetString(span);
+    }
     public override string ReadUtf16String(ulong address)
     {
         // Read characters until we find the null terminator
@@ -186,7 +355,35 @@ internal class TestPlaceholderTarget : Target
         return true;
     }
 
-    public override void Write<T>(ulong address, T value) => throw new NotImplementedException();
+    public override void Write<T>(ulong address, T value)
+    {
+        if (_dataWriter is null)
+            throw new NotImplementedException();
+        Span<byte> buffer = stackalloc byte[Unsafe.SizeOf<T>()];
+        bool success = IsLittleEndian
+            ? value.TryWriteLittleEndian(buffer, out int bytesWritten)
+            : value.TryWriteBigEndian(buffer, out bytesWritten);
+
+        if (!success || bytesWritten != buffer.Length)
+            throw new InvalidOperationException($"Failed to write {typeof(T)} to buffer.");
+        WriteBuffer(address, buffer);
+    }
+
+    public override void WritePointer(ulong address, TargetPointer value)
+    {
+        if (PointerSize == 8)
+            Write<ulong>(address, value.Value);
+        else
+            Write<uint>(address, checked((uint)value.Value));
+    }
+
+    public override void WriteNUInt(ulong address, TargetNUInt value)
+    {
+        if (PointerSize == 8)
+            Write<ulong>(address, value.Value);
+        else
+            Write<uint>(address, checked((uint)value.Value));
+    }
 
     #region subclass reader helpers
 
@@ -361,6 +558,64 @@ internal class TestPlaceholderTarget : Target
         {
             _readDataByAddress.Clear();
         }
+    }
+
+    internal sealed class TestContractRegistry : ContractRegistry
+    {
+        private readonly Dictionary<(Type, string), Func<Target, IContract>> _creators = new();
+        private readonly Dictionary<Type, string> _versions = new();
+        private readonly Dictionary<Type, IContract> _mocks = new();
+        private readonly Dictionary<Type, IContract> _resolved = new();
+        private Target _target = null!;
+
+        public void SetTarget(Target target) => _target = target;
+
+        public void SetVersion<TContract>(string version) where TContract : IContract
+            => _versions[typeof(TContract)] = version;
+
+        public void SetMock<TContract>(TContract mock) where TContract : IContract
+            => _mocks[typeof(TContract)] = mock;
+
+        public override void Register<TContract>(string version, Func<Target, TContract> creator)
+            => _creators[(typeof(TContract), version)] = t => creator(t);
+
+        public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
+        {
+            contract = default!;
+            failureReason = null;
+            if (_resolved.TryGetValue(typeof(TContract), out var cached))
+            {
+                contract = (TContract)cached;
+                return true;
+            }
+
+            IContract resolved;
+            if (_mocks.TryGetValue(typeof(TContract), out var mock))
+            {
+                resolved = mock;
+            }
+            else if (_versions.TryGetValue(typeof(TContract), out string? version))
+            {
+                if (!_creators.TryGetValue((typeof(TContract), version), out var creator))
+                {
+                    failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
+                    return false;
+                }
+
+                resolved = creator(_target);
+            }
+            else
+            {
+                failureReason = $"Contract '{typeof(TContract).Name}' is not supported by the target.";
+                return false;
+            }
+
+            _resolved[typeof(TContract)] = resolved;
+            contract = (TContract)resolved;
+            return true;
+        }
+
+        public override void Flush() { }
     }
 
 }

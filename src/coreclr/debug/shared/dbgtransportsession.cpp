@@ -213,14 +213,6 @@ void DbgTransportSession::Shutdown()
 
 #ifndef RIGHT_SIDE_COMPILE
 
-// Cleans up the named pipe connection so no tmp files are left behind. Does only
-// the minimum and must be safe to call at any time. Called during PAL ExitProcess,
-// TerminateProcess and for unhandled native exceptions and asserts.
-void DbgTransportSession::AbortConnection()
-{
-    m_channel->CloseConnection();
-}
-
 // API used only by the LS to drive the transport into a state where it won't accept connections. This is used
 // when no proxy is detected at startup but it's too late to shutdown all of the debugging system easily. It's
 // mainly paranoia to increase the protection of your system when the proxy isn't started.
@@ -402,7 +394,6 @@ void MarshalDCBTransportToDCB(DebuggerIPCControlBlockTransport* pIn, DebuggerIPC
     pOut->m_verMajor =                        pIn->m_verMajor;
     pOut->m_verMinor =                        pIn->m_verMinor;
     pOut->m_checkedBuild =                    pIn->m_checkedBuild;
-    pOut->m_bHostingInFiber =                 pIn->m_bHostingInFiber;
     pOut->padding2 =                          pIn->padding2;
     pOut->padding3 =                          pIn->padding3;
 
@@ -456,7 +447,6 @@ void MarshalDCBToDCBTransport(DebuggerIPCControlBlock* pIn, DebuggerIPCControlBl
     pOut->m_verMajor =                        pIn->m_verMajor;
     pOut->m_verMinor =                        pIn->m_verMinor;
     pOut->m_checkedBuild =                    pIn->m_checkedBuild;
-    pOut->m_bHostingInFiber =                 pIn->m_bHostingInFiber;
     pOut->padding2 =                          pIn->padding2;
     pOut->padding3 =                          pIn->padding3;
 
@@ -2133,7 +2123,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_THREAD_ATTACH:
     case DB_IPCE_THREAD_DETACH:
     case DB_IPCE_USER_BREAKPOINT:
-    case DB_IPCE_EXIT_APP_DOMAIN:
     case DB_IPCE_SET_DEBUG_STATE_RESULT:
     case DB_IPCE_FUNC_EVAL_ABORT_RESULT:
     case DB_IPCE_CONTROL_C_EVENT:

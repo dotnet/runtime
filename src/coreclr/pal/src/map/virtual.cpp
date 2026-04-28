@@ -715,6 +715,7 @@ VIRTUALCommitMemory(
     TRACE( "Committing the memory now..\n");
 
     nProtect = W32toUnixAccessControl(flProtect);
+    pRetVal = (void *) StartBoundary;
 
 #ifndef TARGET_WASM
     // Commit the pages
@@ -733,7 +734,6 @@ VIRTUALCommitMemory(
     }
 #endif
 
-    pRetVal = (void *) StartBoundary;
     goto done;
 
 #ifndef TARGET_WASM
@@ -1581,8 +1581,13 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
 
     int32_t sizeOfAllocation = MaxExecutableMemorySizeNearCoreClr;
     int32_t initialReserveLimit = -1;
+#ifdef RLIMIT_AS
+    int addressSpace = RLIMIT_AS;
+#else
+    int addressSpace = RLIMIT_DATA;
+#endif
     rlimit addressSpaceLimit;
-    if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
+    if ((getrlimit(addressSpace, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
         // By default reserve max 20% of the available virtual address space
         rlim_t initialExecMemoryPerc = 20;

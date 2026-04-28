@@ -15,6 +15,7 @@ function delay(ms) {
 try {
     const { setModuleImports, getAssemblyExports } = await dotnet
         .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, forwardConsole: true, logExitCode: true })
+        .withDiagnosticTracing(true)
         .create();
 
     setModuleImports("main.js", {
@@ -27,9 +28,12 @@ try {
 
     const exports = await getAssemblyExports("Wasm.Browser.Sample");
     await exports.Sample.Test.PrintMeaning(delay(2000).then(() => 42));
-    console.log("Program has exited normally.");
-    await dotnet.runMainAndExit();
+    const exitCode = await dotnet.run();
+    console.log(`Program has exited with code ${exitCode}.`);
+    exit(exitCode);
 }
 catch (err) {
-    exit(2, err);
+    if (!err || typeof err.status !== "number") {
+        exit(2, err);
+    }
 }

@@ -91,14 +91,17 @@ build_native()
     if [[ "$targetOS" == maccatalyst ]]; then
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
 
-        # set default macCatalyst deployment target
-        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0 $cmakeArgs"
+        # Intentionally do not set CMAKE_OSX_DEPLOYMENT_TARGET for maccatalyst here:
+        # - CMake interprets CMAKE_OSX_DEPLOYMENT_TARGET as a macOS minimum version
+        #   instead of MacCatalyst, causing newer clang to reject it as invalid.
+        # - The effective Catalyst minimum version is enforced via the
+        #   -target *-apple-ios<version>-macabi flag in eng/native/configurecompiler.cmake
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
     fi
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
         # Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
-        local ANDROID_API_LEVEL=21
+        local ANDROID_API_LEVEL=24
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
@@ -297,7 +300,7 @@ __TargetRid=''
 
 # Get the number of processors available to the scheduler
 platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
-if [[ "$platform" == "freebsd" ]]; then
+if [[ "$platform" == "freebsd" || "$platform" == "openbsd" ]]; then
   __NumProc="$(($(sysctl -n hw.ncpu)+1))"
 elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
