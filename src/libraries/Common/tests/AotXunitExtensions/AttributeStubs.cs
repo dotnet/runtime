@@ -21,7 +21,9 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit.Sdk;
@@ -62,108 +64,170 @@ namespace Xunit
     /// decorated with <c>[Fact]</c>/<c>[Theory]</c> plus <c>[ActiveIssue]</c>
     /// are skipped at runtime when the specified conditions match.
     /// </summary>
+    /// <remarks>
+    /// The xUnit v3 AOT source generator always instantiates BeforeAfterTestAttribute
+    /// subclasses via their parameterless constructor (<c>new T()</c>), discarding
+    /// all constructor arguments from metadata. To work around this, the
+    /// <see cref="Before"/> method reads the original attribute metadata from the
+    /// test method, class, and assembly using <see cref="CustomAttributeData"/> and
+    /// evaluates the skip conditions from the actual constructor arguments.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class ActiveIssueAttribute : BeforeAfterTestAttribute
     {
-        private readonly string _issue;
-        private readonly TestPlatforms _platforms;
-        private readonly TargetFrameworkMonikers _frameworks;
-        private readonly TestRuntimes _runtimes;
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicMethods)]
-        private readonly Type? _conditionType;
-        private readonly string[] _conditionMemberNames;
+        // The parameterless constructor is required by the xUnit v3 AOT source generator,
+        // which emits `new ActiveIssueAttribute()` in generated code. It is never used
+        // directly by test authors (the real package has no parameterless constructor).
+        // The remaining constructors match the real ActiveIssueAttribute API so test
+        // source code compiles against this stub.
 
-        public ActiveIssueAttribute()
-        {
-            _issue = string.Empty;
-            _platforms = TestPlatforms.Any;
-            _frameworks = TargetFrameworkMonikers.Any;
-            _runtimes = TestRuntimes.CoreCLR | TestRuntimes.Mono;
-            _conditionMemberNames = [];
-        }
-
-        public ActiveIssueAttribute(string issue)
-        {
-            _issue = issue;
-            _platforms = TestPlatforms.Any;
-            _frameworks = TargetFrameworkMonikers.Any;
-            _runtimes = TestRuntimes.CoreCLR | TestRuntimes.Mono;
-            _conditionMemberNames = [];
-        }
-
-        public ActiveIssueAttribute(string issue, TestPlatforms platforms)
-        {
-            _issue = issue;
-            _platforms = platforms;
-            _frameworks = TargetFrameworkMonikers.Any;
-            _runtimes = TestRuntimes.CoreCLR | TestRuntimes.Mono;
-            _conditionMemberNames = [];
-        }
-
-        public ActiveIssueAttribute(string issue, TargetFrameworkMonikers frameworks)
-        {
-            _issue = issue;
-            _platforms = TestPlatforms.Any;
-            _frameworks = frameworks;
-            _runtimes = TestRuntimes.CoreCLR | TestRuntimes.Mono;
-            _conditionMemberNames = [];
-        }
-
-        public ActiveIssueAttribute(string issue, TestRuntimes runtimes)
-        {
-            _issue = issue;
-            _platforms = TestPlatforms.Any;
-            _frameworks = TargetFrameworkMonikers.Any;
-            _runtimes = runtimes;
-            _conditionMemberNames = [];
-        }
-
-        public ActiveIssueAttribute(string issue, TestPlatforms platforms, TestRuntimes runtimes)
-        {
-            _issue = issue;
-            _platforms = platforms;
-            _frameworks = TargetFrameworkMonikers.Any;
-            _runtimes = runtimes;
-            _conditionMemberNames = [];
-        }
-
-        public ActiveIssueAttribute(string issue, TestPlatforms platforms, TargetFrameworkMonikers frameworks, TestRuntimes runtimes)
-        {
-            _issue = issue;
-            _platforms = platforms;
-            _frameworks = frameworks;
-            _runtimes = runtimes;
-            _conditionMemberNames = [];
-        }
-
-        public ActiveIssueAttribute(string issue, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicMethods)] Type conditionType, params string[] conditionMemberNames)
-        {
-            _issue = issue;
-            _platforms = TestPlatforms.Any;
-            _frameworks = TargetFrameworkMonikers.Any;
-            _runtimes = TestRuntimes.CoreCLR | TestRuntimes.Mono;
-            _conditionType = conditionType;
-            _conditionMemberNames = conditionMemberNames;
-        }
+        public ActiveIssueAttribute() { }
+        public ActiveIssueAttribute(string issue) { }
+        public ActiveIssueAttribute(string issue, TestPlatforms platforms) { }
+        public ActiveIssueAttribute(string issue, TargetFrameworkMonikers frameworks) { }
+        public ActiveIssueAttribute(string issue, TestRuntimes runtimes) { }
+        public ActiveIssueAttribute(string issue, TestPlatforms platforms, TestRuntimes runtimes) { }
+        public ActiveIssueAttribute(string issue, TestPlatforms platforms, TargetFrameworkMonikers frameworks, TestRuntimes runtimes) { }
+        public ActiveIssueAttribute(string issue, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicMethods)] Type conditionType, params string[] conditionMemberNames) { }
 
         public override void Before(ICodeGenTest test)
         {
-            if (ShouldSkip())
+            // Read the real ActiveIssueAttribute metadata from the test method, class,
+            // and assembly (since the source generator discards constructor arguments).
+            foreach (var parsed in GetActiveIssueMetadata(test))
             {
-                throw SkipException.ForSkip($"Active issue: {_issue}");
+                if (ShouldSkip(parsed))
+                {
+                    throw SkipException.ForSkip($"Active issue: {parsed.Issue}");
+                }
             }
         }
 
-        private bool ShouldSkip()
+        private static IEnumerable<ActiveIssueData> GetActiveIssueMetadata(ICodeGenTest test)
         {
-            if (_conditionType is not null)
+            var testMethod = test.TestCase.TestMethod;
+            var testClass = testMethod.TestClass;
+
+            // Method-level attributes
+            MethodInfo? methodInfo = ResolveMethod(testMethod, testClass);
+            if (methodInfo is not null)
             {
-                return EvaluateTypeConditions(_conditionType, _conditionMemberNames);
+                foreach (var data in ReadActiveIssueData(CustomAttributeData.GetCustomAttributes(methodInfo)))
+                    yield return data;
             }
 
-            return MatchesPlatform(_platforms)
-                && MatchesFramework(_frameworks)
-                && MatchesRuntime(_runtimes);
+            // Class-level attributes (check declaring type if different from test class)
+            Type classType = testClass.Class;
+            foreach (var data in ReadActiveIssueData(CustomAttributeData.GetCustomAttributes(classType)))
+                yield return data;
+
+            // If the method is declared on a base type, also check that type
+            if (methodInfo?.DeclaringType is not null && methodInfo.DeclaringType != classType)
+            {
+                foreach (var data in ReadActiveIssueData(CustomAttributeData.GetCustomAttributes(methodInfo.DeclaringType)))
+                    yield return data;
+            }
+
+            // Assembly-level attributes
+            foreach (var data in ReadActiveIssueData(CustomAttributeData.GetCustomAttributes(classType.Assembly)))
+                yield return data;
+        }
+
+        private static MethodInfo? ResolveMethod(Xunit.Sdk.ITestMethodMetadata testMethod, Xunit.v3.ICoreTestClass testClass)
+        {
+            string methodName = testMethod.MethodName;
+            Type classType = testClass.Class;
+
+            // If the method is declared on a different type (base class), resolve from there
+            if (testMethod is Xunit.v3.ICodeGenTestMethod codeGenMethod
+                && codeGenMethod.DeclaredTypeIndex is string declaredTypeIndex)
+            {
+                // DeclaredTypeIndex uses "global::Namespace.Type" format; strip the prefix
+                string typeName = declaredTypeIndex.StartsWith("global::", StringComparison.Ordinal)
+                    ? declaredTypeIndex.Substring("global::".Length)
+                    : declaredTypeIndex;
+                Type? declaredType = classType.Assembly.GetType(typeName)
+                    ?? Type.GetType(typeName);
+                if (declaredType is not null)
+                    classType = declaredType;
+            }
+
+            // Use GetMethods to handle overloads gracefully - pick the first match
+            try
+            {
+                return classType.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            }
+            catch
+            {
+                // If reflection fails (trimmed metadata, ambiguous match, etc.), fail open
+                return null;
+            }
+        }
+
+        private static IEnumerable<ActiveIssueData> ReadActiveIssueData(IList<CustomAttributeData> attributes)
+        {
+            foreach (var attr in attributes)
+            {
+                if (attr.AttributeType != typeof(ActiveIssueAttribute))
+                    continue;
+
+                var args = attr.ConstructorArguments;
+                if (args.Count == 0)
+                    continue;
+
+                string issue = args[0].Value as string ?? string.Empty;
+
+                if (args.Count == 1)
+                {
+                    // ActiveIssueAttribute(string issue)
+                    yield return new ActiveIssueData(issue, TestPlatforms.Any, TargetFrameworkMonikers.Any,
+                        TestRuntimes.CoreCLR | TestRuntimes.Mono, null, []);
+                }
+                else if (args.Count >= 2 && args[1].ArgumentType == typeof(Type))
+                {
+                    // ActiveIssueAttribute(string issue, Type conditionType, params string[] conditionMemberNames)
+                    Type? conditionType = args[1].Value as Type;
+                    string[] memberNames = args.Count > 2
+                        ? args.Skip(2).SelectMany(a =>
+                            a.ArgumentType.IsArray
+                                ? ((System.Collections.ObjectModel.ReadOnlyCollection<CustomAttributeTypedArgument>)a.Value!).Select(e => (string)e.Value!)
+                                : [(string)a.Value!]).ToArray()
+                        : [];
+                    yield return new ActiveIssueData(issue, TestPlatforms.Any, TargetFrameworkMonikers.Any,
+                        TestRuntimes.CoreCLR | TestRuntimes.Mono, conditionType, memberNames);
+                }
+                else
+                {
+                    // Enum-based overloads: determine which enums are present by argument types
+                    var platforms = TestPlatforms.Any;
+                    var frameworks = TargetFrameworkMonikers.Any;
+                    var runtimes = TestRuntimes.CoreCLR | TestRuntimes.Mono;
+
+                    for (int i = 1; i < args.Count; i++)
+                    {
+                        if (args[i].ArgumentType == typeof(TestPlatforms))
+                            platforms = (TestPlatforms)(int)args[i].Value!;
+                        else if (args[i].ArgumentType == typeof(TargetFrameworkMonikers))
+                            frameworks = (TargetFrameworkMonikers)(int)args[i].Value!;
+                        else if (args[i].ArgumentType == typeof(TestRuntimes))
+                            runtimes = (TestRuntimes)(int)args[i].Value!;
+                    }
+
+                    yield return new ActiveIssueData(issue, platforms, frameworks, runtimes, null, []);
+                }
+            }
+        }
+
+        private static bool ShouldSkip(ActiveIssueData data)
+        {
+            if (data.ConditionType is not null)
+            {
+                return EvaluateTypeConditions(data.ConditionType, data.ConditionMemberNames);
+            }
+
+            return MatchesPlatform(data.Platforms)
+                && MatchesFramework(data.Frameworks)
+                && MatchesRuntime(data.Runtimes);
         }
 
         private static bool EvaluateTypeConditions(
@@ -238,6 +302,15 @@ namespace Xunit
             // NativeAOT is CoreCLR-based
             return runtimes.HasFlag(TestRuntimes.CoreCLR);
         }
+
+        private readonly record struct ActiveIssueData(
+            string Issue,
+            TestPlatforms Platforms,
+            TargetFrameworkMonikers Frameworks,
+            TestRuntimes Runtimes,
+            [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicMethods)]
+            Type? ConditionType,
+            string[] ConditionMemberNames);
     }
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = false)]
