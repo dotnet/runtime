@@ -1,0 +1,61 @@
+parameters:
+  - name: platforms
+    type: object
+  - name: testBuildArgs
+    type: string
+
+jobs:
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    platforms: ${{ parameters.platforms }}
+    variables:
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: outerloop
+      nameSuffix: CoreCLR
+      buildArgs: -s clr+libs -c $(_BuildConfig)
+      timeoutInMinutes: 360
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testBuildArgs: ${{ parameters.testBuildArgs }}
+            testRunNamePrefixSuffix: CoreCLR
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          parameters:
+            testGroup: outerloop
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    platforms: ${{ parameters.platforms }}
+    variables:
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: outerloop
+      nameSuffix: NativeAOT
+      buildArgs: -s clr.aot+libs.native+libs.sfx -c $(_BuildConfig)
+      timeoutInMinutes: 360
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testBuildArgs: nativeaot ${{ parameters.testBuildArgs }}
+            testRunNamePrefixSuffix: NativeAOT
+            nativeAotTest: true
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          parameters:
+            testGroup: outerloop
