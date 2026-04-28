@@ -56,13 +56,22 @@ endif()
 
 
 add_library(hostmisc STATIC ${SOURCES})
-target_link_libraries(hostmisc PUBLIC hostmisc_interface minipal)
+target_link_libraries(hostmisc PUBLIC hostmisc_interface)
+if(NOT CLR_CMAKE_TARGET_BROWSER)
+    # The browser-wasm corehost build does not add the minipal subdirectory
+    # (minipal symbols are pulled in directly from the CoreCLR-built libminipal.a
+    # in the final link). Only link the minipal target where it actually exists.
+    target_link_libraries(hostmisc PUBLIC minipal)
+endif()
 if (MSVC)
     target_sources(hostmisc PRIVATE ${HEADERS})
 endif()
 
 add_library(hostmisc_public OBJECT ${SOURCES})
-target_link_libraries(hostmisc_public PUBLIC hostmisc_interface minipal_objects)
+target_link_libraries(hostmisc_public PUBLIC hostmisc_interface)
+if(NOT CLR_CMAKE_TARGET_BROWSER)
+    target_link_libraries(hostmisc_public PUBLIC minipal_objects)
+endif()
 set_target_properties(hostmisc_public PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 add_library(hostmisc::public ALIAS hostmisc_public)
