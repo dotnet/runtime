@@ -131,13 +131,18 @@ artifacts/dumps/cdac/
   local/
     dump-info.json
     heap/
-      BasicThreads/BasicThreads.dmp
+      r2r/
+        BasicThreads/BasicThreads.dmp
+      jit/
+        BasicThreads/BasicThreads.dmp
     full/
-      PInvokeStub/PInvokeStub.dmp
+      r2r/
+        PInvokeStub/PInvokeStub.dmp
   net10.0/
     dump-info.json
-    heap/
-      TypeHierarchy/TypeHierarchy.dmp
+    full/
+      r2r/
+        TypeHierarchy/TypeHierarchy.dmp
 ```
 
 ## Running Locally (Windows)

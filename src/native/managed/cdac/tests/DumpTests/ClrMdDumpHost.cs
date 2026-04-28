@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.IO;
 using Microsoft.Diagnostics.Runtime;
@@ -40,7 +39,7 @@ internal sealed class ClrMdDumpHost : IDisposable
     /// </summary>
     /// <param name="dumpPath">Path to the crash dump file.</param>
     /// <param name="additionalSymbolPaths">
-    /// Optional local directories to search for symbol files (e.g., System.Private.CoreLib,
+    /// Local directories to search for symbol files (e.g., System.Private.CoreLib,
     /// debuggee DLLs).
     /// </param>
     public static ClrMdDumpHost Open(string dumpPath, List<string> additionalSymbolPaths)
@@ -78,8 +77,8 @@ internal sealed class ClrMdDumpHost : IDisposable
         using FileStream fs = File.OpenRead(foundFile);
         using PEReader peReader = new PEReader(fs);
 
-        int filled = 0;
-        ulong current = address;
+        int filled = bytesRead;
+        ulong current = address + (ulong)bytesRead;
         while (filled < buffer.Length)
         {
             PEMemoryBlock block = peReader.GetSectionData((int)(current - info.ImageBase));
@@ -158,6 +157,9 @@ internal sealed class ClrMdDumpHost : IDisposable
 
     private string? FindFileOnDisk(string modulePath)
     {
+        // for local runs
+        if (File.Exists(modulePath))
+            return modulePath;
         int lastSep = Math.Max(modulePath.LastIndexOf('/'), modulePath.LastIndexOf('\\'));
         string fileName = lastSep >= 0 ? modulePath[(lastSep + 1)..] : modulePath;
 
