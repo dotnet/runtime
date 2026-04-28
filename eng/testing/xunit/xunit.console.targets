@@ -52,8 +52,10 @@
     <XunitExcludesTxtFileContent>$(_withoutCategories.Replace(';', '%0dcategory='))</XunitExcludesTxtFileContent>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TestSingleFile)' == 'true'">
-    <!-- Pass the results file -->
+  <PropertyGroup Condition="'$(TestSingleFile)' == 'true' and '$(TargetsAppleMobile)' != 'true'">
+    <!-- Pass the results file. Skipped for Apple mobile because xharness launcher
+         (open on maccatalyst, mlaunch on ios-device) does not reliably forward args
+         past the separator to the app, and AppleTestRunner does not consume -xml. -->
     <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
   </PropertyGroup>
 
