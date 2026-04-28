@@ -1089,6 +1089,13 @@ InfoAccessType interceptor_ICJI::constructStringLiteral(
     return original_ICorJitInfo->constructStringLiteral(module, metaTok, ppValue);
 }
 
+CORINFO_OBJECT_HANDLE interceptor_ICJI::constructDelegateLiteral(
+          CORINFO_METHOD_HANDLE method,
+          CORINFO_CLASS_HANDLE delegateType)
+{
+    return original_ICorJitInfo->constructDelegateLiteral(method, delegateType);
+}
+
 InfoAccessType interceptor_ICJI::emptyStringLiteral(
           void** ppValue)
 {

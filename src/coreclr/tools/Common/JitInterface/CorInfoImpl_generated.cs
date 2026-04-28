@@ -172,6 +172,7 @@ namespace Internal.JitInterface
                 s_callbacks.getStaticFieldCurrentClass = &_getStaticFieldCurrentClass;
                 s_callbacks.getVarArgsHandle = &_getVarArgsHandle;
                 s_callbacks.constructStringLiteral = &_constructStringLiteral;
+                s_callbacks.constructDelegateLiteral = &_constructDelegateLiteral;
                 s_callbacks.emptyStringLiteral = &_emptyStringLiteral;
                 s_callbacks.getFieldThreadLocalStoreID = &_getFieldThreadLocalStoreID;
                 s_callbacks.GetDelegateCtor = &_GetDelegateCtor;
@@ -354,6 +355,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, CORINFO_CLASS_STRUCT_*> getStaticFieldCurrentClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void**, IntPtr> getVarArgsHandle;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, mdToken, void**, InfoAccessType> constructStringLiteral;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*, CORINFO_OBJECT_STRUCT_*> constructDelegateLiteral;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, InfoAccessType> emptyStringLiteral;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, void**, uint> getFieldThreadLocalStoreID;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, DelegateCtorArgs*, CORINFO_METHOD_STRUCT_*> GetDelegateCtor;
@@ -2621,6 +2623,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.constructStringLiteral(module, metaTok, ref *ppValue);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static CORINFO_OBJECT_STRUCT_* _constructDelegateLiteral(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateType)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.constructDelegateLiteral(method, delegateType);
             }
             catch (Exception ex)
             {

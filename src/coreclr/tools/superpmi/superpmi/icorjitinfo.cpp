@@ -1477,6 +1477,13 @@ InfoAccessType MyICJI::constructStringLiteral(CORINFO_MODULE_HANDLE module, mdTo
     return jitInstance->mc->repConstructStringLiteral(module, metaTok, ppValue);
 }
 
+// Allocate a delegate literal on the Non-GC heap and return a handle to it
+CORINFO_OBJECT_HANDLE MyICJI::constructDelegateLiteral(CORINFO_METHOD_HANDLE method, CORINFO_CLASS_HANDLE delegateType)
+{
+    jitInstance->mc->cr->AddCall("constructDelegateLiteral");
+    return jitInstance->mc->repConstructDelegateLiteral(method, delegateType);
+}
+
 InfoAccessType MyICJI::emptyStringLiteral(void** ppValue)
 {
     jitInstance->mc->cr->AddCall("emptyStringLiteral");
