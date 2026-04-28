@@ -156,6 +156,12 @@ INST(cgr,       "cgr",          0,      0xB920)
 INST(clr,       "clr",          0,      0x15)
 INST(clgr,      "clgr",         0,      0xB921)
 
+INST(chi,       "chi",          0,      0xa7e)
+INST(cfi,       "cfi",          0,      0xc2d)
+INST(cgfi,      "cgfi",         0,      0xc2c)
+INST(clfi,      "clfi",         0,      0xc2f)
+INST(clgfi,     "clgfi",        0,      0xc2e)
+
 //// Conditional Branch (all use BRCL opcode 0xC04, RIL format, 6 bytes)
 INST(j,             "brcl",           0,    0xC04)
 INST(beq,           "brcl",           0,    0xC04)

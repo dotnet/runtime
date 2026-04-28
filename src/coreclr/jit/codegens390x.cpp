@@ -4714,11 +4714,25 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     instruction cmpIns;
     emitAttr cmpSize;
-
-    if (varTypeIsFloating(op1Type))
+    
+    if (op2->isContained() && op2->IsCnsIntOrI())
+    {
+        ssize_t imm = op2->AsIntCon()->gtIconVal;
+        bool isUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
+        cmpSize = EA_ATTR(genTypeSize(op1Type));
+        if (isUnsigned)
+            cmpIns = (cmpSize == EA_8BYTE) ? INS_clgfi : INS_clfi;
+        else if (imm >= -32768 && imm <= 32767)
+	    cmpIns = (cmpSize == EA_8BYTE) ? INS_cgfi : INS_chi;
+	    else
+            cmpIns = (cmpSize == EA_8BYTE) ? INS_cgfi : INS_cfi;
+        GetEmitter()->emitIns_R_I(cmpIns, cmpSize, op1->GetRegNum(), imm);
+    }
+    else if (varTypeIsFloating(op1Type))
     {
         cmpIns = (op1Type == TYP_FLOAT) ? INS_cebr : INS_cdbr;
         cmpSize = (op1Type == TYP_FLOAT) ? EA_4BYTE : EA_8BYTE;
+        GetEmitter()->emitIns_R_R(cmpIns, cmpSize, op1->GetRegNum(), op2->GetRegNum());
     }
     else
     {
@@ -4728,9 +4742,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             cmpIns = isUnsigned ? INS_clgr : INS_cgr;
         else
             cmpIns = isUnsigned ? INS_clr : INS_cr;
+            GetEmitter()->emitIns_R_R(cmpIns, cmpSize, op1->GetRegNum(), op2->GetRegNum());
     }
-
-    GetEmitter()->emitIns_R_R(cmpIns, cmpSize, op1->GetRegNum(), op2->GetRegNum());
 
     if (targetReg != REG_NA)
     {

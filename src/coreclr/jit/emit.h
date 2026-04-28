@@ -1193,6 +1193,10 @@ protected:
                     size = 2;
                     break;
                 case INS_lgfi:
+                case INS_cfi:
+                case INS_cgfi:
+                case INS_clfi:
+                case INS_clgfi:
                 case INS_msfi:
                 case INS_msgfi:
                 case INS_afi:

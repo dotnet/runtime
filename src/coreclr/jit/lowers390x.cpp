@@ -51,6 +51,21 @@ bool Lowering::IsCallTargetInRange(void* addr)
 //
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
+    // s390x: Enable immediate containment for compare operations
+    if (!childNode->IsCnsIntOrI())
+        return false;
+    if (childNode->AsIntCon()->ImmedValNeedsReloc(comp))
+        return false;
+    if (parentNode->OperIsCompare())
+    {
+        ssize_t val = childNode->AsIntCon()->gtIconVal;
+        if (val >= INT32_MIN && val <= INT32_MAX)
+            return true;
+        if (val >= 0 && (uint64_t)val <= UINT32_MAX)
+            return true;
+    }
+    return false;
+#if 0
     if (!varTypeIsFloating(parentNode->TypeGet()))
     {
         if (parentNode->OperIsCompare() && childNode->IsFloatPositiveZero())
@@ -142,6 +157,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
     }
 
     return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -2961,6 +2977,38 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //#if 0 
     GenTree* op1 = cmp->gtGetOp1();
     GenTree* op2 = cmp->gtGetOp2();
+
+    // s390x: Fold widening cast of constants to enable CGFI/CLGFI.
+    if (op2->OperIs(GT_CAST) && !op2->gtOverflow() && varTypeIsLong(op2->TypeGet()))
+    {
+        GenTree* castOp = op2->AsCast()->CastOp();
+        if (castOp->IsCnsIntOrI() && !castOp->AsIntCon()->ImmedValNeedsReloc(comp))
+        {
+            ssize_t val = castOp->AsIntCon()->gtIconVal;
+            if (val >= INT32_MIN && val <= INT32_MAX)
+            {
+                castOp->gtType = TYP_LONG;
+                BlockRange().Remove(op2);
+                cmp->gtOp2 = castOp;
+                op2 = castOp;
+            }
+        }
+    }
+    if (op1->OperIs(GT_CAST) && !op1->gtOverflow() && varTypeIsLong(op1->TypeGet()))
+    {
+        GenTree* castOp = op1->AsCast()->CastOp();
+        if (castOp->IsCnsIntOrI() && !castOp->AsIntCon()->ImmedValNeedsReloc(comp))
+        {
+            ssize_t val = castOp->AsIntCon()->gtIconVal;
+            if (val >= INT32_MIN && val <= INT32_MAX)
+            {
+                castOp->gtType = TYP_LONG;
+                BlockRange().Remove(op1);
+                cmp->gtOp1 = castOp;
+                op1 = castOp;
+            }
+        }
+    }
 
     if (CheckImmedAndMakeContained(cmp, op2))
         return;
