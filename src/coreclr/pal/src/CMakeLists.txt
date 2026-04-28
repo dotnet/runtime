@@ -37,9 +37,6 @@ endif(CORECLR_SET_RPATH)
 # Include directories
 
 include_directories(include)
-if(FEATURE_INPROC_CRASHREPORT)
-  add_compile_definitions(FEATURE_INPROC_CRASHREPORT)
-endif()
 
 # Compile options
 

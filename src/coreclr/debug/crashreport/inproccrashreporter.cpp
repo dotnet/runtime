@@ -331,10 +331,32 @@ InProcCrashReporter::Initialize(
     CrashReportHelpers::CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
 
     m_processName[0] = '\0';
-    if (char* exePath = minipal_getexepath())
+#if defined(__ANDROID__)
+    // On Android every app forks from the Zygote, so /proc/self/exe always
+    // resolves to /system/bin/app_process64. /proc/self/cmdline holds the
+    // package name (set by ActivityThread via PR_SET_NAME / setproctitle),
+    // which is what crash diagnostics actually want.
+    int cmdlineFd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);
+    if (cmdlineFd >= 0)
     {
-        CrashReportHelpers::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(exePath));
-        free(exePath);
+        char buf[CRASHREPORT_STRING_BUFFER_SIZE];
+        ssize_t n = read(cmdlineFd, buf, sizeof(buf) - 1);
+        close(cmdlineFd);
+        if (n > 0)
+        {
+            buf[n] = '\0';
+            CrashReportHelpers::CopyString(m_processName, sizeof(m_processName),
+                                           CrashReportHelpers::GetFilename(buf));
+        }
+    }
+#endif
+    if (m_processName[0] == '\0')
+    {
+        if (char* exePath = minipal_getexepath())
+        {
+            CrashReportHelpers::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(exePath));
+            free(exePath);
+        }
     }
 }
 

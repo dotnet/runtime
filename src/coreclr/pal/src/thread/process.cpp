@@ -60,6 +60,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <stdint.h>
 #include <dlfcn.h>
 #include <limits.h>
+#include <minipal/log.h>
 
 #ifdef __linux__
 #include <linux/membarrier.h>
@@ -190,14 +191,15 @@ Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalC
 #define MAX_ARGV_ENTRIES 32
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
-#ifdef FEATURE_INPROC_CRASHREPORT
 // Read from the fatal-signal path (PROCCreateCrashDumpIfEnabled) and written
 // once during startup via PAL_SetInProcCrashReportCallback; use Volatile<>
 // to match the publication ordering of g_logManagedCallstackForSignalCallback.
 // PAL has no direct dependency on the in-proc crash reporter library; the
-// reporter registers itself by installing this signal-safe callback.
+// reporter registers itself by installing this signal-safe callback. When
+// no callback is registered, the fatal-signal path falls back to the
+// out-of-proc createdump utility (where g_argvCreateDump has been populated
+// via PAL_InitializeCoreCLR).
 static Volatile<PINPROCCRASHREPORT_CALLBACK> g_inProcCrashReportCallback = nullptr;
-#endif
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -2795,8 +2797,6 @@ Parameters:
 
 (no return value)
 --*/
-#ifdef FEATURE_INPROC_CRASHREPORT
-#include <minipal/log.h>
 VOID
 PALAPI
 PAL_SetInProcCrashReportCallback(
@@ -2809,26 +2809,21 @@ PAL_SetInProcCrashReportCallback(
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
-    (void)serialize;
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
 
-    // TODO: Dump stress log into logcat and/or file when enabled?
+    // If a host registered an in-proc crash report callback, prefer it: the
+    // host emits its report from this signal frame and the process aborts.
     PINPROCCRASHREPORT_CALLBACK callback = g_inProcCrashReportCallback;
     if (callback != nullptr)
     {
         callback(signal, siginfo, context);
+        minipal_log_write_fatal("Aborting process.\n");
+        return;
     }
-    minipal_log_write_fatal("Aborting process.\n");
-}
-#else
-VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
-{
-    // Preserve context pointer to prevent optimization
-    DoNotOptimize(&context);
 
-    // If enabled, launch the create minidump utility and wait until it completes
+    // Otherwise fall back to launching the out-of-proc createdump utility
+    // and wait until it completes.
     if (g_argvCreateDump[0] != nullptr)
     {
         const char* argv[MAX_ARGV_ENTRIES];
@@ -2898,7 +2893,6 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
         free(signalAddressArg);
     }
 }
-#endif
 
 /*++
 Function:
