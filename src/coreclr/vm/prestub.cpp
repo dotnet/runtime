@@ -2402,18 +2402,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
         pCode = PrepareInitialCode(callerGCMode);
-
-        // We need to resolve the P/Invoke target in the prestub in the following cases:
-        // - SuppressGCTransition
-        //  - The logic to resolve the P/Invoke target does not meet the requirements for SuppressGCTransition usage.
-        // - No P/Invoke import thunk
-        //  - If there's no P/Invoke import thunk, then there's no later time to resolve the P/Invoke target.
-        //
-        // For simplicity, we will resolve all P/Invoke targets here for non-inlined P/Invokes.
-        if (IsPInvoke())
-        {
-            PInvoke::ResolvePInvokeTarget(static_cast<PInvokeMethodDesc*>(this));
-        }
     } // end else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()))
     else if (IsPInvoke())
     {
