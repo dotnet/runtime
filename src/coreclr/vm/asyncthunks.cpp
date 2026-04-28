@@ -93,10 +93,8 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
 
     // Emits roughly the following code:
     //
-    // RuntimeAsyncStackState stackState;
-    // ref RuntimeAsyncAwaitState awaitState = ref AsyncHelpers.t_runtimeAsyncAwaitState;
-    // awaitState.Push(&stackState);
-    //
+    // ExecutionAndSyncBlockStore store = default;
+    // store.Push();
     // try
     // {
     //   try
@@ -106,7 +104,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
     //     if (AsyncHelpers.AsyncCallContinuation() == null)
     //       return Task.FromResult(result);
     //
-    //     return FinalizeTaskReturningThunk(ref awaitState);
+    //     return FinalizeTaskReturningThunk();
     //   }
     //   catch (Exception ex)
     //   {
@@ -115,7 +113,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
     // }
     // finally
     // {
-    //   awaitState.Pop();
+    //   store.Pop();
     // }
 
     ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
@@ -134,24 +132,15 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
 
     LocalDesc returnLocalDesc(thTaskRet);
     DWORD returnTaskLocal = pCode->NewLocal(returnLocalDesc);
-
-    LocalDesc stackStateLocalDesc(TypeHandle(CoreLibBinder::GetClass(CLASS__RUNTIME_ASYNC_STACK_STATE)));
-    DWORD stackStateLocal = pCode->NewLocal(stackStateLocalDesc);
-
-    LocalDesc refAwaitStateLocalDesc(TypeHandle(CoreLibBinder::GetClass(CLASS__RUNTIME_ASYNC_AWAIT_STATE)));
-    refAwaitStateLocalDesc.MakeByRef();
-    DWORD refAwaitStateLocal = pCode->NewLocal(refAwaitStateLocalDesc);
+    LocalDesc executionAndSyncBlockStoreLocalDesc(CoreLibBinder::GetClass(CLASS__EXECUTIONANDSYNCBLOCKSTORE));
+    DWORD executionAndSyncBlockStoreLocal = pCode->NewLocal(executionAndSyncBlockStoreLocalDesc);
 
     ILCodeLabel* returnTaskLabel = pCode->NewCodeLabel();
     ILCodeLabel* suspendedLabel = pCode->NewCodeLabel();
     ILCodeLabel* finishedLabel = pCode->NewCodeLabel();
 
-    pCode->EmitLDSFLDA(pCode->GetToken(CoreLibBinder::GetField(FIELD__ASYNC_HELPERS__TLS_RUNTIME_ASYNC_AWAIT_STATE)));
-    pCode->EmitSTLOC(refAwaitStateLocal);
-
-    pCode->EmitLDLOC(refAwaitStateLocal);
-    pCode->EmitLDLOCA(stackStateLocal);
-    pCode->EmitCALL(METHOD__RUNTIME_ASYNC_AWAIT_STATE__PUSH, 2, 0);
+    pCode->EmitLDLOCA(executionAndSyncBlockStoreLocal);
+    pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(METHOD__EXECUTIONANDSYNCBLOCKSTORE__PUSH)), 1, 0);
 
     {
         pCode->BeginTryBlock();
@@ -263,8 +252,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
                 md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_TASK_RETURNING_THUNK);
             finalizeTaskReturningThunkToken = pCode->GetToken(md);
         }
-        pCode->EmitLDLOC(refAwaitStateLocal);
-        pCode->EmitCALL(finalizeTaskReturningThunkToken, 1, 1);
+        pCode->EmitCALL(finalizeTaskReturningThunkToken, 0, 1);
         pCode->EmitSTLOC(returnTaskLocal);
         pCode->EmitLEAVE(returnTaskLabel);
 
@@ -273,8 +261,8 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
     //
     {
         pCode->BeginFinallyBlock();
-        pCode->EmitLDLOC(refAwaitStateLocal);
-        pCode->EmitCALL(METHOD__RUNTIME_ASYNC_AWAIT_STATE__POP, 1, 0);
+        pCode->EmitLDLOCA(executionAndSyncBlockStoreLocal);
+        pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(METHOD__EXECUTIONANDSYNCBLOCKSTORE__POP)), 1, 0);
         pCode->EmitENDFINALLY();
         pCode->EndFinallyBlock();
     }
