@@ -40,7 +40,6 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class ResumeAsyncContext
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static ulong GetId(ref AsyncDispatcherInfo info)
             {
                 if (info.CurrentTask != null)
@@ -59,7 +58,6 @@ namespace System.Runtime.CompilerServices
                 AsyncThreadContext.Release(context);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void Resume(ref AsyncDispatcherInfo info, AsyncThreadContext context, ulong id, EventKeywords activeEventKeywords)
             {
                 if (SyncPoint.Check(context))
@@ -109,7 +107,6 @@ namespace System.Runtime.CompilerServices
                 AsyncThreadContext.Release(context);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static ulong GetId(ref AsyncDispatcherInfo info)
             {
                 if (info.CurrentTask != null)
@@ -141,7 +138,6 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         internal static partial class ContinuationWrapper
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void InitInfo(ref Info info)
             {
                 info.ContinuationTable = ref Unsafe.As<ContinuationWrapperTable, nint>(ref s_continuationWrappers);
@@ -409,7 +405,6 @@ namespace System.Runtime.CompilerServices
 
         private static partial class SyncPoint
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static unsafe void ResumeAsyncCallstacks(AsyncThreadContext context)
             {
                 //Write recursively all the resume async callstack events.
@@ -421,7 +416,6 @@ namespace System.Runtime.CompilerServices
 
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static unsafe void ResumeRuntimeAsyncCallstacks(AsyncDispatcherInfo* info, AsyncThreadContext context)
             {
                 if (info != null)
@@ -515,19 +509,16 @@ namespace System.Runtime.CompilerServices
                 return state.Continuation == null || state.Count == byte.MaxValue;
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id, Continuation? asyncCallstack)
             {
                 EmitEvent(context, currentTimestamp, AsyncEventID.ResumeAsyncCallstack, id, AsyncCallstackType.Runtime, asyncCallstack);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, Continuation? asyncCallstack)
             {
                 EmitEvent(context, currentTimestamp, eventID, id, AsyncCallstackType.Runtime, asyncCallstack);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, AsyncCallstackType type, Continuation? asyncCallstack)
             {
                 EmitEvent(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, type, asyncCallstack);
@@ -598,7 +589,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static int CallstackHeader(ref EventBuffer eventBuffer, ulong id, AsyncCallstackType type, byte callstackFrameCount)
             {
                 // Callstack header layout: type (1 byte) + callstackId (1 byte, reserved for future use) + frameCount (1 byte) + id (max 10 bytes compressed).
@@ -621,7 +611,6 @@ namespace System.Runtime.CompilerServices
                 return frameCountOffset;
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static void CallstackData(ref EventBuffer eventBuffer, byte[] callstackData, int callstackDataByteCount)
             {
                 ref int index = ref eventBuffer.Index;

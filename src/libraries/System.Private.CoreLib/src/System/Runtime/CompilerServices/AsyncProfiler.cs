@@ -47,7 +47,6 @@ namespace System.Runtime.CompilerServices
             public uint ContinuationIndex;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void InitInfo(ref Info info)
         {
             info.Context = null;
@@ -59,7 +58,6 @@ namespace System.Runtime.CompilerServices
         {
             public static readonly Lock ConfigLock = new();
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool Changed(AsyncThreadContext context) => context.ConfigRevision != Revision;
 
             public static void Update(EventLevel logLevel, EventKeywords eventKeywords)
@@ -344,10 +342,8 @@ namespace System.Runtime.CompilerServices
                     return index;
                 }
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static uint ZigzagEncodeInt32(int value) => (uint)((value << 1) ^ (value >> 31));
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static ulong ZigzagEncodeInt64(long value) => (ulong)((value << 1) ^ (value >> 63));
 
                 public static void Header(AsyncThreadContext context, ref EventBuffer eventBuffer)
@@ -391,7 +387,6 @@ namespace System.Runtime.CompilerServices
                     eventBuffer.Index = headerSpanIndex;
                 }
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, AsyncEventID eventID, int maxEventPayloadSize)
                 {
                     long currentTimestamp = Stopwatch.GetTimestamp();
@@ -399,7 +394,6 @@ namespace System.Runtime.CompilerServices
                     return AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, maxEventPayloadSize);
                 }
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static bool AsyncEventHeader(AsyncThreadContext context, ref EventBuffer eventBuffer, long currentTimestamp, AsyncEventID eventID, int maxEventPayloadSize)
                 {
                     long delta = currentTimestamp - context.LastEventTimestamp;
@@ -487,8 +481,9 @@ namespace System.Runtime.CompilerServices
 
                 public static void RollbackAsyncEventHeader(AsyncThreadContext context, in AsyncEventHeaderRollbackData rollbackData)
                 {
-                    context.EventBuffer.Index = rollbackData.Index;
-                    context.EventBuffer.EventCount = rollbackData.EventCount;
+                    ref EventBuffer eventBuffer = ref context.EventBuffer;
+                    eventBuffer.Index = rollbackData.Index;
+                    eventBuffer.EventCount = rollbackData.EventCount;
                     context.LastEventTimestamp = rollbackData.LastEventTimestamp;
                 }
             }
@@ -525,8 +520,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (_eventBuffer.Data.Length == 0)
                     {
-                        _eventBuffer.Data = AllocBuffer();
-                        Serializer.Header(this, ref _eventBuffer);
+                        InitializeBuffer();
                     }
 
                     Debug.Assert(InUse || BlockContext);
@@ -543,35 +537,7 @@ namespace System.Runtime.CompilerServices
                 context.InUse = true;
                 if (context.BlockContext)
                 {
-                    context.InUse = false;
-                    lock (AsyncThreadContextCache.CacheLock) { ; }
-                    context.InUse = true;
-                }
-
-                return context;
-            }
-
-            public static AsyncThreadContext AcquireTransient()
-            {
-                AsyncThreadContext? context;
-                if (t_asyncThreadContext != null)
-                {
-                    context = Get();
-                    Debug.Assert(!context.InUse);
-                }
-                else
-                {
-                    context = new AsyncThreadContext();
-                    context.ConfigRevision = Config.Revision;
-                    context.ActiveEventKeywords = Config.ActiveEventKeywords;
-                }
-
-                context.InUse = true;
-                if (context.BlockContext)
-                {
-                    context.InUse = false;
-                    lock (AsyncThreadContextCache.CacheLock) {; }
-                    context.InUse = true;
+                    WaitOnBlockedAsyncThreadContext(context);
                 }
 
                 return context;
@@ -593,7 +559,7 @@ namespace System.Runtime.CompilerServices
                     return context;
                 }
 
-                return Create();
+                return CreateAsyncThreadContext();
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -607,8 +573,29 @@ namespace System.Runtime.CompilerServices
                     return context;
                 }
 
-                context = Get();
-                info.Context = t_asyncThreadContext;
+                return GetAsyncThreadContext(ref info);
+            }
+
+            public static AsyncThreadContext AcquireTransient()
+            {
+                AsyncThreadContext? context;
+                if (t_asyncThreadContext != null)
+                {
+                    context = Get();
+                    Debug.Assert(!context.InUse);
+                }
+                else
+                {
+                    context = new AsyncThreadContext();
+                    context.ConfigRevision = Config.Revision;
+                    context.ActiveEventKeywords = Config.ActiveEventKeywords;
+                }
+
+                context.InUse = true;
+                if (context.BlockContext)
+                {
+                    WaitOnBlockedAsyncThreadContext(context);
+                }
 
                 return context;
             }
@@ -654,7 +641,7 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    EmitEvent(eventBuffer.Data.AsSpan().Slice(0, eventBuffer.Index));
+                    Log.AsyncEvents(eventBuffer.Data.AsSpan().Slice(0, eventBuffer.Index));
                 }
                 catch
                 {
@@ -664,31 +651,45 @@ namespace System.Runtime.CompilerServices
                 Serializer.Header(this, ref eventBuffer);
             }
 
-            private static void EmitEvent(Span<byte> buffer)
-            {
-                Log.AsyncEvents(buffer);
-            }
-
-            private static AsyncThreadContext Create()
-            {
-                AsyncThreadContext context = new AsyncThreadContext();
-                AsyncThreadContextCache.Add(context);
-                t_asyncThreadContext = context;
-                return context;
-            }
-
-            private static byte[] AllocBuffer()
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private void InitializeBuffer()
             {
                 try
                 {
-                    return new byte[Config.EventBufferSize];
+                    _eventBuffer.Data = new byte[Config.EventBufferSize];
+                    Serializer.Header(this, ref _eventBuffer);
                 }
                 catch
                 {
                     // Async Profiler can't throw, ignore exception and use empty buffer.
                     // This will cause event to drop and attempt to reallocate buffer on next event.
-                    return Array.Empty<byte>();
+                    _eventBuffer.Data = Array.Empty<byte>();
                 }
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static void WaitOnBlockedAsyncThreadContext(AsyncThreadContext context)
+            {
+                context.InUse = false;
+                lock (AsyncThreadContextCache.CacheLock) {; }
+                context.InUse = true;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static AsyncThreadContext GetAsyncThreadContext(ref Info info)
+            {
+                AsyncThreadContext context = Get();
+                info.Context = t_asyncThreadContext;
+                return context;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static AsyncThreadContext CreateAsyncThreadContext()
+            {
+                AsyncThreadContext context = new AsyncThreadContext();
+                AsyncThreadContextCache.Add(context);
+                t_asyncThreadContext = context;
+                return context;
             }
 
             [ThreadStatic]
@@ -697,57 +698,34 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class CreateAsyncContext
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void EmitEvent(AsyncThreadContext context, ulong id)
-            {
-                const int MaxEventPayloadSize = Serializer.MaxCompressedUInt64Size;
-
-                if (Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.CreateAsyncContext, MaxEventPayloadSize))
-                {
-                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data.AsSpan(context.EventBuffer.Index, MaxEventPayloadSize), id);
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id)
             {
                 const int MaxEventPayloadSize = Serializer.MaxCompressedUInt64Size;
 
-                if (Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, AsyncEventID.CreateAsyncContext, MaxEventPayloadSize))
+                ref EventBuffer eventBuffer = ref context.EventBuffer;
+                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, AsyncEventID.CreateAsyncContext, MaxEventPayloadSize))
                 {
-                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data.AsSpan(context.EventBuffer.Index, MaxEventPayloadSize), id);
+                    eventBuffer.Index += Serializer.WriteCompressedUInt64(eventBuffer.Data.AsSpan(eventBuffer.Index, MaxEventPayloadSize), id);
                 }
             }
         }
 
         internal static partial class ResumeAsyncContext
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void EmitEvent(AsyncThreadContext context, ulong id)
-            {
-                const int MaxEventPayloadSize = Serializer.MaxCompressedUInt64Size;
-
-                if (Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.ResumeAsyncContext, MaxEventPayloadSize))
-                {
-                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data.AsSpan(context.EventBuffer.Index, MaxEventPayloadSize), id);
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id)
             {
                 const int MaxEventPayloadSize = Serializer.MaxCompressedUInt64Size;
 
-                if (Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, AsyncEventID.ResumeAsyncContext, MaxEventPayloadSize))
+                ref EventBuffer eventBuffer = ref context.EventBuffer;
+                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, AsyncEventID.ResumeAsyncContext, MaxEventPayloadSize))
                 {
-                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data.AsSpan(context.EventBuffer.Index, MaxEventPayloadSize), id);
+                    eventBuffer.Index += Serializer.WriteCompressedUInt64(eventBuffer.Data.AsSpan(eventBuffer.Index, MaxEventPayloadSize), id);
                 }
             }
         }
 
         internal static partial class SuspendAsyncContext
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp)
             {
                 Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, AsyncEventID.SuspendAsyncContext, 0);
@@ -770,7 +748,6 @@ namespace System.Runtime.CompilerServices
                 AsyncThreadContext.Release(context);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp)
             {
                 Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, AsyncEventID.CompleteAsyncContext, 0);
@@ -816,15 +793,15 @@ namespace System.Runtime.CompilerServices
                 AsyncThreadContext.Release(context);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, uint unwindedFrames)
             {
                 // unwinded frames
                 const int MaxEventPayloadSize = Serializer.MaxCompressedUInt32Size;
 
-                if (Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, AsyncEventID.UnwindAsyncException, MaxEventPayloadSize))
+                ref EventBuffer eventBuffer = ref context.EventBuffer;
+                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, AsyncEventID.UnwindAsyncException, MaxEventPayloadSize))
                 {
-                    context.EventBuffer.Index += Serializer.WriteCompressedUInt32(context.EventBuffer.Data.AsSpan(context.EventBuffer.Index, MaxEventPayloadSize), unwindedFrames);
+                    eventBuffer.Index += Serializer.WriteCompressedUInt32(eventBuffer.Data.AsSpan(eventBuffer.Index, MaxEventPayloadSize), unwindedFrames);
                 }
             }
         }
@@ -844,7 +821,6 @@ namespace System.Runtime.CompilerServices
                 AsyncThreadContext.Release(context);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void EmitEvent(AsyncThreadContext context)
             {
                 Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.ResumeAsyncMethod, 0);
@@ -866,7 +842,6 @@ namespace System.Runtime.CompilerServices
                 AsyncThreadContext.Release(context);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void EmitEvent(AsyncThreadContext context)
             {
                 Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.CompleteAsyncMethod, 0);
@@ -888,7 +863,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void UnwindIndex(ref Info info, uint unwindedFrames)
             {
                 uint oldIndex = info.ContinuationIndex;
@@ -913,7 +887,6 @@ namespace System.Runtime.CompilerServices
                 AsyncThreadContext.Release(context);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static void EmitEvent(AsyncThreadContext context)
             {
                 Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.ResetAsyncContinuationWrapperIndex, 0);
@@ -949,7 +922,6 @@ namespace System.Runtime.CompilerServices
                 ResumeAsyncCallstacks(context);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static void EmitEvent(AsyncThreadContext context)
             {
                 Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.ResetAsyncThreadContext, 0);
@@ -1161,6 +1133,5 @@ namespace System.Runtime.CompilerServices
 
             private static List<AsyncThreadContextHolder> s_cache = new List<AsyncThreadContextHolder>();
         }
-
     }
 }
