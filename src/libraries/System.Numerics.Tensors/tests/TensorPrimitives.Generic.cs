@@ -320,61 +320,100 @@ namespace System.Numerics.Tensors.Tests
 
     // The tests for some types have been marked as OuterLoop simply to decrease inner loop testing time.
 
-    public class DoubleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<double> { }
-    public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float> { }
+    public class DoubleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<double>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+    }
+
+    public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+    }
+
     public class HalfGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<Half>
     {
+        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanInt16;
         protected override void AssertEqualTolerance(Half expected, Half actual, Half? tolerance = null) =>
             base.AssertEqualTolerance(expected, actual, tolerance ?? Half.CreateTruncating(0.001));
     }
 
     [OuterLoop]
-    public class NFloatGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<NFloat> { }
+    public class NFloatGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<NFloat>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+    }
 
     [OuterLoop]
-    public class SByteGenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<sbyte> { }
-    public class Int16GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<short> { }
+    public class SByteGenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<sbyte>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanByte;
+    }
+
+    public class Int16GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<short>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanInt16;
+    }
+
     [OuterLoop]
-    public class Int32GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<int> { }
-    public class Int64GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<long> { }
+    public class Int32GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<int>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+    }
+
+    public class Int64GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<long>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+    }
+
     [OuterLoop]
-    public class IntPtrGenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<nint> { }
-    public class Int128GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<Int128> { }
+    public class IntPtrGenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<nint>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+    }
+
+    public class Int128GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<Int128>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+    }
 
     public class ByteGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<byte>
     {
-        [Fact]
-        public void IndexOfMax_IndexAboveMaxValue()
-        {
-            using BoundedMemory<byte> tensor = CreateTensor(260);
-            tensor.Span.Fill(0);
-            tensor.Span[258] = 10;
-            int actual = TensorPrimitives.IndexOfMax(tensor.Span);
-            Assert.Equal(258, actual);
-        }
+        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanByte;
     }
+
     [OuterLoop]
     public class UInt16GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<ushort>
     {
-        [Fact]
-        public void IndexOfMax_IndexAboveMaxValue()
-        {
-            using BoundedMemory<ushort> tensor = CreateTensor(65540);
-            tensor.Span.Fill(0);
-            tensor.Span[65538] = 10;
-            int actual = TensorPrimitives.IndexOfMax(tensor.Span);
-            Assert.Equal(65538, actual);
-        }
+        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanInt16;
     }
-    [OuterLoop]
-    public class CharGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<char> { }
-    public class UInt32GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<uint> { }
-    [OuterLoop]
-    public class UInt64GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<ulong> { }
 
-    public class UIntPtrGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<nuint> { }
     [OuterLoop]
-    public class UInt128GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<UInt128> { }
+    public class CharGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<char>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanInt16;
+    }
+
+    public class UInt32GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<uint>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+    }
+
+    [OuterLoop]
+    public class UInt64GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<ulong>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+    }
+
+    public class UIntPtrGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<nuint>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+    }
+
+    [OuterLoop]
+    public class UInt128GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<UInt128>
+    {
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+    }
 
     public unsafe abstract class GenericFloatingPointNumberTensorPrimitivesTests<T> : GenericNumberTensorPrimitivesTests<T>
         where T : unmanaged, IFloatingPointIeee754<T>, IMinMaxValue<T>

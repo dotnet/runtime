@@ -106,6 +106,8 @@ namespace System.Numerics.Tensors.Tests
 
         protected virtual bool IsFloatingPoint => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
+        protected abstract int? IndexOfSizeExceedingMaxValue();
+
         protected abstract T ConvertFromSingle(float f);
 
         protected abstract IEnumerable<T> GetSpecialValues();
@@ -1134,6 +1136,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, IndexOfMax([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(2, IndexOfMax([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
         }
+
+        [Fact]
+        public void IndexOfMax_IndexAboveMaxValue()
+        {
+            var size = IndexOfSizeExceedingMaxValue();
+            if (size == null) return;
+
+            using BoundedMemory<T> x = CreateTensor(size.Value);
+            x.Span.Fill(ConvertFromSingle(1));
+            x.Span[size.Value - 1] = ConvertFromSingle(2);
+            Assert.Equal(size.Value - 1, IndexOfMax(x));
+        }
         #endregion
 
         #region IndexOfMaxMagnitude
@@ -1211,6 +1225,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, IndexOfMaxMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(2, IndexOfMaxMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
         }
+
+        [Fact]
+        public void IndexOfMaxMagnitude_IndexAboveMaxValue()
+        {
+            var size = IndexOfSizeExceedingMaxValue();
+            if (size == null) return;
+
+            using BoundedMemory<T> x = CreateTensor(size.Value);
+            x.Span.Fill(ConvertFromSingle(1));
+            x.Span[size.Value - 1] = ConvertFromSingle(2);
+            Assert.Equal(size.Value - 1, IndexOfMaxMagnitude(x));
+        }
         #endregion
 
         #region IndexOfMin
@@ -1262,6 +1288,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, IndexOfMin([ConvertFromSingle(+0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f)]));
             Assert.Equal(0, IndexOfMin([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(0, IndexOfMin([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
+        }
+
+        [Fact]
+        public void IndexOfMin_IndexAboveMaxValue()
+        {
+            var size = IndexOfSizeExceedingMaxValue();
+            if (size == null) return;
+
+            using BoundedMemory<T> x = CreateTensor(size.Value);
+            x.Span.Fill(ConvertFromSingle(1));
+            x.Span[size.Value - 1] = ConvertFromSingle(0);
+            Assert.Equal(size.Value - 1, IndexOfMin(x));
         }
         #endregion
 
@@ -1339,6 +1377,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, IndexOfMinMagnitude([ConvertFromSingle(+0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f)]));
             Assert.Equal(1, IndexOfMinMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(1, IndexOfMinMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
+        }
+
+        [Fact]
+        public void IndexOfMinMagnitude_IndexAboveMaxValue()
+        {
+            var size = IndexOfSizeExceedingMaxValue();
+            if (size == null) return;
+
+            using BoundedMemory<T> x = CreateTensor(size.Value);
+            x.Span.Fill(ConvertFromSingle(1));
+            x.Span[size.Value - 1] = ConvertFromSingle(0);
+            Assert.Equal(size.Value - 1, IndexOfMinMagnitude(x));
         }
         #endregion
 

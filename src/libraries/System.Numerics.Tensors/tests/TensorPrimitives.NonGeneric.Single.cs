@@ -91,6 +91,8 @@ namespace System.Numerics.Tensors.Tests
         protected override float NegativeOne => -1f;
         protected override float MinValue => float.MinValue;
 
+        protected override int? IndexOfSizeExceedingMaxValue() => null;
+
         protected override IEnumerable<(int Length, float Element)> VectorLengthAndIteratedRange(float min, float max, float increment)
         {
             foreach (int length in new[] { 4, 8, 16 })

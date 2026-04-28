@@ -142,7 +142,7 @@ namespace System.Numerics.Tensors
             }
 
             {
-                // Where result does not bitwise-equal the aggregate max value; replace indices with uint.MaxValue. Then find the min index.
+                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
                 Vector128<TInt> aggMask = ~Vector128.Equals(result.As<T, TInt>(), Vector128.Create(aggResult).As<T, TInt>());
                 Vector128<TInt> aggIndex = resultIndex | aggMask;
@@ -207,7 +207,7 @@ namespace System.Numerics.Tensors
             }
 
             {
-                // Where result does not bitwise-equal the aggregate max value; replace indices with uint.MaxValue. Then find the min index.
+                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
                 Vector128<short> aggMask = ~Vector128.Equals(result.AsInt16(), Vector128.Create(aggResult).AsInt16());
 
@@ -284,7 +284,7 @@ namespace System.Numerics.Tensors
             }
 
             {
-                // Where result does not bitwise-equal the aggregate max value; replace indices with uint.MaxValue. Then find the min index.
+                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
                 Vector128<sbyte> aggMask = ~Vector128.Equals(result.AsSByte(), Vector128.Create(aggResult).AsSByte());
 
@@ -355,7 +355,7 @@ namespace System.Numerics.Tensors
             }
 
             {
-                // Where result does not bitwise-equal the aggregate max value; replace indices with uint.MaxValue. Then find the min index.
+                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
                 Vector256<TInt> aggMask = ~Vector256.Equals(result.As<T, TInt>(), Vector256.Create(aggResult).As<T, TInt>());
                 Vector256<TInt> aggIndex = resultIndex | aggMask;
@@ -420,7 +420,7 @@ namespace System.Numerics.Tensors
             }
 
             {
-                // Where result does not bitwise-equal the aggregate max value; replace indices with uint.MaxValue. Then find the min index.
+                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
                 Vector256<short> aggMask = ~Vector256.Equals(result.AsInt16(), Vector256.Create(aggResult).AsInt16());
 
@@ -497,7 +497,7 @@ namespace System.Numerics.Tensors
             }
 
             {
-                // Where result does not bitwise-equal the aggregate max value; replace indices with uint.MaxValue. Then find the min index.
+                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
                 Vector256<sbyte> aggMask = ~Vector256.Equals(result.AsSByte(), Vector256.Create(aggResult).AsSByte());
 
@@ -568,7 +568,7 @@ namespace System.Numerics.Tensors
             }
 
             {
-                // Where result does not bitwise-equal the aggregate max value; replace indices with uint.MaxValue. Then find the min index.
+                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
                 Vector512<TInt> aggMask = ~Vector512.Equals(result.As<T, TInt>(), Vector512.Create(aggResult).As<T, TInt>());
                 Vector512<TInt> aggIndex = resultIndex | aggMask;
@@ -633,7 +633,7 @@ namespace System.Numerics.Tensors
             }
 
             {
-                // Where result does not bitwise-equal the aggregate max value; replace indices with uint.MaxValue. Then find the min index.
+                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
                 Vector512<short> aggMask = ~Vector512.Equals(result.AsInt16(), Vector512.Create(aggResult).AsInt16());
 
@@ -710,7 +710,7 @@ namespace System.Numerics.Tensors
             }
 
             {
-                // Where result does not bitwise-equal the aggregate max value; replace indices with uint.MaxValue. Then find the min index.
+                // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
                 Vector512<sbyte> aggMask = ~Vector512.Equals(result.AsSByte(), Vector512.Create(aggResult).AsSByte());
 

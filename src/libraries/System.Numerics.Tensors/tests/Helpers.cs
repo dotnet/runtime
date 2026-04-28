@@ -10,6 +10,9 @@ namespace System.Numerics.Tensors.Tests
 {
     public static class Helpers
     {
+        public static int SizeGraterThanByte => 260;
+        public static int SizeGraterThanInt16 => 65540;
+
         public static IEnumerable<int> TensorLengthsIncluding0 => Enumerable.Range(0, 257);
 
         public static IEnumerable<int> TensorLengths => Enumerable.Range(1, 256);
