@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Microsoft.Build.Framework;
 
 namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
@@ -97,8 +96,9 @@ internal static class SignatureMapper
                 }
                 else
                 {
-                    log.LogMessage(MessageImportance.High,
-                        $"SignatureMapper: unknown multi-field struct '{fullName}' (fields: {fields.Length}) — size not hardcoded");
+                    log.Error("WASM0067",
+                        $"SignatureMapper: unknown multi-field struct '{fullName}' (fields: {fields.Length}) — add its size to s_knownStructSizes in SignatureMapper.cs");
+                    return null;
                 }
 
                 c = 'S';
