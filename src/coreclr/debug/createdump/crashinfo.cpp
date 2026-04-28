@@ -794,7 +794,7 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
         if (seekResult != pagemapOffset)
         {
             int seekErrno = errno;
-            TRACE("Seeking in pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", ERRNO %d: %s\n", start, pagemapOffset, seekErrno, strerror(seekErrno));
+            TRACE("Seeking in pagemap file FAILED, addr: %" PRIA PRIx64 ", pagemap offset: %" PRIA PRIx64 ", ERRNO %d: %s\n", start, pagemapOffset, seekErrno, strerror(seekErrno));
             return true;
         }
         uint64_t value;
@@ -802,13 +802,13 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
         if (readResult == (size_t) -1)
         {
             int readErrno = errno;
-            TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
+            TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx64 ", pagemap offset: %" PRIA PRIx64 ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
             return true;
         }
 
         bool is_page_present = (value & ((uint64_t)1 << 63)) != 0;
         bool is_page_swapped = (value & ((uint64_t)1 << 62)) != 0;
-        TRACE_VERBOSE("Pagemap value for %" PRIA PRIx ", pagemap offset %" PRIA PRIx " is %" PRIA PRIx " -> %s\n", start, pagemapOffset, value, is_page_present ? "in memory" : (is_page_swapped ? "in swap" : "NOT in memory"));
+        TRACE_VERBOSE("Pagemap value for %" PRIA PRIx64 ", pagemap offset %" PRIA PRIx64 " is %" PRIA PRIx64 " -> %s\n", start, pagemapOffset, value, is_page_present ? "in memory" : (is_page_swapped ? "in swap" : "NOT in memory"));
         return is_page_present || is_page_swapped;
     #endif
 }
