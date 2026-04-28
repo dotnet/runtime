@@ -1166,39 +1166,15 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
 #ifdef FEATURE_INTERPRETER
     if (m_crawl.codeInfo.IsInterpretedCode())
     {
-        // SP points at an InterpMethodContextFrame on the interpreter stack.
-        // Locate the owning InterpreterFrame and advance past it so the iterator
-        // does not re-enter the same chain via the explicit frame link.
-        TADDR interpSP = GetRegdisplaySP(m_crawl.pRD);
-        PTR_Frame pSearch = m_crawl.pFrame;
-        PTR_Frame pOwningInterpFrame = (PTR_Frame)FRAME_TOP;
-        while (pSearch != FRAME_TOP)
-        {
-            if (pSearch->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
-            {
-                PTR_InterpreterFrame pInterpFrame = dac_cast<PTR_InterpreterFrame>(pSearch);
-                for (PTR_InterpMethodContextFrame pCur = pInterpFrame->GetTopInterpMethodContextFrame();
-                     pCur != NULL;
-                     pCur = pCur->pParent)
-                {
-                    if (dac_cast<TADDR>(pCur) == interpSP)
-                    {
-                        pOwningInterpFrame = pSearch;
-                        break;
-                    }
-                }
-                if (pOwningInterpFrame != FRAME_TOP)
-                {
-                    break;
-                }
-            }
-            pSearch = pSearch->PtrNextFrame();
-        }
-        _ASSERTE(pOwningInterpFrame != FRAME_TOP);
-        if (pOwningInterpFrame != FRAME_TOP)
-        {
-            m_crawl.pFrame = pOwningInterpFrame->PtrNextFrame();
-        }
+        // The CONTEXT carries the owning InterpreterFrame in the first-arg register
+        // (set by InterpreterFrame::SetContextToInterpMethodContextFrame). Advance
+        // m_crawl.pFrame past it so the iterator does not re-enter the same
+        // InterpMethodContextFrame chain via the explicit frame link.
+        PTR_InterpreterFrame pOwningInterpFrame =
+            dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(m_crawl.pRD->pCurrentContext));
+        _ASSERTE(pOwningInterpFrame != NULL);
+        _ASSERTE(pOwningInterpFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+        m_crawl.pFrame = pOwningInterpFrame->PtrNextFrame();
     }
     else
 #endif // FEATURE_INTERPRETER
