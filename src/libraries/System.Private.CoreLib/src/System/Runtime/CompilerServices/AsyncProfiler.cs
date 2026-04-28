@@ -124,32 +124,24 @@ namespace System.Runtime.CompilerServices
                             ref EventBuffer eventBuffer = ref context.EventBuffer;
                             if (Serializer.AsyncEventHeader(context, ref eventBuffer, AsyncEventID.AsyncProfilerMetadata, MaxStaticEventPayloadSize + maxDynamicEventPayloadSize))
                             {
-                                byte[] buffer = eventBuffer.Data;
-                                int index = eventBuffer.Index;
-
                                 SyncClock(out long utcTimeSync, out long qpcSync);
 
-                                Span<byte> payloadSpan = buffer.AsSpan(index, MaxStaticEventPayloadSize);
+                                Span<byte> payloadSpan = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxStaticEventPayloadSize + maxDynamicEventPayloadSize);
                                 int payloadSpanIndex = 0;
 
-                                payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan, payloadSpanIndex, (ulong)Stopwatch.Frequency);
-                                payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan, payloadSpanIndex, (ulong)qpcSync);
-                                payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan, payloadSpanIndex, (ulong)utcTimeSync);
-                                payloadSpanIndex += Serializer.WriteCompressedUInt32(payloadSpan, payloadSpanIndex, EventBufferSize);
+                                payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)Stopwatch.Frequency);
+                                payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)qpcSync);
+                                payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)utcTimeSync);
+                                payloadSpanIndex += Serializer.WriteCompressedUInt32(payloadSpan.Slice(payloadSpanIndex), EventBufferSize);
 
                                 payloadSpan[payloadSpanIndex++] = (byte)wrapperIPs.Length;
 
-                                index += payloadSpanIndex;
-
-                                payloadSpan = buffer.AsSpan(index, maxDynamicEventPayloadSize);
-                                payloadSpanIndex = 0;
-
                                 for (int i = 0; i < wrapperIPs.Length; i++)
                                 {
-                                    payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan, payloadSpanIndex, (ulong)wrapperIPs[i]);
+                                    payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)wrapperIPs[i]);
                                 }
 
-                                eventBuffer.Index = index + payloadSpanIndex;
+                                eventBuffer.Index += payloadSpanIndex;
 
                                 // Force flush to deliver event promptly.
                                 context.Flush();
@@ -195,8 +187,8 @@ namespace System.Runtime.CompilerServices
                         Span<byte> payloadSpan = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxEventPayloadSize);
                         int payloadSpanIndex = 0;
 
-                        payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan, payloadSpanIndex, (ulong)qpcSync);
-                        payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan, payloadSpanIndex, (ulong)utcTimeSync);
+                        payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)qpcSync);
+                        payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)utcTimeSync);
 
                         eventBuffer.Index += payloadSpanIndex;
 
@@ -299,33 +291,9 @@ namespace System.Runtime.CompilerServices
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static int WriteCompressedInt32(Span<byte> buffer, int index, int value)
-                {
-                    return WriteCompressedUInt32(buffer.Slice(index, MaxCompressedUInt32Size), ZigzagEncodeInt32(value));
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static int WriteCompressedInt32(byte[] buffer, int index, int value)
-                {
-                    return WriteCompressedUInt32(buffer.AsSpan(index, MaxCompressedUInt32Size), ZigzagEncodeInt32(value));
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static int WriteCompressedInt32(Span<byte> buffer, int value)
                 {
                     return WriteCompressedUInt32(buffer, ZigzagEncodeInt32(value));
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static int WriteCompressedUInt32(Span<byte> buffer, int index, uint value)
-                {
-                    return WriteCompressedUInt32(buffer.Slice(index, MaxCompressedUInt32Size), value);
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static int WriteCompressedUInt32(byte[] buffer, int index, uint value)
-                {
-                    return WriteCompressedUInt32(buffer.AsSpan(index, MaxCompressedUInt32Size), value);
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -350,44 +318,20 @@ namespace System.Runtime.CompilerServices
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static int WriteCompressedInt64(Span<byte> buffer, int index, long value)
-                {
-                    return WriteCompressedUInt64(buffer.Slice(index, MaxCompressedUInt64Size), ZigzagEncodeInt64(value));
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static int WriteCompressedInt64(byte[] buffer, int index, long value)
-                {
-                    return WriteCompressedUInt64(buffer.AsSpan(index, MaxCompressedUInt64Size), ZigzagEncodeInt64(value));
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static int WriteCompressedInt64(Span<byte> buffer, long value)
                 {
                     return WriteCompressedUInt64(buffer, ZigzagEncodeInt64(value));
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static int WriteCompressedUInt64(Span<byte> buffer, int index, ulong value)
+                public static int WriteCompressedUInt64(Span<byte> buffer, ulong value)
                 {
-                    return WriteCompressedUInt64(buffer.Slice(index, MaxCompressedUInt64Size), value);
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static int WriteCompressedUInt64(byte[] buffer, int index, ulong value)
-                {
-                    return WriteCompressedUInt64(buffer.AsSpan(index, MaxCompressedUInt64Size), value);
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static int WriteCompressedUInt64(Span<byte> destination, ulong value)
-                {
-                    if (destination.Length < MaxCompressedUInt64Size)
+                    if (buffer.Length < MaxCompressedUInt64Size)
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
                     }
 
-                    ref byte dst = ref MemoryMarshal.GetReference(destination);
+                    ref byte dst = ref MemoryMarshal.GetReference(buffer);
                     int index = 0;
 
                     while (value > 0x7Fu)
@@ -498,7 +442,7 @@ namespace System.Runtime.CompilerServices
                     int headerSpanIndex = 0;
 
                     headerSpan[headerSpanIndex++] = (byte)eventID; // eventID
-                    headerSpanIndex += WriteCompressedUInt64(headerSpan, headerSpanIndex, (ulong)delta); // Timestamp delta from last event
+                    headerSpanIndex += WriteCompressedUInt64(headerSpan.Slice(headerSpanIndex), (ulong)delta); // Timestamp delta from last event
 
                     eventBuffer.Index += headerSpanIndex;
                     eventBuffer.EventCount++;
@@ -533,7 +477,7 @@ namespace System.Runtime.CompilerServices
                     int headerSpanIndex = 0;
 
                     headerSpan[headerSpanIndex++] = (byte)eventID; // eventID
-                    headerSpanIndex += WriteCompressedUInt64(headerSpan, headerSpanIndex, (ulong)delta); // Timestamp delta from last event
+                    headerSpanIndex += WriteCompressedUInt64(headerSpan.Slice(headerSpanIndex), (ulong)delta); // Timestamp delta from last event
 
                     eventBuffer.Index += headerSpanIndex;
                     eventBuffer.EventCount++;
@@ -760,7 +704,7 @@ namespace System.Runtime.CompilerServices
 
                 if (Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.CreateAsyncContext, MaxEventPayloadSize))
                 {
-                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data, context.EventBuffer.Index, id);
+                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data.AsSpan(context.EventBuffer.Index, MaxEventPayloadSize), id);
                 }
             }
 
@@ -771,7 +715,7 @@ namespace System.Runtime.CompilerServices
 
                 if (Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, AsyncEventID.CreateAsyncContext, MaxEventPayloadSize))
                 {
-                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data, context.EventBuffer.Index, id);
+                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data.AsSpan(context.EventBuffer.Index, MaxEventPayloadSize), id);
                 }
             }
         }
@@ -785,7 +729,7 @@ namespace System.Runtime.CompilerServices
 
                 if (Serializer.AsyncEventHeader(context, ref context.EventBuffer, AsyncEventID.ResumeAsyncContext, MaxEventPayloadSize))
                 {
-                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data, context.EventBuffer.Index, id);
+                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data.AsSpan(context.EventBuffer.Index, MaxEventPayloadSize), id);
                 }
             }
 
@@ -796,7 +740,7 @@ namespace System.Runtime.CompilerServices
 
                 if (Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, AsyncEventID.ResumeAsyncContext, MaxEventPayloadSize))
                 {
-                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data, context.EventBuffer.Index, id);
+                    context.EventBuffer.Index += Serializer.WriteCompressedUInt64(context.EventBuffer.Data.AsSpan(context.EventBuffer.Index, MaxEventPayloadSize), id);
                 }
             }
         }
@@ -880,7 +824,7 @@ namespace System.Runtime.CompilerServices
 
                 if (Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, AsyncEventID.UnwindAsyncException, MaxEventPayloadSize))
                 {
-                    context.EventBuffer.Index += Serializer.WriteCompressedUInt32(context.EventBuffer.Data, context.EventBuffer.Index, unwindedFrames);
+                    context.EventBuffer.Index += Serializer.WriteCompressedUInt32(context.EventBuffer.Data.AsSpan(context.EventBuffer.Index, MaxEventPayloadSize), unwindedFrames);
                 }
             }
         }
