@@ -1005,7 +1005,11 @@ end:
         EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)malloc(sizeof(EvpPKeyExtraHandle));
         extra->prov = prov;
         extra->libCtx = libCtx;
+#if defined(TARGET_HAIKU) && defined(__clang__)
+        __c11_atomic_init(&extra->refCount, 1);
+#else
         atomic_init(&extra->refCount, 1);
+#endif
         *extraHandle = extra;
     }
 

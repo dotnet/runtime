@@ -924,6 +924,8 @@ CDAC_TYPE_END(ILCodeVersionNode)
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, T_UINT64, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
 CDAC_TYPE_FIELD(ProfControlBlock, T_BOOL, RejitOnAttachEnabled, offsetof(ProfControlBlock, fRejitOnAttachEnabled))
+CDAC_TYPE_FIELD(ProfControlBlock, T_POINTER, MainProfilerProfInterface, offsetof(ProfControlBlock, mainProfilerInfo) + offsetof(ProfilerInfo, pProfInterface))
+CDAC_TYPE_FIELD(ProfControlBlock, T_INT32, NotificationProfilerCount, offsetof(ProfControlBlock, notificationProfilerCount))
 CDAC_TYPE_END(ProfControlBlock)
 #endif // PROFILING_SUPPORTED
 
@@ -1361,6 +1363,7 @@ CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
+CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 #ifdef FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
