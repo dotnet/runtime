@@ -521,17 +521,24 @@ namespace System.Diagnostics.Tests
             using Process process = CreateProcess(static (string encodingArg) =>
             {
                 Encoding enc = Encoding.GetEncoding(encodingArg);
-                // Use characters that require multiple bytes in UTF-8 and exercise decoder state across reads:
-                // CJK characters (U+4E16 U+754C = "世界") require 3 bytes each in UTF-8, 2 bytes in UTF-16, 4 bytes in UTF-32.
-                using (StreamWriter outputWriter = new(Console.OpenStandardOutput(), enc))
-                {
-                    outputWriter.WriteLine("hello_\u4e16\u754c_stdout");
-                }
+                // Write raw encoded bytes split at the midpoint of the byte array so the split
+                // lands inside a multi-byte character, exercising decoder state across reads.
+                // CJK chars (U+4E16 U+754C = "世界"): 3 bytes each in UTF-8, 2 in UTF-16, 4 in UTF-32.
+                byte[] outBytes = enc.GetBytes("hello_\u4e16\u754c_stdout\n");
+                int outSplit = outBytes.Length / 2;
+                Stream stdout = Console.OpenStandardOutput();
+                stdout.Write(outBytes, 0, outSplit);
+                stdout.Flush();
+                stdout.Write(outBytes, outSplit, outBytes.Length - outSplit);
+                stdout.Flush();
 
-                using (StreamWriter errorWriter = new(Console.OpenStandardError(), enc))
-                {
-                    errorWriter.WriteLine("hello_\u4e16\u754c_stderr");
-                }
+                byte[] errBytes = enc.GetBytes("hello_\u4e16\u754c_stderr\n");
+                int errSplit = errBytes.Length / 2;
+                Stream stderr = Console.OpenStandardError();
+                stderr.Write(errBytes, 0, errSplit);
+                stderr.Flush();
+                stderr.Write(errBytes, errSplit, errBytes.Length - errSplit);
+                stderr.Flush();
 
                 return RemoteExecutor.SuccessExitCode;
             }, encodingName);
@@ -549,6 +556,35 @@ namespace System.Diagnostics.Tests
             Assert.Equal(new[] { "hello_\u4e16\u754c_stdout" }, capturedOutput);
             Assert.Equal(new[] { "hello_\u4e16\u754c_stderr" }, capturedError);
 
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAllLines_HandlesMixedLineEndings(bool useAsync)
+        {
+            using Process process = CreateProcess(static () =>
+            {
+                // Write stdout with all three line-terminator styles in one stream:
+                // \r\n (Windows), \n (Unix), bare \r (classic Mac), and a final chunk with no terminator.
+                Stream stdout = Console.OpenStandardOutput();
+                byte[] data = Encoding.UTF8.GetBytes("lineA\r\nlineB\nlineC\rlineD");
+                stdout.Write(data);
+                stdout.Flush();
+                return RemoteExecutor.SuccessExitCode;
+            });
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            List<string> capturedOutput = new();
+            List<string> capturedError = new();
+
+            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
+
+            Assert.Equal(new[] { "lineA", "lineB", "lineC", "lineD" }, capturedOutput);
+            Assert.Empty(capturedError);
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
