@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
@@ -62,7 +63,7 @@ namespace System.Xml
         {
         }
 
-        public unsafe UniqueId(byte[] guid, int offset)
+        public UniqueId(byte[] guid, int offset)
         {
             ArgumentNullException.ThrowIfNull(guid);
 
@@ -71,27 +72,23 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, guid.Length));
             if (guidLength > guid.Length - offset)
                 throw new ArgumentException(SR.Format(SR.XmlArrayTooSmallInput, guidLength), nameof(guid));
-            fixed (byte* pb = &guid[offset])
-            {
-                _idLow = UnsafeGetInt64(pb);
-                _idHigh = UnsafeGetInt64(&pb[8]);
-            }
+
+            ReadOnlySpan<byte> source = guid.AsSpan(offset, guidLength);
+            _idLow = BinaryPrimitives.ReadInt64LittleEndian(source);
+            _idHigh = BinaryPrimitives.ReadInt64LittleEndian(source.Slice(8));
         }
 
-        public unsafe UniqueId(string value)
+        public UniqueId(string value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
             if (value.Length == 0)
                 throw new FormatException(SR.XmlInvalidUniqueId);
-            fixed (char* pch = value)
-            {
-                UnsafeParse(pch, value.Length);
-            }
+            Parse(value);
             _s = value;
         }
 
-        public unsafe UniqueId(char[] chars, int offset, int count)
+        public UniqueId(char[] chars, int offset, int count)
         {
             ArgumentNullException.ThrowIfNull(chars);
 
@@ -103,10 +100,7 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, chars.Length - offset));
             if (count == 0)
                 throw new FormatException(SR.XmlInvalidUniqueId);
-            fixed (char* pch = &chars[offset])
-            {
-                UnsafeParse(pch, count);
-            }
+            Parse(chars.AsSpan(offset, count));
             if (!IsGuid)
             {
                 _s = new string(chars, offset, count);
@@ -125,7 +119,7 @@ namespace System.Xml
             }
         }
 
-        private unsafe int UnsafeDecode(short* char2val, char ch1, char ch2)
+        private static int Decode(ReadOnlySpan<short> char2val, char ch1, char ch2)
         {
             if ((ch1 | ch2) >= 0x80)
                 return 0x100;
@@ -133,21 +127,21 @@ namespace System.Xml
             return char2val[ch1] | char2val[0x80 + ch2];
         }
 
-        private static unsafe void UnsafeEncode(byte b, char* pch)
+        private static void Encode(byte b, Span<char> chars, int offset)
         {
-            pch[0] = HexConverter.ToCharLower(b >> 4);
-            pch[1] = HexConverter.ToCharLower(b);
+            chars[offset] = HexConverter.ToCharLower(b >> 4);
+            chars[offset + 1] = HexConverter.ToCharLower(b);
         }
 
         public bool IsGuid => ((_idLow | _idHigh) != 0);
 
-        private unsafe void UnsafeParse(char* chars, int charCount)
+        private void Parse(ReadOnlySpan<char> chars)
         {
             //           1         2         3         4
             // 012345678901234567890123456789012345678901234
             // urn:uuid:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
-            if (charCount != uuidLength ||
+            if (chars.Length != uuidLength ||
                 chars[0] != 'u' || chars[1] != 'r' || chars[2] != 'n' || chars[3] != ':' ||
                 chars[4] != 'u' || chars[5] != 'u' || chars[6] != 'i' || chars[7] != 'd' || chars[8] != ':' ||
                 chars[17] != '-' || chars[22] != '-' || chars[27] != '-' || chars[32] != '-')
@@ -155,44 +149,40 @@ namespace System.Xml
                 return;
             }
 
-            byte* bytes = stackalloc byte[guidLength];
+            Span<byte> bytes = stackalloc byte[guidLength];
+            ReadOnlySpan<short> char2val = Char2val;
 
-            int i = 0;
+            //   0         1         2         3         4
+            //   012345678901234567890123456789012345678901234
+            //   urn:uuid:aabbccdd-eeff-gghh-0011-223344556677
+            //
+            //   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+            //   ddccbbaaffeehhgg0011223344556677
+
+            int i;
             int j = 0;
-            fixed (short* ps = &Char2val[0])
-            {
-                short* _char2val = ps;
+            i = Decode(char2val, chars[15], chars[16]); bytes[0] = (byte)i; j |= i;
+            i = Decode(char2val, chars[13], chars[14]); bytes[1] = (byte)i; j |= i;
+            i = Decode(char2val, chars[11], chars[12]); bytes[2] = (byte)i; j |= i;
+            i = Decode(char2val, chars[9], chars[10]); bytes[3] = (byte)i; j |= i;
+            i = Decode(char2val, chars[20], chars[21]); bytes[4] = (byte)i; j |= i;
+            i = Decode(char2val, chars[18], chars[19]); bytes[5] = (byte)i; j |= i;
+            i = Decode(char2val, chars[25], chars[26]); bytes[6] = (byte)i; j |= i;
+            i = Decode(char2val, chars[23], chars[24]); bytes[7] = (byte)i; j |= i;
+            i = Decode(char2val, chars[28], chars[29]); bytes[8] = (byte)i; j |= i;
+            i = Decode(char2val, chars[30], chars[31]); bytes[9] = (byte)i; j |= i;
+            i = Decode(char2val, chars[33], chars[34]); bytes[10] = (byte)i; j |= i;
+            i = Decode(char2val, chars[35], chars[36]); bytes[11] = (byte)i; j |= i;
+            i = Decode(char2val, chars[37], chars[38]); bytes[12] = (byte)i; j |= i;
+            i = Decode(char2val, chars[39], chars[40]); bytes[13] = (byte)i; j |= i;
+            i = Decode(char2val, chars[41], chars[42]); bytes[14] = (byte)i; j |= i;
+            i = Decode(char2val, chars[43], chars[44]); bytes[15] = (byte)i; j |= i;
 
-                //   0         1         2         3         4
-                //   012345678901234567890123456789012345678901234
-                //   urn:uuid:aabbccdd-eeff-gghh-0011-223344556677
-                //
-                //   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-                //   ddccbbaaffeehhgg0011223344556677
+            if (j >= 0x100)
+                return;
 
-                i = UnsafeDecode(_char2val, chars[15], chars[16]); bytes[0] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[13], chars[14]); bytes[1] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[11], chars[12]); bytes[2] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[9], chars[10]); bytes[3] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[20], chars[21]); bytes[4] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[18], chars[19]); bytes[5] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[25], chars[26]); bytes[6] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[23], chars[24]); bytes[7] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[28], chars[29]); bytes[8] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[30], chars[31]); bytes[9] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[33], chars[34]); bytes[10] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[35], chars[36]); bytes[11] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[37], chars[38]); bytes[12] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[39], chars[40]); bytes[13] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[41], chars[42]); bytes[14] = (byte)i; j |= i;
-                i = UnsafeDecode(_char2val, chars[43], chars[44]); bytes[15] = (byte)i; j |= i;
-
-                if (j >= 0x100)
-                    return;
-
-                _idLow = UnsafeGetInt64(bytes);
-                _idHigh = UnsafeGetInt64(&bytes[8]);
-            }
+            _idLow = BinaryPrimitives.ReadInt64LittleEndian(bytes);
+            _idHigh = BinaryPrimitives.ReadInt64LittleEndian(bytes.Slice(8));
         }
 
         public int ToCharArray(char[] chars, int offset)
@@ -212,7 +202,7 @@ namespace System.Xml
             return count;
         }
 
-        private unsafe void ToSpan(Span<char> chars)
+        private void ToSpan(Span<char> chars)
         {
             if (_s != null)
             {
@@ -220,44 +210,42 @@ namespace System.Xml
             }
             else
             {
-                byte* bytes = stackalloc byte[guidLength];
-                UnsafeSetInt64(_idLow, bytes);
-                UnsafeSetInt64(_idHigh, &bytes[8]);
+                Span<byte> bytes = stackalloc byte[guidLength];
+                BinaryPrimitives.WriteInt64LittleEndian(bytes, _idLow);
+                BinaryPrimitives.WriteInt64LittleEndian(bytes.Slice(8), _idHigh);
 
-                fixed (char* _pch = &chars[0])
-                {
-                    char* pch = _pch;
-                    pch[0] = 'u';
-                    pch[1] = 'r';
-                    pch[2] = 'n';
-                    pch[3] = ':';
-                    pch[4] = 'u';
-                    pch[5] = 'u';
-                    pch[6] = 'i';
-                    pch[7] = 'd';
-                    pch[8] = ':';
-                    pch[17] = '-';
-                    pch[22] = '-';
-                    pch[27] = '-';
-                    pch[32] = '-';
+                // Force a single bounds check up front so the indexed writes below are bounds-check-free.
+                chars = chars.Slice(0, uuidLength);
+                chars[0] = 'u';
+                chars[1] = 'r';
+                chars[2] = 'n';
+                chars[3] = ':';
+                chars[4] = 'u';
+                chars[5] = 'u';
+                chars[6] = 'i';
+                chars[7] = 'd';
+                chars[8] = ':';
+                chars[17] = '-';
+                chars[22] = '-';
+                chars[27] = '-';
+                chars[32] = '-';
 
-                    UnsafeEncode(bytes[0], &pch[15]);
-                    UnsafeEncode(bytes[1], &pch[13]);
-                    UnsafeEncode(bytes[2], &pch[11]);
-                    UnsafeEncode(bytes[3], &pch[9]);
-                    UnsafeEncode(bytes[4], &pch[20]);
-                    UnsafeEncode(bytes[5], &pch[18]);
-                    UnsafeEncode(bytes[6], &pch[25]);
-                    UnsafeEncode(bytes[7], &pch[23]);
-                    UnsafeEncode(bytes[8], &pch[28]);
-                    UnsafeEncode(bytes[9], &pch[30]);
-                    UnsafeEncode(bytes[10], &pch[33]);
-                    UnsafeEncode(bytes[11], &pch[35]);
-                    UnsafeEncode(bytes[12], &pch[37]);
-                    UnsafeEncode(bytes[13], &pch[39]);
-                    UnsafeEncode(bytes[14], &pch[41]);
-                    UnsafeEncode(bytes[15], &pch[43]);
-                }
+                Encode(bytes[0], chars, 15);
+                Encode(bytes[1], chars, 13);
+                Encode(bytes[2], chars, 11);
+                Encode(bytes[3], chars, 9);
+                Encode(bytes[4], chars, 20);
+                Encode(bytes[5], chars, 18);
+                Encode(bytes[6], chars, 25);
+                Encode(bytes[7], chars, 23);
+                Encode(bytes[8], chars, 28);
+                Encode(bytes[9], chars, 30);
+                Encode(bytes[10], chars, 33);
+                Encode(bytes[11], chars, 35);
+                Encode(bytes[12], chars, 37);
+                Encode(bytes[13], chars, 39);
+                Encode(bytes[14], chars, 41);
+                Encode(bytes[15], chars, 43);
             }
         }
 
@@ -274,7 +262,7 @@ namespace System.Xml
             return true;
         }
 
-        public unsafe bool TryGetGuid(byte[] buffer, int offset)
+        public bool TryGetGuid(byte[] buffer, int offset)
         {
             if (!IsGuid)
                 return false;
@@ -288,11 +276,9 @@ namespace System.Xml
             if (guidLength > buffer.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(buffer), SR.Format(SR.XmlArrayTooSmallOutput, guidLength));
 
-            fixed (byte* pb = &buffer[offset])
-            {
-                UnsafeSetInt64(_idLow, pb);
-                UnsafeSetInt64(_idHigh, &pb[8]);
-            }
+            Span<byte> destination = buffer.AsSpan(offset, guidLength);
+            BinaryPrimitives.WriteInt64LittleEndian(destination, _idLow);
+            BinaryPrimitives.WriteInt64LittleEndian(destination.Slice(8), _idHigh);
 
             return true;
         }
@@ -339,40 +325,5 @@ namespace System.Xml
             }
         }
 
-        private unsafe long UnsafeGetInt64(byte* pb)
-        {
-            int idLow = UnsafeGetInt32(pb);
-            int idHigh = UnsafeGetInt32(&pb[4]);
-            return (((long)idHigh) << 32) | ((uint)idLow);
-        }
-
-        private unsafe int UnsafeGetInt32(byte* pb)
-        {
-            int value = pb[3];
-            value <<= 8;
-            value |= pb[2];
-            value <<= 8;
-            value |= pb[1];
-            value <<= 8;
-            value |= pb[0];
-            return value;
-        }
-
-        private unsafe void UnsafeSetInt64(long value, byte* pb)
-        {
-            UnsafeSetInt32((int)value, pb);
-            UnsafeSetInt32((int)(value >> 32), &pb[4]);
-        }
-
-        private unsafe void UnsafeSetInt32(int value, byte* pb)
-        {
-            pb[0] = (byte)value;
-            value >>= 8;
-            pb[1] = (byte)value;
-            value >>= 8;
-            pb[2] = (byte)value;
-            value >>= 8;
-            pb[3] = (byte)value;
-        }
     }
 }

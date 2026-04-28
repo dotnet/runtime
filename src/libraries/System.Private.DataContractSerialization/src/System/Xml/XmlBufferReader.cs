@@ -855,7 +855,7 @@ namespace System.Xml
             return true;
         }
 
-        public unsafe bool Equals2(int offset1, int length1, string s2)
+        public bool Equals2(int offset1, int length1, string s2)
         {
             int byteLength = length1;
             int charLength = s2.Length;
@@ -884,30 +884,25 @@ namespace System.Xml
             else
             {
                 int length = Math.Min(byteLength, charLength);
-                fixed (byte* _pb = &buffer[offset1])
+                ReadOnlySpan<byte> bytes = buffer.AsSpan(offset1, length);
+                ReadOnlySpan<char> chars = s2.AsSpan(0, length);
+                // Try to do the fast comparison in ASCII space
+                int i = 0;
+                int t = 0;
+                for (; i < bytes.Length; i++)
                 {
-                    byte* pb = _pb;
-                    byte* pbMax = pb + length;
-                    fixed (char* _pch = s2)
-                    {
-                        char* pch = _pch;
-                        // Try to do the fast comparison in ASCII space
-                        int t = 0;
-                        while (pb < pbMax && *pb < 0x80)
-                        {
-                            t = *pb - (byte)*pch;
-                            // The code generated is better if we break out then return
-                            if (t != 0)
-                                break;
-                            pb++;
-                            pch++;
-                        }
-                        if (t != 0)
-                            return false;
-                        if (pb == pbMax)
-                            return (byteLength == charLength);
-                    }
+                    byte b = bytes[i];
+                    if (b >= 0x80)
+                        break;
+                    t = b - (byte)chars[i];
+                    // The code generated is better if we break out then return
+                    if (t != 0)
+                        break;
                 }
+                if (t != 0)
+                    return false;
+                if (i == bytes.Length)
+                    return (byteLength == charLength);
                 return XmlConverter.ToString(buffer, offset1, length1) == s2;
             }
         }
