@@ -1,13 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This header provides the includes needed for datadescriptor.inc to use
-// offsetof() on NativeAOT runtime data structures.
-//
-// Note: Some NativeAOT types have private members that offsetof() cannot access
-// from this compilation unit. For those types, we use known offset constants
-// validated at build time by AsmOffsetsVerify.cpp and DebugHeader.cpp static_asserts.
-
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
