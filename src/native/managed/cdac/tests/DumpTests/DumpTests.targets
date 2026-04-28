@@ -167,7 +167,7 @@
     <PropertyGroup>
       <_PublishOutDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)'))</_PublishOutDir>
     </PropertyGroup>
-    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --no-self-contained /p:PublishReadyToRun=true --nologo -o &quot;$(_PublishOutDir)&quot;" />
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --no-self-contained /p:PublishReadyToRun=true --nologo -v diag -o &quot;$(_PublishOutDir)&quot;" />
   </Target>
 
   <Target Name="_GenerateDumpsForDebuggee">
