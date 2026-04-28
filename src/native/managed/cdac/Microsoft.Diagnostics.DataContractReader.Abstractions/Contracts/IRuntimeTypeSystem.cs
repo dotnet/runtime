@@ -126,7 +126,7 @@ public interface IRuntimeTypeSystem : IContract
     /// Returns (offset, size) pairs normalized to actual byte lengths.
     /// See RuntimeTypeSystem.md for the full GCDesc format documentation.
     /// </summary>
-    IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle, uint objectSize) => throw new NotImplementedException();
+    IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0) => throw new NotImplementedException();
     bool IsDynamicStatics(TypeHandle typeHandle) => throw new NotImplementedException();
     ushort GetNumInterfaces(TypeHandle typeHandle) => throw new NotImplementedException();
 

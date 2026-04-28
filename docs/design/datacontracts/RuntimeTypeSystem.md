@@ -59,7 +59,7 @@ partial interface IRuntimeTypeSystem : IContract
     // True if the MethodTable represents a continuation type used by the async continuation feature
     public virtual bool IsContinuation(TypeHandle typeHandle);
     // Returns the GC pointer runs for the method table as (offset, size) pairs normalized to actual byte lengths.
-    public virtual IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle, uint objectSize);
+    public virtual IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0);
     public virtual bool IsDynamicStatics(TypeHandle typeHandle);
     public virtual ushort GetNumInterfaces(TypeHandle typeHandle);
 
@@ -560,9 +560,11 @@ Contracts used:
         && ContinuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer;
 
-    IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle, uint objectSize)
+    IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0)
     {
         // Returns empty if not a method table or has no GC pointers.
+        // Compute objectSize: baseSize + numComponents * componentSize.
+        // For non-array types, numComponents == 0 so objectSize == baseSize.
 
         // Read NumSeries from (mtAddress - pointerSize), sign-extended to native width.
         // NumSeries == 0 → empty.

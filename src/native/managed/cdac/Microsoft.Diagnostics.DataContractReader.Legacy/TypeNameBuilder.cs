@@ -520,7 +520,7 @@ public struct TypeNameBuilder
         var name = new StringBuilder("Continuation_");
         name.Append(dataSize);
 
-        foreach ((uint seriesOffset, uint seriesSize) in typeSystemContract.GetGCDescSeries(typeHandle, baseSize))
+        foreach ((uint seriesOffset, uint seriesSize) in typeSystemContract.GetGCDescSeries(typeHandle))
         {
             if (seriesOffset < continuationDataOffset)
                 continue;

@@ -565,13 +565,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         && _continuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == _continuationMethodTablePointer;
 
-    IEnumerable<(uint SeriesOffset, uint SeriesSize)> IRuntimeTypeSystem.GetGCDescSeries(TypeHandle typeHandle, uint objectSize)
+    IEnumerable<(uint SeriesOffset, uint SeriesSize)> IRuntimeTypeSystem.GetGCDescSeries(TypeHandle typeHandle, uint numComponents)
     {
         if (!typeHandle.IsMethodTable())
             yield break;
 
         if (!ContainsGCPointers(typeHandle))
             yield break;
+
+        uint baseSize = GetBaseSize(typeHandle);
+        uint componentSize = GetComponentSize(typeHandle);
+        uint objectSize = baseSize + numComponents * componentSize;
 
         ulong mtAddress = typeHandle.Address;
         ulong pointerSize = (ulong)_target.PointerSize;
