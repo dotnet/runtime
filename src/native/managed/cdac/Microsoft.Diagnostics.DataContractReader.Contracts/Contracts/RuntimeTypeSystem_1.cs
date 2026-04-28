@@ -1046,7 +1046,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         if (currentHandle == default)
+        {
+            Console.WriteLine($"Failed to find type {nameSpace}+{name}, 1");
             return new TypeHandle(TargetPointer.Null);
+        }
 
         // 2. Walk down the nested types
         for (int i = 1; i < parts.Length; i++)
@@ -1064,7 +1067,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 }
             }
             if (!found)
+            {
+                Console.WriteLine($"Failed to find type {nameSpace}+{name}, 2");
                 return new TypeHandle(TargetPointer.Null);
+            }
         }
 
         // 3. We have the handle, look up the type handle
@@ -1073,7 +1079,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         TargetPointer typeHandlePtr = loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         if (typeHandlePtr == TargetPointer.Null)
+        {
+            Console.WriteLine($"Failed to find type {nameSpace}+{name}, 3");
             return new TypeHandle(TargetPointer.Null);
+        }
         TypeHandle foundTypeHandle = rts.GetTypeHandle(typeHandlePtr);
         _ = _typeHandlesByName.TryAdd(new TypeKeyByName(name, nameSpace, modulePtr), foundTypeHandle);
         return foundTypeHandle;
