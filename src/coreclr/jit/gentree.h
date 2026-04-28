@@ -1580,19 +1580,12 @@ public:
 
     static bool OperIsMul(genTreeOps gtOper)
     {
-        if (StaticOperIs(gtOper, GT_MUL, GT_MULHI))
-        {
-            return true;
-        }
-
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
-        if (StaticOperIs(gtOper, GT_MUL_LONG))
-        {
-            return true;
-        }
+        static_assert(AreContiguous(GT_MUL, GT_MULHI, GT_MUL_LONG));
+        return (GT_MUL <= gtOper) && (gtOper <= GT_MUL_LONG);
+#else
+        return StaticOperIs(gtOper, GT_MUL, GT_MULHI);
 #endif
-
-        return false;
     }
 
     bool OperIsMul() const
@@ -1604,9 +1597,8 @@ public:
     static bool OperIsRMWMemOp(genTreeOps gtOper)
     {
         // Return if binary op is one of the supported operations for RMW of memory.
-        static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
-        return StaticOperIs(gtOper, GT_ADD, GT_SUB) || ((GT_OR <= gtOper) && (gtOper <= GT_ROR)) ||
-               StaticOperIs(gtOper, GT_NOT, GT_NEG) || OperIsShiftLong(gtOper);
+        static_assert(AreContiguous(GT_NOT, GT_NEG, GT_OR, GT_XOR, GT_AND, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR, GT_ADD, GT_SUB));
+        return ((GT_NOT <= gtOper) && (gtOper <= GT_SUB)) || OperIsShiftLong(gtOper);
     }
     bool OperIsRMWMemOp() const
     {
@@ -1880,9 +1872,9 @@ public:
 
     bool OperIsConditionalJump() const
     {
-        static_assert(AreContiguous(GT_JCMP, GT_JTEST, GT_JCC));
+        static_assert(AreContiguous(GT_JTRUE, GT_JCMP, GT_JTEST, GT_JCC));
 
-        if (OperIs(GT_JTRUE) || ((GT_JCMP <= gtOper) && (gtOper <= GT_JCC)))
+        if ((GT_JTRUE <= gtOper) && (gtOper <= GT_JCC))
         {
             return true;
         }
@@ -1901,18 +1893,10 @@ public:
     {
 #if defined(TARGET_ARM64)
         static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC));
-
-        if ((GT_JCC <= gtOper) && (gtOper <= GT_SELECT_NEGCC))
-        {
-            return true;
-        }
+        return (GT_JCC <= gtOper) && (gtOper <= GT_SELECT_NEGCC);
 #elif defined(TARGET_AMD64)
         static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
-
-        if ((GT_JCC <= gtOper) && (gtOper <= GT_CCMP))
-        {
-            return true;
-        }
+        return (GT_JCC <= gtOper) && (gtOper <= GT_CCMP);
 #else
         static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC));
 
@@ -1920,7 +1904,6 @@ public:
         {
             return true;
         }
-#endif
 
 #if !defined(TARGET_64BIT)
         if (OperIs(GT_ADD_HI, GT_SUB_HI))
@@ -1930,6 +1913,7 @@ public:
 #endif
 
         return false;
+#endif
     }
 
 #ifdef DEBUG

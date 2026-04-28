@@ -6,6 +6,15 @@
 #ifndef GTNODE
 #error  Define GTNODE before including this file.
 #endif
+
+/*****************************************************************************/
+/*                             IMPORTANT                                     */
+/* Several of the nodes below are explicitly ordered to allow for efficient  */
+/* range checks in the various OperIs queries on GenTree. All such usages    */
+/* should be guarded by a corresponding static_assert(AreContiguous(...))    */
+/* check, so be mindful if updating the list and ensure these aren't broken. */
+/*****************************************************************************/
+
 /*****************************************************************************/
 //
 //     Node enum
@@ -60,9 +69,7 @@ GTNODE(CNS_MSK          , GenTreeMskCon      ,0,0,GTK_LEAF)
 //  Unary  operators (1 operand):
 //-----------------------------------------------------------------------------
 
-GTNODE(NOT              , GenTreeOp          ,0,0,GTK_UNOP)
 GTNODE(NOP              , GenTree            ,0,1,GTK_LEAF|DBK_NOCONTAIN)
-GTNODE(NEG              , GenTreeOp          ,0,0,GTK_UNOP)
 
 GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,0,GTK_BINOP|GTK_EXOP)
 GTNODE(KEEPALIVE        , GenTree            ,0,0,GTK_UNOP|GTK_NOVALUE)   // keep operand alive, generate no code, produce no result
@@ -107,18 +114,12 @@ GTNODE(LZCNT            , GenTreeOp          ,0,0,GTK_UNOP)               // Lea
 
 GTNODE(NONLOCAL_JMP     , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE)   // Non-local jump to specified address
 
+GTNODE(NOT              , GenTreeOp          ,0,0,GTK_UNOP)
+GTNODE(NEG              , GenTreeOp          ,0,0,GTK_UNOP)
+
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
 //-----------------------------------------------------------------------------
-
-GTNODE(ADD              , GenTreeOp          ,1,0,GTK_BINOP)
-GTNODE(SUB              , GenTreeOp          ,0,0,GTK_BINOP)
-GTNODE(MUL              , GenTreeOp          ,1,0,GTK_BINOP)
-GTNODE(DIV              , GenTreeOp          ,0,0,GTK_BINOP)
-GTNODE(MOD              , GenTreeOp          ,0,0,GTK_BINOP)
-
-GTNODE(UDIV             , GenTreeOp          ,0,0,GTK_BINOP)
-GTNODE(UMOD             , GenTreeOp          ,0,0,GTK_BINOP)
 
 GTNODE(OR               , GenTreeOp          ,1,0,GTK_BINOP)
 GTNODE(XOR              , GenTreeOp          ,1,0,GTK_BINOP)
@@ -129,6 +130,34 @@ GTNODE(RSH              , GenTreeOp          ,0,0,GTK_BINOP)
 GTNODE(RSZ              , GenTreeOp          ,0,0,GTK_BINOP)
 GTNODE(ROL              , GenTreeOp          ,0,0,GTK_BINOP)
 GTNODE(ROR              , GenTreeOp          ,0,0,GTK_BINOP)
+
+GTNODE(ADD              , GenTreeOp          ,1,0,GTK_BINOP)
+GTNODE(SUB              , GenTreeOp          ,0,0,GTK_BINOP)
+GTNODE(MUL              , GenTreeOp          ,1,0,GTK_BINOP)
+
+// Returns high bits (top N bits of the 2N bit result of an NxN multiply)
+// GT_MULHI is used in division by a constant (LowerUnsignedDivOrMod). We turn
+// the div into a MULHI + some adjustments. In codegen, we only use the
+// results of the high register, and we drop the low results.
+GTNODE(MULHI            , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
+
+// A mul that returns the 2N bit result of an NxN multiply. This op is used for
+// multiplies that take two ints and return a long result. For 32 bit targets,
+// all other multiplies with long results are morphed into helper calls.
+// It is similar to GT_MULHI, the difference being that GT_MULHI drops the lo
+// part of the result, whereas GT_MUL_LONG keeps both parts of the result.
+// MUL_LONG is also used on ARM64, where 64 bit multiplication is more expensive.
+#if !defined(TARGET_64BIT)
+GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,0,GTK_BINOP|DBK_NOTHIR)
+#elif defined(TARGET_ARM64)
+GTNODE(MUL_LONG         , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
+#endif
+
+GTNODE(DIV              , GenTreeOp          ,0,0,GTK_BINOP)
+GTNODE(MOD              , GenTreeOp          ,0,0,GTK_BINOP)
+
+GTNODE(UDIV             , GenTreeOp          ,0,0,GTK_BINOP)
+GTNODE(UMOD             , GenTreeOp          ,0,0,GTK_BINOP)
 
 GTNODE(EQ               , GenTreeOp          ,0,0,GTK_BINOP)
 GTNODE(NE               , GenTreeOp          ,0,0,GTK_BINOP)
@@ -197,23 +226,6 @@ GTNODE(HWINTRINSIC      , GenTreeHWIntrinsic ,0,0,GTK_SPECIAL)               // 
 // Saturating increment, used in division by a constant (LowerUnsignedDivOrMod).
 GTNODE(INC_SATURATE     , GenTreeOp          ,0,0,GTK_UNOP|DBK_NOTHIR)
 
-// Returns high bits (top N bits of the 2N bit result of an NxN multiply)
-// GT_MULHI is used in division by a constant (LowerUnsignedDivOrMod). We turn
-// the div into a MULHI + some adjustments. In codegen, we only use the
-// results of the high register, and we drop the low results.
-GTNODE(MULHI            , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
-
-// A mul that returns the 2N bit result of an NxN multiply. This op is used for
-// multiplies that take two ints and return a long result. For 32 bit targets,
-// all other multiplies with long results are morphed into helper calls.
-// It is similar to GT_MULHI, the difference being that GT_MULHI drops the lo
-// part of the result, whereas GT_MUL_LONG keeps both parts of the result.
-// MUL_LONG is also used on ARM64, where 64 bit multiplication is more expensive.
-#if !defined(TARGET_64BIT)
-GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,0,GTK_BINOP|DBK_NOTHIR)
-#elif defined(TARGET_ARM64)
-GTNODE(MUL_LONG         , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
-#endif
 // AndNot - emitted on ARM/ARM64 as the BIC instruction. Also used for creating AndNot HWINTRINSIC vector nodes in a cross-ISA manner.
 GTNODE(AND_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 
@@ -228,17 +240,15 @@ GTNODE(BFIZ             , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Bitfi
 #endif
 
 //-----------------------------------------------------------------------------
+//  Other nodes that look like unary/binary operators:
+//-----------------------------------------------------------------------------
+
+GTNODE(JTRUE            , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
+
+//-----------------------------------------------------------------------------
 //  LIR specific compare and conditional branch/set nodes:
 //-----------------------------------------------------------------------------
 
-// Sets the condition flags according to the compare result. N.B. Not a relop, it does not produce a value and it cannot be reversed.
-GTNODE(CMP              , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
-// Generate a test instruction; sets the CPU flags according to (a & b) and does not produce a value.
-GTNODE(TEST             , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
-#ifdef TARGET_XARCH
-// The XARCH BT instruction. Like CMP, this sets the condition flags (CF to be precise) and does not produce a value.
-GTNODE(BT               , GenTreeOp          ,0,0,(GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR))
-#endif
 // Makes a comparison and jumps if the condition specified by gtCondition is true. Does not set flags.
 GTNODE(JCMP             , GenTreeOpCC        ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 // Do a bit test and jump if set/not set.
@@ -257,7 +267,6 @@ GTNODE(SELECTCC         , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(CCMP             , GenTreeCCMP        ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 #endif
 
-
 #ifdef TARGET_ARM64
 // Variant of SELECT_INC that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECT_INCCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
@@ -275,6 +284,15 @@ GTNODE(SELECT_INV       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Maps to arm64 csneg/cneg instruction.. Computes result = condition ? op1 : -op2.
 // If op2 is null, computes result = condition ? -op1 : op1.
 GTNODE(SELECT_NEG       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+#endif
+
+// Sets the condition flags according to the compare result. N.B. Not a relop, it does not produce a value and it cannot be reversed.
+GTNODE(CMP              , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+// Generate a test instruction; sets the CPU flags according to (a & b) and does not produce a value.
+GTNODE(TEST             , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+#ifdef TARGET_XARCH
+// The XARCH BT instruction. Like CMP, this sets the condition flags (CF to be precise) and does not produce a value.
+GTNODE(BT               , GenTreeOp          ,0,0,(GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR))
 #endif
 
 //-----------------------------------------------------------------------------
@@ -306,12 +324,6 @@ GTNODE(BIT_CLEAR        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Maps to binv/binvi instruction. Computes result = op1 ^ (1 << op2)
 GTNODE(BIT_INVERT       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 #endif
-
-//-----------------------------------------------------------------------------
-//  Other nodes that look like unary/binary operators:
-//-----------------------------------------------------------------------------
-
-GTNODE(JTRUE            , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 
 //-----------------------------------------------------------------------------
 //  Other nodes that have special structure:
