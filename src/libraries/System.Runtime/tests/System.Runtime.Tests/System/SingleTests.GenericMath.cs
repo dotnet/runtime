@@ -346,6 +346,7 @@ namespace System.Tests
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116823", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public static void ConvertToIntegerTest()
         {
             // Signed Values
