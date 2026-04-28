@@ -318,7 +318,7 @@ InterpreterCalliCookie MethodDesc::GetCalliCookie()
 
     PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
     if (codeData == NULL)
-        return (InterpreterCalliCookie)NULL;
+        return NULL;
     return (InterpreterCalliCookie)VolatileLoadWithoutBarrier(&codeData->CalliCookie);
 }
 #endif // FEATURE_INTERPRETER
