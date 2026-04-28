@@ -120,6 +120,24 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        /// <summary>
+        /// Provides a table of 32 functionally identical continuation wrapper methods, each with
+        /// a unique native IP address. When resuming an async continuation, the profiler dispatches
+        /// through the wrapper at index (ContinuationIndex &amp; COUNT_MASK), then increments the index.
+        ///
+        /// This creates a rotating pattern of unique return addresses on the native callstack. An OS
+        /// CPU profiler (e.g., ETW, perf) captures these native IPs in its stack samples. The async
+        /// profiler emits the wrapper IP table in the metadata event, so a post-processing tool can
+        /// identify which wrapper IPs appear in a native callstack and correlate them with the
+        /// async resume callstack events emitted at the same logical point. This bridges the gap
+        /// between synchronous native stack samples and the asynchronous continuation chain.
+        ///
+        /// Every COUNT (32) continuations, a ResetAsyncContinuationWrapperIndex event is emitted
+        /// so the tool knows the index has wrapped around and can correctly map subsequent samples.
+        ///
+        /// Each wrapper is marked [NoInlining] to guarantee a distinct native IP, and
+        /// [AggressiveOptimization] to ensure stable JIT output (skip tiered compilation).
+        /// </summary>
         [StackTraceHidden]
         internal static partial class ContinuationWrapper
         {
