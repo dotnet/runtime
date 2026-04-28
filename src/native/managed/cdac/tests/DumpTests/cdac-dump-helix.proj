@@ -165,6 +165,42 @@
           Include="echo '{&quot;os&quot;:&quot;$(TargetOS)&quot;,&quot;arch&quot;:&quot;$(TargetArchitecture)&quot;,&quot;debuggees&quot;:[$(_EvalDebuggeeJsonArray)]}' &gt; $HELIX_WORKITEM_PAYLOAD/dumps/local/dump-info.json" />
     </ItemGroup>
 
+    <!--
+      Copy symbols (SPC + debuggee DLLs) alongside dumps so the tar is self-contained.
+      This enables xplat test machines to resolve symbols without the original testhost.
+    -->
+    <RemoveDuplicates Inputs="@(_Debuggee)">
+      <Output TaskParameter="Filtered" ItemName="_UniqueDebuggee" />
+    </RemoveDuplicates>
+
+    <ItemGroup>
+      <!-- Windows: copy SPC from testhost shared framework -->
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="echo === Copying symbols ===" />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="mkdir %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\runtime" />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="for /D %25%25v in (%25HELIX_CORRELATION_PAYLOAD%25\shared\Microsoft.NETCore.App\*) do (echo === Processing folder: %25%25v === &amp; dir %25%25v &amp; echo Copying System.Private.CoreLib.dll &amp; copy &quot;%25%25v\System.Private.CoreLib.dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\runtime\&quot; &amp; echo === Done with %25%25v === &amp; echo)" />
+      <!-- Windows: copy each debuggee DLL -->
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="@(_UniqueDebuggee->'mkdir %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)')" />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="@(_UniqueDebuggee->'copy &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\%(Identity).dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot;')" />
+
+      <!-- Unix: copy SPC from testhost shared framework -->
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="echo '=== Copying symbols ==='" />
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/runtime" />
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="cp $HELIX_CORRELATION_PAYLOAD/shared/Microsoft.NETCore.App/*/System.Private.CoreLib.dll $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/runtime/" />
+      <!-- Unix: copy each debuggee DLL -->
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="@(_UniqueDebuggee->'mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)')" />
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="@(_UniqueDebuggee->'cp $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/%(Identity).dll $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/')" />
+    </ItemGroup>
+
     <!-- Test mode only: run xunit, capture exit code, propagate after archive. -->
     <ItemGroup Condition="'$(DumpOnly)' != 'true'">
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"

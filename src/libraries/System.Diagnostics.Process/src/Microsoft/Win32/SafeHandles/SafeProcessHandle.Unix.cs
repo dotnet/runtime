@@ -132,7 +132,8 @@ namespace Microsoft.Win32.SafeHandles
 
             if (!waitState.WaitForExit(milliseconds))
             {
-                waitState._canceled = SignalCore(PosixSignal.SIGKILL);
+                waitState._canceled = true;
+                SignalCore(PosixSignal.SIGKILL);
                 waitState.WaitForExit(Timeout.Infinite);
             }
 

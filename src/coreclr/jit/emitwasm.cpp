@@ -1143,3 +1143,32 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 {
 }
 #endif // DEBUG
+
+//----------------------------------------------------------------------------------------
+// emitUpdateFuncletLocations: update the start and end locations of each funclet
+//
+void emitter::emitUpdateFuncletLocations()
+{
+    insGroup* ig   = emitIGlist;
+    insGroup* prev = nullptr;
+
+    while (ig != nullptr)
+    {
+        FuncInfoDsc* const func = m_compiler->funGetFunc(ig->igFuncIdx);
+
+        if ((prev == nullptr) || (prev->igFuncIdx != ig->igFuncIdx))
+        {
+            func->startLoc = new (m_compiler, CMK_UnwindInfo) emitLocation(ig);
+        }
+
+        insGroup* const next = ig->igNext;
+
+        if ((next == nullptr) || (next->igFuncIdx != ig->igFuncIdx))
+        {
+            func->endLoc = new (m_compiler, CMK_UnwindInfo) emitLocation(ig, ig->igInsCnt);
+        }
+
+        prev = ig;
+        ig   = next;
+    }
+}

@@ -8,7 +8,7 @@ using Xunit;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsNotAzureLinux3VM))]
+    [ConditionalClass(typeof(QuicTestBase))]
     public class MsQuicPlatformDetectionTests : QuicTestBase
     {
         public MsQuicPlatformDetectionTests(ITestOutputHelper output) : base(output) { }

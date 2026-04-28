@@ -234,6 +234,8 @@
              Link="CommonTest\System\Security\Cryptography\MLKemAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemBaseTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemBaseTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\Pkcs8TestHelpers.cs"
+             Link="CommonTest\System\Security\Cryptography\Pkcs8TestHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
@@ -616,6 +618,13 @@
     <Compile Include="SymmetricAlgorithmTests.cs" />
     <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
+    <Compile Include="X25519DiffieHellmanBaseTests.cs" />
+    <Compile Include="X25519DiffieHellmanContractTests.cs" />
+    <Compile Include="X25519DiffieHellmanImplementationTests.cs" />
+    <Compile Include="X25519DiffieHellmanKeyTests.cs" />
+    <Compile Include="X25519DiffieHellmanNotSupportedTests.cs" />
+    <Compile Include="X25519DiffieHellmanTestData.cs" />
+    <Compile Include="X25519DiffieHellmanTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
     <Compile Include="X509Certificates\Cert.cs" />
     <Compile Include="X509Certificates\CertTests.cs" />
