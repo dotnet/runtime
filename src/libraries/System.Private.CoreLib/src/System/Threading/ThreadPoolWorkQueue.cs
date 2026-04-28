@@ -366,7 +366,10 @@ namespace System.Threading
                                 else
                                 {
                                     // Failed, restore head.
-                                    m_headIndex = head;
+                                    // This write must complete before we return with a missed steal and check if
+                                    // there is a pending thread request because the thread that responds
+                                    // to the request must see the write to not conclude that the queue is empty.
+                                    Interlocked.Exchange(ref m_headIndex, head);
                                 }
                             }
                         }
@@ -839,14 +842,17 @@ namespace System.Threading
         // Dispatch (if YieldFromDispatchLoop is true), or performing periodic activities
         public const uint DispatchQuantumMs = 30;
 
+        public enum DispatchResult
+        {
+            Spurious = 0,   // the thread was invited, but there was no work in the queue.
+            Regular  = 1,   // this thread did as much work as was available or its quantum expired.
+            ShouldStop = 2, // this thread stopped working early.
+        }
+
         /// <summary>
         /// Dispatches work items to this thread.
         /// </summary>
-        /// <returns>
-        /// <c>true</c> if this thread did as much work as was available or its quantum expired.
-        /// <c>false</c> if this thread stopped working early.
-        /// </returns>
-        internal static bool Dispatch()
+        internal static DispatchResult Dispatch()
         {
             ThreadPoolWorkQueue workQueue = ThreadPool.s_workQueue;
             ThreadPoolWorkQueueThreadLocals tl = workQueue.GetOrCreateThreadLocals();
@@ -862,9 +868,10 @@ namespace System.Threading
                     ThreadPool.EnsureWorkerRequested();
                 }
 
-                // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
-                return true;
+                // The thread found no work.
+                return DispatchResult.Spurious;
             }
+
 
             // The workitems that are currently in the queues could have asked only for one worker.
             // We are going to process a workitem, which may take unknown time or even block.
@@ -921,7 +928,7 @@ namespace System.Threading
                             ThreadPool.EnsureWorkerRequested();
                         }
 
-                        return true;
+                        return DispatchResult.Regular;
                     }
                 }
 
@@ -977,7 +984,8 @@ namespace System.Threading
                     {
                         workQueue.UnassignWorkItemQueue(tl);
                     }
-                    return false;
+
+                    return DispatchResult.ShouldStop;
                 }
 
                 // Check if the dispatch quantum has expired
@@ -997,7 +1005,7 @@ namespace System.Threading
                     {
                         workQueue.UnassignWorkItemQueue(tl);
                     }
-                    return true;
+                    return DispatchResult.Regular;
                 }
 
                 if (s_assignableWorkItemQueueCount > 0)
