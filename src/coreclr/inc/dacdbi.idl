@@ -15,7 +15,6 @@ struct DbiVersion;
 struct TypeRefData;
 struct TargetBuffer;
 struct ModuleInfo;
-struct AssemblyInfo;
 struct DacThreadAllocInfo;
 struct NativeVarData;
 struct SequencePoints;
