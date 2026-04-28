@@ -3968,6 +3968,11 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 //------------------------------------------------------------------------
 // optAssertionProp_AddMulSub: Optimizes MUL/ADD/SUB via assertions
 //    1) Clears overflow flag if both operands are proven to be in a range that cannot overflow
+//    2) Clears GTF_ORDER_SIDEEFF on a byref ADD of (non-null gc ref) + constant. The flag is
+//       set during FIELD_ADDR morphing to keep the ADD ordered after a paired NULLCHECK so we
+//       don't form and GC-report a byref to invalid memory; once we can prove the base is
+//       non-null, the ordering constraint is no longer needed and clearing the flag lets
+//       lowering form an addressing mode for indirections that consume this ADD.
 //
 // Arguments:
 //    assertions - set of live assertions
@@ -4011,6 +4016,16 @@ GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTr
             return optAssertionProp_Update(tree, tree, stmt);
         }
     }
+
+    if (tree->OperIs(GT_ADD) && tree->TypeIs(TYP_BYREF) && ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) &&
+        tree->gtGetOp2()->IsCnsIntOrI() && optAssertionIsNonNull(tree->gtGetOp1(), assertions))
+    {
+        JITDUMP("Clearing GTF_ORDER_SIDEEFF on byref ADD [%06d] in " FMT_BB " (base proven non-null)\n",
+                dspTreeID(tree), compCurBB->bbNum);
+        tree->gtFlags &= ~GTF_ORDER_SIDEEFF;
+        return optAssertionProp_Update(tree, tree, stmt);
+    }
+
     return nullptr;
 }
 
