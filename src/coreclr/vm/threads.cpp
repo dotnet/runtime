@@ -3221,10 +3221,10 @@ OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable)
 }
 
 //
-// This is a nice wrapper for SetLastThrownObject, which catches any exceptions caused by not
-// being able to create the handle for the throwable, and sets the throwable to the preallocated out of memory
-// exception instead. It also updates the last thrown object, which is always updated when the throwable is
-// updated.
+// This is a nice wrapper for updating the last thrown object handle, which catches any exceptions caused by not
+// being able to create the handle for the throwable, and falls back to the preallocated out of memory exception
+// for the last thrown object instead. The throwable itself is stored directly in ExInfo::m_exception by managed
+// EH code, so this helper only updates the last thrown object state.
 //
 OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable,
                                     BOOL isUnhandled)
