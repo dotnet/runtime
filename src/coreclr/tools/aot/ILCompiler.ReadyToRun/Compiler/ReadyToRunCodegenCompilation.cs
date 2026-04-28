@@ -781,15 +781,9 @@ namespace ILCompiler
             {
                 if (!method.IsCompilerGeneratedILBodyForAsync())
                     return;
-                if (method.Signature.ReturnType.IsVoid)
-                {
-                    // Special method in CoreLib. These are not compiled in R2R.
-                    return;
-                }
                 var ilProvider = (ReadyToRunILProvider)_methodILCache.ILProvider;
                 MethodIL il = ilProvider.GetMethodIL(method);
                 // We shouldn't get null IL, but just in case, handle it gracefully
-                Debug.Assert(il is not null);
                 if (il is null)
                 {
                     return;
