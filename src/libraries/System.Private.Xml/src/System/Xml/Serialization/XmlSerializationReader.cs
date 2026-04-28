@@ -905,7 +905,7 @@ namespace System.Xml.Serialization
             if (wrapped)
             {
                 if (ReadNull()) return null;
-                if (_r.IsEmptyElement)
+                if (!LocalAppContextSwitches.UseLegacyEmptyXmlElementDeserialization && _r.IsEmptyElement)
                 {
                     _r.Skip();
                     return null;
