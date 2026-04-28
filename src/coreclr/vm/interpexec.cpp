@@ -4360,11 +4360,14 @@ do                                                                      \
                         );
                     }
                     continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
-                    SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), executionContext);
                     continuation->SetFlags(pAsyncSuspendData->flags);
 
+                    PTR_OBJECTREF pExecutionContext = continuation->GetExecutionContextObjectStorageOrNull();
+                    _ASSERTE(pExecutionContext != NULL);
+                    SetObjectReference(pExecutionContext, executionContext);
+
                     PTR_OBJECTREF pContinuationContext = continuation->GetContinuationContextObjectStorageOrNull();
-                    if (pContinuationContext != nullptr)
+                    if (pContinuationContext != NULL)
                     {
                         MethodDesc *captureSyncContextMethod = pAsyncSuspendData->captureSyncContextMethod;
                         int32_t *flagsAddress = continuation->GetFlagsAddress();
@@ -4563,18 +4566,7 @@ do                                                                      \
                         // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
                         _ASSERTE(*ip == INTOP_HANDLE_CONTINUATION_RESUME);
                         _ASSERTE(*(ip-3) == INTOP_HANDLE_CONTINUATION_SUSPEND);
-                        InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[1]];
-
-                        returnOffset = pMethod->allocaSize;
-                        callArgsOffset = pMethod->allocaSize;
-
-                        OBJECTREF execContext = ObjectToOBJECTREF(*(Object**)(((uint8_t*)OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext));
-
-                        // We need to call the RestoreExecutionContext helper method
-                        LOCAL_VAR(callArgsOffset, OBJECTREF) = execContext;
-
-                        targetMethod = pAsyncSuspendData->restoreExecutionContextMethod;
-                        goto CALL_INTERP_METHOD;
+                        break;
                     }
                     ip += 3;
                     break;
