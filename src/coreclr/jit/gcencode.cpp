@@ -4091,7 +4091,12 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
+    // TODO-WASM: Enable tracked GC slots for precise GC
+#ifdef TARGET_WASM
+    const bool noTrackedGCSlots = true;
+#else
     const bool noTrackedGCSlots = m_compiler->opts.MinOpts();
+#endif
 
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
