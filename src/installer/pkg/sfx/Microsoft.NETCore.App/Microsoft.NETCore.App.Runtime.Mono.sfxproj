@@ -70,4 +70,35 @@
       <ReferenceCopyLocalPaths Include="@(MonoRuntimeFiles)" />
     </ItemGroup>
   </Target>
+
+  <!--
+    Generate a catalog (.cat) file covering all .js files in the runtime pack
+    during the MSI installer build phase. This target runs AFTER PublishToDisk
+    extracts the NuPkg contents into the installer layout directory, and BEFORE
+    WiX Heat harvests files for the MSI. This ensures the .cat is included in
+    the MSI alongside the .js files it covers.
+
+    Key design: The NuPkg is built on Linux (in the VMR), but the MSI installer
+    is built on Windows. This target hooks into the installer phase (Windows)
+    rather than the pack phase (Linux), so makecat.exe is available.
+
+    The .js files are customer-modifiable runtime/toolchain files that cannot be
+    directly Authenticode-signed. The .cat provides integrity verification
+    without preventing modification. Same pattern as dotnet/emsdk#1671.
+  -->
+  <Target Name="GenerateCatalogForJsFiles"
+          AfterTargets="PublishToDisk"
+          Condition="$([MSBuild]::IsOSPlatform('Windows')) and
+                     '$(RuntimeIdentifier)' == 'browser-wasm' and
+                     '$(GenerateMSI)' == 'true'">
+    <PropertyGroup>
+      <_CatalogRootPath>$(OutputPath)</_CatalogRootPath>
+      <_CatOutputPath>$(OutputPath)mono-runtime-js.cat</_CatOutputPath>
+      <_ErrorIfMakecatNotFound Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(OfficialBuild)' == 'true'">-ErrorIfMakecatNotFound</_ErrorIfMakecatNotFound>
+    </PropertyGroup>
+
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -Command &quot;&amp; '$(RepoRoot)eng\generate-catalog.ps1' -RootPath '$(_CatalogRootPath)' -CatOutputPath '$(_CatOutputPath)' -WindowsSdkDir '$(WindowsSdkDir)' $(_ErrorIfMakecatNotFound)&quot;" StandardOutputImportance="High" />
+
+    <Message Condition="Exists('$(_CatOutputPath)')" Importance="High" Text="Generated catalog file: $(_CatOutputPath)" />
+  </Target>
 </Project>

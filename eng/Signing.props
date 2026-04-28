@@ -49,9 +49,13 @@
     <MacOSPkg Include="$(ArtifactsPackagesDir)**/dotnet-runtime*.pkg" Exclude="$(ArtifactsPackagesDir)**/dotnet-runtime-internal*.pkg" />
     <FileSignInfo Include="@(MacOSPkg->'%(Filename)%(Extension)')" CertificateName="MacDeveloperWithNotarization" />
 
-    <!-- We don't need to code sign .js files because they are not used in Windows Script Host. -->
-    <!-- WARNING: Needs to happed outside of any target -->
+    <!-- JS files are customer-modifiable runtime/toolchain files. They cannot be
+         Authenticode-signed because modifying a signed file breaks the signature.
+         Instead, a catalog file (.cat) is generated and signed to provide integrity
+         verification. See the GenerateCatalogForJsFiles target in
+         src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.Mono.sfxproj. -->
     <FileExtensionSignInfo Update=".js" CertificateName="None" />
+    <FileExtensionSignInfo Include=".cat" CertificateName="Microsoft400" />
 
     <!-- Third-party components which should be signed.  -->
     <FileSignInfo Include="Antlr4.Runtime.Standard.dll" CertificateName="3PartySHA2" />
