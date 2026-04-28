@@ -3173,7 +3173,7 @@ SWITCH_OPCODE:
                             MetaSig sig(targetMethod);
                             cookie = GetCookieForCalliSig(sig, NULL);
                             _ASSERTE(cookie != NULL);
-                            targetMethod->SetCalliCookie((InterpreterCalliCookie)cookie);
+                            targetMethod->SetCalliCookie(cookie);
                             cookie = targetMethod->GetCalliCookie();
                         }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
