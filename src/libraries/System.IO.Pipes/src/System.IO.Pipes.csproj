@@ -156,12 +156,12 @@
              Link="Common\Interop\Unix\Interop.Pipe.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetPwUid.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.Pipe.cs"
-             Link="Common\Interop\Unix\Interop.Read.Pipe.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs"
+             Link="Common\Interop\Unix\Interop.Read.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs"
              Link="Common\Interop\Unix\Interop.Unlink.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.Pipe.cs"
-             Link="Common\Interop\Unix\Interop.Write.Pipe.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
+             Link="Common\Interop\Unix\Interop.Write.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
              Link="Common\Interop\Unix\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.Pipe.cs"

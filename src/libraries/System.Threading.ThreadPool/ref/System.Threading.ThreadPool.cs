@@ -115,6 +115,7 @@ namespace System.Threading
         protected PollTriggeredOperation() { }
         protected internal abstract bool TryCompleteOperation(System.Runtime.InteropServices.SafeHandle handle);
         protected internal abstract void OnCompleted(System.Threading.PollOperationOnCompletedResult result);
+        protected virtual void ExecuteThreadPoolWorkItem() { }
         void System.Threading.IThreadPoolWorkItem.Execute() { }
     }
     public delegate void WaitCallback(object? state);

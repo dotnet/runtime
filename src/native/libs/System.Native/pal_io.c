@@ -1254,66 +1254,7 @@ int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
     return Common_Read(fd, buffer, bufferSize);
 }
 
-int32_t SystemNative_ReadFromNonblocking(intptr_t fd, void* buffer, int32_t bufferSize)
-{
-    while (1)
-    {
-        int32_t result = Common_Read(fd, buffer, bufferSize);
-        if (result != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
-        {
-            return result;
-        }
 
-        // The fd is non-blocking and no data is available yet.
-        // Block (on a thread pool thread) until data arrives or the pipe/socket is closed.
-        PollEvent pollEvent = { .FileDescriptor = (int32_t)fd, .Events = PAL_POLLIN, .TriggeredEvents = 0 };
-        uint32_t triggered = 0;
-        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
-        if (pollResult != Error_SUCCESS)
-        {
-            errno = ConvertErrorPalToPlatform(pollResult);
-            return -1;
-        }
-
-        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
-            (pollEvent.TriggeredEvents & PAL_POLLIN) == 0)
-        {
-            // The pipe/socket was closed with no data available (EOF).
-            return 0;
-        }
-    }
-}
-
-int32_t SystemNative_WriteToNonblocking(intptr_t fd, const void* buffer, int32_t bufferSize)
-{
-    while (1)
-    {
-        int32_t result = Common_Write(fd, buffer, bufferSize);
-        if (result != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
-        {
-            return result;
-        }
-
-        // The fd is non-blocking and the write buffer is full.
-        // Block (on a thread pool thread) until space is available or the pipe/socket is closed.
-        PollEvent pollEvent = { .FileDescriptor = (int32_t)fd, .Events = PAL_POLLOUT, .TriggeredEvents = 0 };
-        uint32_t triggered = 0;
-        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
-        if (pollResult != Error_SUCCESS)
-        {
-            errno = ConvertErrorPalToPlatform(pollResult);
-            return -1;
-        }
-
-        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
-            (pollEvent.TriggeredEvents & PAL_POLLOUT) == 0)
-        {
-            // The pipe/socket was closed.
-            errno = EPIPE;
-            return -1;
-        }
-    }
-}
 
 int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize)
 {
@@ -2024,35 +1965,11 @@ int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
     int fileDescriptor = ToFileDescriptor(fd);
     int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
 
-    while (1)
-    {
-        int64_t count;
-        while ((count = readv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
+    int64_t count;
+    while ((count = readv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
 
-        if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
-        {
-            assert(count >= -1);
-            return count;
-        }
-
-        // The fd is non-blocking and no data is available yet.
-        // Block (on a thread pool thread) until data arrives or the pipe/socket is closed.
-        PollEvent pollEvent = { .FileDescriptor = fileDescriptor, .Events = PAL_POLLIN, .TriggeredEvents = 0 };
-        uint32_t triggered = 0;
-        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
-        if (pollResult != Error_SUCCESS)
-        {
-            errno = ConvertErrorPalToPlatform(pollResult);
-            return -1;
-        }
-
-        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
-            (pollEvent.TriggeredEvents & PAL_POLLIN) == 0)
-        {
-            // The pipe/socket was closed with no data available (EOF).
-            return 0;
-        }
-    }
+    assert(count >= -1);
+    return count;
 }
 
 int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
@@ -2104,36 +2021,11 @@ int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
     int fileDescriptor = ToFileDescriptor(fd);
     int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
 
-    while (1)
-    {
-        int64_t count;
-        while ((count = writev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
+    int64_t count;
+    while ((count = writev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
 
-        if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
-        {
-            assert(count >= -1);
-            return count;
-        }
-
-        // The fd is non-blocking and the write buffer is full.
-        // Block (on a thread pool thread) until space is available or the pipe/socket is closed.
-        PollEvent pollEvent = { .FileDescriptor = fileDescriptor, .Events = PAL_POLLOUT, .TriggeredEvents = 0 };
-        uint32_t triggered = 0;
-        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
-        if (pollResult != Error_SUCCESS)
-        {
-            errno = ConvertErrorPalToPlatform(pollResult);
-            return -1;
-        }
-
-        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
-            (pollEvent.TriggeredEvents & PAL_POLLOUT) == 0)
-        {
-            // The pipe/socket was closed.
-            errno = EPIPE;
-            return -1;
-        }
-    }
+    assert(count >= -1);
+    return count;
 }
 
 int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)

@@ -17,22 +17,22 @@ namespace Microsoft.Win32.SafeHandles
 
         private NullableBool _isBlocking;
         private PollableHandle? _pollHandle;
-        private PipeReadOperation? _cachedReadOp;
-        private PipeWriteOperation? _cachedWriteOp;
+        private ReadOperation? _cachedReadOp;
+        private WriteOperation? _cachedWriteOp;
 
-        private PipeReadOperation RentReadOperation()
-            => Interlocked.Exchange(ref _cachedReadOp, null) ?? new PipeReadOperation(this);
+        private ReadOperation RentReadOperation()
+            => Interlocked.Exchange(ref _cachedReadOp, null) ?? new ReadOperation(this);
 
-        private PipeWriteOperation RentWriteOperation()
-            => Interlocked.Exchange(ref _cachedWriteOp, null) ?? new PipeWriteOperation(this);
+        private WriteOperation RentWriteOperation()
+            => Interlocked.Exchange(ref _cachedWriteOp, null) ?? new WriteOperation(this);
 
-        private void ReturnReadOperation(PipeReadOperation op)
+        private void ReturnReadOperation(ReadOperation op)
         {
             op.Reset();
             Volatile.Write(ref _cachedReadOp, op);
         }
 
-        private void ReturnWriteOperation(PipeWriteOperation op)
+        private void ReturnWriteOperation(WriteOperation op)
         {
             op.Reset();
             Volatile.Write(ref _cachedWriteOp, op);
@@ -43,7 +43,7 @@ namespace Microsoft.Win32.SafeHandles
             get
             {
                 NullableBool isBlocking = _isBlocking;
-                if (isBlocking == NullableBool.Undefined && !IsClosed)
+                if (isBlocking == NullableBool.Undefined)
                 {
                     if (Interop.Sys.Fcntl.GetIsNonBlocking(this, out bool nonBlocking) != 0)
                     {
@@ -57,16 +57,15 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private void SetHandleBlocking(bool blocking)
+        private void SetHandleNonBlocking()
         {
-            NullableBool newValue = blocking ? NullableBool.True : NullableBool.False;
-            if (_isBlocking != newValue)
+            if (_isBlocking != NullableBool.False)
             {
-                if (Interop.Sys.Fcntl.SetIsNonBlocking(this, blocking ? 0 : 1) != 0)
+                if (Interop.Sys.Fcntl.SetIsNonBlocking(this, 1) != 0)
                 {
                     throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
-                _isBlocking = newValue;
+                _isBlocking = NullableBool.False;
             }
         }
 
@@ -76,7 +75,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 if (_pollHandle == null)
                 {
-                    SetHandleBlocking(false);
+                    SetHandleNonBlocking();
                     PollableHandle.Create(this, ref _pollHandle);
                 }
                 return _pollHandle!;
@@ -153,11 +152,10 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            PipeReadOperation op = RentReadOperation();
+            ReadOperation op = RentReadOperation();
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                op.SyncBuffer = bufPtr;
-                op.SyncBufferLength = buffer.Length;
+                op.Init(bufPtr, buffer.Length);
 
                 PollOperationSyncResult result = PollHandle.ReadSync(op, sequenceNumber, timeout: -1);
 
@@ -170,7 +168,7 @@ namespace Microsoft.Win32.SafeHandles
                     return readResult;
                 }
 
-                return (-1, new Interop.ErrorInfo(Interop.Error.EPIPE));
+                return (-1, new Interop.ErrorInfo(Interop.Error.ECANCELED));
             }
         }
 
@@ -182,9 +180,8 @@ namespace Microsoft.Win32.SafeHandles
                 return new ValueTask<(int, Interop.ErrorInfo)>(readResult);
             }
 
-            PipeReadOperation op = RentReadOperation();
-            op.Buffer = destination;
-            op.CancellationToken = cancellationToken;
+            ReadOperation op = RentReadOperation();
+            op.Init(destination, cancellationToken);
 
             PollOperationAsyncResult result = PollHandle.ReadAsync(op, sequenceNumber, cancellationToken);
 
@@ -199,7 +196,7 @@ namespace Microsoft.Win32.SafeHandles
                 return new ValueTask<(int, Interop.ErrorInfo)>(readResult);
             }
 
-            return new ValueTask<(int, Interop.ErrorInfo)>((-1, new Interop.ErrorInfo(Interop.Error.EPIPE)));
+            return new ValueTask<(int, Interop.ErrorInfo)>((-1, new Interop.ErrorInfo(Interop.Error.ECANCELED)));
         }
 
         internal unsafe Interop.ErrorInfo Write(ReadOnlySpan<byte> buffer)
@@ -229,11 +226,10 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            PipeWriteOperation op = RentWriteOperation();
+            WriteOperation op = RentWriteOperation();
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                op.SyncBuffer = bufPtr;
-                op.SyncRemaining = buffer.Length;
+                op.Init(bufPtr, buffer.Length);
 
                 PollOperationSyncResult result = PollHandle.WriteSync(op, sequenceNumber, timeout: -1);
 
@@ -246,7 +242,7 @@ namespace Microsoft.Win32.SafeHandles
                     return errorInfo;
                 }
 
-                return new Interop.ErrorInfo(Interop.Error.EPIPE);
+                return new Interop.ErrorInfo(Interop.Error.ECANCELED);
             }
         }
 
@@ -259,9 +255,8 @@ namespace Microsoft.Win32.SafeHandles
                 return new ValueTask<Interop.ErrorInfo>(writeResult);
             }
 
-            PipeWriteOperation op = RentWriteOperation();
-            op.Buffer = source.Slice(bytesWritten);
-            op.CancellationToken = cancellationToken;
+            WriteOperation op = RentWriteOperation();
+            op.Init(source.Slice(bytesWritten), cancellationToken);
 
             PollOperationAsyncResult result = PollHandle.WriteAsync(op, sequenceNumber, cancellationToken);
 
@@ -276,47 +271,59 @@ namespace Microsoft.Win32.SafeHandles
                 return new ValueTask<Interop.ErrorInfo>(writeResult);
             }
 
-            return new ValueTask<Interop.ErrorInfo>(new Interop.ErrorInfo(Interop.Error.EPIPE));
+            return new ValueTask<Interop.ErrorInfo>(new Interop.ErrorInfo(Interop.Error.ECANCELED));
         }
 
-        private sealed unsafe class PipeReadOperation : PollTriggeredOperation, IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>
+        private sealed unsafe class ReadOperation : PollTriggeredOperation, IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>
         {
             private readonly SafePipeHandle _owner;
             internal (int BytesRead, Interop.ErrorInfo ErrorInfo) Result;
             private ManualResetValueTaskSourceCore<(int, Interop.ErrorInfo)> _mrvtsc;
-            internal Memory<byte> Buffer;
-            internal byte* SyncBuffer;
-            internal int SyncBufferLength;
-            internal CancellationToken CancellationToken;
+            private Memory<byte> _buffer;
+            private byte* _syncBuffer;
+            private int _syncBufferLength;
+            private CancellationToken _cancellationToken;
 
-            internal PipeReadOperation(SafePipeHandle owner)
+            internal ReadOperation(SafePipeHandle owner)
                 => _owner = owner;
 
             internal short Version
                 => _mrvtsc.Version;
 
+            internal void Init(byte* syncBuffer, int syncBufferLength)
+            {
+                _syncBuffer = syncBuffer;
+                _syncBufferLength = syncBufferLength;
+            }
+
+            internal void Init(Memory<byte> buffer, CancellationToken cancellationToken)
+            {
+                _buffer = buffer;
+                _cancellationToken = cancellationToken;
+            }
+
             internal void Reset()
             {
-                Buffer = default;
-                SyncBuffer = null;
-                CancellationToken = default;
+                _buffer = default;
+                _syncBuffer = null;
+                _cancellationToken = default;
                 _mrvtsc.Reset();
             }
 
             protected override bool TryCompleteOperation(SafeHandle handle)
             {
-                if (SyncBuffer != null)
+                if (_syncBuffer != null)
                 {
-                    Debug.Assert(SyncBufferLength > 0);
-                    return TryCompleteRead((SafePipeHandle)handle, SyncBuffer, SyncBufferLength, out Result, out _);
+                    Debug.Assert(_syncBufferLength > 0);
+                    return _owner.TryCompleteRead(_syncBuffer, _syncBufferLength, out Result, out _);
                 }
 
-                Span<byte> span = Buffer.Span;
+                Span<byte> span = _buffer.Span;
                 Debug.Assert(!span.IsEmpty);
 
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
                 {
-                    return TryCompleteRead((SafePipeHandle)handle, bufPtr, span.Length, out Result, out _);
+                    return _owner.TryCompleteRead(bufPtr, span.Length, out Result, out _);
                 }
             }
 
@@ -328,12 +335,12 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 else if (result == PollOperationOnCompletedResult.Canceled)
                 {
-                    _mrvtsc.SetException(new OperationCanceledException(CancellationToken));
+                    _mrvtsc.SetException(new OperationCanceledException(_cancellationToken));
                 }
                 else
                 {
                     Debug.Assert(result == PollOperationOnCompletedResult.Aborted);
-                    _mrvtsc.SetException(new ObjectDisposedException(typeof(SafePipeHandle).FullName));
+                    _mrvtsc.SetException(new OperationCanceledException());
                 }
             }
 
@@ -345,7 +352,7 @@ namespace Microsoft.Win32.SafeHandles
 
             (int BytesRead, Interop.ErrorInfo ErrorInfo) IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>.GetResult(short token)
             {
-                bool canPool = _mrvtsc.GetStatus(token) == ValueTaskSourceStatus.Succeeded;
+                bool canPool = _mrvtsc.GetStatus(token) != ValueTaskSourceStatus.Canceled;
                 try
                 {
                     return _mrvtsc.GetResult(token);
@@ -360,55 +367,67 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private sealed unsafe class PipeWriteOperation : PollTriggeredOperation, IValueTaskSource<Interop.ErrorInfo>
+        private sealed unsafe class WriteOperation : PollTriggeredOperation, IValueTaskSource<Interop.ErrorInfo>
         {
             private readonly SafePipeHandle _owner;
             internal Interop.ErrorInfo WriteResult;
             private ManualResetValueTaskSourceCore<Interop.ErrorInfo> _mrvtsc;
-            internal ReadOnlyMemory<byte> Buffer;
-            internal byte* SyncBuffer;
-            internal int SyncRemaining;
-            internal CancellationToken CancellationToken;
+            private ReadOnlyMemory<byte> _buffer;
+            private byte* _syncBuffer;
+            private int _syncRemaining;
+            private CancellationToken _cancellationToken;
 
-            internal PipeWriteOperation(SafePipeHandle owner)
+            internal WriteOperation(SafePipeHandle owner)
                 => _owner = owner;
 
             internal short Version
                 => _mrvtsc.Version;
 
+            internal void Init(byte* syncBuffer, int syncRemaining)
+            {
+                _syncBuffer = syncBuffer;
+                _syncRemaining = syncRemaining;
+            }
+
+            internal void Init(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            {
+                _buffer = buffer;
+                _cancellationToken = cancellationToken;
+            }
+
             internal void Reset()
             {
-                Buffer = default;
-                SyncBuffer = null;
-                CancellationToken = default;
+                _buffer = default;
+                _syncBuffer = null;
+                _cancellationToken = default;
                 _mrvtsc.Reset();
             }
 
             protected override bool TryCompleteOperation(SafeHandle handle)
             {
-                if (SyncBuffer != null)
+                if (_syncBuffer != null)
                 {
-                    Debug.Assert(SyncRemaining > 0);
+                    Debug.Assert(_syncRemaining > 0);
 
-                    if (TryCompleteWrite((SafePipeHandle)handle, SyncBuffer, SyncRemaining, out int bytesWritten, out WriteResult, out _))
+                    if (_owner.TryCompleteWrite(_syncBuffer, _syncRemaining, out int bytesWritten, out WriteResult, out _))
                     {
                         return true;
                     }
-                    SyncBuffer += bytesWritten;
-                    SyncRemaining -= bytesWritten;
+                    _syncBuffer += bytesWritten;
+                    _syncRemaining -= bytesWritten;
                     return false;
                 }
 
-                ReadOnlySpan<byte> span = Buffer.Span;
+                ReadOnlySpan<byte> span = _buffer.Span;
                 Debug.Assert(!span.IsEmpty);
 
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
                 {
-                    if (TryCompleteWrite((SafePipeHandle)handle, bufPtr, span.Length, out int bytesWritten, out WriteResult, out _))
+                    if (_owner.TryCompleteWrite(bufPtr, span.Length, out int bytesWritten, out WriteResult, out _))
                     {
                         return true;
                     }
-                    Buffer = Buffer.Slice(bytesWritten);
+                    _buffer = _buffer.Slice(bytesWritten);
                     return false;
                 }
             }
@@ -421,12 +440,12 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 else if (result == PollOperationOnCompletedResult.Canceled)
                 {
-                    _mrvtsc.SetException(new OperationCanceledException(CancellationToken));
+                    _mrvtsc.SetException(new OperationCanceledException(_cancellationToken));
                 }
                 else
                 {
                     Debug.Assert(result == PollOperationOnCompletedResult.Aborted);
-                    _mrvtsc.SetException(new ObjectDisposedException(typeof(SafePipeHandle).FullName));
+                    _mrvtsc.SetException(new OperationCanceledException());
                 }
             }
 
@@ -438,7 +457,7 @@ namespace Microsoft.Win32.SafeHandles
 
             Interop.ErrorInfo IValueTaskSource<Interop.ErrorInfo>.GetResult(short token)
             {
-                bool canPool = _mrvtsc.GetStatus(token) == ValueTaskSourceStatus.Succeeded;
+                bool canPool = _mrvtsc.GetStatus(token) != ValueTaskSourceStatus.Canceled;
                 try
                 {
                     return _mrvtsc.GetResult(token);
@@ -453,9 +472,17 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static unsafe bool TryCompleteRead(SafePipeHandle handle, byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
+        private unsafe bool TryCompleteRead(Span<byte> buffer, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
         {
-            int bytesRead = Interop.Sys.Read(handle, buffer, length);
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
+            {
+                return TryCompleteRead(bufPtr, buffer.Length, out result, out pending);
+            }
+        }
+
+        private unsafe bool TryCompleteRead(byte* buffer, int length, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
+        {
+            int bytesRead = Interop.Sys.Read(this, buffer, length);
             if (bytesRead < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -475,25 +502,17 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private unsafe bool TryCompleteRead(Span<byte> buffer, out (int BytesRead, Interop.ErrorInfo ErrorInfo) result, out bool pending)
-        {
-            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
-            {
-                return TryCompleteRead(this, bufPtr, buffer.Length, out result, out pending);
-            }
-        }
-
         private unsafe bool TryCompleteWrite(ReadOnlySpan<byte> buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending)
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                return TryCompleteWrite(this, bufPtr, buffer.Length, out bytesWritten, out errorInfo, out pending);
+                return TryCompleteWrite(bufPtr, buffer.Length, out bytesWritten, out errorInfo, out pending);
             }
         }
 
-        private static unsafe bool TryCompleteWrite(SafePipeHandle handle, byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending)
+        private unsafe bool TryCompleteWrite(byte* buffer, int length, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending)
         {
-            bytesWritten = Interop.Sys.Write(handle, buffer, length);
+            bytesWritten = Interop.Sys.Write(this, buffer, length);
             if (bytesWritten < 0)
             {
                 errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -513,6 +532,6 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private static bool IsPending(Interop.ErrorInfo errorInfo)
-            => errorInfo.Error == Interop.Error.EAGAIN || errorInfo.Error == Interop.Error.EWOULDBLOCK;
+            => errorInfo.Error is Interop.Error.EAGAIN or Interop.Error.EWOULDBLOCK;
     }
 }

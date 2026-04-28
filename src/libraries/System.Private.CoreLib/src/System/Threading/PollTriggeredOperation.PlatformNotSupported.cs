@@ -9,6 +9,8 @@ namespace System.Threading
     {
         void IThreadPoolWorkItem.Execute() { }
 
+        protected virtual void ExecuteThreadPoolWorkItem() { }
+
         protected internal abstract bool TryCompleteOperation(SafeHandle handle);
         protected internal abstract void OnCompleted(PollOperationOnCompletedResult result);
     }

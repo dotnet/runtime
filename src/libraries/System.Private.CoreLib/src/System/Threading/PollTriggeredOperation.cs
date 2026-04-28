@@ -87,8 +87,10 @@ namespace System.Threading
             ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
         }
 
-        /// <summary>Used by <see cref="PollableHandle"/> implementation.</summary>
         void IThreadPoolWorkItem.Execute()
+            => ExecuteThreadPoolWorkItem();
+
+        protected virtual void ExecuteThreadPoolWorkItem()
         {
             if (IsReadOperation)
                 _owner!.ProcessRead(this);
