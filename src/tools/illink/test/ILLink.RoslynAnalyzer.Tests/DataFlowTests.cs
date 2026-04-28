@@ -252,7 +252,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task MakeGenericDataflowIntrinsics()
+        public Task RequiresDynamicCodeAnalyzerIntrinsics()
         {
             return RunTest();
         }

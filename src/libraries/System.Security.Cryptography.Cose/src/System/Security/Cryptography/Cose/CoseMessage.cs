@@ -307,7 +307,7 @@ namespace System.Security.Cryptography.Cose
 
                 CoseHeaderLabel label = state switch
                 {
-                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32()),
+                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32ForCrypto()),
                     CborReaderState.TextString => new CoseHeaderLabel(reader.ReadTextString()),
                     _ => throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeSign1MapLabelWasIncorrect))
                 };
@@ -323,7 +323,7 @@ namespace System.Security.Cryptography.Cose
                     // Lift the well-known header value validation into a CryptographicException.
                     if (e.ParamName == "value")
                     {
-                        throw new CryptographicException(e.Message);
+                        throw new CryptographicException(e.Message, e.InnerException);
                     }
 
                     Debug.Fail("Unexpected ArgumentException from CoseHeaderMap.Add");
@@ -602,7 +602,7 @@ namespace System.Security.Cryptography.Cose
                 empty = false;
                 CoseHeaderLabel label = state switch
                 {
-                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32()),
+                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32ForCrypto()),
                     CborReaderState.TextString => new CoseHeaderLabel(reader.ReadTextString()),
                     _ => throw new CryptographicException(SR.CriticalHeadersLabelWasIncorrect)
                 };

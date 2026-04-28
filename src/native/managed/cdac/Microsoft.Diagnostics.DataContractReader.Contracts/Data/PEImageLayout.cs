@@ -10,12 +10,14 @@ internal sealed class PEImageLayout : IData<PEImageLayout>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.PEImageLayout);
 
-        Base = target.ReadPointer(address + (ulong)type.Fields[nameof(Base)].Offset);
-        Size = target.Read<uint>(address + (ulong)type.Fields[nameof(Size)].Offset);
-        Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
+        Base = target.ReadPointerField(address, type, nameof(Base));
+        Size = target.ReadField<uint>(address, type, nameof(Size));
+        Flags = target.ReadField<uint>(address, type, nameof(Flags));
+        Format = target.ReadField<uint>(address, type, nameof(Format));
     }
 
     public TargetPointer Base { get; init; }
     public uint Size { get; init; }
     public uint Flags { get; init; }
+    public uint Format { get; init; }
 }

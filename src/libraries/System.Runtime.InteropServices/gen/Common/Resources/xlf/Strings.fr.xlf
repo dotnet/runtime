@@ -507,11 +507,6 @@
         <target state="translated">Les attributs '[In]' et '[Out]' ne sont pris en charge que sur les paramètres de tableau. Pensez à utiliser le mot-clé 'ref' pour rendre le paramètre mutable.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">Attributs [In] et [Out]</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">Les objets marshallés à partir de VARIANT en tant que paramètres « in » dans les appels non gérés à gérés ne propageront pas le résultat mis à jour, même si le VARIANT est une variante de VT_BYREF. Utilisez un paramètre « ref » au lieu d’un paramètre « in » pour propager la valeur mise à jour à l’appelant.</target>

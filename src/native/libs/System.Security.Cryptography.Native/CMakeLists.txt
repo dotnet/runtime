@@ -15,6 +15,31 @@ add_compile_options(-Wno-used-but-marked-unused)
 
 add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
 
+# On OpenBSD, the base system provides LibreSSL in /usr, while packaged OpenSSL
+# is installed under versioned eopenssl* prefixes. In distro-agnostic mode,
+# prefer the newest packaged OpenSSL discovered in the sysroot.
+if (CLR_CMAKE_TARGET_OPENBSD AND FEATURE_DISTRO_AGNOSTIC_SSL)
+    file(GLOB _openbsd_eopenssl_configs "${CMAKE_SYSROOT}/lib/eopenssl*/cmake/OpenSSL/OpenSSLConfig.cmake")
+    if (_openbsd_eopenssl_configs)
+        list(SORT _openbsd_eopenssl_configs)
+        list(REVERSE _openbsd_eopenssl_configs)
+        list(GET _openbsd_eopenssl_configs 0 _openbsd_eopenssl_config)
+
+        get_filename_component(_openbsd_openssl_dir "${_openbsd_eopenssl_config}" DIRECTORY)
+        get_filename_component(_openbsd_openssl_prefix "${_openbsd_openssl_dir}" DIRECTORY)
+        get_filename_component(_openbsd_openssl_prefix "${_openbsd_openssl_prefix}" DIRECTORY)
+        get_filename_component(_openbsd_openssl_name "${_openbsd_openssl_prefix}" NAME)
+
+        unset(OPENSSL_CRYPTO_LIBRARY CACHE)
+        unset(OPENSSL_SSL_LIBRARY CACHE)
+        set(OpenSSL_DIR "${_openbsd_openssl_dir}" CACHE PATH "OpenSSL config directory" FORCE)
+
+        if (EXISTS "${CMAKE_SYSROOT}/include/${_openbsd_openssl_name}")
+            set(OPENSSL_INCLUDE_DIR "${CMAKE_SYSROOT}/include/${_openbsd_openssl_name}" CACHE PATH "OpenSSL include directory" FORCE)
+        endif()
+    endif()
+endif()
+
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
 set(NATIVE_LIBS_EXTRA)
@@ -47,6 +72,7 @@ set(NATIVECRYPTO_SOURCES
     pal_evp_pkey_raw_signverify.c
     pal_evp_pkey_ml_dsa.c
     pal_evp_pkey_slh_dsa.c
+    pal_evp_pkey_x25519.c
     pal_hmac.c
     pal_ocsp.c
     pal_pkcs7.c

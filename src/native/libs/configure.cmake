@@ -22,9 +22,8 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
 elseif (CLR_CMAKE_TARGET_OPENBSD)
-    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
-    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
-    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/heimdal/include)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/heimdal/include)
+    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/heimdal/include)
 elseif (CLR_CMAKE_TARGET_SUNOS)
     # requires /opt/tools when building in Global Zone (GZ)
     include_directories(SYSTEM /opt/local/include /opt/tools/include)
@@ -163,6 +162,11 @@ check_symbol_exists(
     HAVE_FORK)
 
 check_symbol_exists(
+    posix_spawn_file_actions_addchdir_np
+    spawn.h
+    HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP)
+
+check_symbol_exists(
     lseek64
     unistd.h
     HAVE_LSEEK64)
@@ -202,9 +206,20 @@ check_symbol_exists(
     unistd.h
     HAVE_PIPE2)
 
+# close_range is available as a function on FreeBSD 12.2+ and Linux (glibc >= 2.34).
+# On Linux with older glibc it is still accessible via the __NR_close_range syscall number.
+check_function_exists(
+    close_range
+    HAVE_CLOSE_RANGE)
+
+# fdwalk is available on Illumos/Solaris and is used as a fallback when close_range is not available.
+check_function_exists(
+    fdwalk
+    HAVE_FDWALK)
+
 check_symbol_exists(
     getmntinfo
-    sys/mount.h
+    "sys/types.h;sys/mount.h"
     HAVE_MNTINFO)
 
 check_symbol_exists(
@@ -360,11 +375,11 @@ else ()
     set (STATFS_INCLUDES sys/statfs.h)
 endif ()
 
-set(CMAKE_EXTRA_INCLUDE_FILES ${STATFS_INCLUDES})
+set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h ${STATFS_INCLUDES})
 
 check_symbol_exists(
     "statfs"
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_STATFS)
 
 check_symbol_exists(
@@ -559,19 +574,7 @@ check_symbol_exists(
     stdlib.h
     HAVE_POSIX_MEMALIGN)
 
-if(CLR_CMAKE_TARGET_IOS)
-    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
-    unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_REALTIME 1)
-    unset(HAVE_FORK) # exists but blocked by kernel
-elseif(CLR_CMAKE_TARGET_MACCATALYST)
-    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
-    unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_REALTIME 1)
-    unset(HAVE_FORK) # exists but blocked by kernel
-elseif(CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_APPLE_MOBILE)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
@@ -740,8 +743,29 @@ check_prototype_definition(
     statfs
     "int statfs(const char *path, struct statfs *buf)"
     0
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_NON_LEGACY_STATFS)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, size_t bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_SIZE_T)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, int bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_INT)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, long bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_LONG)
 
 check_prototype_definition(
     ioctl
@@ -892,7 +916,7 @@ check_include_files(
     "pthread.h"
     HAVE_PTHREAD_H)
 
-if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_APPLE_MOBILE)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(HAVE_IOS_NET_IFMEDIA_H 1)
     set(HAVE_IOS_NETINET_TCPFSM_H 1)
@@ -973,34 +997,53 @@ check_include_files(
     IOKit/serial/ioss.h
     HAVE_IOSS_H)
 
+check_include_files(
+    OS.h
+    HAVE_OS_H)
+
 check_symbol_exists(
     getpeereid
-    unistd.h
+    "unistd.h;sys/types.h;sys/socket.h"
     HAVE_GETPEEREID)
 
-check_symbol_exists(
-    getdomainname
-    unistd.h
-    HAVE_GETDOMAINNAME)
+set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+if (CLR_CMAKE_TARGET_SUNOS)
+    # On SunOS, getdomainname is in libnsl but not declared in any header
+    set(CMAKE_REQUIRED_LIBRARIES socket nsl)
+    check_function_exists(
+        getdomainname
+        HAVE_GETDOMAINNAME)
+else()
+    check_symbol_exists(
+        getdomainname
+        unistd.h
+        HAVE_GETDOMAINNAME)
+endif()
 
-# getdomainname on OSX takes an 'int' instead of a 'size_t'
-# check if compiling with 'size_t' would cause a warning
-set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
-check_c_source_compiles(
-    "
-    #include <unistd.h>
-    int main(void)
-    {
-        size_t namelen = 20;
-        char name[20];
-        int dummy = getdomainname(name, namelen);
-        (void)dummy;
-        return 0;
-    }
-    "
-    HAVE_GETDOMAINNAME_SIZET)
-set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
+# Some platforms (e.g. macOS, SunOS) define getdomainname with an 'int' length parameter
+# Check whether using 'size_t' for the length parameter would cause a warning
+if (CLR_CMAKE_TARGET_SUNOS)
+    # SunOS uses int, not size_t
+    set (HAVE_GETDOMAINNAME_SIZET 0)
+else()
+    set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+    set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
+    check_c_source_compiles(
+        "
+        #include <unistd.h>
+        int main(void)
+        {
+            size_t namelen = 20;
+            char name[20];
+            int dummy = getdomainname(name, namelen);
+            (void)dummy;
+            return 0;
+        }
+        "
+        HAVE_GETDOMAINNAME_SIZET)
+    set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
+endif()
+set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
 if (HAVE_SYS_INOTIFY_H AND (CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD))

@@ -3989,9 +3989,9 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
         return;
     }
 
-    if (!pLayout->HasNTHeaders())
+    if (!pLayout->HasHeaders())
     {
-        // Without NT headers, we'll have a tough time finding the debug directory
+        // Without headers, we'll have a tough time finding the debug directory
         // entries. This can happen for nlp files.
         return;
     }
@@ -5291,13 +5291,13 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
             ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, pLoaderAllocator, enumerationOptions);
         }
 
-        // Iterate on all DomainAssembly loaded from the same AssemblyLoaderAllocator
-        DomainAssemblyIterator domainAssemblyIt = pLoaderAllocator->Id()->GetDomainAssemblyIterator();
-        while (!domainAssemblyIt.end())
+        // Iterate on all Assemblies loaded from the same AssemblyLoaderAllocator
+        AssemblyIterator assemblyIt = pLoaderAllocator->Id()->GetAssemblyIterator();
+        while (!assemblyIt.end())
         {
-            Assembly *pAssembly = domainAssemblyIt->GetAssembly(); // TODO: handle iterator
+            Assembly *pAssembly = assemblyIt;
 
-            Module* pModule = domainAssemblyIt->GetAssembly()->GetModule();
+            Module* pModule = pAssembly->GetModule();
             ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload)
@@ -5305,7 +5305,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
                 ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
             }
 
-            domainAssemblyIt++;
+            assemblyIt++;
         }
 
         // Load Jit Method events

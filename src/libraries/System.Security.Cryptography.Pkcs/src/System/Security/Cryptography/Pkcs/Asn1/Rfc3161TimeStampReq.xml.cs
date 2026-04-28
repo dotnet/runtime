@@ -9,29 +9,32 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Pkcs.Asn1
 {
+    file static class SharedRfc3161TimeStampReq
+    {
+        internal static ReadOnlySpan<byte> DefaultCertReq => [0x01, 0x01, 0x00];
+
+#if DEBUG
+        static SharedRfc3161TimeStampReq()
+        {
+            Rfc3161TimeStampReq decoded = default;
+            ValueAsnReader reader;
+
+            reader = new ValueAsnReader(SharedRfc3161TimeStampReq.DefaultCertReq, AsnEncodingRules.DER);
+            decoded.CertReq = reader.ReadBoolean();
+            reader.ThrowIfNotEmpty();
+        }
+#endif
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct Rfc3161TimeStampReq
     {
-        private static ReadOnlySpan<byte> DefaultCertReq => [0x01, 0x01, 0x00];
-
         internal int Version;
         internal System.Security.Cryptography.Pkcs.Asn1.MessageImprint MessageImprint;
         internal string? ReqPolicy;
         internal ReadOnlyMemory<byte>? Nonce;
         internal bool CertReq;
         internal System.Security.Cryptography.Asn1.X509ExtensionAsn[]? Extensions;
-
-#if DEBUG
-        static Rfc3161TimeStampReq()
-        {
-            Rfc3161TimeStampReq decoded = default;
-            ValueAsnReader reader;
-
-            reader = new ValueAsnReader(DefaultCertReq, AsnEncodingRules.DER);
-            decoded.CertReq = reader.ReadBoolean();
-            reader.ThrowIfNotEmpty();
-        }
-#endif
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -70,7 +73,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);
                 tmp.WriteBoolean(CertReq);
 
-                if (!tmp.EncodedValueEquals(DefaultCertReq))
+                if (!tmp.EncodedValueEquals(SharedRfc3161TimeStampReq.DefaultCertReq))
                 {
                     tmp.CopyTo(writer);
                 }
@@ -167,7 +170,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
             else
             {
-                defaultReader = new ValueAsnReader(DefaultCertReq, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedRfc3161TimeStampReq.DefaultCertReq, AsnEncodingRules.DER);
                 decoded.CertReq = defaultReader.ReadBoolean();
             }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -108,21 +109,23 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
+        [RequiresUnsafe]
         private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception);
 
-        // Called from the runtime
-        private void StartCallback()
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void StartCallback(Thread* pThread)
         {
-            StartHelper? startHelper = _startHelper;
+            StartHelper? startHelper = pThread->_startHelper;
             Debug.Assert(startHelper != null);
-            _startHelper = null;
+            pThread->_startHelper = null;
 
             startHelper.Run();
 
             // When this thread is about to exit, inform any subsystems that need to know.
             // For external threads that have been attached to the runtime, we'll call this
             // after the thread has been detached as it won't come through this path.
-            OnThreadExiting();
+            pThread->OnThreadExited();
         }
 
         // Max iterations to be done in SpinWait without switching GC modes.
@@ -567,7 +570,7 @@ namespace System.Threading
         }
 #endif
 
-        private void OnThreadExiting()
+        private void OnThreadExited()
         {
             // Consider this managed thread as dead.
             // The unmanaged thread is still alive, but will die soon, after cleaning up some state.
@@ -583,7 +586,22 @@ namespace System.Threading
 #endif
         }
 
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void OnThreadExited(Thread* pThread, Exception* pException)
+        {
+            try
+            {
+                pThread->OnThreadExited();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]
+        [RequiresUnsafe]
         internal static unsafe partial int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
 
         internal static void CheckForPendingInterrupt()

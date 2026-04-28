@@ -23,8 +23,9 @@ enum ThreadState
     Hijacked            = 0x00000080,    // Return address has been hijacked
     Background          = 0x00000200,    // Thread is a background thread
     Unstarted           = 0x00000400,    // Thread has never been started
-    Dead                = 0x00000800,    // Thread is dead
+    Stopped             = 0x00010000,    // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,    // is this a threadpool worker thread?
+    Detached            = unchecked((int)0x80000000), // Thread was detached
 }
 
 record struct ThreadData (
@@ -36,8 +37,11 @@ record struct ThreadData (
     TargetPointer AllocContextLimit;
     TargetPointer Frame;
     TargetPointer FirstNestedException;
-    TargetPointer TEB;
+    TargetPointer ExposedObjectHandle;
     TargetPointer LastThrownObjectHandle;
+    TargetPointer CurrentCustomDebuggerNotificationHandle;
+    bool LastThrownObjectIsUnhandled;
+    bool HasUnhandledException;
     TargetPointer NextThread;
 );
 ```
@@ -97,8 +101,10 @@ The contract additionally depends on these data descriptors
 | `Thread` | `Frame` | Pointer to current frame |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
 | `Thread` | `CachedStackLimit` | Pointer to the limit of the stack |
-| `Thread` | `TEB` | Thread Environment Block pointer |
+| `Thread` | `ExposedObject` | Handle to the managed `Thread` object exposed to the debugger |
 | `Thread` | `LastThrownObject` | Handle to last thrown exception object |
+| `Thread` | `LastThrownObjectIsUnhandled` | Whether `LastThrownObject` should be treated as unhandled |
+| `Thread` | `CurrentCustomDebuggerNotification` | Handle to the current custom debugger notification object |
 | `Thread` | `LinkNext` | Pointer to get next thread |
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
@@ -179,12 +185,11 @@ ThreadData GetThreadData(TargetPointer address)
     return new ThreadData(
         Id: target.Read<uint>(address + /* Thread::Id offset */),
         OSId: target.ReadNUInt(address + /* Thread::OSId offset */),
-        State: target.Read<uint>(address + /* Thread::State offset */),
+        State: target.Read<uint>(address + /* Thread::State offset */) /* -> convert to contract enum */,
         PreemptiveGCDisabled: (target.Read<uint>(address + /* Thread::PreemptiveGCDisabled offset */) & 0x1) != 0,
         AllocContextPointer: allocContextPointer,
         AllocContextLimit: allocContextLimit,
         Frame: target.ReadPointer(address + /* Thread::Frame offset */),
-        TEB : /* Has Thread::TEB offset */ ? target.ReadPointer(address + /* Thread::TEB offset */) : TargetPointer.Null,
         LastThrownObjectHandle : target.ReadPointer(address + /* Thread::LastThrownObject offset */),
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
@@ -264,6 +269,19 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
         }
     }
     return threadLocalStaticBase;
+}
+
+TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
+{
+    TargetPointer exceptionTrackerPtr = target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
+    if (exceptionTrackerPtr == TargetPointer.Null)
+        return TargetPointer.Null;
+    TargetPointer thrownObjectHandle = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObjectHandle offset */);
+
+    if (thrownObjectHandle == TargetPointer.Null || target.ReadPointer(thrownObjectHandle) == TargetPointer.Null)
+        return TargetPointer.Null;
+
+    return thrownObjectHandle;
 }
 
 byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)

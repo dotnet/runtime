@@ -948,11 +948,12 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #if !FEATURE_FIXED_OUT_ARGS
                     // On x86 we previously recorded a stack depth of zero when
                     // morphing the register arguments of any GT_IND with a GTF_IND_RNGCHK flag
-                    // Thus we can not reorder the argument after any stack based argument
-                    // (Note that GT_LCLHEAP sets the GTF_EXCEPT flag so we don't need to
-                    // check for it explicitly.)
+                    // Thus we can not reorder the argument after any stack based argument.
+                    // GT_LCLHEAP has the same stack depth constraint, but it no longer sets
+                    // GTF_EXCEPT, so it must be checked explicitly here.
                     //
-                    if (argx->gtFlags & GTF_EXCEPT)
+                    if (((argx->gtFlags & GTF_EXCEPT) != 0) ||
+                        (comp->compLocallocUsed && comp->gtTreeContainsOper(argx, GT_LCLHEAP)))
                     {
                         SetNeedsTemp(&arg);
                         continue;
@@ -960,15 +961,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #else
                     // For Arm/X64 we can't reorder a register argument that uses a GT_LCLHEAP
                     //
-                    if (argx->gtFlags & GTF_EXCEPT)
+                    if (comp->compLocallocUsed && comp->gtTreeContainsOper(argx, GT_LCLHEAP))
                     {
                         assert(comp->compLocallocUsed);
-
-                        if (comp->gtTreeContainsOper(argx, GT_LCLHEAP))
-                        {
-                            SetNeedsTemp(&arg);
-                            continue;
-                        }
+                        SetNeedsTemp(&arg);
+                        continue;
                     }
 #endif
                 }
@@ -1737,7 +1734,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // All architectures pass the cookie in a register.
         InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
         // put destination into R10/EAX
-        arg = comp->gtClone(call->gtCallAddr, true);
+        arg = comp->gtClone(call->gtControlExpr, true);
         // On x64 the pinvoke target is passed in r10 which is the same
         // register as the gs cookie check may use. That would be a problem if
         // this was a tailcall, but we do not tailcall functions with
@@ -1747,6 +1744,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         // finally change this call to a helper call
         call->gtCallType    = CT_HELPER;
+        call->gtControlExpr = nullptr;
         call->gtCallMethHnd = comp->eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
     }
 #if defined(FEATURE_READYTORUN)
@@ -1783,9 +1781,14 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // Push the stub address onto the list of arguments.
         NewCallArg indirCellAddrArg =
             NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell);
+#ifdef TARGET_WASM
+        // On wasm we need to ensure we put the indirection cell address last in LIR, after the SP and formal args.
+        PushBack(comp, indirCellAddrArg);
+#else
         InsertAfterThisOrFirst(comp, indirCellAddrArg);
+#endif // TARGET_WASM
     }
-#endif
+#endif // defined(FEATURE_READYTORUN)
 
 #if defined(TARGET_WASM)
     // On WASM, we need to add an initial argument for the stack pointer for managed calls.
@@ -2113,15 +2116,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         call->gtArgs.ArgsComplete(this, call);
     }
 
-    // Process the function address, if indirect call
-
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        call->gtCallAddr = fgMorphTree(call->gtCallAddr);
-        // Const CSE may create a store node here
-        flagsSummary |= call->gtCallAddr->gtFlags;
-    }
-
 #if FEATURE_FIXED_OUT_ARGS && defined(UNIX_AMD64_ABI)
     if (!call->IsFastTailCall())
     {
@@ -2426,11 +2420,8 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
         {
             if (seg.IsPassedInRegister())
             {
-                var_types regType = seg.GetRegisterType();
-                // If passed in a float reg then keep that type; otherwise let
-                // createSlotAccess get the type from the layout.
-                var_types slotType = varTypeUsesFloatReg(regType) ? regType : TYP_UNDEF;
-                GenTree*  access   = createSlotAccess(seg.Offset, slotType);
+                var_types regType = seg.GetRegisterType(layout);
+                GenTree*  access  = createSlotAccess(seg.Offset, regType);
 
                 newArg->AsFieldList()->AddField(this, access, seg.Offset, access->TypeGet());
             }
@@ -5287,27 +5278,14 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         {
             if (call->gtCallType == CT_INDIRECT)
             {
-                noway_assert(call->gtCallAddr != nullptr);
-                target = call->gtCallAddr;
+                noway_assert(call->gtControlExpr != nullptr);
+                target = call->gtControlExpr;
             }
             else
             {
                 CORINFO_CONST_LOOKUP addrInfo;
                 info.compCompHnd->getFunctionEntryPoint(call->gtCallMethHnd, &addrInfo);
-
-                CORINFO_GENERIC_HANDLE handle       = nullptr;
-                void*                  pIndirection = nullptr;
-                assert(addrInfo.accessType != IAT_PPVALUE && addrInfo.accessType != IAT_RELPVALUE);
-
-                if (addrInfo.accessType == IAT_VALUE)
-                {
-                    handle = addrInfo.handle;
-                }
-                else if (addrInfo.accessType == IAT_PVALUE)
-                {
-                    pIndirection = addrInfo.addr;
-                }
-                target = gtNewIconEmbHndNode(handle, pIndirection, GTF_ICON_FTN_ADDR, call->gtCallMethHnd);
+                target = gtNewIconEmbHndNode(&addrInfo, GTF_ICON_FTN_ADDR, call->gtCallMethHnd);
             }
         }
         else
@@ -5330,6 +5308,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
 
     // This is now a direct call to the store args stub and not a tailcall.
     call->gtCallType    = CT_USER_FUNC;
+    call->gtControlExpr = nullptr;
     call->gtCallMethHnd = help.hStoreArgs;
     call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
     call->gtCallMoreFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
@@ -5872,7 +5851,7 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
     GenTree* stubAddrArg;
     if (call->gtCallType == CT_INDIRECT)
     {
-        stubAddrArg = gtClone(call->gtCallAddr, true);
+        stubAddrArg = gtClone(call->gtControlExpr, true);
     }
     else
     {
@@ -6304,9 +6283,9 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     }
 
     if (((call->gtCallMoreFlags & (GTF_CALL_M_SPECIAL_INTRINSIC | GTF_CALL_M_LDVIRTFTN_INTERFACE)) == 0) &&
-        (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR)
+        (call->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR)
 #ifdef FEATURE_READYTORUN
-         || call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
+         || call->IsHelperCall(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
 #endif
              ) &&
         (call == fgMorphStmt->GetRootNode()))
@@ -6450,23 +6429,32 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         {
             call->gtControlExpr = fgExpandVirtualVtableCallTarget(call);
         }
-        // We always have to morph or re-morph the control expr
-        //
-        call->gtControlExpr = fgMorphTree(call->gtControlExpr);
+    }
 
-        // Propagate any side effect flags into the call
-        call->gtFlags |= call->gtControlExpr->gtFlags & GTF_ALL_EFFECT;
+    if (call->gtControlExpr != nullptr)
+    {
+        call->gtControlExpr = fgMorphTree(call->gtControlExpr);
+        call->AddAllEffectsFlags(call->gtControlExpr);
     }
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
-    if (opts.OptimizationEnabled() && call->IsHelperCall(this, CORINFO_HELP_ARRADDR_ST))
+    if (opts.OptimizationEnabled() && call->IsHelperCallOrUserEquivalent(this, CORINFO_HELP_ARRADDR_ST))
     {
         assert(call->gtArgs.CountUserArgs() == 3);
 
         GenTree* arr   = call->gtArgs.GetUserArgByIndex(0)->GetNode();
         GenTree* index = call->gtArgs.GetUserArgByIndex(1)->GetNode();
         GenTree* value = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+
+        if (!call->IsHelperCall())
+        {
+            // Convert back to helper call if it wasn't inlined.
+            // Currently, only helper calls are eligible to be direct calls if the target has reached
+            // its final tier. TODO: remove this workaround and convert this user call to direct as well.
+            call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_ARRADDR_ST);
+            call->gtCallType    = CT_HELPER;
+        }
 
         if (gtCanSkipCovariantStoreCheck(value, arr))
         {
@@ -7899,7 +7887,6 @@ DONE_MORPHING_CHILDREN:
                     // Otherwise we may sign-extend incorrectly in cases where the GT_NEG
                     // node ends up feeding directly into a cast, for example in
                     // GT_CAST<ubyte>(GT_SUB(0, s_1.ubyte))
-
                     if (op1->IsIntegralConst(0))
                     {
                         tree->ChangeOper(GT_NEG);
@@ -8496,12 +8483,11 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
 
     if (!indir->IsVolatile() && !indir->TypeIs(TYP_STRUCT) && addr->OperIs(GT_LCL_ADDR))
     {
-        unsigned size    = indir->Size();
-        unsigned offset  = addr->AsLclVarCommon()->GetLclOffs();
-        unsigned extent  = offset + size;
-        unsigned lclSize = lvaLclExactSize(addr->AsLclVarCommon()->GetLclNum());
+        int       lclNum    = addr->AsLclVarCommon()->GetLclNum();
+        unsigned  offset    = addr->AsLclVarCommon()->GetLclOffs();
+        ValueSize indirSize = indir->ValueSize();
 
-        if ((extent <= lclSize) && (extent < UINT16_MAX))
+        if (!IsWideAccess(lclNum, offset, indirSize))
         {
             addr->ChangeType(indir->TypeGet());
             if (indir->OperIs(GT_STOREIND))
@@ -8581,6 +8567,19 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
         }
 
         var_types castToType = cast->CastToType();
+
+        // For small-int casts fed by a widening int->long, remove the widening so we truncate directly
+        // from the original int value.
+        if (varTypeIsSmall(castToType) && src->OperIs(GT_CAST) && !src->gtOverflow())
+        {
+            GenTreeCast* widening = src->AsCast();
+            if (varTypeIsLong(widening->CastToType()) && (genActualType(widening->CastFromType()) == TYP_INT))
+            {
+                cast->CastOp() = widening->CastOp();
+                DEBUG_DESTROY_NODE(widening);
+                src = cast->CastOp();
+            }
+        }
 
         // For indir-like nodes, we may be able to change their type to satisfy (and discard) the cast.
         if (varTypeIsSmall(castToType) && (genTypeSize(castToType) == genTypeSize(src)) &&
@@ -8748,6 +8747,38 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 
     GenTree*             op1 = cmp->gtGetOp1();
     GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
+
+    // Fold: (-(x)) == 0  ->  x == 0  (avoid neg on compare-to-zero)
+    if (op1->OperIs(GT_NEG) && !op1->gtOverflowEx())
+    {
+        GenTree* negOp = op1->AsUnOp()->gtGetOp1();
+
+        if (op2->IsIntegralConst(0))
+        {
+            bool shouldFold = true;
+
+#ifdef TARGET_ARM64
+            // On ARM64 negs with a shift can be more compact than shift; cmp #0.
+            // Avoid folding when the negated operand is a simple shift so we keep the single
+            // instruction form.
+            if (negOp->OperIsShift())
+            {
+                GenTree* shiftAmount = negOp->AsOp()->gtGetOp2();
+                if (shiftAmount->IsCnsIntOrI())
+                {
+                    shouldFold = false;
+                }
+            }
+#endif
+
+            if (shouldFold)
+            {
+                cmp->gtOp1 = negOp;
+                DEBUG_DESTROY_NODE(op1);
+                op1 = negOp;
+            }
+        }
+    }
 
     // Check for "(expr +/- icon1) ==/!= (non-zero-icon2)".
     if (op2->IsCnsIntOrI() && (op2->IconValue() != 0))
@@ -10400,46 +10431,80 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
 
     if (opts.OptimizationEnabled())
     {
-        // Reduce local addresses: "ADD(LCL_ADDR, OFFSET)" => "LCL_FLD_ADDR".
+        // Reduce local addresses: "ADD(LCL_ADDR(BASE), OFFSET)" => "LCL_ADDR(BASE+OFFSET)".
         //
         if (op1->OperIs(GT_LCL_ADDR) && op2->IsCnsIntOrI())
         {
             GenTreeLclVarCommon* lclAddrNode = op1->AsLclVarCommon();
             GenTreeIntCon*       offsetNode  = op2->AsIntCon();
-            if (FitsIn<uint16_t>(offsetNode->IconValue()))
+            ssize_t              consVal     = offsetNode->IconValue();
+
+            // Note: the emitter does not expect out-of-bounds access for LCL_ADDR.
+            if (FitsIn<uint16_t>(consVal) && IsValidLclAddr(lclAddrNode->GetLclNum(), (uint32_t)consVal))
             {
-                unsigned offset = lclAddrNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
+                ClrSafeInt<uint16_t> newOffset =
+                    ClrSafeInt<uint16_t>(lclAddrNode->GetLclOffs()) + ClrSafeInt<uint16_t>(consVal);
+                assert(!newOffset.IsOverflow());
 
-                // Note: the emitter does not expect out-of-bounds access for LCL_FLD_ADDR.
-                if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclAddrNode->GetLclNum())))
-                {
-                    lclAddrNode->SetOper(GT_LCL_ADDR);
-                    lclAddrNode->AsLclFld()->SetLclOffs(offset);
-                    assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
+                lclAddrNode->SetOper(GT_LCL_ADDR);
+                lclAddrNode->AsLclFld()->SetLclOffs(newOffset.Value());
+                assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
 
-                    lclAddrNode->SetVNsFromNode(add);
+                lclAddrNode->SetVNsFromNode(add);
 
-                    DEBUG_DESTROY_NODE(offsetNode);
-                    DEBUG_DESTROY_NODE(add);
+                DEBUG_DESTROY_NODE(offsetNode);
+                DEBUG_DESTROY_NODE(add);
 
-                    return lclAddrNode;
-                }
+                return lclAddrNode;
             }
         }
 
-        // - a + b = > b - a
-        // ADD(NEG(a), b) => SUB(b, a)
-
-        // Do not do this if "op2" is constant for canonicalization purposes.
-        if (op1->OperIs(GT_NEG) && !op2->OperIs(GT_NEG) && !op2->IsIntegralConst() && gtCanSwapOrder(op1, op2))
+        if (op1->OperIs(GT_NEG) && !op2->OperIs(GT_NEG))
         {
-            add->SetOper(GT_SUB);
-            add->gtOp1 = op2;
-            add->gtOp2 = op1->AsOp()->gtGetOp1();
+            if (op2->IsIntegralConst())
+            {
+                // ADD(NEG(x), CONST) => XOR(x, CONST)
 
-            DEBUG_DESTROY_NODE(op1);
+                auto isSubToXorValid = [=](uint64_t cns, IntegralRange range) {
+                    // cns - x, where x in [lo, hi]
+                    uint64_t lo = IntegralRange::SymbolicToRealValue(range.GetLowerBound());
+                    uint64_t hi = IntegralRange::SymbolicToRealValue(range.GetUpperBound());
 
-            return add;
+                    // OR of all numbers in [lo, hi]
+                    uint64_t knownBits = (lo == hi) ? 0 : (UINT64_MAX >> BitOperations::LeadingZeroCount(lo ^ hi));
+                    knownBits          = lo | knownBits;
+
+                    // Zero out bits outside of TYPE. This handles cases that rely on overflow
+                    uint32_t sizeInBits = genTypeSize(add->TypeGet()) * BITS_PER_BYTE;
+                    knownBits &= (1ULL << (sizeInBits - 1)) - 1;
+
+                    // At every bit pos with a 1 in knownBits, cns also needs 1.
+                    // Otherwise borrowing occurs and XOR is not equivalent to SUB
+                    return (cns & knownBits) == knownBits;
+                };
+
+                IntegralRange range = IntegralRange::ForNode(op1->gtGetOp1(), this);
+                uint64_t      cns   = (uint64_t)op2->AsIntConCommon()->IntegralValue();
+                if (isSubToXorValid(cns, range))
+                {
+                    add->SetOper(GT_XOR, GenTree::PRESERVE_VN);
+                    add->gtOp1 = op1->gtGetOp1();
+                    return fgMorphTree(add);
+                }
+            }
+
+            // - a + b => b - a
+            // ADD(NEG(a), b) => SUB(b, a)
+            // Do not do this if "op2" is constant for canonicalization purposes.
+            if (!op2->IsIntegralConst() && gtCanSwapOrder(op1, op2))
+            {
+                add->SetOper(GT_SUB);
+                add->gtOp1 = op2;
+                add->gtOp2 = op1->AsOp()->gtGetOp1();
+
+                DEBUG_DESTROY_NODE(op1);
+                return add;
+            }
         }
 
         // a + -b = > a - b
@@ -11423,6 +11488,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     innerOp = fgMorphHWIntrinsicOptional(innerOp->AsHWIntrinsic());
                 }
+                innerOp->SetMorphed(this);
 
                 tree->Op(opIndex) = innerOp;
             }
@@ -11479,44 +11545,58 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             std::swap(op1, op2);
         }
 
-        if (((oper == GT_EQ) || (oper == GT_NE)) && op1->OperIsHWIntrinsic() && op2->IsCnsVec())
+        if ((oper == GT_EQ) || (oper == GT_NE))
         {
-            GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
-            NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
-            var_types           op1Type        = op1Intrinsic->TypeGet();
-
-            if (HWIntrinsicInfo::ReturnsPerElementMask(op1IntrinsicId) &&
-                (genTypeSize(simdBaseType) == genTypeSize(op1Intrinsic->GetSimdBaseType())))
+            if (op2->IsCnsVec() && op1->IsVectorPerElementMask(simdBaseType, simdSize))
             {
-                // This optimization is only safe if we know the other node produces
-                // AllBitsSet or Zero per element and if the outer comparison is the
-                // same size as what the other node produces for its mask
-
                 bool reverseCond = false;
 
                 if (oper == GT_EQ)
                 {
-                    // Handle `Mask == Zero` and `Zero == Mask` for integral types
+                    // Handle `Equals(Mask, Zero)` for integral types
                     if (op2->IsVectorZero())
                     {
+                        // We are comparing something that is known per element to be either
+                        // AllBitsSet or Zero, with Zero.
+                        //
+                        // In such a case:
+                        // * `AllBitsSet == Zero` is false and so produces `Zero`
+                        // * `Zero == Zero` is true and so produces `AllBitsSet`
+                        //
+                        // This means that we are just inverting the input and can reverse
+                        // the condition
+
                         reverseCond = true;
                     }
                 }
                 else if (oper == GT_NE)
                 {
-                    // Handle `Mask != AllBitsSet` and `AllBitsSet != Mask` for integral types
+                    // Handle `~Equals(Mask, AllBitsSet)` for integral types
                     if (op2->IsVectorAllBitsSet())
                     {
+                        // We are comparing something that is known per element to be either
+                        // AllBitsSet or Zero, with AllBitsSet.
+                        //
+                        // In such a case:
+                        // * `AllBitsSet != AllBitsSet` is false and so produces `Zero`
+                        // * `Zero != AllBitsSet` is true and so produces `AllBitsSet`
+                        //
+                        // This means that we are just inverting the input and can reverse
+                        // the condition
+
                         reverseCond = true;
                     }
                 }
 
                 if (reverseCond)
                 {
-                    GenTree* newNode = nullptr;
+                    GenTree*  newNode = nullptr;
+                    var_types op1Type = op1->TypeGet();
 
-                    if (op1Intrinsic->OperIsConvertVectorToMask())
+                    if (op1->OperIsConvertVectorToMask())
                     {
+                        GenTreeHWIntrinsic* op1Intrinsic = op1->AsHWIntrinsic();
+
 #if defined(TARGET_XARCH)
                         op1 = op1Intrinsic->Op(1);
 #elif defined(TARGET_ARM64)
@@ -11553,6 +11633,12 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                         if (op1Type != retType)
                         {
                             newNode = fgMorphHWIntrinsicRequired(newNode->AsHWIntrinsic());
+
+                            if (newNode->OperIsHWIntrinsic())
+                            {
+                                newNode = fgMorphHWIntrinsicOptional(newNode->AsHWIntrinsic());
+                            }
+                            newNode->SetMorphed(this);
 
                             if (retType == TYP_MASK)
                             {
@@ -11727,9 +11813,14 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     tree->ChangeHWIntrinsicId(addIntrinsic, op2, op1);
 
                     op2 = fgMorphHWIntrinsicRequired(op2->AsHWIntrinsic());
-                    op2->SetMorphed(this);
-                    tree->Op(1) = op2;
 
+                    if (op2->OperIsHWIntrinsic())
+                    {
+                        op2 = fgMorphHWIntrinsicOptional(op2->AsHWIntrinsic());
+                    }
+                    op2->SetMorphed(this);
+
+                    tree->Op(1) = op2;
                     return fgMorphHWIntrinsicRequired(tree);
                 }
             }

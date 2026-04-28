@@ -209,12 +209,6 @@ extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
 
-// ARM64 JIT_WriteBarrier uses special ABI and thus is not callable directly
-// Copied write barriers must be called at a different location
-extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
-
-#define WriteBarrier_Helper JIT_WriteBarrier_Callable
-
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
 #ifndef HOST_64BIT
@@ -1005,13 +999,25 @@ struct VMHELPDEF
     bool IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const;
 };
 
+struct VMAUXILIARYSYMBOLDEF
+{
+    PCODE pfnAuxiliarySymbol;
+    PTR_CSTR name;
+};
+
+#define MAX_AUXILIARY_SYMBOLS 7
+
 #if defined(DACCESS_COMPILE)
 
 GARY_DECL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
+GARY_DECL(VMAUXILIARYSYMBOLDEF, hlpAuxiliarySymbolTable, MAX_AUXILIARY_SYMBOLS);
+GVAL_DECL(DWORD, g_auxiliarySymbolCount);
 
 #else
 
 extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
+extern "C" VMAUXILIARYSYMBOLDEF hlpAuxiliarySymbolTable[MAX_AUXILIARY_SYMBOLS];
+extern "C" DWORD g_auxiliarySymbolCount;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 extern "C" PCODE hlpFuncEntryPoints[CORINFO_HELP_COUNT];
@@ -1027,6 +1033,7 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
+void SetAuxiliarySymbol(void* pFunc, const char* name);
 
 PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);

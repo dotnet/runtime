@@ -405,7 +405,7 @@ void TieredCompilationManager::CreateBackgroundWorker()
     #endif
         newThread->SetBackground(true);
 
-        if (!newThread->CreateNewThread(0, BackgroundWorkerBootstrapper0, newThread, W(".NET Tiered Compilation Worker")))
+        if (!newThread->CreateNewThread(0, BackgroundWorkerBootstrapper0, newThread, W(".NET Tiered JIT")))
         {
             newThread->DecExternalCount(false);
             ThrowOutOfMemory();
@@ -1056,6 +1056,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         case NativeCodeVersion::OptimizationTier0:
             if (g_pConfig->TieredCompilation_QuickJit())
             {
+#ifdef FEATURE_PGO
                 if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_InstrumentOnlyHotCode())
                 {
                     // If we plan to only instrument hot code we have to make an exception
@@ -1064,6 +1065,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
                     // if current method has loops and is eligible for OSR.
                     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
                 }
+#endif
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 break;
             }

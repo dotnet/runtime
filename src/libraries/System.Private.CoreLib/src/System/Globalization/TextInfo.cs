@@ -768,6 +768,7 @@ namespace System.Globalization
             return inputIndex;
         }
 
+        [RequiresUnsafe]
         private unsafe void ChangeCaseCore(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
             if (GlobalizationMode.UseNls)

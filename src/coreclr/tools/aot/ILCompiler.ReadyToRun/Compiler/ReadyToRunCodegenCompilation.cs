@@ -109,12 +109,6 @@ namespace ILCompiler
                 }
             }
 
-            if (callee.IsAsyncThunk())
-            {
-                // Async thunks require special handling in the compiler and should not be inlined
-                return false;
-            }
-
             _nodeFactory.DetectGenericCycles(caller, callee);
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
@@ -302,7 +296,7 @@ namespace ILCompiler
 
         private readonly ProfileDataManager _profileData;
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
-        private readonly HashSet<EcmaMethod> _methodsWhichNeedMutableILBodies = new HashSet<EcmaMethod>();
+        private readonly HashSet<MethodDesc> _methodsWhichNeedMutableILBodies = new HashSet<MethodDesc>();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
 
         public ProfileDataManager ProfileData => _profileData;
@@ -377,6 +371,8 @@ namespace ILCompiler
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             if (nodeFactory.CrossModuleInlningInfo != null)
                 nodeFactory.CrossModuleInlningInfo.Initialize(SymbolNodeFactory);
+            if (nodeFactory.ImportReferenceProvider != null)
+                nodeFactory.ImportReferenceProvider.Initialize(SymbolNodeFactory);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
@@ -444,6 +440,12 @@ namespace ILCompiler
                         ownerExecutableName = Path.ChangeExtension(ownerExecutableName, ".dylib");
                     }
 
+                    HashSet<MethodDesc> compiledMethodDefs = null;
+                    if (_nodeFactory.OptimizationFlags.StripILBodies)
+                    {
+                        compiledMethodDefs = _nodeFactory.BuildCompiledMethodDefsSet();
+                    }
+
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
@@ -453,13 +455,13 @@ namespace ILCompiler
                             relativeMsilPath = Path.GetFileName(inputFile);
                         }
                         string standaloneMsilOutputFile = Path.Combine(outputDirectory, relativeMsilPath);
-                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName);
+                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName, compiledMethodDefs: compiledMethodDefs);
                     }
                 }
             }
         }
 
-        private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName)
+        private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName, HashSet<MethodDesc> compiledMethodDefs)
         {
             EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
 
@@ -479,7 +481,22 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
 
-            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true };
+            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true, CompiledMethodDefs = compiledMethodDefs };
+
+            if (optimizationFlags.StripILBodies)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_StrippedILBodies;
+            }
+
+            if (optimizationFlags.StripInliningInfo)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_StrippedInliningInfo;
+            }
+
+            if (optimizationFlags.StripDebugInfo)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_StrippedDebugInfo;
+            }
 
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
 
@@ -531,7 +548,8 @@ namespace ILCompiler
                 componentGraph.AddRoot(componentFactory.Win32ResourcesNode, "Win32 resources");
             }
             componentGraph.ComputeMarkedNodes();
-            componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
+            componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode);
+            componentFactory.SetMarkingComplete();
             ReadyToRunObjectWriter.EmitObject(
                 outputFile,
                 componentModule: inputModule,
@@ -653,14 +671,19 @@ namespace ILCompiler
         // The _finishedFirstCompilationRunInPhase2 variable works in concert some checking to ensure that we don't violate any of this model
         private bool _finishedFirstCompilationRunInPhase2 = false;
 
-        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<EcmaMethod> methodsThatNeedILBodies)
+        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<MethodDesc> methodsThatNeedILBodies)
         {
             lock (_methodsToRecompile)
             {
                 _methodsToRecompile.Add(methodToBeRecompiled);
                 if (methodsThatNeedILBodies != null)
+                {
                     foreach (var method in methodsThatNeedILBodies)
+                    {
+                        Debug.Assert(method.IsMethodDefinition);
                         _methodsWhichNeedMutableILBodies.Add(method);
+                    }
+                }
             }
         }
 
@@ -695,12 +718,15 @@ namespace ILCompiler
                     if (dependency is MethodWithGCInfo methodCodeNodeNeedingCode)
                     {
                         var method = methodCodeNodeNeedingCode.Method;
-                        if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                        var typicalDef = method.GetTypicalMethodDefinition();
+                        if (typicalDef is EcmaMethod or AsyncMethodVariant or AsyncResumptionStub)
                         {
-                            if (ilProvider.NeedsCrossModuleInlineableTokens(ecmaMethod) &&
-                                !_methodsWhichNeedMutableILBodies.Contains(ecmaMethod) &&
-                                CorInfoImpl.IsMethodCompilable(this, methodCodeNodeNeedingCode.Method))
-                                _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
+                            if (ilProvider.NeedsCrossModuleInlineableTokens(typicalDef) &&
+                                !_methodsWhichNeedMutableILBodies.Contains(typicalDef) &&
+                                CorInfoImpl.IsMethodCompilable(this, method))
+                            {
+                                _methodsWhichNeedMutableILBodies.Add(typicalDef);
+                            }
                         }
 
                         if (method.IsAsyncCall()
@@ -748,11 +774,11 @@ namespace ILCompiler
 
             void ProcessMutableMethodBodiesList()
             {
-                EcmaMethod[] mutableMethodBodyNeedList = new EcmaMethod[_methodsWhichNeedMutableILBodies.Count];
+                MethodDesc[] mutableMethodBodyNeedList = new MethodDesc[_methodsWhichNeedMutableILBodies.Count];
                 _methodsWhichNeedMutableILBodies.CopyTo(mutableMethodBodyNeedList);
                 _methodsWhichNeedMutableILBodies.Clear();
                 TypeSystemComparer comparer = TypeSystemComparer.Instance;
-                Comparison<EcmaMethod> comparison = (EcmaMethod a, EcmaMethod b) => comparer.Compare(a, b);
+                Comparison<MethodDesc> comparison = (MethodDesc a, MethodDesc b) => comparer.Compare(a, b);
                 Array.Sort(mutableMethodBodyNeedList, comparison);
                 var ilProvider = (ReadyToRunILProvider)_methodILCache.ILProvider;
 
@@ -1001,6 +1027,8 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("CaptureContexts"u8, null),
                 asyncHelpers.GetKnownMethod("RestoreContexts"u8, null),
                 asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
+                asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null),
 
                 // R2R Helpers
                 asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),

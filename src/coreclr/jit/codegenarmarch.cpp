@@ -295,10 +295,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // SWIFT_SUPPORT
 
-        case GT_RETURN_SUSPEND:
-            genReturnSuspend(treeNode->AsUnOp());
-            break;
-
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());
@@ -500,14 +496,19 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CATCH_ARG:
+            genCodeForCatchArg(treeNode);
+            break;
+        case GT_LABEL:
+            genPendingCallLabel = genCreateTempLabel();
+#if defined(TARGET_ARM)
+            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
+#else
+            emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
+#endif
+            break;
 
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
-
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
-
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
             break;
 
         case GT_ASYNC_CONTINUATION:
@@ -518,23 +519,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genAsyncResumeInfo(treeNode->AsVal());
             break;
 
-        case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
-                          ~fullIntArgRegMask(m_compiler->info.compCallConv)) == 0);
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-            // the runtime side requires the codegen here to be consistent
-            emit->emitDisableRandomNops();
-#endif // PSEUDORANDOM_NOP_INSERTION
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
-        case GT_LABEL:
-            genPendingCallLabel = genCreateTempLabel();
-#if defined(TARGET_ARM)
-            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
-#else
-            emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
-#endif
+        case GT_FTN_ENTRY:
+            genFtnEntry(treeNode);
+            break;
+
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
             break;
 
         case GT_STORE_BLK:
@@ -558,10 +552,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_IL_OFFSET:
             // Do nothing; this node is a marker for debug info.
-            break;
-
-        case GT_RECORD_ASYNC_RESUME:
-            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         default:
@@ -3079,7 +3069,6 @@ void CodeGen::genCall(GenTreeCall* call)
 
         if (target != nullptr)
         {
-            // Indirect fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
             genConsumeReg(target);
         }
 #ifdef FEATURE_READYTORUN
@@ -3124,7 +3113,7 @@ void CodeGen::genCall(GenTreeCall* call)
     regMaskTP killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
-        CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+        CorInfoHelpFunc helpFunc = call->GetHelperNum();
         killMask                 = m_compiler->compHelperCallKillSet(helpFunc);
     }
 
@@ -3157,7 +3146,7 @@ void CodeGen::genCall(GenTreeCall* call)
         else
         {
 #ifdef TARGET_ARM
-            if (call->IsHelperCall(m_compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+            if (call->IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
             {
                 // The CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
                 // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
@@ -3170,7 +3159,7 @@ void CodeGen::genCall(GenTreeCall* call)
             else
 #endif // TARGET_ARM
 #ifdef TARGET_ARM64
-                if (call->IsHelperCall(m_compiler, CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
+                if (call->IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
             {
                 returnReg = genFirstRegNumFromMask(RBM_INTERFACELOOKUP_FOR_SLOT_RETURN);
             }
@@ -3391,7 +3380,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
         // indirection cell but we should not try to optimize.
         regNumber callThroughIndirReg = REG_NA;
-        if (!call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
         {
             callThroughIndirReg = getCallIndirectionCellReg(call);
         }
@@ -4296,16 +4285,12 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
 //
-// Arguments (arm64):
+// Arguments:
 //    initReg        - A scratch register (that gets set to zero on some platforms).
 //    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 //
-#if defined(TARGET_ARM64)
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
-#else
-void CodeGen::genPushCalleeSavedRegisters()
-#endif
 {
     assert(m_compiler->compGeneratingProlog);
 
@@ -4789,6 +4774,7 @@ void CodeGen::genPushCalleeSavedRegisters()
             JITDUMP("    spAdjustment2=%d\n", spAdjustment2);
 
             genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegZeroed);
+
             offset += spAdjustment2;
 
             // Now subtract off the #outsz (or the rest of the #outsz if it was unaligned, and the above "sub"
@@ -4815,6 +4801,7 @@ void CodeGen::genPushCalleeSavedRegisters()
         {
             genPrologSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false, initReg,
                                  pInitRegZeroed);
+
             offset += remainingFrameSz;
 
             offsetSpToSavedFp = m_compiler->lvaOutgoingArgSpaceSize;

@@ -294,6 +294,43 @@ namespace System
         [Intrinsic]
         public static ulong LeadingZeroCount(ulong value) => (ulong)BitOperations.LeadingZeroCount(value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong Log10(ulong value)
+        {
+            // Approximate log10 via log2, then correct with a powers of 10 lookup table.
+            // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10
+            value |= 1;
+            uint log2 = (uint)BitOperations.Log2(value) + 1;
+            uint approx = (log2 * 1233) >> 12;
+            return value < PowersOf10[(int)approx] ? approx - 1 : approx;
+        }
+
+        // Lookup table for power-of-10 boundaries corrections
+        private static ReadOnlySpan<ulong> PowersOf10 =>
+        [
+            1,
+            10,
+            100,
+            1_000,
+            10_000,
+            100_000,
+            1_000_000,
+            10_000_000,
+            100_000_000,
+            1_000_000_000,
+            10_000_000_000,
+            100_000_000_000,
+            1_000_000_000_000,
+            10_000_000_000_000,
+            100_000_000_000_000,
+            1_000_000_000_000_000,
+            10_000_000_000_000_000,
+            100_000_000_000_000_000,
+            1_000_000_000_000_000_000,
+            10_000_000_000_000_000_000,
+        ];
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         [Intrinsic]
         public static ulong PopCount(ulong value) => (ulong)BitOperations.PopCount(value);
@@ -335,19 +372,10 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(ulong))
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(ulong));
-
                     // We have at least 8 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<ulong>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUInt64BigEndian(source.Slice(source.Length - sizeof(ulong)));
                 }
                 else
                 {
@@ -358,7 +386,7 @@ namespace System
                     for (int i = 0; i < source.Length; i++)
                     {
                         result <<= 8;
-                        result |= Unsafe.Add(ref sourceRef, i);
+                        result |= source[i];
                     }
                 }
             }

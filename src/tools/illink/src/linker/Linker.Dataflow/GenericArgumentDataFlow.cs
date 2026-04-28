@@ -53,7 +53,16 @@ namespace Mono.Linker.Dataflow
                 var genericArgument = arguments[i];
                 var genericParameter = parameters[i];
 
-                var genericParameterValue = context.Annotations.FlowAnnotations.GetGenericParameterValue(genericParameter);
+                var parameterRequirements = context.Annotations.FlowAnnotations.GetGenericParameterAnnotation(genericParameter);
+
+                if (genericParameter.HasDefaultConstructorConstraint)
+                {
+                    reflectionMarker.MarkTypeForDynamicallyAccessedMembers(diagnosticContext.Origin, genericArgument, DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, DependencyKind.DefaultCtorForNewConstrainedGenericArgument);
+                    // Avoid duplicate warnings for new() and DAMT.PublicParameterlessConstructor
+                    parameterRequirements &= ~DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+                }
+
+                var genericParameterValue = context.Annotations.FlowAnnotations.GetGenericParameterValue(genericParameter, parameterRequirements);
                 if (genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
                 {
                     MultiValue genericArgumentValue = context.Annotations.FlowAnnotations.GetTypeValueFromGenericArgument(genericArgument);
@@ -82,6 +91,9 @@ namespace Mono.Linker.Dataflow
                 if (flowAnnotations.HasGenericParameterAnnotation(method))
                     return true;
 
+                if (flowAnnotations.HasGenericParameterNewConstraint(method))
+                    return true;
+
                 foreach (var genericArgument in genericInstanceMethod.GenericArguments)
                 {
                     if (RequiresGenericArgumentDataFlow(flowAnnotations, genericArgument))
@@ -100,6 +112,11 @@ namespace Mono.Linker.Dataflow
         internal static bool RequiresGenericArgumentDataFlow(FlowAnnotations flowAnnotations, TypeReference type)
         {
             if (flowAnnotations.HasGenericParameterAnnotation(type))
+            {
+                return true;
+            }
+
+            if (flowAnnotations.HasGenericParameterNewConstraint(type))
             {
                 return true;
             }
