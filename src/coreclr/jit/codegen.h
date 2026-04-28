@@ -1246,6 +1246,7 @@ protected:
     void                 genJumpTable(GenTree* tree);
     void                 genTableBasedSwitch(GenTree* tree);
     void                 genAsyncResumeInfo(GenTreeVal* tree);
+    void                 genFtnEntry(GenTree* tree);
     UNATIVE_OFFSET       genEmitAsyncResumeInfoTable(emitter::dataSection** dataSec);
     CORINFO_FIELD_HANDLE genEmitAsyncResumeInfo(unsigned stateNum);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1303,11 +1304,14 @@ protected:
 
     void genReturn(GenTree* treeNode);
     void genReturnSuspend(GenTreeUnOp* treeNode);
+    void genPatchpoint(GenTreeOp* treeNode);
     void genMarkReturnGCInfo();
 
 #ifdef SWIFT_SUPPORT
     void genSwiftErrorReturn(GenTree* treeNode);
 #endif // SWIFT_SUPPORT
+
+    void genNonLocalJmp(GenTreeUnOp* treeNode);
 
 #ifdef TARGET_XARCH
     void           genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);

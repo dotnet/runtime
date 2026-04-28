@@ -155,6 +155,13 @@ CDAC_TYPE_BEGIN(ObjectHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(ObjectHandle)
 
+CDAC_TYPE_BEGIN(JITNotification)
+CDAC_TYPE_SIZE(sizeof(::JITNotification))
+CDAC_TYPE_FIELD(JITNotification, T_UINT16, State, offsetof(::JITNotification, state))
+CDAC_TYPE_FIELD(JITNotification, T_NUINT, ClrModule, offsetof(::JITNotification, clrModule))
+CDAC_TYPE_FIELD(JITNotification, T_UINT32, MethodToken, offsetof(::JITNotification, methodToken))
+CDAC_TYPE_END(JITNotification)
+
 // Object
 
 CDAC_TYPE_BEGIN(Object)
@@ -924,6 +931,8 @@ CDAC_TYPE_END(ILCodeVersionNode)
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, T_UINT64, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
 CDAC_TYPE_FIELD(ProfControlBlock, T_BOOL, RejitOnAttachEnabled, offsetof(ProfControlBlock, fRejitOnAttachEnabled))
+CDAC_TYPE_FIELD(ProfControlBlock, T_POINTER, MainProfilerProfInterface, offsetof(ProfControlBlock, mainProfilerInfo) + offsetof(ProfilerInfo, pProfInterface))
+CDAC_TYPE_FIELD(ProfControlBlock, T_INT32, NotificationProfilerCount, offsetof(ProfControlBlock, notificationProfilerCount))
 CDAC_TYPE_END(ProfControlBlock)
 #endif // PROFILING_SUPPORTED
 
@@ -1361,6 +1370,7 @@ CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
+CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 #ifdef FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
@@ -1453,6 +1463,8 @@ CDAC_GLOBAL(DispatchThisPtrMask, T_NUINT, InteropLib::ABI::DispatchThisPtrMask)
 CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, InteropLib::ABI::g_knownQueryInterfaceImplementations)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
+CDAC_GLOBAL_POINTER(JITNotificationTable, &::g_pNotificationTable)
+CDAC_GLOBAL(JITNotificationTableSize, T_UINT32, JIT_NOTIFICATION_TABLE_SIZE)
 CDAC_GLOBAL_POINTER(GlobalAllocContext, &::g_global_alloc_context)
 CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS
@@ -1510,6 +1522,7 @@ CDAC_GLOBAL_CONTRACT(AuxiliarySymbols, c1)
 CDAC_GLOBAL_CONTRACT(BuiltInCOM, c1)
 #endif // FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(CodeVersions, c1)
+CDAC_GLOBAL_CONTRACT(CodeNotifications, c1)
 #ifdef FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(ComWrappers, c1)
 #endif // FEATURE_COMWRAPPERS

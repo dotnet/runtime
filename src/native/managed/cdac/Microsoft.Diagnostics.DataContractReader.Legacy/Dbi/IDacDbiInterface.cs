@@ -194,9 +194,6 @@ public unsafe partial interface IDacDbiInterface
     int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData);
 
     [PreserveSig]
-    int GetAssemblyInfo(ulong vmAssembly, DacDbiAssemblyInfo* pData);
-
-    [PreserveSig]
     int GetModuleForAssembly(ulong vmAssembly, ulong* pModule);
 
     [PreserveSig]
