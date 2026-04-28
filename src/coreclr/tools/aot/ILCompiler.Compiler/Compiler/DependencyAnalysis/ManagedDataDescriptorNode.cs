@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (!ecmaType.HasCustomAttribute(DataContractAttributeNamespace, DataContractAttributeName))
                         continue;
 
-                    WriteType(writer, ecmaType, factory.NameMangler);
+                    WriteType(writer, ecmaType);
                 }
                 writer.WriteEndObject();
 
@@ -120,9 +120,9 @@ namespace ILCompiler.DependencyAnalysis
             return stream.ToArray();
         }
 
-        private static void WriteType(Utf8JsonWriter writer, EcmaType type, NameMangler nameMangler)
+        private static void WriteType(Utf8JsonWriter writer, EcmaType type)
         {
-            writer.WriteStartObject(nameMangler.GetMangledTypeName(type).ToString());
+            writer.WriteStartObject(GetFullTypeName(type));
 
             if (type.IsValueType)
             {
@@ -141,6 +141,21 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Returns a fully-qualified type name for cDAC descriptors
+        /// (e.g., "System.Threading.Thread").
+        /// </summary>
+        private static string GetFullTypeName(MetadataType type)
+        {
+            string ns = type.GetNamespace();
+            string name = type.GetName();
+
+            if (string.IsNullOrEmpty(ns))
+                return name;
+
+            return $"{ns}.{name}";
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
