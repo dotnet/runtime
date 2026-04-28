@@ -858,8 +858,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                         if (comp->vnStore->IsVNBinFuncWithConst(op1VN, VNF_ADD, &addOpVN, &addCns) &&
                             (addOpVN == op2VN) && (addCns < 0) && (addCns > INT32_MIN))
                         {
-                            Range aRange = GetRangeFromAssertionsWorker(comp, addOpVN, assertions, --budget, visited);
-                            if (aRange.LowerLimit().IsConstant() && (aRange.LowerLimit().GetConstant() >= -addCns))
+                            if (r2.LowerLimit().IsConstant() && (r2.LowerLimit().GetConstant() >= -addCns))
                             {
                                 // ADD(A, K) < A is proven (both signed and unsigned).
                                 switch (cmpOper)
