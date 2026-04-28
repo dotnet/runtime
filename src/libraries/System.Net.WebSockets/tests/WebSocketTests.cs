@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -182,6 +183,20 @@ namespace System.Net.WebSockets.Tests
             await client.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Text, WebSocketMessageFlags.DisableCompression, default);
             Assert.Throws<ArgumentException>("messageFlags", () =>
                client.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Binary, WebSocketMessageFlags.EndOfMessage, default));
+        }
+
+        [Fact]
+        public async Task ReceiveAsync_ServerUnmaskedFrame_ThrowsWebSocketException()
+        {
+            byte[] frame = { 0x81, 0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F };
+            using var stream = new MemoryStream();
+            stream.Write(frame, 0, frame.Length);
+            stream.Position = 0;
+            using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions { IsServer = true });
+            WebSocketException exception = await Assert.ThrowsAsync<WebSocketException>(() =>
+                websocket.ReceiveAsync(new byte[5], CancellationToken.None));
+            Assert.Equal("The WebSocket client sent an unmasked frame.", exception.Message);
+            Assert.Equal(WebSocketState.Aborted, websocket.State);
         }
 
         public abstract class ExposeProtectedWebSocket : WebSocket
