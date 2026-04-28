@@ -39,6 +39,7 @@ namespace R2RDumpTests
 
         [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
         [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Process.Start is not supported on browser-wasm")]
         [Fact]
         [SkipOnMono("Ready-To-Run is a CoreCLR-only feature", TestPlatforms.Any)]
         public static void DumpCoreLib()

@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
+using TestLibrary;
 using Xunit;
 
 namespace Tracing.Tests
@@ -65,7 +66,7 @@ namespace Tracing.Tests
     {
         [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static int TestEntryPoint()
         {
             using (RuntimeEventListener listener = new RuntimeEventListener())

@@ -214,6 +214,10 @@
       string('This test is not compatible with GC stress.')
       int32(0xC0) // AnyGCStress
     }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnPlatformAttribute::.ctor(valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms, string) = {
+      int32(0x400) // TestPlatforms.Browser
+      string('Threading is not supported on browser-wasm without multithreading.')
+    }
     .entrypoint
     .maxstack  5
     .locals init (class cs1 V_0,
