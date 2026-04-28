@@ -342,6 +342,18 @@ NoFloatingPointRetVal
         ret
     LEAF_END PacSignPtr
 
+; void* PacAuthPtr(void *, void *);
+; This function authenticates the input signed-pointer using x1 as salt.
+; To avoid failing on non-PAC enabled machines, we use pacia1716 which authenticates lr explicitly.
+; Thus we need to move input in lr, authenticate it and then copy it back to the result register.
+    LEAF_ENTRY PacAuthPtr
+        mov x17, x0
+        mov x16, x1
+        DCD 0xD503219F  ; autia1716 instruction in binary to avoid error while compiling with non-PAC enabled compilers
+        mov x0, x17
+        ret
+    LEAF_END PacAuthPtr
+
 ;; ------------------------------------------------------------------
 ;; Redirection Stub for GC in fully interruptible method
         GenerateRedirectedHandledJITCaseStub GCThreadControl

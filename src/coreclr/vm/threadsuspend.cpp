@@ -24,7 +24,7 @@
 
 #if defined(TARGET_ARM64)
 extern "C" void* PacSignPtr(void* ptr, void* sp);
-extern "C" void* PacStripPtr(void* ptr);
+extern "C" void* PacAuthPtr(void* ptr, void* sp);
 #endif // TARGET_ARM64
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -4828,16 +4828,24 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 
     thread->ResetThreadState(Thread::TS_Hijacked);
 
-    // Fix up our caller's stack, so it can resume from the hijack correctly
-#if defined(TARGET_ARM64)
-    pArgs->ReturnAddress = (size_t)PacStripPtr(thread->m_pvHJRetAddr);
-#else
+    // Keep the actual resume address in the saved LR slot. HijackFrame needs a
+    // canonical managed PC for stackwalk/GC, but OnHijackTripThread will later
+    // return via the saved LR in HijackArgs.
     pArgs->ReturnAddress = (size_t)thread->m_pvHJRetAddr;
-#endif //TARGET_ARM64
+
+#if defined(TARGET_ARM64)
+    void* hijackFrameReturnAddress = thread->m_pvHJRetAddr;
+    if (thread->m_pSpForPacSign != nullptr)
+    {
+        hijackFrameReturnAddress = PacAuthPtr(hijackFrameReturnAddress, thread->m_pSpForPacSign);
+    }
+#else
+    void* hijackFrameReturnAddress = thread->m_pvHJRetAddr;
+#endif // TARGET_ARM64
 
     // Build a frame so that stack crawling can proceed from here back to where
     // we will resume execution.
-    HijackFrame frame((void *)pArgs->ReturnAddress, thread, pArgs);
+    HijackFrame frame(hijackFrameReturnAddress, thread, pArgs);
 
 #ifdef _DEBUG
     BOOL GCOnTransition = FALSE;
