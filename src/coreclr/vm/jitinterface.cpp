@@ -11528,7 +11528,7 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
 
         if (pContextMD != nullptr)
         {
-            pContextMD->SetCalliCookie((InterpreterCalliCookie)result);
+            pContextMD->SetCalliCookie(result);
             result = pContextMD->GetCalliCookie();
         }
     }
