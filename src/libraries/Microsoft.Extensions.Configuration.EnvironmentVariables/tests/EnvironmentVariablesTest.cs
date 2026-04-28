@@ -414,8 +414,6 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         [Fact]
         public void ColonAndDotTransformationIsNotTheDefault()
         {
-            // Sanity check: the two built-in transformations produce different results for triple underscores.
-            // If they ever agree, this test no longer demonstrates that the default isn't ColonAndDot.
             var dict = new Hashtable()
             {
                 { "App___Config", "value" }
