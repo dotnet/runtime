@@ -3600,10 +3600,11 @@ namespace System
                 MethodTable* pMT = th.AsMethodTable();
                 if (pMT->IsNullable)
                 {
-                    // The open generic Nullable<> is also classified as Nullable,
-                    // but InstantiationArg0() does not yield a MethodTable for the type variable T.
-                    // Fall back to the managed API which returns the generic type parameter.
-                    if (pMT->IsGenericTypeDefinition)
+                    // The open generic Nullable<> is also classified as Nullable, and a constructed
+                    // Nullable<T> instantiated over a generic variable holds a TypeDesc (not a
+                    // MethodTable*) in InstantiationArg0(). Fall back to managed reflection in
+                    // those cases.
+                    if (pMT->ContainsGenericVariables)
                     {
                         return GetGenericArguments()[0];
                     }
