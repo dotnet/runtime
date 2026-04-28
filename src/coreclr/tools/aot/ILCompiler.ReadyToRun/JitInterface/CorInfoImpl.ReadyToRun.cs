@@ -55,11 +55,13 @@ namespace Internal.JitInterface
         public readonly FieldDesc Field;
         public readonly ModuleToken Token;
         public readonly bool OwningTypeNotDerivedFromToken;
+        private readonly bool _forceOwningTypeNotDerivedFromToken;
 
         public FieldWithToken(FieldDesc field, ModuleToken token, bool forceOwningTypeNotDerivedFromToken = false)
         {
             Field = field;
             Token = token;
+            _forceOwningTypeNotDerivedFromToken = forceOwningTypeNotDerivedFromToken;
             if (token.TokenType == CorTokenType.mdtMemberRef)
             {
                 var memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
@@ -75,7 +77,7 @@ namespace Internal.JitInterface
                     break;
                 }
             }
-            if (forceOwningTypeNotDerivedFromToken)
+            if (_forceOwningTypeNotDerivedFromToken)
             {
                 OwningTypeNotDerivedFromToken = true;
             }
@@ -99,7 +101,7 @@ namespace Internal.JitInterface
 
             return Field == fieldWithToken.Field
                 && Token.Equals(fieldWithToken.Token)
-                && OwningTypeNotDerivedFromToken == fieldWithToken.OwningTypeNotDerivedFromToken;
+                && _forceOwningTypeNotDerivedFromToken == fieldWithToken._forceOwningTypeNotDerivedFromToken;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -130,7 +132,7 @@ namespace Internal.JitInterface
             result = Token.CompareTo(other.Token);
             if (result != 0)
                 return result;
-            return OwningTypeNotDerivedFromToken.CompareTo(other.OwningTypeNotDerivedFromToken);
+            return _forceOwningTypeNotDerivedFromToken.CompareTo(other._forceOwningTypeNotDerivedFromToken);
         }
     }
 
@@ -141,6 +143,7 @@ namespace Internal.JitInterface
         public readonly TypeDesc ConstrainedType;
         public readonly bool Unboxing;
         public readonly bool OwningTypeNotDerivedFromToken;
+        private readonly bool _forceOwningTypeNotDerivedFromToken;
         public readonly TypeDesc OwningType;
 
         public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, TypeSystemEntity genericContextObject, TypeDesc devirtualizedMethodOwner = null, bool forceOwningTypeFromMethodDesc = false)
@@ -151,7 +154,8 @@ namespace Internal.JitInterface
             Token = token;
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
-            if (!forceOwningTypeFromMethodDesc)
+            _forceOwningTypeNotDerivedFromToken = forceOwningTypeFromMethodDesc;
+            if (!_forceOwningTypeNotDerivedFromToken)
             {
                 OwningType = GetMethodTokenOwningType(this, constrainedType, genericContextObject, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
             }
@@ -343,7 +347,7 @@ namespace Internal.JitInterface
                 && OwningType == methodWithToken.OwningType
                 && ConstrainedType == methodWithToken.ConstrainedType
                 && Unboxing == methodWithToken.Unboxing
-                && OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken;
+                && _forceOwningTypeNotDerivedFromToken == methodWithToken._forceOwningTypeNotDerivedFromToken;
 
             return equals;
         }
@@ -419,7 +423,7 @@ namespace Internal.JitInterface
             if (result != 0)
                 return result;
 
-            result = OwningTypeNotDerivedFromToken.CompareTo(other.OwningTypeNotDerivedFromToken);
+            result = _forceOwningTypeNotDerivedFromToken.CompareTo(other._forceOwningTypeNotDerivedFromToken);
             if (result != 0)
                 return result;
 
