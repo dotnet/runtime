@@ -613,7 +613,7 @@ void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum)
         call->gtArgs.PushBack(this, NewCallArg::Primitive(src));
 
         compCurBB = fgFirstBB; // Needed by some morphing
-        fgMorphTree(call);
+        fgMorphArgs(call);
         compCurBB = nullptr;
 
         // Insert the IR

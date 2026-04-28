@@ -1708,7 +1708,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
         CreateAllocContinuationCall(subLayout.NeedsKeepAlive(), returnedContinuation, layout);
 
     m_compiler->compCurBB = suspendBB;
-    m_compiler->fgMorphTree(allocContinuation);
+    m_compiler->fgMorphArgs(allocContinuation);
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, allocContinuation));
 
@@ -2057,7 +2057,7 @@ void AsyncTransformation::FinishContextHandlingOnSuspension(BasicBlock*         
         captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(contContextElementPlaceholder));
 
         m_compiler->compCurBB = suspendBB;
-        m_compiler->fgMorphTree(captureCall);
+        m_compiler->fgMorphArgs(captureCall);
 
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, captureCall));
 
@@ -2099,7 +2099,7 @@ void AsyncTransformation::FinishContextHandlingOnSuspension(BasicBlock*         
         SetCallEntrypointForR2R(captureExecContext, m_compiler, m_asyncInfo->captureExecutionContextMethHnd);
 
         m_compiler->compCurBB = suspendBB;
-        m_compiler->fgMorphTree(captureExecContext);
+        m_compiler->fgMorphArgs(captureExecContext);
 
         GenTree* newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned offset          = OFFSETOF__CORINFO_Continuation__data + layout.ExecutionContextOffset;
@@ -2174,7 +2174,7 @@ void AsyncTransformation::FinishContextHandlingOnSuspensionWithHelper(BasicBlock
     }
 
     m_compiler->compCurBB = suspendBB;
-    m_compiler->fgMorphTree(finishCall);
+    m_compiler->fgMorphArgs(finishCall);
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, finishCall));
 
@@ -2320,7 +2320,7 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
     restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(resumedPlaceholder));
 
     m_compiler->compCurBB = suspendBB;
-    m_compiler->fgMorphTree(restoreCall);
+    m_compiler->fgMorphArgs(restoreCall);
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, restoreCall));
 
@@ -2537,7 +2537,7 @@ void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& 
         restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(valuePlaceholder));
 
         m_compiler->compCurBB = resumeBB;
-        m_compiler->fgMorphTree(restoreCall);
+        m_compiler->fgMorphArgs(restoreCall);
 
         LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, restoreCall));
 
@@ -2691,7 +2691,7 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     GenTreeCall* rethrowException = m_compiler->gtNewHelperCallNode(CORINFO_HELP_THROWEXACT, TYP_VOID, exception);
 
     m_compiler->compCurBB = rethrowExceptionBB;
-    m_compiler->fgMorphTree(rethrowException);
+    m_compiler->fgMorphArgs(rethrowException);
 
     LIR::AsRange(rethrowExceptionBB).InsertAtEnd(LIR::SeqTree(m_compiler, rethrowException));
 
