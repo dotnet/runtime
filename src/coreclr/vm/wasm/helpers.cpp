@@ -909,7 +909,7 @@ namespace
         InterpreterCalliCookie thunk;
         void* thunk;
         bool success = table->Lookup(key, &thunk);
-        return success ? thunk : nullptr;
+        return success ? (InterpreterCalliCookie)thunk : nullptr;
     }
 
     void* LookupPortableEntryPointThunk(const char* key)
