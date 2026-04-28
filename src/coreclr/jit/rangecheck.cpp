@@ -845,6 +845,42 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                     }
 
                     result = RangeOps::EvalRelop(cmpOper, isUnsigned, r1, r2);
+
+                    // Example: "(uint)(length - 4) > (uint)length" folds to false when
+                    // length >= 4 (the typical Slice(length - cns) bounds check).
+                    if (!result.IsSingleValueConstant())
+                    {
+                        ValueNum op1VN = funcApp.m_args[0];
+                        ValueNum op2VN = funcApp.m_args[1];
+                        ValueNum addOpVN;
+                        int      addCns;
+
+                        if (comp->vnStore->IsVNBinFuncWithConst(op1VN, VNF_ADD, &addOpVN, &addCns) &&
+                            (addOpVN == op2VN) && (addCns < 0) && (addCns > INT32_MIN))
+                        {
+                            if (r2.LowerLimit().IsConstant() && (r2.LowerLimit().GetConstant() >= -addCns))
+                            {
+                                // ADD(A, K) < A is proven (both signed and unsigned).
+                                switch (cmpOper)
+                                {
+                                    case GT_LT:
+                                    case GT_LE:
+                                    case GT_NE:
+                                        result = Range(Limit(Limit::keConstant, 1));
+                                        break;
+
+                                    case GT_GT:
+                                    case GT_GE:
+                                    case GT_EQ:
+                                        result = Range(Limit(Limit::keConstant, 0));
+                                        break;
+
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                    }
                 }
                 break;
             }

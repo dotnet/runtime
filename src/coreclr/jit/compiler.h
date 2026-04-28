@@ -9854,13 +9854,6 @@ private:
         return getBaseTypeAndSizeOfSIMDType(typeHnd, nullptr);
     }
 
-    CorInfoType getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
-
-    CorInfoType getBaseJitTypeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd)
-    {
-        return getBaseJitTypeAndSizeOfSIMDType(typeHnd, nullptr);
-    }
-
     GenTree* impSIMDPopStack();
 
     void     setLclRelatedToSIMDIntrinsic(GenTree* tree);

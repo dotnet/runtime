@@ -11181,7 +11181,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 GenTreeHWIntrinsic(tree->TypeGet(), IntrinsicNodeBuilder(getAllocator(CMK_ASTNode), tree->AsMultiOp()),
                                    tree->AsHWIntrinsic()->GetHWIntrinsicId(), tree->AsHWIntrinsic()->GetSimdBaseType(),
                                    tree->AsHWIntrinsic()->GetSimdSize());
-            copy->AsHWIntrinsic()->SetAuxiliaryJitType(tree->AsHWIntrinsic()->GetAuxiliaryJitType());
+            copy->AsHWIntrinsic()->SetAuxiliaryType(tree->AsHWIntrinsic()->GetAuxiliaryType());
 
             if (tree->AsHWIntrinsic()->IsUserCall())
             {
@@ -21538,17 +21538,6 @@ void GenTreeJitIntrinsic::SetMethodHandle(Compiler*                          com
 #endif // FEATURE_READYTORUN
 }
 
-var_types GenTreeJitIntrinsic::GetAuxiliaryType() const
-{
-    CorInfoType auxiliaryJitType = GetAuxiliaryJitType();
-
-    if (auxiliaryJitType == CORINFO_TYPE_UNDEF)
-    {
-        return TYP_UNKNOWN;
-    }
-    return JitType2PreciseVarType(auxiliaryJitType);
-}
-
 var_types GenTreeJitIntrinsic::GetSimdBaseType() const
 {
     return (var_types)gtSimdBaseType;
@@ -29554,13 +29543,13 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
-                    if (GetAuxiliaryJitType() == CORINFO_TYPE_PTR)
+                    if (GetAuxiliaryType() == TYP_U_IMPL)
                     {
                         addr = Op(1);
                     }
                     else
                     {
-                        assert(GetAuxiliaryJitType() == CORINFO_TYPE_UNDEF);
+                        assert(GetAuxiliaryType() == TYP_UNKNOWN);
                     }
                     break;
 
@@ -33912,14 +33901,13 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             }
                         }
 #elif defined(TARGET_ARM64)
-                        CorInfoType auxJitType = tree->GetAuxiliaryJitType();
-                        if (auxJitType != CORINFO_TYPE_UNDEF &&
-                            genTypeSize(JITtype2varType(auxJitType)) != genTypeSize(simdBaseType))
+                        var_types auxType = tree->GetAuxiliaryType();
+                        if (auxType != TYP_UNKNOWN && genTypeSize(auxType) != genTypeSize(simdBaseType))
                         {
                             // Handle the "wide elements" variant of shift, where otherNode is a vector of ulongs,
                             // which is looped over to read the shift values. The values can safely be narrowed
                             // to the result type.
-                            assert(auxJitType == CORINFO_TYPE_ULONG);
+                            assert(auxType == TYP_ULONG);
                             assert(tree->TypeIs(TYP_SIMD16));
 
                             simd16_t result = {};
