@@ -39,7 +39,7 @@ PCODE LookupPregeneratedThunkByString(const char* str)
     return NULL;
 }
 
-void ProcessInjectStringThunksFixup(TADDR moduleBase, PCCOR_SIGNATURE pBlob)
+void ProcessInjectStringThunksFixup(ReadyToRunInfo * pR2RInfo, PCCOR_SIGNATURE pBlob)
 {
     STANDARD_VM_CONTRACT;
 
@@ -76,6 +76,14 @@ void ProcessInjectStringThunksFixup(TADDR moduleBase, PCCOR_SIGNATURE pBlob)
         if (!hasNewEntries)
             return;
 
+#ifdef TARGET_WASM
+        WebcilDecoder decoder;
+        decoder.Init(dac_cast<void*>(pR2RInfo->GetImage()->GetBase()), pR2RInfo->GetImage()->GetVirtualSize());
+        TADDR rvaBase = decoder.GetTableBaseOffset();
+#else
+        TADDR rvaBase = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase());
+#endif
+
         // Build a new table with all existing entries plus new ones.
         StringToThunkHash* newTable = new StringToThunkHash();
 
@@ -104,7 +112,7 @@ void ProcessInjectStringThunksFixup(TADDR moduleBase, PCCOR_SIGNATURE pBlob)
                 void* unused;
                 if (!newTable->Lookup(str, &unused))
                 {
-                    void* codeAddr = (void*)(moduleBase + (TADDR)rva);
+                    void* codeAddr = (void*)(rvaBase + (TADDR)rva);
                     newTable->Add(str, codeAddr);
                 }
             }

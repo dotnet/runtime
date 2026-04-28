@@ -14747,8 +14747,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_InjectStringThunks:
         {
             ReadyToRunInfo * pR2RInfo = currentModule->GetReadyToRunInfo();
-            TADDR moduleBase = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase());
-            ProcessInjectStringThunksFixup(moduleBase, pBlob);
+            ProcessInjectStringThunksFixup(pR2RInfo, pBlob);
             result = 1;
         }
         break;

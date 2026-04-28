@@ -18,7 +18,7 @@ PCODE LookupPregeneratedThunkByString(const char* str);
 // Process a READYTORUN_FIXUP_InjectStringThunks fixup, adding new entries to the global hash.
 // moduleBase is the base address of the R2R image.
 // pBlob points to the first byte after the fixup kind byte in the signature.
-void ProcessInjectStringThunksFixup(TADDR moduleBase, PCCOR_SIGNATURE pBlob);
+void ProcessInjectStringThunksFixup(ReadyToRunInfo * pR2RInfo, PCCOR_SIGNATURE pBlob);
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 // Initialize the lock used for pending thunk resolution tracking.
