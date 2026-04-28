@@ -6,9 +6,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
     public sealed class MLDsaOpenSslTests : MLDsaTestsBase
     {
+        public MLDsaOpenSslTests()
+        {
+            Assert.SkipUnless(MLDsa.IsSupported, "Precondition not met");
+        }
+
         protected override MLDsa GenerateKey(MLDsaAlgorithm algorithm)
         {
             using SafeEvpPKeyHandle key = Interop.Crypto.MLDsaGenerateKey(algorithm.Name, ReadOnlySpan<byte>.Empty);

@@ -8,9 +8,13 @@ using System.Reflection;
 using Xunit;
 using TestLibrary;
 
-[ConditionalClass(typeof(StartupHookTests), nameof(StartupHookTests.IsSupported))]
 public unsafe class StartupHookTests
 {
+    public StartupHookTests()
+    {
+        Assert.SkipUnless(IsSupported, "Precondition not met");
+    }
+
     private const string StartupHookKey = "STARTUP_HOOKS";
 
     private static Type s_startupHookProvider = typeof(object).Assembly.GetType("System.StartupHookProvider", throwOnError: true);
@@ -29,7 +33,7 @@ public unsafe class StartupHookTests
 
     [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
-    public static void ValidHookName()
+    public void ValidHookName()
     {
         Console.WriteLine($"Running {nameof(ValidHookName)}...");
 
@@ -46,7 +50,7 @@ public unsafe class StartupHookTests
 
     [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
-    public static void ValidHookPath()
+    public void ValidHookPath()
     {
         Console.WriteLine($"Running {nameof(ValidHookPath)}...");
 
@@ -63,7 +67,7 @@ public unsafe class StartupHookTests
 
     [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
-    public static void MultipleValidHooksAndSeparators()
+    public void MultipleValidHooksAndSeparators()
     {
         Console.WriteLine($"Running {nameof(MultipleValidHooksAndSeparators)}...");
 
@@ -84,7 +88,7 @@ public unsafe class StartupHookTests
 
     [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
-    public static void MultipleValidDiagnosticHooksAndSeparators()
+    public void MultipleValidDiagnosticHooksAndSeparators()
     {
         Console.WriteLine($"Running {nameof(MultipleValidDiagnosticHooksAndSeparators)}...");
 
@@ -106,7 +110,7 @@ public unsafe class StartupHookTests
 
     [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
-    public static void MultipleValidDiagnosticAndStandardHooks()
+    public void MultipleValidDiagnosticAndStandardHooks()
     {
         Console.WriteLine($"Running {nameof(MultipleValidDiagnosticAndStandardHooks)}...");
 
@@ -128,7 +132,7 @@ public unsafe class StartupHookTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public static void MissingAssembly(bool useAssemblyName)
+    public void MissingAssembly(bool useAssemblyName)
     {
         Console.WriteLine($"Running {nameof(MissingAssembly)}...");
 
@@ -146,7 +150,7 @@ public unsafe class StartupHookTests
 
     [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
-    public static void InvalidAssembly()
+    public void InvalidAssembly()
     {
         Console.WriteLine($"Running {nameof(InvalidAssembly)}...");
 
@@ -184,7 +188,7 @@ public unsafe class StartupHookTests
     [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Theory]
     [MemberData(nameof(InvalidSimpleAssemblyNameData))]
-    public static void InvalidSimpleAssemblyName(string name, bool failsSimpleNameCheck)
+    public void InvalidSimpleAssemblyName(string name, bool failsSimpleNameCheck)
     {
         Console.WriteLine($"Running {nameof(InvalidSimpleAssemblyName)}({name}, {failsSimpleNameCheck})...");
 
@@ -210,7 +214,7 @@ public unsafe class StartupHookTests
 
     [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
-    public static void MissingStartupHookType()
+    public void MissingStartupHookType()
     {
         Console.WriteLine($"Running {nameof(MissingStartupHookType)}...");
 
@@ -230,7 +234,7 @@ public unsafe class StartupHookTests
 
     [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
-    public static void MissingInitializeMethod()
+    public void MissingInitializeMethod()
     {
         Console.WriteLine($"Running {nameof(MissingInitializeMethod)}...");
 
@@ -250,7 +254,7 @@ public unsafe class StartupHookTests
     [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Theory]
     [MemberData(nameof(IncorrectInitializeSignatureData))]
-    public static void IncorrectInitializeSignature(Hook hook)
+    public void IncorrectInitializeSignature(Hook hook)
     {
         Console.WriteLine($"Running {nameof(IncorrectInitializeSignature)}({hook.Name})...");
 

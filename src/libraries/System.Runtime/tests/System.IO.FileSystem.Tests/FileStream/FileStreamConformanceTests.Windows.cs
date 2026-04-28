@@ -77,9 +77,13 @@ namespace System.IO.Tests
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specific
     [Collection(nameof(DisableParallelization))] // don't run in parallel, as file sharing logic is not thread-safe
     [OuterLoop("Requires admin privileges to create a file share")]
-    [ConditionalClass(typeof(WindowsTestFileShare), nameof(WindowsTestFileShare.CanShareFiles))]
     public class UncFilePathFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests
     {
+        public UncFilePathFileStreamStandaloneConformanceTests()
+        {
+            Assert.SkipUnless(WindowsTestFileShare.CanShareFiles, "Precondition not met");
+        }
+
         private WindowsTestFileShare _testShare;
 
         protected override string GetTestFilePath(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
@@ -113,9 +117,13 @@ namespace System.IO.Tests
 
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
     [OuterLoop("Has a very complex setup logic that in theory might have some side-effects")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public class DeviceInterfaceTests
     {
+        public DeviceInterfaceTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "Precondition not met");
+        }
+
         [Fact]
         public async Task DeviceInterfaceCanBeOpenedForAsyncIO()
         {

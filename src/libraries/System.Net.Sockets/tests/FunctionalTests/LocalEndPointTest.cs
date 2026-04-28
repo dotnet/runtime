@@ -245,30 +245,39 @@ namespace System.Net.Sockets.Tests
     }
 
     [Trait("IPv4", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv4Sync : LocalEndPointTestIPv4<SocketHelperArraySync>
     {
-        public LocalEndPointTestIPv4Sync(ITestOutputHelper output) : base(output) { }
+        public LocalEndPointTestIPv4Sync(ITestOutputHelper output) : base(output)
+ {
+     Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+ }
     }
 
     [Trait("IPv4", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv4SyncForceNonBlocking : LocalEndPointTestIPv4<SocketHelperSyncForceNonBlocking>
     {
-        public LocalEndPointTestIPv4SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+            public LocalEndPointTestIPv4SyncForceNonBlocking(ITestOutputHelper output) : base(output)
+            {
+                Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+            }
     }
 
     [Trait("IPv4", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv4Apm : LocalEndPointTestIPv4<SocketHelperApm>
     {
-        public LocalEndPointTestIPv4Apm(ITestOutputHelper output) : base(output) { }
+        public LocalEndPointTestIPv4Apm(ITestOutputHelper output) : base(output)
+ {
+     Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+ }
     }
 
     [Trait("IPv4", "true")]
     public sealed class LocalEndPointTestIPv4Task : LocalEndPointTestIPv4<SocketHelperTask>
     {
-        public LocalEndPointTestIPv4Task(ITestOutputHelper output) : base(output) { }
+        public LocalEndPointTestIPv4Task(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+        }
     }
 
     [Trait("IPv4", "true")]
@@ -278,30 +287,39 @@ namespace System.Net.Sockets.Tests
     }
 
     [Trait("IPv6", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv6Sync : LocalEndPointTestIPv6<SocketHelperArraySync>
     {
-        public LocalEndPointTestIPv6Sync(ITestOutputHelper output) : base(output) { }
+        public LocalEndPointTestIPv6Sync(ITestOutputHelper output) : base(output)
+ {
+     Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+ }
     }
 
     [Trait("IPv6", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv6SyncForceNonBlocking : LocalEndPointTestIPv6<SocketHelperSyncForceNonBlocking>
     {
-        public LocalEndPointTestIPv6SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+            public LocalEndPointTestIPv6SyncForceNonBlocking(ITestOutputHelper output) : base(output)
+            {
+                Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+            }
     }
 
     [Trait("IPv6", "true")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class LocalEndPointTestIPv6Apm : LocalEndPointTestIPv6<SocketHelperApm>
     {
-        public LocalEndPointTestIPv6Apm(ITestOutputHelper output) : base(output) { }
+        public LocalEndPointTestIPv6Apm(ITestOutputHelper output) : base(output)
+ {
+     Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+ }
     }
 
     [Trait("IPv6", "true")]
     public sealed class LocalEndPointTestIPv6Task : LocalEndPointTestIPv6<SocketHelperTask>
     {
-        public LocalEndPointTestIPv6Task(ITestOutputHelper output) : base(output) { }
+        public LocalEndPointTestIPv6Task(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+        }
     }
 
     [Trait("IPv6", "true")]

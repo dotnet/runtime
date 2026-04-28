@@ -12,11 +12,13 @@ using Xunit;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public class MsQuicRemoteExecutorTests : QuicTestBase
     {
         public MsQuicRemoteExecutorTests()
-            : base(null!) { }
+            : base(null!)
+        {
+            Assert.SkipUnless(QuicTestBase.IsSupported && QuicTestBase.IsNotArm32CoreClrStressTest, "Precondition not met");
+        }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]

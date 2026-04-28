@@ -14,9 +14,13 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveTypeBuilderTests
     {
+        public AssemblySaveTypeBuilderTests()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "Precondition not met");
+        }
+
         private static readonly AssemblyName s_assemblyName = new AssemblyName("MyDynamicAssembly")
         {
             Version = new Version("1.2.3.4"),
@@ -944,7 +948,7 @@ namespace System.Reflection.Emit.Tests
             //     public static delegate*<int, int, int> Method;
             //
             //     public static int Add(int a, int b) => a + b;
-            //     public static void Init() => Method = &Add;
+            //     public void Init() => Method = &Add;
             // }
 
             TempFile assembly1Path = TempFile.Create();

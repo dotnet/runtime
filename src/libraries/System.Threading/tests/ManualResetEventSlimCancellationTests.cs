@@ -6,11 +6,15 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-    public static class ManualResetEventCancellationTests
+    public class ManualResetEventCancellationTests
     {
+        public ManualResetEventCancellationTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+        }
+
         [Fact]
-        public static void CancelBeforeWait()
+        public void CancelBeforeWait()
         {
             ManualResetEventSlim mres = new ManualResetEventSlim();
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -27,7 +31,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static void CancelAfterWait()
+        public void CancelAfterWait()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationTokenSource.Token;

@@ -209,9 +209,14 @@ namespace System.Net.WebSockets.Client.Tests
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
-    public abstract class ConnectTest_External(ITestOutputHelper output) : ConnectTestBase(output)
+    public abstract class ConnectTest_External : ConnectTestBase
     {
+        public ConnectTest_External(ITestOutputHelper output)
+            : base(output)
+        {
+            Assert.SkipUnless(ClientWebSocketTestBase.WebSocketsSupported, "Precondition not met");
+        }
+
         #region Common (Echo Server) tests
 
         [Theory, MemberData(nameof(EchoServers))]

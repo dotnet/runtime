@@ -13,7 +13,6 @@ using Xunit;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicListenerTests : QuicTestBase
     {
         public QuicListenerTests(ITestOutputHelper output) : base(output) { }
@@ -21,6 +20,9 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task Listener_Backlog_Success()
         {
+            Assert.SkipUnless(QuicTestBase.IsSupported, "Precondition not met");
+            Assert.SkipUnless(QuicTestBase.IsNotArm32CoreClrStressTest, "Precondition not met");
+
             await Task.Run(async () =>
             {
                 await using QuicListener listener = await CreateQuicListener();

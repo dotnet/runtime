@@ -144,13 +144,13 @@ namespace System.Runtime.Loader.Tests
     }
 
     [ActiveIssue("https://github.com/mono/mono/issues/15142", TestRuntimes.Mono)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class ContextualReflectionTest : IClassFixture<ContextualReflectionTestFixture>
     {
         IContextualReflectionTestFixture _fixture;
 
         public ContextualReflectionTest(ContextualReflectionTestFixture fixture)
         {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "Precondition not met");
             _fixture = fixture;
             _fixture.SetPreConditions();
         }

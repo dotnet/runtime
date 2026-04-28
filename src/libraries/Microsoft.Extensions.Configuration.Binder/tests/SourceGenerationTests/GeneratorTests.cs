@@ -28,6 +28,11 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
+        public ConfigurationBindingGeneratorTests()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "Precondition not met");
+        }
+
         [Theory]
         [InlineData(LanguageVersion.CSharp11)]
         [InlineData(LanguageVersion.CSharp10)]

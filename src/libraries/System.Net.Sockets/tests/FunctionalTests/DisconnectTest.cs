@@ -154,19 +154,22 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class Disconnect_Sync : Disconnect<SocketHelperArraySync>
     {
-        public Disconnect_Sync(ITestOutputHelper output) : base(output) { }
+        public Disconnect_Sync(ITestOutputHelper output) : base(output)
+ {
+     Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+ }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class Disconnect_SyncForceNonBlocking : Disconnect<SocketHelperSyncForceNonBlocking>
     {
-        public Disconnect_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+            public Disconnect_SyncForceNonBlocking(ITestOutputHelper output) : base(output)
+            {
+                Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+            }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class Disconnect_Apm : Disconnect<SocketHelperApm>
     {
         public Disconnect_Apm(ITestOutputHelper output) : base(output) { }
@@ -174,6 +177,8 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void EndDisconnect_InvalidArguments_Throws()
         {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 AssertExtensions.Throws<ArgumentNullException>("asyncResult", () => s.EndDisconnect(null));

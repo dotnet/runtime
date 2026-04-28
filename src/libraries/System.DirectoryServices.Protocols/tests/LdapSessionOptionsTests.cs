@@ -9,9 +9,13 @@ namespace System.DirectoryServices.Protocols.Tests
 {
     // To enable these tests locally for Mono, comment out this line in DirectoryServicesTestHelpers.cs:
     //     [assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/35912", TestRuntimes.Mono)]
-    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class LdapSessionOptionsTests
     {
+        public LdapSessionOptionsTests()
+        {
+            Assert.SkipUnless(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled, "Precondition not met");
+        }
+
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(ReferralChasingOptions.None)]

@@ -176,9 +176,14 @@ namespace System.Net.WebSockets.Client.Tests
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
-    public abstract class CancelTest_External(ITestOutputHelper output) : CancelTestBase(output)
+    public abstract class CancelTest_External : CancelTestBase
     {
+        public CancelTest_External(ITestOutputHelper output)
+            : base(output)
+        {
+            Assert.SkipUnless(ClientWebSocketTestBase.WebSocketsSupported, "Precondition not met");
+        }
+
         #region Common (Echo Server) tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/83579", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]

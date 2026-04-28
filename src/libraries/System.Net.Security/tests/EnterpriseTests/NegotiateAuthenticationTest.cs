@@ -13,9 +13,13 @@ using Xunit;
 
 namespace System.Net.Security.Enterprise.Tests
 {
-    [ConditionalClass(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
     public class NegotiateAuthenticationTest
     {
+        public NegotiateAuthenticationTest()
+        {
+            Assert.SkipUnless(EnterpriseTestConfiguration.Enabled, "Precondition not met");
+        }
+
         static NegotiateAuthenticationTest()
         {
             // Obtain a Kerberos TGT so that DefaultNetworkCredentials tests can work.

@@ -15,9 +15,13 @@ using VerifyCS = System.Text.RegularExpressions.Tests.CSharpCodeFixVerifier<
 namespace System.Text.RegularExpressions.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/69823", TestRuntimes.Mono)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class UpgradeToGeneratedRegexAnalyzerTests
     {
+        public UpgradeToGeneratedRegexAnalyzerTests()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "Precondition not met");
+        }
+
         private const string UseRegexSourceGeneratorDiagnosticId = @"SYSLIB1045";
 
         [Fact]

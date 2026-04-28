@@ -7,9 +7,13 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class SecurityDescriptorFlagControlTests
     {
+        public SecurityDescriptorFlagControlTests()
+        {
+            Assert.SkipUnless(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled, "Precondition not met");
+        }
+
         [Fact]
         public void Ctor_Default()
         {

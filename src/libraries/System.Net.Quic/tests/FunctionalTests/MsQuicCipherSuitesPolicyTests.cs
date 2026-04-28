@@ -9,7 +9,6 @@ using Xunit;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     [SkipOnPlatform(TestPlatforms.Windows, "CipherSuitesPolicy is not supported on Windows")]
     public class MsQuicCipherSuitesPolicyTests : QuicTestBase
     {
@@ -17,6 +16,9 @@ namespace System.Net.Quic.Tests
 
         private async Task TestConnection(CipherSuitesPolicy serverPolicy, CipherSuitesPolicy clientPolicy)
         {
+            Assert.SkipUnless(QuicTestBase.IsSupported, "Precondition not met");
+            Assert.SkipUnless(QuicTestBase.IsNotArm32CoreClrStressTest, "Precondition not met");
+
             var listenerOptions = new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),

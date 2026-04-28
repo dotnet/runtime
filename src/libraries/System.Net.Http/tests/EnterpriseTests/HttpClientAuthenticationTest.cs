@@ -8,9 +8,13 @@ using Xunit;
 
 namespace System.Net.Http.Enterprise.Tests
 {
-    [ConditionalClass(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
     public class HttpClientAuthenticationTest
     {
+        public HttpClientAuthenticationTest()
+        {
+            Assert.SkipUnless(EnterpriseTestConfiguration.Enabled, "Precondition not met");
+        }
+
         private const string AppContextSettingName = "System.Net.Http.UsePortInSpn";
 
         [Theory]

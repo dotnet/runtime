@@ -18,7 +18,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
         internal sealed class ConfigBindingGenTestDriver

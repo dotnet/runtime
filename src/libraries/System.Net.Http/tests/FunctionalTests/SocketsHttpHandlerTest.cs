@@ -124,17 +124,21 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http3 : SocketsHttpHandler_HttpClientHandler_Asynchrony_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http3(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
 
         [Fact]
         public async Task ReadAheadTaskOnConnectionReuse_ExceptionsAreObserved()
@@ -287,10 +291,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_HttpProtocolTests : HttpProtocolTests
     {
-        public SocketsHttpHandler_HttpProtocolTests(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpProtocolTests(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
 
         [Fact]
         public async Task DefaultRequestHeaders_SentUnparsed()
@@ -314,10 +320,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_HttpProtocolTests_Dribble : HttpProtocolTests_Dribble
     {
-        public SocketsHttpHandler_HttpProtocolTests_Dribble(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpProtocolTests_Dribble(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
     }
 
     public sealed class SocketsHttpHandler_DiagnosticsTest_Http11 : DiagnosticsTest
@@ -331,10 +339,12 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_DiagnosticsTest_Http3 : DiagnosticsTest
     {
-        public SocketsHttpHandler_DiagnosticsTest_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_DiagnosticsTest_Http3(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
@@ -699,10 +709,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_PostScenarioTest : PostScenarioTest
     {
-        public SocketsHttpHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_PostScenarioTest(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
 
         [Theory]
         [InlineData(false)]
@@ -755,10 +767,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
     public sealed class SocketsHttpHandler_ResponseStreamTest : ResponseStreamTest
     {
-        public SocketsHttpHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_ResponseStreamTest(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsBrowserDomSupportedOrNotBrowser, "Precondition not met");
+        }
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
@@ -1182,10 +1196,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandler_Http2_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
     {
-        public SocketsHttpHandler_Http2_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_Http2_TrailingHeaders_Test(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version20;
 
         protected override async Task AcceptConnectionAndSendResponseAsync(
@@ -1242,10 +1258,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_Http3_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
     {
-        public SocketsHttpHandler_Http3_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_Http3_TrailingHeaders_Test(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
 
         protected override async Task AcceptConnectionAndSendResponseAsync(
@@ -1357,16 +1375,20 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
     {
-        public SocketsHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
-        public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
 
         [Theory]
         [InlineData("Basic")]
@@ -1394,16 +1416,20 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_IdnaProtocolTests : IdnaProtocolTests
     {
-        public SocketsHttpHandler_IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_IdnaProtocolTests(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandlerTest_RequestRetry : HttpClientHandlerTest_RequestRetry
     {
-        public SocketsHttpHandlerTest_RequestRetry(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_RequestRetry(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseCookies is not supported on Browser")]
@@ -1418,10 +1444,12 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test : SocketsHttpHandler_Cancellation_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(SocketsHttpHandler.IsSupported, "Precondition not met");
+        }
 
         [Fact]
         public void ConnectTimeout_Default()
@@ -1651,10 +1679,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11 : SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength
     {
-        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(SocketsHttpHandler.IsSupported, "Precondition not met");
+        }
 
         [Theory]
         [InlineData(null, 63 * 1024)]
@@ -1816,17 +1846,21 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http2 : SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength
     {
-        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http2(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http2(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(SocketsHttpHandler.IsSupported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3 : SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength
     {
-        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
@@ -1836,10 +1870,12 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_ConnectionUpgrade_Test : HttpClientHandlerTestBase
     {
-        public SocketsHttpHandler_ConnectionUpgrade_Test(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_ConnectionUpgrade_Test(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
 
         [Fact]
         public async Task UpgradeConnection_ReturnsReadableAndWritableStream()
@@ -1956,10 +1992,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_Connect_Test : HttpClientHandler_Connect_Test
     {
-        public SocketsHttpHandler_Connect_Test(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_Connect_Test(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
@@ -2296,9 +2334,13 @@ namespace System.Net.Http.Functional.Tests
     }
 
     // System.Net.Sockets is not supported on this platform
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_PublicAPIBehavior_Test
     {
+        public SocketsHttpHandler_PublicAPIBehavior_Test()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
+
         [Fact]
         public void AllowAutoRedirect_GetSet_Roundtrips()
         {
@@ -2771,10 +2813,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandlerTest_Http2 : HttpClientHandlerTest_Http2
     {
-        public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
 
         [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()
@@ -3727,10 +3771,12 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_ConnectCallback_Http11(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandlerTest_ConnectCallback_Http2 : SocketsHttpHandlerTest_ConnectCallback
     {
-        public SocketsHttpHandlerTest_ConnectCallback_Http2(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_ConnectCallback_Http2(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version20;
 
         [Fact]
@@ -4046,10 +4092,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandlerTest_PlaintextStreamFilter_Http11 : SocketsHttpHandlerTest_PlaintextStreamFilter
     {
-        public SocketsHttpHandlerTest_PlaintextStreamFilter_Http11(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_PlaintextStreamFilter_Http11(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
 
         [Theory]
         [InlineData(true)]
@@ -4146,24 +4194,30 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandlerTest_PlaintextStreamFilter_Http2 : SocketsHttpHandlerTest_PlaintextStreamFilter
     {
-        public SocketsHttpHandlerTest_PlaintextStreamFilter_Http2(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_PlaintextStreamFilter_Http2(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
     {
-        public SocketsHttpHandlerTest_Cookies_Http2(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_Cookies_Http2(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http2 : HttpClientHandlerTest
     {
-        public SocketsHttpHandlerTest_HttpClientHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_HttpClientHandlerTest_Http2(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
@@ -4199,65 +4253,85 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http2 : HttpClientHandlerTest_Headers
     {
-        public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http2(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http2(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http2 : SocketsHttpHandler_Cancellation_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http2(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http2(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3 : HttpClientHandlerTest
     {
-        public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3 : HttpClientHandlerTest_Cookies
     {
-        public SocketsHttpHandlerTest_Cookies_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_Cookies_Http3(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3 : HttpClientHandlerTest_Headers
     {
-        public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3 : SocketsHttpHandler_Cancellation_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3 : HttpClientHandler_AltSvc_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3 : HttpClientHandler_Finalization_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_Finalization_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_Finalization_Http3(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class SocketsHttpHandler_RequestValidationTest
     {
+        public SocketsHttpHandler_RequestValidationTest()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
+
         protected abstract bool TestAsync { get; }
 
         [Fact]
@@ -4351,10 +4425,12 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class SocketsHttpHandler_RequestContentLengthMismatchTest : HttpClientHandlerTestBase
     {
-        public SocketsHttpHandler_RequestContentLengthMismatchTest(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_RequestContentLengthMismatchTest(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
 
         [Theory]
         [InlineData(0, 1)]
@@ -4398,27 +4474,31 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version11;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandler_RequestContentLengthMismatchTest_Http2 : SocketsHttpHandler_RequestContentLengthMismatchTest
     {
-        public SocketsHttpHandler_RequestContentLengthMismatchTest_Http2(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_RequestContentLengthMismatchTest_Http2(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_RequestContentLengthMismatchTest_Http3 : SocketsHttpHandler_RequestContentLengthMismatchTest
     {
-        public SocketsHttpHandler_RequestContentLengthMismatchTest_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_RequestContentLengthMismatchTest_Http3(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class SocketsHttpHandler_SecurityTest : HttpClientHandlerTestBase
     {
         private readonly CertificateSetup _certificateSetup;
 
         public SocketsHttpHandler_SecurityTest(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
             _certificateSetup = certificateSetup;
         }
 
@@ -4532,7 +4612,10 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11 : SocketsHttpHandler_SecurityTest, IClassFixture<CertificateSetup>
     {
-        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version11;
 
 #if DEBUG
@@ -4581,26 +4664,33 @@ namespace System.Net.Http.Functional.Tests
 #endif
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http2 : SocketsHttpHandler_SecurityTest, IClassFixture<CertificateSetup>
     {
-        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http2(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http2(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
 
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3 : SocketsHttpHandler_SecurityTest, IClassFixture<CertificateSetup>
     {
-        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class SocketsHttpHandler_HttpRequestErrorTest : HttpClientHandlerTestBase
     {
-        protected SocketsHttpHandler_HttpRequestErrorTest(ITestOutputHelper output) : base(output)
+        public SocketsHttpHandler_HttpRequestErrorTest(ITestOutputHelper output) : base(output)
+
         {
+
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+
         }
 
         // On Windows7 DNS may return SocketError.NoData (WSANO_DATA), which we currently don't map to NameResolutionError.
@@ -4679,14 +4769,19 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http11 : SocketsHttpHandler_HttpRequestErrorTest
     {
-        public SocketsHttpHandler_HttpRequestErrorTest_Http11(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpRequestErrorTest_Http11(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version11;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http20 : SocketsHttpHandler_HttpRequestErrorTest
     {
-        public SocketsHttpHandler_HttpRequestErrorTest_Http20(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpRequestErrorTest_Http20(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version20;
 
         [Fact]
@@ -4717,10 +4812,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http30 : SocketsHttpHandler_HttpRequestErrorTest
     {
-        public SocketsHttpHandler_HttpRequestErrorTest_Http30(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpRequestErrorTest_Http30(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 

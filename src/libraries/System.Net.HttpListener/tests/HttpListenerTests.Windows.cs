@@ -9,9 +9,13 @@ using Xunit;
 namespace System.Net.Tests
 {
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerWindowsTests
     {
+        public HttpListenerWindowsTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "Precondition not met");
+        }
+
         [Fact]
         public void EnableKernelResponseBuffering_DefaultIsDisabled()
         {

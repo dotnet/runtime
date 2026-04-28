@@ -10,9 +10,13 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class ExecutionContextFlowTest : FileCleanupTestBase
     {
+        public ExecutionContextFlowTest()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

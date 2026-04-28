@@ -8,9 +8,13 @@ using System.Runtime.Serialization;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
 
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
 public class BinaryFormattedTypes
 {
+    public BinaryFormattedTypes()
+    {
+        Assert.SkipUnless(PlatformDetection.IsBinaryFormatterSupported, "Precondition not met");
+    }
+
     [Theory]
     [MemberData(nameof(BinaryFormattedTypes_TestData))]
     public void Types_UseBinaryFormatter(Type type)

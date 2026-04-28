@@ -7,10 +7,14 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class MLDsaCngTests_AllowPlaintextExport : MLDsaTestsBase
     {
+        public MLDsaCngTests_AllowPlaintextExport()
+        {
+            Assert.SkipUnless(MLDsa.IsSupported, "Precondition not met");
+        }
+
         protected override MLDsa GenerateKey(MLDsaAlgorithm algorithm) =>
             MLDsaTestHelpers.GenerateKey(algorithm, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
 
@@ -27,10 +31,14 @@ namespace System.Security.Cryptography.Tests
             MLDsaTestHelpers.AssertThrowsCryptographicExceptionWithHResult(export);
     }
 
-    [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class MLDsaCngTests_AllowExport : MLDsaTestsBase
     {
+        public MLDsaCngTests_AllowExport()
+        {
+            Assert.SkipUnless(MLDsa.IsSupported, "Precondition not met");
+        }
+
         protected override MLDsa GenerateKey(MLDsaAlgorithm algorithm) =>
             MLDsaTestHelpers.GenerateKey(algorithm, CngExportPolicies.AllowExport);
 
@@ -47,10 +55,14 @@ namespace System.Security.Cryptography.Tests
             MLDsaTestHelpers.AssertThrowsCryptographicExceptionWithHResult(export);
     }
 
-    [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class MLDsaCngTests
     {
+        public MLDsaCngTests()
+        {
+            Assert.SkipUnless(MLDsa.IsSupported, "Precondition not met");
+        }
+
         [Theory]
         [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void ImportPrivateKey_NoExportFlag(MLDsaKeyInfo info)
@@ -236,7 +248,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void MLDsaCng_GetKey()
+        public void MLDsaCng_GetKey()
         {
             CngProperty parameterSet = MLDsaTestHelpers.GetCngProperty(MLDsaAlgorithm.MLDsa65);
             CngKeyCreationParameters creationParams = new();

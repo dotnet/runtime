@@ -12,9 +12,13 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
-        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public sealed class IncrementalTests
         {
+            public IncrementalTests()
+            {
+                Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "Precondition not met");
+            }
+
             [Fact]
             public async Task CompilingTheSameSourceResultsInEqualModels()
             {

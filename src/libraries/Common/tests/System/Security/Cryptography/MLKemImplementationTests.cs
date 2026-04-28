@@ -7,9 +7,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     public class MLKemImplementationTests : MLKemBaseTests
     {
+        public MLKemImplementationTests()
+        {
+            Assert.SkipUnless(MLKem.IsSupported, "Precondition not met");
+        }
+
         public override MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
             return MLKem.GenerateKey(algorithm);
@@ -31,7 +35,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void IsSupported_InitializesCrypto()
+        public void IsSupported_InitializesCrypto()
         {
             Assert.SkipUnless(MLKem.IsSupported, "Algorithm is not supported on current platform.");
 
@@ -45,7 +49,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void IsSupported_AgreesWithPlatform()
+        public void IsSupported_AgreesWithPlatform()
         {
             Assert.Equal(PlatformSupportsMLKem(), MLKem.IsSupported);
         }

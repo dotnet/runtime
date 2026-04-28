@@ -172,26 +172,32 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version11;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class Http2ResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTestBase
     {
-        public Http2ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output) { }
+        public Http2ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
 
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class Http3ResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTestBase
     {
-        public Http3ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output) { }
+        public Http3ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
 
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class ResponseStreamZeroByteReadTestBase : HttpClientHandlerTestBase
     {
-        public ResponseStreamZeroByteReadTestBase(ITestOutputHelper output) : base(output) { }
+        public ResponseStreamZeroByteReadTestBase(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
 
         [Theory]
         [InlineData(true)]
@@ -274,10 +280,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class Http2ConnectionZeroByteReadTest : HttpClientHandlerTestBase
     {
-        public Http2ConnectionZeroByteReadTest(ITestOutputHelper output) : base(output) { }
+        public Http2ConnectionZeroByteReadTest(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.SupportsAlpn, "Precondition not met");
+        }
 
         protected override Version UseVersion => HttpVersion.Version20;
 

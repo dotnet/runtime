@@ -1173,10 +1173,12 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest_Http20(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class TelemetryTest_Http30 : TelemetryTest
     {
         protected override Version UseVersion => HttpVersion.Version30;
-        public TelemetryTest_Http30(ITestOutputHelper output) : base(output) { }
+        public TelemetryTest_Http30(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "Precondition not met");
+        }
     }
 }

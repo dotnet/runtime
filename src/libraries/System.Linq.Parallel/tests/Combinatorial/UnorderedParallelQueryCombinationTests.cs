@@ -13,6 +13,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Cast_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             foreach (int? i in operation.Item(DefaultStart, DefaultSize, DefaultSource).Cast<int?>())
             {
@@ -27,6 +28,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Cast_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             Assert.All(operation.Item(DefaultStart, DefaultSize, DefaultSource).Cast<int?>().ToList(), x => seen.Add((int)x));
             seen.AssertComplete();
@@ -37,6 +39,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Concat_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Concat(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -56,6 +59,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Concat_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Concat(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -74,6 +78,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void DefaultIfEmpty_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             foreach (int i in operation.Item(DefaultStart, DefaultSize, DefaultSource).DefaultIfEmpty())
             {
@@ -87,6 +92,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void DefaultIfEmpty_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             Assert.All(operation.Item(DefaultStart, DefaultSize, DefaultSource).DefaultIfEmpty().ToList(), x => seen.Add((int)x));
             seen.AssertComplete();
@@ -97,6 +103,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Distinct_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             ParallelQuery<int> query = operation.Item(DefaultStart * 2, DefaultSize * 2, DefaultSource).Select(x => x / 2).Distinct();
             foreach (int i in query)
@@ -111,6 +118,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Distinct_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             ParallelQuery<int> query = operation.Item(DefaultStart * 2, DefaultSize * 2, DefaultSource).Select(x => x / 2).Distinct();
             Assert.All(query.ToList(), x => seen.Add((int)x));
@@ -122,6 +130,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Except_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Except(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -142,6 +151,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Except_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Except(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -159,6 +169,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void GetEnumerator_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             IEnumerator<int> enumerator = operation.Item(DefaultStart, DefaultSize, DefaultSource).GetEnumerator();
             while (enumerator.MoveNext())
@@ -177,6 +188,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void GroupBy_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, (DefaultSize + (GroupFactor - 1)) / GroupFactor);
             foreach (IGrouping<int, int> group in operation.Item(DefaultStart, DefaultSize, DefaultSource).GroupBy(x => x / GroupFactor))
             {
@@ -193,6 +205,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void GroupBy_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, (DefaultSize + (GroupFactor - 1)) / GroupFactor);
             foreach (IGrouping<int, int> group in operation.Item(DefaultStart, DefaultSize, DefaultSource).GroupBy(x => x / GroupFactor).ToList())
             {
@@ -209,6 +222,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void GroupBy_ElementSelector_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, (DefaultSize + (GroupFactor - 1)) / GroupFactor);
             foreach (IGrouping<int, int> group in operation.Item(DefaultStart, DefaultSize, DefaultSource).GroupBy(x => x / GroupFactor, y => -y))
             {
@@ -225,6 +239,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void GroupBy_ElementSelector_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, (DefaultSize + (GroupFactor - 1)) / GroupFactor);
             foreach (IGrouping<int, int> group in operation.Item(DefaultStart, DefaultSize, DefaultSource).GroupBy(x => x / GroupFactor, y => -y).ToList())
             {
@@ -241,6 +256,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void GroupJoin_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void GroupJoin(Operation left, Operation right)
             {
                 IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, DefaultSize / GroupFactor);
@@ -263,6 +279,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void GroupJoin_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void GroupJoin(Operation left, Operation right)
             {
                 IntegerRangeSet seenKey = new IntegerRangeSet(DefaultStart / GroupFactor, DefaultSize / GroupFactor);
@@ -285,6 +302,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Intersect_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Intersect(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -305,6 +323,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Intersect_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Intersect(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -322,6 +341,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Join_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Join(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -343,6 +363,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Join_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Join(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -364,6 +385,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void OfType_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             foreach (int i in operation.Item(DefaultStart, DefaultSize, DefaultSource).OfType<int>())
             {
@@ -377,6 +399,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void OfType_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             Assert.All(operation.Item(DefaultStart, DefaultSize, DefaultSource).OfType<int>().ToList(), x => seen.Add(x));
             seen.AssertComplete();
@@ -387,6 +410,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Select_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize + 1, DefaultSize);
             foreach (int i in operation.Item(DefaultStart, DefaultSize, DefaultSource).Select(x => -x))
             {
@@ -400,6 +424,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Select_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize + 1, DefaultSize);
             Assert.All(operation.Item(DefaultStart, DefaultSize, DefaultSource).Select(x => -x).ToList(), x => seen.Add(x));
             seen.AssertComplete();
@@ -410,6 +435,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Select_Index_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize + 1, DefaultSize);
             IntegerRangeSet indices = new IntegerRangeSet(0, DefaultSize);
             foreach (int i in operation.Item(DefaultStart, DefaultSize, DefaultSource).Select((x, index) => { indices.Add(index); return -x; }))
@@ -425,6 +451,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Select_Index_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize + 1, DefaultSize);
             IntegerRangeSet indices = new IntegerRangeSet(0, DefaultSize);
             Assert.All(operation.Item(DefaultStart, DefaultSize, DefaultSource).Select((x, index) => { indices.Add(index); return -x; }).ToList(), x => seen.Add(x));
@@ -437,6 +464,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void SelectMany_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize * 2 + 1, DefaultSize * 2);
             foreach (int i in operation.Item(0, DefaultSize, DefaultSource).SelectMany(x => new[] { 0, -1 }.Select(y => y + -DefaultStart - 2 * x)))
             {
@@ -450,6 +478,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void SelectMany_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize * 2 + 1, DefaultSize * 2);
             Assert.All(operation.Item(0, DefaultSize, DefaultSource).SelectMany(x => new[] { 0, -1 }.Select(y => y + -DefaultStart - 2 * x)).ToList(), x => seen.Add(x));
             seen.AssertComplete();
@@ -460,6 +489,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void SelectMany_Indexed_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize * 2 + 1, DefaultSize * 2);
             IntegerRangeSet indices = new IntegerRangeSet(0, DefaultSize);
             foreach (int i in operation.Item(0, DefaultSize, DefaultSource).SelectMany((x, index) => { indices.Add(index); return new[] { 0, -1 }.Select(y => y + -DefaultStart - 2 * x); }))
@@ -475,6 +505,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void SelectMany_Indexed_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize * 2 + 1, DefaultSize * 2);
             IntegerRangeSet indices = new IntegerRangeSet(0, DefaultSize);
             Assert.All(operation.Item(0, DefaultSize, DefaultSource).SelectMany((x, index) => { indices.Add(index); return new[] { 0, -1 }.Select(y => y + -DefaultStart - 2 * x); }).ToList(), x => seen.Add(x));
@@ -487,6 +518,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void SelectMany_ResultSelector_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize * 2 + 1, DefaultSize * 2);
             foreach (int i in operation.Item(0, DefaultSize, DefaultSource).SelectMany(x => new[] { 0, -1 }, (x, y) => y + -DefaultStart - 2 * x))
             {
@@ -500,6 +532,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void SelectMany_ResultSelector_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize * 2 + 1, DefaultSize * 2);
             Assert.All(operation.Item(0, DefaultSize, DefaultSource).SelectMany(x => new[] { 0, -1 }, (x, y) => y + -DefaultStart - 2 * x).ToList(), x => seen.Add(x));
             seen.AssertComplete();
@@ -510,6 +543,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void SelectMany_Indexed_ResultSelector_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize * 2 + 1, DefaultSize * 2);
             IntegerRangeSet indices = new IntegerRangeSet(0, DefaultSize);
             foreach (int i in operation.Item(0, DefaultSize, DefaultSource).SelectMany((x, index) => { indices.Add(index); return new[] { 0, -1 }; }, (x, y) => y + -DefaultStart - 2 * x))
@@ -525,6 +559,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void SelectMany_Indexed_ResultSelector_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(-DefaultStart - DefaultSize * 2 + 1, DefaultSize * 2);
             IntegerRangeSet indices = new IntegerRangeSet(0, DefaultSize);
             Assert.All(operation.Item(0, DefaultSize, DefaultSource).SelectMany((x, index) => { indices.Add(index); return new[] { 0, -1 }; }, (x, y) => y + -DefaultStart - 2 * x).ToList(), x => seen.Add(x));
@@ -537,6 +572,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Skip_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             int count = 0;
             foreach (int i in operation.Item(DefaultStart, DefaultSize, DefaultSource).Skip(DefaultSize / 2))
@@ -552,6 +588,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Skip_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             int count = 0;
             Assert.All(operation.Item(DefaultStart, DefaultSize, DefaultSource).Skip(DefaultSize / 2).ToList(), x => { seen.Add(x); count++; });
@@ -563,6 +600,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Take_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             int count = 0;
             foreach (int i in operation.Item(DefaultStart, DefaultSize, DefaultSource).Take(DefaultSize / 2))
@@ -578,6 +616,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Take_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             int count = 0;
             Assert.All(operation.Item(DefaultStart, DefaultSize, DefaultSource).Take(DefaultSize / 2).ToList(), x => { seen.Add(x); count++; });
@@ -589,6 +628,7 @@ namespace System.Linq.Parallel.Tests
         //[MemberData(nameof(BinaryOperations))]
         public static void ToArray_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             Assert.All(operation.Item(DefaultStart, DefaultSize, DefaultSource).ToArray(), x => seen.Add(x));
             seen.AssertComplete();
@@ -599,6 +639,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Union_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Union(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -619,6 +660,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Union_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Union(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -636,6 +678,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Where_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize / 2);
             foreach (int i in operation.Item(DefaultStart, DefaultSize, DefaultSource).Where(x => x < DefaultStart + DefaultSize / 2))
             {
@@ -649,6 +692,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Where_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize / 2);
             Assert.All(operation.Item(DefaultStart, DefaultSize, DefaultSource).Where(x => x < DefaultStart + DefaultSize / 2).ToList(), x => seen.Add(x));
             seen.AssertComplete();
@@ -659,6 +703,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Where_Indexed_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize / 2);
             foreach (int i in operation.Item(DefaultStart, DefaultSize, DefaultSource).Where((x, index) => x < DefaultStart + DefaultSize / 2))
             {
@@ -672,6 +717,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Where_Indexed_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize / 2);
             Assert.All(operation.Item(DefaultStart, DefaultSize, DefaultSource).Where((x, index) => x < DefaultStart + DefaultSize / 2).ToList(), x => seen.Add(x));
             seen.AssertComplete();
@@ -682,6 +728,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Zip_Unordered(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Zip(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
@@ -702,6 +749,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(BinaryOperations))]
         public static void Zip_Unordered_NotPipelined(Labeled<Operation> operation)
         {
+            Assert.SkipUnless(RunSlowTests, "Slow test");
             static void Zip(Operation left, Operation right)
             {
                 IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);

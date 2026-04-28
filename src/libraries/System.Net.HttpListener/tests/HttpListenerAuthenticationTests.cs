@@ -13,10 +13,8 @@ namespace System.Net.Tests
 {
     [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", ~RuntimeConfiguration.Release)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerAuthenticationTests : IDisposable
-    {
-        private const string Basic = "Basic";
+    {        private const string Basic = "Basic";
         private const string TestUser = "testuser";
         private const string TestPassword = "testpassword";
 
@@ -25,6 +23,7 @@ namespace System.Net.Tests
 
         public HttpListenerAuthenticationTests()
         {
+            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "Precondition not met");
             _factory = new HttpListenerFactory();
             _listener = _factory.GetListener();
         }

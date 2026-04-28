@@ -10,9 +10,13 @@ using Xunit;
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     // V8's implementation of setTimer ignores delay parameter and always run immediately. So it could not be used to test this.
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupported))]
     public class TimerTests : IAsyncLifetime
     {
+        public TimerTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsBrowserDomSupported, "Precondition not met");
+        }
+
         public static IEnumerable<object[]> TestCases()
         {
             yield return new object[] { new int[0], 0, null, null };

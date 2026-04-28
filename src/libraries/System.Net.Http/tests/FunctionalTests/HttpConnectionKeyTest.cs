@@ -9,9 +9,13 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class HttpConnectionKeyTest
     {
+        public HttpConnectionKeyTest()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
+        }
+
         public static IEnumerable<object[]> KeyComponents()
         {
             yield return new object[] { "Https", "localhost", 80, "localhost-ssl", new Uri("http://localhost"), "domain1/userA", false};

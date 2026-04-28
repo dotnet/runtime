@@ -7,9 +7,13 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveModuleBuilderTests
     {
+        public AssemblySaveModuleBuilderTests()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "Precondition not met");
+        }
+
         [Fact]
         public void DefineGlobalMethodAndCreateGlobalFunctionsTest()
         {
@@ -81,7 +85,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public static void DefinePInvokeMethodTest()
+        public void DefinePInvokeMethodTest()
         {
             using (TempFile file = TempFile.Create())
             {
@@ -309,7 +313,7 @@ namespace System.Reflection.Emit.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/98013", TestRuntimes.Mono)]
-        public static void GetArrayMethodTest()
+        public void GetArrayMethodTest()
         {
             using (TempFile file = TempFile.Create())
             {

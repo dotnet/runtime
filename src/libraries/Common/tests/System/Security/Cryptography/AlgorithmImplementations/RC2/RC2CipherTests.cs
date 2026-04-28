@@ -11,9 +11,13 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
     using RC2 = System.Security.Cryptography.RC2;
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    [ConditionalClass(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
-    public static partial class RC2CipherTests
+    public partial class RC2CipherTests
     {
+        public RC2CipherTests()
+        {
+            Assert.SkipUnless(RC2Factory.IsSupported, "Precondition not met");
+        }
+
         // These are the expected output of many decryptions. Changing these values requires re-generating test input.
         private static readonly string s_multiBlockString = new ASCIIEncoding().GetBytes(
             "This is a sentence that is longer than a block, it ensures that multi-block functions work.").ByteArrayToHex();
@@ -26,7 +30,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         private static readonly string s_randomKey_64 = "87FF0737F868378F";
         private static readonly string s_randomIv_64 = "E531E789E3E1BB6F";
 
-        public static IEnumerable<object[]> RC2TestData
+        public IEnumerable<object[]> RC2TestData
         {
             get
             {
@@ -142,7 +146,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         }
 
         [Theory, MemberData(nameof(RC2TestData))]
-        public static void RC2RoundTrip(CipherMode cipherMode, PaddingMode paddingMode, string key, string iv, string textHex, string expectedDecrypted, string expectedEncrypted)
+        public void RC2RoundTrip(CipherMode cipherMode, PaddingMode paddingMode, string key, string iv, string textHex, string expectedDecrypted, string expectedEncrypted)
         {
             byte[] expectedDecryptedBytes = expectedDecrypted == null ? textHex.HexToByteArray() : expectedDecrypted.HexToByteArray();
             byte[] expectedEncryptedBytes = expectedEncrypted.HexToByteArray();
@@ -188,7 +192,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         [Theory]
         [InlineData(CipherMode.CBC, 0)]
         [InlineData(CipherMode.ECB, 0)]
-        public static void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        public void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
         {
             // AppleCCCryptor does not allow calling Reset on CFB cipher.
             // this test validates that the behavior is taken into consideration.
@@ -216,7 +220,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         [Theory]
         [InlineData(CipherMode.CBC, 0)]
         [InlineData(CipherMode.ECB, 0)]
-        public static void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        public void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
         {
             // AppleCCCryptor does not allow calling Reset on CFB cipher.
             // this test validates that the behavior is taken into consideration.
@@ -247,7 +251,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         }
 
         [Fact]
-        public static void RC2ReuseEncryptorDecryptor()
+        public void RC2ReuseEncryptorDecryptor()
         {
             using (RC2 alg = RC2Factory.Create())
             {
@@ -288,7 +292,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         }
 
         [Fact]
-        public static void RC2ExplicitEncryptorDecryptor_WithIV()
+        public void RC2ExplicitEncryptorDecryptor_WithIV()
         {
             using (RC2 alg = RC2Factory.Create())
             {
@@ -307,7 +311,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         }
 
         [Fact]
-        public static void RC2ExplicitEncryptorDecryptor_NoIV()
+        public void RC2ExplicitEncryptorDecryptor_NoIV()
         {
             using (RC2 alg = RC2Factory.Create())
             {
@@ -328,7 +332,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void EncryptWithLargeOutputBuffer(bool blockAlignedOutput)
+        public void EncryptWithLargeOutputBuffer(bool blockAlignedOutput)
         {
             using (RC2 alg = RC2Factory.Create())
             using (ICryptoTransform xform = alg.CreateEncryptor())
@@ -357,7 +361,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
-        public static void TransformWithTooShortOutputBuffer(bool encrypt, bool blockAlignedOutput)
+        public void TransformWithTooShortOutputBuffer(bool encrypt, bool blockAlignedOutput)
         {
             using (RC2 alg = RC2Factory.Create())
             using (ICryptoTransform xform = encrypt ? alg.CreateEncryptor() : alg.CreateDecryptor())
@@ -378,7 +382,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void MultipleBlockDecryptTransform(bool blockAlignedOutput)
+        public void MultipleBlockDecryptTransform(bool blockAlignedOutput)
         {
             const string ExpectedOutput = "This is a test";
 
@@ -404,7 +408,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         }
 
         [Fact]
-        public static void SetKey_Sanity()
+        public void SetKey_Sanity()
         {
             using (RC2 one = RC2Factory.Create())
             using (RC2 two = RC2Factory.Create())

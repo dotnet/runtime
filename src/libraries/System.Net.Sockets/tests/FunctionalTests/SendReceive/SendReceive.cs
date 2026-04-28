@@ -1190,7 +1190,6 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_Sync : SendReceive<SocketHelperArraySync>
     {
         public SendReceive_Sync(ITestOutputHelper output) : base(output) { }
@@ -1200,6 +1199,8 @@ namespace System.Net.Sockets.Tests
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task BlockingRead_DoesntRequireAnotherThreadPoolThread()
         {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+
             await RemoteExecutor.Invoke(() =>
             {
                 // Set the max number of worker threads to a low value.
@@ -1247,16 +1248,20 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_SyncForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking>
     {
-        public SendReceive_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+        public SendReceive_SyncForceNonBlocking(ITestOutputHelper output) : base(output)
+ {
+     Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+ }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_Apm : SendReceive<SocketHelperApm>
     {
-        public SendReceive_Apm(ITestOutputHelper output) : base(output) {}
+            public SendReceive_Apm(ITestOutputHelper output) : base(output)
+            {
+                Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+            }
     }
 
     public sealed class SendReceive_Task : SendReceive<SocketHelperTask>
@@ -1269,7 +1274,6 @@ namespace System.Net.Sockets.Tests
         public SendReceive_Eap(ITestOutputHelper output) : base(output) {}
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_SpanSync : SendReceive<SocketHelperSpanSync>
     {
         public SendReceive_SpanSync(ITestOutputHelper output) : base(output) { }
@@ -1277,6 +1281,8 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task Send_0ByteSend_Span_Success()
         {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
@@ -1343,15 +1349,20 @@ namespace System.Net.Sockets.Tests
 
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_SpanSyncForceNonBlocking : SendReceive<SocketHelperSpanSyncForceNonBlocking>
     {
-        public SendReceive_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+        public SendReceive_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output)
+ {
+     Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+ }
     }
 
     public sealed class SendReceive_MemoryArrayTask : SendReceive<SocketHelperMemoryArrayTask>
     {
-        public SendReceive_MemoryArrayTask(ITestOutputHelper output) : base(output) { }
+        public SendReceive_MemoryArrayTask(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+        }
 
         [Fact]
         public async Task Send_0ByteSend_Memory_Success()

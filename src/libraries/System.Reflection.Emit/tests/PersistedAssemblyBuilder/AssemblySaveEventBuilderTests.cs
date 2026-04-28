@@ -9,9 +9,13 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveEventBuilderTests
     {
+        public AssemblySaveEventBuilderTests()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "Precondition not met");
+        }
+
         [Fact]
         public void DefineEventAndItsAccessors()
         {

@@ -6,11 +6,16 @@ using System.Runtime.CompilerServices;
 using Xunit;
 using TestLibrary;
 
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsVarArgSupported), nameof(PlatformDetection.IsArm64Process))]
 public class Runtime_71375
 {
+    public Runtime_71375()
+    {
+        Assert.SkipUnless(PlatformDetection.IsVarArgSupported, "Precondition not met");
+        Assert.SkipUnless(PlatformDetection.IsArm64Process, "Precondition not met");
+    }
+
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
-    public static void TestEntryPoint()
+    public void TestEntryPoint()
     {
         // At the time of writing this test, the calling convention for incoming vector parameters on
         // Windows ARM64 was broken, so only the fact that "Problem" compiled without asserts was
@@ -28,7 +33,7 @@ public class Runtime_71375
     }
 
     [Fact]
-    public static int TestEntryPoint2()
+    public int TestEntryPoint2()
     {
         if (Case2())
             return 101;
@@ -46,7 +51,7 @@ public class Runtime_71375
     }
 
     [Fact]
-    public static int TestEntryPoint3()
+    public int TestEntryPoint3()
     {
         if (Case3())
             return 101;
@@ -64,7 +69,7 @@ public class Runtime_71375
     }
 
     [Fact]
-    public static int TestEntryPoint4()
+    public int TestEntryPoint4()
     {
         if (Case4())
             return 101;

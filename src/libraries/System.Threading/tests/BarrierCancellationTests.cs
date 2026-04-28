@@ -6,11 +6,15 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-    public static class BarrierCancellationTests
+    public class BarrierCancellationTests
     {
+        public BarrierCancellationTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
+        }
+
         [Fact]
-        public static void BarrierCancellationTestsCancelBeforeWait()
+        public void BarrierCancellationTestsCancelBeforeWait()
         {
             Barrier barrier = new Barrier(3);
 
@@ -32,7 +36,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static void BarrierCancellationTestsCancelAfterWait_Negative()
+        public void BarrierCancellationTestsCancelAfterWait_Negative()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationTokenSource.Token;
@@ -52,7 +56,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static void BarrierCancellationTestsCancelAfterWait()
+        public void BarrierCancellationTestsCancelAfterWait()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationTokenSource.Token;

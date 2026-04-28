@@ -12,11 +12,13 @@ using Xunit;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicStreamTests : QuicTestBase
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
-        public QuicStreamTests(ITestOutputHelper output) : base(output) { }
+        public QuicStreamTests(ITestOutputHelper output) : base(output)
+        {
+            Assert.SkipUnless(QuicTestBase.IsNotArm32CoreClrStressTest, "Precondition not met");
+        }
 
         [Fact]
         public async Task BasicTest()

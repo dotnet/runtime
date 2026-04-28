@@ -12,14 +12,13 @@ using Xunit;
 namespace System.Net.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerRequestTests : IDisposable
-    {
-        private HttpListenerFactory Factory { get; }
+    {        private HttpListenerFactory Factory { get; }
         private Socket Client { get; }
 
         public HttpListenerRequestTests()
         {
+            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "Precondition not met");
             Factory = new HttpListenerFactory();
             Client = Factory.GetConnectedSocket();
         }

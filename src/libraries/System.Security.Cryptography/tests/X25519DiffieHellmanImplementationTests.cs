@@ -5,9 +5,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
     public sealed class X25519DiffieHellmanImplementationTests : X25519DiffieHellmanBaseTests
     {
+        public X25519DiffieHellmanImplementationTests()
+        {
+            Assert.SkipUnless(X25519DiffieHellman.IsSupported, "Precondition not met");
+        }
+
         public override X25519DiffieHellman GenerateKey() => X25519DiffieHellman.GenerateKey();
 
         public override X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source) =>

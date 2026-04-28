@@ -10,11 +10,15 @@ using TestLibrary;
 using Xunit;
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
 public class RunInALC
 {
+    public RunInALC()
+    {
+        Assert.SkipUnless(PlatformDetection.IsCollectibleAssembliesSupported, "Precondition not met");
+    }
+
     [Fact]
-    public static int TestEntryPoint()
+    public int TestEntryPoint()
     {
         try
         {

@@ -5,9 +5,13 @@ using Xunit;
 
 namespace System.Formats.Nrbf.Tests;
 
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
 public abstract class ReadTests
 {
+    public ReadTests()
+    {
+        Assert.SkipUnless(PlatformDetection.IsBinaryFormatterSupported, "Precondition not met");
+    }
+
     public static bool IsPatched
 #if NET
         => true;

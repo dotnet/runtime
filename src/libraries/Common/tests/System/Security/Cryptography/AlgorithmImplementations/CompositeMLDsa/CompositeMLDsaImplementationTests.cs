@@ -6,19 +6,23 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
     public sealed class CompositeMLDsaImplementationTests : CompositeMLDsaTestsBase
     {
+        public CompositeMLDsaImplementationTests()
+        {
+            Assert.SkipUnless(CompositeMLDsa.IsSupported, "Precondition not met");
+        }
+
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public static void CompositeMLDsaIsOnlyPublicAncestor_GenerateKey(CompositeMLDsaAlgorithm algorithm)
+        public void CompositeMLDsaIsOnlyPublicAncestor_GenerateKey(CompositeMLDsaAlgorithm algorithm)
         {
             AssertCompositeMLDsaIsOnlyPublicAncestor(() => CompositeMLDsa.GenerateKey(algorithm));
         }
 
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public static void CompositeMLDsaIsOnlyPublicAncestor_Import(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
+        public void CompositeMLDsaIsOnlyPublicAncestor_Import(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
         {
             CompositeMLDsaTestHelpers.AssertImportPublicKey(
                 AssertCompositeMLDsaIsOnlyPublicAncestor, info.Algorithm, info.PublicKey);
@@ -41,7 +45,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportPkcs8_BerEncoding()
+        public void ImportPkcs8_BerEncoding()
         {
             CompositeMLDsaTestData.CompositeMLDsaTestVector vector = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384);
 

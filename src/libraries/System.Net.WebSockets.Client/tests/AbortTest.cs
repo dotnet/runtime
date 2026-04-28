@@ -144,9 +144,14 @@ namespace System.Net.WebSockets.Client.Tests
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
-    public abstract class AbortTest_External(ITestOutputHelper output) : AbortTestBase(output)
+    public abstract class AbortTest_External : AbortTestBase
     {
+        public AbortTest_External(ITestOutputHelper output)
+            : base(output)
+        {
+            Assert.SkipUnless(ClientWebSocketTestBase.WebSocketsSupported, "Precondition not met");
+        }
+
         #region Common (Echo Server) tests
 
         [Theory, MemberData(nameof(EchoServers))]
