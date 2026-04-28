@@ -108,31 +108,35 @@ namespace System.Runtime.InteropServices.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetNativeVariantForObject_NonRoundtrippingPrimitives_TestData))]
-        public void GetNativeVariantForObject_ValidObject_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue, object expectedRoundtripValue)
+        public unsafe void GetNativeVariantForObject_ValidObject_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue, object expectedRoundtripValue)
         {
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
+            ComVariant variant = default;
+            bool variantInitialized = false;
             try
             {
-                Marshal.GetNativeVariantForObject(primitive, pNative);
+                Marshal.GetNativeVariantForObject(primitive, (nint)(&variant));
+                variantInitialized = true;
 
-                ComVariant result = Marshal.PtrToStructure<ComVariant>(pNative);
-                Assert.Equal(expectedVarType, result.VarType);
+                Assert.Equal(expectedVarType, variant.VarType);
                 if (expectedValue != (IntPtr)(-1))
                 {
-                    Assert.Equal(expectedValue, result.GetRawDataRef<IntPtr>());
+                    Assert.Equal(expectedValue, variant.GetRawDataRef<IntPtr>());
                 }
                 else
                 {
-                    Assert.NotEqual((IntPtr)(-1), result.GetRawDataRef<IntPtr>());
-                    Assert.NotEqual(IntPtr.Zero, result.GetRawDataRef<IntPtr>());
+                    Assert.NotEqual((IntPtr)(-1), variant.GetRawDataRef<IntPtr>());
+                    Assert.NotEqual(IntPtr.Zero, variant.GetRawDataRef<IntPtr>());
                 }
 
                 // Make sure it roundtrips.
-                Assert.Equal(expectedRoundtripValue, Marshal.GetObjectForNativeVariant(pNative));
+                Assert.Equal(expectedRoundtripValue, Marshal.GetObjectForNativeVariant((nint)(&variant)));
             }
             finally
             {
-                Marshal.FreeHGlobal(pNative);
+                if (variantInitialized)
+                {
+                    variant.Dispose();
+                }
             }
         }
 
