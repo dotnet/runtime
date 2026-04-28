@@ -1899,7 +1899,14 @@ public:
 
     bool OperConsumesFlags() const
     {
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM64)
+        static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC));
+
+        if ((GT_JCC <= gtOper) && (gtOper <= GT_SELECT_NEGCC))
+        {
+            return true;
+        }
+#elif defined(TARGET_AMD64)
         static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
 
         if ((GT_JCC <= gtOper) && (gtOper <= GT_CCMP))
@@ -1915,12 +1922,7 @@ public:
         }
 #endif
 
-#if defined(TARGET_ARM64)
-        if (OperIs(GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
-        {
-            return true;
-        }
-#elif !defined(TARGET_64BIT)
+#if !defined(TARGET_64BIT)
         if (OperIs(GT_ADD_HI, GT_SUB_HI))
         {
             return true;
