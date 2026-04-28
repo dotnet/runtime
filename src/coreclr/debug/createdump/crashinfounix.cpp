@@ -302,7 +302,7 @@ CrashInfo::EnumerateMemoryRegions()
 
     if (g_diagnostics)
     {
-        TRACE("Module mappings (%06llx):\n", m_cbModuleMappings / PAGE_SIZE);
+        TRACE("Module mappings (%06" PRIx64 "):\n", m_cbModuleMappings / PAGE_SIZE);
         for (const ModuleRegion& region : m_moduleMappings)
         {
             region.Trace();
@@ -455,7 +455,7 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
         {
             uint64_t ehFrameHdrStart = loadbias + phdr->p_vaddr;
             uint64_t ehFrameHdrSize = phdr->p_memsz;
-            TRACE("VisitProgramHeader: ehFrameHdrStart %016llx ehFrameHdrSize %08llx\n", ehFrameHdrStart, ehFrameHdrSize);
+            TRACE("VisitProgramHeader: ehFrameHdrStart %" PRIA PRIx64 " ehFrameHdrSize %08" PRIx64 "\n", ehFrameHdrStart, ehFrameHdrSize);
             InsertMemoryRegion(ehFrameHdrStart, ehFrameHdrSize);
 
             if (m_appModel != AppModelType::NativeAOT)
@@ -464,7 +464,7 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
                 ULONG64 ehFrameSize;
                 if (PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, &ehFrameStart, &ehFrameSize))
                 {
-                    TRACE("VisitProgramHeader: ehFrameStart %016llx ehFrameSize %08llx\n", ehFrameStart, ehFrameSize);
+                    TRACE("VisitProgramHeader: ehFrameStart %" PRIA PRIx64 " ehFrameSize %08" PRIx64 "\n", ehFrameStart, ehFrameSize);
                     if (ehFrameStart != 0 && ehFrameSize != 0)
                     {
                         InsertMemoryRegion(ehFrameStart, ehFrameSize);
@@ -501,7 +501,7 @@ CrashInfo::GetMemoryRegionFlags(uint64_t start)
     if (region != nullptr) {
         return region->Flags();
     }
-    TRACE_VERBOSE("GetMemoryRegionFlags: %016llx FAILED\n", start);
+    TRACE_VERBOSE("GetMemoryRegionFlags: %" PRIA PRIx64 " FAILED\n", start);
     return PF_R | PF_W | PF_X;
 }
 

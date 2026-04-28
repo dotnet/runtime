@@ -467,7 +467,7 @@ CrashInfo::EnumerateManagedModules()
         if (enumModules != 0) {
             m_pClrDataProcess->EndEnumModules(enumModules);
         }
-        TRACE("EnumerateManagedModules: Module enumeration FINISHED (%d) ModuleMappings %06llx\n", m_dataTargetPagesAdded, m_cbModuleMappings / PAGE_SIZE);
+        TRACE("EnumerateManagedModules: Module enumeration FINISHED (%d) ModuleMappings %06" PRIx64 "\n", m_dataTargetPagesAdded, m_cbModuleMappings / PAGE_SIZE);
     }
     return true;
 }
