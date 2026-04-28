@@ -53,7 +53,7 @@ To do cross-building using Docker, you need to use either specific images design
 This table of images might often become stale as we change our images as our requirements change. The images used for our official builds can be found in [the pipeline resources](/eng/pipelines/common/templates/pipeline-with-resources.yml) of our Azure DevOps builds under the `container` key of the platform you plan to build. These image tags don't include version numbers, and our build infrastructure will automatically use the latest version of the image. You can ensure you are using the latest version by using `docker pull`, for example:
 
 ```
-docker pull mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64
+docker pull mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net8.0-cross-arm64
 ```
 
 All official builds are cross-builds with a rootfs for the target OS, and will use the clang version available on the container.

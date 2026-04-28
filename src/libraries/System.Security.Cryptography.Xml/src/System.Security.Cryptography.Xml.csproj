@@ -4,8 +4,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA1850</NoWarn> <!-- CA1850 suppressed due to multitargeting -->
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <ServicingVersion>2</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>3</ServicingVersion>
     <PackageDescription>Provides classes to support the creation and validation of XML digital signatures. The classes in this namespace implement the World Wide Web Consortium Recommendation, "XML-Signature Syntax and Processing", described at http://www.w3.org/TR/xmldsig-core/.
 
 Commonly Used Types:
@@ -101,6 +101,7 @@ System.Security.Cryptography.Xml.XmlLicenseTransform</PackageDescription>
     <Compile Include="System\Security\Cryptography\Xml\KeyInfoRetrievalMethod.cs" />
     <Compile Include="System\Security\Cryptography\Xml\KeyInfoX509Data.cs" />
     <Compile Include="System\Security\Cryptography\Xml\KeyReference.cs" />
+    <Compile Include="System\Security\Cryptography\Xml\LocalAppContextSwitches.cs" />
     <Compile Include="System\Security\Cryptography\Xml\MyXmlDocument.cs" />
     <Compile Include="System\Security\Cryptography\Xml\NamespaceFrame.cs" />
     <Compile Include="System\Security\Cryptography\Xml\NamespaceSortOrder.cs" />
