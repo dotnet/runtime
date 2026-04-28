@@ -3529,11 +3529,17 @@ BOOL PInvokeMethodDesc::TryGetResolvedPInvokeTarget(_In_ PInvokeMethodDesc* pMD,
         return TRUE;
     }
 
-    // We only resolve P/Invoke targets early for SuppressGCTransition inlined P/Invokes.
-    // We do so because we cannot resolve the target of a SuppressGCTransition inlined P/Invoke at the time of the call
-    // as the resolution logic violates the rules of SuppressGCTransition (this behavior is documented).
+    // We only resolve P/Invoke targets early in two cases:
+    // - SuppressGCTransition inlined P/Invokes.
+    //   We do so because we cannot resolve the target of a SuppressGCTransition inlined P/Invoke at the time of the call
+    //   as the resolution logic violates the rules of SuppressGCTransition (this behavior is documented).
+    // - Platforms with no P/Invoke import precode:
+    //   On these platforms, there is no mechanism to lazily resolve the target of a P/Invoke,
+    //   so we must resolve it eagerly in order for the call to succeed.
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
     if (!pMD->ShouldSuppressGCTransition())
         return FALSE;
+#endif
 
     PInvoke::ResolvePInvokeTarget(pMD);
     *ndirectTarget = pMD->GetPInvokeTarget();

@@ -6019,7 +6019,7 @@ ClrDataAccess::GetHostJitNotificationTable()
     if (m_jitNotificationTable == NULL)
     {
         m_jitNotificationTable =
-            JITNotifications::InitializeNotificationTable(1000);
+            JITNotifications::InitializeNotificationTable(JIT_NOTIFICATION_TABLE_SIZE);
     }
 
     return m_jitNotificationTable;

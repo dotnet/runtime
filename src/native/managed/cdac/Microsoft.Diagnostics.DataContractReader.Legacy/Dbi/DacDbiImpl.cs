@@ -278,10 +278,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #endif
         return hr;
     }
-
-    public int GetAssemblyInfo(ulong vmAssembly, DacDbiAssemblyInfo* pData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAssemblyInfo(vmAssembly, pData) : HResults.E_NOTIMPL;
-
     public int GetModuleForAssembly(ulong vmAssembly, ulong* pModule)
     {
         *pModule = 0;

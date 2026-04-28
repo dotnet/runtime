@@ -20,6 +20,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     private readonly TargetPointer _address;
     private readonly Target _target;
 
+    internal TargetPointer Address => _address;
+
     private bool _extentsSet;
     private CLRDataModuleExtent[] _extents = new CLRDataModuleExtent[2];
 

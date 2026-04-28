@@ -57,20 +57,14 @@ CordbModule::CordbModule(
     m_fDynamic  = modInfo.fIsDynamic;
     m_fInMemory = modInfo.fInMemory;
     m_vmPEFile = modInfo.vmPEAssembly;
+    m_pAppDomain = pProcess->GetAppDomain();
 
     if (!vmAssembly.IsNull())
     {
-        AssemblyInfo dfInfo;
-
-        IfFailThrow(pProcess->GetDAC()->GetAssemblyInfo(vmAssembly, &dfInfo)); // throws
-
-        m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
-        _ASSERTE(m_pAppDomain == pProcess->GetAppDomain());
-        m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmAssembly);
+        m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(vmAssembly);
     }
     else
     {
-        m_pAppDomain = pProcess->GetAppDomain();
         m_pAssembly = m_pAppDomain->LookupOrCreateAssembly(modInfo.vmAssembly);
     }
 #ifdef _DEBUG

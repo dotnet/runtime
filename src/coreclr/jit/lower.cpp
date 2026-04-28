@@ -685,6 +685,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerReturnSuspend(node);
             break;
 
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // This will generate a call in codegen
+            RequireOutgoingArgSpace(node, MIN_ARG_AREA_FOR_CALL);
+            break;
+
         case GT_NONLOCAL_JMP:
             ContainCheckNonLocalJmp(node->AsUnOp());
             break;
@@ -9931,6 +9937,12 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckHWIntrinsic(node->AsHWIntrinsic());
             break;
 #endif // FEATURE_HW_INTRINSICS
+
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // No containment for patchpoint nodes
+            break;
+
         case GT_NONLOCAL_JMP:
             ContainCheckNonLocalJmp(node->AsUnOp());
             break;

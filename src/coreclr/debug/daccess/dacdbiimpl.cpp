@@ -4361,29 +4361,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleForAssembly(VMPTR_Assemb
     return hr;
 }
 
-
-// Implement IDacDbiInterface::GetAssemblyInfo
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAssemblyInfo(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        _ASSERTE(pData != NULL);
-
-        ZeroMemory(pData, sizeof(*pData));
-
-        Assembly * pAssembly  = vmAssembly.GetDacPtr();
-
-        pData->vmAssembly.SetHostPtr(pAssembly);
-        pData->vmAppDomain.SetHostPtr(AppDomain::GetCurrentDomain());
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 // Implement IDacDbiInterface::GetModuleData
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData)
 {

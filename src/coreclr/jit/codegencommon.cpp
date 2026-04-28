@@ -7305,6 +7305,61 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genPatchpoint:
+//   Generate code for GT_PATCHPOINT / GT_PATCHPOINT_FORCED nodes.
+//   Emits a call to the patchpoint helper followed by an unconditional jump
+//   to the returned address.
+//
+// Arguments:
+//   treeNode - The patchpoint node (GT_PATCHPOINT or GT_PATCHPOINT_FORCED)
+//
+void CodeGen::genPatchpoint(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_PATCHPOINT, GT_PATCHPOINT_FORCED));
+
+    genConsumeOperands(treeNode);
+
+    // Move operands into the expected argument registers if needed.
+    genCopyRegIfNeeded(treeNode->gtGetOp1(), REG_ARG_0);
+    if (treeNode->OperIs(GT_PATCHPOINT))
+    {
+        genCopyRegIfNeeded(treeNode->gtGetOp2(), REG_ARG_1);
+    }
+
+    CorInfoHelpFunc helper = treeNode->OperIs(GT_PATCHPOINT) ? CORINFO_HELP_PATCHPOINT : CORINFO_HELP_PATCHPOINT_FORCED;
+
+    genEmitHelperCall(helper, 0, EA_UNKNOWN);
+
+    // On non-x64 targets, mark the method as having tail calls so that
+    // return-address hijacking is disabled — after the jump the return
+    // address may have moved in the frame and unhijacking will write
+    // to the wrong slot.
+    // On x64 this is unnecessary because the return address is always at
+    // the same stack slot regardless of tail calls.
+#ifndef TARGET_XARCH
+    SetHasTailCalls(true);
+#endif
+
+    // Jump to the address returned by the patchpoint helper.
+    // Must not use INS_tail_i_jmp: it is a REX-prefixed jump that the
+    // win-x64 unwinder detects as an epilog instruction, which would
+    // incorrectly signal that callee saves / RSP have been restored.
+#ifdef TARGET_XARCH
+    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_ARM64)
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_ARM)
+    GetEmitter()->emitIns_R(INS_bx, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_LOONGARCH64)
+    GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+#elif defined(TARGET_RISCV64)
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+#else
+#error "Unsupported target architecture for GT_PATCHPOINT"
+#endif
+}
+
+//------------------------------------------------------------------------
 // genMarkReturnGCInfo:
 //   Mark GC and non-GC pointers of return registers going into the epilog..
 //
