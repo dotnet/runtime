@@ -457,14 +457,14 @@ namespace System.Runtime.CompilerServices
                 // are written as deltas from the previous frame.
                 if (state.Count == 0)
                 {
-                    frameSpanIndex += Serializer.WriteCompressedUInt64(frameSpan, frameSpanIndex, currentNativeIP);
+                    frameSpanIndex += Serializer.WriteCompressedUInt64(frameSpan.Slice(frameSpanIndex, Serializer.MaxCompressedUInt64Size), currentNativeIP);
                 }
                 else
                 {
-                    frameSpanIndex += Serializer.WriteCompressedInt64(frameSpan, frameSpanIndex, (long)(currentNativeIP - previousNativeIP));
+                    frameSpanIndex += Serializer.WriteCompressedInt64(frameSpan.Slice(frameSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
                 }
 
-                frameSpanIndex += Serializer.WriteCompressedInt32(frameSpan, frameSpanIndex, state.Continuation.State);
+                frameSpanIndex += Serializer.WriteCompressedInt32(frameSpan.Slice(frameSpanIndex, Serializer.MaxCompressedInt32Size), state.Continuation.State);
 
                 callstackSpanIndex += frameSpanIndex;
                 state.Count++;
@@ -482,8 +482,8 @@ namespace System.Runtime.CompilerServices
                     frameSpan = callstackSpan.Slice(callstackSpanIndex, MaxAsyncMethodFrameSize);
                     frameSpanIndex = 0;
 
-                    frameSpanIndex += Serializer.WriteCompressedInt64(frameSpan, frameSpanIndex, (long)(currentNativeIP - previousNativeIP));
-                    frameSpanIndex += Serializer.WriteCompressedInt32(frameSpan, frameSpanIndex, state.Continuation.State);
+                    frameSpanIndex += Serializer.WriteCompressedInt64(frameSpan.Slice(frameSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
+                    frameSpanIndex += Serializer.WriteCompressedInt32(frameSpan.Slice(frameSpanIndex, Serializer.MaxCompressedInt32Size), state.Continuation.State);
 
                     callstackSpanIndex += frameSpanIndex;
 
@@ -597,7 +597,7 @@ namespace System.Runtime.CompilerServices
                 int frameCountOffset = index + spanIndex;
                 callstackHeaderSpan[spanIndex++] = callstackFrameCount;
 
-                spanIndex += Serializer.WriteCompressedUInt64(callstackHeaderSpan, spanIndex, id);
+                spanIndex += Serializer.WriteCompressedUInt64(callstackHeaderSpan.Slice(spanIndex), id);
                 eventBuffer.Index += spanIndex;
 
                 return frameCountOffset;
