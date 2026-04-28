@@ -14,6 +14,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class RuntimeInfoDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "BasicThreads";
+    protected override string DumpType => "full";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
