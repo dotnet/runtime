@@ -358,14 +358,6 @@ template<> struct cdac_data<MethodTable>
     static constexpr size_t NumInterfaces = offsetof(MethodTable, m_usNumInterfaces);
     static constexpr size_t HashCode = offsetof(MethodTable, m_uHashCode);
     static constexpr size_t VTable = offsetof(MethodTable, m_VTable);
-
-    static constexpr uint32_t EETypeKindMask = MethodTable::EETypeKindMask;
-    static constexpr uint32_t HasComponentSizeFlag = MethodTable::HasComponentSizeFlag;
-    static constexpr uint32_t HasFinalizerFlag = MethodTable::HasFinalizerFlag;
-    static constexpr uint32_t HasPointersFlag = MethodTable::HasPointersFlag;
-    static constexpr uint32_t IsGenericFlag = MethodTable::IsGenericFlag;
-    static constexpr uint32_t ElementTypeMask = MethodTable::ElementTypeMask;
-    static constexpr uint32_t ElementTypeShift = MethodTable::ElementTypeShift;
 };
 
 #pragma warning(pop)

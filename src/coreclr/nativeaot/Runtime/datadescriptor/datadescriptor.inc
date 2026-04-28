@@ -141,15 +141,6 @@ CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &g_pFreeObjectEEType)
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 
-// NativeAOT MethodTable flag constants (accessed via cdac_data friend)
-CDAC_GLOBAL(MethodTableEETypeKindMask, T_UINT32, cdac_data<MethodTable>::EETypeKindMask)
-CDAC_GLOBAL(MethodTableHasComponentSizeFlag, T_UINT32, cdac_data<MethodTable>::HasComponentSizeFlag)
-CDAC_GLOBAL(MethodTableHasFinalizerFlag, T_UINT32, cdac_data<MethodTable>::HasFinalizerFlag)
-CDAC_GLOBAL(MethodTableHasPointersFlag, T_UINT32, cdac_data<MethodTable>::HasPointersFlag)
-CDAC_GLOBAL(MethodTableIsGenericFlag, T_UINT32, cdac_data<MethodTable>::IsGenericFlag)
-CDAC_GLOBAL(MethodTableElementTypeMask, T_UINT32, cdac_data<MethodTable>::ElementTypeMask)
-CDAC_GLOBAL(MethodTableElementTypeShift, T_UINT32, cdac_data<MethodTable>::ElementTypeShift)
-
 // Thread state flag constants
 CDAC_GLOBAL(ThreadStateFlagAttached, T_UINT32, 0x00000001)
 CDAC_GLOBAL(ThreadStateFlagDetached, T_UINT32, 0x00000002)

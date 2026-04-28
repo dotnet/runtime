@@ -97,6 +97,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 writer.WriteStartObject();
                 writer.WriteNumber("version", 0);
+                writer.WriteString("baseline", "empty");
 
                 writer.WriteStartObject("types");
                 foreach (TypeDesc type in factory.MetadataManager.GetTypesWithEETypes())
@@ -112,6 +113,9 @@ namespace ILCompiler.DependencyAnalysis
                 writer.WriteEndObject();
 
                 writer.WriteStartObject("globals");
+                writer.WriteEndObject();
+
+                writer.WriteStartObject("contracts");
                 writer.WriteEndObject();
 
                 writer.WriteEndObject();
