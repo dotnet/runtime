@@ -2935,7 +2935,9 @@ public:
         FlagRequiresCOM         = 0x00002000,
         FlagIsLCGMethod         = 0x00004000,
         FlagIsILStub            = 0x00008000,
-        // unused               = 0x00010000,
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        FlagPendingThunkResolution = 0x00010000,
+#endif
         // unused               = 0x00020000,
         FlagMask                = 0x0003f800,
         StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
@@ -2962,6 +2964,14 @@ public:
     void ClearFlags(DWORD flags)
     {
         m_dwExtendedFlags = (m_dwExtendedFlags & ~flags);
+    }
+    void InterlockedSetFlags(DWORD flags)
+    {
+        InterlockedOr((LONG*)&m_dwExtendedFlags, (LONG)flags);
+    }
+    void InterlockedClearFlags(DWORD flags)
+    {
+        InterlockedAnd((LONG*)&m_dwExtendedFlags, (LONG)~flags);
     }
 
     ILStubType GetILStubType() const

@@ -2950,7 +2950,22 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
         // resolution so it gets updated when new R2R thunks are injected.
         if (!ContainsGenericVariables())
         {
-            GetLoaderAllocator()->AddPendingPortableEntryPointThunk(this);
+            // DynamicMethodDescs (LCG) can be re-used, so guard against duplicate adds
+            // with a flag to avoid unbounded growth in the pending list.
+            bool shouldAdd = true;
+            if (IsDynamicMethod())
+            {
+                DynamicMethodDesc* pDMD = AsDynamicMethodDesc();
+                if (pDMD->HasFlags(DynamicMethodDesc::FlagPendingThunkResolution))
+                {
+                    shouldAdd = false;
+                }
+            }
+
+            if (shouldAdd)
+            {
+                GetLoaderAllocator()->AddPendingPortableEntryPointThunk(this);
+            }
         }
     }
     // If we find actual code, we will remove this flag, but we want to prefer the interpreter entry point

@@ -168,6 +168,11 @@ void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator* pLoaderAllocato
 
     pLoaderAllocator->m_pendingPortableEntryPointThunks.Append(pMD);
 
+    if (pMD->IsDynamicMethod())
+    {
+        pMD->AsDynamicMethodDesc()->InterlockedSetFlags(DynamicMethodDesc::FlagPendingThunkResolution);
+    }
+
     if (!pLoaderAllocator->m_registeredForPendingThunkResolution)
     {
         s_pendingThunkLoaderAllocators.Append(pLoaderAllocator);
@@ -249,6 +254,11 @@ void ResolvePendingPortableEntryPointThunksGlobal()
                 }
                 pending[i] = nullptr;
                 nullCount++;
+
+                if (pMD->IsDynamicMethod())
+                {
+                    pMD->AsDynamicMethodDesc()->InterlockedClearFlags(DynamicMethodDesc::FlagPendingThunkResolution);
+                }
             }
         }
 
