@@ -53,10 +53,7 @@ namespace System.Threading.Tasks.Sources
             // The outer user always ensures that the state is not accessed across
             // the reset point when implementing Rent/Return operations.
             _version++;
-            Debug.Assert(_continuation == null || IsCompleted);
             _continuation = null;
-            Debug.Assert(_continuationState == null);
-            Debug.Assert(_capturedContext == null);
             _continuationState = null;
             _capturedContext = null;
             _error = null;
@@ -232,9 +229,7 @@ namespace System.Threading.Tasks.Sources
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
-            Action<object?>? continuation =
-                Volatile.Read(ref _continuation) ??
-                Interlocked.CompareExchange(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel, null);
+            Action<object?>? continuation = Interlocked.Exchange(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel);
 
             if (continuation is not null)
             {
@@ -242,10 +237,6 @@ namespace System.Threading.Tasks.Sources
                 _continuationState = null;
                 object? context = _capturedContext;
                 _capturedContext = null;
-                // NB: this write must happen after setting result/error, but
-                //     _continuation is set to not-null via CAS after setting result/error,
-                //     and this write is after that.
-                _continuation = ManualResetValueTaskSourceCoreShared.s_sentinel;
 
                 if (context is null)
                 {
