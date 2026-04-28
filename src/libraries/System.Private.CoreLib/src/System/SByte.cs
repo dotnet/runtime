@@ -355,7 +355,7 @@ namespace System
                 }
 
                 // We only have 1-byte so read it directly
-                result = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(source), source.Length - sizeof(sbyte));
+                result = (sbyte)source[source.Length - sizeof(sbyte)];
             }
 
             value = result;
