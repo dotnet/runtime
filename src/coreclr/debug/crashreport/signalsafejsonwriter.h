@@ -49,9 +49,9 @@ public:
     bool OpenArray();
     bool CloseArray();
     bool WriteString(const char* key, const char* value);
-    bool WriteHex(const char* key, uint64_t value);
-    bool WriteDecimal(const char* key, uint64_t value);
-    bool WriteSignedDecimal(const char* key, int64_t value);
+    bool WriteHexAsString(const char* key, uint64_t value);
+    bool WriteDecimalAsString(const char* key, uint64_t value);
+    bool WriteSignedDecimalAsString(const char* key, int64_t value);
     bool Finish();
     bool Flush();
 

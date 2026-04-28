@@ -10,7 +10,6 @@
 #include "peassembly.h"
 #include <clrconfignocache.h>
 #include <minipal/guid.h>
-#include <minipal/tempdir.h>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
@@ -349,12 +348,9 @@ CrashReportSuspendThreads(Thread* pCrashThread)
 
 static
 void
-CrashReportResumeThreads(bool runtimeSuspended)
+CrashReportResumeThreads()
 {
-    if (runtimeSuspended)
-    {
-        ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
-    }
+    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
 }
 
 static
@@ -404,9 +400,9 @@ CrashReportEnumerateThreads(
             threadCallback(osThreadId, false, "", 0, ctx);
             CrashReportWalkThread(pThread, frameCallback, ctx);
         }
-    }
 
-    CrashReportResumeThreads(runtimeSuspended);
+        CrashReportResumeThreads();
+    }
 }
 
 void
@@ -433,26 +429,6 @@ CrashReportConfigure()
     if (dumpName == nullptr || dumpName[0] == '\0')
     {
         return;
-    }
-
-    // If DbgMiniDumpName is just a filename (no directory component), write
-    // the crash report under the platform temp directory.
-    char dumpPathBuf[CRASHREPORT_STRING_BUFFER_SIZE];
-    if (strchr(dumpName, DIRECTORY_SEPARATOR_CHAR_A) == nullptr)
-    {
-        if (!minipal_get_tempdir(dumpPathBuf, sizeof(dumpPathBuf)))
-        {
-            return;
-        }
-        size_t tmpLen = strlen(dumpPathBuf);
-        size_t dumpLen = strlen(dumpName);
-        if (tmpLen + dumpLen + 1 > sizeof(dumpPathBuf))
-        {
-            return;
-        }
-        memcpy(dumpPathBuf + tmpLen, dumpName, dumpLen);
-        dumpPathBuf[tmpLen + dumpLen] = '\0';
-        dumpName = dumpPathBuf;
     }
 
     InProcCrashReporterSettings settings = {};

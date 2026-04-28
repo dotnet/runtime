@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <ucontext.h>
+#include <minipal/getexepath.h>
 #include <minipal/thread.h>
 
 // Include the .NET version string instead of linking because it is "static".
@@ -130,8 +131,9 @@ private:
     bool m_writeFailed;
 };
 
-struct CrashReportHelpers
+class CrashReportHelpers
 {
+public:
     static void GetVersionString(
         char* buffer,
         size_t bufferSize);
@@ -172,10 +174,6 @@ struct CrashReportHelpers
         char* buffer,
         size_t bufferSize,
         const char* value);
-
-    static bool TryGetProcessName(
-        char* filename,
-        size_t filenameLen);
 
     static void JsonFrameCallback(
         uint64_t ip,
@@ -271,7 +269,7 @@ InProcCrashReporter::CreateReport(
         m_jsonWriter.WriteString("process_name", m_processName);
     }
 
-    m_jsonWriter.WriteDecimal("pid", static_cast<uint64_t>(GetCurrentProcessId()));
+    m_jsonWriter.WriteDecimalAsString("pid", static_cast<uint64_t>(GetCurrentProcessId()));
 
     m_jsonWriter.OpenArray("threads");
     if (m_enumerateThreadsCallback != nullptr)
@@ -297,7 +295,7 @@ InProcCrashReporter::CreateReport(
     m_jsonWriter.CloseObject(); // payload
 
     m_jsonWriter.OpenObject("parameters");
-    m_jsonWriter.WriteSignedDecimal("signal", static_cast<int64_t>(signal));
+    m_jsonWriter.WriteSignedDecimalAsString("signal", static_cast<int64_t>(signal));
     m_jsonWriter.CloseObject(); // parameters
 
     m_jsonWriter.CloseObject(); // root
@@ -331,7 +329,13 @@ InProcCrashReporter::Initialize(
     m_getExceptionCallback = settings.getExceptionCallback;
     m_enumerateThreadsCallback = settings.enumerateThreadsCallback;
     CrashReportHelpers::CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
-    (void)CrashReportHelpers::TryGetProcessName(m_processName, sizeof(m_processName));
+
+    m_processName[0] = '\0';
+    if (char* exePath = minipal_getexepath())
+    {
+        CrashReportHelpers::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(exePath));
+        free(exePath);
+    }
 }
 
 static void
@@ -588,9 +592,9 @@ CrashReportHelpers::WriteRegistersToJson(
     uint64_t bpValue = GetFramePointer(context);
 
     writer->OpenObject("ctx");
-    writer->WriteHex("IP", ipValue);
-    writer->WriteHex("SP", spValue);
-    writer->WriteHex("BP", bpValue);
+    writer->WriteHexAsString("IP", ipValue);
+    writer->WriteHexAsString("SP", spValue);
+    writer->WriteHexAsString("BP", bpValue);
     writer->CloseObject(); // ctx
 }
 
@@ -674,8 +678,8 @@ CrashReportHelpers::WriteCrashSiteFrameToJson(
     // subsequent frames produced by the managed stack walker carry their
     // own is_managed classification.
     writer->WriteString("is_managed", "false");
-    writer->WriteHex("stack_pointer", spValue);
-    writer->WriteHex("native_address", ipValue);
+    writer->WriteHexAsString("stack_pointer", spValue);
+    writer->WriteHexAsString("native_address", ipValue);
     writer->CloseObject(); // frame
 }
 
@@ -712,19 +716,25 @@ CrashReportHelpers::BuildMethodName(
     }
 }
 
-// Returns the basename of a POSIX path (the substring after the last '/').
-// The in-proc reporter only consumes /proc paths, so a single POSIX separator
-// is sufficient; if this ever needs to handle other separators, extend the
-// loop to recognize them as well.
+// Returns the basename of a path (the substring after the last directory
+// separator). The crash reporter is currently Unix-only via
+// FEATURE_INPROC_CRASHREPORT gating, but a future Windows port would need
+// a different separator; expose a platform-conditional constant so callers
+// don't have to change.
+#if defined(_WIN32)
+static constexpr char CRASHREPORT_DIRECTORY_SEPARATOR = '\\';
+#else
+static constexpr char CRASHREPORT_DIRECTORY_SEPARATOR = '/';
+#endif
+
 const char*
 CrashReportHelpers::GetFilename(
     const char* path)
 {
-    constexpr char POSIX_PATH_SEPARATOR = '/';
     const char* last = path;
     for (const char* p = path; *p != '\0'; p++)
     {
-        if (*p == POSIX_PATH_SEPARATOR)
+        if (*p == CRASHREPORT_DIRECTORY_SEPARATOR)
         {
             last = p + 1;
         }
@@ -759,48 +769,6 @@ CrashReportHelpers::CopyString(
     buffer[copied] = '\0';
 }
 
-bool
-CrashReportHelpers::TryGetProcessName(
-    char* filename,
-    size_t filenameLen)
-{
-    if (filename == nullptr || filenameLen == 0)
-    {
-        return false;
-    }
-
-    filename[0] = '\0';
-
-    char scratch[CRASHREPORT_STRING_BUFFER_SIZE];
-
-    int fd = open("/proc/self/cmdline", O_RDONLY);
-    if (fd != -1)
-    {
-        ssize_t bytesRead = read(fd, scratch, sizeof(scratch) - 1);
-        close(fd);
-
-        if (bytesRead > 0)
-        {
-            scratch[bytesRead] = '\0';
-            CopyString(filename, filenameLen, GetFilename(scratch));
-            if (filename[0] != '\0')
-            {
-                return true;
-            }
-        }
-    }
-
-    ssize_t pathLength = readlink("/proc/self/exe", scratch, sizeof(scratch) - 1);
-    if (pathLength > 0)
-    {
-        scratch[pathLength] = '\0';
-        CopyString(filename, filenameLen, GetFilename(scratch));
-        return filename[0] != '\0';
-    }
-
-    return false;
-}
-
 void
 CrashReportHelpers::JsonFrameCallback(
     uint64_t ip,
@@ -819,9 +787,9 @@ CrashReportHelpers::JsonFrameCallback(
     SignalSafeJsonWriter* writer = reinterpret_cast<SignalSafeJsonWriter*>(ctx);
 
     writer->OpenObject();
-    writer->WriteHex("stack_pointer", stackPointer);
-    writer->WriteHex("native_address", ip);
-    writer->WriteHex("native_offset", nativeOffset);
+    writer->WriteHexAsString("stack_pointer", stackPointer);
+    writer->WriteHexAsString("native_address", ip);
+    writer->WriteHexAsString("native_offset", nativeOffset);
 
     if (methodName != nullptr)
     {
@@ -829,19 +797,19 @@ CrashReportHelpers::JsonFrameCallback(
         BuildMethodName(fullName, sizeof(fullName), className, methodName);
         writer->WriteString("method_name", fullName);
         writer->WriteString("is_managed", "true");
-        writer->WriteHex("token", token);
-        writer->WriteHex("il_offset", ilOffset);
+        writer->WriteHexAsString("token", token);
+        writer->WriteHexAsString("il_offset", ilOffset);
         if (moduleName != nullptr)
         {
             writer->WriteString("filename", moduleName);
         }
         if (moduleTimestamp != 0)
         {
-            writer->WriteHex("timestamp", moduleTimestamp);
+            writer->WriteHexAsString("timestamp", moduleTimestamp);
         }
         if (moduleSize != 0)
         {
-            writer->WriteHex("sizeofimage", moduleSize);
+            writer->WriteHexAsString("sizeofimage", moduleSize);
         }
         if (moduleGuid != nullptr && moduleGuid[0] != '\0')
         {
@@ -919,17 +887,17 @@ ThreadEnumerationContext::OnThread(
     m_writer->OpenObject();
     m_writer->WriteString("is_managed", "true");
     m_writer->WriteString("crashed", isCrashThread ? "true" : "false");
-    m_writer->WriteHex("native_thread_id", osThreadId);
+    m_writer->WriteHexAsString("native_thread_id", osThreadId);
 
     if (isCrashThread && m_hasCrashException)
     {
         m_writer->WriteString("managed_exception_type", m_crashExceptionType);
-        m_writer->WriteHex("managed_exception_hresult", m_crashExceptionHResult);
+        m_writer->WriteHexAsString("managed_exception_hresult", m_crashExceptionHResult);
     }
     else if (exceptionType != nullptr && exceptionType[0] != '\0')
     {
         m_writer->WriteString("managed_exception_type", exceptionType);
-        m_writer->WriteHex("managed_exception_hresult", exceptionHResult);
+        m_writer->WriteHexAsString("managed_exception_hresult", exceptionHResult);
     }
 
     if (isCrashThread)
@@ -986,12 +954,12 @@ InProcCrashReporter::EmitSynthesizedCrashThread(
     m_jsonWriter.WriteString("is_managed",
         m_isManagedThreadCallback != nullptr && m_isManagedThreadCallback() ? "true" : "false");
     m_jsonWriter.WriteString("crashed", "true");
-    m_jsonWriter.WriteHex("native_thread_id", crashingTid);
+    m_jsonWriter.WriteHexAsString("native_thread_id", crashingTid);
 
     if (hasException)
     {
         m_jsonWriter.WriteString("managed_exception_type", crashExceptionType);
-        m_jsonWriter.WriteHex("managed_exception_hresult", crashExceptionHResult);
+        m_jsonWriter.WriteHexAsString("managed_exception_hresult", crashExceptionHResult);
     }
 
     CrashReportHelpers::WriteRegistersToJson(&m_jsonWriter, context);

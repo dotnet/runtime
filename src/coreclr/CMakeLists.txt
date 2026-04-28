@@ -109,10 +109,6 @@ if(CLR_CMAKE_HOST_UNIX)
       add_linker_flag(-Wl,-z,notext)
     endif()
 
-    # FEATURE_INPROC_CRASHREPORT must be visible to PAL sources before
-    # clrdefinitions.cmake is processed (PAL is added before that include).
-    include(clrfeatures.cmake)
-
     add_subdirectory(pal)
 else()
     if(CLR_CMAKE_TARGET_UNIX)

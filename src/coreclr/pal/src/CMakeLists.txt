@@ -39,7 +39,6 @@ endif(CORECLR_SET_RPATH)
 include_directories(include)
 if(FEATURE_INPROC_CRASHREPORT)
   add_compile_definitions(FEATURE_INPROC_CRASHREPORT)
-  include_directories(${CLR_DIR}/debug/crashreport)
 endif()
 
 # Compile options

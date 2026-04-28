@@ -364,7 +364,7 @@ SignalSafeJsonWriter::FormatSignedDecimal(
 }
 
 bool
-SignalSafeJsonWriter::WriteHex(
+SignalSafeJsonWriter::WriteHexAsString(
     const char* key,
     uint64_t value)
 {
@@ -374,7 +374,7 @@ SignalSafeJsonWriter::WriteHex(
 }
 
 bool
-SignalSafeJsonWriter::WriteDecimal(
+SignalSafeJsonWriter::WriteDecimalAsString(
     const char* key,
     uint64_t value)
 {
@@ -384,7 +384,7 @@ SignalSafeJsonWriter::WriteDecimal(
 }
 
 bool
-SignalSafeJsonWriter::WriteSignedDecimal(
+SignalSafeJsonWriter::WriteSignedDecimalAsString(
     const char* key,
     int64_t value)
 {
