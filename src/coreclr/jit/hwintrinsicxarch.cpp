@@ -1853,6 +1853,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
+            if ((simdSize == 64) && !compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            {
+                // Vector512 float->int conversion requires AVX-512 for the native
+                // truncation instruction. Fall back to the managed implementation.
+                break;
+            }
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdCvtNode(retType, op1, TYP_INT, simdBaseType, simdSize);
             break;
@@ -1867,6 +1874,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (BlockNonDeterministicIntrinsics(mustExpand))
             {
+                break;
+            }
+
+            if ((simdSize == 64) && !compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            {
+                // Vector512 float->int conversion requires AVX-512 for the native
+                // truncation instruction. Fall back to the managed implementation.
                 break;
             }
 

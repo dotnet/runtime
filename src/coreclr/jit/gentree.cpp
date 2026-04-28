@@ -23127,7 +23127,7 @@ GenTree* Compiler::gtNewSimdCvtNode(
     assert(varTypeIsIntegral(simdTargetBaseType));
 
 #if defined(TARGET_XARCH)
-    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512) || (simdTargetBaseType == TYP_INT));
+    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512) || ((simdTargetBaseType == TYP_INT) && (simdSize != 64)));
 
     GenTree* fixupVal;
 
@@ -23258,7 +23258,7 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(
     NamedIntrinsic hwIntrinsicID = NI_Illegal;
 
 #if defined(TARGET_XARCH)
-    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512) || (simdTargetBaseType == TYP_INT));
+    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512) || ((simdTargetBaseType == TYP_INT) && (simdSize != 64)));
 
     switch (simdSourceBaseType)
     {
