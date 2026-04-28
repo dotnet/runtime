@@ -1802,7 +1802,8 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 
     if (subLayout.NeedsExecutionContext())
     {
-        encodeIndex(layout.ExecutionContextOffset, CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS);
+        encodeIndex(layout.ExecutionContextOffset, CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS);
     }
 
     if (subLayout.NeedsContinuationContext())
