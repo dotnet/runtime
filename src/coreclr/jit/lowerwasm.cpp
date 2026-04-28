@@ -709,7 +709,13 @@ void Lowering::AfterLowerBlocks()
 
         void ReleaseTemporaries()
         {
-            unsigned numRemoved = 0;
+            if (m_minimumTempLclNum == m_compiler->lvaCount)
+            {
+                // No temporaries were created
+                return;
+            }
+            assert(m_minimumTempLclNum < m_compiler->lvaCount);
+
             // Recycle all available temporaries as unused nodes
             for (int i = 0; i < TYP_COUNT; i++)
             {
