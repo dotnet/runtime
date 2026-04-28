@@ -22,7 +22,6 @@
     <_IsPublishing Condition="'$(_IsPublishing)' == ''">true</_IsPublishing>
     <NativeLib>Static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
-    <EnableAggressiveTrimming Condition="'$(EnableAggressiveTrimming)' == ''">true</EnableAggressiveTrimming>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
