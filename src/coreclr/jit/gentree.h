@@ -1021,7 +1021,7 @@ public:
 
     bool isLclField() const
     {
-        return OperGet() == GT_LCL_FLD || OperGet() == GT_STORE_LCL_FLD;
+        return OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD);
     }
 
     bool isUsedFromSpillTemp() const;
@@ -1342,12 +1342,20 @@ public:
 
     static bool OperIsNonPhiLocal(genTreeOps gtOper)
     {
-        return OperIsLocal(gtOper) && (gtOper != GT_PHI_ARG);
+        static_assert(AreContiguous(GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD));
+        bool result = (GT_LCL_VAR <= gtOper) && (gtOper <= GT_STORE_LCL_FLD);
+
+        assert(result == (OperIsLocal(gtOper) && !StaticOperIs(gtOper, GT_PHI_ARG)));
+        return result;
     }
 
     static bool OperIsLocalRead(genTreeOps gtOper)
     {
-        return (OperIsLocal(gtOper) && !OperIsLocalStore(gtOper));
+        static_assert(AreContiguous(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD));
+        bool result = (GT_PHI_ARG <= gtOper) && (gtOper <= GT_LCL_FLD);
+
+        assert(result == (OperIsLocal(gtOper) && !OperIsLocalStore(gtOper)));
+        return result;
     }
 
     static bool OperIsLocalStore(genTreeOps gtOper)
@@ -1357,12 +1365,12 @@ public:
 
     static bool OperIsAddrMode(genTreeOps gtOper)
     {
-        return gtOper == GT_LEA;
+        return StaticOperIs(gtOper, GT_LEA);
     }
 
     static bool OperIsInitVal(genTreeOps gtOper)
     {
-        return gtOper == GT_INIT_VAL;
+        return StaticOperIs(gtOper, GT_INIT_VAL);
     }
 
     bool OperIsInitVal() const
@@ -1386,7 +1394,7 @@ public:
 
     static bool OperIsBlk(genTreeOps gtOper)
     {
-        return (gtOper == GT_BLK) || OperIsStoreBlk(gtOper);
+        return StaticOperIs(gtOper, GT_BLK) || OperIsStoreBlk(gtOper);
     }
 
     bool OperIsBlk() const
@@ -1523,7 +1531,8 @@ public:
 
     static bool OperIsShift(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_LSH, GT_RSH, GT_RSZ);
+        static_assert(AreContiguous(GT_LSH, GT_RSH, GT_RSZ));
+        return (GT_LSH <= gtOper) && (gtOper <= GT_RSZ);
     }
 
     bool OperIsShift() const
@@ -1557,7 +1566,11 @@ public:
 
     static bool OperIsShiftOrRotate(genTreeOps gtOper)
     {
-        return OperIsShift(gtOper) || OperIsRotate(gtOper) || OperIsShiftLong(gtOper);
+        static_assert(AreContiguous(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
+        bool result = (GT_LSH <= gtOper) && (gtOper <= GT_ROR);
+
+        assert(result == (OperIsShift(gtOper) || OperIsRotate(gtOper)));
+        return result || OperIsShiftLong(gtOper);
     }
 
     bool OperIsShiftOrRotate() const
@@ -1567,11 +1580,19 @@ public:
 
     static bool OperIsMul(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_MUL, GT_MULHI)
+        if (StaticOperIs(gtOper, GT_MUL, GT_MULHI))
+        {
+            return true;
+        }
+
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
-               || (gtOper == GT_MUL_LONG)
+        if (StaticOperIs(gtOper, GT_MUL_LONG))
+        {
+            return true;
+        }
 #endif
-            ;
+
+        return false;
     }
 
     bool OperIsMul() const
@@ -1583,8 +1604,9 @@ public:
     static bool OperIsRMWMemOp(genTreeOps gtOper)
     {
         // Return if binary op is one of the supported operations for RMW of memory.
-        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_AND, GT_OR, GT_XOR, GT_NOT, GT_NEG) ||
-               OperIsShiftOrRotate(gtOper);
+        static_assert(AreContiguous(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
+        return StaticOperIs(gtOper, GT_ADD, GT_SUB) || ((GT_OR <= gtOper) && (gtOper <= GT_ROR)) ||
+               StaticOperIs(gtOper, GT_NOT, GT_NEG) || OperIsShiftLong(gtOper);
     }
     bool OperIsRMWMemOp() const
     {
@@ -1687,11 +1709,26 @@ public:
 
     static bool OperMayOverflow(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_MUL, GT_CAST)
+        static_assert(AreContiguous(GT_ADD, GT_SUB, GT_MUL));
+
+        if ((GT_ADD <= gtOper) && (gtOper <= GT_MUL))
+        {
+            return true;
+        }
+
+        if (StaticOperIs(gtOper, GT_CAST))
+        {
+            return true;
+        }
+
 #if !defined(TARGET_64BIT)
-               || StaticOperIs(gtOper, GT_ADD_HI, GT_SUB_HI)
+        if (StaticOperIs(gtOper, GT_ADD_HI, GT_SUB_HI))
+        {
+            return true;
+        }
 #endif
-            ;
+
+        return false;
     }
 
     bool OperMayOverflow() const
@@ -1722,7 +1759,8 @@ public:
     // Is this an access of an SZ array length, MD array length, or MD array lower bounds?
     static bool OperIsArrMetaData(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND);
+        static_assert(AreContiguous(GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND));
+        return (GT_ARR_LENGTH <= gtOper) && (gtOper <= GT_MDARR_LOWER_BOUND);
     }
 
     static bool OperIsIndirOrArrMetaData(genTreeOps gtOper)
@@ -1762,18 +1800,8 @@ public:
 
     static bool OperIsAtomicOp(genTreeOps gtOper)
     {
-        switch (gtOper)
-        {
-            case GT_XADD:
-            case GT_XORR:
-            case GT_XAND:
-            case GT_XCHG:
-            case GT_LOCKADD:
-            case GT_CMPXCHG:
-                return true;
-            default:
-                return false;
-        }
+        static_assert(AreContiguous(GT_LOCKADD, GT_XAND, GT_XORR, GT_XADD, GT_XCHG, GT_CMPXCHG));
+        return (GT_LOCKADD <= gtOper) && (gtOper <= GT_CMPXCHG);
     }
 
     bool OperIsAtomicOp() const
@@ -1819,7 +1847,7 @@ public:
     static bool OperIsHWIntrinsic(genTreeOps gtOper)
     {
 #ifdef FEATURE_HW_INTRINSICS
-        return gtOper == GT_HWINTRINSIC;
+        return StaticOperIs(gtOper, GT_HWINTRINSIC);
 #else
         return false;
 #endif // FEATURE_HW_INTRINSICS
@@ -1841,7 +1869,7 @@ public:
 #if defined(TARGET_64BIT)
         return false;
 #else
-        return gtOper == GT_LONG;
+        return StaticOperIs(gtOper, GT_LONG);
 #endif
     }
 
@@ -1852,29 +1880,54 @@ public:
 
     bool OperIsConditionalJump() const
     {
-        return OperIs(GT_JTRUE, GT_JCMP, GT_JTEST, GT_JCC, GT_WASM_JEXCEPT);
+        static_assert(AreContiguous(GT_JCMP, GT_JTEST, GT_JCC));
+
+        if (OperIs(GT_JTRUE) || ((GT_JCMP <= gtOper) && (gtOper <= GT_JCC)))
+        {
+            return true;
+        }
+
+#if defined(TARGET_WASM)
+        if (OperIs(GT_WASM_JEXCEPT))
+        {
+            return true;
+        }
+#endif
+
+        return false;
     }
 
     bool OperConsumesFlags() const
     {
-#if !defined(TARGET_64BIT)
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+        static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
+
+        if ((GT_JCC <= gtOper) && (gtOper <= GT_CCMP))
+        {
+            return true;
+        }
+#else
+        static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC));
+
+        if ((GT_JCC <= gtOper) && (gtOper <= GT_SELECTCC))
+        {
+            return true;
+        }
+#endif
+
+#if defined(TARGET_ARM64)
+        if (OperIs(GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
+        {
+            return true;
+        }
+#elif !defined(TARGET_64BIT)
         if (OperIs(GT_ADD_HI, GT_SUB_HI))
         {
             return true;
         }
 #endif
-#if defined(TARGET_ARM64)
-        if (OperIs(GT_CCMP, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
-        {
-            return true;
-        }
-        return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
-#elif defined(TARGET_AMD64)
-        static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
-        return (GT_JCC <= gtOper) && (gtOper <= GT_CCMP);
-#else
-        return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
-#endif
+
+        return false;
     }
 
 #ifdef DEBUG
@@ -2462,7 +2515,7 @@ public:
 
     bool IsCall() const
     {
-        return OperGet() == GT_CALL;
+        return OperIs(GT_CALL);
     }
     inline bool IsHelperCall();
     inline bool IsHelperCall(unsigned helper);
@@ -3245,7 +3298,7 @@ struct GenTreeOp : public GenTreeUnOp
         , gtOp2(nullptr)
     {
         // Unary operators with optional arguments:
-        assert(oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
+        assert(StaticOperIs(oper, GT_RETURN, GT_RETFILT) || OperIsBlk(oper));
     }
 
     // returns true if we will use the division by constant optimization for this node.
@@ -8976,7 +9029,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     // TODO-X86: Implement this routine for x86
     void CopyOtherRegs(GenTreeCopyOrReload* from)
     {
-        assert(OperGet() == from->OperGet());
+        assert(OperIs(from->OperGet()));
 
 #ifdef UNIX_AMD64_ABI
         for (unsigned i = 0; i < MAX_MULTIREG_COUNT - 1; ++i)
@@ -10396,7 +10449,7 @@ inline void GenTree::ClearLastUse(int fieldIndex)
 //
 inline bool GenTree::IsCopyOrReload() const
 {
-    return (OperIs(GT_COPY) || OperIs(GT_RELOAD));
+    return OperIs(GT_COPY, GT_RELOAD);
 }
 
 //-----------------------------------------------------------------------------------
@@ -10421,16 +10474,24 @@ inline bool GenTree::IsCopyOrReloadOfMultiRegCall() const
 
 inline bool GenTree::IsCnsIntOrI() const
 {
-    return (OperIs(GT_CNS_INT));
+    return OperIs(GT_CNS_INT);
 }
 
 inline bool GenTree::IsIntegralConst() const
 {
-#ifdef TARGET_64BIT
-    return IsCnsIntOrI();
-#else  // !TARGET_64BIT
-    return ((OperIs(GT_CNS_INT)) || (OperIs(GT_CNS_LNG)));
-#endif // !TARGET_64BIT
+    if (IsCnsIntOrI())
+    {
+        return true;
+    }
+
+#if !defined(TARGET_64BIT)
+    if (OperIs(GT_CNS_LNG))
+    {
+        return true;
+    }
+#endif
+
+    return false;
 }
 
 //-------------------------------------------------------------------------
