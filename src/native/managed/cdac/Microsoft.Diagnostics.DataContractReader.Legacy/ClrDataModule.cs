@@ -89,7 +89,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 try
                 {
                     Guid iidMetaDataImport = typeof(IMetaDataImport).GUID;
-                    if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, iidMetaDataImport, out nint ppMdi) >= 0)
+                    if (_legacyModulePointer != 0 && _legacyModulePointer != 1 && Marshal.QueryInterface(_legacyModulePointer, iidMetaDataImport, out nint ppMdi) >= 0)
                     {
                         legacyImport = ComInterfaceMarshaller<IMetaDataImport>.ConvertToManaged((void*)ppMdi);
                         Marshal.Release(ppMdi);
