@@ -40,5 +40,41 @@ namespace System.Reflection.Emit.Tests
             Type instantiation = tb.MakeGenericType(typeof(int));
             Assert.Null(instantiation.GetNullableUnderlyingType());
         }
+
+        [Fact]
+        public void SymbolType_Array_ReturnsNull()
+        {
+            TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
+            Type arrayType = tb.MakeArrayType();
+            Assert.Null(arrayType.GetNullableUnderlyingType());
+            Assert.Null(Nullable.GetUnderlyingType(arrayType));
+        }
+
+        [Fact]
+        public void SymbolType_MultiDimArray_ReturnsNull()
+        {
+            TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
+            Type arrayType = tb.MakeArrayType(2);
+            Assert.Null(arrayType.GetNullableUnderlyingType());
+            Assert.Null(Nullable.GetUnderlyingType(arrayType));
+        }
+
+        [Fact]
+        public void SymbolType_Pointer_ReturnsNull()
+        {
+            TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
+            Type pointerType = tb.MakePointerType();
+            Assert.Null(pointerType.GetNullableUnderlyingType());
+            Assert.Null(Nullable.GetUnderlyingType(pointerType));
+        }
+
+        [Fact]
+        public void SymbolType_ByRef_ReturnsNull()
+        {
+            TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
+            Type byRefType = tb.MakeByRefType();
+            Assert.Null(byRefType.GetNullableUnderlyingType());
+            Assert.Null(Nullable.GetUnderlyingType(byRefType));
+        }
     }
 }
