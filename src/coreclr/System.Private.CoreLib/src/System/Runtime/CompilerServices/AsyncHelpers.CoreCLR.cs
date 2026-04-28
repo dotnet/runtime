@@ -505,7 +505,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
-                    Continuation? nextContinuation = t_runtimeAsyncAwaitState.SentinelContinuation!.Next;
+                    Continuation? nextContinuation = state.SentinelContinuation!.Next;
 
                     AsyncDebugger.HandleSuspended(nextContinuation, newContinuation);
 
@@ -672,7 +672,7 @@ namespace System.Runtime.CompilerServices
                         {
                             newContinuation.Next = nextContinuation;
 
-                            RuntimeAsyncInstrumentationHelpers.AwaitSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation, newContinuation);
+                            RuntimeAsyncInstrumentationHelpers.AwaitSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation, newContinuation, awaitState.SentinelContinuation!.Next);
                             InstrumentedHandleSuspended(flags, ref awaitState, newContinuation);
 
                             awaitState.Pop();
@@ -847,10 +847,10 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                 {
-                    Continuation? nc = t_runtimeAsyncAwaitState.SentinelContinuation!.Next;
-                    if (nc != null)
+                    Continuation? nextContinuation = state.SentinelContinuation!.Next;
+                    if (nextContinuation != null)
                     {
-                        AsyncProfiler.CreateAsyncContext.Create((ulong)task.Id, nc);
+                        AsyncProfiler.CreateAsyncContext.Create((ulong)task.Id, nextContinuation);
                     }
                 }
 
@@ -1104,14 +1104,13 @@ namespace System.Runtime.CompilerServices
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void AwaitSuspendedRuntimeAsyncContext(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation curContinuation, Continuation newContinuation)
+            public static void AwaitSuspendedRuntimeAsyncContext(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation curContinuation, Continuation newContinuation, Continuation? nextContinuation)
             {
                 if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(flags))
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                     {
-                        Continuation? nextContinuation = t_runtimeAsyncAwaitState.SentinelContinuation!.Next;
-                        AsyncProfiler.SuspendAsyncContext.Suspend(ref info, nextContinuation != null ? nextContinuation : newContinuation);
+                        AsyncProfiler.SuspendAsyncContext.Suspend(ref info, nextContinuation ?? newContinuation);
                     }
 
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
