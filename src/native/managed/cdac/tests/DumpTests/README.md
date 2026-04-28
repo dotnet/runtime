@@ -121,7 +121,7 @@ If `dump-info.json` is not present, OS-based skipping is silently disabled.
 Dumps are written to:
 
 ```
-artifacts/dumps/cdac/{version}/{dumptype}/{debuggee}/{debuggee}.dmp
+artifacts/dumps/cdac/{version}/{dumptype}/{r2rmode}/{debuggee}/{debuggee}.dmp
 ```
 
 For example:

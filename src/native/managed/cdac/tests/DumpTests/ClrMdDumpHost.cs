@@ -63,14 +63,12 @@ internal sealed class ClrMdDumpHost : IDisposable
         ModuleInfo? info = GetModuleForAddress(address);
         if (info is null || info.FileName is null)
         {
-            Console.WriteLine($"Failed to find module for {buffer.Length} at 0x{address:x8}.");
             return -1;
         }
 
         string? foundFile = FindFileOnDisk(info.FileName);
         if (foundFile is null)
         {
-            Console.WriteLine($"Failed to find {info.FileName}");
             return -1;
         }
 
@@ -84,7 +82,6 @@ internal sealed class ClrMdDumpHost : IDisposable
             PEMemoryBlock block = peReader.GetSectionData((int)(current - info.ImageBase));
             if (block.Length == 0)
             {
-                Console.WriteLine($"Failed to read {foundFile} at RVA 0x{(current-info.ImageBase):x8}.");
                 return -1;
             }
 
