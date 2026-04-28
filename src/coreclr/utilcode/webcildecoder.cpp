@@ -920,7 +920,7 @@ BOOL WebcilDecoder::HasReadyToRunHeader() const
 
 READYTORUN_HEADER * WebcilDecoder::GetReadyToRunHeader() const
 {
-    CONTRACT(READYTORUN_HEADER *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckWebcilHeaders());
@@ -928,29 +928,27 @@ READYTORUN_HEADER * WebcilDecoder::GetReadyToRunHeader() const
         PRECONDITION(HasReadyToRunHeader());
         NOTHROW;
         GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL));
         SUPPORTS_DAC;
         CANNOT_TAKE_LOCK;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_pReadyToRunHeader != NULL)
-        RETURN m_pReadyToRunHeader;
+        return m_pReadyToRunHeader;
 
-    RETURN FindReadyToRunHeader();
+    return FindReadyToRunHeader();
 }
 
 PTR_CVOID WebcilDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
 {
-    CONTRACT(PTR_CVOID)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(HasReadyToRunHeader());
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // TBD - may not store metadata for IJW
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     {
@@ -979,14 +977,14 @@ PTR_CVOID WebcilDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
                 *pSize = 0;
             }
 
-            RETURN NULL;
+            return NULL;
         }
     }
 
     if (pSize != NULL)
         *pSize = VAL32(pDir->Size);
 
-    RETURN dac_cast<PTR_VOID>(GetDirectoryData(pDir));
+    return dac_cast<PTR_VOID>(GetDirectoryData(pDir));
 }
 
 READYTORUN_HEADER * WebcilDecoder::FindReadyToRunHeader() const
@@ -1017,7 +1015,7 @@ READYTORUN_HEADER * WebcilDecoder::FindReadyToRunHeader() const
 
 TADDR WebcilDecoder::GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const
 {
-    CONTRACT(TADDR)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckWebcilHeaders());
@@ -1025,12 +1023,11 @@ TADDR WebcilDecoder::GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        POSTCONDITION(CheckPointer((void *)RETVAL, NULL_OK));
         CANNOT_TAKE_LOCK;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN GetRvaData(VAL32(pDir->VirtualAddress));
+    return GetRvaData(VAL32(pDir->VirtualAddress));
 }
 
 CHECK WebcilDecoder::CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags, IsNullOK ok) const
