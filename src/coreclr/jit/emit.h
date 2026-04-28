@@ -2222,8 +2222,8 @@ protected:
 
     struct insExecutionCharacteristics
     {
-        float                     insThroughput = 0;
-        float                     insLatency = 0;
+        float                     insThroughput       = 0;
+        float                     insLatency          = 0;
         PerfScoreMemoryAccessKind insMemoryAccessKind = PerfScoreMemoryAccessKind::None;
     };
 
