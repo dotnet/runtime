@@ -452,7 +452,7 @@ COR_ILMETHOD_DECODER* ILStubResolver::AllocGeneratedIL(
 
 } // ILStubResolver::AllocGeneratedIL
 
-COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl)
+COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl, CORJIT_FLAGS corJitFlags)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(!IsILGenerated());
@@ -478,7 +478,7 @@ COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl)
 
     // Store the token lookup map
     SetTokenLookupMap(sl->GetTokenLookupMap());
-    SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
+    SetJitFlags(corJitFlags);
 
     return pILHeader;
 }

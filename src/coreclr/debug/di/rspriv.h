@@ -3658,9 +3658,6 @@ public:
 
     void PrepopulateThreadsOrThrow();
 
-    // Lookup or create an appdomain.
-    CordbAppDomain * LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDomain);
-
     // Get the app domain.
     CordbAppDomain * GetAppDomain();
 

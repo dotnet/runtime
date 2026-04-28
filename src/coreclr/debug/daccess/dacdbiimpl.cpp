@@ -606,51 +606,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeftSideInitialized(OUT BOOL * 
 }
 
 
-// Determines if a given address is a CLR stub.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsTransitionStub(CORDB_ADDRESS address, OUT BOOL * pResult)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        BOOL fIsStub = FALSE;
-
-    #if defined(TARGET_UNIX)
-        // Currently IsIPInModule() is not implemented in the PAL.  Rather than skipping the check, we should
-        // either E_NOTIMPL this API or implement IsIPInModule() in the PAL.  Since ICDProcess::IsTransitionStub()
-        // is only called by VS in mixed-mode debugging scenarios, and mixed-mode debugging is not supported on
-        // POSIX systems, there is really no incentive to implement this API at this point.
-        ThrowHR(E_NOTIMPL);
-
-    #else // !TARGET_UNIX
-
-        TADDR ip = (TADDR)address;
-
-        if (ip == NULL)
-        {
-            fIsStub = FALSE;
-        }
-        else
-        {
-            fIsStub = StubManager::IsStub(ip);
-        }
-
-        // If it's in Mscorwks, count that as a stub too.
-        if (fIsStub == FALSE)
-        {
-            fIsStub = IsIPInModule(m_globalBase, ip);
-        }
-
-    #endif // TARGET_UNIX
-
-        *pResult = fIsStub;
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 // Gets the type of 'address'.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal)
 {
@@ -3853,31 +3808,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetRcwCachedInterfacePointers(VMP
 #endif // FEATURE_COMINTEROP
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCachedWinRTTypesForIIDs(VMPTR_AppDomain vmAppDomain, DacDbiArrayList<GUID> * pIids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
-{
-    if (pIids == NULL || pTypes == NULL)
-        return E_POINTER;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        pTypes->Alloc(0);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCachedWinRTTypes(VMPTR_AppDomain vmAppDomain, OUT DacDbiArrayList<GUID> * piids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
-{
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        pTypes->Alloc(0);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 //-----------------------------------------------------------------------------
 // DacDbiInterfaceImpl::FindField
 // Finds information for a particular class field
@@ -4426,29 +4356,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleForAssembly(VMPTR_Assemb
 
         Assembly * pAssembly = vmAssembly.GetDacPtr();
         pModule->SetHostPtr(pAssembly->GetModule());
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-
-// Implement IDacDbiInterface::GetAssemblyInfo
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAssemblyInfo(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        _ASSERTE(pData != NULL);
-
-        ZeroMemory(pData, sizeof(*pData));
-
-        Assembly * pAssembly  = vmAssembly.GetDacPtr();
-
-        pData->vmAssembly.SetHostPtr(pAssembly);
-        pData->vmAppDomain.SetHostPtr(AppDomain::GetCurrentDomain());
     }
     EX_CATCH_HRESULT(hr);
     return hr;

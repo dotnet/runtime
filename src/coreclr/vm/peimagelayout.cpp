@@ -210,6 +210,8 @@ void PEImageLayout::InitDecoders(void* data, COUNT_T size)
     {
         m_format = FORMAT_WEBCIL;
         m_webcilDecoder.Init(data, size);
+        if (HasBaseRelocations())
+            ApplyBaseRelocations(true);
         m_peDecoder.Init(data, size); // Initialize base/size/flags for cDAC
     }
     else
@@ -245,7 +247,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     SSIZE_T delta = (SIZE_T) GetBase() - (SIZE_T) GetPreferredBase();
 
 #ifdef FEATURE_WEBCIL
-    SSIZE_T tableBaseDelta = m_tableBaseOffset;
+    SSIZE_T tableBaseDelta = GetTableBaseOffset();
 #endif // FEATURE_WEBCIL
 
     // Nothing to do - image is loaded at preferred base and no table base offset
@@ -275,11 +277,25 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     const SIZE_T cbPageSize = 4096;
 
     COUNT_T dirPos = 0;
+#ifdef TARGET_WASM
+    // WASM will pad out the reloc size to the next 16 byte boundary, so we need to validate we can safely read the IMAGE_BASE_RELOCATION struct before processing each entry.
+    while (dirPos + sizeof(IMAGE_BASE_RELOCATION) <= dirSize)
+#else
     while (dirPos < dirSize)
+#endif
     {
         PIMAGE_BASE_RELOCATION r = (PIMAGE_BASE_RELOCATION)(dir + dirPos);
 
         COUNT_T fixupsSize = VAL32(r->SizeOfBlock);
+
+#ifdef TARGET_WASM
+        if (fixupsSize == 0)
+        {
+            // Since WASM will pad the reloc block to the next 16 byte boundary with 0's we need to allow for a SizeOfBlock being zero.
+            // This can only happen for the last block in the relocation list, so we can break here instead of continue.
+            break;
+        }
+#endif
 
         USHORT *fixups = (USHORT *) (r + 1);
 
@@ -415,7 +431,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
         dirPos += fixupsSize;
     }
-    _ASSERTE(dirSize == dirPos);
+    _ASSERTE(dirSize == dirPos || !IsPEFormat());
 
     if (dwOldProtection != 0)
     {

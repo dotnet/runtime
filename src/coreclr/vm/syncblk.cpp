@@ -523,8 +523,8 @@ void    SyncBlockCache::InsertCleanupSyncBlock(SyncBlock* psb)
     // we don't need to lock here
     //EnterCacheLock();
 
-    psb->m_Link.m_pNext = m_pCleanupBlockList;
-    m_pCleanupBlockList = &psb->m_Link;
+    psb->m_pNext = m_pCleanupBlockList;
+    m_pCleanupBlockList = psb;
 
     // we don't need a lock here
     //LeaveCacheLock();
@@ -541,7 +541,7 @@ SyncBlock* SyncBlockCache::GetNextCleanupSyncBlock()
     if (m_pCleanupBlockList)
     {
         // get the actual sync block pointer
-        psb = (SyncBlock *) (((BYTE *) m_pCleanupBlockList) - offsetof(SyncBlock, m_Link));
+        psb = m_pCleanupBlockList;
         m_pCleanupBlockList = m_pCleanupBlockList->m_pNext;
     }
     return psb;
@@ -566,7 +566,7 @@ SyncBlock *SyncBlockCache::GetNextFreeSyncBlock()
 #endif
 
     SyncBlock       *psb;
-    SLink           *plst = m_FreeBlockList;
+    SyncBlock       *plst = m_FreeBlockList;
 
     m_ActiveCount++;
 
@@ -578,7 +578,7 @@ SyncBlock *SyncBlockCache::GetNextFreeSyncBlock()
         m_FreeCount--;
 
         // get the actual sync block pointer
-        psb = (SyncBlock *) (((BYTE *) plst) - offsetof(SyncBlock, m_Link));
+        psb = plst;
 
         return psb;
     }
@@ -822,8 +822,8 @@ void    SyncBlockCache::DeleteSyncBlockMemory(SyncBlock *psb)
     m_ActiveCount--;
     m_FreeCount++;
 
-    psb->m_Link.m_pNext = m_FreeBlockList;
-    m_FreeBlockList = &psb->m_Link;
+    psb->m_pNext = m_FreeBlockList;
+    m_FreeBlockList = psb;
 
 }
 
@@ -846,8 +846,8 @@ void SyncBlockCache::GCDeleteSyncBlock(SyncBlock *psb)
     m_ActiveCount--;
     m_FreeCount++;
 
-    psb->m_Link.m_pNext = m_FreeBlockList;
-    m_FreeBlockList = &psb->m_Link;
+    psb->m_pNext = m_FreeBlockList;
+    m_FreeBlockList = psb;
 }
 
 void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)

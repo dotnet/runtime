@@ -23,7 +23,6 @@ static void EnsureMacHmac(void)
     g_evpMacHmac = NULL;
 }
 
-#define HAVE_EVP_MAC (g_evpMacHmac != NULL)
 #define ENSURE_DN_MAC_CONSISTENCY(ctx) \
     do \
     { \
@@ -49,7 +48,7 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
     }
 
 #ifdef NEED_OPENSSL_3_0
-    if (HAVE_EVP_MAC)
+    if (g_evpMacHmac != NULL)
     {
         assert(API_EXISTS(EVP_MAC_CTX_new));
         assert(API_EXISTS(EVP_MAC_init));

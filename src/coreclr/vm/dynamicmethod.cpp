@@ -219,7 +219,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(psig));
         PRECONDITION(sigSize > 0);
@@ -254,10 +254,6 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
 
     // Reset the method desc into pristine state
 
-    // Note: Reset has THROWS contract since it may allocate jump stub. It will never throw here
-    // since it will always reuse the existing jump stub.
-    pNewMD->Reset();
-
     LOG((LF_BCL, LL_INFO1000, "Level3 - DynamicMethod obtained {0x%p} (used %d)\n", pNewMD, m_Used));
 
     // the store sig part of the method desc
@@ -267,6 +263,14 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
                     | DynamicMethodDesc::FlagStatic
                     | DynamicMethodDesc::FlagIsLCGMethod);
+
+
+    // Note: Reset has THROWS contract since it may allocate jump stub and on WASM parses the signature
+    // It will never throw here for jump stubs since it will always reuse the existing jump stub,
+    // and for signature parsing, the signature produced for LCG is guaranteed to only have loaded types
+    // so that can't fail either.
+    pNewMD->Reset(); // Run the Reset after setting the signature and flags, since Reset may need to examine
+                     // the signature to establish the correct entrypoint details.
 
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = name;

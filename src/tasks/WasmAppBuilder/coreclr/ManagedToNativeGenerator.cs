@@ -18,10 +18,6 @@ public class ManagedToNativeGenerator : Task
     [Required]
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
-    public string? RuntimeIcallTableFile { get; set; }
-
-    public string? IcallOutputPath { get; set; }
-
     [Required, NotNull]
     public string[]? PInvokeModules { get; set; }
 
@@ -72,31 +68,50 @@ public class ManagedToNativeGenerator : Task
         Dictionary<string, string> _symbolNameFixups = new();
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
         var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode);
-        var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, log, isCoreClr: true);
+        var internalCallCollector = new InternalCallSignatureCollector(log);
 
         var resolver = new PathAssemblyResolver(managedAssemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
         foreach (string asmPath in managedAssemblies)
         {
-            log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes, and icalls");
+            log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes and InternalCall methods");
             Assembly asm = mlc.LoadFromAssemblyPath(asmPath);
             pinvoke.ScanAssembly(asm);
-            icall.ScanAssembly(asm);
+
+            if (asmPath.Contains("System.Private.CoreLib", StringComparison.OrdinalIgnoreCase))
+            {
+                // Only scan System.Private.CoreLib, as all used InternalCall methods should be defined there,
+                // and scanning all assemblies can be expensive, and can trigger failures which should be avoided.
+                // System.Private.CoreLib is tested such that this should never fail on that binary.
+                internalCallCollector.ScanAssembly(asm);
+            }
         }
 
-        IEnumerable<string> cookies = Enumerable.Concat(
-            pinvoke.Generate(PInvokeModules, PInvokeOutputPath, ReversePInvokeOutputPath),
-            icall.Generate(IcallOutputPath));
+        // Pregenerated signatures for commonly used shapes used by R2R code to reduce duplication in generated R2R binaries.
+        // The signatures should be in the form of a string where the first character represents the return type and the
+        // following characters represent the argument types. The type characters should match those used by the
+        // SignatureMapper.CharToNativeType method.
+        string[] pregeneratedInterpreterToNativeSignatures =
+        {
+            "ip",
+            "iip",
+            "iiip",
+            "iiiip",
+            "vip",
+            "viip",
+        };
+
+        IEnumerable<string> cookies = pinvoke.Generate(PInvokeModules, PInvokeOutputPath, ReversePInvokeOutputPath);
+        cookies = cookies.Concat(internalCallCollector.GetSignatures());
+        cookies = cookies.Concat(pregeneratedInterpreterToNativeSignatures);
 
         var m2n = new InterpToNativeGenerator(log);
         m2n.Generate(cookies, InterpToNativeOutputPath);
 
         if (!string.IsNullOrEmpty(CacheFilePath))
-            File.WriteAllLines(CacheFilePath, PInvokeModules);
+            File.WriteAllLines(CacheFilePath, PInvokeModules, Encoding.UTF8);
 
         List<string> fileWritesList = new() { PInvokeOutputPath, InterpToNativeOutputPath };
-        if (!string.IsNullOrEmpty(IcallOutputPath))
-            fileWritesList.Add(IcallOutputPath);
         if (!string.IsNullOrEmpty(CacheFilePath))
             fileWritesList.Add(CacheFilePath);
 

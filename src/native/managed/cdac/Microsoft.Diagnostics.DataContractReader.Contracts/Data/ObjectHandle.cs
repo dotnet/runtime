@@ -10,11 +10,14 @@ internal sealed class ObjectHandle : IData<ObjectHandle>
 
     public ObjectHandle(Target target, TargetPointer address)
     {
-        Handle = address;
         if (address != TargetPointer.Null)
-            Object = target.ReadPointer(address);
+        {
+            Handle = target.ReadPointer(address);
+            if (Handle != TargetPointer.Null && target.TryReadPointer(Handle, out TargetPointer obj))
+                Object = obj;
+        }
     }
 
-    public TargetPointer Handle { get; init; }
+    public TargetPointer Handle { get; init; } = TargetPointer.Null;
     public TargetPointer Object { get; init; } = TargetPointer.Null;
 }
