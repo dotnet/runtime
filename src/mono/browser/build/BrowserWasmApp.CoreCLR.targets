@@ -153,6 +153,7 @@
       <_WasmIntermediateOutputPath Condition="'$(WasmBuildingForNestedPublish)' == 'true'">$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm', 'for-publish'))</_WasmIntermediateOutputPath>
 
       <_WasmCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_WasmCompileRsp>
+      <_WasmCompileRspGenerated>$(_WasmIntermediateOutputPath)emcc-compile-generated.rsp</_WasmCompileRspGenerated>
       <_WasmLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_WasmLinkRsp>
     </PropertyGroup>
 
@@ -270,12 +271,19 @@
       <_EmccCFlags Include="@(_EmccCommonFlags)" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
+    </ItemGroup>
 
-      <!-- All declarations needed by ManagedToNativeGenerator output (pinvoke-table.cpp,
-           wasm_m2n_invoke.g.cpp) are provided by coreclr_compat.h, which ships next to this
-           targets file. This avoids relying on the in-repo coreclr/vm/wasm and
-           native/minipal headers, which are not present in the WBT Helix payload. -->
-      <_EmccCFlags Include="-include &quot;$(MSBuildThisFileDirectory)coreclr_compat.h&quot;" />
+    <!-- Compile flags for ManagedToNativeGenerator output (pinvoke-table.cpp,
+         wasm_m2n_invoke.g.cpp). All declarations these files need are provided
+         by coreclr_compat.h (which ships next to this targets file), force-included
+         here. We keep this off the user-source flags (_EmccCFlags) so user .c/.cpp
+         in NativeFileReference don't pick up the C++-style struct decls (which
+         would fail to compile in C without a 'struct' tag).
+         Avoiding reliance on the in-repo coreclr/vm/wasm and native/minipal headers
+         is intentional, since those aren't present in the WBT Helix payload. -->
+    <ItemGroup>
+      <_EmccCFlagsGenerated Include="@(_EmccCFlags)" />
+      <_EmccCFlagsGenerated Include="-include &quot;$(MSBuildThisFileDirectory)coreclr_compat.h&quot;" />
     </ItemGroup>
 
     <!-- Source files: user NativeFileReference sources -->
@@ -283,8 +291,8 @@
       <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
       <_WasmSourceFileToCompile Include="@(NativeFileReference)" Condition="'%(Extension)' == '.c' or '%(Extension)' == '.cpp'" />
       <_WasmSourceFileToCompile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
-      <!-- Add compile RSP and compat header as dependencies for incremental build -->
-      <_WasmSourceFileToCompile Dependencies="$(_WasmCompileRsp);$(MSBuildThisFileDirectory)coreclr_compat.h" />
+      <!-- Add compile RSP as dependency for incremental build -->
+      <_WasmSourceFileToCompile Dependencies="$(_WasmCompileRsp)" />
     </ItemGroup>
 
     <!-- Native .a files to link: any NativeFileReference that are archives -->
@@ -353,36 +361,40 @@
          cause duplicate symbol errors when the archive object is pulled in for
          other required symbols (e.g., SystemInteropJS_*). -->
     <ItemGroup>
-      <_WasmSourceFileToCompile Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)pinvoke-table.o"
-                                                                            Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
-      <_WasmSourceFileToCompile Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)wasm_m2n_invoke.o"
-                                                                            Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
+      <_WasmSourceFileToCompileGenerated Remove="@(_WasmSourceFileToCompileGenerated)" />
+      <_WasmSourceFileToCompileGenerated Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)pinvoke-table.o"
+                                                                                     Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h" />
+      <_WasmSourceFileToCompileGenerated Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)wasm_m2n_invoke.o"
+                                                                                     Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h" />
     </ItemGroup>
   </Target>
 
   <!-- ======================== Write Compile RSP ======================== -->
 
-  <Target Name="_CoreCLRWriteCompileRsp" Condition="@(_WasmSourceFileToCompile->Count()) > 0">
+  <Target Name="_CoreCLRWriteCompileRsp"
+          Condition="@(_WasmSourceFileToCompile->Count()) > 0 or @(_WasmSourceFileToCompileGenerated->Count()) > 0">
     <ItemGroup>
       <_WasmCFlags Include="@(_EmccCFlags)" />
+      <_WasmCFlagsGenerated Include="@(_EmccCFlagsGenerated)" />
     </ItemGroup>
-    <WriteLinesToFile Lines="@(_WasmCFlags)" File="$(_WasmCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile Lines="@(_WasmCFlags)"          File="$(_WasmCompileRsp)"          Overwrite="true" WriteOnlyWhenDifferent="true" Condition="@(_WasmSourceFileToCompile->Count()) > 0" />
+    <WriteLinesToFile Lines="@(_WasmCFlagsGenerated)" File="$(_WasmCompileRspGenerated)" Overwrite="true" WriteOnlyWhenDifferent="true" Condition="@(_WasmSourceFileToCompileGenerated->Count()) > 0" />
     <ItemGroup>
-      <FileWrites Include="$(_WasmCompileRsp)" />
+      <FileWrites Include="$(_WasmCompileRsp)"          Condition="@(_WasmSourceFileToCompile->Count()) > 0" />
+      <FileWrites Include="$(_WasmCompileRspGenerated)" Condition="@(_WasmSourceFileToCompileGenerated->Count()) > 0" />
     </ItemGroup>
   </Target>
 
   <!-- ======================== Compile Native Sources ======================== -->
 
-  <Target Name="_CoreCLRCompileNativeSources" Condition="@(_WasmSourceFileToCompile->Count()) > 0">
-    <ItemGroup>
-      <_WasmCompileArguments Remove="@(_WasmCompileArguments)" />
-      <_WasmCompileArguments Include="&quot;@$(_WasmCompileRsp)&quot;" Condition="'$(_WasmCompileRsp)' != ''" />
-    </ItemGroup>
+  <Target Name="_CoreCLRCompileNativeSources"
+          Condition="@(_WasmSourceFileToCompile->Count()) > 0 or @(_WasmSourceFileToCompileGenerated->Count()) > 0">
 
+    <!-- Compile user NativeFileReference sources (no force-included compat header). -->
     <EmccCompile
+          Condition="@(_WasmSourceFileToCompile->Count()) > 0"
           SourceFiles="@(_WasmSourceFileToCompile)"
-          Arguments="@(_WasmCompileArguments, ' ')"
+          Arguments="&quot;@$(_WasmCompileRsp)&quot;"
           CompilerBinaryPath="$(WasmClang)"
           EnvironmentVariables="@(EmscriptenEnvVars)"
           DisableParallelCompile="$(DisableParallelEmccCompile)"
@@ -391,8 +403,22 @@
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>
 
+    <!-- Compile generated ManagedToNativeGenerator output (force-includes coreclr_compat.h). -->
+    <EmccCompile
+          Condition="@(_WasmSourceFileToCompileGenerated->Count()) > 0"
+          SourceFiles="@(_WasmSourceFileToCompileGenerated)"
+          Arguments="&quot;@$(_WasmCompileRspGenerated)&quot;"
+          CompilerBinaryPath="$(WasmClang)"
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          DisableParallelCompile="$(DisableParallelEmccCompile)"
+          MessageToIndicateCompiling="Compiling generated managed-to-native sources with emcc $(EmccCompileOptimizationFlag) ..."
+          OutputMessageImportance="$(_WasmCompileOutputMessageImportance)">
+      <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
+    </EmccCompile>
+
     <ItemGroup>
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
+      <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompileGenerated.ObjectFile)" />
     </ItemGroup>
   </Target>
 
