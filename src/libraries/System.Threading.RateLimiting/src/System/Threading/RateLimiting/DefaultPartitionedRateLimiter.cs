@@ -251,14 +251,14 @@ namespace System.Threading.RateLimiting
                 // Use Volatile.Read so the value is read atomically on 32-bit platforms where 64-bit
                 // reads are not guaranteed to be atomic.
                 TimeSpan idleDuration = limiterEntry.Limiter.IdleDuration
-                    ?? RateLimiterHelper.GetElapsedTime(Volatile.Read(ref limiterEntry.LastAccessTimestamp)).GetValueOrDefault();
+                    ?? RateLimiterHelper.GetElapsedTime(Volatile.Read(ref limiterEntry.LastAccessTimestamp));
                 if (idleDuration > s_idleTimeLimit)
                 {
                     lock (Lock)
                     {
                         // Check time again under lock to make sure no one calls Acquire or WaitAsync after checking the time and removing the limiter
                         idleDuration = limiterEntry.Limiter.IdleDuration
-                            ?? RateLimiterHelper.GetElapsedTime(Volatile.Read(ref limiterEntry.LastAccessTimestamp)).GetValueOrDefault();
+                            ?? RateLimiterHelper.GetElapsedTime(Volatile.Read(ref limiterEntry.LastAccessTimestamp));
                         if (idleDuration > s_idleTimeLimit)
                         {
                             // Remove limiter from the lookup table and mark cache as invalid
