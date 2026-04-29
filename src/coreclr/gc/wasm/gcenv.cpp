@@ -59,8 +59,8 @@ static size_t g_RestrictedPhysicalMemoryLimit = 0;
 static int64_t g_totalPhysicalMemSize = 0;
 
 // Forward declarations
-size_t GetRestrictedPhysicalMemoryLimit();
-bool GetPhysicalMemoryUsed(size_t* val);
+static size_t GetRestrictedPhysicalMemoryLimit();
+static bool GetPhysicalMemoryUsed(size_t* val);
 
 // ============================================================================
 // Initialization / Shutdown
