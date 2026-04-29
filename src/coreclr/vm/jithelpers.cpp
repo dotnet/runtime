@@ -1575,12 +1575,13 @@ static PCODE PatchpointRequiredPolicy(int* counter, int ilOffset, PerPatchpointI
 // Currently, `counter` is a pointer into the Tier0 method stack
 // frame if it exists so we have exclusive access.
 //
-// `resumeIP` is the address of the instruction immediately after
-// the JIT-emitted indirect jump that follows the helper call.
-// Returning it makes that indirect jump skip past itself and
-// resume Tier0 execution; returning an OSR method address instead
-// causes the indirect jump to transition to OSR code.
-static PCODE PatchpointWorker(int* counter, int ilOffset, PCODE resumeIP)
+// `callsiteIP` is the address of the JIT-emitted indirect jump that
+// follows the helper call (captured by the per-arch asm shim from the
+// helper's return address). On the no-transition path we return
+// `callsiteIP` advanced past that indirect jump so the jump skips
+// over itself and resumes Tier0 execution; on the transition path we
+// return an OSR method address instead.
+static PCODE PatchpointWorker(int* counter, int ilOffset, PCODE callsiteIP)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1590,10 +1591,8 @@ static PCODE PatchpointWorker(int* counter, int ilOffset, PCODE resumeIP)
     // cooperative mode. We arrive here in preemptive mode via QCall.
     GCX_COOP();
 
-    // Patchpoint identity is any IP inside the Tier0 method body; we use
-    // the resume IP (just past the helper's indirect jump) since that is
-    // what the JIT can cheaply materialize as a label address.
-    EECodeInfo codeInfo(resumeIP);
+    // Patchpoint identity is the helper's call site inside the Tier0 method.
+    EECodeInfo codeInfo(callsiteIP);
     MethodDesc* pMD = codeInfo.GetMethodDesc();
     LoaderAllocator* allocator = pMD->GetLoaderAllocator();
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
@@ -1621,9 +1620,23 @@ static PCODE PatchpointWorker(int* counter, int ilOffset, PCODE resumeIP)
     {
         _ASSERTE(!patchpointMustFindOptimizedCode);
 
-        // No transition. Returning the resume IP makes the JIT's indirect
-        // jump skip past itself and resume Tier0 execution.
-        return resumeIP;
+        // No transition. Return the address past the indirect jump at the
+        // call site so that jump skips over itself and resumes Tier0.
+#if defined(TARGET_AMD64)
+        // jmp rax = 2 bytes
+        return callsiteIP + 2;
+#elif defined(TARGET_ARM64)
+        // br xN = 4 bytes
+        return callsiteIP + 4;
+#elif defined(TARGET_LOONGARCH64)
+        // jirl r0, rN, 0 = 4 bytes
+        return callsiteIP + 4;
+#elif defined(TARGET_RISCV64)
+        // jalr x0, xN, 0 = 4 bytes
+        return callsiteIP + 4;
+#else
+#error "Unsupported platform for patchpoint skip address"
+#endif
     }
 
     // If we get here, we will transition to OSR code. This can happen
@@ -1638,7 +1651,7 @@ static PCODE PatchpointWorker(int* counter, int ilOffset, PCODE resumeIP)
     return osrMethodCode;
 }
 
-extern "C" PCODE QCALLTYPE ThreadNative_Patchpoint(int* counter, int ilOffset, PCODE resumeIP)
+extern "C" PCODE QCALLTYPE ThreadNative_Patchpoint(int* counter, int ilOffset, PCODE callsiteIP)
 {
     QCALL_CONTRACT;
 
@@ -1646,26 +1659,7 @@ extern "C" PCODE QCALLTYPE ThreadNative_Patchpoint(int* counter, int ilOffset, P
 
     BEGIN_QCALL;
 
-    result = PatchpointWorker(counter, ilOffset, resumeIP);
-
-    END_QCALL;
-
-    return result;
-}
-
-extern "C" PCODE QCALLTYPE ThreadNative_PatchpointForced(int ilOffset, PCODE resumeIP)
-{
-    QCALL_CONTRACT;
-
-    PCODE result = (PCODE)NULL;
-
-    BEGIN_QCALL;
-
-    // Forced patchpoint: counter is implicitly NULL. The required-policy
-    // path always returns a non-NULL OSR method address (or fatally errors),
-    // so resumeIP is never used; pass it through for parity with the normal
-    // helper signature.
-    result = PatchpointWorker(NULL, ilOffset, resumeIP);
+    result = PatchpointWorker(counter, ilOffset, callsiteIP);
 
     END_QCALL;
 
@@ -1674,16 +1668,11 @@ extern "C" PCODE QCALLTYPE ThreadNative_PatchpointForced(int ilOffset, PCODE res
 
 #else // FEATURE_ON_STACK_REPLACEMENT
 
-extern "C" PCODE QCALLTYPE ThreadNative_Patchpoint(int* counter, int ilOffset, PCODE resumeIP)
+extern "C" PCODE QCALLTYPE ThreadNative_Patchpoint(int* counter, int ilOffset, PCODE callsiteIP)
 {
     // OSR not supported on this configuration; the JIT does not emit
     // CORINFO_HELP_PATCHPOINT, so this entrypoint is unreachable. Provide
     // the symbol so qcallentrypoints.cpp registration links.
-    UNREACHABLE();
-}
-
-extern "C" PCODE QCALLTYPE ThreadNative_PatchpointForced(int ilOffset, PCODE resumeIP)
-{
     UNREACHABLE();
 }
 

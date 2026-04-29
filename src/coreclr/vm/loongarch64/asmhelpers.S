@@ -910,6 +910,31 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+// Capture the return address (the JIT-emitted indirect jump that follows
+// the helper call) into $a2 as the third arg, then tail-jump to the managed
+// Thread.Patchpoint via g_pPatchpoint.
+LEAF_ENTRY JIT_Patchpoint, _TEXT
+        ori     $a2, $ra, 0
+        PREPARE_EXTERNAL_VAR g_pPatchpoint, $t0
+        ld.d    $t0, $t0, 0
+        EPILOG_BRANCH_REG $t0
+LEAF_END JIT_Patchpoint, _TEXT
+
+// Forced variant: ilOffset arrives in $a0; shift to $a1, zero $a0 (counter=NULL),
+// then capture return address and tail-jump.
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
+        move    $a1, $a0
+        li.d    $a0, 0
+        ori     $a2, $ra, 0
+        PREPARE_EXTERNAL_VAR g_pPatchpoint, $t0
+        ld.d    $t0, $t0, 0
+        EPILOG_BRANCH_REG $t0
+LEAF_END JIT_PatchpointForced, _TEXT
+
+#endif // FEATURE_ON_STACK_REPLACEMENT
+
 // ------------------------------------------------------------------
 // size_t GetThreadStaticsVariableOffset()
 

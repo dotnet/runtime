@@ -90,6 +90,14 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                           SIZE_T *entry,
                           BOOL mayUsePrecompiledPInvokeMethods = TRUE);
 
+// Per-arch asm shims for OSR patchpoints. Each captures its own return
+// address (the JIT-emitted indirect jump that follows the helper call) and
+// tail-jumps to the managed Thread.Patchpoint via g_pPatchpoint.
+// JIT_PatchpointForced additionally sets counter=NULL and shifts ilOffset
+// from the first to the second arg register.
+EXTERN_C FCDECL2(PCODE, JIT_Patchpoint, int* counter, int ilOffset);
+EXTERN_C FCDECL1(PCODE, JIT_PatchpointForced, int ilOffset);
+
 //
 // JIT HELPER ALIASING FOR PORTABILITY.
 //

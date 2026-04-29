@@ -557,19 +557,14 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Patchpoint")]
         private static unsafe partial IntPtr PatchpointInternal(int* counter, int ilOffset, IntPtr resumeIP);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PatchpointForced")]
-        private static partial IntPtr PatchpointForcedInternal(int ilOffset, IntPtr resumeIP);
-
-        // OSR patchpoint helper. Called by the Tier0 patchpoint sequence the JIT emits.
-        // Returns the address to jump to: either the OSR-compiled method's entrypoint
-        // (transition to optimized code) or `resumeIP` (no transition; the JIT's indirect
-        // jump skips itself and resumes Tier0 execution).
+        // OSR patchpoint helper. Called from per-arch JIT_Patchpoint / JIT_PatchpointForced
+        // asm stubs which capture the Tier0 return address as `resumeIP` before tail-jumping
+        // here. Returns the address to jump to: either the OSR-compiled method's entrypoint
+        // (transition) or `resumeIP` advanced past the helper's indirect jump (no transition).
+        // For the forced variant the asm stub passes counter == NULL; the worker then always
+        // returns an OSR entrypoint and never uses resumeIP.
         private static unsafe IntPtr Patchpoint(int* counter, int ilOffset, IntPtr resumeIP)
             => PatchpointInternal(counter, ilOffset, resumeIP);
-
-        // Forced variant: counter is implicitly NULL; always returns an OSR entrypoint.
-        private static IntPtr PatchpointForced(int ilOffset, IntPtr resumeIP)
-            => PatchpointForcedInternal(ilOffset, resumeIP);
 
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
