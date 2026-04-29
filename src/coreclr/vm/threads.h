@@ -1441,19 +1441,19 @@ public:
         return m_ExceptionState.GetThrowable();
     }
 
+    // An unmanaged thread can check if a managed thread is processing an exception
+    BOOL HasException()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return !IsThrowableNull();
+    }
+
     // See ExInfo::GetThrowableAsPseudoHandle for details on the pseudo-handle.
     OBJECTHANDLE GetThrowableAsPseudoHandle()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return m_ExceptionState.GetThrowableAsPseudoHandle();
-    }
-
-    // An unmanaged thread can check if a managed thread is processing an exception
-    BOOL HasException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return !IsThrowableNull();
     }
 
     // special null test (for use when we're in the wrong GC mode)
