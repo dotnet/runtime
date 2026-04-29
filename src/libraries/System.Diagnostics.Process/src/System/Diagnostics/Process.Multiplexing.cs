@@ -392,30 +392,9 @@ namespace System.Diagnostics
             var outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
             var errorHandle = GetSafeHandleFromStreamReader(_standardError!);
 
-            bool outputRefAdded = false;
-            bool errorRefAdded = false;
-
-            try
-            {
-                outputHandle.DangerousAddRef(ref outputRefAdded);
-                errorHandle.DangerousAddRef(ref errorRefAdded);
-
-                ReadPipes(outputHandle, errorHandle, timeoutMs,
-                    ref outputBuffer, ref outputBytesRead,
-                    ref errorBuffer, ref errorBytesRead);
-            }
-            finally
-            {
-                if (outputRefAdded)
-                {
-                    outputHandle.DangerousRelease();
-                }
-
-                if (errorRefAdded)
-                {
-                    errorHandle.DangerousRelease();
-                }
-            }
+            ReadPipes(outputHandle, errorHandle, timeoutMs,
+                ref outputBuffer, ref outputBytesRead,
+                ref errorBuffer, ref errorBytesRead);
         }
 
         /// <summary>
