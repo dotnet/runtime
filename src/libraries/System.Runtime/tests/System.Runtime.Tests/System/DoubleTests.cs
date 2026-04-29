@@ -536,6 +536,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void ParsePatterns()
         {
             string path = Directory.GetCurrentDirectory();
