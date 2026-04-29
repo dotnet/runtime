@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     throw new InvalidOperationException(
                         $"Open generic decoration for '{decoration.ServiceType}' cannot be materialized. " +
-                        $"Use the built-in container or a container that implements ISupportServiceDecoration<T>.");
+                        $"Use the built-in container or a container that implements ISupportServiceDecoration<TContainerBuilder>.");
                 }
 
                 bool found = false;

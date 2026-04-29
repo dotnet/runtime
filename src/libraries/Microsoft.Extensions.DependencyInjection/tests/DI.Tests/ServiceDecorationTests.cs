@@ -343,6 +343,22 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void Decorate_DecoratorWithObjectParameter_DoesNotBindInnerToObject()
+        {
+            var services = new ServiceCollection();
+            services.AddTransient<IService, InnerService>();
+            services.Decorate<IService, DecoratorWithObjectParam>();
+
+            var provider = services.BuildServiceProvider();
+            var service = provider.GetRequiredService<IService>();
+
+            // The decorator's IService parameter should get the inner service,
+            // NOT the object parameter (which should be resolved from container or default)
+            var decorator = Assert.IsType<DecoratorWithObjectParam>(service);
+            Assert.IsType<InnerService>(decorator.Inner);
+        }
+
+        [Fact]
         public void Decorate_OpenGenericWithConstraints_AppliesWhenConstraintsMet()
         {
             var services = new ServiceCollection();
@@ -516,6 +532,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             public DisposableDecoratorService(IService inner) => Inner = inner;
             public void Dispose() => Disposed = true;
+        }
+
+        public class DecoratorWithObjectParam : IService
+        {
+            public IService Inner { get; }
+            public object Extra { get; }
+
+            public DecoratorWithObjectParam(IService inner, object extra = null)
+            {
+                Inner = inner;
+                Extra = extra;
+            }
         }
 
         // Decorator without a constructor accepting IService — invalid

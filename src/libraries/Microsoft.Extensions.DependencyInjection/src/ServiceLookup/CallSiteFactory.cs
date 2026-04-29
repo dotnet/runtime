@@ -123,7 +123,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 if (decoratorType.IsAbstract || decoratorType.IsInterface)
                 {
                     throw new ArgumentException(
-                        SR.Format(SR.TypeCannotBeActivated, decoratorType, serviceType));
+                        SR.Format(SR.TypeCannotBeActivated, decoratorType, serviceType), "decorations");
                 }
 
                 Type[] serviceTypeGenericArguments = serviceType.GetGenericArguments();
@@ -876,7 +876,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                         for (int p = 0; p < parameters.Length; p++)
                         {
-                            if (innerIndex == -1 && parameters[p].ParameterType.IsAssignableFrom(serviceIdentifier.ServiceType))
+                            if (innerIndex == -1 && parameters[p].ParameterType == serviceIdentifier.ServiceType)
                             {
                                 // This parameter receives the inner service
                                 innerIndex = p;

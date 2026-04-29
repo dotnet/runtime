@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd /Users/khellang/Code/runtime/artifacts/bin/Microsoft.Extensions.DependencyInjection.Tests/Debug/net11.0 && /Users/khellang/Code/runtime/artifacts/bin/testhost/net11.0-osx-Debug-arm64/do...",
-  "error": "Exit code 1\n\u001b[37m  Discovering: Microsoft.Extensions.DependencyInjection.Tests (method display = ClassAndMethod, method display options = None)\n\u001b[m\u001b[37m  Discovered:  Microsoft.Extensions.DependencyInjection.Tests (found 14 of 943 test cases)\n\u001b[m\u001b[37m  Starting:    Microsoft.Extensions.DependencyInjection.Tests (parallel test collections = on [10 threads], stop on fail = off)\n\u001b[m\u001b[31;1m    Microsoft.Extensions.DependencyInjection.Tests.ServiceDecorationTests.Decorate_IEnumerable_DecoratesEachIte...",
-  "timestamp": "2026-04-29T07:16:36.588Z",
-  "retry_count": 1
-}
