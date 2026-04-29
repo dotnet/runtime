@@ -10,11 +10,6 @@
     <MergedWrapperProjectReference Remove="c*/**/*_r.??proj" />
     <MergedWrapperProjectReference Remove="d*/**/*_r.??proj" />
     <MergedWrapperProjectReference Remove="e*/**/*_r.??proj" />
-    <!-- https://github.com/dotnet/runtime/issues/127426 - TypeLoadException on WASM interpreter, regression from #126901 -->
-    <MergedWrapperProjectReference Condition="'$(TargetOS)' == 'browser'" Remove="VT/callconv/aa_r.ilproj" />
-    <MergedWrapperProjectReference Condition="'$(TargetOS)' == 'browser'" Remove="VT/callconv/calli_r.ilproj" />
-    <MergedWrapperProjectReference Condition="'$(TargetOS)' == 'browser'" Remove="VT/callconv/dd_r.ilproj" />
-    <MergedWrapperProjectReference Condition="'$(TargetOS)' == 'browser'" Remove="VT/callconv/ee_r.ilproj" />
     <ProjectReference Include="../common/localloc_common.ilproj" />
     <ProjectReference Include="../common/eh_common.csproj" />
     <ProjectReference Include="int64/unsigned/implicit_promotion_il.ilproj" />
@@ -128,8 +123,7 @@
     <Compile Include="unsafecsharp\unsafe-4.cs" />
     <Compile Include="unsafecsharp\unsafe-5.cs" />
     <Compile Include="unsafecsharp\unsafe-6.cs" />
-    <!-- https://github.com/dotnet/runtime/issues/127426 — TypeLoadException for struct implementing interface on interpreter -->
-    <Compile Include="VT\callconv\call.cs" Condition="'$(TargetOS)' != 'browser'" />
+    <Compile Include="VT\callconv\call.cs" />
     <Compile Include="VT\callconv\jumper.cs" />
     <Compile Include="VT\callconv\jumps.cs" />
     <Compile Include="VT\callconv\vtret.cs" />

@@ -261,8 +261,7 @@
     <Compile Include="unsafecsharp\unsafe-4.cs" />
     <Compile Include="unsafecsharp\unsafe-5.cs" />
     <Compile Include="unsafecsharp\unsafe-6.cs" />
-    <!-- https://github.com/dotnet/runtime/issues/127426 — TypeLoadException for struct implementing interface on interpreter -->
-    <Compile Include="VT\callconv\call.cs" Condition="'$(TargetOS)' != 'browser'" />
+    <Compile Include="VT\callconv\call.cs" />
     <Compile Include="VT\callconv\jumper.cs" />
     <Compile Include="VT\callconv\jumps.cs" />
     <Compile Include="VT\callconv\vtret.cs" />
