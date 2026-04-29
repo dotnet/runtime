@@ -35,6 +35,7 @@ namespace Internal.TypeSystem
             _metadataBuilder = new MetadataBuilder();
             _ilBuilder = new BlobBuilder();
             _methodBodyStream = new MethodBodyStreamEncoder(_ilBuilder);
+            _ = _metadataBuilder.GetOrAddString(string.Empty);
             StringHandle assemblyNameHandle = _metadataBuilder.GetOrAddString(assemblyName.Name);
             if (assemblyName.CultureName != null)
                 throw new ArgumentException("assemblyName");

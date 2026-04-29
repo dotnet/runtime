@@ -1544,8 +1544,16 @@ namespace Internal.JitInterface
         {
             MethodILScope methodIL = HandleToObject(module);
 
-            // If this is not a MethodIL backed by a physical method body, we need to remap the token.
-            Debug.Assert(methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL);
+            Debug.Assert(methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL
+                // We may be calling this from emptyStringLiteral for a method inlined into a thunk
+                || metaTok == (mdToken)CorTokenType.mdtString);
+            if (metaTok == (mdToken)CorTokenType.mdtString)
+            {
+                ISymbolNode str = _compilation.SymbolNodeFactory.StringLiteral(
+                    new ModuleToken(_compilation.NodeFactory.ManifestMetadataTable._mutableModule, metaTok));
+                ppValue = (void*)ObjectToHandle(str);
+                return InfoAccessType.IAT_PPVALUE;
+            }
 
             IEcmaModule metadataModule = ((IEcmaMethodIL)methodIL.GetMethodILScopeDefinition()).Module;
             ISymbolNode stringObject = _compilation.SymbolNodeFactory.StringLiteral(
