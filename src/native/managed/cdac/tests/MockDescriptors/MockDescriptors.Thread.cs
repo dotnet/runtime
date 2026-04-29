@@ -187,9 +187,8 @@ internal sealed class MockThread : TypedView
     private const string ThreadLocalDataPtrFieldName = "ThreadLocalDataPtr";
     private const string UEWatsonBucketTrackerBucketsFieldName = "UEWatsonBucketTrackerBuckets";
     private const string DebuggerFilterContextFieldName = "DebuggerFilterContext";
-    private const string ProfilerFilterContextFieldName = "ProfilerFilterContext";
 
-    public static Layout<MockThread> CreateLayout(MockTarget.Architecture architecture, bool hasProfilingSupport = true)
+    public static Layout<MockThread> CreateLayout(MockTarget.Architecture architecture)
     {
         SequentialLayoutBuilder layoutBuilder = new SequentialLayoutBuilder("Thread", architecture)
             .AddUInt32Field(IdFieldName)
@@ -209,11 +208,6 @@ internal sealed class MockThread : TypedView
             .AddPointerField(ThreadLocalDataPtrFieldName)
             .AddPointerField(UEWatsonBucketTrackerBucketsFieldName)
             .AddPointerField(DebuggerFilterContextFieldName);
-
-        if (hasProfilingSupport)
-        {
-            layoutBuilder.AddPointerField(ProfilerFilterContextFieldName);
-        }
 
         return layoutBuilder.Build<MockThread>();
     }
@@ -307,19 +301,19 @@ internal sealed class MockThreadBuilder
 
     private MockThread? _previousThread;
 
-    public MockThreadBuilder(MockMemorySpace.Builder builder, bool hasProfilingSupport = true)
-        : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), hasProfilingSupport)
+    public MockThreadBuilder(MockMemorySpace.Builder builder)
+        : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
     {
     }
 
-    public MockThreadBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool hasProfilingSupport = true)
+    public MockThreadBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
     {
         Builder = builder;
         _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
 
         TargetTestHelpers helpers = builder.TargetTestHelpers;
         ExceptionInfoLayout = MockExceptionInfo.CreateLayout(helpers.Arch);
-        ThreadLayout = MockThread.CreateLayout(helpers.Arch, hasProfilingSupport);
+        ThreadLayout = MockThread.CreateLayout(helpers.Arch);
         ThreadStoreLayout = MockThreadStore.CreateLayout(helpers.Arch);
         GCAllocContextLayout = MockGCAllocContext.CreateLayout(helpers.Arch);
         EEAllocContextLayout = MockEEAllocContext.CreateLayout(helpers.Arch, GCAllocContextLayout);

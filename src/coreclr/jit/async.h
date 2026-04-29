@@ -406,6 +406,16 @@ class AsyncTransformation
                                        VARSET_VALARG_TP                 mutatedSinceResumption,
                                        SaveSet                          saveSet);
     SaveSet     GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption);
+    void        FinishContextHandlingOnSuspension(BasicBlock*                      callBlock,
+                                                  GenTreeCall*                     call,
+                                                  BasicBlock*                      suspendBB,
+                                                  const ContinuationLayout&        layout,
+                                                  const ContinuationLayoutBuilder& subLayout);
+    void        FinishContextHandlingOnSuspensionWithHelper(BasicBlock*                      callBlock,
+                                                            GenTreeCall*                     call,
+                                                            BasicBlock*                      suspendBB,
+                                                            const ContinuationLayout&        layout,
+                                                            const ContinuationLayoutBuilder& subLayout);
     void        RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
     void        CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                GenTreeCall*              call,

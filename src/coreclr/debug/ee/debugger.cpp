@@ -1213,31 +1213,39 @@ ULONG DebuggerMethodInfoTable::CheckDmiTable(void)
 // Arguments:
 //      pContext - The context to return to when done with this eval.
 //      pEvalInfo - Contains all the important information, such as parameters, type args, method.
-//      fInException - TRUE if the thread for the eval is currently in an exception notification.
-//      bpInfoSegmentRX - bpInfoSegmentRX is an InteropSafe allocation allocated by the caller.
-//                        (Caller allocated as there is no way to fail the allocation without
-//                        throwing, and this function is called in a NOTHROW region)
+//      bpInfoSegmentRX - Non-NULL only when the eval hijacks the native CPU context through
+//                        FuncEvalHijack. NULL for non-hijack evals (exception-time or interpreter),
+//                        which complete via the pending-eval queue instead of a native breakpoint
+//                        trap. Caller-allocated because this function is NOTHROW.
 //
-DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX)
+DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX)
 {
     WRAPPER_NO_CONTRACT;
 
+    if (bpInfoSegmentRX != NULL)
+    {
 #if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE) && defined(HOST_OSX) && defined(HOST_ARM64)
-    ExecutableWriterHolder<DebuggerEvalBreakpointInfoSegment> bpInfoSegmentWriterHolder(bpInfoSegmentRX, sizeof(DebuggerEvalBreakpointInfoSegment));
-    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentWriterHolder.GetRW();
+        ExecutableWriterHolder<DebuggerEvalBreakpointInfoSegment> bpInfoSegmentWriterHolder(bpInfoSegmentRX, sizeof(DebuggerEvalBreakpointInfoSegment));
+        DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentWriterHolder.GetRW();
 #else // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
-    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentRX;
+        DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentRX;
 #endif // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
-    new (bpInfoSegmentRW) DebuggerEvalBreakpointInfoSegment(this);
-    m_bpInfoSegment = bpInfoSegmentRX;
+        new (bpInfoSegmentRW) DebuggerEvalBreakpointInfoSegment(this);
+        m_bpInfoSegment = bpInfoSegmentRX;
 
-    // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
-    // so that we can have a breakpoint instruction in any slot in the bundle.
-    bpInfoSegmentRW->m_breakpointInstruction[0] = 0x16;
+        // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
+        // so that we can have a breakpoint instruction in any slot in the bundle.
+        bpInfoSegmentRW->m_breakpointInstruction[0] = 0x16;
 #if defined(TARGET_ARM)
-    USHORT *bp = (USHORT*)&m_bpInfoSegment->m_breakpointInstruction;
-    *bp = CORDbg_BREAK_INSTRUCTION;
+        USHORT *bp = (USHORT*)&m_bpInfoSegment->m_breakpointInstruction;
+        *bp = CORDbg_BREAK_INSTRUCTION;
 #endif // TARGET_ARM
+    }
+    else
+    {
+        m_bpInfoSegment = NULL;
+    }
+
     m_thread = pEvalInfo->vmThreadToken.GetRawPtr();
     m_evalType = pEvalInfo->funcEvalType;
     m_methodToken = pEvalInfo->funcMetadataToken;
@@ -1263,7 +1271,10 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_aborting = FE_ABORT_NONE;
     m_aborted = false;
     m_completed = false;
-    m_evalDuringException = fInException;
+    // Hijacked evals redirect the native CPU context through FuncEvalHijack; non-hijack
+    // evals (exception-time and interpreter) complete via the pending-eval queue. The
+    // presence of the breakpoint info segment is the single source of truth.
+    m_evalUsesHijack = (bpInfoSegmentRX != NULL);
     m_retValueBoxing = Debugger::NoValueTypeBoxing;
     m_vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
 
@@ -7556,7 +7567,7 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
     {
         DebuggerEval *pDE = pfe->pDE;
 
-        _ASSERTE(pDE->m_evalDuringException);
+        _ASSERTE(!pDE->m_evalUsesHijack);
         _ASSERTE(pDE->m_thread == GetThreadNULLOk());
 
         // Remove the pending eval from the hash. This ensures that if we take a first chance exception during the eval
@@ -14198,29 +14209,57 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_ILLEGAL_AT_GC_UNSAFE_POINT;
     }
 
-    if (filterContext != NULL && ::GetSP(filterContext) != ALIGN_DOWN(::GetSP(filterContext), STACK_ALIGN_SIZE))
+    // A func eval uses a CONTEXT hijack (redirects the native CPU context through FuncEvalHijack)
+    // only when the thread is stopped at a breakpoint or single-step in JIT-compiled code. For
+    // exception-time evals and interpreter evals we cannot hijack the native context — those paths
+    // queue the DebuggerEval into the pending-eval table and let the suspend-resume logic dispatch
+    // it: for exceptions via Debugger::ProcessAnyPendingEvals on continue, for the interpreter via
+    // INTOP_BREAKPOINT after the debugger callback returns.
+    bool funcEvalUsesHijack = !fInException;
+#ifdef FEATURE_INTERPRETER
+    if (funcEvalUsesHijack && filterContext != NULL)
     {
-        // SP is not aligned, we cannot do a FuncEval here
-        LOG((LF_CORDB, LL_INFO1000, "D::FES SP is unaligned"));
-        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
+        EECodeInfo codeInfo((PCODE)GetIP(filterContext));
+        if (codeInfo.IsInterpretedCode())
+            funcEvalUsesHijack = false;
+    }
+#endif // FEATURE_INTERPRETER
+
+    if (funcEvalUsesHijack)
+    {
+        _ASSERTE(filterContext != NULL);
+        if (::GetSP(filterContext) != ALIGN_DOWN(::GetSP(filterContext), STACK_ALIGN_SIZE))
+        {
+            // SP is not aligned, we cannot do a FuncEval here
+            LOG((LF_CORDB, LL_INFO1000, "D::FES SP is unaligned"));
+            return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
+        }
     }
 
-    // Allocate the breakpoint instruction info for the debugger info in executable memory.
-    DebuggerHeap *pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
-    if (pHeap == NULL)
+    // Allocate the breakpoint instruction info only for hijacked evals. Non-hijack paths
+    // (exception-time and interpreter) signal completion via FuncEvalComplete on the pending-eval
+    // queue, not via a native breakpoint trap, so the segment would never be used. Avoiding the
+    // allocation also means we don't require executable memory on platforms where it's unavailable
+    // (e.g. iOS).
+    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRX = NULL;
+    if (funcEvalUsesHijack)
     {
-        return E_OUTOFMEMORY;
-    }
+        DebuggerHeap *pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
+        if (pHeap == NULL)
+        {
+            return E_OUTOFMEMORY;
+        }
 
-    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRX = (DebuggerEvalBreakpointInfoSegment*)pHeap->Alloc(sizeof(DebuggerEvalBreakpointInfoSegment));
-    if (bpInfoSegmentRX == NULL)
-    {
-        return E_OUTOFMEMORY;
+        bpInfoSegmentRX = (DebuggerEvalBreakpointInfoSegment*)pHeap->Alloc(sizeof(DebuggerEvalBreakpointInfoSegment));
+        if (bpInfoSegmentRX == NULL)
+        {
+            return E_OUTOFMEMORY;
+        }
     }
 
     // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
     // CONTEXT.
-    DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, fInException, bpInfoSegmentRX);
+    DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, bpInfoSegmentRX);
 
     if (pDE == NULL)
     {
@@ -14259,9 +14298,9 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         *argDataArea = pDE->m_argData;
     }
 
-    // Set the thread's IP (in the filter context) to our hijack function if we're stopped due to a breakpoint or single
-    // step.
-    if (!fInException)
+    // Hijacked evals rewrite the thread's native context to enter FuncEvalHijack when execution resumes.
+    // Non-hijack evals are queued in the pending-eval table and dispatched from the resume path.
+    if (funcEvalUsesHijack)
     {
         _ASSERTE(filterContext != NULL);
 
@@ -14309,9 +14348,15 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
             DeleteInteropSafeExecutable(pDE);  // Note this runs the destructor for DebuggerEval, which releases its internal buffers
             return (hr);
         }
-        // If we're in an exception, then add a pending eval for this thread. This will cause us to perform the func
-        // eval when the user continues the process after the current exception event.
+
+        // Queue the eval. Exception-time evals run from Debugger::ProcessAnyPendingEvals when
+        // the process continues. Interpreter evals run from the INTOP_BREAKPOINT handler after
+        // the debugger callback returns — no context modification and no IncThreadsAtUnsafePlaces
+        // needed because the stack remains walkable.
         GetPendingEvals()->AddPendingEval(pDE->m_thread, pDE);
+
+        LOG((LF_CORDB, LL_INFO1000, "D::FES: Non-hijack func eval setup for pDE:%p on thread %p (fInException=%d)\n",
+             pDE, pThread, fInException));
     }
 
 
@@ -15963,7 +16008,7 @@ unsigned FuncEvalFrame::GetFrameAttribs_Impl(void)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (GetDebuggerEval()->m_evalDuringException)
+    if (!GetDebuggerEval()->m_evalUsesHijack)
     {
         return FRAME_ATTR_NONE;
     }
@@ -15977,7 +16022,7 @@ TADDR FuncEvalFrame::GetReturnAddressPtr_Impl()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (GetDebuggerEval()->m_evalDuringException)
+    if (!GetDebuggerEval()->m_evalUsesHijack)
     {
         return (TADDR)NULL;
     }
@@ -15995,8 +16040,9 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SUPPORTS_DAC;
     DebuggerEval * pDE = GetDebuggerEval();
 
-    // No context to update if we're doing a func eval from within exception processing.
-    if (pDE->m_evalDuringException)
+    // No context to update if we're doing a func eval from within exception processing
+    // or from interpreter code (both skip the hijack path).
+    if (!pDE->m_evalUsesHijack)
     {
         return;
     }
