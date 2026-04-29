@@ -90,9 +90,9 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 // was called (not MarkRequirementsForInstantiatedTypes), preventing ProcessInstantiated from
 // being called and leaving TypeMapAssociation entries unmarked.
 [assembly: TypeMap<UsedTypeMap>("BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTrimTarget))] // Kept
-[assembly: TypeMapAssociation<UsedTypeMap>(typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))] // Kept
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))] // Kept by Trimmer (ILCompiler fix tracked separately)
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTrimTarget))]
-[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget), By = Tool.Trimmer)]
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
@@ -590,8 +590,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [Kept]
     [KeptMember(".ctor()")]
     class BothInExternalAndProxyTrimTarget;
-    [Kept]
+    [Kept(By = Tool.Trimmer)]
     class BothInExternalAndProxy;
-    [Kept]
+    [Kept(By = Tool.Trimmer)]
     class BothInExternalAndProxyTarget;
 }
