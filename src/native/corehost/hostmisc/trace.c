@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "trace.h"
+#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +11,8 @@
 #if defined(_WIN32)
 #include <locale.h>
 #include <share.h>
+#else
+#include <unistd.h>
 #endif
 
 #define TRACE_VERBOSITY_WARN 2
@@ -174,6 +177,40 @@ bool trace_enable(void)
     g_trace_file = stderr;
     if (get_host_env_var(_TRACE_X("TRACEFILE"), tracefile_str, ARRAY_SIZE(tracefile_str)))
     {
+        if (pal_directory_exists(tracefile_str))
+        {
+            // If the trace file path is a directory, construct a file path:
+            // <dir>/<exe_name>.<pid>.log
+            pal_char_t exe_path[APPHOST_PATH_MAX];
+            pal_char_t exe_name[256];
+            if (pal_get_own_executable_path(exe_path, ARRAY_SIZE(exe_path)))
+            {
+                utils_get_filename(exe_path, exe_name, ARRAY_SIZE(exe_name));
+                // Strip extension from exe_name
+                pal_char_t* dot = pal_strrchr(exe_name, _TRACE_X('.'));
+                if (dot != NULL)
+                    *dot = _TRACE_X('\0');
+            }
+            else
+            {
+                pal_str_printf(exe_name, ARRAY_SIZE(exe_name), _TRACE_X("host"));
+            }
+
+#if defined(_WIN32)
+            int pid = (int)GetCurrentProcessId();
+#else
+            int pid = (int)getpid();
+#endif
+            pal_char_t trace_path[APPHOST_PATH_MAX];
+            pal_str_printf(trace_path, ARRAY_SIZE(trace_path),
+                _TRACE_X("%s") DIR_SEPARATOR_STR _TRACE_X("%s.%d.log"),
+                tracefile_str, exe_name, pid);
+            // Replace tracefile_str with the constructed path
+            size_t path_len = pal_strlen(trace_path);
+            if (path_len < ARRAY_SIZE(tracefile_str))
+                memcpy(tracefile_str, trace_path, (path_len + 1) * sizeof(pal_char_t));
+        }
+
 #if defined(_WIN32)
         FILE* tracefile = _wfsopen(tracefile_str, L"a", _SH_DENYNO);
 #else

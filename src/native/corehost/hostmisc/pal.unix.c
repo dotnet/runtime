@@ -71,7 +71,11 @@ bool pal_file_exists(const pal_char_t* path)
 
 bool pal_directory_exists(const pal_char_t* path)
 {
-    return pal_file_exists(path);
+    struct stat sb;
+    if (stat(path, &sb) != 0)
+        return false;
+
+    return S_ISDIR(sb.st_mode);
 }
 
 bool pal_is_path_fully_qualified(const pal_char_t* path)
