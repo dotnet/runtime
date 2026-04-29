@@ -777,19 +777,10 @@ VIRTUALCommitMemory(
         goto error;
     }
 #else
-    // On WASM, reserve == commit. If this range was previously decommitted,
-    // sentinels were placed at each page boundary. Check the first byte and
-    // zero the entire range if needed.
-#ifdef FEATURE_MULTITHREADING
-    // Under MT, VirtualDecommit already zeroes the full range on decommit, and
-    // reserve already zeroes on allocation - so commit is a no-op.
+    // On WASM, reserve == commit — memory is accessible after posix_memalign.
+    // Memory is always zero here: either from ReserveVirtualMemory (initial
+    // allocation) or from the MEM_DECOMMIT path (which zeroes on decommit).
     (void)MemSize;
-#else
-    if (MemSize && *(BYTE*)StartBoundary != 0)
-    {
-        ZeroMemory((LPVOID) StartBoundary, MemSize);
-    }
-#endif
 #endif
 
 #if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
@@ -1143,22 +1134,10 @@ VirtualFree(
             goto VirtualFreeExit;
         }
 #else // TARGET_WASM
-#ifdef FEATURE_MULTITHREADING
-        // Under MT, VirtualCommit always zeroes unconditionally, so just zero
-        // here immediately - no sentinel trick needed, and no races.
+        // On WASM, we cannot decommit (MAP_FIXED and madvise don't work in
+        // emscripten). Zero the range so it is clean for any future commit
+        // (which is a no-op).
         ZeroMemory((LPVOID) StartBoundary, MemSize);
-#else
-        // We can't decommit the mapping (MAP_FIXED doesn't work in emscripten), and we can't
-        //  MADV_DONTNEED it (madvise doesn't work in emscripten). Instead of zeroing the
-        //  entire range here, write a non-zero sentinel at each page boundary. The commit
-        //  path checks the first byte to decide whether a zeroing pass is needed.
-        //  Writing every page guarantees the sentinel is visible even if a sub-range is
-        //  recommitted at an offset.
-        for (SIZE_T offset = 0; offset < MemSize; offset += GetVirtualPageSize())
-        {
-            *((BYTE*)StartBoundary + offset) = 1;
-        }
-#endif // FEATURE_MULTITHREADING
 #endif // TARGET_WASM
     }
 
