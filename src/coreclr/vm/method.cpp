@@ -309,7 +309,7 @@ bool MethodDesc::SetCalliCookie(InterpreterCalliCookie cookie)
     IfFailThrow(EnsureCodeDataExists(NULL));
 
     _ASSERTE(m_codeData != NULL);
-    return InterlockedCompareExchangeT(&m_codeData->CalliCookie, (void*)cookie, (void*)NULL) == NULL;
+    return InterlockedCompareExchangeT((void**)&m_codeData->CalliCookie, (void*)cookie, (void*)NULL) == NULL;
 }
 
 InterpreterCalliCookie MethodDesc::GetCalliCookie()

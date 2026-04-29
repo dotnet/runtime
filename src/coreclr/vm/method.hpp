@@ -265,7 +265,7 @@ struct MethodDescCodeData final
 #endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
 #ifdef FEATURE_INTERPRETER
-    void* CalliCookie;
+    InterpreterCalliCookie CalliCookie;
 #endif // FEATURE_INTERPRETER
 #if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
     PatchpointInfo *AltJitPatchpointInfo;

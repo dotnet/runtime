@@ -736,15 +736,16 @@ void InvokeCalliStub(CalliStubParam* pParam)
     _ASSERTE(pParam->ftn != (PCODE)NULL);
     _ASSERTE(pParam->cookie != NULL);
 
-    PCODE actualFtn = (PCODE)PortableEntryPoint::GetActualCode(pParam->ftn);
-    ((void(*)(PCODE, int8_t*, int8_t*, PCODE))pParam->cookie)(actualFtn, pParam->pArgs, pParam->pRet, pParam->ftn);
+    MethodDesc* md = PortableEntryPoint::GetMethodDesc(pParam->ftn);
+
+    (pParam->cookie)(pParam->ftn, pParam->pArgs, pParam->pRet);
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet)
 {
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
-    ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
+    (cookie)(ftn, pArgs, pRet);
 }
 
 void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam)

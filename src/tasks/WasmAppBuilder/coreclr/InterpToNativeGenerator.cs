@@ -105,14 +105,14 @@ internal sealed class InterpToNativeGenerator
 
                 var portableEntryPointComma = signature.Length > 1 ? ", " : "";
                 var portableEntrypointDeclaration = isPortableEntryPointCall ? portableEntryPointComma + "PCODE" : "";
-                var portableEntrypointParam = isPortableEntryPointCall ? portableEntryPointComma + "pPortableEntryPointContext" : "";
+                var portableEntrypointParam = isPortableEntryPointCall ? portableEntryPointComma + "pPortableEntryPoint" : "";
                 var portableEntrypointStackDeclaration = isPortableEntryPointCall ? "int*, " : "";
                 var portableEntrypointStackParam = isPortableEntryPointCall ? "&framePointer, " : "";
                 w.Write(
                     $$"""
 
-                        {{(isPortableEntryPointCall ? "NOINLINE " : "")}}static void {{CallFuncName(args, SignatureMapper.CharToNameType(signature[0]), isPortableEntryPointCall)}}(PCODE pcode, int8_t* pArgs, int8_t* pRet{{(isPortableEntryPointCall ? ", PCODE pPortableEntryPointContext" : "")}})
-                        {{{(isPortableEntryPointCall ? "\n        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;" : "")}}
+                        {{(isPortableEntryPointCall ? "NOINLINE " : "")}}static void {{CallFuncName(args, SignatureMapper.CharToNameType(signature[0]), isPortableEntryPointCall)}}(PCODE {{(isPortableEntryPointCall ? "pPortableEntryPoint" : "pcode")}}, int8_t* pArgs, int8_t* pRet)
+                        {{{(isPortableEntryPointCall ? "\n        PCODE pcode = (PCODE)PortableEntryPoint::GetActualCode(pPortableEntryPoint);\n        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;" : "")}}
                             {{result.nativeType}} (*fptr)({{portableEntrypointStackDeclaration}}{{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}{{portableEntrypointDeclaration}}) = ({{result.nativeType}} (*)({{portableEntrypointStackDeclaration}}{{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}{{portableEntrypointDeclaration}}))pcode;
                             {{portabilityAssert}}{{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{portableEntrypointStackParam}}{{args.Join(", ", (p, i) => $"{SignatureMapper.CharToArgType(p)}({i})")}}{{portableEntrypointParam}});
                         }
