@@ -263,36 +263,49 @@ namespace System.Text.Json
             Debug.Assert(jsonTypeInfo.IsConfigured);
 
             JsonWriterOptions writerOptions = jsonTypeInfo.Options.GetWriterOptionsForJsonLines();
-            using var writer = new Utf8JsonWriter(utf8Json, writerOptions);
+            var writer = new Utf8JsonWriter(utf8Json, writerOptions);
 
-            bool first = true;
-            await foreach (TValue item in value.WithCancellation(cancellationToken).ConfigureAwait(false))
+            try
             {
-                if (!first)
+                bool first = true;
+                await foreach (TValue item in value.WithCancellation(cancellationToken).ConfigureAwait(false))
                 {
-                    writer.Reset();
+                    if (!first)
+                    {
+                        writer.Reset();
+                    }
+
+                    first = false;
+                    jsonTypeInfo.Serialize(writer, item);
+
+                    // The JSON Lines spec mandates a single line-feed character as the line separator,
+                    // independently of any platform-specific or user-configured newline preference.
+                    Span<byte> dest = utf8Json.GetSpan(1);
+                    dest[0] = (byte)'\n';
+                    utf8Json.Advance(1);
+
+                    FlushResult result = await utf8Json.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+                    if (result.IsCanceled)
+                    {
+                        ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
+                    }
+
+                    if (result.IsCompleted)
+                    {
+                        break;
+                    }
                 }
-
-                first = false;
-                jsonTypeInfo.Serialize(writer, item);
-
-                // The JSON Lines spec mandates a single line-feed character as the line separator,
-                // independently of any platform-specific or user-configured newline preference.
-                Span<byte> dest = utf8Json.GetSpan(1);
-                dest[0] = (byte)'\n';
-                utf8Json.Advance(1);
-
-                FlushResult result = await utf8Json.FlushAsync(cancellationToken).ConfigureAwait(false);
-
-                if (result.IsCanceled)
-                {
-                    ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
-                }
-
-                if (result.IsCompleted)
-                {
-                    break;
-                }
+            }
+            catch
+            {
+                // Reset the writer in exception cases so writer.Dispose() doesn't flush a partially-written value to the pipe.
+                writer.Reset();
+                throw;
+            }
+            finally
+            {
+                writer.Dispose();
             }
         }
     }

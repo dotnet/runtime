@@ -887,24 +887,31 @@ namespace System.Text.Json.Serialization.Tests
 
             Task<byte[]> readerTask = Task.Run(async () =>
             {
-                using MemoryStream output = new();
-                while (true)
+                try
                 {
-                    ReadResult result = await pipe.Reader.ReadAsync();
-                    foreach (ReadOnlyMemory<byte> segment in result.Buffer)
+                    using MemoryStream output = new();
+                    while (true)
                     {
-                        byte[] tmp = segment.ToArray();
-                        output.Write(tmp, 0, tmp.Length);
+                        ReadResult result = await pipe.Reader.ReadAsync();
+                        foreach (ReadOnlyMemory<byte> segment in result.Buffer)
+                        {
+                            byte[] tmp = segment.ToArray();
+                            output.Write(tmp, 0, tmp.Length);
+                        }
+
+                        pipe.Reader.AdvanceTo(result.Buffer.End);
+                        if (result.IsCompleted)
+                        {
+                            break;
+                        }
                     }
 
-                    pipe.Reader.AdvanceTo(result.Buffer.End);
-                    if (result.IsCompleted)
-                    {
-                        break;
-                    }
+                    return output.ToArray();
                 }
-
-                return output.ToArray();
+                finally
+                {
+                    await pipe.Reader.CompleteAsync();
+                }
             });
 
             await Assert.ThrowsAsync<InvalidOperationException>(() => writeTask);
@@ -1231,6 +1238,7 @@ namespace System.Text.Json.Serialization.Tests
 
             public int FlushCount { get; private set; }
             public override bool CanGetUnflushedBytes => true;
+            public override long UnflushedBytes => _written;
 
             public override void Advance(int bytes) => _written += bytes;
 
@@ -1271,13 +1279,20 @@ namespace System.Text.Json.Serialization.Tests
             stream.Position = 0;
             PipeReader reader = PipeReader.Create(stream);
 
-            int i = 0;
-            await foreach (SimpleTestClass? item in JsonSerializer.DeserializeAsyncEnumerable<SimpleTestClass>(reader, topLevelValues: true))
+            try
             {
-                Assert.NotNull(item);
-                Assert.Equal(i++, item.MyInt32);
+                int i = 0;
+                await foreach (SimpleTestClass? item in JsonSerializer.DeserializeAsyncEnumerable<SimpleTestClass>(reader, topLevelValues: true))
+                {
+                    Assert.NotNull(item);
+                    Assert.Equal(i++, item.MyInt32);
+                }
+                Assert.Equal(20, i);
             }
-            Assert.Equal(20, i);
+            finally
+            {
+                await reader.CompleteAsync();
+            }
         }
 
         [Fact]
@@ -1488,20 +1503,27 @@ namespace System.Text.Json.Serialization.Tests
                 TaskScheduler.Default).Unwrap();
 
             using MemoryStream output = new();
-            while (true)
+            try
             {
-                ReadResult result = await pipe.Reader.ReadAsync();
-                foreach (ReadOnlyMemory<byte> segment in result.Buffer)
+                while (true)
                 {
-                    byte[] tmp = segment.ToArray();
-                    output.Write(tmp, 0, tmp.Length);
-                }
+                    ReadResult result = await pipe.Reader.ReadAsync();
+                    foreach (ReadOnlyMemory<byte> segment in result.Buffer)
+                    {
+                        byte[] tmp = segment.ToArray();
+                        output.Write(tmp, 0, tmp.Length);
+                    }
 
-                pipe.Reader.AdvanceTo(result.Buffer.End);
-                if (result.IsCompleted)
-                {
-                    break;
+                    pipe.Reader.AdvanceTo(result.Buffer.End);
+                    if (result.IsCompleted)
+                    {
+                        break;
+                    }
                 }
+            }
+            finally
+            {
+                await pipe.Reader.CompleteAsync();
             }
 
             await completer;

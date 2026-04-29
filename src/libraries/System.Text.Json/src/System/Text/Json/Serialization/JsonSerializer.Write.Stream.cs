@@ -346,7 +346,7 @@ namespace System.Text.Json
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             if (topLevelValues)
             {
-                return SerializeAsyncEnumerableAsTopLevelValues(utf8Json, value, jsonTypeInfo, cancellationToken);
+                return SerializeAsyncEnumerableAsJsonLines(utf8Json, value, jsonTypeInfo, cancellationToken);
             }
 
             JsonTypeInfo<IAsyncEnumerable<TValue>> collectionTypeInfo = GetOrAddIAsyncEnumerableTypeInfoForSerialize(jsonTypeInfo);
@@ -389,14 +389,14 @@ namespace System.Text.Json
             jsonTypeInfo.EnsureConfigured();
             if (topLevelValues)
             {
-                return SerializeAsyncEnumerableAsTopLevelValues(utf8Json, value, jsonTypeInfo, cancellationToken);
+                return SerializeAsyncEnumerableAsJsonLines(utf8Json, value, jsonTypeInfo, cancellationToken);
             }
 
             JsonTypeInfo<IAsyncEnumerable<TValue>> collectionTypeInfo = GetOrAddIAsyncEnumerableTypeInfoForSerialize(jsonTypeInfo);
             return collectionTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
         }
 
-        private static async Task SerializeAsyncEnumerableAsTopLevelValues<TValue>(
+        private static async Task SerializeAsyncEnumerableAsJsonLines<TValue>(
             Stream utf8Json,
             IAsyncEnumerable<TValue> value,
             JsonTypeInfo<TValue> jsonTypeInfo,
@@ -406,26 +406,40 @@ namespace System.Text.Json
 
             JsonWriterOptions writerOptions = jsonTypeInfo.Options.GetWriterOptionsForJsonLines();
 
-            using var bufferWriter = new PooledByteBufferWriter(jsonTypeInfo.Options.DefaultBufferSize, utf8Json);
-            using var writer = new Utf8JsonWriter(bufferWriter, writerOptions);
+            var bufferWriter = new PooledByteBufferWriter(jsonTypeInfo.Options.DefaultBufferSize, utf8Json);
+            var writer = new Utf8JsonWriter(bufferWriter, writerOptions);
 
-            bool first = true;
-            await foreach (TValue item in value.WithCancellation(cancellationToken).ConfigureAwait(false))
+            try
             {
-                if (!first)
+                bool first = true;
+                await foreach (TValue item in value.WithCancellation(cancellationToken).ConfigureAwait(false))
                 {
-                    writer.Reset();
+                    if (!first)
+                    {
+                        writer.Reset();
+                    }
+
+                    first = false;
+                    jsonTypeInfo.Serialize(writer, item);
+
+                    // The JSON Lines spec mandates a single line-feed character as the line separator,
+                    // independently of any platform-specific or user-configured newline preference.
+                    Span<byte> dest = bufferWriter.GetSpan(1);
+                    dest[0] = (byte)'\n';
+                    bufferWriter.Advance(1);
+                    await bufferWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
-
-                first = false;
-                jsonTypeInfo.Serialize(writer, item);
-
-                // The JSON Lines spec mandates a single line-feed character as the line separator,
-                // independently of any platform-specific or user-configured newline preference.
-                Span<byte> dest = bufferWriter.GetSpan(1);
-                dest[0] = (byte)'\n';
-                bufferWriter.Advance(1);
-                await bufferWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Reset the writer in exception cases so writer.Dispose() doesn't flush a partially-written value.
+                writer.Reset();
+                throw;
+            }
+            finally
+            {
+                writer.Dispose();
+                bufferWriter.Dispose();
             }
         }
     }
