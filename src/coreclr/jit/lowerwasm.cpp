@@ -554,7 +554,7 @@ void Lowering::AfterLowerBlocks()
             {
                 assert(IsDataFlowRoot(node));
                 node = StackifyTree(node);
-                // We don't track liveness of temporaries more precisely since introducing eairler uses
+                // We don't track liveness of temporaries more precisely since introducing earlier uses
                 // may interfere with later (by that point already inserted and stackified) stores.
                 ReleaseTemporaries();
             }
