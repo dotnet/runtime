@@ -164,7 +164,24 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
         get
         {
             string path = Path.Combine(AppContext.BaseDirectory, "xunit-excludes.txt");
-            return File.Exists(path) ? path : string.Empty;
+            if (File.Exists(path))
+            {
+                return path;
+            }
+
+            // For NativeAOT maccatalyst apps the binary lives under .app/Contents/MacOS/ but
+            // xunit-excludes.txt is bundled as a resource under .app/Contents/Resources/.
+            string? appBase = Path.GetDirectoryName(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
+            if (appBase is not null)
+            {
+                string resourcesPath = Path.Combine(appBase, "Resources", "xunit-excludes.txt");
+                if (File.Exists(resourcesPath))
+                {
+                    return resourcesPath;
+                }
+            }
+
+            return string.Empty;
         }
     }
 
