@@ -471,7 +471,8 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
-                    Continuation? nextContinuation = state.SentinelContinuation!.Next;
+                    ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
+                    Continuation? nextContinuation = awaitState.SentinelContinuation!.Next;
 
                     AsyncDebugger.HandleSuspended(nextContinuation, newContinuation);
 
@@ -604,6 +605,7 @@ namespace System.Runtime.CompilerServices
             [StackTraceHidden]
             private unsafe void InstrumentedDispatchContinuations(AsyncInstrumentation.Flags flags)
             {
+                ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
 
@@ -809,7 +811,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                 {
-                    Continuation? nextContinuation = state.SentinelContinuation!.Next;
+                    Continuation? nextContinuation = t_runtimeAsyncAwaitState.SentinelContinuation!.Next;
                     if (nextContinuation != null)
                     {
                         AsyncProfiler.CreateAsyncContext.Create((ulong)task.Id, nextContinuation);
