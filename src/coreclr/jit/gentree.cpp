@@ -7833,7 +7833,7 @@ bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
     public:
         enum
         {
-            DoPreOrder    = true,
+            DoPreOrder = true,
         };
 
         unsigned   m_lclNum;
