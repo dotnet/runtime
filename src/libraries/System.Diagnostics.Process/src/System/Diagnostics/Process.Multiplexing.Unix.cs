@@ -59,14 +59,6 @@ namespace System.Diagnostics
                 bool outputDone = false, errorDone = false;
                 bool outputPreambleChecked = false, errorPreambleChecked = false;
 
-                // Four-byte BOM accumulation buffers: bytes are gathered here until we have
-                // enough to unambiguously detect the encoding (needed to distinguish
-                // UTF-32 LE BOM FF FE 00 00 from a UTF-16 LE BOM FF FE when the first read
-                // delivers fewer than four bytes).
-                byte[] outputBomAccum = new byte[4];
-                byte[] errorBomAccum = new byte[4];
-                int outputBomAccumLen = 0, errorBomAccumLen = 0;
-
                 List<ProcessOutputLine> lines = new();
 
                 while (!outputDone || !errorDone)
@@ -89,15 +81,13 @@ namespace System.Diagnostics
                         {
                             HandlePipeLineRead(currentHandle, ref errorDecoder, ref errorEncoding, byteBuffer,
                                 ref errorCharBuffer, ref errorCharStart, ref errorCharEnd,
-                                ref errorPreambleChecked, ref errorDone, standardError: true, lines,
-                                errorBomAccum, ref errorBomAccumLen);
+                                ref errorPreambleChecked, ref errorDone, standardError: true, lines);
                         }
                         else
                         {
                             HandlePipeLineRead(currentHandle, ref outputDecoder, ref outputEncoding, byteBuffer,
                                 ref outputCharBuffer, ref outputCharStart, ref outputCharEnd,
-                                ref outputPreambleChecked, ref outputDone, standardError: false, lines,
-                                outputBomAccum, ref outputBomAccumLen);
+                                ref outputPreambleChecked, ref outputDone, standardError: false, lines);
                         }
                     }
 
@@ -114,13 +104,11 @@ namespace System.Diagnostics
             {
                 if (outputRefAdded)
                 {
-                    Interop.Sys.Fcntl.DangerousSetIsNonBlocking(outputHandle.DangerousGetHandle().ToInt32(), 0);
                     outputHandle.DangerousRelease();
                 }
 
                 if (errorRefAdded)
                 {
-                    Interop.Sys.Fcntl.DangerousSetIsNonBlocking(errorHandle.DangerousGetHandle().ToInt32(), 0);
                     errorHandle.DangerousRelease();
                 }
 
@@ -229,18 +217,15 @@ namespace System.Diagnostics
             ref bool preambleChecked,
             ref bool done,
             bool standardError,
-            List<ProcessOutputLine> lines,
-            byte[] bomAccum,
-            ref int bomAccumLen)
+            List<ProcessOutputLine> lines)
         {
             int bytesRead = ReadNonBlocking(handle, byteBuffer, 0);
             if (bytesRead > 0)
             {
-                DecodeBytesAndParseLines(ref decoder, ref encoding, byteBuffer, bytesRead, ref charBuffer, ref charStart, ref charEnd, ref preambleChecked, bomAccum, ref bomAccumLen, standardError, lines);
+                DecodeBytesAndParseLines(ref decoder, ref encoding, byteBuffer, bytesRead, ref charBuffer, ref charStart, ref charEnd, ref preambleChecked, standardError, lines);
             }
             else if (bytesRead == 0)
             {
-                FlushBomAccumulation(ref decoder, ref encoding, bomAccum, bomAccumLen, ref preambleChecked, ref charBuffer, ref charStart, ref charEnd, standardError, lines);
                 done = FlushDecoderAndEmitRemainingChars(decoder, ref charBuffer, ref charStart, ref charEnd, standardError, lines);
             }
             // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.

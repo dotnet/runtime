@@ -342,92 +342,17 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>
-        /// Decodes bytes from <paramref name="byteBuffer"/> (and any previously accumulated BOM bytes)
-        /// into <paramref name="charBuffer"/>, then parses complete lines. On the first call(s),
-        /// bytes are accumulated into <paramref name="bomAccum"/> until four are available so that
-        /// <see cref="SkipPreambleOrDetectEncoding"/> can unambiguously distinguish a UTF-32 LE BOM
-        /// (<c>FF FE 00 00</c>) from a UTF-16 LE BOM (<c>FF FE</c>) even when the first OS read
-        /// delivers only two bytes.
-        /// </summary>
-        private static void DecodeBytesAndParseLines(
-            ref Decoder decoder, ref Encoding encoding,
-            byte[] byteBuffer, int bytesRead,
-            ref char[] charBuffer, ref int charStart, ref int charEnd,
-            ref bool preambleChecked,
-            byte[] bomAccum, ref int bomAccumLen,
-            bool standardError, List<ProcessOutputLine> lines)
+        private static void DecodeBytesAndParseLines(ref Decoder decoder, ref Encoding encoding, byte[] byteBuffer, int bytesRead, ref char[] charBuffer, ref int charStart, ref int charEnd, ref bool preambleChecked, bool standardError, List<ProcessOutputLine> lines)
         {
+            int byteOffset = 0;
             if (!preambleChecked)
             {
-                // Accumulate initial bytes into bomAccum until we have 4, enough to unambiguously
-                // detect all supported BOMs (UTF-8 = 3 bytes, UTF-16 LE/BE = 2 bytes, but FF FE
-                // could be the start of a 4-byte UTF-32 LE BOM, so we need all 4 before deciding).
-                int prevBomAccumLen = bomAccumLen;
-                if (bomAccumLen < 4 && bytesRead > 0)
-                {
-                    int toCopy = Math.Min(4 - bomAccumLen, bytesRead);
-                    byteBuffer.AsSpan(0, toCopy).CopyTo(bomAccum.AsSpan(bomAccumLen));
-                    bomAccumLen += toCopy;
-                }
-
-                if (bomAccumLen < 4)
-                {
-                    // Not enough bytes yet for a definitive BOM/preamble check. Defer to the next read.
-                    return;
-                }
-
                 preambleChecked = true;
-                int bomSkip = SkipPreambleOrDetectEncoding(bomAccum, bomAccumLen, ref encoding, ref decoder);
-
-                // Decode the accumulated BOM bytes (minus the BOM prefix to skip).
-                int bomToDecode = bomAccumLen - bomSkip;
-                if (bomToDecode > 0)
-                {
-                    DecodeAndAppendChars(decoder, bomAccum, bomSkip, bomToDecode, flush: false, ref charBuffer, ref charStart, ref charEnd);
-                }
-
-                // Decode remaining bytes from the current read (those not consumed into bomAccum).
-                int consumedFromByteBuffer = bomAccumLen - prevBomAccumLen;
-                int remaining = bytesRead - consumedFromByteBuffer;
-                if (remaining > 0)
-                {
-                    DecodeAndAppendChars(decoder, byteBuffer, consumedFromByteBuffer, remaining, flush: false, ref charBuffer, ref charStart, ref charEnd);
-                }
-
-                ParseLinesFromCharBuffer(charBuffer, ref charStart, charEnd, standardError, lines);
-                return;
+                byteOffset = SkipPreambleOrDetectEncoding(byteBuffer, bytesRead, ref encoding, ref decoder);
             }
 
-            DecodeAndAppendChars(decoder, byteBuffer, 0, bytesRead, flush: false, ref charBuffer, ref charStart, ref charEnd);
+            DecodeAndAppendChars(decoder, byteBuffer, byteOffset, bytesRead - byteOffset, flush: false, ref charBuffer, ref charStart, ref charEnd);
             ParseLinesFromCharBuffer(charBuffer, ref charStart, charEnd, standardError, lines);
-        }
-
-        /// <summary>
-        /// Resolves any bytes accumulated in <paramref name="bomAccum"/> when the pipe closes
-        /// before four bytes have been gathered. The accumulated bytes are BOM-checked and decoded
-        /// into <paramref name="charBuffer"/>; any complete lines are added to
-        /// <paramref name="lines"/>. This must be called before
-        /// <see cref="FlushDecoderAndEmitRemainingChars"/> at EOF.
-        /// </summary>
-        private static void FlushBomAccumulation(
-            ref Decoder decoder, ref Encoding encoding,
-            byte[] bomAccum, int bomAccumLen,
-            ref bool preambleChecked,
-            ref char[] charBuffer, ref int charStart, ref int charEnd,
-            bool standardError, List<ProcessOutputLine> lines)
-        {
-            if (!preambleChecked && bomAccumLen > 0)
-            {
-                preambleChecked = true;
-                int bomSkip = SkipPreambleOrDetectEncoding(bomAccum, bomAccumLen, ref encoding, ref decoder);
-                int toDecode = bomAccumLen - bomSkip;
-                if (toDecode > 0)
-                {
-                    DecodeAndAppendChars(decoder, bomAccum, bomSkip, toDecode, flush: false, ref charBuffer, ref charStart, ref charEnd);
-                    ParseLinesFromCharBuffer(charBuffer, ref charStart, charEnd, standardError, lines);
-                }
-            }
         }
 
         private static bool FlushDecoderAndEmitRemainingChars(Decoder decoder, ref char[] charBuffer, ref int charStart, ref int charEnd, bool standardError, List<ProcessOutputLine> lines)

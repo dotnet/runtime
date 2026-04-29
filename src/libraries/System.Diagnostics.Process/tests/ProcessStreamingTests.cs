@@ -588,41 +588,7 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReadAllLines_HandlesPartialBomAcrossReads(bool useAsync)
-        {
-            // Write a UTF-32 LE BOM (FF FE 00 00) as two separate flushed writes so the
-            // first read can deliver only the first two BOM bytes. Without BOM accumulation,
-            // FF FE would be misclassified as a UTF-16 LE BOM and the content would be
-            // decoded with the wrong encoding.
-            using Process process = CreateProcess(static () =>
-            {
-                Stream stdout = Console.OpenStandardOutput();
-                stdout.Write(new byte[] { 0xFF, 0xFE }); // First half of UTF-32 LE BOM
-                stdout.Flush();
-                stdout.Write(new byte[] { 0x00, 0x00 }); // Second half of BOM
-                stdout.Write(Encoding.UTF32.GetBytes("hello\n")); // Content (no BOM from GetBytes)
-                stdout.Flush();
-                return RemoteExecutor.SuccessExitCode;
-            });
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.StandardOutputEncoding = Encoding.UTF32;
-            process.Start();
-
-            List<string> capturedOutput = new();
-            List<string> capturedError = new();
-
-            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
-
-            Assert.Equal(new[] { "hello" }, capturedOutput);
-            Assert.Empty(capturedError);
-            Assert.True(process.WaitForExit(WaitInMS));
-        }
-
-
+        private Process StartLinePrintingProcess(string stdOutText, string stdErrText)
         {
             Process process = CreateProcess((stdOut, stdErr) =>
             {
