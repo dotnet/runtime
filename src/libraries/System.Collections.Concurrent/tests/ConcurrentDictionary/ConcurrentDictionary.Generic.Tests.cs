@@ -47,7 +47,6 @@ namespace System.Collections.Concurrent.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void NonRandomizedToRandomizedUpgrade_FunctionsCorrectly(bool ignoreCase)
         {
             List<string> strings = GenerateCollidingStrings(110); // higher than the collisions threshold
