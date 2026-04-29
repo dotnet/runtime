@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void IsSupported_AgreesWithPlatform()
+        public void IsSupported_AgreesWithPlatform()
         {
             bool expectedSupported =
                 PlatformDetection.IsWindows10OrLater ||

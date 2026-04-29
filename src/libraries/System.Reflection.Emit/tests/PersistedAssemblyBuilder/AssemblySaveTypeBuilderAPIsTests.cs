@@ -654,7 +654,7 @@ namespace System.Reflection.Emit.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
-        public static void DefinePInvokeMethodExecution_Windows()
+        public void DefinePInvokeMethodExecution_Windows()
         {
             const string EnvironmentVariable = "COMPUTERNAME";
 
@@ -725,7 +725,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(TestData))]
-        public static void TestDefinePInvokeMethod(DpmParams p)
+        public void TestDefinePInvokeMethod(DpmParams p)
         {
             using (TempFile file = TempFile.Create())
             {
@@ -881,7 +881,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public static void DefineUninitializedDataTest()
+        public void DefineUninitializedDataTest()
         {
             using (TempFile file = TempFile.Create())
             {

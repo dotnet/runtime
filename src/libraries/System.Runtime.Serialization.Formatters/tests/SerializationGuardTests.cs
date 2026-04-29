@@ -17,7 +17,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
-        public static void IsNoLongerActivated()
+        public void IsNoLongerActivated()
         {
             MemoryStream ms = new MemoryStream();
             BinaryFormatter writer = new BinaryFormatter();

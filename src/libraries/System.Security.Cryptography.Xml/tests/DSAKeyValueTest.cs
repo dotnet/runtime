@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public static void KeyProperty_SetNull()
+        public void KeyProperty_SetNull()
         {
             DSAKeyValue dsaKeyValue = new DSAKeyValue();
 #if NET

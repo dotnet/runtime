@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
     internal static class ConfigBindingGenTestDriverExtensions
     {
-        public static void ValidateIncrementalResult(this ConfigBindingGenRunResult result,
+        public void ValidateIncrementalResult(this ConfigBindingGenRunResult result,
             IncrementalStepRunReason inputReason,
             IncrementalStepRunReason outputReason)
         {
@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             });
         }
 
-        public static void ValidateDiagnostics(this ConfigBindingGenRunResult result, ExpectedDiagnostics expectedDiags)
+        public void ValidateDiagnostics(this ConfigBindingGenRunResult result, ExpectedDiagnostics expectedDiags)
         {
             ImmutableArray<Diagnostic> outputDiagnostics = result.OutputCompilation.GetDiagnostics();
 

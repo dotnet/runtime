@@ -29,7 +29,7 @@ namespace System.Net.Tests
         public void Dispose() => _factory.Dispose();
 
         [Fact]
-        public static void Supported_True()
+        public void Supported_True()
         {
             Assert.True(HttpListener.IsSupported);
         }

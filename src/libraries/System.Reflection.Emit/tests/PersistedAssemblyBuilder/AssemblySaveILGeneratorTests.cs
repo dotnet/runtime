@@ -805,7 +805,7 @@ public class MyType<T>
 {
     public T Field;
 
-    public static void GM<U>(U P_0)
+    public void GM<U>(U P_0)
     {
         MyType<U> myType = new MyType<U>();
         myType.Field = P_0;
@@ -815,7 +815,7 @@ public class MyType<T>
 
 internal class Dummy
 {
-    public static void Main()
+    public void Main()
     {
         MyType<string>.GM("HelloWorld");
     }

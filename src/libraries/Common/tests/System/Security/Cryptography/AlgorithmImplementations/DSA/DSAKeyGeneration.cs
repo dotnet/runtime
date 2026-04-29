@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         public static bool HasSecondMinSize { get; } = GetHasSecondMinSize();
 
         [Fact]
-        public static void VerifyDefaultKeySize_Fips186_2()
+        public void VerifyDefaultKeySize_Fips186_2()
         {
             if (!DSAFactory.SupportsFips186_3)
             {
@@ -28,19 +28,19 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void GenerateMinKey()
+        public void GenerateMinKey()
         {
             GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
         }
 
         [ConditionalFact(typeof(DSAKeyGeneration), nameof(HasSecondMinSize))]
-        public static void GenerateSecondMinKey()
+        public void GenerateSecondMinKey()
         {
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));
         }
 
         [Fact]
-        public static void GenerateKey_1024()
+        public void GenerateKey_1024()
         {
             GenerateKey(1024);
         }

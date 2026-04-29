@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void MLKemCng_NonExportable_ExportPrivateSeedThrows(MLKemAlgorithm algorithm)
+        public void MLKemCng_NonExportable_ExportPrivateSeedThrows(MLKemAlgorithm algorithm)
         {
             using CngKey key = MLKemCngTests.GenerateCngKey(algorithm, CngExportPolicies.None);
             using MLKemCng kem = new MLKemCng(key);
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void MLKemCng_NonExportable_ExportDecapsulationKeyThrows(MLKemAlgorithm algorithm)
+        public void MLKemCng_NonExportable_ExportDecapsulationKeyThrows(MLKemAlgorithm algorithm)
         {
             using CngKey key = MLKemCngTests.GenerateCngKey(algorithm, CngExportPolicies.None);
             using MLKemCng kem = new MLKemCng(key);
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void MLKemCng_NonExportable_ExportEncapsulationKeyAlwaysWorks()
+        public void MLKemCng_NonExportable_ExportEncapsulationKeyAlwaysWorks()
         {
             using CngKey key = MLKemCngTests.ImportPrivateSeed(
                 MLKemAlgorithm.MLKem512,
@@ -81,13 +81,13 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void MLKemCng_Ctor_ArgValidation()
+        public void MLKemCng_Ctor_ArgValidation()
         {
             AssertExtensions.Throws<ArgumentNullException>("key", static () => new MLKemCng(null));
         }
 
         [Fact]
-        public static void MLKemCng_Ctor_KeyWrongAlgorithm()
+        public void MLKemCng_Ctor_KeyWrongAlgorithm()
         {
             using CngKey rsaKey = CngKey.Create(CngAlgorithm.Rsa, keyName: null);
             AssertExtensions.Throws<ArgumentException>("key", () => new MLKemCng(rsaKey));
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void MLKemCng_GetKey(MLKemAlgorithm algorithm)
+        public void MLKemCng_GetKey(MLKemAlgorithm algorithm)
         {
             using CngKey key = MLKemCngTests.GenerateCngKey(
                 algorithm,

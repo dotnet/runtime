@@ -24,7 +24,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
         [Theory]
         [MemberData(nameof(GetCompilationHelperFactories))]
-        public static void CompilingTheSameSourceResultsInEqualModels(Func<Compilation> factory)
+        public void CompilingTheSameSourceResultsInEqualModels(Func<Compilation> factory)
         {
             JsonSourceGeneratorResult result1 = CompilationHelper.RunJsonSourceGenerator(factory(), disableDiagnosticValidation: true);
             JsonSourceGeneratorResult result2 = CompilationHelper.RunJsonSourceGenerator(factory(), disableDiagnosticValidation: true);
@@ -45,7 +45,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public static void CompilingEquivalentSourcesResultsInEqualModels()
+        public void CompilingEquivalentSourcesResultsInEqualModels()
         {
             string source1 = """
                 using System.Text.Json.Serialization;
@@ -113,7 +113,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public static void CompilingDifferentSourcesResultsInUnequalModels()
+        public void CompilingDifferentSourcesResultsInUnequalModels()
         {
             string source1 = """
                 using System.Text.Json.Serialization;
@@ -158,7 +158,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
         [Theory]
         [MemberData(nameof(GetCompilationHelperFactories))]
-        public static void SourceGenModelDoesNotEncapsulateSymbolsOrCompilationData(Func<Compilation> factory)
+        public void SourceGenModelDoesNotEncapsulateSymbolsOrCompilationData(Func<Compilation> factory)
         {
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(factory(), disableDiagnosticValidation: true);
             WalkObjectGraph(result.ContextGenerationSpecs);
@@ -205,7 +205,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 #if ROSLYN4_4_OR_GREATER
         [Theory]
         [MemberData(nameof(GetCompilationHelperFactories))]
-        public static void IncrementalGenerator_SameInput_DoesNotRegenerate(Func<Compilation> factory)
+        public void IncrementalGenerator_SameInput_DoesNotRegenerate(Func<Compilation> factory)
         {
             Compilation compilation = factory();
             GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver(compilation);
@@ -259,7 +259,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public static void IncrementalGenerator_EquivalentSources_DoesNotRegenerate()
+        public void IncrementalGenerator_EquivalentSources_DoesNotRegenerate()
         {
             string source1 = """
                 using System;
@@ -328,7 +328,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public static void IncrementalGenerator_DifferentSources_Regenerates()
+        public void IncrementalGenerator_DifferentSources_Regenerates()
         {
             string source1 = """
                 using System;

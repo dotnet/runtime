@@ -54,7 +54,7 @@ namespace SampleSynthesisTests
 
         [ConditionalFact(typeof(SpeechRecognizerTests), nameof(RecognizerInstalledAndEnabled))]
         [OuterLoop] // Pops UI
-        public static void SpeechRecognizer()
+        public void SpeechRecognizer()
         {
             if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
                 return;

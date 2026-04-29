@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             public class Program
             {
-        	    public static void Main()
+        	    public void Main()
         	    {
         		    ConfigurationBuilder configurationBuilder = new();
         		    IConfigurationRoot config = configurationBuilder.Build();
@@ -182,7 +182,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             public class Program
             {
-        	    public static void Main()
+        	    public void Main()
         	    {
         		    ConfigurationBuilder configurationBuilder = new();
         		    IConfigurationRoot config = configurationBuilder.Build();
@@ -215,7 +215,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             public class Program
             {
-        	    public static void Main()
+        	    public void Main()
         	    {
         		    ConfigurationBuilder configurationBuilder = new();
         		    IConfigurationRoot config = configurationBuilder.Build();
@@ -245,7 +245,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             public class Program
             {
-        	    public static void Main()
+        	    public void Main()
         	    {
         		    ConfigurationBuilder configurationBuilder = new();
         		    IConfigurationRoot config = configurationBuilder.Build();
@@ -276,7 +276,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             public class Program
             {
-        	    public static void Main()
+        	    public void Main()
         	    {
         		    ConfigurationBuilder configurationBuilder = new();
         		    IConfigurationRoot config = configurationBuilder.Build();
@@ -307,7 +307,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             public class Program
             {
-        	    public static void Main()
+        	    public void Main()
         	    {
         		    ConfigurationBuilder configurationBuilder = new();
         		    IConfigurationRoot config = configurationBuilder.Build();
@@ -338,7 +338,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             public class Program
             {
-        	    public static void Main()
+        	    public void Main()
         	    {
         		    ConfigurationBuilder configurationBuilder = new();
         		    IConfigurationRoot config = configurationBuilder.Build();

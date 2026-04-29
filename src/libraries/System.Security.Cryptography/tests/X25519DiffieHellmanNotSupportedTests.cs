@@ -15,13 +15,13 @@ namespace System.Security.Cryptography.Tests
         public static bool IsNotSupported => !X25519DiffieHellman.IsSupported;
 
         [Fact]
-        public static void Generate_NotSupported()
+        public void Generate_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() => X25519DiffieHellman.GenerateKey());
         }
 
         [Fact]
-        public static void ImportPrivateKey_NotSupported()
+        public void ImportPrivateKey_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() =>
                 X25519DiffieHellman.ImportPrivateKey(new byte[X25519DiffieHellman.PrivateKeySizeInBytes]));
@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportPublicKey_NotSupported()
+        public void ImportPublicKey_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() =>
                 X25519DiffieHellman.ImportPublicKey(new byte[X25519DiffieHellman.PublicKeySizeInBytes]));
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportSubjectPublicKeyInfo_NotSupported()
+        public void ImportSubjectPublicKeyInfo_NotSupported()
         {
             // A minimal valid SPKI for X25519
             byte[] spki = Convert.FromHexString(
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportPkcs8PrivateKey_NotSupported()
+        public void ImportPkcs8PrivateKey_NotSupported()
         {
             // A minimal valid PKCS#8 for X25519
             byte[] pkcs8 = Convert.FromHexString(
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportEncryptedPkcs8PrivateKey_NotSupported()
+        public void ImportEncryptedPkcs8PrivateKey_NotSupported()
         {
             // Use an encrypted PKCS#8 blob. The implementation should throw PlatformNotSupportedException
             // before attempting decryption.
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportFromPem_NotSupported()
+        public void ImportFromPem_NotSupported()
         {
             string pem = """
             -----BEGIN THING-----

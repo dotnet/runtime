@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(EncryptTamperAADDecryptTestInputs))]
-        public static void EncryptTamperAADDecrypt(int dataLength, int additionalDataLength)
+        public void EncryptTamperAADDecrypt(int dataLength, int additionalDataLength)
         {
             byte[] additionalData = new byte[additionalDataLength];
             RandomNumberGenerator.Fill(additionalData);
@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(24)] // 192-bit keys disallowed
         [InlineData(29)]
         [InlineData(33)]
-        public static void InvalidKeyLength(int keyLength)
+        public void InvalidKeyLength(int keyLength)
         {
             byte[] key = new byte[keyLength];
             Assert.Throws<CryptographicException>(() => new ChaCha20Poly1305(key));
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetInvalidNonceSizes))]
-        public static void InvalidNonceSize(int nonceSize)
+        public void InvalidNonceSize(int nonceSize)
         {
             int dataLength = 30;
             byte[] plaintext = Enumerable.Range(1, dataLength).Select((x) => (byte)x).ToArray();
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetInvalidTagSizes))]
-        public static void InvalidTagSize(int tagSize)
+        public void InvalidTagSize(int tagSize)
         {
             int dataLength = 30;
             byte[] plaintext = Enumerable.Range(1, dataLength).Select((x) => (byte)x).ToArray();
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ValidNonceAndTagSize()
+        public void ValidNonceAndTagSize()
         {
             const int dataLength = 35;
             byte[] plaintext = Enumerable.Range(1, dataLength).Select((x) => (byte)x).ToArray();
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void TwoEncryptionsAndDecryptionsUsingOneInstance()
+        public void TwoEncryptionsAndDecryptionsUsingOneInstance()
         {
             byte[] key = "fde37f01fe9ca260f432e0ed98b3e0bb23895ca1ca1ce2cfcaaca2ccc98889d7".HexToByteArray();
             byte[] originalData1 = Enumerable.Range(1, 15).Select((x) => (byte)x).ToArray();
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(PlaintextAndCiphertextSizeDifferTestInputs))]
-        public static void PlaintextAndCiphertextSizeDiffer(int ptLen, int ctLen)
+        public void PlaintextAndCiphertextSizeDiffer(int ptLen, int ctLen)
         {
             byte[] key = new byte[KeySizeInBytes];
             byte[] nonce = new byte[NonceSizeInBytes];
@@ -175,13 +175,13 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void NullKey()
+        public void NullKey()
         {
             Assert.Throws<ArgumentNullException>(() => new ChaCha20Poly1305((byte[])null));
         }
 
         [Fact]
-        public static void EncryptDecryptNullNonce()
+        public void EncryptDecryptNullNonce()
         {
             byte[] key = "fde37f01fe9ca260f432e0ed98b3e0bb23895ca1ca1ce2cfcaaca2ccc98889d7".HexToByteArray();
             byte[] plaintext = new byte[0];
@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void EncryptDecryptNullPlaintext()
+        public void EncryptDecryptNullPlaintext()
         {
             byte[] key = "fde37f01fe9ca260f432e0ed98b3e0bb23895ca1ca1ce2cfcaaca2ccc98889d7".HexToByteArray();
             byte[] nonce = new byte[NonceSizeInBytes];
@@ -211,7 +211,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void EncryptDecryptNullCiphertext()
+        public void EncryptDecryptNullCiphertext()
         {
             byte[] key = "fde37f01fe9ca260f432e0ed98b3e0bb23895ca1ca1ce2cfcaaca2ccc98889d7".HexToByteArray();
             byte[] nonce = new byte[NonceSizeInBytes];
@@ -226,7 +226,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void EncryptDecryptNullTag()
+        public void EncryptDecryptNullTag()
         {
             byte[] key = "fde37f01fe9ca260f432e0ed98b3e0bb23895ca1ca1ce2cfcaaca2ccc98889d7".HexToByteArray();
             byte[] nonce = new byte[NonceSizeInBytes];
@@ -241,7 +241,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void InplaceEncryptDecrypt()
+        public void InplaceEncryptDecrypt()
         {
             byte[] key = "fde37f01fe9ca260f432e0ed98b3e0bb23895ca1ca1ce2cfcaaca2ccc98889d7".HexToByteArray();
             byte[] nonce = RandomNumberGenerator.GetBytes(NonceSizeInBytes);
@@ -260,7 +260,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void InplaceEncryptTamperTagDecrypt()
+        public void InplaceEncryptTamperTagDecrypt()
         {
             byte[] key = "fde37f01fe9ca260f432e0ed98b3e0bb23895ca1ca1ce2cfcaaca2ccc98889d7".HexToByteArray();
             byte[] nonce = RandomNumberGenerator.GetBytes(NonceSizeInBytes);
@@ -283,7 +283,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetRfc8439TestCases))]
-        public static void Rfc8439Tests(AEADTest testCase)
+        public void Rfc8439Tests(AEADTest testCase)
         {
             using (var chaChaPoly = new ChaCha20Poly1305(testCase.Key))
             {
@@ -301,7 +301,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetRfc8439TestCases))]
-        public static void Rfc8439TestsTamperTag(AEADTest testCase)
+        public void Rfc8439TestsTamperTag(AEADTest testCase)
         {
             using (var chaChaPoly = new ChaCha20Poly1305(testCase.Key))
             {
@@ -321,7 +321,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void UseAfterDispose()
+        public void UseAfterDispose()
         {
             byte[] key = new byte[32];
             byte[] nonce = new byte[12];
@@ -448,7 +448,7 @@ namespace System.Security.Cryptography.Tests
         public static bool RuntimeSaysIsNotSupported => !ChaCha20Poly1305.IsSupported;
 
         [ConditionalFact(typeof(ChaCha20Poly1305IsSupportedTests), nameof(RuntimeSaysIsNotSupported))]
-        public static void CtorThrowsPNSEIfNotSupported()
+        public void CtorThrowsPNSEIfNotSupported()
         {
             byte[] key = RandomNumberGenerator.GetBytes(256 / 8);
 
@@ -457,7 +457,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void CheckIsSupported()
+        public void CheckIsSupported()
         {
             bool expectedIsSupported = false; // assume not supported unless environment advertises support
 

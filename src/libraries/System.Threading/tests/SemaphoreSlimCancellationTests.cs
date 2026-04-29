@@ -14,7 +14,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static void CancelBeforeWait()
+        public void CancelBeforeWait()
         {
             SemaphoreSlim semaphoreSlim = new SemaphoreSlim(2);
 
@@ -31,7 +31,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static void CancelAfterWait()
+        public void CancelAfterWait()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationTokenSource.Token;
@@ -57,7 +57,7 @@ namespace System.Threading.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public static async Task Cancel_WaitAsync_ContinuationInvokedAsynchronously(bool withTimeout)
+        public async Task Cancel_WaitAsync_ContinuationInvokedAsynchronously(bool withTimeout)
         {
             await Task.Run(async () => // escape xunit's SynchronizationContext
             {

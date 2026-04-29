@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        public static void NothingRevoked(PkiOptions pkiOptions)
+        public void NothingRevoked(PkiOptions pkiOptions)
         {
             bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
             SimpleTest(
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeIntermediate(PkiOptions pkiOptions)
+        public void RevokeIntermediate(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -154,7 +154,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        public static void RevokeEndEntity(PkiOptions pkiOptions)
+        public void RevokeEndEntity(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        public static void RevokeLeafWithAiaFetchingDisabled(PkiOptions pkiOptions)
+        public void RevokeLeafWithAiaFetchingDisabled(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -198,7 +198,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeIntermediateAndEndEntity(PkiOptions pkiOptions)
+        public void RevokeIntermediateAndEndEntity(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -227,7 +227,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeRoot(PkiOptions pkiOptions)
+        public void RevokeRoot(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -264,7 +264,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeRootAndEndEntity(PkiOptions pkiOptions)
+        public void RevokeRootAndEndEntity(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -299,7 +299,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeRootAndIntermediate(PkiOptions pkiOptions)
+        public void RevokeRootAndIntermediate(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -335,7 +335,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeEverything(PkiOptions pkiOptions)
+        public void RevokeEverything(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -373,7 +373,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [InlineData(PkiOptions.OcspEverywhere)]
         [InlineData(PkiOptions.AllIssuerRevocation | PkiOptions.EndEntityRevocationViaOcsp)]
         [InlineData(PkiOptions.IssuerRevocationViaCrl | PkiOptions.EndEntityRevocationViaOcsp)]
-        public static void RevokeEndEntity_IssuerUnrelatedOcsp(PkiOptions pkiOptions)
+        public void RevokeEndEntity_IssuerUnrelatedOcsp(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -458,7 +458,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [InlineData(PkiOptions.OcspEverywhere)]
         [InlineData(PkiOptions.IssuerRevocationViaOcsp | PkiOptions.AllEndEntityRevocation)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeEndEntity_RootUnrelatedOcsp(PkiOptions pkiOptions)
+        public void RevokeEndEntity_RootUnrelatedOcsp(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -561,7 +561,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(PolicyErrorsNotTimeValidData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeIntermediate_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
+        public void RevokeIntermediate_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
             SimpleTest(
                 PkiOptions.OcspEverywhere,
@@ -645,7 +645,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(PolicyErrorsNotTimeValidData))]
-        public static void RevokeEndEntity_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
+        public void RevokeEndEntity_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
             SimpleTest(
                 PkiOptions.OcspEverywhere,
@@ -727,7 +727,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeEndEntity_RootRevocationOffline(PkiOptions pkiOptions)
+        public void RevokeEndEntity_RootRevocationOffline(PkiOptions pkiOptions)
         {
             BuildPrivatePki(
                 pkiOptions,
@@ -804,7 +804,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void NothingRevoked_RootRevocationOffline(PkiOptions pkiOptions)
+        public void NothingRevoked_RootRevocationOffline(PkiOptions pkiOptions)
         {
             BuildPrivatePki(
                 pkiOptions,
@@ -879,7 +879,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        public static void RevokeEndEntityWithInvalidRevocationSignature(PkiOptions pkiOptions)
+        public void RevokeEndEntityWithInvalidRevocationSignature(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -894,7 +894,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeIntermediateWithInvalidRevocationSignature(PkiOptions pkiOptions)
+        public void RevokeIntermediateWithInvalidRevocationSignature(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -908,7 +908,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        public static void RevokeEndEntityWithInvalidRevocationName(PkiOptions pkiOptions)
+        public void RevokeEndEntityWithInvalidRevocationName(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -923,7 +923,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeIntermediateWithInvalidRevocationName(PkiOptions pkiOptions)
+        public void RevokeIntermediateWithInvalidRevocationName(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -937,7 +937,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        public static void RevokeEndEntityWithExpiredRevocation(PkiOptions pkiOptions)
+        public void RevokeEndEntityWithExpiredRevocation(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -974,7 +974,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void RevokeIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
+        public void RevokeIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
@@ -1014,7 +1014,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        public static void CheckEndEntityWithExpiredRevocation(PkiOptions pkiOptions)
+        public void CheckEndEntityWithExpiredRevocation(PkiOptions pkiOptions)
         {
             bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
             SimpleTest(
@@ -1041,7 +1041,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void CheckIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
+        public void CheckIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
         {
             bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
             SimpleTest(
@@ -1067,7 +1067,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void TestRevocationWithNoNextUpdate_NotRevoked()
+        public void TestRevocationWithNoNextUpdate_NotRevoked()
         {
             SimpleTest(
                 PkiOptions.CrlEverywhere,
@@ -1104,7 +1104,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
-        public static void TestRevocationWithNoNextUpdate_Revoked()
+        public void TestRevocationWithNoNextUpdate_Revoked()
         {
             SimpleTest(
                 PkiOptions.CrlEverywhere,
@@ -1140,7 +1140,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android | PlatformSupport.AppleCrypto, "Android and macOS do not support offline revocation chain building.")]
-        public static void TestRevocation_Offline_NotRevoked()
+        public void TestRevocation_Offline_NotRevoked()
         {
             SimpleTest(
                 PkiOptions.CrlEverywhere,
@@ -1184,7 +1184,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android | PlatformSupport.AppleCrypto, "Android and macOS do not support offline revocation chain building.")]
-        public static void TestRevocation_Offline_Revoked()
+        public void TestRevocation_Offline_Revoked()
         {
             SimpleTest(
                 PkiOptions.CrlEverywhere,

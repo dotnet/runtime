@@ -40,7 +40,7 @@ public class Program
         Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
     }
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var regex = new Regex("""", RegexOptions.None, TimeSpan.FromSeconds(10));
     }
@@ -51,7 +51,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var regex = new Regex("""", matchTimeout: TimeSpan.FromSeconds(10), options: RegexOptions.None);
     }
@@ -62,7 +62,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var regex = new Regex(matchTimeout: TimeSpan.FromSeconds(10), pattern: """", options: RegexOptions.None);
     }
@@ -73,7 +73,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var regex = new Regex(matchTimeout: TimeSpan.FromSeconds(10), options: RegexOptions.None, pattern: """");
     }
@@ -119,7 +119,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         Regex." + method + @"(""input"", ""a|b"", RegexOptions.None, TimeSpan.FromSeconds(10));
     }
@@ -132,7 +132,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         Regex.Replace(""input"", ""a|b"", ""replacement"" ,RegexOptions.None, TimeSpan.FromSeconds(10));
     }
@@ -154,7 +154,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocation(invocationType, pattern: "\"\"") + isMatchInvocation + @";
     }
@@ -173,7 +173,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocation(invocationType, "\"\"") + isMatchInvocation + @";
     }
@@ -195,7 +195,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {{
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {{
         var isMatch = [|Regex.IsMatch|]("""", @""{pattern}"");
     }}
@@ -206,7 +206,7 @@ using System.Text.RegularExpressions;
 
 public partial class Program
 {{
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {{
         var isMatch = MyRegex.IsMatch("""");
     }}
@@ -228,7 +228,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {{
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {{
         var isMatch = Regex.IsMatch("""", @""{pattern}""); // fixer not offered
     }}
@@ -249,7 +249,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"") + @"" + isMatchInvocation + @";
     }
@@ -258,7 +258,7 @@ using System.Text.RegularExpressions;
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -273,7 +273,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         const string pattern = @""a|b"";
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "pattern") + @"" + isMatchInvocation + @";
@@ -283,7 +283,7 @@ using System.Text.RegularExpressions;
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         const string pattern = @""a|b"";
         var isMatch = MyRegex.IsMatch("""");
@@ -301,7 +301,7 @@ public class Program
 {
     private const string Pattern = @""a|b"";
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "Pattern") + @"" + isMatchInvocation + @";
     }
@@ -312,7 +312,7 @@ public partial class Program
 {
     private const string Pattern = @""a|b"";
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -337,7 +337,7 @@ public class PatternConstants
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "PatternConstants.EmailPattern") + @"" + isMatchInvocation + @";
     }
@@ -351,7 +351,7 @@ public class PatternConstants
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -380,7 +380,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocation(invocationType, "args[0]") + isMatchInvocation + @";
     }
@@ -392,7 +392,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         string somePattern = """";
         var isMatch = " + ConstructRegexInvocation(invocationType, "somePattern") + isMatchInvocation + @";
@@ -455,7 +455,7 @@ public class Program
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"", "RegexOptions.None") + @"" + isMatchInvocation + @";
     }
@@ -463,7 +463,7 @@ public class Program
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -477,7 +477,7 @@ public partial class Program
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         const RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"", "options") + @"" + isMatchInvocation + @";
@@ -486,7 +486,7 @@ public class Program
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         const RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
         var isMatch = MyRegex.IsMatch("""");
@@ -503,7 +503,7 @@ public class Program
 {
     const RegexOptions Options = RegexOptions.None;
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"", "Options") + @"" + isMatchInvocation + @";
     }
@@ -513,7 +513,7 @@ public partial class Program
 {
     const RegexOptions Options = RegexOptions.None;
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -537,7 +537,7 @@ public class RegexConstants
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"", "RegexConstants.DefaultOptions") + @"" + isMatchInvocation + @";
     }
@@ -550,7 +550,7 @@ public class RegexConstants
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -564,7 +564,7 @@ public partial class Program
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"", "RegexOptions.AnyNewLine | RegexOptions.Multiline") + @"" + isMatchInvocation + @";
     }
@@ -572,7 +572,7 @@ public class Program
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -604,7 +604,7 @@ public class Program
     const string MyPattern = @""[a-z]+"";
     const RegexOptions MyOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "MyPattern", "MyOptions") + @"" + isMatchInvocation + @";
     }
@@ -615,7 +615,7 @@ public partial class Program
     const string MyPattern = @""[a-z]+"";
     const RegexOptions MyOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -631,7 +631,7 @@ public class Program
 {
     const string GlobalPattern = @""\d+"";
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         const RegexOptions localOptions = RegexOptions.Multiline;
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "GlobalPattern", "localOptions") + @"" + isMatchInvocation + @";
@@ -642,7 +642,7 @@ public partial class Program
 {
     const string GlobalPattern = @""\d+"";
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         const RegexOptions localOptions = RegexOptions.Multiline;
         var isMatch = MyRegex.IsMatch("""");
@@ -659,7 +659,7 @@ public class Program
 {
     const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         const string localPattern = @""test.*pattern"";
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "localPattern", "DefaultOptions") + @"" + isMatchInvocation + @";
@@ -670,7 +670,7 @@ public partial class Program
 {
     const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         const string localPattern = @""test.*pattern"";
         var isMatch = MyRegex.IsMatch("""");
@@ -696,7 +696,7 @@ public class RegexConfig
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "RegexConfig.EmailPattern", "RegexConfig.EmailOptions") + @"" + isMatchInvocation + @";
     }
@@ -710,7 +710,7 @@ public class RegexConfig
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -744,7 +744,7 @@ public class Program
     private static readonly RegexOptions ReadOnlyOptions = RegexOptions.IgnoreCase; // This is not const, so won't be preserved
     private const RegexOptions ConstOptions = RegexOptions.Multiline;
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "ConstPattern", "ConstOptions") + @"" + isMatchInvocation + @";
     }
@@ -757,7 +757,7 @@ public partial class Program
     private static readonly RegexOptions ReadOnlyOptions = RegexOptions.IgnoreCase; // This is not const, so won't be preserved
     private const RegexOptions ConstOptions = RegexOptions.Multiline;
 
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -786,7 +786,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(RegexOptions options)
+    public void Main(RegexOptions options)
     {
         var isMatch = " + ConstructRegexInvocation(invocationType, "\"\"", "options") + isMatchInvocation + @";
     }
@@ -798,7 +798,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         RegexOptions options = RegexOptions.None;
         var isMatch = " + ConstructRegexInvocation(invocationType, "\"\"", "options") + isMatchInvocation + @";
@@ -857,7 +857,7 @@ public class Program
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         [|Regex.@@Method@@|](""input"", ""a|b"", RegexOptions.None);
     }
@@ -866,7 +866,7 @@ public class Program
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         MyRegex.@@Method@@(""input"");
     }
@@ -879,7 +879,7 @@ public partial class Program
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         [|Regex.@@Method@@|](""input"", ""a|b"");
     }
@@ -888,7 +888,7 @@ public class Program
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         MyRegex.@@Method@@(""input"");
     }
@@ -919,7 +919,7 @@ public partial class Program
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         [|Regex.Replace|](""input"", ""a[b|c]*"", ""replacement"", RegexOptions.CultureInvariant);
     }
@@ -928,7 +928,7 @@ public class Program
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         MyRegex.Replace(""input"", ""replacement"");
     }
@@ -942,7 +942,7 @@ public partial class Program
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         [|Regex.Replace|](""input"", ""a[b|c]*"", ""replacement"");
     }
@@ -951,7 +951,7 @@ public class Program
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         MyRegex.Replace(""input"", ""replacement"");
     }
@@ -1104,7 +1104,7 @@ static partial class Foo
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocation(invocationType, "\"\"", "RegexOptions.IgnoreCase | RegexOptions.NonBacktracking") + isMatchInvocation + @";
     }
@@ -1124,14 +1124,14 @@ public class Program
 
 public class Program
 {
-    public static void M1()
+    public void M1()
     {
         Regex regex1 = [|new Regex|](""a|b"");
     }
 
     private static readonly Regex s_field = [|new Regex|](""x"");
 
-    public static void M2()
+    public void M2()
     {
         var _ = s_field;
         Regex regex2 = [|new Regex|](""c|d"", RegexOptions.CultureInvariant);
@@ -1142,7 +1142,7 @@ public class Program
 
 public partial class Program
 {
-    public static void M1()
+    public void M1()
     {
         Regex regex1 = MyRegex;
     }
@@ -1150,7 +1150,7 @@ public partial class Program
     [GeneratedRegex(""x"")]
     private static partial Regex s_field { get; }
 
-    public static void M2()
+    public void M2()
     {
         var _ = s_field;
         Regex regex2 = MyRegex1;
@@ -2013,7 +2013,7 @@ using System.Text.RegularExpressions;
 
 public class Program
 {{
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {{
         var isMatch = [|Regex.IsMatch|]("""", {expression});
     }}
@@ -2028,7 +2028,7 @@ using System.Text.RegularExpressions;
 
 public partial class Program
 {{
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {{
         var isMatch = MyRegex.IsMatch("""");
     }}
@@ -2393,7 +2393,7 @@ public partial class A
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, pattern, options) + @"" + isMatchInvocation + @";
     }
@@ -2401,7 +2401,7 @@ public class Program
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -2416,7 +2416,7 @@ public partial class Program
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, pattern, options) + @"" + isMatchInvocation + @";
     }
@@ -2424,7 +2424,7 @@ public class Program
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -2447,7 +2447,7 @@ public partial class Program
 
 public class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"(?i)abc\"") + @"" + isMatchInvocation + @";
     }
@@ -2455,7 +2455,7 @@ public class Program
 
 public partial class Program
 {
-    public static void Main(string[] args)
+    public void Main(string[] args)
     {
         var isMatch = MyRegex.IsMatch("""");
     }
@@ -2483,7 +2483,7 @@ public class Program
 {
     private static readonly Regex s_regex = [|new Regex|](""abc"");
     
-    public static void Main()
+    public void Main()
     {
         var match = s_regex.IsMatch(""test"");
     }
@@ -2496,7 +2496,7 @@ public partial class Program
     [GeneratedRegex(""abc"")]
     private static partial Regex s_regex { get; }
 
-    public static void Main()
+    public void Main()
     {
         var match = s_regex.IsMatch(""test"");
     }
@@ -2514,7 +2514,7 @@ public class Program
 {
     private static readonly Regex s_regex = [|new Regex|](""abc"", RegexOptions.IgnoreCase);
     
-    public static void Main()
+    public void Main()
     {
         var match = s_regex.IsMatch(""test"");
     }
@@ -2527,7 +2527,7 @@ public partial class Program
     [GeneratedRegex(""abc"", RegexOptions.IgnoreCase, ""{CultureInfo.CurrentCulture.Name}"")]
     private static partial Regex s_regex {{ get; }}
 
-    public static void Main()
+    public void Main()
     {{
         var match = s_regex.IsMatch(""test"");
     }}
@@ -2545,7 +2545,7 @@ public class Program
 {
     private static Regex MyRegex { get; } = [|new Regex|](""abc"");
     
-    public static void Main()
+    public void Main()
     {
         var match = MyRegex.IsMatch(""test"");
     }
@@ -2558,7 +2558,7 @@ public partial class Program
     [GeneratedRegex(""abc"")]
     private static partial Regex MyRegex { get; }
 
-    public static void Main()
+    public void Main()
     {
         var match = MyRegex.IsMatch(""test"");
     }
@@ -2576,7 +2576,7 @@ public class Program
 {
     private static Regex MyRegex { get; } = [|new Regex|](""abc"", RegexOptions.Multiline);
     
-    public static void Main()
+    public void Main()
     {
         var match = MyRegex.IsMatch(""test"");
     }
@@ -2589,7 +2589,7 @@ public partial class Program
     [GeneratedRegex(""abc"", RegexOptions.Multiline)]
     private static partial Regex MyRegex { get; }
 
-    public static void Main()
+    public void Main()
     {
         var match = MyRegex.IsMatch(""test"");
     }
@@ -2607,7 +2607,7 @@ public class Program
 {
     public static readonly Regex s_regex = [|new Regex|](""abc"");
     
-    public static void Main()
+    public void Main()
     {
         var match = s_regex.IsMatch(""test"");
     }
@@ -2620,7 +2620,7 @@ public partial class Program
     [GeneratedRegex(""abc"")]
     public static partial Regex s_regex { get; }
 
-    public static void Main()
+    public void Main()
     {
         var match = s_regex.IsMatch(""test"");
     }
@@ -2638,7 +2638,7 @@ public class Program
 {
     internal static readonly Regex s_regex = [|new Regex|](""abc"");
     
-    public static void Main()
+    public void Main()
     {
         var match = s_regex.IsMatch(""test"");
     }
@@ -2651,7 +2651,7 @@ public partial class Program
     [GeneratedRegex(""abc"")]
     internal static partial Regex s_regex { get; }
 
-    public static void Main()
+    public void Main()
     {
         var match = s_regex.IsMatch(""test"");
     }

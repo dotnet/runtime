@@ -14,7 +14,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static void BarrierCancellationTestsCancelBeforeWait()
+        public void BarrierCancellationTestsCancelBeforeWait()
         {
             Barrier barrier = new Barrier(3);
 
@@ -36,7 +36,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static void BarrierCancellationTestsCancelAfterWait_Negative()
+        public void BarrierCancellationTestsCancelAfterWait_Negative()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationTokenSource.Token;
@@ -56,7 +56,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static void BarrierCancellationTestsCancelAfterWait()
+        public void BarrierCancellationTestsCancelAfterWait()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationTokenSource.Token;

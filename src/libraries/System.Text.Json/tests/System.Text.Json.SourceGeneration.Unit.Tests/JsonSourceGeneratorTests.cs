@@ -191,7 +191,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [InlineData("System.Text.Json.Not", true)]
         [InlineData("System.Text.Json", false)]
         [InlineData("System.Text.Json.Not", false)]
-        public static void LocalJsonSerializableAttributeExpectedShape(string assemblyName, bool includeSTJ)
+        public void LocalJsonSerializableAttributeExpectedShape(string assemblyName, bool includeSTJ)
         {
             string source = """
                 using System;

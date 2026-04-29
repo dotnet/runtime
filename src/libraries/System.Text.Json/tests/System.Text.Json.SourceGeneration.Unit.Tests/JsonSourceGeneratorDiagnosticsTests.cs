@@ -203,7 +203,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                 public class Program
                 {
-                    public static void Main()
+                    public void Main()
                     {
                         Console.WriteLine("Hello World");
                     }
@@ -219,7 +219,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                 public class Program
                 {
-                    public static void Main()
+                    public void Main()
                     {
                         JsonSerializer.Serialize("Hello World");
                     }

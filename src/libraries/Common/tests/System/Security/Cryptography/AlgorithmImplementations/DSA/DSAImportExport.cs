@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void ExportAutoKey()
+        public void ExportAutoKey()
         {
             DSAParameters privateParams;
             DSAParameters publicParams;
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void Import_512()
+        public void Import_512()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void Import_576()
+        public void Import_576()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void Import_1024()
+        public void Import_1024()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
-        public static void Import_2048()
+        public void Import_2048()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void MultiExport()
+        public void MultiExport()
         {
             DSAParameters imported = DSATestData.GetDSA1024Params();
 
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void ImportRoundTrip(bool includePrivate)
+        public void ImportRoundTrip(bool includePrivate)
         {
             DSAParameters imported = DSATestData.GetDSA1024Params();
 
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public static void ExportAfterDispose(bool importKey)
+        public void ExportAfterDispose(bool importKey)
         {
             DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(1024);
             byte[] hash = new byte[20];

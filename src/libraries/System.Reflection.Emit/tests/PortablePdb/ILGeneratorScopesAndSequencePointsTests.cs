@@ -459,10 +459,10 @@ namespace System.Reflection.Emit.Tests
 
         public static bool CCC() => false;
 
-        public static void EEE(TestClass b) { }
+        public void EEE(TestClass b) { }
 
         public static int NNN() => 3;
 
-        public static void OOO() { }
+        public void OOO() { }
     }
 }

@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         private const string BinaryFormatterEventSourceName = "System.Runtime.Serialization.Formatters.Binary.BinaryFormatterEventSource";
 
         [Fact]
-        public static void RecordsSerialization()
+        public void RecordsSerialization()
         {
             using LoggingEventListener listener = new LoggingEventListener();
 
@@ -41,7 +41,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
-        public static void RecordsDeserialization()
+        public void RecordsDeserialization()
         {
             MemoryStream ms = new MemoryStream();
             BinaryFormatter formatter = new BinaryFormatter();
@@ -64,7 +64,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
-        public static void RecordsNestedSerializationCalls()
+        public void RecordsNestedSerializationCalls()
         {
             // First, serialization
 

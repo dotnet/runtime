@@ -21,7 +21,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public static void TestBasicScenarios()
+        public void TestBasicScenarios()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>(3);
             Task[] tks = new Task[2];
@@ -59,7 +59,7 @@ namespace System.Collections.Concurrent.Tests
         /// </summary>
         /// <returns></returns>
         [Fact]
-        public static void TestBugFix544259()
+        public void TestBugFix544259()
         {
             int count = 8;
             CountdownEvent cde = new CountdownEvent(count);
@@ -94,7 +94,7 @@ namespace System.Collections.Concurrent.Tests
         // but we keep the test as a good example of how cleanup of linkedCTS must be carefully handled
         // to prevent users of the source CTS mistakenly calling methods on disposed targets.
         [Fact]
-        public static void TestBugFix626345()
+        public void TestBugFix626345()
         {
             const int noOfProducers = 1;
             const int noOfConsumers = 7;
@@ -158,7 +158,7 @@ namespace System.Collections.Concurrent.Tests
         /// Making sure if TryTakeFromAny succeeds, it returns the correct index
         /// </summary>
         [Fact]
-        public static void TestBugFix914998()
+        public void TestBugFix914998()
         {
             var producer1 = new BlockingCollection<int>();
             var producer2 = new BlockingCollection<int>();
@@ -176,7 +176,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public static void TestDebuggerAttributes()
+        public void TestDebuggerAttributes()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new BlockingCollection<int>());
             BlockingCollection<int> col = new BlockingCollection<int> { 1, 2, 3 };
@@ -187,7 +187,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public static void TestDebuggerAttributes_Null()
+        public void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(new BlockingCollection<int>());
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
@@ -201,7 +201,7 @@ namespace System.Collections.Concurrent.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(10)]
-        public static void TestConstruction(int boundedCapacity)
+        public void TestConstruction(int boundedCapacity)
         {
             BlockingCollection<int> blockingQueue;
             if (boundedCapacity != -1)
@@ -238,7 +238,7 @@ namespace System.Collections.Concurrent.Tests
         [Theory]
         [InlineData(1, 1, -1)]
         [InlineData(5, 3, 1)]
-        public static void TestAddTake(int numOfAdds, int numOfTakes, int boundedCapacity)
+        public void TestAddTake(int numOfAdds, int numOfTakes, int boundedCapacity)
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>(boundedCapacity);
             AddAnyTakeAny(numOfAdds, numOfTakes, boundedCapacity, blockingCollection, null, -1);
@@ -248,7 +248,7 @@ namespace System.Collections.Concurrent.Tests
         [InlineData(10, 10, 10)]
         [InlineData(10, 10, 9)]
         [OuterLoop]
-        public static void TestAddTake_Longrunning(int numOfAdds, int numOfTakes, int boundedCapacity)
+        public void TestAddTake_Longrunning(int numOfAdds, int numOfTakes, int boundedCapacity)
         {
             TestAddTake(numOfAdds, numOfTakes, boundedCapacity);
         }
@@ -260,7 +260,7 @@ namespace System.Collections.Concurrent.Tests
         [Theory]
         [InlineData(2, 1024)]
         [InlineData(8, 512)]
-        public static void TestConcurrentAdd(int numOfThreads, int numOfElementsPerThread)
+        public void TestConcurrentAdd(int numOfThreads, int numOfElementsPerThread)
         {
             ManualResetEvent mre = new ManualResetEvent(false);
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
@@ -298,7 +298,7 @@ namespace System.Collections.Concurrent.Tests
         /// <param name="numOfElementsPerThread">Number of elements to Add/Take per thread.</param>
         [Theory]
         [InlineData(8, 1024)]
-        public static void TestConcurrentAddTake(int numOfThreads, int numOfElementsPerThread)
+        public void TestConcurrentAddTake(int numOfThreads, int numOfElementsPerThread)
         {
             //If numOfThreads is not an even number, make it even.
             if ((numOfThreads % 2) != 0)
@@ -361,7 +361,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public static void Test4_Dispose()
+        public void Test4_Dispose()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
             blockingCollection.Dispose();
@@ -435,7 +435,7 @@ namespace System.Collections.Concurrent.Tests
         /// same results as IConcurrentCollection.GetEnumerator().</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        public static void Test5_GetEnumerator()
+        public void Test5_GetEnumerator()
         {
             ConcurrentStackCollection<int> concurrentCollection = new ConcurrentStackCollection<int>();
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
@@ -470,7 +470,7 @@ namespace System.Collections.Concurrent.Tests
         /// produces the same results as if call Take in a loop.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        public static void Test6_GetConsumingEnumerable()
+        public void Test6_GetConsumingEnumerable()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
             BlockingCollection<int> blockingCollectionMirror = ConstructBlockingCollection<int>();
@@ -515,7 +515,7 @@ namespace System.Collections.Concurrent.Tests
         /// on the enumerable returned from GetConsumingEnumerable will return false when the collection's count reaches 0.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        public static void Test7_CompleteAdding()
+        public void Test7_CompleteAdding()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
             blockingCollection.Add(0);
@@ -540,7 +540,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public static void Test7_ConcurrentAdd_CompleteAdding()
+        public void Test7_ConcurrentAdd_CompleteAdding()
         {
             BlockingCollection<ushort> blockingCollection = ConstructBlockingCollection<ushort>();
             Task[] threads = new Task[4];
@@ -578,7 +578,7 @@ namespace System.Collections.Concurrent.Tests
         /// IConcurrentCollection.ToArray().</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        public static void Test8_ToArray()
+        public void Test8_ToArray()
         {
             ConcurrentStackCollection<byte> concurrentCollection = new ConcurrentStackCollection<byte>();
             BlockingCollection<byte> blockingCollection = ConstructBlockingCollection<byte>();
@@ -606,7 +606,7 @@ namespace System.Collections.Concurrent.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(8)]
-        public static void TestCopyTo(int indexOfInsertion)
+        public void TestCopyTo(int indexOfInsertion)
         {
             ConcurrentStackCollection<int> concurrentCollection = new ConcurrentStackCollection<int>();
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
@@ -631,7 +631,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Validates BlockingCollection.Count.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        public static void Test10_Count()
+        public void Test10_Count()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>(1);
             Assert.Equal(0, blockingCollection.Count);
@@ -649,7 +649,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Validates BlockingCollection.BoundedCapacity.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        public static void Test11_BoundedCapacity()
+        public void Test11_BoundedCapacity()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>(1);
             Assert.Equal(1, blockingCollection.BoundedCapacity);
@@ -661,7 +661,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Validates BlockingCollection.IsCompleted and BlockingCollection.AddingIsCompleted.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        public static void Test12_IsCompleted_AddingIsCompleted()
+        public void Test12_IsCompleted_AddingIsCompleted()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
 
@@ -698,7 +698,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Validates BlockingCollection.IsSynchronized and BlockingCollection.SyncRoot.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        public static void Test13_IsSynchronized_SyncRoot()
+        public void Test13_IsSynchronized_SyncRoot()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
 
@@ -721,7 +721,7 @@ namespace System.Collections.Concurrent.Tests
         [Theory]
         [InlineData(1, 1, 16, 0, -1)]
         [InlineData(10, 10, 16, 14, 10)]
-        public static void TestAddAnyTakeAny(int numOfAdds,
+        public void TestAddAnyTakeAny(int numOfAdds,
                                                  int numOfTakes,
                                                  int numOfBlockingCollections,
                                                  int indexOfBlockingCollectionUnderTest,
@@ -737,7 +737,7 @@ namespace System.Collections.Concurrent.Tests
         [InlineData(10, 9, 16, 15, -1)]
         [InlineData(10, 10, 16, 1, 9)]
         [OuterLoop]
-        public static void TestAddAnyTakeAny_Longrunning(int numOfAdds, int numOfTakes, int numOfBlockingCollections, int indexOfBlockingCollectionUnderTest, int boundedCapacity)
+        public void TestAddAnyTakeAny_Longrunning(int numOfAdds, int numOfTakes, int numOfBlockingCollections, int indexOfBlockingCollectionUnderTest, int boundedCapacity)
         {
             TestAddAnyTakeAny(numOfAdds, numOfTakes, numOfBlockingCollections, indexOfBlockingCollectionUnderTest, boundedCapacity);
         }
@@ -826,7 +826,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Validates the constructor of BlockingCollection.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        public static void Test16_Ctor()
+        public void Test16_Ctor()
         {
             BlockingCollection<int> blockingCollection = null;
 
@@ -848,7 +848,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Verifies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
-        public static void Test17_AddExceptions()
+        public void Test17_AddExceptions()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
 
@@ -867,7 +867,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public static void Test_AddTakeWithReject_DoNotCorruptCount()
+        public void Test_AddTakeWithReject_DoNotCorruptCount()
         {
             var secondFalse = new FalseOnSecondAddOrTake();
             BlockingCollection<int> bc = new BlockingCollection<int>(secondFalse, 2);
@@ -898,7 +898,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Verifies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
-        public static void Test18_TakeExceptions()
+        public void Test18_TakeExceptions()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
 
@@ -916,7 +916,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Verifies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
-        public static void Test19_AddAnyExceptions()
+        public void Test19_AddAnyExceptions()
         {
             const int NUM_OF_COLLECTIONS = 2;
             BlockingCollection<int>[] blockingCollections = new BlockingCollection<int>[NUM_OF_COLLECTIONS];
@@ -947,7 +947,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Verifies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
-        public static void Test20_TakeAnyExceptions()
+        public void Test20_TakeAnyExceptions()
         {
             const int NUM_OF_COLLECTIONS = 2;
             BlockingCollection<int>[] blockingCollections = new BlockingCollection<int>[NUM_OF_COLLECTIONS];
@@ -976,7 +976,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>Verifies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
-        public static void Test21_CopyToExceptions()
+        public void Test21_CopyToExceptions()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
             blockingCollection.Add(0);
@@ -1000,7 +1000,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public static void Test_WithNullEntries()
+        public void Test_WithNullEntries()
         {
             BlockingCollection<string> collection = new BlockingCollection<string>()
             {
@@ -1016,7 +1016,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public static void Test_LargeSize()
+        public void Test_LargeSize()
         {
             Assert.Equal(0, BlockingCollection<int>.TryAddToAny(ConstructBlockingCollectionArray<int>(63), 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => BlockingCollection<int>.TryAddToAny(ConstructBlockingCollectionArray<int>(64), 1));
@@ -1025,7 +1025,7 @@ namespace System.Collections.Concurrent.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34360", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public static void Test_LargeSize_STA()
+        public void Test_LargeSize_STA()
         {
             Thread t = new Thread(() =>
             {

@@ -362,7 +362,7 @@ namespace System.Net.Sockets.Tests
         }
         [OuterLoop]
         [Fact]
-        public static async Task Select_AcceptNonBlocking_Success()
+        public async Task Select_AcceptNonBlocking_Success()
         {
             using (Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {

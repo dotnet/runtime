@@ -254,7 +254,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void MLDsaCng_GetKey()
+        public void MLDsaCng_GetKey()
         {
             CngProperty parameterSet = MLDsaTestHelpers.GetCngProperty(MLDsaAlgorithm.MLDsa65);
             CngKeyCreationParameters creationParams = new();

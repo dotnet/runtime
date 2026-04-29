@@ -14,7 +14,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static void CancelBeforeWait()
+        public void CancelBeforeWait()
         {
             CountdownEvent countdownEvent = new CountdownEvent(2);
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -31,7 +31,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static void CancelAfterWait()
+        public void CancelAfterWait()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationTokenSource.Token;
