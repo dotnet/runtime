@@ -405,14 +405,6 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 #endif
 
-#ifdef TARGET_WASM
-    // FIXME-WASM: Why is this only necessary on Wasm?
-    if (m_compiler->bbIsFuncletBeg(block))
-    {
-        needLabel = true;
-    }
-#endif
-
     if (needLabel)
     {
         // Mark a label and update the current set of live GC refs
