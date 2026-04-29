@@ -4920,8 +4920,6 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
 
     exState = thread->GetExceptionState()->m_pCurrentTracker;
 
-    // Pass the address of the ExInfo's m_exception field as the "handle".
-    // See dacimpl.h comment on the throwable parameter.
     exIf = new (nothrow)
         ClrDataExceptionState(dac,
                               AppDomain::GetCurrentDomain(),
