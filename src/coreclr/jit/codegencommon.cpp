@@ -1051,7 +1051,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             codeGen->genUpdateRegLife(varDsc, false /*isBorn*/, true /*isDying*/ DEBUGARG(nullptr));
         }
 #endif // !TARGET_WASM
-       // Update the gcVarPtrSetCur if it is in memory.
+        // Update the gcVarPtrSetCur if it is in memory.
         if (isInMemory && (isGCRef || isByRef))
         {
             VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, deadVarIndex);
@@ -7213,7 +7213,7 @@ void CodeGen::genReturn(GenTree* treeNode)
     {
         genMarkReturnGCInfo();
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && !defined(TARGET_WASM)
 
 #ifdef PROFILING_SUPPORTED
 
