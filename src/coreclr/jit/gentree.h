@@ -1868,8 +1868,13 @@ public:
         {
             return true;
         }
-#endif
         return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
+#elif defined(TARGET_AMD64)
+        static_assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
+        return (GT_JCC <= gtOper) && (gtOper <= GT_CCMP);
+#else
+        return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
+#endif
     }
 
 #ifdef DEBUG
@@ -6413,11 +6418,11 @@ protected:
 #endif // FEATURE_READYTORUN
         };
     };
-    regNumberSmall     gtOtherReg;     // The second register for multi-reg intrinsics.
-    MultiRegSpillFlags gtSpillFlags;   // Spill flags for multi-reg intrinsics.
-    unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-    unsigned char  gtSimdBaseType;     // SIMD vector base JIT type
-    unsigned char  gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
+    regNumberSmall     gtOtherReg;   // The second register for multi-reg intrinsics.
+    MultiRegSpillFlags gtSpillFlags; // Spill flags for multi-reg intrinsics.
+    unsigned char  gtAuxiliaryType;  // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+    unsigned char  gtSimdBaseType;   // SIMD vector base JIT type
+    unsigned char  gtSimdSize;       // SIMD vector size in bytes, use 0 for scalar intrinsics
     NamedIntrinsic gtHWIntrinsicId;
 
 public:
@@ -6509,18 +6514,16 @@ public:
         gtSpillFlags = SetMultiRegSpillFlagsByIdx(gtSpillFlags, flags, idx);
     }
 
-    CorInfoType GetAuxiliaryJitType() const
+    var_types GetAuxiliaryType() const
     {
-        return (CorInfoType)gtAuxiliaryJitType;
+        return (var_types)gtAuxiliaryType;
     }
 
-    void SetAuxiliaryJitType(CorInfoType auxiliaryJitType)
+    void SetAuxiliaryType(var_types auxiliaryType)
     {
-        gtAuxiliaryJitType = (unsigned char)auxiliaryJitType;
-        assert(gtAuxiliaryJitType == auxiliaryJitType);
+        gtAuxiliaryType = (unsigned char)auxiliaryType;
+        assert(gtAuxiliaryType == auxiliaryType);
     }
-
-    var_types GetAuxiliaryType() const;
 
     // The invariant here is that simdBaseType is a converted
     // CorInfoType using JitType2PreciseVarType.
@@ -6555,7 +6558,7 @@ public:
         : GenTreeMultiOp(oper, type, allocator, gtInlineOperands DEBUGARG(false), operands...)
         , gtOtherReg(REG_NA)
         , gtSpillFlags(0)
-        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
+        , gtAuxiliaryType(TYP_UNKNOWN)
         , gtSimdBaseType((unsigned char)simdBaseType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
@@ -6581,7 +6584,7 @@ protected:
                          gtInlineOperands DEBUGARG(false))
         , gtOtherReg(REG_NA)
         , gtSpillFlags(0)
-        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
+        , gtAuxiliaryType(TYP_UNKNOWN)
         , gtSimdBaseType((unsigned char)simdBaseType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)

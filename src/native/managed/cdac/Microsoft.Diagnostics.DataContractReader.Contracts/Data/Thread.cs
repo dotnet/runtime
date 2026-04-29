@@ -34,7 +34,6 @@ internal sealed class Thread : IData<Thread>
         UEWatsonBucketTrackerBuckets = target.ReadPointerFieldOrNull(address, type, nameof(UEWatsonBucketTrackerBuckets));
         ThreadLocalDataPtr = target.ReadPointerField(address, type, nameof(ThreadLocalDataPtr));
         DebuggerFilterContext = target.ReadPointerField(address, type, nameof(DebuggerFilterContext));
-        ProfilerFilterContext = target.ReadPointerFieldOrNull(address, type, nameof(ProfilerFilterContext));
         CurrentCustomDebuggerNotification = target.ReadDataField<ObjectHandle>(address, type, nameof(CurrentCustomDebuggerNotification));
     }
 
@@ -54,6 +53,5 @@ internal sealed class Thread : IData<Thread>
     public TargetPointer UEWatsonBucketTrackerBuckets { get; init; }
     public TargetPointer ThreadLocalDataPtr { get; init; }
     public TargetPointer DebuggerFilterContext { get; init; }
-    public TargetPointer ProfilerFilterContext { get; init; }
     public ObjectHandle CurrentCustomDebuggerNotification { get; init; }
 }

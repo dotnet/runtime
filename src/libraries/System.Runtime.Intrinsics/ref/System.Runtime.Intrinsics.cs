@@ -5004,8 +5004,12 @@ namespace System.Runtime.Intrinsics.Arm
         internal ArmBase() { }
         public static bool IsSupported { get { throw null; } }
         public static int LeadingZeroCount(int value) { throw null; }
+        public static int LeadingZeroCount(nint value) { throw null; }
+        public static int LeadingZeroCount(nuint value) { throw null; }
         public static int LeadingZeroCount(uint value) { throw null; }
         public static int ReverseElementBits(int value) { throw null; }
+        public static nint ReverseElementBits(nint value) { throw null; }
+        public static nuint ReverseElementBits(nuint value) { throw null; }
         public static uint ReverseElementBits(uint value) { throw null; }
         public static void Yield() { throw null; }
         public abstract partial class Arm64
@@ -5014,6 +5018,7 @@ namespace System.Runtime.Intrinsics.Arm
             public static bool IsSupported { get { throw null; } }
             public static int LeadingSignCount(int value) { throw null; }
             public static int LeadingSignCount(long value) { throw null; }
+            public static int LeadingSignCount(nint value) { throw null; }
             public static int LeadingZeroCount(long value) { throw null; }
             public static int LeadingZeroCount(ulong value) { throw null; }
             public static long MultiplyHigh(long left, long right) { throw null; }
@@ -5028,11 +5033,13 @@ namespace System.Runtime.Intrinsics.Arm
         internal Crc32() { }
         public static new bool IsSupported { get { throw null; } }
         public static uint ComputeCrc32(uint crc, byte data) { throw null; }
-        public static uint ComputeCrc32(uint crc, ushort data) { throw null; }
+        public static uint ComputeCrc32(uint crc, nuint data) { throw null; }
         public static uint ComputeCrc32(uint crc, uint data) { throw null; }
+        public static uint ComputeCrc32(uint crc, ushort data) { throw null; }
         public static uint ComputeCrc32C(uint crc, byte data) { throw null; }
-        public static uint ComputeCrc32C(uint crc, ushort data) { throw null; }
+        public static uint ComputeCrc32C(uint crc, nuint data) { throw null; }
         public static uint ComputeCrc32C(uint crc, uint data) { throw null; }
+        public static uint ComputeCrc32C(uint crc, ushort data) { throw null; }
         public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
         {
             internal Arm64() { }

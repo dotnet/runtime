@@ -3440,6 +3440,59 @@ namespace System.Security.Cryptography
         public override void GenerateIV() { }
         public override void GenerateKey() { }
     }
+    public abstract partial class X25519DiffieHellman : System.IDisposable
+    {
+        public const int PrivateKeySizeInBytes = 32;
+        public const int PublicKeySizeInBytes = 32;
+        public const int SecretAgreementSizeInBytes = 32;
+        protected X25519DiffieHellman() { }
+        public static bool IsSupported { get { throw null; } }
+        public byte[] DeriveRawSecretAgreement(System.Security.Cryptography.X25519DiffieHellman otherParty) { throw null; }
+        public void DeriveRawSecretAgreement(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination) { }
+        protected abstract void DeriveRawSecretAgreementCore(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination);
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public byte[] ExportPrivateKey() { throw null; }
+        public void ExportPrivateKey(System.Span<byte> destination) { }
+        protected abstract void ExportPrivateKeyCore(System.Span<byte> destination);
+        public byte[] ExportPublicKey() { throw null; }
+        public void ExportPublicKey(System.Span<byte> destination) { }
+        protected abstract void ExportPublicKeyCore(System.Span<byte> destination);
+        public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public byte[] ExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public string ExportEncryptedPkcs8PrivateKeyPem(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public byte[] ExportPkcs8PrivateKey() { throw null; }
+        public string ExportPkcs8PrivateKeyPem() { throw null; }
+        public byte[] ExportSubjectPublicKeyInfo() { throw null; }
+        public string ExportSubjectPublicKeyInfoPem() { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman GenerateKey() { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(string password, byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<byte> passwordBytes) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> password) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(string source, byte[] passwordBytes) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(string source, string password) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromPem(System.ReadOnlySpan<char> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromPem(string source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPkcs8PrivateKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPrivateKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
+        public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportPkcs8PrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        protected abstract bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten);
+        public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
 }
 namespace System.Security.Cryptography.X509Certificates
 {

@@ -91,6 +91,7 @@ CONFIG_INTEGER(JitHideAlignBehindJmp, "JitHideAlignBehindJmp", 1)
 
 // Track stores to locals done through return buffers.
 CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, "JitOptimizeStructHiddenBuffer", 1)
+RELEASE_CONFIG_INTEGER(JitEnableStoreLclFldCoalescing, "JitEnableStoreLclFldCoalescing", 1)
 
 CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
                "JitUnrollLoopMaxIterationCount",
@@ -346,7 +347,7 @@ CONFIG_INTEGER(JitDisasmWithDebugInfo, "JitDisasmWithDebugInfo", 0)
 CONFIG_INTEGER(JitDisasmSpilled, "JitDisasmSpilled", 0)
 
 // Print the process address next to each instruction of the disassembly
-CONFIG_INTEGER(JitDasmWithAddress, "JitDasmWithAddress", 0)
+CONFIG_INTEGER(JitDisasmWithAddress, "JitDisasmWithAddress", 0)
 
 RELEASE_CONFIG_STRING(JitStdOutFile, "JitStdOutFile") // If set, sends JIT's stdout output to this file.
 

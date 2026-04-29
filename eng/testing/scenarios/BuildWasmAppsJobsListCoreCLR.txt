@@ -21,3 +21,4 @@ Wasm.Build.Tests.IcuShardingTests2
 Wasm.Build.Tests.IcuTests
 Wasm.Build.Tests.InvariantGlobalizationTests
 Wasm.Build.Tests.MemoryTests
+Wasm.Build.Tests.DownloadThenInitTests
