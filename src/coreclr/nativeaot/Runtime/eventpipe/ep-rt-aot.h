@@ -23,6 +23,7 @@
 #include "rhassert.h"
 #include <RhConfig.h>
 #include <runtime_version.h>
+#include <stdio.h>
 
 #ifdef TARGET_UNIX
 #define sprintf_s snprintf
@@ -505,6 +506,23 @@ ep_rt_config_value_get_enable_stackwalk (void)
         return value;
 
     return false;
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_buffer_guard_level (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    uint64_t value;
+    if (RhConfig::Environment::TryGetIntegerValue("EventPipeBufferGuardLevel", &value))
+    {
+        EP_ASSERT(value <= UINT32_MAX);
+        return static_cast<uint32_t>(value);
+    }
+
+    return 0;
 }
 
 /*
@@ -1801,6 +1819,41 @@ ep_rt_volatile_store_ptr_without_barrier (
     volatile void **ptr,
     void *value);
     ep_rt_aot_volatile_store_ptr_without_barrier(ptr, value);
+}
+
+/*
+ * Memory Protection
+ */
+
+static
+inline
+bool
+ep_rt_vprotect (
+    void *addr,
+    size_t length,
+    EventPipePageProtection protection)
+{
+    return true;
+}
+
+/*
+ * Fail fast and ensure proper crash dump and diagnostic reporting.
+ */
+
+static
+inline
+void
+ep_rt_fatal_error_with_message (const ep_char8_t *message)
+{
+    STATIC_CONTRACT_NOTHROW;
+    if (message != nullptr)
+    {
+        fputs(reinterpret_cast<const char*>(message), stderr);
+        fputs("\n", stderr);
+        fflush(stderr);
+    }
+
+    RhFailFast();
 }
 
 #endif /* ENABLE_PERFTRACING */
