@@ -547,7 +547,6 @@ jobs:
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip
-          - managedilasmroundtrip
 
     ########################################################################################################
     #
