@@ -92,7 +92,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMap<UsedTypeMap>("BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTrimTarget))] // Kept
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))] // Kept
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTrimTarget))]
-[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget), By = Tool.Trimmer)]
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
@@ -592,6 +592,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
     class BothInExternalAndProxyTrimTarget;
     [Kept]
     class BothInExternalAndProxy;
-    [Kept]
+    [Kept(By = Tool.Trimmer)]
     class BothInExternalAndProxyTarget;
 }
