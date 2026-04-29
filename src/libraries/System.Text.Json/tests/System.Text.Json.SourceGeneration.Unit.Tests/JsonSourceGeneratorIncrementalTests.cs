@@ -21,7 +21,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
             Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
         }
-
         [Theory]
         [MemberData(nameof(GetCompilationHelperFactories))]
         public void CompilingTheSameSourceResultsInEqualModels(Func<Compilation> factory)
@@ -53,22 +52,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 namespace Test
                 {
                     [JsonSerializable(typeof(MyPoco))]
-                    public partial class JsonContext : JsonSerializerContext {
-                        public JsonContext()
-                        {
-                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
-                            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
-                        }
- }
+                    public partial class JsonContext : JsonSerializerContext { }
 
                     public class MyPoco
                     {
-                        public MyPoco()
-                        {
-                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
-                            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
-                        }
-
                         public int MyProperty { get; set; } = 42;
                     }
                 }
