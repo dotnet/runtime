@@ -160,6 +160,16 @@ struct UnmanagedMethodWithTransitionParam
     PCODE callTarget;
 };
 
+struct UnmanagedCalliWithTransiationParam
+{
+    PCODE ftn;
+    void *cookie;
+    int8_t *stack;
+    InterpMethodContextFrame *pFrame;
+    int8_t *pArgs;
+    int8_t *pRet;
+};
+
 void InterpDispatchCache_ReclaimAll();
 void InterpDispatchCache_ClearForLoaderAllocator(LoaderAllocator* pLoaderAllocator);
 
