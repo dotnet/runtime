@@ -145,6 +145,7 @@ namespace System.Diagnostics.Tracing
 
         private long _timeStampSinceCollectionStarted;
         private TimeSpan _pollingInterval;
+        private long _pollingIntervalSwTicks;
         private long _nextPollingTimeStamp;
 
         private void EnableTimer(float pollingIntervalInSeconds)
@@ -155,12 +156,13 @@ namespace System.Diagnostics.Tracing
             if (_pollingInterval == TimeSpan.Zero || interval < _pollingInterval)
             {
                 _pollingInterval = interval;
+                _pollingIntervalSwTicks = _pollingInterval.Ticks * Stopwatch.Frequency / TimeSpan.TicksPerSecond;
                 // Schedule IncrementingPollingCounter reset and synchronously reset other counters
                 HandleCountersReset();
 
                 long now = Stopwatch.GetTimestamp();
                 _timeStampSinceCollectionStarted = now;
-                _nextPollingTimeStamp = now + _pollingInterval.Ticks * Stopwatch.Frequency / TimeSpan.TicksPerSecond;
+                _nextPollingTimeStamp = now + _pollingIntervalSwTicks;
 
                 // Create the polling thread and init all the shared state if needed
                 if (s_pollingThread == null)
@@ -190,6 +192,7 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
             _pollingInterval = TimeSpan.Zero;
+            _pollingIntervalSwTicks = 0;
             s_counterGroupEnabledList?.Remove(this);
 
             if (s_needsResetIncrementingPollingCounters.Count > 0)
@@ -270,7 +273,7 @@ namespace System.Diagnostics.Tracing
 
                     if (_pollingInterval > TimeSpan.Zero)
                     {
-                        _nextPollingTimeStamp += (long)Math.Ceiling(delta / _pollingInterval) * _pollingInterval.Ticks * Stopwatch.Frequency / TimeSpan.TicksPerSecond;
+                        _nextPollingTimeStamp += (long)Math.Ceiling(delta / _pollingInterval) * _pollingIntervalSwTicks;
                     }
                 }
             }
