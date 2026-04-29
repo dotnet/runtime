@@ -67,7 +67,7 @@ namespace System.Runtime.CompilerServices
                     Revision++;
 
                     ActiveEventKeywords = 0;
-                    if (logLevel >= EventLevel.Informational)
+                    if (logLevel == EventLevel.LogAlways || logLevel >= EventLevel.Informational)
                     {
                         ActiveEventKeywords = eventKeywords;
                     }
