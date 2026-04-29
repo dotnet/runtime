@@ -600,33 +600,38 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
         else
         {
-            // Value-class (repeating) series.
             long absNumSeries = -numSeries;
             ulong startOffset = _target.ReadPointer(mtAddress - 2 * pointerSize).Value;
+
+            var seriesItems = new (uint Nptrs, uint Skip)[absNumSeries];
+            for (long i = 0; i < absNumSeries; i++)
+            {
+                ulong itemAddress = mtAddress - (3 + (ulong)i) * pointerSize;
+
+                // Read val_serie_item fields individually for endianness safety.
+                uint nptrs, skip;
+                if (_target.PointerSize == sizeof(uint))
+                {
+                    nptrs = _target.Read<ushort>(itemAddress);
+                    skip = _target.Read<ushort>(itemAddress + sizeof(ushort));
+                }
+                else
+                {
+                    nptrs = _target.Read<uint>(itemAddress);
+                    skip = _target.Read<uint>(itemAddress + sizeof(uint));
+                }
+
+                seriesItems[i] = (nptrs, skip);
+            }
 
             ulong currentOffset = startOffset;
             while (currentOffset <= objectSize - pointerSize)
             {
                 for (long i = 0; i < absNumSeries; i++)
                 {
-                    ulong itemAddress = mtAddress - (3 + (ulong)i) * pointerSize;
-
-                    // Read val_serie_item fields individually for endianness safety.
-                    uint nptrs, skip;
-                    if (_target.PointerSize == sizeof(uint))
-                    {
-                        nptrs = _target.Read<ushort>(itemAddress);
-                        skip = _target.Read<ushort>(itemAddress + sizeof(ushort));
-                    }
-                    else
-                    {
-                        nptrs = _target.Read<uint>(itemAddress);
-                        skip = _target.Read<uint>(itemAddress + sizeof(uint));
-                    }
-
-                    uint runBytes = nptrs * (uint)pointerSize;
+                    uint runBytes = seriesItems[i].Nptrs * (uint)pointerSize;
                     yield return ((uint)currentOffset, runBytes);
-                    currentOffset += runBytes + skip;
+                    currentOffset += runBytes + seriesItems[i].Skip;
                 }
             }
         }
