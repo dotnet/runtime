@@ -1340,14 +1340,14 @@ namespace System.Threading.Tasks.Tests
                 });
 
                 // Wait for the periodic flush timer (1s interval) to detect the idle buffer and flush it automatically.
-                Thread.Sleep(2000);
+                Thread.Sleep(1000);
 
-                // Use polling instead of a fixed sleep to wait for the flush, so the test is robust on slow/loaded CI machines.
+                // Poll to make sure the expected buffer got flush.
                 SpinWait.SpinUntil(() =>
                 {
                     var ids = CollectAsyncEventIds(collectedEvents);
                     return ids.Exists(id => id == AsyncEventID.ResumeAsyncContext || id == AsyncEventID.SuspendAsyncContext || id == AsyncEventID.CompleteAsyncContext);
-                }, TimeSpan.FromSeconds(15));
+                }, TimeSpan.FromSeconds(20));
             });
 
             // DumpCollectedEvents(events);
@@ -1356,6 +1356,110 @@ namespace System.Threading.Tasks.Tests
             int coreEventCount = eventIds.FindAll(id => id == AsyncEventID.ResumeAsyncContext || id == AsyncEventID.SuspendAsyncContext || id == AsyncEventID.CompleteAsyncContext).Count;
 
             Assert.True(coreEventCount > 0, "Expected periodic timer to flush buffer with core lifecycle events");
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        public void RuntimeAsync_PeriodicTimerFlush_PreservesOwnerThreadId()
+        {
+            // This test verifies that when the background flush timer flushes a thread's buffer,
+            // the new header written afterwards preserves the owning thread's OS thread ID
+            // (not the timer thread's ID).
+            //
+            // Strategy: run async work on a dedicated thread so its profiler context gets events.
+            // Between two batches of work, wait for the flush timer to fire. Both buffer flushes
+            // from the dedicated thread should carry the same OsThreadId.
+
+            ulong workerOsThreadId = 0;
+            var workerIdReady = new ManualResetEventSlim(false);
+            var firstFlushSeen = new ManualResetEventSlim(false);
+            var workerEvents = new ConcurrentQueue<EventWrittenEventArgs>();
+
+            using (var listener = CreateListener(CoreKeywords))
+            {
+                listener.RunWithCallback(e =>
+                {
+                    if (!workerIdReady.IsSet)
+                        return;
+                    if (e.EventId != AsyncEventsId || e.Payload is null || e.Payload.Count == 0)
+                        return;
+                    if (e.Payload[0] is not byte[] payload)
+                        return;
+                    EventBufferHeader? header = ParseEventBufferHeader(payload);
+                    if (header is not null && header.Value.OsThreadId == workerOsThreadId)
+                        workerEvents.Enqueue(e);
+                }, () =>
+                {
+                    SendFlushCommand();
+
+                    var thread = new Thread(() =>
+                    {
+                        workerOsThreadId = GetCurrentOSThreadId();
+                        workerIdReady.Set();
+
+                        // First batch: generate events on this thread's profiler context.
+                        Func().GetAwaiter().GetResult();
+
+                        // Wait for the periodic flush timer to flush our buffer.
+                        firstFlushSeen.Wait(TimeSpan.FromSeconds(20));
+
+                        // Second batch: generate more events on the same thread's context.
+                        Func().GetAwaiter().GetResult();
+                    });
+
+                    thread.IsBackground = true;
+                    thread.Start();
+
+                    // Periodic flush timer (1s interval) to detect the idle buffer and flush it automatically.
+                    Thread.Sleep(1000);
+
+                    // Poll for first buffer from our worker thread.
+                    SpinWait.SpinUntil(() => workerEvents.Count >= 1, TimeSpan.FromSeconds(20));
+                    firstFlushSeen.Set();
+
+                    // Wait for the worker to finish.
+                    thread.Join(TimeSpan.FromSeconds(20));
+
+                    // Periodic flush timer (1s interval) to detect the idle buffer and flush it automatically.
+                    Thread.Sleep(1000);
+
+                    // Poll for second buffer from our worker thread.
+                    SpinWait.SpinUntil(() => workerEvents.Count >= 2, TimeSpan.FromSeconds(20));
+                });
+            }
+
+            // DumpCollectedEvents(workerEvents);
+
+            Assert.True(workerOsThreadId != 0, "Failed to capture worker OS thread ID");
+
+            // The key assertion: find buffers that contain CreateAsyncContext events (our work batches).
+            // There must be at least 2 such buffers (one per Func() call), and ALL of them must
+            // have the worker's OsThreadId — proving the timer flush didn't corrupt the header.
+            int workBufferCount = 0;
+            foreach (EventWrittenEventArgs e in workerEvents)
+            {
+                if (e.EventId != AsyncEventsId || e.Payload is null || e.Payload.Count == 0)
+                    continue;
+                if (e.Payload[0] is not byte[] payload)
+                    continue;
+
+                bool hasCreateEvent = false;
+                ParseEventBuffer(payload, (AsyncEventID eventId, ReadOnlySpan<byte> buf, ref int idx) =>
+                {
+                    if (eventId == AsyncEventID.CreateAsyncContext)
+                        hasCreateEvent = true;
+                    return SkipEventPayload(eventId, buf, ref idx);
+                });
+
+                if (hasCreateEvent)
+                {
+                    workBufferCount++;
+                    EventBufferHeader? header = ParseEventBufferHeader(payload);
+                    Assert.NotNull(header);
+                    Assert.Equal(workerOsThreadId, header.Value.OsThreadId);
+                }
+            }
+
+            Assert.True(workBufferCount >= 2, $"Expected at least 2 buffers with CreateAsyncContext from the worker thread, got {workBufferCount}");
         }
 
 
@@ -1376,20 +1480,20 @@ namespace System.Threading.Tasks.Tests
 
                 thread.IsBackground = true;
                 thread.Start();
-                bool joined = thread.Join(TimeSpan.FromSeconds(10));
+                bool joined = thread.Join(TimeSpan.FromSeconds(20));
 
                 Assert.True(joined, "Expected worker thread to terminate within timeout before waiting for orphaned buffer flush");
 
                 // Do NOT send a flush command.
                 // Wait for the periodic flush timer to detect the dead thread and flush its orphaned buffer.
-                Thread.Sleep(2000);
+                Thread.Sleep(1000);
 
-                // Use polling instead of a fixed sleep so the test is robust on slow/loaded CI machines.
+                // Poll to make sure the expected buffer got flush.
                 SpinWait.SpinUntil(() =>
                 {
                     var ids = CollectAsyncEventIds(collectedEvents);
                     return ids.Exists(id => id == AsyncEventID.ResumeAsyncContext || id == AsyncEventID.SuspendAsyncContext || id == AsyncEventID.CompleteAsyncContext);
-                }, TimeSpan.FromSeconds(15));
+                }, TimeSpan.FromSeconds(20));
             });
 
             // DumpCollectedEvents(events);

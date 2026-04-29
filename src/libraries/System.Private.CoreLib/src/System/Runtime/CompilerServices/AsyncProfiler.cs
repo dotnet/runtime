@@ -369,7 +369,7 @@ namespace System.Runtime.CompilerServices
                     headerSpanIndex += sizeof(uint);
 
                     // OS Thread ID
-                    BinaryPrimitives.WriteUInt64LittleEndian(headerSpan.Slice(headerSpanIndex), Thread.CurrentOSThreadId);
+                    BinaryPrimitives.WriteUInt64LittleEndian(headerSpan.Slice(headerSpanIndex), context.OsThreadId);
                     headerSpanIndex += sizeof(ulong);
 
                     // Total event count, will be updated on flush.
@@ -497,6 +497,7 @@ namespace System.Runtime.CompilerServices
             {
                 _eventBuffer.Data = Array.Empty<byte>();
                 AsyncThreadContextId = Interlocked.Increment(ref s_nextAsyncThreadContextId);
+                OsThreadId = Thread.CurrentOSThreadId;
             }
 
             private EventBuffer _eventBuffer;
@@ -504,6 +505,8 @@ namespace System.Runtime.CompilerServices
             public long LastEventTimestamp;
 
             public EventKeywords ActiveEventKeywords;
+
+            public readonly ulong OsThreadId;
 
             public readonly uint AsyncThreadContextId;
 
