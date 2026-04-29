@@ -554,6 +554,23 @@ namespace System.Threading
             static void PollGCWorker() => PollGCInternal();
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Patchpoint")]
+        private static unsafe partial IntPtr PatchpointInternal(int* counter, int ilOffset, IntPtr resumeIP);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PatchpointForced")]
+        private static partial IntPtr PatchpointForcedInternal(int ilOffset, IntPtr resumeIP);
+
+        // OSR patchpoint helper. Called by the Tier0 patchpoint sequence the JIT emits.
+        // Returns the address to jump to: either the OSR-compiled method's entrypoint
+        // (transition to optimized code) or `resumeIP` (no transition; the JIT's indirect
+        // jump skips itself and resumes Tier0 execution).
+        private static unsafe IntPtr Patchpoint(int* counter, int ilOffset, IntPtr resumeIP)
+            => PatchpointInternal(counter, ilOffset, resumeIP);
+
+        // Forced variant: counter is implicitly NULL; always returns an OSR entrypoint.
+        private static IntPtr PatchpointForced(int ilOffset, IntPtr resumeIP)
+            => PatchpointForcedInternal(ilOffset, resumeIP);
+
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
         {

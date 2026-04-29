@@ -841,11 +841,14 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_PATCHPOINT:
-            // Patchpoint takes two args: counter addr (x0) and IL offset (x1)
+            // Patchpoint takes three args: counter addr (x0), IL offset (x1),
+            // and the resume address (x2) materialized by codegen.
             // Calls helper and jumps to returned address - no value produced
             srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
             BuildOperandUses(tree->gtGetOp2(), RBM_ARG_1.GetIntRegSet());
             srcCount++;
+            buildInternalIntRegisterDefForNode(tree, RBM_ARG_2.GetIntRegSet());
+            buildInternalRegisterUses();
             BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
             break;
 

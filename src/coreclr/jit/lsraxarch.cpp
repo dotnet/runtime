@@ -244,11 +244,17 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_PATCHPOINT:
-            // Patchpoint takes two args: counter addr (RDI/RCX) and IL offset (RSI/RDX)
+            // Patchpoint takes three args: counter addr (RDI/RCX), IL offset (RSI/RDX),
+            // and the resume address (RDX/R8) materialized by codegen.
             // Calls helper and jumps to returned address - no value produced
             srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
             BuildOperandUses(tree->gtGetOp2(), RBM_ARG_1.GetIntRegSet());
             srcCount++;
+#ifdef TARGET_AMD64
+            // x86 does not support OSR; only x64 reaches this path.
+            buildInternalIntRegisterDefForNode(tree, RBM_ARG_2.GetIntRegSet());
+            buildInternalRegisterUses();
+#endif
             BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
             break;
 

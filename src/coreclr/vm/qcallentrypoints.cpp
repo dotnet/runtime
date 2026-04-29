@@ -317,6 +317,8 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetOSHandle)
 #endif // TARGET_WINDOWS
     DllImportEntry(ThreadNative_PollGC)
+    DllImportEntry(ThreadNative_Patchpoint)
+    DllImportEntry(ThreadNative_PatchpointForced)
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP

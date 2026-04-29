@@ -1297,7 +1297,7 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, const EECodeInfo& codeInfo, in
     return osrVariant;
 }
 
-static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
+static PCODE PatchpointOptimizationPolicy(int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1420,22 +1420,6 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
             goto DONE;
         }
 
-        MAKE_CURRENT_THREAD_AVAILABLE();
-
-    #ifdef _DEBUG
-        Thread::ObjectRefFlush(CURRENT_THREAD);
-    #endif
-
-        DynamicHelperFrame frame(pTransitionBlock, 0);
-        DynamicHelperFrame * pFrame = &frame;
-
-        pFrame->Push(CURRENT_THREAD);
-
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-        GCX_PREEMP();
-
         osrMethodCode = ppInfo->m_osrMethodCode;
         if (osrMethodCode == (PCODE)NULL)
         {
@@ -1456,7 +1440,10 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
             LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) TRIGGER at count %d\n", ppId, ip, hitCount));
 
             // Invoke the helper to build the OSR method
-            osrMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
+            {
+                GCX_PREEMP();
+                osrMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
+            }
 
             // If that failed, mark the patchpoint as invalid.
             if (osrMethodCode == (PCODE)NULL)
@@ -1473,11 +1460,6 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
                 ppInfo->m_osrMethodCode = osrMethodCode;
             }
         }
-
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-
-        pFrame->Pop(CURRENT_THREAD);
     }
     return osrMethodCode;
 
@@ -1485,7 +1467,7 @@ DONE:
     return (PCODE)NULL;
 }
 
-static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
+static PCODE PatchpointRequiredPolicy(int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1506,23 +1488,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
-    MAKE_CURRENT_THREAD_AVAILABLE();
-
-#ifdef _DEBUG
-    Thread::ObjectRefFlush(CURRENT_THREAD);
-#endif
-
-    DynamicHelperFrame frame(pTransitionBlock, 0);
-    DynamicHelperFrame * pFrame = &frame;
-
-    pFrame->Push(CURRENT_THREAD);
-
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
     {
-        GCX_PREEMP();
-
         DWORD backoffs = 0;
         while (ppInfo->m_osrMethodCode == (PCODE)NULL)
         {
@@ -1565,7 +1531,11 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             // (but consider: throw path in method with try/catch, OSR method will contain more than just the throw?)
             //
             LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointRequiredPolicy: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
-            PCODE newMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
+            PCODE newMethodCode;
+            {
+                GCX_PREEMP();
+                newMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
+            }
 
             // If that failed, mark the patchpoint as invalid.
             // This is fatal, for partial compilation patchpoints
@@ -1586,11 +1556,6 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
         }
     }
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-
-    pFrame->Pop(CURRENT_THREAD);
-
     // If we get here, we have code to transition to...
     PCODE osrMethodCode = ppInfo->m_osrMethodCode;
     _ASSERTE(osrMethodCode != (PCODE)NULL);
@@ -1604,30 +1569,31 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 // an entry is added to the patchpoint table.
 //
 // When the patchpoint has been hit often enough to trigger
-// a transition, create an OSR method. OR if the first argument
-// is NULL, always create an OSR method and transition to it.
+// a transition, create an OSR method. OR if `counter` is
+// NULL, always create an OSR method and transition to it.
 //
-// Currently, counter(the first argument) is a pointer into the Tier0 method stack
+// Currently, `counter` is a pointer into the Tier0 method stack
 // frame if it exists so we have exclusive access.
-
-extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransitionBlock)
+//
+// `resumeIP` is the address of the instruction immediately after
+// the JIT-emitted indirect jump that follows the helper call.
+// Returning it makes that indirect jump skip past itself and
+// resume Tier0 execution; returning an OSR method address instead
+// causes the indirect jump to transition to OSR code.
+static PCODE PatchpointWorker(int* counter, int ilOffset, PCODE resumeIP)
 {
-    DWORD dwLastError = ::GetLastError();
-
-    // This method may not return normally
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    PTR_PCODE pReturnAddress = (PTR_PCODE)(((BYTE*)pTransitionBlock) + TransitionBlock::GetOffsetOfReturnAddress());
-    PCODE ip = *pReturnAddress;
-    int* counter = *(int**)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
-    int ilOffset = *(int*)GetSecondArgumentRegisterValuePtr(pTransitionBlock);
+    // Bookkeeping (EECodeInfo, GetPerPatchpointInfo, hit-count CAS) requires
+    // cooperative mode. We arrive here in preemptive mode via QCall.
+    GCX_COOP();
 
-    // Patchpoint identity is the helper return address
-
-    // Fetch or setup patchpoint info for this patchpoint.
-    EECodeInfo codeInfo(ip);
+    // Patchpoint identity is any IP inside the Tier0 method body; we use
+    // the resume IP (just past the helper's indirect jump) since that is
+    // what the JIT can cheaply materialize as a label address.
+    EECodeInfo codeInfo(resumeIP);
     MethodDesc* pMD = codeInfo.GetMethodDesc();
     LoaderAllocator* allocator = pMD->GetLoaderAllocator();
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
@@ -1640,41 +1606,24 @@ extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransit
     bool isNewMethod = false;
     PCODE osrMethodCode = (PCODE)NULL;
 
-
     bool patchpointMustFindOptimizedCode = counter == NULL;
 
     if (patchpointMustFindOptimizedCode)
     {
-        osrMethodCode = PatchpointRequiredPolicy(pTransitionBlock, counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
+        osrMethodCode = PatchpointRequiredPolicy(counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
     }
     else
     {
-        osrMethodCode = PatchpointOptimizationPolicy(pTransitionBlock, counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
+        osrMethodCode = PatchpointOptimizationPolicy(counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
     }
 
     if (osrMethodCode == (PCODE)NULL)
     {
         _ASSERTE(!patchpointMustFindOptimizedCode);
 
-        // No transition. Return the address past the jump instruction
-        // at the call site so the JIT's unconditional jump skips over itself
-        // and resumes Tier0 execution.
-#if defined(TARGET_AMD64)
-        // jmp rax = 2 bytes to skip
-        osrMethodCode = ip + 2;
-#elif defined(TARGET_ARM64)
-        // br xN = 4 bytes
-        osrMethodCode = ip + 4;
-#elif defined(TARGET_LOONGARCH64)
-        // jirl r0, rN, 0 = 4 bytes
-        osrMethodCode = ip + 4;
-#elif defined(TARGET_RISCV64)
-        // jalr x0, xN, 0 = 4 bytes
-        osrMethodCode = ip + 4;
-#else
-#error "Unsupported platform for patchpoint skip address"
-#endif
-        goto DONE;
+        // No transition. Returning the resume IP makes the JIT's indirect
+        // jump skip past itself and resume Tier0 execution.
+        return resumeIP;
     }
 
     // If we get here, we will transition to OSR code. This can happen
@@ -1683,35 +1632,60 @@ extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransit
     // code at the patchpoint handles the actual SP/FP setup and jump.
     {
         const int transitionLogLevel = isNewMethod ? LL_INFO10 : LL_INFO1000;
-        LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
+        LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] TRANSITION to ip 0x%p\n", ppId, osrMethodCode));
     }
 
- DONE:
-    ::SetLastError(dwLastError);
     return osrMethodCode;
 }
 
-#else
-
-HCIMPL2(PCODE, JIT_Patchpoint, int* counter, int ilOffset)
+extern "C" PCODE QCALLTYPE ThreadNative_Patchpoint(int* counter, int ilOffset, PCODE resumeIP)
 {
-    // Stub version if OSR feature is disabled
-    //
-    // Should not be called.
+    QCALL_CONTRACT;
 
+    PCODE result = (PCODE)NULL;
+
+    BEGIN_QCALL;
+
+    result = PatchpointWorker(counter, ilOffset, resumeIP);
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" PCODE QCALLTYPE ThreadNative_PatchpointForced(int ilOffset, PCODE resumeIP)
+{
+    QCALL_CONTRACT;
+
+    PCODE result = (PCODE)NULL;
+
+    BEGIN_QCALL;
+
+    // Forced patchpoint: counter is implicitly NULL. The required-policy
+    // path always returns a non-NULL OSR method address (or fatally errors),
+    // so resumeIP is never used; pass it through for parity with the normal
+    // helper signature.
+    result = PatchpointWorker(NULL, ilOffset, resumeIP);
+
+    END_QCALL;
+
+    return result;
+}
+
+#else // FEATURE_ON_STACK_REPLACEMENT
+
+extern "C" PCODE QCALLTYPE ThreadNative_Patchpoint(int* counter, int ilOffset, PCODE resumeIP)
+{
+    // OSR not supported on this configuration; the JIT does not emit
+    // CORINFO_HELP_PATCHPOINT, so this entrypoint is unreachable. Provide
+    // the symbol so qcallentrypoints.cpp registration links.
     UNREACHABLE();
 }
-HCIMPLEND
 
-HCIMPL1(PCODE, JIT_PatchpointForced, int ilOffset)
+extern "C" PCODE QCALLTYPE ThreadNative_PatchpointForced(int ilOffset, PCODE resumeIP)
 {
-    // Stub version if OSR feature is disabled
-    //
-    // Should not be called.
-
     UNREACHABLE();
 }
-HCIMPLEND
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
 

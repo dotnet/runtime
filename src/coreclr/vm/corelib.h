@@ -985,6 +985,8 @@ DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                        SM_PtrThread_RetVoid)
 DEFINE_METHOD(THREAD,               POLLGC,                                  PollGC,                               NoSig)
+DEFINE_METHOD(THREAD,               PATCHPOINT,                              Patchpoint,                           NoSig)
+DEFINE_METHOD(THREAD,               PATCHPOINT_FORCED,                       PatchpointForced,                     NoSig)
 DEFINE_METHOD(THREAD,               ON_THREAD_EXITING,                       OnThreadExited,                       SM_PtrThread_PtrException_RetVoid)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(THREAD,               CTOR,                                    .ctor,                                IM_RetVoid)

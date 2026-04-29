@@ -7310,6 +7310,12 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
 //   Emits a call to the patchpoint helper followed by an unconditional jump
 //   to the returned address.
 //
+//   For GT_PATCHPOINT we also materialize the address of the fall-through
+//   (BBJ_ALWAYS target) block into REG_ARG_2 before the call. The helper
+//   returns this address when no OSR transition should occur, so the
+//   following indirect jump skips past itself and resumes Tier0 execution.
+//   GT_PATCHPOINT_FORCED always transitions, so no resume address is needed.
+//
 // Arguments:
 //   treeNode - The patchpoint node (GT_PATCHPOINT or GT_PATCHPOINT_FORCED)
 //
@@ -7324,6 +7330,26 @@ void CodeGen::genPatchpoint(GenTreeOp* treeNode)
     if (treeNode->OperIs(GT_PATCHPOINT))
     {
         genCopyRegIfNeeded(treeNode->gtGetOp2(), REG_ARG_1);
+
+        // Materialize the resume address (start of the BBJ_ALWAYS target block)
+        // into REG_ARG_2. The helper reads it from the third argument register
+        // slot of the TransitionBlock and returns it on the no-transition path.
+        BasicBlock* resumeBlock = m_compiler->compCurBB->GetTarget();
+#ifdef TARGET_AMD64
+        GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, resumeBlock, REG_ARG_2);
+#elif defined(TARGET_ARM64)
+        GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, resumeBlock, REG_ARG_2);
+#elif defined(TARGET_ARM)
+        GetEmitter()->emitIns_R_L(INS_movw, EA_4BYTE_DSP_RELOC, resumeBlock, REG_ARG_2);
+        GetEmitter()->emitIns_R_L(INS_movt, EA_4BYTE_DSP_RELOC, resumeBlock, REG_ARG_2);
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, resumeBlock, REG_ARG_2);
+#elif defined(TARGET_X86)
+        // x86 does not support OSR; patchpoint nodes are never created here.
+        unreached();
+#else
+#error "Unsupported target architecture for GT_PATCHPOINT"
+#endif
     }
 
     CorInfoHelpFunc helper = treeNode->OperIs(GT_PATCHPOINT) ? CORINFO_HELP_PATCHPOINT : CORINFO_HELP_PATCHPOINT_FORCED;

@@ -793,26 +793,6 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-
-NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    addi  a0, sp, __PWTB_TransitionBlock // TransitionBlock *
-    call  C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
-
-    EPILOG_WITH_TRANSITION_BLOCK_RETURN
-NESTED_END JIT_Patchpoint, _TEXT
-
-// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PatchpointForced, _TEXT
-    mv    a1, a0
-    li    a0, 0
-    j C_FUNC(JIT_Patchpoint)
-LEAF_END JIT_PatchpointForced, _TEXT
-
-#endif // FEATURE_ON_STACK_REPLACEMENT
-
 // ------------------------------------------------------------------
 // size_t GetThreadStaticsVariableOffset()
 
