@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Tests
         protected abstract CompositeMLDsa ImportPrivateKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         protected abstract CompositeMLDsa ImportPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void GenerateSignVerifyWithPublicKey(CompositeMLDsaAlgorithm algorithm)
         {
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void GenerateSignVerifyWithPrivateKey(CompositeMLDsaAlgorithm algorithm)
         {
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void GenerateSignVerifyNoContext(CompositeMLDsaAlgorithm algorithm)
         {
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(dsa, data, signature, Array.Empty<byte>());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void GenerateSignVerifyWithContext(CompositeMLDsaAlgorithm algorithm)
         {
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(dsa, data, signature, context);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void GenerateSignVerifyEmptyMessageNoContext(CompositeMLDsaAlgorithm algorithm)
         {
@@ -111,7 +111,7 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(dsa, [], signature, []);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void GenerateSignVerifyEmptyMessageWithContext(CompositeMLDsaAlgorithm algorithm)
         {
@@ -130,7 +130,7 @@ namespace System.Security.Cryptography.Tests
             from useContext in new[] { false, true }
             select new object[] { vector, useContext };
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(SupportedIetfVectorsWithContextFlagTestData))]
         public void ImportExportVerify(CompositeMLDsaTestData.CompositeMLDsaTestVector vector, bool useContext)
         {
@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(SupportedIetfVectorsWithContextFlagTestData))]
         public void ImportSignVerify(CompositeMLDsaTestData.CompositeMLDsaTestVector vector, bool useContext)
         {
@@ -188,7 +188,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void ImportPublicKey_Export(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
@@ -201,7 +201,7 @@ namespace System.Security.Cryptography.Tests
                 export => Assert.Throws<CryptographicException>(() => export(dsa)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void ImportPrivateKey_Export(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
@@ -214,7 +214,7 @@ namespace System.Security.Cryptography.Tests
                 export => CompositeMLDsaTestHelpers.AssertPrivateKeyEquals(vector.Algorithm, vector.SecretKey, export(dsa)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void Generate_Export_Import_PublicKey(CompositeMLDsaAlgorithm algorithm)
         {
@@ -238,7 +238,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void Generate_Export_Import_PrivateKey(CompositeMLDsaAlgorithm algorithm)
         {
@@ -264,7 +264,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void SignData_PublicKeyOnlyThrows(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
@@ -276,7 +276,7 @@ namespace System.Security.Cryptography.Tests
             Assert.DoesNotContain("unknown", ce.Message, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void TryExportPrivateKey_BufferTooSmall(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
@@ -286,7 +286,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(0, bytesWritten);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void TryExportPublicKey_BufferTooSmall(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
@@ -296,7 +296,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(0, bytesWritten);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void ImportPrivateKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
@@ -305,7 +305,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<CryptographicException>(() => ImportPrivateKey(vector.Algorithm, secretKeyWithTrailingData));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void ImportPublicKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {

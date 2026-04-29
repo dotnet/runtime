@@ -13,14 +13,14 @@ namespace System.Security.Cryptography.Tests
             Assert.SkipUnless(CompositeMLDsa.IsSupported, "ConditionalClass: CompositeMLDsa.IsSupported");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void CompositeMLDsaIsOnlyPublicAncestor_GenerateKey(CompositeMLDsaAlgorithm algorithm)
         {
             AssertCompositeMLDsaIsOnlyPublicAncestor(() => CompositeMLDsa.GenerateKey(algorithm));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void CompositeMLDsaIsOnlyPublicAncestor_Import(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
         {
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Tests
 
         #region Roundtrip by exporting then importing
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Export_Import_PublicKey(CompositeMLDsaAlgorithm algorithm)
         {
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Tests
                 });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Export_Import_PrivateKey(CompositeMLDsaAlgorithm algorithm)
         {
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Tests
                 });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Export_Import_Pkcs8PrivateKey(CompositeMLDsaAlgorithm algorithm)
         {
@@ -140,7 +140,7 @@ namespace System.Security.Cryptography.Tests
                 }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Export_Import_SPKI(CompositeMLDsaAlgorithm algorithm)
         {
@@ -161,7 +161,7 @@ namespace System.Security.Cryptography.Tests
                 }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Export_Import_EncryptedPkcs8PrivateKey(CompositeMLDsaAlgorithm algorithm)
         {
@@ -185,7 +185,7 @@ namespace System.Security.Cryptography.Tests
                 }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Export_Import_Pkcs8PrivateKeyPem(CompositeMLDsaAlgorithm algorithm)
         {
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.Tests
                 }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Export_Import_SPKIPem(CompositeMLDsaAlgorithm algorithm)
         {
@@ -229,7 +229,7 @@ namespace System.Security.Cryptography.Tests
                 }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Export_Import_EncryptedPkcs8PrivateKeyPem(CompositeMLDsaAlgorithm algorithm)
         {
@@ -257,7 +257,7 @@ namespace System.Security.Cryptography.Tests
 
         #region Roundtrip by importing then exporting
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Import_Export_PublicKey(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
         {
@@ -269,7 +269,7 @@ namespace System.Security.Cryptography.Tests
                 info.PublicKey);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Import_Export_PrivateKey(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
         {
@@ -281,7 +281,7 @@ namespace System.Security.Cryptography.Tests
                 info.SecretKey);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Import_Export_SpkiPublicKey(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
         {
@@ -291,7 +291,7 @@ namespace System.Security.Cryptography.Tests
                         AssertExtensions.SequenceEqual(info.Spki, export(dsa)))));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Import_Export_Pkcs8PrivateKey(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
         {
