@@ -771,16 +771,16 @@ public:
 #endif
 
 private:
-    regNumberSmall _lvRegNum; // Used to store the register this variable is in (or, the low register of a
-                              // register pair). It is set during codegen any time the
-                              // variable is enregistered (lvRegister is only set
-                              // to non-zero if the variable gets the same register assignment for its entire
-                              // lifetime).
+    regNumber _lvRegNum; // Used to store the register this variable is in (or, the low register of a
+                         // register pair). It is set during codegen any time the
+                         // variable is enregistered (lvRegister is only set
+                         // to non-zero if the variable gets the same register assignment for its entire
+                         // lifetime).
 #if !defined(TARGET_64BIT)
-    regNumberSmall _lvOtherReg; // Used for "upper half" of long var.
-#endif                          // !defined(TARGET_64BIT)
+    regNumber _lvOtherReg; // Used for "upper half" of long var.
+#endif                     // !defined(TARGET_64BIT)
 
-    regNumberSmall _lvArgInitReg; // the register into which the argument is moved at entry
+    regNumber _lvArgInitReg; // the register into which the argument is moved at entry
 
 public:
     // The register number is stored in a small format (8 bits), but the getters return and the setters take
@@ -795,7 +795,7 @@ public:
 
     void SetRegNum(regNumber reg)
     {
-        _lvRegNum = (regNumberSmall)reg;
+        _lvRegNum = (regNumber)reg;
         assert(_lvRegNum == reg);
     }
 
@@ -824,7 +824,7 @@ public:
 
     void SetOtherReg(regNumber reg)
     {
-        _lvOtherReg = (regNumberSmall)reg;
+        _lvOtherReg = reg;
         assert(_lvOtherReg == reg);
     }
 #endif // !TARGET_64BIT
@@ -877,7 +877,7 @@ public:
 
     void SetArgInitReg(regNumber reg)
     {
-        _lvArgInitReg = (regNumberSmall)reg;
+        _lvArgInitReg = (regNumber)reg;
         assert(_lvArgInitReg == reg);
     }
 

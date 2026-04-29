@@ -448,7 +448,7 @@ inline bool RefTypeIsDef(RefType refType)
     return ((refType & RefTypeDef) == RefTypeDef);
 }
 
-typedef regNumberSmall* VarToRegMap;
+typedef regNumber* VarToRegMap;
 
 typedef jitstd::list<Interval>                      IntervalList;
 typedef jitstd::list<RefPosition>                   RefPositionList;
@@ -719,7 +719,7 @@ public:
     void addResolutionForDouble(BasicBlock*             block,
                                 GenTree*                insertionPoint,
                                 Interval**              sourceIntervals,
-                                regNumberSmall*         location,
+                                regNumber*              location,
                                 regNumber               toReg,
                                 regNumber               fromReg,
                                 ResolveType resolveType DEBUG_ARG(BasicBlock* fromBlock)

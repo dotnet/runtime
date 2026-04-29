@@ -621,10 +621,57 @@ protected:
 
     struct emitAddrMode
     {
-        regNumber       amBaseReg : REGNUM_BITS + 1;
-        regNumber       amIndxReg : REGNUM_BITS + 1;
-        emitter::opSize amScale : 2;
-        int             amDisp : AM_DISP_BITS;
+    private:
+        unsigned        _amBaseReg : REGNUM_BITS + 1;
+        unsigned        _amIndxReg : REGNUM_BITS + 1;
+        emitter::opSize _amScale : 2;
+        int             _amDisp : AM_DISP_BITS;
+
+    public:
+        regNumber amBaseReg() const
+        {
+            return static_cast<regNumber>(_amBaseReg);
+        }
+        void amBaseReg(regNumber reg)
+        {
+            _amBaseReg = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(_amBaseReg));
+        }
+
+        regNumber amIndxReg() const
+        {
+            return static_cast<regNumber>(_amIndxReg);
+        }
+        void amIndxReg(regNumber reg)
+        {
+            _amIndxReg = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(_amIndxReg));
+        }
+
+        emitter::opSize amScale() const
+        {
+            return static_cast<emitter::opSize>(_amScale);
+        }
+        void amScale(emitter::opSize scale)
+        {
+            _amScale = scale;
+            assert(scale == _amScale);
+        }
+
+        int amDisp() const
+        {
+            return _amDisp;
+        }
+        void amDisp(int disp)
+        {
+            _amDisp = disp;
+            assert(disp == _amDisp);
+        }
+        void amDisp(ssize_t disp)
+        {
+            _amDisp = static_cast<int>(disp);
+            assert(disp == _amDisp);
+        }
     };
 
 #endif // TARGET_XARCH
@@ -805,8 +852,8 @@ protected:
         // the live gcrefReg mask for the call instructions on x86/x64
         //
 #if !defined(TARGET_XARCH)
-        regNumber _idReg1 : REGNUM_BITS; // register num
-        regNumber _idReg2 : REGNUM_BITS;
+        unsigned _idReg1 : REGNUM_BITS; // register num
+        unsigned _idReg2 : REGNUM_BITS;
 #endif
 
         ////////////////////////////////////////////////////////////////////////
@@ -832,8 +879,8 @@ protected:
         unsigned _idCustom2 : 1;
         unsigned _idCustom3 : 1;
 #if defined(TARGET_XARCH)
-        regNumber _idReg1 : REGNUM_BITS; // register num
-        regNumber _idReg2 : REGNUM_BITS;
+        unsigned _idReg1 : REGNUM_BITS; // register num
+        unsigned _idReg2 : REGNUM_BITS;
 #endif
 
 #define _idBound          _idCustom1 /* jump target / frame offset bound */
@@ -1075,8 +1122,8 @@ protected:
 #ifdef TARGET_ARM
             struct
             {
-                regNumber _idReg3 : REGNUM_BITS;
-                regNumber _idReg4 : REGNUM_BITS;
+                unsigned _idReg3 : REGNUM_BITS;
+                unsigned _idReg4 : REGNUM_BITS;
             };
 #elif defined(TARGET_ARM64)
             struct
@@ -1085,8 +1132,8 @@ protected:
                 emitLclVarAddr iiaLclVar;
                 unsigned       _idRegBit : 1; // Reg3 is scaled by idOpSize bits
                 GCtype         _idGCref2 : 2;
-                regNumber      _idReg3 : REGNUM_BITS;
-                regNumber      _idReg4 : REGNUM_BITS;
+                unsigned       _idReg3 : REGNUM_BITS;
+                unsigned       _idReg4 : REGNUM_BITS;
             };
 
             insSvePattern _idSvePattern;
@@ -1094,15 +1141,15 @@ protected:
 #elif defined(TARGET_XARCH)
             struct
             {
-                regNumber _idReg3 : REGNUM_BITS;
-                regNumber _idReg4 : REGNUM_BITS;
+                unsigned _idReg3 : REGNUM_BITS;
+                unsigned _idReg4 : REGNUM_BITS;
             };
 #elif defined(TARGET_LOONGARCH64)
             struct
             {
                 unsigned int iiaEncodedInstr; // instruction's binary encoding.
-                regNumber    _idReg3 : REGNUM_BITS;
-                regNumber    _idReg4 : REGNUM_BITS;
+                unsigned int _idReg3 : REGNUM_BITS;
+                unsigned int _idReg4 : REGNUM_BITS;
             };
 
             struct
@@ -1132,8 +1179,8 @@ protected:
 #elif defined(TARGET_RISCV64)
             struct
             {
-                regNumber    _idReg3 : REGNUM_BITS;
-                regNumber    _idReg4 : REGNUM_BITS;
+                unsigned int _idReg3 : REGNUM_BITS;
+                unsigned int _idReg4 : REGNUM_BITS;
                 unsigned int iiaEncodedInstr; // instruction's binary encoding.
             };
 
@@ -1297,12 +1344,12 @@ protected:
 
         regNumber idReg1() const
         {
-            return _idReg1;
+            return static_cast<regNumber>(_idReg1);
         }
         void idReg1(regNumber reg)
         {
-            _idReg1 = reg;
-            assert(reg == _idReg1);
+            _idReg1 = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(_idReg1));
         }
 
 #ifdef TARGET_WASM
@@ -1332,37 +1379,37 @@ protected:
 
         regNumber idReg2() const
         {
-            return _idReg2;
+            return static_cast<regNumber>(_idReg2);
         }
         void idReg2(regNumber reg)
         {
-            _idReg2 = reg;
-            assert(reg == _idReg2);
+            _idReg2 = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(_idReg2));
         }
 
 #if defined(TARGET_XARCH)
         regNumber idReg3() const
         {
             assert(!idIsSmallDsc());
-            return idAddr()->_idReg3;
+            return static_cast<regNumber>(idAddr()->_idReg3);
         }
         void idReg3(regNumber reg)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg3 = reg;
-            assert(reg == idAddr()->_idReg3);
+            idAddr()->_idReg3 = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(idAddr()->_idReg3));
         }
 
         regNumber idReg4() const
         {
             assert(!idIsSmallDsc());
-            return idAddr()->_idReg4;
+            return static_cast<regNumber>(idAddr()->_idReg4);
         }
         void idReg4(regNumber reg)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg4 = reg;
-            assert(reg == idAddr()->_idReg4);
+            idAddr()->_idReg4 = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(idAddr()->_idReg4));
         }
 
         bool idHasReg1() const
@@ -1511,24 +1558,24 @@ protected:
         regNumber idReg3() const
         {
             assert(!idIsSmallDsc());
-            return idAddr()->_idReg3;
+            return static_cast<regNumber>(idAddr()->_idReg3);
         }
         void idReg3(regNumber reg)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg3 = reg;
-            assert(reg == idAddr()->_idReg3);
+            idAddr()->_idReg3 = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(idAddr()->_idReg3));
         }
         regNumber idReg4() const
         {
             assert(!idIsSmallDsc());
-            return idAddr()->_idReg4;
+            return static_cast<regNumber>(idAddr()->_idReg4);
         }
         void idReg4(regNumber reg)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg4 = reg;
-            assert(reg == idAddr()->_idReg4);
+            idAddr()->_idReg4 = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(idAddr()->_idReg4));
         }
 #ifdef TARGET_ARM64
         bool idReg3Scaled() const
@@ -1610,24 +1657,24 @@ protected:
         regNumber idReg3() const
         {
             assert(!idIsSmallDsc());
-            return idAddr()->_idReg3;
+            return static_cast<regNumber>(idAddr()->_idReg3);
         }
         void idReg3(regNumber reg)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg3 = reg;
-            assert(reg == idAddr()->_idReg3);
+            idAddr()->_idReg3 = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(idAddr()->_idReg3));
         }
         regNumber idReg4() const
         {
             assert(!idIsSmallDsc());
-            return idAddr()->_idReg4;
+            return static_cast<regNumber>(idAddr()->_idReg4);
         }
         void idReg4(regNumber reg)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg4 = reg;
-            assert(reg == idAddr()->_idReg4);
+            idAddr()->_idReg4 = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(idAddr()->_idReg4));
         }
 
 #endif // TARGET_LOONGARCH64
@@ -1646,24 +1693,24 @@ protected:
         regNumber idReg3() const
         {
             assert(!idIsSmallDsc());
-            return idAddr()->_idReg3;
+            return static_cast<regNumber>(idAddr()->_idReg3);
         }
         void idReg3(regNumber reg)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg3 = reg;
-            assert(reg == idAddr()->_idReg3);
+            idAddr()->_idReg3 = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(idAddr()->_idReg3));
         }
         regNumber idReg4() const
         {
             assert(!idIsSmallDsc());
-            return idAddr()->_idReg4;
+            return static_cast<regNumber>(idAddr()->_idReg4);
         }
         void idReg4(regNumber reg)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg4 = reg;
-            assert(reg == idAddr()->_idReg4);
+            idAddr()->_idReg4 = static_cast<unsigned>(reg);
+            assert(reg == static_cast<regNumber>(idAddr()->_idReg4));
         }
 
 #endif // TARGET_RISCV64

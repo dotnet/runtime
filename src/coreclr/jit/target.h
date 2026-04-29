@@ -72,33 +72,37 @@ inline bool compUnixX86Abi()
 #if defined(TARGET_AMD64)
 #define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 16
-
 #elif defined(TARGET_X86)
 #define REGMASK_BITS              32
 #define CSE_CONST_SHARED_LOW_BITS 16
-
 #elif defined(TARGET_ARM)
 #define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
-
 #elif defined(TARGET_ARM64)
 #define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
-
 #elif defined(TARGET_LOONGARCH64)
 #define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
-
 #elif defined(TARGET_RISCV64)
 #define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
-
 #elif defined(TARGET_WASM)
 #define REGMASK_BITS              32
 #define CSE_CONST_SHARED_LOW_BITS 12
-
 #else
 #error Unsupported or unset target architecture
+#endif
+
+#if defined(TARGET_WASM)
+typedef uint32_t regNumberBase_t;
+typedef uint32_t regMaskBase_t;
+#elif defined(TARGET_X86)
+typedef uint8_t  regNumberBase_t;
+typedef uint32_t regMaskBase_t;
+#else
+typedef uint8_t  regNumberBase_t;
+typedef uint64_t regMaskBase_t;
 #endif
 
 //------------------------------------------------------------------------
@@ -112,10 +116,12 @@ inline bool compUnixX86Abi()
 //                       be assigned during register allocation.
 //    REG_NA           - Used to indicate that a register is either not yet assigned or not required.
 //
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
-enum _regNumber_enum : unsigned
+enum regNumber : regNumberBase_t
 {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM64)
+#define REGDEF(name, rnum, mask, xname, wname) JITREG_##name = rnum,
+#define REGALIAS(alias, realname)              JITREG_##alias = JITREG_##realname,
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 // LA64 and RV64 don't require JITREG_ workaround for Android (see register.h)
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
@@ -123,6 +129,7 @@ enum _regNumber_enum : unsigned
 #define REGDEF(name, rnum, mask, sname) JITREG_##name = rnum,
 #define REGALIAS(alias, realname)       JITREG_##alias = JITREG_##realname,
 #endif
+
 #include "register.h"
 
     REG_COUNT,
@@ -130,119 +137,35 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-enum _regMask_enum : uint64_t
+enum _regMask_enum : regMaskBase_t
 {
     RBM_NONE = 0,
-#define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
-#define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
-#include "register.h"
-};
 
-#elif defined(TARGET_ARM64)
-
-enum _regNumber_enum : unsigned
-{
-#define REGDEF(name, rnum, mask, xname, wname) JITREG_##name = rnum,
-#define REGALIAS(alias, realname)              JITREG_##alias = JITREG_##realname,
-#include "register.h"
-
-    REG_COUNT,
-    REG_NA           = REG_COUNT,
-    ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
-};
-
-enum _regMask_enum : uint64_t
-{
-    RBM_NONE = 0,
+#if defined(TARGET_ARM64)
 #define REGDEF(name, rnum, mask, xname, wname) SRBM_##name = mask,
 #define REGALIAS(alias, realname)              SRBM_##alias = SRBM_##realname,
-#include "register.h"
-};
-
-#elif defined(TARGET_AMD64)
-
-enum _regNumber_enum : unsigned
-{
-#define REGDEF(name, rnum, mask, sname) JITREG_##name = rnum,
-#define REGALIAS(alias, realname)       JITREG_##alias = JITREG_##realname,
-#include "register.h"
-
-    REG_COUNT,
-    REG_NA           = REG_COUNT,
-    ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
-};
-
-enum _regMask_enum : uint64_t
-{
-    RBM_NONE = 0,
-
-#define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
-#define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
-#include "register.h"
-};
-
-#elif defined(TARGET_X86)
-
-enum _regNumber_enum : unsigned
-{
-#define REGDEF(name, rnum, mask, sname) JITREG_##name = rnum,
-#define REGALIAS(alias, realname)       JITREG_##alias = JITREG_##realname,
-#include "register.h"
-
-    REG_COUNT,
-    REG_NA           = REG_COUNT,
-    ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
-};
-
-enum _regMask_enum : unsigned
-{
-    RBM_NONE = 0,
-
-#define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
-#define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
-#include "register.h"
-};
-
 #else
-#error Unsupported target architecture
+#define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
+#define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
 #endif
+
+#include "register.h"
+};
 
 #define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
 
 /*****************************************************************************/
 
-// TODO-Cleanup: The types defined below are mildly confusing: why are there both?
-// regMaskSmall is large enough to represent the entire set of registers.
-// If regMaskSmall is smaller than a "natural" integer type, regMaskTP is wider, based
-// on a belief by the original authors of the JIT that in some situations it is more
-// efficient to have the wider representation.  This belief should be tested, and if it
-// is false, then we should coalesce these two types into one (the Small width, probably).
-// In any case, we believe that is OK to freely cast between these types; no information will
-// be lost.
-
-typedef _regNumber_enum regNumber;
-#ifdef TARGET_WASM
-typedef unsigned regNumberSmall; // An 'unlimited' number of registers.
-#else
-typedef unsigned char regNumberSmall;
-#endif
-
-#if REGMASK_BITS == 8
-typedef unsigned char regMaskSmall;
-#define REG_MASK_INT_FMT "%02X"
-#define REG_MASK_ALL_FMT "%02X"
-#elif REGMASK_BITS == 16
-typedef unsigned short regMaskSmall;
-#define REG_MASK_INT_FMT "%04X"
-#define REG_MASK_ALL_FMT "%04X"
-#elif REGMASK_BITS == 32
+#if REGMASK_BITS == 32
 typedef unsigned regMaskSmall;
 #define REG_MASK_INT_FMT "%08X"
 #define REG_MASK_ALL_FMT "%08X"
-#else
+#elif REGMASK_BITS == 64
 typedef uint64_t regMaskSmall;
 #define REG_MASK_INT_FMT "%04llX"
 #define REG_MASK_ALL_FMT "%016llX"
+#else
+#error Unsupported value for REGMASK_BITS
 #endif
 
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)

@@ -978,7 +978,7 @@ private:
 
 private:
     // This stores the register assigned to the node. If a register is not assigned, _gtRegNum is set to REG_NA.
-    regNumberSmall _gtRegNum;
+    regNumber _gtRegNum;
 
     // Count of operands. Used *only* by GenTreeMultiOp, exists solely due to padding constraints.
     friend struct GenTreeMultiOp;
@@ -1085,7 +1085,7 @@ public:
     void SetRegNum(regNumber reg)
     {
         genIsValidReg(reg);
-        _gtRegNum = (regNumberSmall)reg;
+        _gtRegNum = (regNumber)reg;
         INDEBUG(gtRegTag = GT_REGTAG_REG;)
         assert(_gtRegNum == reg);
     }
@@ -3931,7 +3931,7 @@ inline MultiRegSpillFlags SetMultiRegSpillFlagsByIdx(MultiRegSpillFlags oldFlags
 struct GenTreeLclVar : public GenTreeLclVarCommon
 {
 private:
-    regNumberSmall     gtOtherReg[MAX_MULTIREG_COUNT - 1];
+    regNumber          gtOtherReg[MAX_MULTIREG_COUNT - 1];
     MultiRegSpillFlags gtSpillFlags;
 
 public:
@@ -3967,7 +3967,7 @@ public:
         }
         else
         {
-            gtOtherReg[regIndex - 1] = (regNumberSmall)reg;
+            gtOtherReg[regIndex - 1] = (regNumber)reg;
         }
     }
 
@@ -5172,7 +5172,7 @@ struct GenTreeCall final : public GenTree
 
     // GetRegNum() would always be the first return reg.
     // The following array holds the other reg numbers of multi-reg return.
-    regNumberSmall gtOtherRegs[MAX_RET_REG_COUNT - 1];
+    regNumber gtOtherRegs[MAX_RET_REG_COUNT - 1];
 
     MultiRegSpillFlags gtSpillFlags;
 
@@ -5280,7 +5280,7 @@ struct GenTreeCall final : public GenTree
 #if FEATURE_MULTIREG_RET
         else
         {
-            gtOtherRegs[idx - 1] = (regNumberSmall)reg;
+            gtOtherRegs[idx - 1] = reg;
             assert(gtOtherRegs[idx - 1] == reg);
         }
 #else
@@ -6418,7 +6418,7 @@ protected:
 #endif // FEATURE_READYTORUN
         };
     };
-    regNumberSmall     gtOtherReg;   // The second register for multi-reg intrinsics.
+    regNumber          gtOtherReg;   // The second register for multi-reg intrinsics.
     MultiRegSpillFlags gtSpillFlags; // Spill flags for multi-reg intrinsics.
     unsigned char  gtAuxiliaryType;  // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
     unsigned char  gtSimdBaseType;   // SIMD vector base JIT type
@@ -6501,7 +6501,7 @@ public:
 #endif
         // should only be used to set otherReg
         assert(idx == 1);
-        gtOtherReg = (regNumberSmall)reg;
+        gtOtherReg = (regNumber)reg;
     }
 
     GenTreeFlags GetRegSpillFlagByIdx(unsigned idx) const
@@ -8897,7 +8897,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     // State required to support copy/reload of a multi-reg call node.
     // The first register is always given by GetRegNum().
     //
-    regNumberSmall gtOtherRegs[MAX_MULTIREG_COUNT - 1];
+    regNumber gtOtherRegs[MAX_MULTIREG_COUNT - 1];
 
     //----------------------------------------------------------
     // ClearOtherRegs: set gtOtherRegs to REG_NA.
@@ -8957,7 +8957,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
         }
         else
         {
-            gtOtherRegs[idx - 1] = (regNumberSmall)reg;
+            gtOtherRegs[idx - 1] = (regNumber)reg;
             assert(gtOtherRegs[idx - 1] == reg);
         }
     }

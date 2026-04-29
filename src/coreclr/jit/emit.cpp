@@ -3582,9 +3582,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
         id->idSetIsCall();
 
 #ifdef TARGET_XARCH
-        /* Store the displacement and make sure the value fit */
-        id->idAddr()->iiaAddrMode.amDisp = disp;
-        assert(id->idAddr()->iiaAddrMode.amDisp == disp);
+        id->idAddr()->iiaAddrMode.amDisp(disp);
 #endif // TARGET_XARCH
 
         /* Save the live GC registers in the unused register fields */

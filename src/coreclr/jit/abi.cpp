@@ -200,7 +200,7 @@ ABIPassingSegment ABIPassingSegment::InRegister(regNumber reg, unsigned offset, 
 {
     assert(reg != REG_NA);
     ABIPassingSegment segment;
-    segment.m_register    = static_cast<regNumberSmall>(reg);
+    segment.m_register    = static_cast<regNumber>(reg);
     segment.m_stackOffset = 0;
     segment.Offset        = offset;
     segment.Size          = size;

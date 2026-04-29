@@ -8,9 +8,9 @@ enum class WellKnownArg : unsigned;
 
 class ABIPassingSegment
 {
-    regNumberSmall m_register        = REG_NA;
-    bool           m_isFullStackSlot = true;
-    unsigned       m_stackOffset     = 0;
+    regNumber m_register        = REG_NA;
+    bool      m_isFullStackSlot = true;
+    unsigned  m_stackOffset     = 0;
 
 public:
     bool IsPassedInRegister() const;

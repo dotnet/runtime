@@ -121,7 +121,7 @@ inline regNumber emitter::inst3opImulReg(instruction ins)
 
 inline ssize_t emitter::emitGetInsAmd(instrDesc* id) const
 {
-    return id->idIsLargeDsp() ? ((instrDescAmd*)id)->idaAmdVal : id->idAddr()->iiaAddrMode.amDisp;
+    return id->idIsLargeDsp() ? ((instrDescAmd*)id)->idaAmdVal : id->idAddr()->iiaAddrMode.amDisp();
 }
 
 inline int emitter::emitGetInsCDinfo(instrDesc* id)
@@ -183,7 +183,7 @@ inline ssize_t emitter::emitGetInsAmdCns(const instrDesc* id, CnsVal* cv) const
             cv->cnsVal = id->idSmallCns();
         }
 
-        return id->idAddr()->iiaAddrMode.amDisp;
+        return id->idAddr()->iiaAddrMode.amDisp();
     }
 }
 
@@ -218,7 +218,7 @@ inline ssize_t emitter::emitGetInsAmdAny(const instrDesc* id) const
         return ((instrDescAmd*)id)->idaAmdVal;
     }
 
-    return id->idAddr()->iiaAddrMode.amDisp;
+    return id->idAddr()->iiaAddrMode.amDisp();
 }
 
 #endif // TARGET_XARCH

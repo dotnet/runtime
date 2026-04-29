@@ -142,7 +142,7 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
     {
         assert(regIdx == 1);
         GenTreeCopyOrReload* copy = tree->AsCopyOrReload();
-        copy->gtOtherRegs[0]      = (regNumberSmall)reg;
+        copy->gtOtherRegs[0]      = reg;
     }
 #endif // FEATURE_MULTIREG_RET
 #ifdef FEATURE_HW_INTRINSICS
@@ -1988,18 +1988,18 @@ void LinearScan::initVarRegMaps()
     // So, if we want to index by bbNum we have to know the maximum value.
     unsigned int bbCount = m_compiler->fgBBNumMax + 1;
 
-    inVarToRegMaps  = new (m_compiler, CMK_LSRA) regNumberSmall*[bbCount];
-    outVarToRegMaps = new (m_compiler, CMK_LSRA) regNumberSmall*[bbCount];
+    inVarToRegMaps  = new (m_compiler, CMK_LSRA) regNumber*[bbCount];
+    outVarToRegMaps = new (m_compiler, CMK_LSRA) regNumber*[bbCount];
 
     if (varCount > 0)
     {
         // This VarToRegMap is used during the resolution of critical edges.
-        sharedCriticalVarToRegMap = new (m_compiler, CMK_LSRA) regNumberSmall[regMapCount];
+        sharedCriticalVarToRegMap = new (m_compiler, CMK_LSRA) regNumber[regMapCount];
 
         for (unsigned int i = 0; i < bbCount; i++)
         {
-            VarToRegMap inVarToRegMap  = new (m_compiler, CMK_LSRA) regNumberSmall[regMapCount];
-            VarToRegMap outVarToRegMap = new (m_compiler, CMK_LSRA) regNumberSmall[regMapCount];
+            VarToRegMap inVarToRegMap  = new (m_compiler, CMK_LSRA) regNumber[regMapCount];
+            VarToRegMap outVarToRegMap = new (m_compiler, CMK_LSRA) regNumber[regMapCount];
 
             for (unsigned int j = 0; j < regMapCount; j++)
             {
@@ -2025,14 +2025,14 @@ void LinearScan::setInVarRegForBB(unsigned int bbNum, unsigned int varNum, regNu
 {
     assert(enregisterLocalVars);
     assert(reg < UCHAR_MAX && varNum < m_compiler->lvaCount);
-    inVarToRegMaps[bbNum][m_compiler->lvaTable[varNum].lvVarIndex] = (regNumberSmall)reg;
+    inVarToRegMaps[bbNum][m_compiler->lvaTable[varNum].lvVarIndex] = (regNumber)reg;
 }
 
 void LinearScan::setOutVarRegForBB(unsigned int bbNum, unsigned int varNum, regNumber reg)
 {
     assert(enregisterLocalVars);
     assert(reg < UCHAR_MAX && varNum < m_compiler->lvaCount);
-    outVarToRegMaps[bbNum][m_compiler->lvaTable[varNum].lvVarIndex] = (regNumberSmall)reg;
+    outVarToRegMaps[bbNum][m_compiler->lvaTable[varNum].lvVarIndex] = (regNumber)reg;
 }
 
 LinearScan::SplitEdgeInfo LinearScan::getSplitEdgeInfo(unsigned int bbNum)
@@ -2115,7 +2115,7 @@ VarToRegMap LinearScan::getOutVarToRegMap(unsigned int bbNum)
 void LinearScan::setVarReg(VarToRegMap bbVarToRegMap, unsigned int trackedVarIndex, regNumber reg)
 {
     assert(trackedVarIndex < m_compiler->lvaTrackedCount);
-    regNumberSmall regSmall = (regNumberSmall)reg;
+    regNumber regSmall = (regNumber)reg;
     assert((regNumber)regSmall == reg);
     bbVarToRegMap[trackedVarIndex] = regSmall;
 }
@@ -8706,7 +8706,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
 void LinearScan::addResolutionForDouble(BasicBlock*             block,
                                         GenTree*                insertionPoint,
                                         Interval**              sourceIntervals,
-                                        regNumberSmall*         location,
+                                        regNumber*              location,
                                         regNumber               toReg,
                                         regNumber               fromReg,
                                         ResolveType resolveType DEBUG_ARG(BasicBlock* fromBlock)
@@ -8733,7 +8733,7 @@ void LinearScan::addResolutionForDouble(BasicBlock*             block,
         }
         addResolution(block, insertionPoint, intervalToBeMoved1, toReg,
                       fromReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock) DEBUG_ARG(resolveTypeName[resolveType]));
-        location[fromReg] = (regNumberSmall)toReg;
+        location[fromReg] = toReg;
     }
 
     if (intervalToBeMoved2 != nullptr)
@@ -8745,7 +8745,7 @@ void LinearScan::addResolutionForDouble(BasicBlock*             block,
         addResolution(block, insertionPoint, intervalToBeMoved2, secondHalfTempReg,
                       secondHalfTargetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                           DEBUG_ARG(resolveTypeName[resolveType]));
-        location[secondHalfTargetReg] = (regNumberSmall)secondHalfTempReg;
+        location[secondHalfTargetReg] = secondHalfTempReg;
     }
 
     return;
@@ -9508,10 +9508,10 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     //   location[rax] == REG_NA
     // This indicates that the var originally in rax is now in its target register.
 
-    regNumberSmall location[REG_COUNT];
-    static_assert(sizeof(char) == sizeof(regNumberSmall)); // for memset to work
+    regNumber location[REG_COUNT];
+    static_assert(sizeof(char) == sizeof(regNumber)); // for memset to work
     memset(location, REG_NA, REG_COUNT);
-    regNumberSmall source[REG_COUNT];
+    regNumber source[REG_COUNT];
     memset(source, REG_NA, REG_COUNT);
 
     // What interval is this register associated with?
@@ -9611,8 +9611,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         }
         else
         {
-            location[fromReg]        = (regNumberSmall)fromReg;
-            source[toReg]            = (regNumberSmall)fromReg;
+            location[fromReg]        = (regNumber)fromReg;
+            source[toReg]            = (regNumber)fromReg;
             sourceIntervals[fromReg] = interval;
             targetRegsToDo |= genRegMask(toReg);
         }
@@ -9834,7 +9834,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         insertSwap(block, insertionPoint, sourceIntervals[source[otherTargetReg]]->varNum, targetReg,
                                    sourceIntervals[sourceReg]->varNum, fromReg);
                         location[sourceReg]              = REG_NA;
-                        location[source[otherTargetReg]] = (regNumberSmall)fromReg;
+                        location[source[otherTargetReg]] = (regNumber)fromReg;
 
                         INTRACK_STATS(updateLsraStat(STAT_RESOLUTION_MOV, block->bbNum));
                     }
@@ -9924,7 +9924,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
                                       targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                           DEBUG_ARG(resolveTypeName[resolveType]));
-                        location[targetReg] = (regNumberSmall)tempReg;
+                        location[targetReg] = tempReg;
 
                         if (sourceIntervals[targetReg]->registerType == TYP_DOUBLE)
                         {
@@ -9940,7 +9940,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
                                   targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                       DEBUG_ARG(resolveTypeName[resolveType]));
-                    location[targetReg] = (regNumberSmall)tempReg;
+                    location[targetReg] = (regNumber)tempReg;
 #endif // TARGET_ARM
                     targetRegsReady |= targetRegMask;
                 }

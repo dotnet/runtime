@@ -6,7 +6,7 @@
 #pragma hdrstop
 #endif
 
-using RegNumUnderlyingType                               = regNumberSmall;
+using RegNumUnderlyingType                               = regNumberBase_t;
 static const RegNumUnderlyingType WASM_REG_TYPE_BITS     = 3;
 static const RegNumUnderlyingType WASM_REG_TYPE_SHIFT    = 8 * sizeof(RegNumUnderlyingType) - WASM_REG_TYPE_BITS;
 static const RegNumUnderlyingType WASM_REG_TYPE_MASK     = ~0u << WASM_REG_TYPE_SHIFT;
