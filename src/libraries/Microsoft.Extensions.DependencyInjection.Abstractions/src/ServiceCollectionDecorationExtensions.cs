@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -155,33 +154,6 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
-        // --- Helpers ---
-
-        /// <summary>
-        /// Finds all <see cref="ServiceDescriptor"/> entries in the collection that match the
-        /// specified <paramref name="decoration"/>.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection"/> to search.</param>
-        /// <param name="decoration">The decoration to match against.</param>
-        /// <returns>An enumerable of matching <see cref="ServiceDescriptor"/> entries.</returns>
-        public static IEnumerable<ServiceDescriptor> FindMatchingDescriptors(
-            this IServiceCollection services,
-            ServiceDecoration decoration)
-        {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(decoration);
-
-            for (int i = 0; i < services.Count; i++)
-            {
-                ServiceDescriptor descriptor = services[i];
-
-                if (IsMatch(descriptor, decoration))
-                {
-                    yield return descriptor;
-                }
-            }
-        }
-
         private static void AddDecoration(IServiceCollection services, ServiceDecoration decoration)
         {
             if (services is IDecorationServiceCollection decorationCollection)
@@ -193,20 +165,5 @@ namespace Microsoft.Extensions.DependencyInjection
             throw new InvalidOperationException(SR.Format(SR.ServiceCollectionDoesNotSupportDecoration, services.GetType()));
         }
 
-        private static bool IsMatch(ServiceDescriptor descriptor, ServiceDecoration decoration)
-        {
-            if (!object.Equals(descriptor.ServiceKey, decoration.ServiceKey))
-            {
-                return false;
-            }
-
-            if (decoration.ServiceType.IsGenericTypeDefinition)
-            {
-                return descriptor.ServiceType.IsGenericType
-                    && descriptor.ServiceType.GetGenericTypeDefinition() == decoration.ServiceType;
-            }
-
-            return descriptor.ServiceType == decoration.ServiceType;
-        }
     }
 }
