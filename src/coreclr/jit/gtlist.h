@@ -39,6 +39,7 @@ GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Addre
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
 GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)
 GTNODE(ASYNC_RESUME_INFO, GenTreeVal         ,0,0,GTK_LEAF)             // Address of async resume info for a state
+GTNODE(FTN_ENTRY        , GenTree            ,0,0,GTK_LEAF)             // Address of this function's entry point
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -103,6 +104,8 @@ GTNODE(BSWAP            , GenTreeOp          ,0,0,GTK_UNOP)               // Byt
 GTNODE(BSWAP16          , GenTreeOp          ,0,0,GTK_UNOP)               // Byte swap lower 16-bits and zero upper 16 bits
 
 GTNODE(LZCNT            , GenTreeOp          ,0,0,GTK_UNOP)               // Leading Zero Count - Only used for SIMD VN evaluation today
+
+GTNODE(NONLOCAL_JMP     , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE)   // Non-local jump to specified address
 
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
@@ -325,6 +328,15 @@ GTNODE(NO_OP            , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE) // A NOP
 // Before lowering this is a seemingly normal TYP_VOID node with a lot of side effects (GTF_CALL | GTF_GLOB_REF | GTF_ORDER_SIDEEFF).
 // Lowering then removes all successor nodes and leaves it as the terminator node.
 GTNODE(RETURN_SUSPEND   , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
+
+// Transfer control to an OSR method variant via patchpoint helper.
+// Operands are the counter address (op1) and IL offset (op2).
+// Codegen emits the helper call and an unconditional jump to the returned address.
+GTNODE(PATCHPOINT       , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE)
+
+// Forced OSR patchpoint (partial compilation). Operand is the IL offset.
+// Codegen emits the forced patchpoint helper call and a jump to the returned address.
+GTNODE(PATCHPOINT_FORCED, GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 
 GTNODE(START_NONGC      , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group that will be non-gc interruptible.
 GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group where preemptive GC is enabled.

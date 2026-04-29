@@ -1134,7 +1134,16 @@ public:
     bool IsVNTypeHandle(ValueNum vn);
 
     // Returns true iff the VN represents a relop
-    bool IsVNRelop(ValueNum vn);
+    bool IsVNRelop(ValueNum vn, VNFuncApp* pFuncApp = nullptr);
+
+    // Map this VNFunc back to a gen tree op (relops only). Returns GT_NONE for
+    // any non-relop VNFunc. `isUnsigned` is set to true for VNF_*_UN variants.
+    //
+    // Note: VNF_*_UN is also used to represent unordered floating-point relops
+    // (see `GetVNFuncForNode`). Callers that propagate `isUnsigned` into a
+    // GTF_UNSIGNED flag must ensure the operands are integral; this helper
+    // cannot distinguish the two cases from a VNFunc alone.
+    genTreeOps VNRelopToGenTreeOp(VNFunc vnf, bool* isUnsigned);
 
     enum class VN_RELATION_KIND
     {
@@ -1541,6 +1550,10 @@ private:
         var_types         m_typ;
         ChunkExtraAttribs m_attribs;
 
+        // Precomputed element size for func-app chunks (sizeof(VNFunc) + sizeof(ValueNum) * arity).
+        // Zero for non-func chunks.
+        unsigned m_funcAppElemSize;
+
         // Initialize a chunk, starting at "*baseVN", for the given "typ", and "attribs", using "alloc" for allocations.
         // (Increments "*baseVN" by ChunkSize.)
         Chunk(CompAllocator alloc, ValueNum* baseVN, var_types typ, ChunkExtraAttribs attribs);
@@ -1557,9 +1570,8 @@ private:
         {
             assert((m_attribs >= CEA_Func0) && (m_attribs <= CEA_Func4));
             assert(numArgs == (unsigned)(m_attribs - CEA_Func0));
-            static_assert(sizeof(VNDefFuncAppFlexible) == sizeof(VNFunc));
-            return reinterpret_cast<VNDefFuncAppFlexible*>(
-                (char*)m_defs + offsetWithinChunk * (sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * numArgs));
+            assert(m_funcAppElemSize == sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * numArgs);
+            return reinterpret_cast<VNDefFuncAppFlexible*>((char*)m_defs + offsetWithinChunk * m_funcAppElemSize);
         }
 
         template <int N>

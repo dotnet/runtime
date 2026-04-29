@@ -16,7 +16,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class RCWDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "RCW";
-    protected override string DumpType => "full";
 
     /// <summary>
     /// Walks all strong GC handles and returns all RCW pointers found,

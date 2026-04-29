@@ -3,6 +3,7 @@
 
 #include "pal_config.h"
 #include "pal_process.h"
+#include "pal_signal.h"
 #include "pal_io.h"
 #include "pal_utilities.h"
 
@@ -783,6 +784,9 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 #elif defined(RLIMIT_VMEM)
         case PAL_RLIMIT_RSS:
             return RLIMIT_VMEM;
+#else
+        case PAL_RLIMIT_RSS:
+            break;
 #endif
 #ifdef RLIMIT_MEMLOCK
         case PAL_RLIMIT_MEMLOCK:
@@ -790,17 +794,19 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 #elif defined(RLIMIT_VMEM)
         case PAL_RLIMIT_MEMLOCK:
             return RLIMIT_VMEM;
+#else
+        case PAL_RLIMIT_MEMLOCK:
+            break;
 #endif
 #ifdef RLIMIT_NPROC
         case PAL_RLIMIT_NPROC:
             return RLIMIT_NPROC;
+#else
+        case PAL_RLIMIT_NPROC:
+            break;
 #endif
         case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
-#if !defined(RLIMIT_RSS) || !(defined(RLIMIT_MEMLOCK) || defined(RLIMIT_VMEM)) || !defined(RLIMIT_NPROC)
-        default:
-            break;
-#endif
     }
 
     assert_msg(false, "Unknown RLIMIT value", (int)value);
@@ -929,10 +935,13 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
     return result;
 }
 
-int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
+int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal)
 {
     assert(exitCode != NULL);
+    assert(terminatingSignal != NULL);
 
+    *exitCode = 0;
+    *terminatingSignal = 0;
     int32_t result;
     int status;
     while (CheckInterrupted(result = waitpid(pid, &status, WNOHANG)));
@@ -942,11 +951,16 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
         {
             // the child terminated normally.
             *exitCode = WEXITSTATUS(status);
+            *terminatingSignal = 0;
         }
         else if (WIFSIGNALED(status))
         {
             // child process was terminated by a signal.
-            *exitCode = 128 + WTERMSIG(status);
+            int sig = WTERMSIG(status);
+            *exitCode = 128 + sig;
+            PosixSignal posixSignal = PosixSignalInvalid;
+            TryConvertSignalCodeToPosixSignal(sig, &posixSignal);
+            *terminatingSignal = (int32_t)posixSignal;
         }
         else
         {
