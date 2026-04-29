@@ -31,6 +31,7 @@
 #include <minipal/thread.h>
 #include <minipal/time.h>
 #include <minipal/utils.h>
+#include <minipal/ospagesize.h>
 
 #include "globals.h"
 

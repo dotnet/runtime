@@ -25,6 +25,7 @@ Revision History:
 #include <errno.h>
 #include <unistd.h>
 #include <minipal/utils.h>
+#include <minipal/ospagesize.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <sys/types.h>

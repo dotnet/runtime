@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <minipal/utils.h>
+#include <minipal/ospagesize.h>
 
 #ifdef __wasm__
 // The OS page size used by CoreCLR on WASM (16KB).
@@ -12,25 +12,24 @@ int minipal_getpagesize(void)
     return 16 * 1024;
 }
 #elif HOST_WINDOWS
-#include <Windows.h>
 int minipal_getpagesize(void)
 {
-    static int cached_page_size = 0;
-    if (cached_page_size == 0)
-    {
-        SYSTEM_INFO sysInfo;
-        GetSystemInfo(&sysInfo);
-        cached_page_size = (int)sysInfo.dwPageSize;
-    }
-    return cached_page_size;
+    // The page size on Windows is 4KB and is not going to change.
+    return 4 * 1024;
 }
 #else
 #include <unistd.h>
 int minipal_getpagesize(void)
 {
-    static int cached_page_size = 0;
-    if (cached_page_size == 0)
-        cached_page_size = getpagesize();
-    return cached_page_size;
+    // Use volatile to prevent the compiler from reordering loads/stores of the cache,
+    // which could cause callers to observe a zero value after another thread initialized it.
+    static volatile int cached_page_size = 0;
+    int page_size = cached_page_size;
+    if (page_size == 0)
+    {
+        page_size = getpagesize();
+        cached_page_size = page_size;
+    }
+    return page_size;
 }
 #endif
