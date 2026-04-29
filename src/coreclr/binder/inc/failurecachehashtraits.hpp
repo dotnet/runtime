@@ -49,7 +49,7 @@ namespace BINDER_SPACE
         {
             return m_diagnosticInfo;
         }
-        inline void SetDiagnosticInfo(const SString &diagnosticInfo)
+        inline void SetDiagnosticInfo(LPCWSTR diagnosticInfo)
         {
             m_diagnosticInfo.Set(diagnosticInfo);
         }

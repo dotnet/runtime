@@ -29,7 +29,7 @@ namespace BINDER_SPACE
 
         HRESULT Add(/* in */ SString  &assemblyNameorPath,
                     /* in */ HRESULT  hrBindResult,
-                    /* in */ const SString &diagnosticInfo);
+                    /* in */ LPCWSTR  diagnosticInfo);
         HRESULT Lookup(/* in */  SString &assemblyNameorPath,
                        /* out */ SString *pDiagnosticInfo = NULL);
         void Remove(/* in */ SString &assemblyName);

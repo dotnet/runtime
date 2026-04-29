@@ -227,7 +227,7 @@ namespace BINDER_SPACE
     Exit:
         tracer.TraceBindResult(bindResult);
 
-        if (pDiagnosticInfo != NULL && !bindResult.GetDiagnosticInfo().IsEmpty())
+        if (pDiagnosticInfo != NULL)
         {
             pDiagnosticInfo->Append(bindResult.GetDiagnosticInfo());
         }
@@ -412,7 +412,9 @@ namespace BINDER_SPACE
         pAssemblyName->GetDisplayName(assemblyDisplayName,
                                       AssemblyName::INCLUDE_VERSION);
 
-        hr = pApplicationContext->GetFailureCache()->Lookup(assemblyDisplayName, &pBindResult->GetDiagnosticInfo());
+        SString cachedFailureInfo;
+        hr = pApplicationContext->GetFailureCache()->Lookup(assemblyDisplayName, &cachedFailureInfo);
+        pBindResult->AppendDiagnosticInfo(cachedFailureInfo);
         if (FAILED(hr))
         {
             if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) && skipFailureCaching)
@@ -873,11 +875,13 @@ namespace BINDER_SPACE
 
                     assemblyFilePath.Append(assemblyFileName);
 
+                    SString getAssemblyDiag;
                     hr = GetAssembly(assemblyFilePath,
                                         TRUE,  // fIsInTPA
                                         &pTPAAssembly,
                                         probeExtensionResult,
-                                        &pBindResult->GetDiagnosticInfo());
+                                        &getAssemblyDiag);
+                    pBindResult->AppendDiagnosticInfo(getAssemblyDiag);
 
                     BinderTracing::PathProbed(assemblyFilePath, BinderTracing::PathSource::Bundle, hr);
 
@@ -905,11 +909,13 @@ namespace BINDER_SPACE
                 _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
                 SString fileName(pTpaEntry->m_wszILFileName);
 
+                SString getAssemblyDiag;
                 hr = GetAssembly(fileName,
                                     TRUE,  // fIsInTPA
                                     &pTPAAssembly,
                                     ProbeExtensionResult::Invalid(),
-                                    &pBindResult->GetDiagnosticInfo());
+                                    &getAssemblyDiag);
+                pBindResult->AppendDiagnosticInfo(getAssemblyDiag);
                 BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
 
                 pBindResult->SetAttemptResult(hr, pTPAAssembly);
@@ -1022,14 +1028,11 @@ namespace BINDER_SPACE
         {
             if (pDiagnosticInfo != NULL)
             {
-                if (!pDiagnosticInfo->IsEmpty())
-                    pDiagnosticInfo->AppendUTF8("\n");
-
                 StackSString format;
                 format.LoadResource(IDS_BINDING_FAILED_TO_INIT_ASSEMBLY);
                 StackSString hrMsg;
                 GetHRMsg(hr, hrMsg);
-                pDiagnosticInfo->AppendPrintf(format.GetUTF8(), assemblyPath.GetUTF8(), hrMsg.GetUTF8());
+                pDiagnosticInfo->Printf(format.GetUTF8(), assemblyPath.GetUTF8(), hrMsg.GetUTF8());
             }
             goto Exit;
         }

@@ -56,7 +56,8 @@ namespace BINDER_SPACE
 
         const AttemptResult* GetAttempt(bool foundInContext) const;
 
-        SString& GetDiagnosticInfo() { return m_diagnosticInfo; }
+        inline LPCWSTR GetDiagnosticInfo() const;
+        inline void AppendDiagnosticInfo(const SString& info);
 
     protected:
         bool m_isContextBound;

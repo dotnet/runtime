@@ -1466,7 +1466,6 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const 
     m_diagnosticInfo.Set(diagnosticInfo);
 }
 
-
 EEFileLoadException::~EEFileLoadException()
 {
     STATIC_CONTRACT_NOTHROW;
