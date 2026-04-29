@@ -13,6 +13,10 @@ namespace Microsoft.Extensions.DependencyInjection
         public Microsoft.Extensions.DependencyInjection.IServiceCollection CreateBuilder(Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
         public System.IServiceProvider CreateServiceProvider(Microsoft.Extensions.DependencyInjection.IServiceCollection containerBuilder) { throw null; }
     }
+    public static partial class DecorationMaterializer
+    {
+        public static void Materialize(Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDecoration> decorations) { }
+    }
     public static partial class ServiceCollectionContainerBuilderExtensions
     {
         public static Microsoft.Extensions.DependencyInjection.ServiceProvider BuildServiceProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
