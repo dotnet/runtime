@@ -22,7 +22,10 @@ int minipal_getpagesize(void)
     // which is too coarse for GC alignment and thresholds.
     return 16 * 1024;
 #else
-    return getpagesize();
+    static int cached_page_size = 0;
+    if (cached_page_size == 0)
+        cached_page_size = getpagesize();
+    return cached_page_size;
 #endif
 }
 
