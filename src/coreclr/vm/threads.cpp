@@ -3330,7 +3330,7 @@ void Thread::SafeUpdateLastThrownObject(void)
         }
         EX_CATCH
         {
-            // If we can't create a handle, we set both throwables to the preallocated OOM exception.
+            // If we can't create a handle, set the last thrown object to the preallocated OOM exception.
             SafeSetThrowables(CLRException::GetPreallocatedOutOfMemoryException());
         }
         EX_END_CATCH
