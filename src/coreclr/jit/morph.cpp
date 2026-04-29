@@ -15506,7 +15506,8 @@ bool Compiler::fgMorphOperIsIntScalarMulLclVar(GenTree* op, ssize_t* scalar, uns
         *lclNum = op->AsLclVar()->GetLclNum();
         return true;
     }
-    else if (op->OperIs(GT_COMMA) && op->gtGetOp1()->OperIs(GT_STORE_LCL_VAR))
+    else if (op->OperIs(GT_COMMA) && op->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+             op->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
     {
         *scalar = 1;
         *lclNum = op->gtGetOp1()->AsLclVar()->GetLclNum();
@@ -15520,7 +15521,8 @@ bool Compiler::fgMorphOperIsIntScalarMulLclVar(GenTree* op, ssize_t* scalar, uns
             *lclNum = op->gtGetOp2()->AsLclVar()->GetLclNum();
             return true;
         }
-        else if (op->gtGetOp2()->OperIs(GT_COMMA) && op->gtGetOp2()->gtGetOp1()->OperIs(GT_STORE_LCL_VAR))
+        else if (op->gtGetOp2()->OperIs(GT_COMMA) && op->gtGetOp2()->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op->gtGetOp2()->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
         {
             *scalar = 1;
             *lclNum = op->gtGetOp2()->gtGetOp1()->AsLclVar()->GetLclNum();
@@ -15547,13 +15549,15 @@ bool Compiler::fgMorphOperIsIntScalarMulLclVar(GenTree* op, ssize_t* scalar, uns
             *scalar = -temp_scalar;
             *lclNum = op1->gtGetOp1()->AsLclVar()->GetLclNum();
         }
-        else if (op1->OperIs(GT_COMMA) && op1->gtGetOp1()->OperIs(GT_STORE_LCL_VAR))
+        else if (op1->OperIs(GT_COMMA) && op1->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op1->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
         {
             *scalar = temp_scalar;
             *lclNum = op1->gtGetOp1()->AsLclVar()->GetLclNum();
         }
         else if (op1->OperIs(GT_NEG) && op1->gtGetOp1()->OperIs(GT_COMMA) &&
-                 op1->gtGetOp1()->gtGetOp1()->OperIs(GT_STORE_LCL_VAR))
+                 op1->gtGetOp1()->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op1->gtGetOp1()->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
         {
             *scalar = -temp_scalar;
             *lclNum = op1->gtGetOp1()->gtGetOp1()->AsLclVar()->GetLclNum();
@@ -15578,12 +15582,14 @@ bool Compiler::fgMorphOperIsIntScalarMulLclVar(GenTree* op, ssize_t* scalar, uns
             *scalar = op2->AsIntConCommon()->IconValue();
             *lclNum = op1->AsLclVar()->GetLclNum();
         }
-        else if (op1->IsIntegralConst() && op2->OperIs(GT_COMMA) && op2->gtGetOp1()->OperIs(GT_STORE_LCL_VAR))
+        else if (op1->IsIntegralConst() && op2->OperIs(GT_COMMA) && op2->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op2->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
         {
             *scalar = op1->AsIntConCommon()->IconValue();
             *lclNum = op2->gtGetOp1()->AsLclVar()->GetLclNum();
         }
-        else if (op2->IsIntegralConst() && op1->OperIs(GT_COMMA) && op1->gtGetOp1()->OperIs(GT_STORE_LCL_VAR))
+        else if (op2->IsIntegralConst() && op1->OperIs(GT_COMMA) && op1->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op1->gtGetOp1()->gtGetOp1()->OperIs(GT_IND))
         {
             *scalar = op2->AsIntConCommon()->IconValue();
             *lclNum = op1->gtGetOp1()->AsLclVar()->GetLclNum();
@@ -15604,7 +15610,8 @@ bool Compiler::fgMorphOperIsIntScalarMulLclVar(GenTree* op, ssize_t* scalar, uns
             *scalar = 0;
             *lclNum = op2->AsLclVar()->GetLclNum();
         }
-        else if (op1->OperIs(GT_COMMA) && op1->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) && op2->OperIs(GT_LCL_VAR) &&
+        else if (op1->OperIs(GT_COMMA) && op1->gtGetOp1()->OperIs(GT_STORE_LCL_VAR) &&
+                 op1->gtGetOp1()->gtGetOp1()->OperIs(GT_IND) && op2->OperIs(GT_LCL_VAR) &&
                  op1->gtGetOp1()->AsLclVar()->GetLclNum() == op2->AsLclVar()->GetLclNum())
         {
             *scalar = 0;
