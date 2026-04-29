@@ -107,9 +107,9 @@ namespace System.Threading.RateLimiting
                 {
                     // For subsequent accesses on an already-materialized entry, refresh the timestamp
                     // under the lock so the Heartbeat won't observe a stale value and concurrently evict
-                    // a limiter that's actively being used. Use Interlocked.Exchange so the write is atomic
+                    // a limiter that's actively being used. Use Volatile.Write so the write is atomic
                     // on 32-bit platforms where the outside-lock read in Heartbeat may otherwise tear.
-                    Interlocked.Exchange(ref entry.Value.LastAccessTimestamp, Stopwatch.GetTimestamp());
+                    Volatile.Write(ref entry.Value.LastAccessTimestamp, Stopwatch.GetTimestamp());
                 }
             }
 
@@ -248,17 +248,17 @@ namespace System.Threading.RateLimiting
                 // Fall back to our internally tracked last-access timestamp when the limiter
                 // does not report an idle duration (e.g. NoopLimiter always returns null).
                 // This ensures idle partitions are eventually evicted regardless of the limiter implementation.
-                // Use Interlocked.Read so the value is read atomically on 32-bit platforms where 64-bit
+                // Use Volatile.Read so the value is read atomically on 32-bit platforms where 64-bit
                 // reads are not guaranteed to be atomic.
                 TimeSpan idleDuration = limiterEntry.Limiter.IdleDuration
-                    ?? RateLimiterHelper.GetElapsedTime(Interlocked.Read(ref limiterEntry.LastAccessTimestamp)).GetValueOrDefault();
+                    ?? RateLimiterHelper.GetElapsedTime(Volatile.Read(ref limiterEntry.LastAccessTimestamp)).GetValueOrDefault();
                 if (idleDuration > s_idleTimeLimit)
                 {
                     lock (Lock)
                     {
                         // Check time again under lock to make sure no one calls Acquire or WaitAsync after checking the time and removing the limiter
                         idleDuration = limiterEntry.Limiter.IdleDuration
-                            ?? RateLimiterHelper.GetElapsedTime(Interlocked.Read(ref limiterEntry.LastAccessTimestamp)).GetValueOrDefault();
+                            ?? RateLimiterHelper.GetElapsedTime(Volatile.Read(ref limiterEntry.LastAccessTimestamp)).GetValueOrDefault();
                         if (idleDuration > s_idleTimeLimit)
                         {
                             // Remove limiter from the lookup table and mark cache as invalid
