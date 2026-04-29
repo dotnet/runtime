@@ -552,9 +552,8 @@ void Lowering::AfterLowerBlocks()
             {
                 assert(IsDataFlowRoot(node));
                 node = StackifyTree(node);
-                // We've finished processing the current root tree, so
-                // we can release any temps used in stackification of the tree,
-                // since there is no more risk of interference between tree operands.
+                // We don't track liveness of temporaries more precisely since introducing eairler uses
+                // may interfere with later (by that point already inserted and stackified) stores.
                 ReleaseTemporaries();
             }
             m_lower->m_block = nullptr;
