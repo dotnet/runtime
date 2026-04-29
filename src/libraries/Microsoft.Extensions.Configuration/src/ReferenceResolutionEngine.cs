@@ -373,7 +373,9 @@ namespace Microsoft.Extensions.Configuration
                 _providers = providers;
             }
 
-            // Detects whether `raw` at `path` is a single-token section alias (e.g. {{Other:Section}}).
+            // Detects whether `raw` at `path` is a top-level ref(...) call whose chain resolves
+            // to a section (e.g. ref(Other:Section)). Sections are always strict — earlier-
+            // provider keys are not merged under the alias path.
             public bool IsDirectSectionAlias(Path path, Value raw, out SectionAlias alias)
             {
                 if (!raw.IsLeaf)
@@ -382,14 +384,13 @@ namespace Microsoft.Extensions.Configuration
                     return false;
                 }
 
-                IReadOnlyList<ValueToken> tokens = ReferenceParser.Parse(raw.AsString!);
+                ValueToken token = ReferenceParser.Parse(raw.AsString!);
 
-                if (tokens.Count == 1 &&
-                    tokens[0].Kind == ValueTokenKind.Reference &&
-                    tokens[0].HasHead &&
-                    TryDetectSectionTarget(tokens[0], raw.ProviderIndex, out Path targetPath))
+                if (token.Kind == ValueTokenKind.Reference &&
+                    token.HasHead &&
+                    TryDetectSectionTarget(token, raw.ProviderIndex, out Path targetPath))
                 {
-                    alias = new SectionAlias(path, targetPath, raw.ProviderIndex, tokens[0].IsStrict);
+                    alias = new SectionAlias(path, targetPath, raw.ProviderIndex, strict: true);
                     return true;
                 }
 
@@ -503,8 +504,8 @@ namespace Microsoft.Extensions.Configuration
 
                 try
                 {
-                    IReadOnlyList<ValueToken> tokens = ReferenceParser.Parse(rawValue);
-                    return TryResolveTokens(originKey, tokens, resolutionStack, depth, upperIndex, out value);
+                    ValueToken token = ReferenceParser.Parse(rawValue);
+                    return TryResolveTopToken(originKey, token, resolutionStack, depth, upperIndex, out value);
                 }
                 finally
                 {
@@ -512,15 +513,34 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            // Resolves a pre-parsed token list as either a single ref-style token (preserving the
-            // reference's untransformed value) or a fmt-style template concatenation.
-            private bool TryResolveTokens(Path originKey, IReadOnlyList<ValueToken> tokens, HashSet<Path>? resolutionStack, int depth, int upperIndex, out string? value)
+            // Top-level token resolution: a single Literal, Reference (may surface a section as a
+            // null leaf), or Format (always a concatenated string with embedded refs that must
+            // resolve to scalars).
+            private bool TryResolveTopToken(Path originKey, ValueToken token, HashSet<Path>? resolutionStack, int depth, int upperIndex, out string? value)
             {
-                if (tokens.Count == 1 && tokens[0].Kind == ValueTokenKind.Reference && tokens[0].HasHead)
+                switch (token.Kind)
                 {
-                    return TryResolveToken(originKey, tokens[0], resolutionStack, depth + 1, upperIndex, out value);
-                }
+                    case ValueTokenKind.Literal:
+                        value = token.Value;
+                        return true;
 
+                    case ValueTokenKind.Reference:
+                        return TryResolveReference(originKey, token, resolutionStack, depth + 1, upperIndex, allowSection: true, out value);
+
+                    case ValueTokenKind.Format:
+                        return TryResolveFormat(originKey, token.Tokens, resolutionStack, depth + 1, upperIndex, out value);
+
+                    default:
+                        value = null;
+                        return false;
+                }
+            }
+
+            // Resolve a Format body (sequence of Literal and Reference tokens) by concatenating
+            // the resolved string for each token. Embedded ref(...) calls inside a format body
+            // MUST resolve to a scalar value; section results throw.
+            private bool TryResolveFormat(Path originKey, IReadOnlyList<ValueToken> tokens, HashSet<Path>? resolutionStack, int depth, int upperIndex, out string? value)
+            {
                 var builder = new StringBuilder();
                 foreach (ValueToken token in tokens)
                 {
@@ -530,7 +550,19 @@ namespace Microsoft.Extensions.Configuration
                         continue;
                     }
 
-                    if (!TryResolveToken(originKey, token, resolutionStack, depth + 1, upperIndex, out string? resolvedTokenValue))
+                    if (token.Kind == ValueTokenKind.Format)
+                    {
+                        if (!TryResolveFormat(originKey, token.Tokens, resolutionStack, depth, upperIndex, out string? nestedValue))
+                        {
+                            value = null;
+                            return false;
+                        }
+
+                        builder.Append(nestedValue ?? string.Empty);
+                        continue;
+                    }
+
+                    if (!TryResolveReference(originKey, token, resolutionStack, depth, upperIndex, allowSection: false, out string? resolvedTokenValue))
                     {
                         value = null;
                         return false;
@@ -543,7 +575,10 @@ namespace Microsoft.Extensions.Configuration
                 return true;
             }
 
-            private bool TryResolveToken(Path storageKey, ValueToken token, HashSet<Path>? resolutionStack, int depth, int upperIndex, out string? value)
+            // Resolve a Reference token's coalesce chain. When `allowSection` is true, a path that
+            // resolves to a section produces a null leaf result. When `allowSection` is false (i.e.
+            // the reference appears inside a format(...) template), a section result throws.
+            private bool TryResolveReference(Path storageKey, ValueToken token, HashSet<Path>? resolutionStack, int depth, int upperIndex, bool allowSection, out string? value)
             {
                 foreach (ReferenceItem item in token.Items)
                 {
@@ -564,26 +599,111 @@ namespace Microsoft.Extensions.Configuration
 
                     if (!raw.Exists)
                     {
+                        // The path may still represent a section (has children but no direct value).
+                        if (_providers.IsSectionPath(tokenPath, upperIndex))
+                        {
+                            if (!allowSection)
+                            {
+                                throw new InvalidOperationException(
+                                    SR.Format(SR.ReferenceResolution_SectionInFormat, tokenPath, storageKey));
+                            }
+
+                            value = null;
+                            return true;
+                        }
+
                         continue;
+                    }
+
+                    if (raw.IsSection)
+                    {
+                        if (!allowSection)
+                        {
+                            throw new InvalidOperationException(
+                                SR.Format(SR.ReferenceResolution_SectionInFormat, tokenPath, storageKey));
+                        }
+
+                        value = null;
+                        return true;
                     }
 
                     if (raw.NeedsResolving)
                     {
-                        return TryResolveValue(tokenPath, raw.AsString!, resolutionStack, depth, raw.ProviderIndex, out value);
+                        // Recurse with the same allowSection flag so a leaf whose value is a single
+                        // ref(...) preserves section semantics for top-level reads but throws when
+                        // it surfaces inside a format(...).
+                        if (allowSection)
+                        {
+                            return TryResolveValue(tokenPath, raw.AsString!, resolutionStack, depth, raw.ProviderIndex, out value);
+                        }
+
+                        return TryResolveValueAsString(tokenPath, raw.AsString!, resolutionStack, depth, raw.ProviderIndex, out value);
                     }
 
                     value = raw.AsString;
                     return true;
                 }
 
-                if (token.HasDefault)
+                // No path resolved. Apply the chain default.
+                if (token.HasEmptyDefault)
                 {
-                    return TryResolveTokens(storageKey, token.LiteralDefault!, resolutionStack, depth, upperIndex, out value);
+                    value = string.Empty;
+                    return true;
+                }
+
+                if (token.Default is { } defaultTokens)
+                {
+                    // The default member is either a single Literal token or a single Format token
+                    // (encoded as a one-element list). Resolve as a format-style concatenation; in
+                    // either case the result is a scalar string and sections in inner refs throw.
+                    return TryResolveFormat(storageKey, defaultTokens, resolutionStack, depth, upperIndex, out value);
                 }
 
                 string missing = string.Join("?", token.Items.Select(i => i.Value));
                 throw new KeyNotFoundException(
                     SR.Format(SR.ReferenceResolution_KeyNotFound, missing, storageKey));
+            }
+
+            // Variant of TryResolveValue used when recursing from inside a format(...) context.
+            // Re-parses the leaf value and refuses any section result.
+            private bool TryResolveValueAsString(Path originKey, string rawValue, HashSet<Path>? resolutionStack, int depth, int upperIndex, out string? value)
+            {
+                if (depth > MaxDepth)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.ReferenceResolution_MaxDepthExceeded, MaxDepth, originKey));
+                }
+
+                if (depth >= CycleCheckThreshold && resolutionStack is null)
+                {
+                    resolutionStack = new HashSet<Path>();
+                }
+
+                if (resolutionStack is not null && !resolutionStack.Add(originKey))
+                {
+                    throw new InvalidOperationException(SR.Format(SR.ReferenceResolution_CircularReference, originKey));
+                }
+
+                try
+                {
+                    ValueToken token = ReferenceParser.Parse(rawValue);
+                    switch (token.Kind)
+                    {
+                        case ValueTokenKind.Literal:
+                            value = token.Value;
+                            return true;
+                        case ValueTokenKind.Reference:
+                            return TryResolveReference(originKey, token, resolutionStack, depth + 1, upperIndex, allowSection: false, out value);
+                        case ValueTokenKind.Format:
+                            return TryResolveFormat(originKey, token.Tokens, resolutionStack, depth + 1, upperIndex, out value);
+                        default:
+                            value = null;
+                            return false;
+                    }
+                }
+                finally
+                {
+                    resolutionStack?.Remove(originKey);
+                }
             }
 
             private static bool TryBuildAbsolutePath(Path storageKey, ReferenceItem item, out Path absolute)

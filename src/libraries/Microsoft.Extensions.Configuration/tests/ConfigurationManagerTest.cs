@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Configuration.Test
             builder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["Host"] = "api.example.com",
-                ["ServiceUrl"] = "{{|https://{{Host}}}}",
+                ["ServiceUrl"] = "format(https://ref(Host))",
             });
 
             builder.EnableReferenceResolution();
@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var counter = new LoadCountingProvider(new Dictionary<string, string>
             {
                 ["Host"] = "api.example.com",
-                ["ServiceUrl"] = "{{|https://{{Host}}}}",
+                ["ServiceUrl"] = "format(https://ref(Host))",
             });
 
             builder.Add(new LoadCountingSource(counter));
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal(1, counter.LoadCount);
 
             // And the engine picked up the mode change for the existing provider.
-            Assert.Equal("{{|https://{{Host}}}}", config["ServiceUrl"]);
+            Assert.Equal("format(https://ref(Host))", config["ServiceUrl"]);
         }
 
         [Fact]
@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             builder.AddInMemoryCollection(new Dictionary<string, string>
             {
-                ["ServiceUrl"] = "{{|https://{{Host|}}fallback}}",
+                ["ServiceUrl"] = "format(https://ref(Host?)fallback)",
             });
             builder.EnableReferenceResolution();
 
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Configuration.Test
             builder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["Defaults:Feature:Enabled"] = "true",
-                ["Feature"] = "{{Defaults:Feature}}",
+                ["Feature"] = "ref(Defaults:Feature)",
             });
             builder.EnableReferenceResolution();
 
@@ -188,7 +188,7 @@ namespace Microsoft.Extensions.Configuration.Test
             builder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["Defaults:Feature:Nested:Enabled"] = "true",
-                ["Feature"] = "{{Defaults:Feature}}",
+                ["Feature"] = "ref(Defaults:Feature)",
             });
             builder.EnableReferenceResolution();
 
@@ -205,7 +205,7 @@ namespace Microsoft.Extensions.Configuration.Test
             builder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["Defaults:Feature"] = "feature-default",
-                ["Feature"] = "{{Defaults:Feature}}",
+                ["Feature"] = "ref(Defaults:Feature)",
             });
             builder.EnableReferenceResolution();
 
@@ -215,7 +215,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void EnableReferenceResolutionMergesEarlierChildrenNotPresentInAliasedSection()
+        public void EnableReferenceResolutionAliasHidesEarlierChildrenUnderAliasedSection()
         {
             var config = new ConfigurationManager();
             IConfigurationBuilder builder = config;
@@ -227,13 +227,13 @@ namespace Microsoft.Extensions.Configuration.Test
             });
             builder.AddInMemoryCollection(new Dictionary<string, string>
             {
-                ["Feature"] = "{{Defaults:Feature}}",
+                ["Feature"] = "ref(Defaults:Feature)",
             });
             builder.EnableReferenceResolution();
 
-            Assert.Equal("from-early-provider", config["Feature:Legacy"]);
+            Assert.Null(config["Feature:Legacy"]);
             Assert.Equal(
-                new[] { "Enabled", "Legacy" },
+                new[] { "Enabled" },
                 config.GetSection("Feature").GetChildren().Select(c => c.Key).OrderBy(k => k));
         }
 

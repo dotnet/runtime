@@ -139,22 +139,31 @@
     <value>An unclosed reference expression was found at position '{0}'.</value>
   </data>
   <data name="ReferenceResolution_TrailingContentAfterClose" xml:space="preserve">
-    <value>Unexpected content at position '{0}' after the closing '}}}}' of a reference expression.</value>
+    <value>Unexpected content at position '{0}' after the closing ')' of a reference expression.</value>
   </data>
   <data name="ReferenceResolution_InvalidExpression" xml:space="preserve">
-    <value>A reference expression at position '{0}' is malformed. Expected '?' between items or end of expression.</value>
+    <value>A reference expression at position '{0}' is malformed.</value>
   </data>
   <data name="ReferenceResolution_KeyIsEmpty" xml:space="preserve">
     <value>A reference expression at position '{0}' has an empty key.</value>
   </data>
   <data name="ReferenceResolution_KeyNotFound" xml:space="preserve">
-    <value>The reference key '{0}' referenced by '{1}' was not found. Add a fallback reference or an explicit default with '|' (for example '{{Key|default}}' or bare '{{Key|}}' for empty on miss).</value>
+    <value>The reference key '{0}' referenced by '{1}' was not found. Add a fallback reference, a quoted literal default, or a trailing '?' for empty on miss (for example 'ref(Key?''default'')' or 'ref(Key?)').</value>
   </data>
   <data name="ReferenceResolution_MaxDepthExceeded" xml:space="preserve">
     <value>Maximum reference-resolution depth '{0}' was exceeded while resolving '{1}'.</value>
   </data>
   <data name="ReferenceResolution_SectionReferenceMustBeSingleToken" xml:space="preserve">
-    <value>Section reference at '{0}' must be a single reference expression in the form '{{Path}}'.</value>
+    <value>Section reference at '{0}' must be a single reference expression in the form 'ref(Path)'.</value>
+  </data>
+  <data name="ReferenceResolution_RedundantTrailingQuestion" xml:space="preserve">
+    <value>A reference expression at position '{0}' has both a literal/format default and a trailing '?'. Use one or the other.</value>
+  </data>
+  <data name="ReferenceResolution_DefaultMustBeLast" xml:space="preserve">
+    <value>A reference expression at position '{0}' has a path member after a literal or format default. Literal and format defaults must be the last member of the chain.</value>
+  </data>
+  <data name="ReferenceResolution_SectionInFormat" xml:space="preserve">
+    <value>The reference '{0}' inside a format(...) template at '{1}' resolves to a section. Sections are only allowed as a top-level ref(...) value.</value>
   </data>
   <data name="ReferenceResolution_NoSourceToConfigure" xml:space="preserve">
     <value>The configuration builder has no sources; there is nothing to configure for reference resolution.</value>

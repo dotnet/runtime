@@ -1033,17 +1033,17 @@ IniKey1=IniValue2");
     }
   },
   ""Services"": {
-    ""Primary"": ""{{Defaults:Service}}""
+    ""Primary"": ""ref(Defaults:Service)""
   },
-  ""ConnectionString"": ""{{|{{Services:Primary:Protocol}}://{{User}}@{{Services:Primary:Host}}:{{Services:Primary:Port}}/{{Database?Defaults:Database}}}}"",
+  ""ConnectionString"": ""format(ref(Services:Primary:Protocol)://ref(User)@ref(Services:Primary:Host):ref(Services:Primary:Port)/ref(Database?Defaults:Database))"",
   ""Tracing"": {
-    ""Collector"": ""{{|{{Tracing:Endpoint|}}}}""
+    ""Collector"": ""ref(Tracing:Endpoint?)""
   },
   ""Defaults"": {
     ""Database"": ""appdb""
   },
   ""Metadata"": {
-    ""Literal"": ""{{do-not-interpret}}""
+    ""Literal"": ""ref(do-not-interpret)""
   }
 }");
 
@@ -1059,7 +1059,7 @@ Port = 6543");
                 .AddIniFile(_iniFile, optional: false, reloadOnChange: false)
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
-                    // Exercises {{Key?Fallback}} — the key isn't present so the fallback reference ("Defaults:Database") applies.
+                    // Exercises ref(Key?Fallback) — the key isn't present so the fallback reference ("Defaults:Database") applies.
                     // We intentionally don't set "Database" anywhere else in the chain.
                 })
                 .EnableReferenceResolution()
@@ -1084,7 +1084,7 @@ Port = 6543");
             // default-value token — the single ConnectionString pulls from three providers at once.
             Assert.Equal("tcp://admin@primary.example.com:6543/appdb", config["ConnectionString"]);
 
-            // Optional {{Tracing:Endpoint|}} resolves to an empty string because the key is missing.
+            // Optional ref(Tracing:Endpoint?) resolves to an empty string because the key is missing.
             Assert.Equal(string.Empty, config["Tracing:Collector"]);
 
             // A gated value whose key cannot be resolved and has no default throws.
