@@ -950,6 +950,8 @@ namespace System.Threading.Tasks.Tests
                 });
             });
 
+            // DumpCollectedEvents(events);
+
             var eventIds = CollectAsyncEventIdsWithTimestamps(events);
 
             int suspendIdx = eventIds.FindIndex(e => e.EventId == AsyncEventID.SuspendAsyncCallstack);
@@ -977,18 +979,22 @@ namespace System.Threading.Tasks.Tests
                 });
             });
 
+            // DumpCollectedEvents(events);
+
             var resumeStacks = CollectCallstacks(events, AsyncEventID.ResumeAsyncCallstack);
             var suspendStacks = CollectCallstacks(events, AsyncEventID.SuspendAsyncCallstack);
 
             Assert.NotEmpty(resumeStacks);
             Assert.NotEmpty(suspendStacks);
 
-            // The first resume is the lambda resuming after Yield (depth 1).
-            byte firstResumeDepth = resumeStacks[0].FrameCount;
+            // The shallowest resume is after the initial Yield (just the lambda).
+            // The deepest suspend captures the full chain (FuncInner -> FuncChained -> lambda).
+            // Use min/max to avoid cross-buffer ordering dependence.
+            byte minResumeDepth = resumeStacks.Min(cs => cs.FrameCount);
             byte maxSuspendDepth = suspendStacks.Max(cs => cs.FrameCount);
 
-            Assert.True(maxSuspendDepth > firstResumeDepth,
-                $"Suspend callstack depth ({maxSuspendDepth}) should be deeper than initial resume callstack depth ({firstResumeDepth})");
+            Assert.True(maxSuspendDepth > minResumeDepth,
+                $"Suspend callstack depth ({maxSuspendDepth}) should be deeper than shallowest resume callstack depth ({minResumeDepth})");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
@@ -1371,6 +1377,7 @@ namespace System.Threading.Tasks.Tests
 
             ulong workerOsThreadId = 0;
             var workerIdReady = new ManualResetEventSlim(false);
+            var firstBatchDone = new ManualResetEventSlim(false);
             var firstFlushSeen = new ManualResetEventSlim(false);
             var workerEvents = new ConcurrentQueue<EventWrittenEventArgs>();
 
@@ -1398,8 +1405,9 @@ namespace System.Threading.Tasks.Tests
 
                         // First batch: generate events on this thread's profiler context.
                         Func().GetAwaiter().GetResult();
+                        firstBatchDone.Set();
 
-                        // Wait for the periodic flush timer to flush our buffer.
+                        // Wait for the flush to deliver our first buffer before generating more events.
                         firstFlushSeen.Wait(TimeSpan.FromSeconds(20));
 
                         // Second batch: generate more events on the same thread's context.
@@ -1409,18 +1417,19 @@ namespace System.Threading.Tasks.Tests
                     thread.IsBackground = true;
                     thread.Start();
 
-                    // Periodic flush timer (1s interval) to detect the idle buffer and flush it automatically.
-                    Thread.Sleep(1000);
+                    // Wait for the worker to finish its first batch, then force flush.
+                    firstBatchDone.Wait(TimeSpan.FromSeconds(20));
+                    SendFlushCommand();
 
                     // Poll for first buffer from our worker thread.
                     SpinWait.SpinUntil(() => workerEvents.Count >= 1, TimeSpan.FromSeconds(20));
                     firstFlushSeen.Set();
 
-                    // Wait for the worker to finish.
+                    // Wait for the worker to finish its second batch.
                     thread.Join(TimeSpan.FromSeconds(20));
 
-                    // Periodic flush timer (1s interval) to detect the idle buffer and flush it automatically.
-                    Thread.Sleep(1000);
+                    // Force a flush to deliver the second batch.
+                    SendFlushCommand();
 
                     // Poll for second buffer from our worker thread.
                     SpinWait.SpinUntil(() => workerEvents.Count >= 2, TimeSpan.FromSeconds(20));
