@@ -21,7 +21,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TDecorator">The type of the decorator.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the decoration to.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        /// <exception cref="InvalidOperationException">No service of type <typeparamref name="TService"/> has been registered.</exception>
         public static IServiceCollection Decorate<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TDecorator>(
             this IServiceCollection services)
             where TDecorator : TService
@@ -37,7 +36,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The type of the service to decorate.</param>
         /// <param name="decoratorType">The type of the decorator.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        /// <exception cref="InvalidOperationException">No service of type <paramref name="serviceType"/> has been registered.</exception>
         public static IServiceCollection Decorate(
             this IServiceCollection services,
             Type serviceType,
@@ -47,11 +45,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ArgumentNullException.ThrowIfNull(serviceType);
             ArgumentNullException.ThrowIfNull(decoratorType);
 
-            if (!TryDecorateCore(services, serviceType, serviceKey: null, decoratorType, decoratorFactory: null))
-            {
-                throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
-            }
-
+            AddDecoration(services, new ServiceDecoration(serviceType, decoratorType));
             return services;
         }
 
@@ -63,7 +57,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the decoration to.</param>
         /// <param name="decorator">A factory that creates the decorator, given the inner service and service provider.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        /// <exception cref="InvalidOperationException">No service of type <typeparamref name="TService"/> has been registered.</exception>
         public static IServiceCollection Decorate<TService>(
             this IServiceCollection services,
             Func<TService, IServiceProvider, TService> decorator)
@@ -72,11 +65,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ArgumentNullException.ThrowIfNull(services);
             ArgumentNullException.ThrowIfNull(decorator);
 
-            if (!TryDecorateCore(services, typeof(TService), serviceKey: null, decoratorType: null, (sp, inner) => decorator((TService)inner, sp)!))
-            {
-                throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, typeof(TService)));
-            }
-
+            AddDecoration(services, new ServiceDecoration(typeof(TService), (sp, inner) => decorator((TService)inner, sp)!));
             return services;
         }
 
@@ -88,7 +77,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The type of the service to decorate.</param>
         /// <param name="decorator">A factory that creates the decorator, given the service provider and the inner service instance.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        /// <exception cref="InvalidOperationException">No service of type <paramref name="serviceType"/> has been registered.</exception>
         public static IServiceCollection Decorate(
             this IServiceCollection services,
             Type serviceType,
@@ -98,88 +86,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ArgumentNullException.ThrowIfNull(serviceType);
             ArgumentNullException.ThrowIfNull(decorator);
 
-            if (!TryDecorateCore(services, serviceType, serviceKey: null, decoratorType: null, decorator))
-            {
-                throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
-            }
-
-            return services;
-        }
-
-        /// <summary>
-        /// Decorates all registrations of the type specified in <typeparamref name="TService"/> with
-        /// the decorator type specified in <typeparamref name="TDecorator"/>, if any exist.
-        /// </summary>
-        /// <typeparam name="TService">The type of the service to decorate.</typeparam>
-        /// <typeparam name="TDecorator">The type of the decorator.</typeparam>
-        /// <param name="services">The <see cref="IServiceCollection"/> to add the decoration to.</param>
-        /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection TryDecorate<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TDecorator>(
-            this IServiceCollection services)
-            where TDecorator : TService
-        {
-            return TryDecorate(services, typeof(TService), typeof(TDecorator));
-        }
-
-        /// <summary>
-        /// Decorates all registrations of the specified <paramref name="serviceType"/> with
-        /// the specified <paramref name="decoratorType"/>, if any exist.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection"/> to add the decoration to.</param>
-        /// <param name="serviceType">The type of the service to decorate.</param>
-        /// <param name="decoratorType">The type of the decorator.</param>
-        /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection TryDecorate(
-            this IServiceCollection services,
-            Type serviceType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type decoratorType)
-        {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(serviceType);
-            ArgumentNullException.ThrowIfNull(decoratorType);
-
-            TryDecorateCore(services, serviceType, serviceKey: null, decoratorType, decoratorFactory: null);
-            return services;
-        }
-
-        /// <summary>
-        /// Decorates all registrations of the type specified in <typeparamref name="TService"/> using
-        /// the specified factory, if any exist.
-        /// </summary>
-        /// <typeparam name="TService">The type of the service to decorate.</typeparam>
-        /// <param name="services">The <see cref="IServiceCollection"/> to add the decoration to.</param>
-        /// <param name="decorator">A factory that creates the decorator, given the inner service and service provider.</param>
-        /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection TryDecorate<TService>(
-            this IServiceCollection services,
-            Func<TService, IServiceProvider, TService> decorator)
-            where TService : class
-        {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(decorator);
-
-            TryDecorateCore(services, typeof(TService), serviceKey: null, decoratorType: null, (sp, inner) => decorator((TService)inner, sp)!);
-            return services;
-        }
-
-        /// <summary>
-        /// Decorates all registrations of the specified <paramref name="serviceType"/> using
-        /// the specified factory, if any exist.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection"/> to add the decoration to.</param>
-        /// <param name="serviceType">The type of the service to decorate.</param>
-        /// <param name="decorator">A factory that creates the decorator, given the service provider and the inner service instance.</param>
-        /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection TryDecorate(
-            this IServiceCollection services,
-            Type serviceType,
-            Func<IServiceProvider, object, object> decorator)
-        {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(serviceType);
-            ArgumentNullException.ThrowIfNull(decorator);
-
-            TryDecorateCore(services, serviceType, serviceKey: null, decoratorType: null, decorator);
+            AddDecoration(services, new ServiceDecoration(serviceType, decorator));
             return services;
         }
 
@@ -195,7 +102,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the decoration to.</param>
         /// <param name="serviceKey">The key of the service to decorate.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        /// <exception cref="InvalidOperationException">No keyed service of type <typeparamref name="TService"/> has been registered with the specified key.</exception>
         public static IServiceCollection DecorateKeyed<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TDecorator>(
             this IServiceCollection services,
             object? serviceKey)
@@ -213,7 +119,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The key of the service to decorate.</param>
         /// <param name="decoratorType">The type of the decorator.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        /// <exception cref="InvalidOperationException">No keyed service of type <paramref name="serviceType"/> has been registered with the specified key.</exception>
         public static IServiceCollection DecorateKeyed(
             this IServiceCollection services,
             Type serviceType,
@@ -224,11 +129,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ArgumentNullException.ThrowIfNull(serviceType);
             ArgumentNullException.ThrowIfNull(decoratorType);
 
-            if (!TryDecorateCore(services, serviceType, serviceKey, decoratorType, decoratorFactory: null))
-            {
-                throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
-            }
-
+            AddDecoration(services, new ServiceDecoration(serviceType, serviceKey, decoratorType));
             return services;
         }
 
@@ -241,7 +142,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The key of the service to decorate.</param>
         /// <param name="decorator">A factory that creates the decorator, given the inner service and service provider.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        /// <exception cref="InvalidOperationException">No keyed service of type <typeparamref name="TService"/> has been registered with the specified key.</exception>
         public static IServiceCollection DecorateKeyed<TService>(
             this IServiceCollection services,
             object? serviceKey,
@@ -251,75 +151,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ArgumentNullException.ThrowIfNull(services);
             ArgumentNullException.ThrowIfNull(decorator);
 
-            if (!TryDecorateCore(services, typeof(TService), serviceKey, decoratorType: null, (sp, inner) => decorator((TService)inner, sp)!))
-            {
-                throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, typeof(TService)));
-            }
-
-            return services;
-        }
-
-        /// <summary>
-        /// Decorates all registrations of the type specified in <typeparamref name="TService"/> with
-        /// the specified <paramref name="serviceKey"/> using the decorator type specified in
-        /// <typeparamref name="TDecorator"/>, if any exist.
-        /// </summary>
-        /// <typeparam name="TService">The type of the service to decorate.</typeparam>
-        /// <typeparam name="TDecorator">The type of the decorator.</typeparam>
-        /// <param name="services">The <see cref="IServiceCollection"/> to add the decoration to.</param>
-        /// <param name="serviceKey">The key of the service to decorate.</param>
-        /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection TryDecorateKeyed<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TDecorator>(
-            this IServiceCollection services,
-            object? serviceKey)
-            where TDecorator : TService
-        {
-            return TryDecorateKeyed(services, typeof(TService), serviceKey, typeof(TDecorator));
-        }
-
-        /// <summary>
-        /// Decorates all registrations of the specified <paramref name="serviceType"/> with
-        /// the specified <paramref name="serviceKey"/> using the specified <paramref name="decoratorType"/>,
-        /// if any exist.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection"/> to add the decoration to.</param>
-        /// <param name="serviceType">The type of the service to decorate.</param>
-        /// <param name="serviceKey">The key of the service to decorate.</param>
-        /// <param name="decoratorType">The type of the decorator.</param>
-        /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection TryDecorateKeyed(
-            this IServiceCollection services,
-            Type serviceType,
-            object? serviceKey,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type decoratorType)
-        {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(serviceType);
-            ArgumentNullException.ThrowIfNull(decoratorType);
-
-            TryDecorateCore(services, serviceType, serviceKey, decoratorType, decoratorFactory: null);
-            return services;
-        }
-
-        /// <summary>
-        /// Decorates all registrations of the type specified in <typeparamref name="TService"/> with
-        /// the specified <paramref name="serviceKey"/> using the specified factory, if any exist.
-        /// </summary>
-        /// <typeparam name="TService">The type of the service to decorate.</typeparam>
-        /// <param name="services">The <see cref="IServiceCollection"/> to add the decoration to.</param>
-        /// <param name="serviceKey">The key of the service to decorate.</param>
-        /// <param name="decorator">A factory that creates the decorator, given the inner service and service provider.</param>
-        /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection TryDecorateKeyed<TService>(
-            this IServiceCollection services,
-            object? serviceKey,
-            Func<TService, IServiceProvider, TService> decorator)
-            where TService : class
-        {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(decorator);
-
-            TryDecorateCore(services, typeof(TService), serviceKey, decoratorType: null, (sp, inner) => decorator((TService)inner, sp)!);
+            AddDecoration(services, new ServiceDecoration(typeof(TService), serviceKey, (sp, inner) => decorator((TService)inner, sp)!));
             return services;
         }
 
@@ -350,47 +182,12 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        private static bool TryDecorateCore(
-            IServiceCollection services,
-            Type serviceType,
-            object? serviceKey,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type? decoratorType,
-            Func<IServiceProvider, object, object>? decoratorFactory)
-        {
-            // For non-open-generic decorations, check that at least one matching descriptor exists
-            if (!serviceType.IsGenericTypeDefinition)
-            {
-                bool hasMatch = false;
-                for (int i = 0; i < services.Count; i++)
-                {
-                    ServiceDescriptor descriptor = services[i];
-                    if (descriptor.ServiceType == serviceType && object.Equals(descriptor.ServiceKey, serviceKey))
-                    {
-                        hasMatch = true;
-                        break;
-                    }
-                }
-
-                if (!hasMatch)
-                {
-                    return false;
-                }
-            }
-
-            ServiceDecoration decoration = decoratorType is not null
-                ? new ServiceDecoration(serviceType, serviceKey, decoratorType)
-                : new ServiceDecoration(serviceType, serviceKey, decoratorFactory!);
-
-            GetDecorations(services).Add(decoration);
-
-            return true;
-        }
-
-        internal static IList<ServiceDecoration> GetDecorations(IServiceCollection services)
+        private static void AddDecoration(IServiceCollection services, ServiceDecoration decoration)
         {
             if (services is IDecorationServiceCollection decorationCollection)
             {
-                return decorationCollection.Decorations;
+                decorationCollection.Decorations.Add(decoration);
+                return;
             }
 
             throw new InvalidOperationException(SR.Format(SR.ServiceCollectionDoesNotSupportDecoration, services.GetType()));

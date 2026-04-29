@@ -55,22 +55,14 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public void Decorate_ThrowsWhenNoMatchingService()
+        public void Decorate_NoMatchingService_IsIgnoredAtResolution()
         {
             var services = new ServiceCollection();
+            services.Decorate<IService, DecoratorService>();
 
-            Assert.Throws<InvalidOperationException>(() =>
-                services.Decorate<IService, DecoratorService>());
-        }
-
-        [Fact]
-        public void TryDecorate_DoesNotThrowWhenNoMatchingService()
-        {
-            var services = new ServiceCollection();
-            services.TryDecorate<IService, DecoratorService>();
-
-            // Should not throw, decoration is simply ignored
+            // Decoration with no matching service is silently ignored
             var provider = services.BuildServiceProvider();
+            Assert.Null(provider.GetService<IService>());
         }
 
         [Fact]
