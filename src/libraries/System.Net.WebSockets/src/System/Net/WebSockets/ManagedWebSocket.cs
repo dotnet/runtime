@@ -421,6 +421,12 @@ namespace System.Net.WebSockets
 
             await SendCloseFrameAsync(closeStatus, statusDescription, cancellationToken).ConfigureAwait(false);
 
+            // Polite EOF wait under the receive mutex; avoids racing the receive loop on the stream.
+            if (!_isServer && _receivedCloseFrame)
+            {
+                await WaitForServerToCloseConnectionAsync(enterMutex: true, cancellationToken).ConfigureAwait(false);
+            }
+
             // If we already received a close frame, since we've now also sent one, we're now closed.
             lock (StateUpdateLock)
             {
@@ -1121,50 +1127,67 @@ namespace System.Net.WebSockets
 
             if (!_isServer && _sentCloseFrame)
             {
-                await WaitForServerToCloseConnectionAsync(cancellationToken).ConfigureAwait(false);
+                await WaitForServerToCloseConnectionAsync(enterMutex: false, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        /// <summary>Issues a read on the stream to wait for EOF. Idempotent across call sites.</summary>
-        private async ValueTask WaitForServerToCloseConnectionAsync(CancellationToken cancellationToken)
+        /// <summary>Issues a read on the stream to wait for EOF, optionally acquiring <see cref="_receiveMutex"/> first.</summary>
+        private async ValueTask WaitForServerToCloseConnectionAsync(bool enterMutex, CancellationToken cancellationToken)
         {
-            // Called from both the receive and the send path. In rare concurrent Close + Receive
-            // scenarios both paths can observe the close handshake as complete and would otherwise
-            // both issue a stream read (violating most Stream implementations' single-consumer invariant).
-            // The flag guarantees that only the first invocation performs the wait; the other is a no-op.
-            if (Interlocked.CompareExchange(ref _waitedForServerClose, 1, 0) != 0)
+            bool mutexEntered = false;
+            Task? task = null;
+            try
             {
-                return;
-            }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
-
-            // Per RFC 6455 7.1.1, try to let the server close the connection.  We give it up to a second.
-            // We simply issue a read and don't care what we get back; we could validate that we don't get
-            // additional data, but at this point we're about to close the connection and we're just stalling
-            // to try to get the server to close first.
-            ValueTask<int> finalReadTask = _stream.ReadAsync(_receiveBuffer, cancellationToken);
-
-            if (finalReadTask.IsCompletedSuccessfully)
-            {
-                finalReadTask.GetAwaiter().GetResult();
-            }
-            else
-            {
-                const int WaitForCloseTimeoutMs = 1_000; // arbitrary amount of time to give the server (same duration as .NET Framework)
-                Task task = finalReadTask.AsTask();
-
-                try
+                if (enterMutex)
                 {
+                    await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
+                    mutexEntered = true;
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(_receiveMutex);
+                }
+
+                Debug.Assert(_receiveMutex.IsHeld, $"Expected {nameof(_receiveMutex)} to be held");
+
+                if (Interlocked.CompareExchange(ref _waitedForServerClose, 1, 0) != 0)
+                {
+                    return;
+                }
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+
+                // Per RFC 6455 7.1.1, try to let the server close the connection.  We give it up to a second.
+                // We simply issue a read and don't care what we get back; we could validate that we don't get
+                // additional data, but at this point we're about to close the connection and we're just stalling
+                // to try to get the server to close first.
+                ValueTask<int> finalReadTask = _stream.ReadAsync(_receiveBuffer, cancellationToken);
+
+                if (finalReadTask.IsCompletedSuccessfully)
+                {
+                    finalReadTask.GetAwaiter().GetResult();
+                }
+                else
+                {
+                    const int WaitForCloseTimeoutMs = 1_000; // arbitrary amount of time to give the server (same duration as .NET Framework)
+                    task = finalReadTask.AsTask();
+
 #pragma warning disable CA2016 // Token was already provided to the ReadAsync
                     await task.WaitAsync(TimeSpan.FromMilliseconds(WaitForCloseTimeoutMs)).ConfigureAwait(false);
 #pragma warning restore CA2016
                 }
-                catch
+            }
+            catch
+            {
+                if (task is not null)
                 {
-                    // Eat any resulting exceptions. We were going to close the connection, anyway.
                     LogExceptions(task);
-                    Abort();
+                }
+                Abort();
+            }
+            finally
+            {
+                if (mutexEntered)
+                {
+                    _receiveMutex.Exit();
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(_receiveMutex);
                 }
             }
         }
@@ -1278,12 +1301,28 @@ namespace System.Net.WebSockets
         private async ValueTask CloseWithReceiveErrorAndThrowAsync(
             WebSocketCloseStatus closeStatus, WebSocketError error, string? errorMessage = null, Exception? innerException = null)
         {
+            Debug.Assert(_receiveMutex.IsHeld, $"Caller should hold the {nameof(_receiveMutex)}");
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, errorMessage);
 
-            // Close the connection if it hasn't already been closed
+            // Caller holds _receiveMutex; bypass CloseOutputAsync to avoid re-entering it for the EOF wait.
             if (!_sentCloseFrame)
             {
-                await CloseOutputAsync(closeStatus, string.Empty, default).ConfigureAwait(false);
+                await SendCloseFrameAsync(closeStatus, string.Empty, default).ConfigureAwait(false);
+
+                if (!_isServer && _receivedCloseFrame)
+                {
+                    await WaitForServerToCloseConnectionAsync(enterMutex: false, default).ConfigureAwait(false);
+                }
+
+                lock (StateUpdateLock)
+                {
+                    Debug.Assert(_sentCloseFrame);
+                    if (_receivedCloseFrame)
+                    {
+                        DisposeCore();
+                    }
+                }
             }
 
             // Dump our receive buffer; we're in a bad state to do any further processing
@@ -1502,6 +1541,12 @@ namespace System.Net.WebSockets
                     }
                 }
 
+                // Polite EOF wait under the receive mutex; avoids racing the receive loop on the stream.
+                if (!_isServer && _receivedCloseFrame)
+                {
+                    await WaitForServerToCloseConnectionAsync(enterMutex: true, cancellationToken).ConfigureAwait(false);
+                }
+
                 // We're closed.  Close the connection and update the status.
                 lock (StateUpdateLock)
                 {
@@ -1570,11 +1615,6 @@ namespace System.Net.WebSockets
                 }
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"State transition from {state} to {_state}");
-            }
-
-            if (!_isServer && _receivedCloseFrame)
-            {
-                await WaitForServerToCloseConnectionAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
