@@ -65,6 +65,7 @@ struct InProcCrashReporterSettings
     InProcCrashReportWalkStackCallback walkStackCallback;
     InProcCrashReportGetExceptionCallback getExceptionCallback;
     InProcCrashReportEnumerateThreadsCallback enumerateThreadsCallback;
+    uint32_t timeoutSeconds;
 };
 
 class InProcCrashReporter
@@ -107,6 +108,7 @@ private:
     InProcCrashReportWalkStackCallback m_walkStackCallback = nullptr;
     InProcCrashReportGetExceptionCallback m_getExceptionCallback = nullptr;
     InProcCrashReportEnumerateThreadsCallback m_enumerateThreadsCallback = nullptr;
+    uint32_t m_timeoutSeconds = 0;
     char m_reportPath[CRASHREPORT_STRING_BUFFER_SIZE] = {};
     char m_processName[CRASHREPORT_STRING_BUFFER_SIZE] = {};
 };
