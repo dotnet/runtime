@@ -678,6 +678,11 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
 
     # clang 20 suppressions
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-nontrivial-memaccess>)
+
+    # Xcode 26 / newer clang suppressions for iOS-like Apple builds
+    add_compile_options(-Wno-jump-misses-init)
+    add_compile_options(-Wno-implicit-int-enum-cast)
+    add_compile_options(-Wno-implicit-void-ptr-cast)
   else()
     add_compile_options(-Wno-uninitialized)
     add_compile_options(-Wno-strict-aliasing)
