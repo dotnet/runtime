@@ -139,6 +139,46 @@ namespace Wasm.Build.Tests
             }
         }
 
+        [Theory]
+        [InlineData(Configuration.Release)]
+        public void IncrementalBuild_NoChanges_SkipsWebcilAndBootJson_AOT(Configuration config)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.WasmBasicTestApp, "incremental_aot_noop");
+            UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
+
+            (_, string firstBinlog) = BuildProjectWithoutAssert(config, info.ProjectName, new PublishOptions(AOT: true, Label: "first"));
+            _testOutput.WriteLine($"First publish binlog: {firstBinlog}");
+
+            // no-op publish
+            (_, string secondBinlog) = BuildProjectWithoutAssert(config, info.ProjectName, new PublishOptions(AOT: true, UseCache: false, Label: "second"));
+            _testOutput.WriteLine($"Second publish binlog: {secondBinlog}");
+
+            AssertTargetSkipped(secondBinlog, "GeneratePublishWasmBootJson");
+        }
+
+        [Theory]
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
+        public void IncrementalBuild_PropertyChange_RunsBootJson(Configuration config)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "incremental_prop");
+            UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
+
+            (_, string firstBinlog) = BuildProjectWithoutAssert(config, info.ProjectName, new BuildOptions(Label: "first"));
+            _testOutput.WriteLine($"First build binlog: {firstBinlog}");
+
+            // rebuild with a property-only change (no source changes)
+            (_, string secondBinlog) = BuildProjectWithoutAssert(config, info.ProjectName, new BuildOptions(UseCache: false, Label: "second", ExtraMSBuildArgs: "-p:WasmDebugLevel=-1"));
+            _testOutput.WriteLine($"Second build binlog: {secondBinlog}");
+
+            // boot JSON must be regenerated because WasmDebugLevel changed (tracked via stamp file)
+            AssertTargetRan(secondBinlog, "_WriteBuildWasmBootJsonFile");
+
+            // webcil conversion should be skipped — no assembly changes
+            if (UseWebcil)
+                AssertTargetSkipped(secondBinlog, "_ConvertBuildDllsToWebcil");
+        }
+
         private static void AssertTargetSkipped(string binlogPath, string targetName)
         {
             var build = SL.BinaryLog.ReadBuild(binlogPath);
