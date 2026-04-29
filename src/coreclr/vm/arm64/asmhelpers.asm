@@ -777,9 +777,6 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
 
     IMPORT g_pPatchpoint
 
-    ; Capture the return address (the JIT-emitted indirect jump that follows
-    ; the helper call) into x2 as the third arg, then tail-jump to the managed
-    ; Thread.Patchpoint via g_pPatchpoint.
     LEAF_ENTRY JIT_Patchpoint
         mov     x2, lr
         ldr     x9, =g_pPatchpoint
@@ -787,8 +784,6 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         br      x9
     LEAF_END
 
-    ; Forced variant: ilOffset arrives in x0; shift to x1, zero x0 (counter=NULL),
-    ; then capture return address and tail-jump.
     LEAF_ENTRY JIT_PatchpointForced
         mov     x1, x0
         mov     x0, #0

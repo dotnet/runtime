@@ -150,9 +150,6 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-// Capture the return address (the JIT-emitted indirect jump that follows
-// the helper call) into rdx as the third arg, then tail-jump to the managed
-// Thread.Patchpoint via g_pPatchpoint.
 LEAF_ENTRY JIT_Patchpoint, _TEXT
         mov     rdx, [rsp]
         PREPARE_EXTERNAL_VAR g_pPatchpoint, rax
@@ -160,8 +157,6 @@ LEAF_ENTRY JIT_Patchpoint, _TEXT
         TAILJMP_RAX
 LEAF_END JIT_Patchpoint, _TEXT
 
-// Forced variant: ilOffset arrives in rdi; shift to rsi, zero rdi (counter=NULL),
-// then capture return address and tail-jump.
 LEAF_ENTRY JIT_PatchpointForced, _TEXT
         mov     rsi, rdi
         xor     edi, edi

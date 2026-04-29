@@ -372,17 +372,12 @@ endif ; FEATURE_TIERED_COMPILATION
 
 ifdef FEATURE_ON_STACK_REPLACEMENT
 
-; Capture the return address (the JIT-emitted indirect jump that follows
-; the helper call) into r8 as the third arg, then tail-jump to the managed
-; Thread.Patchpoint via g_pPatchpoint.
 LEAF_ENTRY JIT_Patchpoint, _TEXT
         mov     r8, [rsp]
         mov     rax, g_pPatchpoint
         TAILJMP_RAX
 LEAF_END JIT_Patchpoint, _TEXT
 
-; Forced variant: ilOffset arrives in rcx; shift to rdx, zero rcx (counter=NULL),
-; then capture return address and tail-jump.
 LEAF_ENTRY JIT_PatchpointForced, _TEXT
         mov     rdx, rcx
         xor     ecx, ecx

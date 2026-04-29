@@ -84,8 +84,6 @@ using std::isnan;
 //
 //========================================================================
 
-
-
 //========================================================================
 //
 //      INTEGER ARITHMETIC HELPERS
@@ -1574,24 +1572,14 @@ static PCODE PatchpointRequiredPolicy(int* counter, int ilOffset, PerPatchpointI
 //
 // Currently, `counter` is a pointer into the Tier0 method stack
 // frame if it exists so we have exclusive access.
-//
-// `callsiteIP` is the address of the JIT-emitted indirect jump that
-// follows the helper call (captured by the per-arch asm shim from the
-// helper's return address). On the no-transition path we return
-// `callsiteIP` advanced past that indirect jump so the jump skips
-// over itself and resumes Tier0 execution; on the transition path we
-// return an OSR method address instead.
 static PCODE PatchpointWorker(int* counter, int ilOffset, PCODE callsiteIP)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    // Bookkeeping (EECodeInfo, GetPerPatchpointInfo, hit-count CAS) requires
-    // cooperative mode. We arrive here in preemptive mode via QCall.
     GCX_COOP();
 
-    // Patchpoint identity is the helper's call site inside the Tier0 method.
     EECodeInfo codeInfo(callsiteIP);
     MethodDesc* pMD = codeInfo.GetMethodDesc();
     LoaderAllocator* allocator = pMD->GetLoaderAllocator();
@@ -1668,11 +1656,21 @@ extern "C" PCODE QCALLTYPE ThreadNative_Patchpoint(int* counter, int ilOffset, P
 
 #else // FEATURE_ON_STACK_REPLACEMENT
 
+// OSR-disabled builds keep these symbols for registration/linking, but they are unreachable.
+HCIMPL2(PCODE, JIT_Patchpoint, int* counter, int ilOffset)
+{
+    UNREACHABLE();
+}
+HCIMPLEND
+
+HCIMPL1(PCODE, JIT_PatchpointForced, int ilOffset)
+{
+    UNREACHABLE();
+}
+HCIMPLEND
+
 extern "C" PCODE QCALLTYPE ThreadNative_Patchpoint(int* counter, int ilOffset, PCODE callsiteIP)
 {
-    // OSR not supported on this configuration; the JIT does not emit
-    // CORINFO_HELP_PATCHPOINT, so this entrypoint is unreachable. Provide
-    // the symbol so qcallentrypoints.cpp registration links.
     UNREACHABLE();
 }
 

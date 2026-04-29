@@ -557,12 +557,6 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Patchpoint")]
         private static unsafe partial IntPtr PatchpointInternal(int* counter, int ilOffset, IntPtr resumeIP);
 
-        // OSR patchpoint helper. Called from per-arch JIT_Patchpoint / JIT_PatchpointForced
-        // asm stubs which capture the Tier0 return address as `resumeIP` before tail-jumping
-        // here. Returns the address to jump to: either the OSR-compiled method's entrypoint
-        // (transition) or `resumeIP` advanced past the helper's indirect jump (no transition).
-        // For the forced variant the asm stub passes counter == NULL; the worker then always
-        // returns an OSR entrypoint and never uses resumeIP.
         private static unsafe IntPtr Patchpoint(int* counter, int ilOffset, IntPtr resumeIP)
             => PatchpointInternal(counter, ilOffset, resumeIP);
 
