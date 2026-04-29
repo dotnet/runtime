@@ -16,6 +16,7 @@
 // The DAC/DBI interface can use structures and LSPTR declarations from the
 // existing V2 interfaces
 #include "dbgipcevents.h"
+#include "dbgipcevent_debuggerside.h"
 
 //-----------------------------------------------------------------------------
 // Deallocation function for memory allocated with the global IAllocator object.
@@ -2327,10 +2328,20 @@ public:
         OUT UINT32* pTokenIndex) = 0;
 
     // Convert raw IPC event bytes (DebuggerIPCEvent_RuntimeSide layout) into a DebuggerIPCEvent_DebuggerSide struct.
-    virtual void FillDebuggerIPCEvent_DebuggerSide(const BYTE * pRawEvent, DebuggerIPCEvent_DebuggerSide * pEvent) = 0;
+    virtual HRESULT STDMETHODCALLTYPE FillDebuggerIPCEvent_DebuggerSide(const BYTE * pRawEvent, DebuggerIPCEvent_DebuggerSide * pEvent) = 0;
 
     // Convert a DebuggerIPCEvent_DebuggerSide struct into raw IPC event bytes (DebuggerIPCEvent_RuntimeSide layout).
-    virtual void FillDebuggerIPCEvent_RuntimeSide(const DebuggerIPCEvent_DebuggerSide * pEvent, BYTE * pRawEventOut, UINT * pBufSize) = 0;
+    virtual HRESULT STDMETHODCALLTYPE FillDebuggerIPCEvent_RuntimeSide(const DebuggerIPCEvent_DebuggerSide * pEvent, BYTE * pRawEventOut, UINT * pBufSize) = 0;
+
+    // Write func eval argument data (type args, argData1, argData2) into the target's memory at the specified address.
+    virtual HRESULT STDMETHODCALLTYPE FillFuncEvalBuffer(
+        CORDB_ADDRESS argDataArea,
+        const DebuggerIPCE_TypeArgData_DebuggerSide * tyargData,
+        unsigned int genericArgsNodeCount,
+        const void * argData1,
+        unsigned int argData1Size,
+        const void * argData2,
+        unsigned int argData2Size) = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL

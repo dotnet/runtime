@@ -10708,7 +10708,7 @@ void CordbProcess::FilterClrNotification(
     }
     else
     {
-        DebuggerIPCEventType eventType = reinterpret_cast<BYTE*>(pManagedEvent)[0];
+        DebuggerIPCEventType eventType = *reinterpret_cast<DebuggerIPCEventType*>(pManagedEvent);
         if (eventType == DB_IPCE_LEFTSIDE_STARTUP)
         {
             //
@@ -11544,12 +11544,27 @@ void CordbWin32EventThread::Win32EventLoop()
                 // Managed-only, never win32 stopped, so always check for an event.
                 dwWaitTimeout = 0;
                 fEventAvailable = m_pNativePipeline->WaitForDebugEvent(&event, dwWFDETimeout, m_pProcess);
-                if (fEventAvailable)
+                if (fEventAvailable &&
+                    event.dwDebugEventCode == EXCEPTION_DEBUG_EVENT &&
+                    event.u.Exception.ExceptionRecord.ExceptionCode == CLRDBG_NOTIFICATION_EXCEPTION_CODE &&
+                    event.u.Exception.ExceptionRecord.NumberParameters == 3 &&
+                    event.u.Exception.ExceptionRecord.ExceptionInformation[0] == CLRDBG_EXCEPTION_DATA_CHECKSUM)
                 {
-                    DebuggerIPCEvent_DebuggerSide rightSideEvent;
-                    process->GetDAC()->FillDebuggerIPCEvent_DebuggerSide((BYTE*)event.u.Exception.ExceptionRecord.ExceptionInformation[2], &rightSideEvent);
-                    event.dwProcessId = rightSideEvent.processId;
-                    event.dwThreadId = rightSideEvent.threadId;
+                    BYTE * pLocalBuffer = (BYTE *)_alloca(CorDBIPC_BUFFER_SIZE);
+                    CORDB_ADDRESS ptrRemoteEvent = (CORDB_ADDRESS)event.u.Exception.ExceptionRecord.ExceptionInformation[2];
+#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
+                    HRESULT hrRead = m_pProcess->SafeReadBuffer(TargetBuffer(ptrRemoteEvent, CorDBIPC_BUFFER_SIZE), pLocalBuffer, FALSE);
+#else
+                    memcpy(pLocalBuffer, reinterpret_cast<BYTE *>(CORDB_ADDRESS_TO_PTR(ptrRemoteEvent)), CorDBIPC_BUFFER_SIZE);
+                    HRESULT hrRead = S_OK;
+#endif
+                    if (SUCCEEDED(hrRead))
+                    {
+                        DebuggerIPCEvent_DebuggerSide rightSideEvent;
+                        m_pProcess->GetDAC()->FillDebuggerIPCEvent_DebuggerSide(pLocalBuffer, &rightSideEvent);
+                        event.dwProcessId = rightSideEvent.processId;
+                        event.dwThreadId = rightSideEvent.threadId;
+                    }
                 }
 #else
                 // Wait for a Win32 debug event from any processes that we may be attached to as the Win32 debugger.
@@ -11567,13 +11582,6 @@ void CordbWin32EventThread::Win32EventLoop()
                 {
                     dwWaitTimeout = 0;
                     fEventAvailable = m_pNativePipeline->WaitForDebugEvent(&event, dwWFDETimeout, m_pProcess);
-                    if (fEventAvailable)
-                    {
-                        DebuggerIPCEvent_DebuggerSide rightSideEvent;
-                        process->GetDAC()->FillDebuggerIPCEvent_DebuggerSide((BYTE*)event.u.Exception.ExceptionRecord.ExceptionInformation[2], &rightSideEvent);
-                        event.dwProcessId = rightSideEvent.processId;
-                        event.dwThreadId = rightSideEvent.threadId;
-                    }
                 }
                 else
                 {

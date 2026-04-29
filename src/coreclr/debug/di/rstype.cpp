@@ -1676,7 +1676,7 @@ HRESULT CordbType::InitInstantiationFieldInfo(BOOL fForceInit)
             typeData.Alloc(typeDataNodeCount);
 
             // fill the buffer
-            DebuggerIPCE_TypeArgData * pCurrent = &(typeData[0]);
+            DebuggerIPCE_TypeArgData_DebuggerSide * pCurrent = &(typeData[0]);
             GatherTypeData(this, &pCurrent);
 
             // request the type handle from the DAC
@@ -2011,7 +2011,7 @@ void CordbType::TypeToExpandedTypeData(ExpandedTypeData_DebuggerSide *data)
 }
 
 
-void CordbType::TypeToTypeArgData(DebuggerIPCE_TypeArgData *data)
+void CordbType::TypeToTypeArgData(DebuggerIPCE_TypeArgData_DebuggerSide *data)
 {
   TypeToExpandedTypeData(&(data->data));
   data->numTypeArgs = m_inst.m_cClassTyPars;
@@ -2610,7 +2610,7 @@ void CordbType::CountTypeDataNodesForInstantiation(unsigned int genericArgsCount
 //      CountTypeDataNodes).
 //      On output, set to the next element in the buffer.
 //-----------------------------------------------------------------------------
-void CordbType::GatherTypeData(CordbType *type, DebuggerIPCE_TypeArgData **curr_tyargData)
+void CordbType::GatherTypeData(CordbType *type, DebuggerIPCE_TypeArgData_DebuggerSide **curr_tyargData)
 {
   type->TypeToTypeArgData(*curr_tyargData);
   (*curr_tyargData)++;
@@ -2634,7 +2634,7 @@ void CordbType::GatherTypeData(CordbType *type, DebuggerIPCE_TypeArgData **curr_
 //      On output, set to the next element in the buffer.
 //
 //-----------------------------------------------------------------------------
-void CordbType::GatherTypeDataForInstantiation(unsigned int genericArgsCount, ICorDebugType *genericArgs[], DebuggerIPCE_TypeArgData **curr_tyargData)
+void CordbType::GatherTypeDataForInstantiation(unsigned int genericArgsCount, ICorDebugType *genericArgs[], DebuggerIPCE_TypeArgData_DebuggerSide **curr_tyargData)
 {
     for (unsigned int i = 0; i < genericArgsCount; i++)
     {

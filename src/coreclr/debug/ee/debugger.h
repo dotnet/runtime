@@ -40,6 +40,7 @@
 
 #include "corjit.h"
 #include <dbgmeta.h> // <TODO>need to rip this out of here...</TODO>
+#include <dbgipcevent_runtimeside.h>
 
 #include "frameinfo.h"
 
@@ -2172,11 +2173,11 @@ public:
 
     class TypeDataWalk
     {
-        DebuggerIPCE_TypeArgData *m_curdata;
+        DebuggerIPCE_TypeArgData_RuntimeSide *m_curdata;
         unsigned int m_remaining;
 
     public:
-        TypeDataWalk(DebuggerIPCE_TypeArgData *pData, unsigned int nData)
+        TypeDataWalk(DebuggerIPCE_TypeArgData_RuntimeSide *pData, unsigned int nData)
         {
             m_curdata = pData;
             m_remaining = nData;
@@ -2190,7 +2191,7 @@ public:
         TypeHandle ReadTypeHandle();
 
         BOOL Finished() { LIMITED_METHOD_CONTRACT; return m_remaining == 0; }
-        DebuggerIPCE_TypeArgData *ReadOne() { LIMITED_METHOD_CONTRACT; if (m_remaining) { m_remaining--; return m_curdata++; } else return NULL; }
+        DebuggerIPCE_TypeArgData_RuntimeSide *ReadOne() { LIMITED_METHOD_CONTRACT; if (m_remaining) { m_remaining--; return m_curdata++; } else return NULL; }
 
     };
 
@@ -2565,7 +2566,7 @@ public:
     // Notify the debugger that an assembly has been unloaded
     void UnloadAssembly(Assembly * pAssembly);
 
-    HRESULT FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo, BYTE **argDataArea, DebuggerEval **debuggerEvalKey);
+    HRESULT FuncEvalSetup(DebuggerIPCE_FuncEvalInfo_RuntimeSide *pEvalInfo, BYTE **argDataArea, DebuggerEval **debuggerEvalKey);
     HRESULT FuncEvalAbort(DebuggerEval *debuggerEvalKey);
     HRESULT FuncEvalRudeAbort(DebuggerEval *debuggerEvalKey);
     HRESULT FuncEvalCleanup(DebuggerEval *debuggerEvalKey);
@@ -3461,7 +3462,7 @@ public:
     TypeHandle                         m_ownerTypeHandle;
     DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
-    DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
+    DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo_RuntimeSide * pEvalInfo, bool fInException, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
 
     bool Init()
     {
@@ -3472,16 +3473,16 @@ public:
     // The m_argData buffer holds both the type arg data (for generics) and the main argument data.
     //
     // For DB_IPCE_FET_NEW_STRING it holds the data specifying the string to create.
-    DebuggerIPCE_TypeArgData *GetTypeArgData()
+    DebuggerIPCE_TypeArgData_RuntimeSide *GetTypeArgData()
     {
         LIMITED_METHOD_CONTRACT;
-        return (DebuggerIPCE_TypeArgData *) (m_argData);
+        return (DebuggerIPCE_TypeArgData_RuntimeSide *) (m_argData);
     }
 
-    DebuggerIPCE_FuncEvalArgData *GetArgData()
+    DebuggerIPCE_FuncEvalArgData_RuntimeSide *GetArgData()
     {
         LIMITED_METHOD_CONTRACT;
-        return (DebuggerIPCE_FuncEvalArgData*) (m_argData + m_genericArgsNodeCount * sizeof(DebuggerIPCE_TypeArgData));
+        return (DebuggerIPCE_FuncEvalArgData_RuntimeSide*) (m_argData + m_genericArgsNodeCount * sizeof(DebuggerIPCE_TypeArgData_RuntimeSide));
     }
 
     WCHAR *GetNewStringArgData()
@@ -3497,7 +3498,7 @@ public:
 
         // Clean up any temporary buffers used to send the argument type information.  These were allocated
         // in respnse to a GET_BUFFER message
-        DebuggerIPCE_FuncEvalArgData *argData = GetArgData();
+        DebuggerIPCE_FuncEvalArgData_RuntimeSide *argData = GetArgData();
         for (unsigned int i = 0; i < m_argCount; i++)
         {
             if (argData[i].fullArgType != NULL)

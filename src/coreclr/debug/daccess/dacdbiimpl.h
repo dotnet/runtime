@@ -158,8 +158,17 @@ public:
     HRESULT STDMETHODCALLTYPE GetAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals);
     HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
 
-    void FillDebuggerIPCEvent_DebuggerSide(const BYTE * pRawEvent, DebuggerIPCEvent_DebuggerSide * pEvent);
-    void FillDebuggerIPCEvent_RuntimeSide(const DebuggerIPCEvent_DebuggerSide * pEvent, BYTE * pRawEventOut, UINT * pBufSize);
+    HRESULT STDMETHODCALLTYPE FillDebuggerIPCEvent_DebuggerSide(const BYTE * pRawEvent, DebuggerIPCEvent_DebuggerSide * pEvent);
+    HRESULT STDMETHODCALLTYPE FillDebuggerIPCEvent_RuntimeSide(const DebuggerIPCEvent_DebuggerSide * pEvent, BYTE * pRawEventOut, UINT * pBufSize);
+
+    HRESULT STDMETHODCALLTYPE FillFuncEvalBuffer(
+        CORDB_ADDRESS argDataArea,
+        const DebuggerIPCE_TypeArgData_DebuggerSide * tyargData,
+        unsigned int genericArgsNodeCount,
+        const void * argData1,
+        unsigned int argData1Size,
+        const void * argData2,
+        unsigned int argData2Size);
 
 private:
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
@@ -441,7 +450,7 @@ private:
     {
     private:
         // list of type arguments
-        DebuggerIPCE_TypeArgData * m_pCurrentData;
+        DebuggerIPCE_TypeArgData_DebuggerSide * m_pCurrentData;
 
         // number of type arguments still to be processed
         unsigned int m_nRemaining;
@@ -449,7 +458,7 @@ private:
     public:
         typedef enum {kGetExact, kGetCanonical} TypeHandleReadType;
         // constructor
-        TypeDataWalk(DebuggerIPCE_TypeArgData *pData, unsigned int nData);
+        TypeDataWalk(DebuggerIPCE_TypeArgData_DebuggerSide *pData, unsigned int nData);
 
         // Compute the type handle for a given type.
         // This is the top-level function that will return the type handle
@@ -463,7 +472,7 @@ private:
         void Skip();
 
         // read and return a single node from the list of type parameters
-        DebuggerIPCE_TypeArgData * ReadOne();
+        DebuggerIPCE_TypeArgData_DebuggerSide * ReadOne();
 
         //
         // These are for type arguments. They return null if the item could not be found.
@@ -492,11 +501,11 @@ private:
                                            unsigned int       nTypeArgs);
 
         // These are helper functions to get the type handle for specific classes of types
-        TypeHandle ArrayTypeArg(DebuggerIPCE_TypeArgData * pData, TypeHandleReadType retrieveWhich);
-        TypeHandle PtrOrByRefTypeArg(DebuggerIPCE_TypeArgData * pData, TypeHandleReadType retrieveWhich);
-        TypeHandle FnPtrTypeArg(DebuggerIPCE_TypeArgData * pData, TypeHandleReadType retrieveWhich);
-        TypeHandle ClassTypeArg(DebuggerIPCE_TypeArgData * pData, TypeHandleReadType retrieveWhich);
-        TypeHandle ObjRefOrPrimitiveTypeArg(DebuggerIPCE_TypeArgData * pData, CorElementType elementType);
+        TypeHandle ArrayTypeArg(DebuggerIPCE_TypeArgData_DebuggerSide * pData, TypeHandleReadType retrieveWhich);
+        TypeHandle PtrOrByRefTypeArg(DebuggerIPCE_TypeArgData_DebuggerSide * pData, TypeHandleReadType retrieveWhich);
+        TypeHandle FnPtrTypeArg(DebuggerIPCE_TypeArgData_DebuggerSide * pData, TypeHandleReadType retrieveWhich);
+        TypeHandle ClassTypeArg(DebuggerIPCE_TypeArgData_DebuggerSide * pData, TypeHandleReadType retrieveWhich);
+        TypeHandle ObjRefOrPrimitiveTypeArg(DebuggerIPCE_TypeArgData_DebuggerSide * pData, CorElementType elementType);
 
     }; // class TypeDataWalk
 

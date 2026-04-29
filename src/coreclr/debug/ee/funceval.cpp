@@ -702,7 +702,7 @@ static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *regA
  *
  */
 static PVOID GetRegisterValueAndReturnAddress(DebuggerEval *pDE,
-                                              DebuggerIPCE_FuncEvalArgData *pFEAD,
+                                              DebuggerIPCE_FuncEvalArgData_RuntimeSide *pFEAD,
                                               INT64 *pInt64Buf,
                                               SIZE_T *pSizeTBuf
                                               )
@@ -814,7 +814,7 @@ typedef DWORD DataLocation;
  *
  */
 static void GetFuncEvalArgValue(DebuggerEval *pDE,
-                                DebuggerIPCE_FuncEvalArgData *pFEAD,
+                                DebuggerIPCE_FuncEvalArgData_RuntimeSide *pFEAD,
                                 bool isByRef,
                                 bool fNeedBoxOrUnbox,
                                 TypeHandle argTH,
@@ -1210,7 +1210,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
     }
 }
 
-static CorDebugRegister GetArgAddrFromReg( DebuggerIPCE_FuncEvalArgData *pFEAD)
+static CorDebugRegister GetArgAddrFromReg( DebuggerIPCE_FuncEvalArgData_RuntimeSide *pFEAD)
 {
     CorDebugRegister retval = REGISTER_INSTRUCTION_POINTER; // good as default as any
 #if defined(HOST_64BIT)
@@ -1228,12 +1228,12 @@ static CorDebugRegister GetArgAddrFromReg( DebuggerIPCE_FuncEvalArgData *pFEAD)
 // the pMaybeInteriorPtrArray, the pByRefMaybeInteriorPtrArray, or the pObjectRefArray.  Then
 // place it back into the proper register or address.
 //
-// Note that we should never use the argAddr of the DebuggerIPCE_FuncEvalArgData in this function
+// Note that we should never use the argAddr of the DebuggerIPCE_FuncEvalArgData_RuntimeSide in this function
 // since the address may be an interior GC pointer and may have been moved by the GC.  Instead,
 // use the pByRefMaybeInteriorPtrArray.
 //
 static void SetFuncEvalByRefArgValue(DebuggerEval *pDE,
-                                     DebuggerIPCE_FuncEvalArgData *pFEAD,
+                                     DebuggerIPCE_FuncEvalArgData_RuntimeSide *pFEAD,
                                      CorElementType byrefArgSigType,
                                      INT64 bufferByRefArg,
                                      void *maybeInteriorPtrArg,
@@ -1429,7 +1429,7 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
     CONTRACTL_END;
 
 
-    DebuggerIPCE_FuncEvalArgData *argData = pDE->GetArgData();
+    DebuggerIPCE_FuncEvalArgData_RuntimeSide *argData = pDE->GetArgData();
 
     unsigned currArgIndex = 0;
 
@@ -1438,7 +1438,7 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
     //
     for ( ; currArgIndex < pDE->m_argCount; currArgIndex++)
     {
-        DebuggerIPCE_FuncEvalArgData *pFEAD = &argData[currArgIndex];
+        DebuggerIPCE_FuncEvalArgData_RuntimeSide *pFEAD = &argData[currArgIndex];
 
         // In case any of the arguments is a by ref argument and points into the GC heap,
         // we need to GC protect their addresses as well.
@@ -1665,7 +1665,7 @@ void ResolveFuncEvalGenericArgInfo(DebuggerEval *pDE)
     }
     CONTRACTL_END;
 
-    DebuggerIPCE_TypeArgData *firstdata = pDE->GetTypeArgData();
+    DebuggerIPCE_TypeArgData_RuntimeSide *firstdata = pDE->GetTypeArgData();
     unsigned int nGenericArgs = pDE->m_genericArgsCount;
     SIZE_T cbAllocSize;
     if ((!ClrSafeInt<SIZE_T>::multiply(nGenericArgs, sizeof(TypeHandle *), cbAllocSize)) ||
@@ -1742,7 +1742,7 @@ void ResolveFuncEvalGenericArgInfo(DebuggerEval *pDE)
  *
  */
 void BoxFuncEvalThisParameter(DebuggerEval *pDE,
-                           DebuggerIPCE_FuncEvalArgData *argData,
+                           DebuggerIPCE_FuncEvalArgData_RuntimeSide *argData,
                            void **pMaybeInteriorPtrArray,
                            OBJECTREF *pObjectRefArg          // out
                            DEBUG_ARG(DataLocation pDataLocationArray[])
@@ -1784,7 +1784,7 @@ void BoxFuncEvalThisParameter(DebuggerEval *pDE,
             //
             if (!pDE->m_md->GetMethodTable()->IsValueType())
             {
-                DebuggerIPCE_FuncEvalArgData *pFEAD = &argData[0];
+                DebuggerIPCE_FuncEvalArgData_RuntimeSide *pFEAD = &argData[0];
                 SIZE_T v;
                 LPVOID pAddr = NULL;
                 INT64 bigVal;
@@ -1822,7 +1822,7 @@ void BoxFuncEvalThisParameter(DebuggerEval *pDE,
                 //
                 // A buffer should have been allocated for the full struct type
                 _ASSERTE(argData[0].fullArgType != NULL);
-                Debugger::TypeDataWalk walk((DebuggerIPCE_TypeArgData *) argData[0].fullArgType, argData[0].fullArgTypeNodeCount);
+                Debugger::TypeDataWalk walk((DebuggerIPCE_TypeArgData_RuntimeSide *) argData[0].fullArgType, argData[0].fullArgTypeNodeCount);
 
                 TypeHandle typeHandle = walk.ReadTypeHandle();
 
@@ -1881,7 +1881,7 @@ struct FuncEvalArgInfo
  */
 void GatherFuncEvalArgInfo(DebuggerEval *pDE,
                            MetaSig mSig,
-                           DebuggerIPCE_FuncEvalArgData *argData,
+                           DebuggerIPCE_FuncEvalArgData_RuntimeSide *argData,
                            FuncEvalArgInfo *pFEArgInfo    // out
                           )
 {
@@ -1902,7 +1902,7 @@ void GatherFuncEvalArgInfo(DebuggerEval *pDE,
     //
     for ( ; currArgIndex < pDE->m_argCount; currArgIndex++)
     {
-        DebuggerIPCE_FuncEvalArgData *pFEAD = &argData[currArgIndex];
+        DebuggerIPCE_FuncEvalArgData_RuntimeSide *pFEAD = &argData[currArgIndex];
 
         //
         // Move to the next arg in the signature.
@@ -1957,7 +1957,7 @@ void GatherFuncEvalArgInfo(DebuggerEval *pDE,
  *
  */
 void BoxFuncEvalArguments(DebuggerEval *pDE,
-                          DebuggerIPCE_FuncEvalArgData *argData,
+                          DebuggerIPCE_FuncEvalArgData_RuntimeSide *argData,
                           FuncEvalArgInfo *pFEArgInfo,
                           void **pMaybeInteriorPtrArray,
                           OBJECTREF *pObjectRef          // out
@@ -1982,7 +1982,7 @@ void BoxFuncEvalArguments(DebuggerEval *pDE,
     //
     for ( ; currArgIndex < pDE->m_argCount; currArgIndex++)
     {
-        DebuggerIPCE_FuncEvalArgData *pFEAD = &argData[currArgIndex];
+        DebuggerIPCE_FuncEvalArgData_RuntimeSide *pFEAD = &argData[currArgIndex];
 
         // Allocate the space for box nullables.  Nullable parameters need a unboxed
         // nullable value to point at, where our current representation does not have
@@ -2081,7 +2081,7 @@ void BoxFuncEvalArguments(DebuggerEval *pDE,
  */
 void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
                               MetaSig mSig,
-                              DebuggerIPCE_FuncEvalArgData *argData,
+                              DebuggerIPCE_FuncEvalArgData_RuntimeSide *argData,
                               MethodDesc **ppUnboxedMD,
                               OBJECTREF *pObjectRefArray,
                               INT64 *pBufferForArgsArray,
@@ -2279,7 +2279,7 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
  *
  */
 void CopyArgsToBuffer(DebuggerEval *pDE,
-                      DebuggerIPCE_FuncEvalArgData *argData,
+                      DebuggerIPCE_FuncEvalArgData_RuntimeSide *argData,
                       FuncEvalArgInfo *pFEArgInfo,
                       INT64 *pBufferArray
                       DEBUG_ARG(DataLocation pDataLocationArray[])
@@ -2308,7 +2308,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
     //
     for ( ; currArgIndex < pDE->m_argCount; currArgIndex++)
     {
-        DebuggerIPCE_FuncEvalArgData *pFEAD = &argData[currArgIndex];
+        DebuggerIPCE_FuncEvalArgData_RuntimeSide *pFEAD = &argData[currArgIndex];
         BOOL isByRef = (pFEArgInfo[currArgIndex].argSigType == ELEMENT_TYPE_BYREF);
         BOOL fNeedBoxOrUnbox;
         fNeedBoxOrUnbox = pFEArgInfo[currArgIndex].fNeedBoxOrUnbox;
@@ -2624,7 +2624,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
  *
  */
 void PackArgumentArray(DebuggerEval *pDE,
-                       DebuggerIPCE_FuncEvalArgData *argData,
+                       DebuggerIPCE_FuncEvalArgData_RuntimeSide *argData,
                        FuncEvalArgInfo *pFEArgInfo,
                        MethodDesc *pUnboxedMD,
                        TypeHandle RetValueType,
@@ -2826,7 +2826,7 @@ void PackArgumentArray(DebuggerEval *pDE,
     // Now do the remaining args
     for ( ; currArgIndex < pDE->m_argCount; currArgSlot++, currArgIndex++)
     {
-        DebuggerIPCE_FuncEvalArgData *pFEAD = &argData[currArgIndex];
+        DebuggerIPCE_FuncEvalArgData_RuntimeSide *pFEAD = &argData[currArgIndex];
 
         LOG((LF_CORDB, LL_EVERYTHING, "currArgSlot=%d, currArgIndex=%d\n",
              currArgSlot,
@@ -2975,7 +2975,7 @@ void UnpackFuncEvalResult(DebuggerEval *pDE,
  *
  */
 void UnpackFuncEvalArguments(DebuggerEval *pDE,
-                             DebuggerIPCE_FuncEvalArgData *argData,
+                             DebuggerIPCE_FuncEvalArgData_RuntimeSide *argData,
                              MetaSig mSig,
                              BOOL staticMethod,
                              OBJECTREF *pObjectRefArray,
@@ -3261,7 +3261,7 @@ static void DoNormalFuncEval( DebuggerEval *pDE,
     // An array to hold information about the parameters to be passed.  This is
     // all the information we need to gather before entering the GCX_FORBID area.
     //
-    DebuggerIPCE_FuncEvalArgData *argData = pDE->GetArgData();
+    DebuggerIPCE_FuncEvalArgData_RuntimeSide *argData = pDE->GetArgData();
 
     MethodDesc *pUnboxedMD = pDE->m_md;
     BOOL fHasRetBuffArg;
@@ -3612,7 +3612,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
     // want them to get marshalled.
     EX_TRY
     {
-        DebuggerIPCE_TypeArgData *firstdata = pDE->GetTypeArgData();
+        DebuggerIPCE_TypeArgData_RuntimeSide *firstdata = pDE->GetTypeArgData();
         DWORD nGenericArgs = pDE->m_genericArgsCount;
 
         SIZE_T cbAllocSize;

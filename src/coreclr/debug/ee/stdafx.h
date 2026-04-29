@@ -31,6 +31,7 @@
 
 #include <cordbpriv.h>
 #include <dbgipcevents.h>
+#include <dbgipcevent_runtimeside.h>
 #include "debugger.h"
 #include "walker.h"
 #include "controller.h"

@@ -33,6 +33,8 @@ struct MonitorLockInfo;
 struct DacGcReference;
 struct DacSharedReJitInfo;
 struct AsyncLocalData;
+struct DebuggerIPCEvent_DebuggerSide;
+struct DebuggerIPCE_TypeArgData_DebuggerSide;
 
 //
 // Types MIDL cannot handle natively. These dummy definitions satisfy the MIDL
@@ -451,6 +453,8 @@ interface IDacDbiInterface : IUnknown
     // Generic Arg Token
     HRESULT GetGenericArgTokenIndex([in] VMPTR_MethodDesc vmMethod, [out] UINT32 * pTokenIndex);
 
-    void FillDebuggerIPCEvent_DebuggerSide([in] const BYTE * pRawEvent, [out] DebuggerIPCEvent_DebuggerSide * pEvent);
-    void FillDebuggerIPCEvent_RuntimeSide([in] const DebuggerIPCEvent_DebuggerSide * pEvent, [out] BYTE * pRawEventOut, [out] UINT * pBufSize);
+    HRESULT FillDebuggerIPCEvent_DebuggerSide([in] const BYTE * pRawEvent, [out] struct DebuggerIPCEvent_DebuggerSide * pEvent);
+    HRESULT FillDebuggerIPCEvent_RuntimeSide([in] const struct DebuggerIPCEvent_DebuggerSide * pEvent, [out] BYTE * pRawEventOut, [out] UINT * pBufSize);
+
+    HRESULT FillFuncEvalBuffer([in] CORDB_ADDRESS argDataArea, [in] const struct DebuggerIPCE_TypeArgData_DebuggerSide * tyargData, [in] unsigned int genericArgsNodeCount, [in] const void * argData1, [in] unsigned int argData1Size, [in] const void * argData2, [in] unsigned int argData2Size);
 };

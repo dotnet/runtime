@@ -674,7 +674,7 @@ typedef struct MSLAYOUT
 
 // @dbgtodo Microsoft inspection: get rid of IPCE type.
 // TypeInfoList encapsulates a list of type data instances and the length of the list.
-typedef DacDbiArrayList<DebuggerIPCE_TypeArgData> TypeInfoList;
+typedef DacDbiArrayList<DebuggerIPCE_TypeArgData_DebuggerSide> TypeInfoList;
 
 // ArgInfoList encapsulates a list of type data instances for arguments for a top-level
 // type and the length of the list.
@@ -782,89 +782,8 @@ struct MSLAYOUT DacThreadAllocInfo
     ULONG64 m_allocBytesUOH;
 };
 
-//
-// BasicTypeData_DebuggerSide and ExpandedTypeData_DebuggerSide
-// hold data for each type sent across the
-// boundary, whether it be a constructed type List<String> or a non-constructed
-// type such as String, Foo or Object.
-//
-// Logically speaking BasicTypeData_DebuggerSide might just be "typeHandle", as
-// we could then send further events to ask what the elementtype, typeToken and moduleToken
-// are for the type handle.  But as
-// nearly all types are non-generic we send across even the basic type information in
-// the slightly expanded form shown below, sending the element type and the
-// tokens with the type handle itself. The fields debuggerModuleToken, metadataToken and typeHandle
-// are only used as follows:
-//                                   elementType    debuggerModuleToken metadataToken      typeHandle
-//     E_T_INT8    :                  E_T_INT8         No                     No              No
-//     Boxed E_T_INT8:                E_T_CLASS        No                     No              No
-//     E_T_CLASS, non-generic class:  E_T_CLASS       Yes                    Yes              No
-//     E_T_VALUETYPE, non-generic:    E_T_VALUETYPE   Yes                    Yes              No
-//     E_T_CLASS,     generic class:  E_T_CLASS       Yes                    Yes             Yes
-//     E_T_VALUETYPE, generic class:  E_T_VALUETYPE   Yes                    Yes             Yes
-//     E_T_BYREF                   :  E_T_BYREF        No                     No             Yes
-//     E_T_PTR                     :  E_T_PTR          No                     No             Yes
-//     E_T_ARRAY etc.              :  E_T_ARRAY        No                     No             Yes
-//     E_T_FNPTR etc.              :  E_T_FNPTR        No                     No             Yes
-// This allows us to always set "typeHandle" to NULL except when dealing with highly nested
-// types or function-pointer types (the latter are too complexe to transfer over in one hit).
-//
-
-struct MSLAYOUT BasicTypeData_DebuggerSide
-{
-    CorElementType  elementType;
-    mdTypeDef       metadataToken;
-    VMPTR_Assembly  vmAssembly;
-    VMPTR_TypeHandle vmTypeHandle;
-};
-
-// So this type information is not "fully expanded", it's just a little
-// more detail then BasicTypeData_DebuggerSide.  For type
-// instantiatons (e.g. List<int>) and
-// function pointer types you will need to make further requests for
-// information about the type parameters.
-// For array types there is always only one type parameter so
-// we include that as part of the expanded data.
-//
-//
-struct MSLAYOUT ExpandedTypeData_DebuggerSide
-{
-    CorElementType  elementType; // Note this is _never_ E_T_VAR, E_T_WITH or E_T_MVAR
-    union MSLAYOUT
-    {
-        // used for E_T_CLASS and E_T_VALUECLASS, E_T_PTR, E_T_BYREF etc.
-        // For non-constructed E_T_CLASS or E_T_VALUECLASS the tokens will be set and the typeHandle will be NULL
-        // For constructed E_T_CLASS or E_T_VALUECLASS the tokens will be set and the typeHandle will be non-NULL
-        // For E_T_PTR etc. the tokens will be NULL and the typeHandle will be non-NULL.
-        struct MSLAYOUT
-         {
-            mdTypeDef       metadataToken;
-            VMPTR_Assembly  vmAssembly;
-            VMPTR_TypeHandle typeHandle; // if non-null then further fetches will be needed to get type arguments
-        } ClassTypeData;
-
-        // used for E_T_PTR, E_T_BYREF etc.
-        struct MSLAYOUT
-        {
-            BasicTypeData_DebuggerSide unaryTypeArg;  // used only when sending back to debugger
-        } UnaryTypeData;
-
-
-        // used for E_T_ARRAY etc.
-        struct MSLAYOUT
-        {
-          BasicTypeData_DebuggerSide arrayTypeArg; // used only when sending back to debugger
-            DWORD           arrayRank;
-        } ArrayTypeData;
-
-        // used for E_T_FNPTR
-        struct MSLAYOUT
-         {
-            VMPTR_TypeHandle typeHandle; // if non-null then further fetches needed to get type arguments
-        } NaryTypeData;
-
-    };
-};
+// BasicTypeData_DebuggerSide and ExpandedTypeData_DebuggerSide are now defined in
+// dbgipcevent_debuggerside.h (included via dacdbiinterface.h before this file).
 
 
 #include "dacdbistructures.inl"

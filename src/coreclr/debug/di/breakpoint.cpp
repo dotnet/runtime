@@ -537,7 +537,7 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
     // Send ranges.  We may have to send > 1 message.
     //
 
-    COR_DEBUG_STEP_RANGE * pRangeStart = &(pEvent->StepData.range);
+    COR_DEBUG_STEP_RANGE * pRangeStart = &(pEvent->StepData.range[0]);
     COR_DEBUG_STEP_RANGE * pRangeEnd = (reinterpret_cast<COR_DEBUG_STEP_RANGE *> (((BYTE *)pEvent) + CorDBIPC_BUFFER_SIZE)) - 1;
 
     int cRangesToGo = cRanges;

@@ -1218,7 +1218,7 @@ ULONG DebuggerMethodInfoTable::CheckDmiTable(void)
 //                        (Caller allocated as there is no way to fail the allocation without
 //                        throwing, and this function is called in a NOTHROW region)
 //
-DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX)
+DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo_RuntimeSide * pEvalInfo, bool fInException, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -10329,7 +10329,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent_RuntimeSide * pEvent)
 
                 if (!pStepper->Step(pEvent->StepData.frameToken,
                                     pEvent->StepData.stepIn,
-                                    &(pEvent->StepData.range),
+                                    &(pEvent->StepData.range[0]),
                                     cRanges,
                                     ((cRanges > 0) ? pEvent->StepData.rangeIL : false)))
                 {
@@ -11634,7 +11634,7 @@ TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
     }
     CONTRACTL_END;
 
-    DebuggerIPCE_TypeArgData * data = ReadOne();
+    DebuggerIPCE_TypeArgData_RuntimeSide * data = ReadOne();
     if (!data)
       COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
 
@@ -13978,7 +13978,7 @@ void Debugger::SendCustomDebuggerNotification(Thread * pThread,
 //
 // FuncEvalSetup sets up a function evaluation for the given method on the given thread.
 //
-HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
+HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo_RuntimeSide *pEvalInfo,
                                 BYTE **argDataArea,
                                 DebuggerEval **debuggerEvalKey)
 {
@@ -14076,12 +14076,12 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 
     SIZE_T argDataAreaSize = 0;
 
-    argDataAreaSize += pEvalInfo->genericArgsNodeCount * sizeof(DebuggerIPCE_TypeArgData);
+    argDataAreaSize += pEvalInfo->genericArgsNodeCount * sizeof(DebuggerIPCE_TypeArgData_RuntimeSide);
 
     if ((pEvalInfo->funcEvalType == DB_IPCE_FET_NORMAL) ||
         (pEvalInfo->funcEvalType == DB_IPCE_FET_NEW_OBJECT) ||
         (pEvalInfo->funcEvalType == DB_IPCE_FET_NEW_OBJECT_NC))
-        argDataAreaSize += pEvalInfo->argCount * sizeof(DebuggerIPCE_FuncEvalArgData);
+        argDataAreaSize += pEvalInfo->argCount * sizeof(DebuggerIPCE_FuncEvalArgData_RuntimeSide);
     else if (pEvalInfo->funcEvalType == DB_IPCE_FET_NEW_STRING)
         argDataAreaSize += pEvalInfo->stringSize;
     else if (pEvalInfo->funcEvalType == DB_IPCE_FET_NEW_ARRAY)

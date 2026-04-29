@@ -9238,11 +9238,11 @@ HRESULT CordbEval::QueryInterface(REFIID id, void **pInterface)
 
 //
 // Gather data about an argument to either CallFunction or NewObject
-// and place it into a DebuggerIPCE_FuncEvalArgData struct for passing
+// and place it into a DebuggerIPCE_FuncEvalArgData_DebuggerSide struct for passing
 // to the Left Side.
 //
 HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
-                                 DebuggerIPCE_FuncEvalArgData *argData)
+                                 DebuggerIPCE_FuncEvalArgData_DebuggerSide *argData)
 {
     FAIL_IF_NEUTERED(this);
     INTERNAL_SYNC_API_ENTRY(GetProcess()); //
@@ -9336,7 +9336,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
 
         // The EE does not guarantee to have exact type information
         // available for all struct types, so we indicate the type by using a
-        // DebuggerIPCE_TypeArgData serialization of a type.
+        // DebuggerIPCE_TypeArgData_DebuggerSide serialization of a type.
         //
         // At the moment the LHS only cares about this data
         // when boxing the "this" pointer.
@@ -9348,14 +9348,14 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
             cv->m_type->CountTypeDataNodes(&fullArgTypeNodeCount);
 
             _ASSERTE(fullArgTypeNodeCount > 0);
-            unsigned int bufferSize = sizeof(DebuggerIPCE_TypeArgData) * fullArgTypeNodeCount;
-            DebuggerIPCE_TypeArgData *bufferFrom = (DebuggerIPCE_TypeArgData *) _alloca(bufferSize);
+            unsigned int bufferSize = sizeof(DebuggerIPCE_TypeArgData_DebuggerSide) * fullArgTypeNodeCount;
+            DebuggerIPCE_TypeArgData_DebuggerSide *bufferFrom = (DebuggerIPCE_TypeArgData_DebuggerSide *) _alloca(bufferSize);
 
-            DebuggerIPCE_TypeArgData *curr = bufferFrom;
+            DebuggerIPCE_TypeArgData_DebuggerSide *curr = bufferFrom;
             CordbType::GatherTypeData(cv->m_type, &curr);
 
             void *buffer = NULL;
-            IfFailRet(m_thread->GetProcess()->GetAndWriteRemoteBuffer(m_thread->GetAppDomain(), bufferSize, bufferFrom, &buffer));
+            IfFailRet(m_thread->GetProcess()->GetAndWriteRemoteBuffer(m_thread->GetAppDomain(), bufferSize, bufferFrom, &buffer)); // Rachel: todo
 
             argData->fullArgType = buffer;
             argData->fullArgTypeNodeCount = fullArgTypeNodeCount;
@@ -9404,20 +9404,20 @@ HRESULT CordbEval::SendFuncEval(unsigned int genericArgsCount,
     INTERNAL_SYNC_API_ENTRY(GetProcess()); //
     unsigned int genericArgsNodeCount = 0;
 
-    DebuggerIPCE_TypeArgData *tyargData = NULL;
+    DebuggerIPCE_TypeArgData_DebuggerSide *tyargData = NULL;
     CordbType::CountTypeDataNodesForInstantiation(genericArgsCount,genericArgs,&genericArgsNodeCount);
 
-    unsigned int tyargDataSize = sizeof(DebuggerIPCE_TypeArgData) * genericArgsNodeCount;
+    unsigned int tyargDataSize = sizeof(DebuggerIPCE_TypeArgData_DebuggerSide) * genericArgsNodeCount;
 
     if (genericArgsNodeCount > 0)
     {
-        tyargData = new (nothrow) DebuggerIPCE_TypeArgData[genericArgsNodeCount];
+        tyargData = new (nothrow) DebuggerIPCE_TypeArgData_DebuggerSide[genericArgsNodeCount];
         if (tyargData == NULL)
         {
             return E_OUTOFMEMORY;
         }
 
-        DebuggerIPCE_TypeArgData *curr_tyargData = tyargData;
+        DebuggerIPCE_TypeArgData_DebuggerSide *curr_tyargData = tyargData;
         CordbType::GatherTypeDataForInstantiation(genericArgsCount, genericArgs, &curr_tyargData);
 
     }
@@ -9456,36 +9456,8 @@ HRESULT CordbEval::SendFuncEval(unsigned int genericArgsCount,
     // for other arguments.
     if (SUCCEEDED(hr))
     {
-        EX_TRY
-        {
-            CORDB_ADDRESS argdata = event->FuncEvalSetupComplete.argDataArea; // Rachel
-
-            if ((tyargData != NULL) && (tyargDataSize != 0))
-            {
-
-                TargetBuffer tb(argdata, tyargDataSize);
-                m_thread->GetProcess()->SafeWriteBuffer(tb, (const BYTE*) tyargData); // throws
-
-                argdata += tyargDataSize;
-            }
-
-            if ((argData1 != NULL) && (argData1Size != 0))
-            {
-                TargetBuffer tb(argdata, argData1Size);
-                m_thread->GetProcess()->SafeWriteBuffer(tb, (const BYTE*) argData1); // throws
-
-                argdata += argData1Size;
-            }
-
-            if ((argData2 != NULL) && (argData2Size != 0))
-            {
-                TargetBuffer tb(argdata, argData2Size);
-                m_thread->GetProcess()->SafeWriteBuffer(tb, (const BYTE*) argData2); // throws
-
-                argdata += argData2Size;
-            }
-        }
-        EX_CATCH_HRESULT(hr);
+        CORDB_ADDRESS argdata = event->FuncEvalSetupComplete.argDataArea;
+        hr = m_thread->GetProcess()->GetDAC()->FillFuncEvalBuffer(argdata, tyargData, genericArgsNodeCount, argData1, argData1Size, argData2, argData2Size);
     }
 
 LExit:
@@ -9771,13 +9743,13 @@ HRESULT CordbEval::CallParameterizedFunction(ICorDebugFunction *pFunction,
         // with. We do this before starting the func eval setup to ensure
         // that we can complete this step before mutating the left
         // side.
-        DebuggerIPCE_FuncEvalArgData * pArgData = NULL;
+        DebuggerIPCE_FuncEvalArgData_DebuggerSide * pArgData = NULL;
 
         if (nArgs > 0)
         {
             // We need to make the same type of array that the left side
             // holds.
-            pArgData = new (nothrow) DebuggerIPCE_FuncEvalArgData[nArgs];
+            pArgData = new (nothrow) DebuggerIPCE_FuncEvalArgData_DebuggerSide[nArgs];
 
             if (pArgData == NULL)
             {
@@ -9815,7 +9787,7 @@ HRESULT CordbEval::CallParameterizedFunction(ICorDebugFunction *pFunction,
         hr = SendFuncEval(nTypeArgs,
                           rgpTypeArgs,
                           reinterpret_cast<void *>(pArgData),
-                          sizeof(DebuggerIPCE_FuncEvalArgData) * nArgs,
+                          sizeof(DebuggerIPCE_FuncEvalArgData_DebuggerSide) * nArgs,
                           NULL,
                           0,
                           &event);
@@ -9953,13 +9925,13 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
     // with. We do this before starting the func eval setup to ensure
     // that we can complete this step before mutating up the left
     // side.
-    DebuggerIPCE_FuncEvalArgData * pArgData = NULL;
+    DebuggerIPCE_FuncEvalArgData_DebuggerSide * pArgData = NULL;
 
     if (nArgs > 0)
     {
         // We need to make the same type of array that the left side
         // holds.
-        pArgData = new (nothrow) DebuggerIPCE_FuncEvalArgData[nArgs];
+        pArgData = new (nothrow) DebuggerIPCE_FuncEvalArgData_DebuggerSide[nArgs];
 
         if (pArgData == NULL)
         {
@@ -9996,7 +9968,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
     hr = SendFuncEval(nTypeArgs,
                       rgpTypeArgs,
                       reinterpret_cast<void *>(pArgData),
-                      sizeof(DebuggerIPCE_FuncEvalArgData) * nArgs,
+                      sizeof(DebuggerIPCE_FuncEvalArgData_DebuggerSide) * nArgs,
                       NULL,
                       0,
                       &event);

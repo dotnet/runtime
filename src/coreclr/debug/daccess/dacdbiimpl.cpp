@@ -10,6 +10,7 @@
 #include "stdafx.h"
 
 #include "dacdbiinterface.h"
+#include "dbgipcevent_debuggerside.h"
 
 #include "typestring.h"
 #include "holder.h"
@@ -1745,7 +1746,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetInstantiationFieldInfo(VMPTR_A
 //                    instantiated type
 //            nData - number of entries in pData
 //-----------------------------------------------------------------------------
-DacDbiInterfaceImpl::TypeDataWalk::TypeDataWalk(DebuggerIPCE_TypeArgData * pData, unsigned int nData)
+DacDbiInterfaceImpl::TypeDataWalk::TypeDataWalk(DebuggerIPCE_TypeArgData_DebuggerSide * pData, unsigned int nData)
 {
     m_pCurrentData = pData;
     m_nRemaining = nData;
@@ -1757,7 +1758,7 @@ DacDbiInterfaceImpl::TypeDataWalk::TypeDataWalk(DebuggerIPCE_TypeArgData * pData
 // Arguments: none (uses internal state)
 // Return value: information about the next type parameter in m_pCurrentData
 //-----------------------------------------------------------------------------
-DebuggerIPCE_TypeArgData * DacDbiInterfaceImpl::TypeDataWalk::ReadOne()
+DebuggerIPCE_TypeArgData_DebuggerSide * DacDbiInterfaceImpl::TypeDataWalk::ReadOne()
 {
     LIMITED_METHOD_CONTRACT;
     if (m_nRemaining)
@@ -1781,7 +1782,7 @@ void DacDbiInterfaceImpl::TypeDataWalk::Skip()
 {
     LIMITED_METHOD_CONTRACT;
 
-    DebuggerIPCE_TypeArgData * pData = ReadOne();
+    DebuggerIPCE_TypeArgData_DebuggerSide * pData = ReadOne();
     if (pData)
     {
         for (unsigned int i = 0; i < pData->numTypeArgs; i++)
@@ -1831,7 +1832,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeArg(TypeHandleReadTy
     //
     // Ideally this logic would not be duplicated in this way, but it is difficult
     // to arrange for that.
-    DebuggerIPCE_TypeArgData * pData = ReadOne();
+    DebuggerIPCE_TypeArgData_DebuggerSide * pData = ReadOne();
     if (!pData)
         return TypeHandle();
 
@@ -1964,7 +1965,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeHandle(TypeHandleRea
     CONTRACTL_END;
 
     // get the type information at the head of the list m_pCurrentData
-    DebuggerIPCE_TypeArgData * pData = ReadOne();
+    DebuggerIPCE_TypeArgData_DebuggerSide * pData = ReadOne();
     if (!pData)
       return TypeHandle();
 
@@ -2012,7 +2013,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeHandle(TypeHandleRea
 // Arguments:
 //     input: pArrayTypeInfo - type information for an array type
 //                             Although this is in fact a pointer (in)to a list, we treat it here
-//                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData
+//                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData_DebuggerSide
 //                             which holds type information for an array.
 //                             This is the most recent type node (for an array type) retrieved
 //                             by TypeDataWalk::ReadOne(). The call to ReadLoadedTypeArg will
@@ -2032,7 +2033,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeHandle(TypeHandleRea
 // Return value: the type handle corresponding to the array type
 //-----------------------------------------------------------------------------
 
-TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ArrayTypeArg(DebuggerIPCE_TypeArgData * pArrayTypeInfo,
+TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ArrayTypeArg(DebuggerIPCE_TypeArgData_DebuggerSide * pArrayTypeInfo,
                                                            TypeHandleReadType         retrieveWhich)
 {
     TypeHandle arrayElementTypeArg = ReadLoadedTypeArg(retrieveWhich);
@@ -2053,7 +2054,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ArrayTypeArg(DebuggerIPCE_TypeArgD
 // Arguments:
 //     input: pPtrOrByRefTypeInfo - type information for a pointer or byref type
 //                             Although this is in fact a pointer (in)to a list, we treat it here
-//                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData
+//                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData_DebuggerSide
 //                             which holds type information for a pointer or byref type.
 //                             This is the most recent type node (for a pointer or byref type) retrieved
 //                             by TypeDataWalk::ReadOne(). The call to ReadLoadedTypeArg will
@@ -2072,7 +2073,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ArrayTypeArg(DebuggerIPCE_TypeArgD
 //                            a canonical type or only for an exact type
 // Return value: the type handle corresponding to the address type
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::TypeDataWalk::PtrOrByRefTypeArg(DebuggerIPCE_TypeArgData * pPtrOrByRefTypeInfo,
+TypeHandle DacDbiInterfaceImpl::TypeDataWalk::PtrOrByRefTypeArg(DebuggerIPCE_TypeArgData_DebuggerSide * pPtrOrByRefTypeInfo,
                                                                 TypeHandleReadType         retrieveWhich)
 {
     TypeHandle referentTypeArg = ReadLoadedTypeArg(retrieveWhich);
@@ -2092,7 +2093,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::PtrOrByRefTypeArg(DebuggerIPCE_Typ
 // Arguments:
 //     input: pClassTypeInfo - type information for a class type
 //                             Although this is in fact a pointer (in)to a list, we treat it here
-//                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData
+//                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData_DebuggerSide
 //                             which holds type information for a pointer or byref type.
 //                             This is the most recent type node (for a pointer or byref type) retrieved
 //                             by TypeDataWalk::ReadOne(). The call to ReadLoadedInstantiation will
@@ -2109,7 +2110,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::PtrOrByRefTypeArg(DebuggerIPCE_Typ
 //                            a canonical type or only for an exact type
 // Return value: the type handle corresponding to the class type
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ClassTypeArg(DebuggerIPCE_TypeArgData * pClassTypeInfo,
+TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ClassTypeArg(DebuggerIPCE_TypeArgData_DebuggerSide * pClassTypeInfo,
                                                            TypeHandleReadType         retrieveWhich)
 {
     Module * pModule = pClassTypeInfo->data.ClassTypeData.vmAssembly.GetDacPtr()->GetModule();
@@ -2142,7 +2143,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ClassTypeArg(DebuggerIPCE_TypeArgD
 // Arguments:
 //     input: pFnPtrTypeInfo - type information for a pointer or byref type
 //                             Although this is in fact a pointer (in)to a list, we treat it here
-//                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData
+//                             simply as a pointer to a single instance of DebuggerIPCE_TypeArgData_DebuggerSide
 //                             which holds type information for a function pointer type.
 //                             This is the most recent type node (for a function pointer type) retrieved
 //                             by TypeDataWalk::ReadOne(). The call to ReadLoadedTypeHandles will
@@ -2155,7 +2156,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ClassTypeArg(DebuggerIPCE_TypeArgD
 //                            a canonical type or only for an exact type
 // Return value: the type handle corresponding to the function pointer type
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::TypeDataWalk::FnPtrTypeArg(DebuggerIPCE_TypeArgData * pFnPtrTypeInfo,
+TypeHandle DacDbiInterfaceImpl::TypeDataWalk::FnPtrTypeArg(DebuggerIPCE_TypeArgData_DebuggerSide * pFnPtrTypeInfo,
                                                            TypeHandleReadType         retrieveWhich)
 {
     // allocate space to store a list of type handles, one for the return type and one for each
@@ -2188,7 +2189,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::FnPtrTypeArg(DebuggerIPCE_TypeArgD
 //            elementType   - type of the argument
 // Return value: the type handle corresponding to the elementType
 //-----------------------------------------------------------------------------
-TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ObjRefOrPrimitiveTypeArg(DebuggerIPCE_TypeArgData * pArgInfo,
+TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ObjRefOrPrimitiveTypeArg(DebuggerIPCE_TypeArgData_DebuggerSide * pArgInfo,
                                                                        CorElementType             elementType)
 {
     // If there are any type args (e.g. for arrays) they can be skipped.  The thing
@@ -7919,6 +7920,76 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
     else
     {
         *pIndex = ICorDebugInfo::TYPECTXT_ILNUM;
+    }
+
+    return S_OK;
+}
+
+// Simple memcpy from raw wire bytes into the DebuggerSide struct.
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FillDebuggerIPCEvent_DebuggerSide(const BYTE * pRawEvent, DebuggerIPCEvent_DebuggerSide * pEvent)
+{
+    DD_ENTER_MAY_THROW;
+    _ASSERTE(pRawEvent != NULL);
+    _ASSERTE(pEvent != NULL);
+
+    memcpy(pEvent, pRawEvent, sizeof(DebuggerIPCEvent_DebuggerSide));
+    return S_OK;
+}
+
+// Simple memcpy from the DebuggerSide struct into raw wire bytes.
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FillDebuggerIPCEvent_RuntimeSide(const DebuggerIPCEvent_DebuggerSide * pEvent, BYTE * pRawEventOut, UINT * pBufSize)
+{
+    DD_ENTER_MAY_THROW;
+    _ASSERTE(pEvent != NULL);
+    _ASSERTE(pRawEventOut != NULL);
+    _ASSERTE(pBufSize != NULL);
+
+    memcpy(pRawEventOut, pEvent, sizeof(DebuggerIPCEvent_DebuggerSide));
+    *pBufSize = sizeof(DebuggerIPCEvent_DebuggerSide);
+    return S_OK;
+}
+
+// Write func eval argument data (type args, argData1, argData2) into the target's memory.
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FillFuncEvalBuffer(
+    CORDB_ADDRESS argDataArea,
+    const DebuggerIPCE_TypeArgData_DebuggerSide * tyargData,
+    unsigned int genericArgsNodeCount,
+    const void * argData1,
+    unsigned int argData1Size,
+    const void * argData2,
+    unsigned int argData2Size)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (argDataArea == 0)
+    {
+        return E_INVALIDARG;
+    }
+
+    CORDB_ADDRESS dest = argDataArea;
+
+    if (tyargData != NULL && genericArgsNodeCount != 0)
+    {
+        ULONG32 tyargDataSize = genericArgsNodeCount * sizeof(DebuggerIPCE_TypeArgData_DebuggerSide);
+        HRESULT hr = m_pMutableTarget->WriteVirtual(dest, (const BYTE *)tyargData, tyargDataSize);
+        if (FAILED(hr))
+            return hr;
+        dest += tyargDataSize;
+    }
+
+    if (argData1 != NULL && argData1Size != 0)
+    {
+        HRESULT hr = m_pMutableTarget->WriteVirtual(dest, (const BYTE *)argData1, argData1Size);
+        if (FAILED(hr))
+            return hr;
+        dest += argData1Size;
+    }
+
+    if (argData2 != NULL && argData2Size != 0)
+    {
+        HRESULT hr = m_pMutableTarget->WriteVirtual(dest, (const BYTE *)argData2, argData2Size);
+        if (FAILED(hr))
+            return hr;
     }
 
     return S_OK;
