@@ -532,8 +532,7 @@ void Lowering::AfterLowerBlocks()
         unsigned              m_minimumTempLclNum;
         Temporary*            m_availableTemps[TYP_COUNT] = {};
         Temporary*            m_inUseTemps[TYP_COUNT]     = {};
-        Temporary*            m_unusedTempNodes           = nullptr;
-        Temporary*            m_inUseTempNodes            = nullptr;
+        unsigned              m_numInUseTemps;
         bool                  m_anyChanges                = false;
 
     public:
@@ -542,6 +541,7 @@ void Lowering::AfterLowerBlocks()
             , m_compiler(lower->m_compiler)
             , m_stack(m_compiler->getAllocator(CMK_Lower))
             , m_minimumTempLclNum(m_compiler->lvaCount)
+            , m_numInUseTemps(0)
         {
         }
 
@@ -562,7 +562,6 @@ void Lowering::AfterLowerBlocks()
 
             JITDUMP(FMT_BB ": %s\n", block->bbNum,
                     m_anyChanges ? "stackified with some changes" : "already in WASM value stack order");
-            assert((m_unusedTempNodes == nullptr) && "Some temporaries were not released");
         }
 
         GenTree* StackifyTree(GenTree* root)
@@ -708,6 +707,7 @@ void Lowering::AfterLowerBlocks()
                 local->LclNum = lclNum;
             }
             Append(&m_inUseTemps[genActualType(type)], local);
+            m_numInUseTemps++;
 
             JITDUMP("Temporary V%02u is now in use\n", lclNum);
             return lclNum;
@@ -731,9 +731,12 @@ void Lowering::AfterLowerBlocks()
                     Temporary* temp = Remove(&m_inUseTemps[i]);
                     assert(temp->LclNum >= m_minimumTempLclNum);
                     Append(&m_availableTemps[i], temp);
+                    m_numInUseTemps--;
                     JITDUMP("Temporary V%02u is now available\n", temp->LclNum);
                 }
             }
+
+            assert(m_numInUseTemps == 0 && "Some temporaries are still in use");
         }
 
         Temporary* Remove(Temporary** pTemps)
