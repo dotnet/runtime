@@ -580,37 +580,17 @@ namespace System.Net.Mail.Tests
 
         [Theory]
         [MemberData(nameof(SendMail_MultiLineDomainLiterals_Data))]
-        public async Task SendMail_MultiLineDomainLiterals_Disabled_Throws(string from, string to, bool asyncSend)
+        public void SendMail_MultiLineDomainLiterals_Disabled_Throws(string from, string to)
         {
-            using var server = new LoopbackSmtpServer();
-
-            using SmtpClient client = server.CreateClient();
-            client.Credentials = new NetworkCredential("Foo", "Bar");
-
-            using var msg = new MailMessage(@from, @to, "subject", "body");
-
-            await Assert.ThrowsAsync<SmtpException>(async () =>
-            {
-                if (asyncSend)
-                {
-                    await client.SendMailAsync(msg).WaitAsync(TimeSpan.FromSeconds(30));
-                }
-                else
-                {
-                    client.Send(msg);
-                }
-            });
+            Assert.Throws<FormatException>(() => new MailMessage(@from, @to, "subject", "body"));
         }
 
         public static IEnumerable<object[]> SendMail_MultiLineDomainLiterals_Data()
         {
-            foreach (bool async in new[] { true, false })
+            foreach (string address in new[] { "foo@[\r\n bar]", "foo@[bar\r\n ]", "foo@[bar\r\n baz]" })
             {
-                foreach (string address in new[] { "foo@[\r\n bar]", "foo@[bar\r\n ]", "foo@[bar\r\n baz]" })
-                {
-                    yield return new object[] { address, "foo@example.com", async };
-                    yield return new object[] { "foo@example.com", address, async };
-                }
+                yield return new object[] { address, "foo@example.com" };
+                yield return new object[] { "foo@example.com", address };
             }
         }
     }
