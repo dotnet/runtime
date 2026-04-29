@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
-    public class ServiceDecorationTests
+    internal class ServiceDecorationTests
     {
         [Fact]
         public void Decorate_TypeBased_WrapsService()
@@ -377,7 +377,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [InlineData(ServiceProviderMode.Expressions)]
         [InlineData(ServiceProviderMode.ILEmit)]
         [InlineData(ServiceProviderMode.Dynamic)]
-        private void Decorate_TypeBased_AllEngines(ServiceProviderMode mode)
+        public void Decorate_TypeBased_AllEngines(ServiceProviderMode mode)
         {
             var services = new ServiceCollection();
             services.AddTransient<IService, InnerService>();
@@ -395,7 +395,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [InlineData(ServiceProviderMode.Expressions)]
         [InlineData(ServiceProviderMode.ILEmit)]
         [InlineData(ServiceProviderMode.Dynamic)]
-        private void Decorate_FactoryBased_AllEngines(ServiceProviderMode mode)
+        public void Decorate_FactoryBased_AllEngines(ServiceProviderMode mode)
         {
             var services = new ServiceCollection();
             services.AddTransient<IService, InnerService>();
@@ -413,7 +413,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [InlineData(ServiceProviderMode.Expressions)]
         [InlineData(ServiceProviderMode.ILEmit)]
         [InlineData(ServiceProviderMode.Dynamic)]
-        private void Decorate_MultipleDecorators_AllEngines(ServiceProviderMode mode)
+        public void Decorate_MultipleDecorators_AllEngines(ServiceProviderMode mode)
         {
             var services = new ServiceCollection();
             services.AddTransient<IService, InnerService>();
