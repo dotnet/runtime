@@ -320,10 +320,10 @@ public unsafe partial interface IDacDbiInterface
     int GetFramePointer(nuint pSFIHandle, ulong* pRetVal);
 
     [PreserveSig]
-    int IsLeafFrame(ulong vmThread, nint pContext, Interop.BOOL* pResult);
+    int IsLeafFrame(ulong vmThread, byte* pContext, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetContext(ulong vmThread, nint pContextBuffer);
+    int GetContext(ulong vmThread, byte* pContextBuffer);
 
     [PreserveSig]
     int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, Interop.BOOL fActive);

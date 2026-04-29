@@ -8974,8 +8974,6 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     // INS_bt only has reg-to-reg form.
     theEmitter->emitIns_R_R(INS_bt, EA_2BYTE, REG_EAX, REG_EDX);
 
-    theEmitter->emitIns_R(INS_idiv, EA_8BYTE, REG_EDX);
-
     theEmitter->emitIns_R_R(INS_xchg, EA_8BYTE, REG_EAX, REG_EDX);
 
     theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_EDX);
@@ -9106,8 +9104,6 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_R(INS_imulEAX, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R(INS_idiv, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
 
     theEmitter->emitIns_R_R(INS_tzcnt_apx, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_R(INS_lzcnt_apx, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
@@ -9183,6 +9179,12 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM16, false);
 
     theEmitter->emitIns_R(INS_seto_apx, EA_1BYTE, REG_R11, INS_OPTS_EVEX_zu);
+    theEmitter->emitIns_I_AR(INS_imul_09, EA_4BYTE, 0x8149a, REG_EAX, 0x14);
+    theEmitter->emitIns_I_AR(INS_imul_19, EA_4BYTE, 0x8149a, REG_EAX, 0x14);
+    theEmitter->emitIns_I_AR(INS_imul_19, EA_4BYTE, 0x8149a, REG_R16, 0x14);
+    theEmitter->emitIns_S_I(INS_imul_19, EA_4BYTE, 0, 20, 30);
+    theEmitter->emitIns_S_I(INS_imul_09, EA_4BYTE, 0, 20, 30);
+    theEmitter->emitIns_R_AR(INS_crc32_apx, EA_4BYTE, REG_R17, REG_EAX, 0x14);
 }
 
 void CodeGen::genAmd64EmitterUnitTestsAvx10v2()
@@ -10098,7 +10100,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 #endif // DEBUG
 
 #ifdef TARGET_AMD64
-    if (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX())
+    if (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPP2())
     {
         genPushCalleeSavedRegistersFromMaskAPX(rsPushRegs);
         return;
@@ -10113,7 +10115,13 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
         if ((regBit & rsPushRegs) != 0)
         {
+#ifdef TARGET_AMD64
+            insOpts instOptions =
+                (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPHint()) ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
+            GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, reg, instOptions);
+#else
             inst_RV(INS_push, reg, TYP_REF);
+#endif
             m_compiler->unwindPush(reg);
             rsPushRegs &= ~regBit;
         }
@@ -10224,7 +10232,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         return;
     }
 
-    if (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX())
+    if (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPP2())
     {
         regMaskTP      rsPopRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
         const unsigned popCount  = genPopCalleeSavedRegistersFromMaskAPX(rsPopRegs);
@@ -10248,10 +10256,12 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
 {
     unsigned popCount = 0;
+    insOpts  instOptions =
+        (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPHint()) ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
     if ((rsPopRegs & RBM_EBX) != 0)
     {
         popCount++;
-        inst_RV(INS_pop, REG_EBX, TYP_I_IMPL);
+        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_EBX, instOptions);
     }
     if ((rsPopRegs & RBM_FPBASE) != 0)
     {
@@ -10259,7 +10269,7 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
         assert(!doubleAlignOrFramePointerUsed());
 
         popCount++;
-        inst_RV(INS_pop, REG_EBP, TYP_I_IMPL);
+        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_EBP, instOptions);
     }
 
 #ifndef UNIX_AMD64_ABI
@@ -10267,35 +10277,22 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
     if ((rsPopRegs & RBM_ESI) != 0)
     {
         popCount++;
-        inst_RV(INS_pop, REG_ESI, TYP_I_IMPL);
+        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_ESI, instOptions);
     }
     if ((rsPopRegs & RBM_EDI) != 0)
     {
         popCount++;
-        inst_RV(INS_pop, REG_EDI, TYP_I_IMPL);
+        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_EDI, instOptions);
     }
 #endif // !defined(UNIX_AMD64_ABI)
 
 #ifdef TARGET_AMD64
-    if ((rsPopRegs & RBM_R12) != 0)
+    regMaskTP popRegs = rsPopRegs & (RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15);
+    while (popRegs != RBM_NONE)
     {
+        regNumber reg = genFirstRegNumFromMaskAndToggle(popRegs);
         popCount++;
-        inst_RV(INS_pop, REG_R12, TYP_I_IMPL);
-    }
-    if ((rsPopRegs & RBM_R13) != 0)
-    {
-        popCount++;
-        inst_RV(INS_pop, REG_R13, TYP_I_IMPL);
-    }
-    if ((rsPopRegs & RBM_R14) != 0)
-    {
-        popCount++;
-        inst_RV(INS_pop, REG_R14, TYP_I_IMPL);
-    }
-    if ((rsPopRegs & RBM_R15) != 0)
-    {
-        popCount++;
-        inst_RV(INS_pop, REG_R15, TYP_I_IMPL);
+        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, reg, instOptions);
     }
 #endif // TARGET_AMD64
 

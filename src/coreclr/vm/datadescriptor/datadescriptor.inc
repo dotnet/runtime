@@ -45,9 +45,6 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackBase, cdac_data<Thread>::CachedSta
 CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackLimit, cdac_data<Thread>::CachedStackLimit)
 CDAC_TYPE_FIELD(Thread, T_POINTER, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, T_POINTER, DebuggerFilterContext, cdac_data<Thread>::DebuggerFilterContext)
-#ifdef PROFILING_SUPPORTED
-CDAC_TYPE_FIELD(Thread, T_POINTER, ProfilerFilterContext, cdac_data<Thread>::ProfilerFilterContext)
-#endif // PROFILING_SUPPORTED
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), ExposedObject, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, T_UINT32, LastThrownObjectIsUnhandled, cdac_data<Thread>::LastThrownObjectIsUnhandled)
@@ -989,7 +986,7 @@ CDAC_TYPE_END(FuncEvalFrame)
 CDAC_TYPE_BEGIN(DebuggerEval)
 CDAC_TYPE_SIZE(sizeof(DebuggerEval))
 CDAC_TYPE_FIELD(DebuggerEval, EXTERN_TYPE(Context), TargetContext, offsetof(DebuggerEval, m_context))
-CDAC_TYPE_FIELD(DebuggerEval, T_BOOL, EvalDuringException, offsetof(DebuggerEval, m_evalDuringException))
+CDAC_TYPE_FIELD(DebuggerEval, T_BOOL, EvalUsesHijack, offsetof(DebuggerEval, m_evalUsesHijack))
 CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
 
