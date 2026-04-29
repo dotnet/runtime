@@ -230,7 +230,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         if (m_exception == NULL)
-            return NULL;
+            return (OBJECTHANDLE)NULL;
 
         return (OBJECTHANDLE)dac_cast<TADDR>(&m_exception);
     }

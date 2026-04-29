@@ -24,7 +24,7 @@ OBJECTHANDLE ThreadExceptionState::GetThrowableAsPseudoHandle()
         return m_pCurrentTracker->GetThrowableAsPseudoHandle();
     }
 
-    return NULL;
+    return (OBJECTHANDLE)NULL;
 }
 
 
