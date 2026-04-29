@@ -599,7 +599,7 @@ private:
         SAFEARRAY *sa = currArg->parray;
 
         RETURN_IF_FAILED(::VariantChangeType(pVarResult, pVarResult, 0, VT_I4));
-        return Sum_IntArray_SafeArray(sa, &V_I4(pVarResult));
+        return Sum_IntArray_SafeArray(sa, (int*)&V_I4(pVarResult));
     }
 
     HRESULT GetDispIdAsString_Proxy(_Inout_ VARIANT *pVarResult)
