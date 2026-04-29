@@ -630,7 +630,9 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
         }
 
         thread->SetThreadState(Thread::TS_Finalized);
+#ifndef TARGET_WASM
         Thread::SetCleanupNeededForFinalizedThread();
+#endif // TARGET_WASM
     }
 }
 FCIMPLEND
