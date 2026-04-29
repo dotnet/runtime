@@ -1441,6 +1441,14 @@ public:
         return m_ExceptionState.GetThrowable();
     }
 
+    // See ExInfo::GetThrowableAsPseudoHandle for details on the pseudo-handle.
+    OBJECTHANDLE GetThrowableAsPseudoHandle()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return m_ExceptionState.GetThrowableAsPseudoHandle();
+    }
+
     // An unmanaged thread can check if a managed thread is processing an exception
     BOOL HasException()
     {

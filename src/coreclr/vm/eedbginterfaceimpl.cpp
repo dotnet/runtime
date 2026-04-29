@@ -239,16 +239,13 @@ OBJECTHANDLE EEDbgInterfaceImpl::GetThreadException(Thread *pThread)
     }
     CONTRACTL_END;
 
-    // The exception object is stored directly in ExInfo::m_exception (no handle).
-    // Return m_LastThrownObjectHandle which is kept in sync via SafeSetThrowables
-    // before any debugger notification fires. Assert this invariant in debug builds.
-#ifdef _DEBUG
-    ExInfo* pTracker = pThread->GetExceptionState()->GetCurrentExceptionTracker();
-    if (pTracker != NULL && pTracker->m_exception != NULL && pThread->m_LastThrownObjectHandle != NULL)
+    OBJECTHANDLE oh = pThread->GetThrowableAsPseudoHandle();
+
+    if (oh != NULL)
     {
-        _ASSERTE(ObjectFromHandle(pThread->m_LastThrownObjectHandle) == pTracker->m_exception);
+        return oh;
     }
-#endif
+
     return pThread->m_LastThrownObjectHandle;
 }
 

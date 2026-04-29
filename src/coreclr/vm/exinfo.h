@@ -219,6 +219,22 @@ public:
         return m_exception;
     }
 
+    // Returns the target address of the m_exception field as a pseudo-handle.
+    // This is NOT a real GC handle table entry - it is the address of an
+    // OBJECTREF slot on the stack. Reading through it yields the exception
+    // Object*. The slot is updated during GC by the ExInfo chain scanner
+    // in ScanStackRoots (gcenv.ee.cpp). The pseudo-handle has the same
+    // lifetime as the ExInfo.
+    inline OBJECTHANDLE GetThrowableAsPseudoHandle()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        if (m_exception == NULL)
+            return NULL;
+
+        return (OBJECTHANDLE)dac_cast<TADDR>(&m_exception);
+    }
+
    inline BOOL DeliveredFirstChanceNotification()
    {
        LIMITED_METHOD_CONTRACT;

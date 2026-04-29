@@ -52,6 +52,19 @@ OBJECTREF ThreadExceptionState::GetThrowable()
     return NULL;
 }
 
+// See ExInfo::GetThrowableAsPseudoHandle for details on the pseudo-handle.
+OBJECTHANDLE ThreadExceptionState::GetThrowableAsPseudoHandle()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (m_pCurrentTracker)
+    {
+        return m_pCurrentTracker->GetThrowableAsPseudoHandle();
+    }
+
+    return NULL;
+}
+
 BOOL ThreadExceptionState::IsThrowableNull()
 {
     LIMITED_METHOD_DAC_CONTRACT;

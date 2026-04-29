@@ -51,6 +51,7 @@ class ThreadExceptionState
 public:
 
     OBJECTREF           GetThrowable();
+    OBJECTHANDLE        GetThrowableAsPseudoHandle();
     BOOL                IsThrowableNull();
     DWORD               GetExceptionCode();
     BOOL                IsComPlusException();
