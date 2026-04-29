@@ -58,7 +58,11 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
     public virtual bool IsContinuation(TypeHandle typeHandle);
-    // Returns the GC pointer runs for the method table as (offset, size) pairs normalized to actual byte lengths.
+    // Returns the GC pointer runs for the method table as (offset, size) pairs. Each
+    // run starts offset bytes from the beginning of the object and includes size bytes
+    // of contiguous pointers.
+    // For handles representing value types the object is assumed to be stored in the
+    // boxed layout.
     public virtual IEnumerable<(uint SeriesOffset, uint SeriesSize)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0);
     public virtual bool IsDynamicStatics(TypeHandle typeHandle);
     public virtual ushort GetNumInterfaces(TypeHandle typeHandle);
@@ -585,7 +589,7 @@ Contracts used:
         // Add objectSize back to get the true run length:
         //   trueRunLength = rawSeriesSize + objectSize
         // For non-arrays objectSize == baseSize, recovering the actual run.
-        // For arrays objectSize > baseSize, extending the last series across all elements.
+        // For arrays objectSize > baseSize, extending the single series across all elements.
 
         // NumSeries < 0: Value-class (repeating) series.
         // Used for arrays of value types containing GC references.
