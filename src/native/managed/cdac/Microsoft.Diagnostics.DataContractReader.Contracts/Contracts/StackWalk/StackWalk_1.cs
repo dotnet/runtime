@@ -17,11 +17,13 @@ internal partial class StackWalk_1 : IStackWalk
 {
     private readonly Target _target;
     private readonly IExecutionManager _eman;
+    private readonly GcScanner _gcScanner;
 
     internal StackWalk_1(Target target)
     {
         _target = target;
         _eman = target.Contracts.ExecutionManager;
+        _gcScanner = new GcScanner(target);
     }
 
     public enum StackWalkState
@@ -249,11 +251,11 @@ internal partial class StackWalk_1 : IStackWalk
                             }
                         }
 
-                        EnumGcRefsForManagedFrame(gcFrame.Frame.Context, cbh.Value, gcOptions, scanContext, relOffsetOverride);
+                        _gcScanner.EnumGcRefsForManagedFrame(gcFrame.Frame.Context, cbh.Value, gcOptions, scanContext, relOffsetOverride);
                     }
                     else
                     {
-                        walkData.FrameIter.GcScanRoots(gcFrame.Frame.FrameAddress, scanContext);
+                        _gcScanner.GcScanRoots(gcFrame.Frame.FrameAddress, scanContext);
                     }
                 }
             }
@@ -883,80 +885,5 @@ internal partial class StackWalk_1 : IStackWalk
         }
 
         return handle;
-    }
-
-    /// <summary>
-    /// Enumerates live GC slots for a managed (frameless) code frame.
-    /// Port of native EECodeManager::EnumGcRefs (eetwain.cpp).
-    /// </summary>
-    private void EnumGcRefsForManagedFrame(
-        IPlatformAgnosticContext context,
-        CodeBlockHandle cbh,
-        GcSlotEnumerationOptions options,
-        GcScanContext scanContext,
-        uint? relOffsetOverride = null)
-    {
-        TargetNUInt relativeOffset = _eman.GetRelativeOffset(cbh);
-        _eman.GetGCInfo(cbh, out TargetPointer gcInfoAddr, out uint gcVersion);
-
-        IGCInfo gcInfo = _target.Contracts.GCInfo;
-        IGCInfoHandle handle = gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
-
-        uint stackBaseRegister = gcInfo.GetStackBaseRegister(handle);
-        TargetPointer? callerSP = null;
-        uint offsetToUse = relOffsetOverride ?? (uint)relativeOffset.Value;
-
-        IReadOnlyList<LiveSlot> liveSlots = gcInfo.EnumerateLiveSlots(handle, offsetToUse, options);
-        foreach (LiveSlot slot in liveSlots)
-        {
-            GcScanFlags scanFlags = GcScanFlags.None;
-            if ((slot.GcFlags & 0x1) != 0)
-                scanFlags |= GcScanFlags.GC_CALL_INTERIOR;
-            if ((slot.GcFlags & 0x2) != 0)
-                scanFlags |= GcScanFlags.GC_CALL_PINNED;
-
-            if (slot.IsRegister)
-            {
-                if (!context.TryReadRegister((int)slot.RegisterNumber, out TargetNUInt regValue))
-                    continue;
-                GcScanSlotLocation loc = new((int)slot.RegisterNumber, 0, false);
-                scanContext.GCEnumCallback(new TargetPointer(regValue.Value), scanFlags, loc);
-            }
-            else
-            {
-                int spReg = context.StackPointerRegister;
-                int reg = slot.SpBase switch
-                {
-                    1 => spReg,
-                    2 => (int)stackBaseRegister,
-                    0 => -(spReg + 1),
-                    _ => throw new InvalidOperationException($"Unknown stack slot base: {slot.SpBase}"),
-                };
-                TargetPointer baseAddr = slot.SpBase switch
-                {
-                    1 => context.StackPointer,
-                    2 => context.TryReadRegister((int)stackBaseRegister, out TargetNUInt val)
-                        ? new TargetPointer(val.Value)
-                        : throw new InvalidOperationException($"Failed to read register {stackBaseRegister}"),
-                    0 => GetCallerSP(context, ref callerSP),
-                    _ => throw new InvalidOperationException($"Unknown stack slot base: {slot.SpBase}"),
-                };
-
-                TargetPointer addr = new(baseAddr.Value + (ulong)(long)slot.SpOffset);
-                GcScanSlotLocation loc = new(reg, slot.SpOffset, true);
-                scanContext.GCEnumCallback(addr, scanFlags, loc);
-            }
-        }
-    }
-
-    private TargetPointer GetCallerSP(IPlatformAgnosticContext context, ref TargetPointer? cached)
-    {
-        if (cached is null)
-        {
-            IPlatformAgnosticContext callerContext = context.Clone();
-            callerContext.Unwind(_target);
-            cached = callerContext.StackPointer;
-        }
-        return cached.Value;
     }
 }
