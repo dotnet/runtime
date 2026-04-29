@@ -312,6 +312,41 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Asserts that a method whose signature contains <paramref name="methodName"/>
+    /// has exactly <paramref name="expectedCount"/> fixups of the given kind.
+    /// Useful for ensuring fixups are properly deduplicated.
+    /// </summary>
+    public static void HasFixupKindCountOnMethod(ReadyToRunReader reader, ReadyToRunFixupKind kind, string methodName, int expectedCount)
+    {
+        var matchingMethods = new List<(string Signature, int Count)>();
+        foreach (var method in GetAllMethods(reader))
+        {
+            if (method.Fixups is null)
+                continue;
+            if (!method.SignatureString.Contains(methodName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            int count = 0;
+            foreach (var cell in method.Fixups)
+            {
+                if (cell.Signature is not null && cell.Signature.FixupKind == kind)
+                    count++;
+            }
+
+            matchingMethods.Add((method.SignatureString, count));
+        }
+
+        Assert.True(matchingMethods.Count > 0,
+            $"No method matching '{methodName}' was found.");
+
+        foreach (var (signature, count) in matchingMethods)
+        {
+            Assert.True(count == expectedCount,
+                $"Expected exactly {expectedCount} '{kind}' fixup(s) on method '{signature}', but found {count}.");
+        }
+    }
+
+    /// <summary>
     /// Asserts the R2R image contains at least one fixup of the given kind.
     /// </summary>
     public static void HasFixupKind(ReadyToRunReader reader, ReadyToRunFixupKind kind)
