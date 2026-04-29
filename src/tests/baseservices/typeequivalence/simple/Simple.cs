@@ -19,13 +19,9 @@ public struct EquivalentValueType
     public int A;
 }
 
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
 public class Simple
 {
-    public Simple()
-    {
-        Assert.SkipUnless(PlatformDetection.IsTypeEquivalenceSupported, "Precondition not met");
-    }
-
     private class EmptyType2 : IEmptyType
     {
         /// <summary>
@@ -38,7 +34,7 @@ public class Simple
     }
 
     [Fact]
-    public void InterfaceTypesFromDifferentAssembliesAreEquivalent()
+    public static void InterfaceTypesFromDifferentAssembliesAreEquivalent()
     {
         Console.WriteLine($"{nameof(InterfaceTypesFromDifferentAssembliesAreEquivalent)}");
         var inAsm = EmptyType.Create();
@@ -53,7 +49,7 @@ public class Simple
     }
 
     [Fact]
-    public void TypeInstanceEquality()
+    public static void TypeInstanceEquality()
     {
         Console.WriteLine($"{nameof(TypeInstanceEquality)}");
         var inAsm = EmptyType.Create();
@@ -120,7 +116,7 @@ public class Simple
     }
 
     [Fact]
-    public void InterfaceTypesMethodOperations()
+    public static void InterfaceTypesMethodOperations()
     {
         Console.WriteLine($"{nameof(InterfaceTypesMethodOperations)}");
 
@@ -152,7 +148,7 @@ public class Simple
     }
 
     [Fact]
-    public void CallSparseInterface()
+    public static void CallSparseInterface()
     {
         Console.WriteLine($"{nameof(CallSparseInterface)}");
 
@@ -168,7 +164,7 @@ public class Simple
     }
 
     [Fact]
-    public void ArrayEquivalence()
+    public static void ArrayEquivalence()
     {
         Console.WriteLine($"{nameof(ArrayEquivalence)}");
         var inAsm = EmptyType.Create();
@@ -186,7 +182,7 @@ public class Simple
     }
 
     [Fact]
-    public void ByRefEquivalence()
+    public static void ByRefEquivalence()
     {
         Console.WriteLine($"{nameof(ByRefEquivalence)}");
         var inAsm = EmptyType.Create();
@@ -211,7 +207,7 @@ public class Simple
     }
 
     [Fact]
-    public void GenericClassNonEquivalence()
+    public static void GenericClassNonEquivalence()
     {
         Console.WriteLine($"{nameof(GenericClassNonEquivalence)}");
         var inAsm = EmptyType.Create();
@@ -224,7 +220,7 @@ public class Simple
     }
 
     [Fact]
-    public void GenericInterfaceEquivalence()
+    public static void GenericInterfaceEquivalence()
     {
         Console.WriteLine($"{nameof(GenericInterfaceEquivalence)}");
         var inAsm = EmptyType.Create();
@@ -278,7 +274,7 @@ public class Simple
 
     [Fact]
     [MethodImpl (MethodImplOptions.NoInlining)]
-    public void LoadValueTypesWithMethod()
+    public static void LoadValueTypesWithMethod()
     {
         Console.WriteLine($"{nameof(LoadValueTypesWithMethod)}");
         Console.WriteLine($"-- {typeof(ValueTypeWithStaticMethod).Name}");
@@ -292,7 +288,7 @@ public class Simple
     }
 
     [Fact]
-    public void CastsOptimizations()
+    public static void CastsOptimizations()
     {
         string otherTypeName = $"{typeof(EquivalentValueType).FullName},{typeof(EmptyType).Assembly.GetName().Name}";
         Type otherEquivalentValueType = Type.GetType(otherTypeName);
@@ -304,7 +300,7 @@ public class Simple
     }
 
     [Fact]
-    public void ExactTypeOptimizations()
+    public static void ExactTypeOptimizations()
     {
         TestsExactTypeOptimizationsHelper.s_arrayInstance = new TestValueType[1];
         Thread.Yield();
@@ -312,7 +308,7 @@ public class Simple
     }
 
     [Fact]
-    public void MethodCallSignature()
+    public static void MethodCallSignature()
     {
         Console.WriteLine($"{nameof(MethodCallSignature)}");
 

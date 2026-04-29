@@ -349,15 +349,11 @@ public sealed class ClassVisibleTrueServerNoGuid : IInterfaceVisibleTrue
     private int privateVal;
 }
 
+[ConditionalClass(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
 [PlatformSpecific(TestPlatforms.Windows)]
 [SkipOnMono("Requires COM support")]
 public class ComVisibleServer
 {
-    public ComVisibleServer()
-    {
-        Assert.SkipUnless(TestLibrary.Utilities.IsNotNativeAot, "Precondition not met");
-    }
-
     /// <summary>
     /// Nested interface with ComImport.
     /// </summary>
@@ -712,7 +708,7 @@ public class ComVisibleServer
     [ActiveIssue("Requires COM support, disabled on all Mono platforms", TestRuntimes.Mono)]
     [Fact]
     [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
-    public void RunComVisibleTests()
+    public static void RunComVisibleTests()
     {
         int fooSuccessVal = 0;
         //
@@ -1012,7 +1008,7 @@ public class ComVisibleServer
     [ActiveIssue("Requires COM support, disabled on all Mono platforms", TestRuntimes.Mono)]
     [Fact]
     [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
-    public void RunTestsInALC()
+    public static void RunTestsInALC()
     {
         TestLibrary.Utilities.ExecuteAndUnload(typeof(ComVisibleServer).Assembly.Location, nameof(ComVisibleServer), nameof(RunComVisibleTests));
     }

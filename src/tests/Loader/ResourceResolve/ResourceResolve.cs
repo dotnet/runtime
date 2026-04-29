@@ -6,16 +6,12 @@ using System.IO;
 using System.Reflection;
 using Xunit;
 
+[ConditionalClass(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
 public unsafe class ResourceResolve
 {
-    public ResourceResolve()
-    {
-        Assert.SkipUnless(TestLibrary.Utilities.IsNotNativeAot, "Precondition not met");
-    }
-
     [Fact]
     [SkipOnMono("AssemblyRef manifest resource is not supported")]
-    public void AssemblyRef()
+    public static void AssemblyRef()
     {
         string resourceName = "MyResource";
         Assembly assembly = typeof(ResourceResolve).Assembly;

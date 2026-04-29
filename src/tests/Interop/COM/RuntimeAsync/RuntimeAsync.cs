@@ -6,19 +6,15 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
 public class RuntimeAsyncBuiltInCom
 {
-    public RuntimeAsyncBuiltInCom()
-    {
-        Assert.SkipUnless(TestLibrary.PlatformDetection.IsBuiltInComEnabled, "Precondition not met");
-    }
-
     public const int ExpectedIntValue = 42;
     public const float ExpectedClassFloatValue = 3.14f;
     public const float ExpectedInterfaceFloatValue = 2.71f;
 
     [Fact]
-    public void RuntimeAsyncThunksDoNotModifyCcwVtable()
+    public static void RuntimeAsyncThunksDoNotModifyCcwVtable()
     {
         ExposedToCom obj = new();
         Assert.True(RuntimeAsyncNative.ValidateSlotLayoutForDefaultInterface(obj, ExpectedIntValue, ExpectedClassFloatValue));
@@ -26,7 +22,7 @@ public class RuntimeAsyncBuiltInCom
     }
 
     [Fact]
-    public void RuntimeAsyncDoNotModifyRcwVtable()
+    public static void RuntimeAsyncDoNotModifyRcwVtable()
     {
         using (ComActivationHelpers.RegisterTypeForActivation<TaskComServer>())
         {
@@ -45,7 +41,7 @@ public class RuntimeAsyncBuiltInCom
     }
 
     [Fact]
-    public void IDispatchCallInvokesCorrectMethod()
+    public static void IDispatchCallInvokesCorrectMethod()
     {
         using (ComActivationHelpers.RegisterTypeForActivation<TaskComServer>())
         {
@@ -64,7 +60,7 @@ public class RuntimeAsyncBuiltInCom
     }
 
     [Fact]
-    public void TaskReturningPInvokeWithComMarshalling()
+    public static void TaskReturningPInvokeWithComMarshalling()
     {
         Task originalTask = new(() => {});
         Task result = RunTask(originalTask);
