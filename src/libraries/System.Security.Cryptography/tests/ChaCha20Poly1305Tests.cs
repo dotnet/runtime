@@ -8,9 +8,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(ChaCha20Poly1305), nameof(ChaCha20Poly1305.IsSupported))]
     public class ChaCha20Poly1305Tests : CommonAEADTests
     {
+        public ChaCha20Poly1305Tests()
+        {
+            Assert.SkipUnless(ChaCha20Poly1305.IsSupported, "ConditionalClass: ChaCha20Poly1305.IsSupported");
+        }
+
         private const int KeySizeInBytes = 256 / 8;
         private const int NonceSizeInBytes = 96 / 8;
         private const int TagSizeInBytes = 128 / 8;

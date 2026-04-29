@@ -179,12 +179,13 @@ namespace System.Net.Http.Functional.Tests
     }
 
 #if NET
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
     public sealed class PlatformHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
     {
         protected override Version UseVersion => HttpVersion20.Value;
 
-        public PlatformHandlerTest_Cookies_Http2(ITestOutputHelper output) : base(output) { }
+        public PlatformHandlerTest_Cookies_Http2(ITestOutputHelper output) : base(output)  {
+            Assert.SkipUnless(PlatformDetection.IsWindows10Version1607OrGreater, "ConditionalClass: PlatformDetection.IsWindows10Version1607OrGreater");
+        }
     }
 
     public sealed class PlatformHandler_HttpClientHandler_Asynchrony_Http2_Test : HttpClientHandler_Asynchrony_Test
@@ -288,13 +289,13 @@ namespace System.Net.Http.Functional.Tests
 
         public PlatformHandler_HttpClientHandler_Proxy_Http2_Test(ITestOutputHelper output) : base(output) { }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
     public sealed class PlatformHandler_HttpClientHandler_Http2_Test : HttpClientHandlerTest
     {
         protected override Version UseVersion => HttpVersion20.Value;
 
-        public PlatformHandler_HttpClientHandler_Http2_Test(ITestOutputHelper output) : base(output) { }
+        public PlatformHandler_HttpClientHandler_Http2_Test(ITestOutputHelper output) : base(output)  {
+            Assert.SkipUnless(PlatformDetection.IsWindows10Version1607OrGreater, "ConditionalClass: PlatformDetection.IsWindows10Version1607OrGreater");
+        }
     }
 
     public sealed class PlatformHandlerTest_AutoRedirect_Http2 : HttpClientHandlerTest_AutoRedirect
@@ -324,13 +325,13 @@ namespace System.Net.Http.Functional.Tests
 
         public PlatformHandlerTest_Cookies_Http11_Http2(ITestOutputHelper output) : base(output) { }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
     public sealed class PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Http2_Test : HttpClientHandler_MaxResponseHeadersLength_Test
     {
         protected override Version UseVersion => HttpVersion20.Value;
 
-        public PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Http2_Test(ITestOutputHelper output) : base(output) { }
+        public PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Http2_Test(ITestOutputHelper output) : base(output)  {
+            Assert.SkipUnless(PlatformDetection.IsWindows10Version1607OrGreater, "ConditionalClass: PlatformDetection.IsWindows10Version1607OrGreater");
+        }
     }
 
     public sealed class PlatformHandler_HttpClientHandler_Cancellation_Http2_Test : HttpClientHandler_Cancellation_Test

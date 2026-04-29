@@ -10,9 +10,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    [ConditionalClass(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
     public sealed class SlhDsaImplementationTests : SlhDsaTests
     {
+        public SlhDsaImplementationTests()
+        {
+            Assert.SkipUnless(SlhDsa.IsSupported, "ConditionalClass: SlhDsa.IsSupported");
+        }
+
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public static void SlhDsaIsOnlyPublicAncestor_GenerateKey(SlhDsaAlgorithm algorithm)

@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLKemNotSupportedTests), nameof(MLKemNotSupportedTests.IsNotSupported))]
     public static class MLKemNotSupportedTests
     {
         public static bool IsNotSupported => !MLKem.IsSupported;

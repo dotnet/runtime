@@ -8,9 +8,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(AesGcm), nameof(AesGcm.IsSupported))]
     public class AesGcmTests : CommonAEADTests
     {
+        public AesGcmTests()
+        {
+            Assert.SkipUnless(AesGcm.IsSupported, "ConditionalClass: AesGcm.IsSupported");
+        }
+
         private const int CryptoKitSupportedTagSizeInBytes = 16;
 
         [Theory]

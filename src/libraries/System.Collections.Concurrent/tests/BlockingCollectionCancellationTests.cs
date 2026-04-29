@@ -8,9 +8,13 @@ using Xunit;
 
 namespace System.Collections.Concurrent.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class BlockingCollectionCancellationTests
     {
+        public BlockingCollectionCancellationTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
+
         [Fact]
         public static void InternalCancellation_CompleteAdding_Negative()
         {

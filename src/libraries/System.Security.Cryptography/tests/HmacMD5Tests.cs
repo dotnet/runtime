@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(HmacMD5Tests.Traits), nameof(HmacMD5Tests.Traits.IsSupported))]
     public class HmacMD5Tests : Rfc2202HmacTests<HmacMD5Tests.Traits>
     {
         public sealed class Traits : IHmacTrait
@@ -46,7 +45,8 @@ namespace System.Security.Cryptography.Tests
 
         public HmacMD5Tests()
             : base(s_testKeys2202, s_testMacs2202)
-        {
+         {
+            Assert.SkipUnless(HmacMD5Tests.Traits.IsSupported, "ConditionalClass: HmacMD5Tests.Traits.IsSupported");
         }
 
         protected override int BlockSize => 64;

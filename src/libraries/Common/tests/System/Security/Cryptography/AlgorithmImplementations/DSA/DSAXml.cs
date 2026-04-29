@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public static class DSAXml
     {
         [Fact]

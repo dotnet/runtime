@@ -7,9 +7,13 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public class DirectoryInfo_SymbolicLinks : BaseSymbolicLinks_FileSystemInfo
     {
+        public DirectoryInfo_SymbolicLinks()
+        {
+            Assert.SkipUnless(MountHelper.CanCreateSymbolicLinks, "ConditionalClass: MountHelper.CanCreateSymbolicLinks");
+        }
+
         protected override bool IsDirectoryTest => true;
 
         protected override FileSystemInfo GetFileSystemInfo(string path) =>

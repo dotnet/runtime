@@ -11,9 +11,13 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveILGeneratorTests
     {
+        public AssemblySaveILGeneratorTests()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+        }
+
         [Fact]
         public void MethodWithEmptyBody()
         {

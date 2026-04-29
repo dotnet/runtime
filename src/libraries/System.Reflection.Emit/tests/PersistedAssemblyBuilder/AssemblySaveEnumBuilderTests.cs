@@ -8,9 +8,13 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveEnumBuilderTests
     {
+        public AssemblySaveEnumBuilderTests()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+        }
+
         private static AssemblyName PopulateAssemblyName()
         {
             AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");

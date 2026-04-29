@@ -7,9 +7,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     public class MLKemImplementationTests : MLKemBaseTests
     {
+        public MLKemImplementationTests()
+        {
+            Assert.SkipUnless(MLKem.IsSupported, "ConditionalClass: MLKem.IsSupported");
+        }
+
         public override MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
             return MLKem.GenerateKey(algorithm);

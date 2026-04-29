@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
     public static class X25519DiffieHellmanTests
     {
         private static readonly byte[] s_asnNull = [0x05, 0x00];

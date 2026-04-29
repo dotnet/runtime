@@ -10,7 +10,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     public static class MLKemKeyTests
     {
         [Theory]

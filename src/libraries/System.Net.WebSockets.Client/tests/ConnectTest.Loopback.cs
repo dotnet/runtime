@@ -10,10 +10,14 @@ using Xunit;
 using Xunit.Sdk;
 namespace System.Net.WebSockets.Client.Tests
 {
-    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets are not supported on browser")]
     public abstract class ConnectTest_LoopbackBase(ITestOutputHelper output) : ConnectTestBase(output)
     {
+        public ConnectTest_LoopbackBase() : this(null!)
+        {
+            Assert.SkipUnless(ClientWebSocketTestBase.WebSocketsSupported, "ConditionalClass: ClientWebSocketTestBase.WebSocketsSupported");
+        }
+
         #region Common (Echo Server) tests
 
         [Theory, MemberData(nameof(UseSsl))]

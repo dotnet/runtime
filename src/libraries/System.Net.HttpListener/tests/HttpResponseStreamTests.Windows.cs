@@ -13,7 +13,6 @@ using static System.Net.Tests.HttpListenerTimeoutManagerWindowsTests;
 namespace System.Net.Tests
 {
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpResponseStreamWindowsTests : IDisposable
     {
         private HttpListenerFactory _factory;
@@ -22,6 +21,7 @@ namespace System.Net.Tests
 
         public HttpResponseStreamWindowsTests()
         {
+            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "ConditionalClass: PlatformDetection.IsNotWindowsNanoServer");
             _factory = new HttpListenerFactory();
             _listener = _factory.GetListener();
             _helper = new GetContextHelper(_listener, _factory.ListeningUrl);

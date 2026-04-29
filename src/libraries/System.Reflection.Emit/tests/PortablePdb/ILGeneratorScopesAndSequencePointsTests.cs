@@ -10,9 +10,13 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class ILGeneratorScopesAndSequencePointsTests
     {
+        public ILGeneratorScopesAndSequencePointsTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "ConditionalClass: PlatformDetection.IsNotBrowser");
+        }
+
         [Fact]
         public void SetLocalSymInfo_UsingNamespace_Validations()
         {

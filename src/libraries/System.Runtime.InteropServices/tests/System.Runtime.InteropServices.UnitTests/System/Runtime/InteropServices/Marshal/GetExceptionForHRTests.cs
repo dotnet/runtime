@@ -6,9 +6,13 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
     public class GetExceptionForHRTests
     {
+        public GetExceptionForHRTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotNativeAot, "ConditionalClass: PlatformDetection.IsNotNativeAot");
+        }
+
         [Theory(SkipUnless = nameof(PlatformDetection.IsNotNativeAot), SkipType = typeof(PlatformDetection), Skip = "COM interop not supported on NativeAOT")]
         [ActiveIssue("https://github.com/mono/mono/issues/15093", TestRuntimes.Mono)]
         [InlineData(unchecked((int)0x80020006))]

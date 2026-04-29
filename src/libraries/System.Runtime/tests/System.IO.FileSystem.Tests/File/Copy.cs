@@ -463,9 +463,13 @@ namespace System.IO.Tests
     /// <summary>
     /// Single tests that shouldn't be duplicated by inheritance.
     /// </summary>
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
     public sealed class File_Copy_Single : FileSystemTest
     {
+        public File_Copy_Single()
+        {
+            Assert.SkipUnless(PlatformDetection.IsFileLockingEnabled, "ConditionalClass: PlatformDetection.IsFileLockingEnabled");
+        }
+
         [Fact]
         public void EnsureThrowWhenCopyToNonSharedFile()
         {

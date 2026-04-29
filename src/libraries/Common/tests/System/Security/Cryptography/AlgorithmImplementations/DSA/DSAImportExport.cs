@@ -6,9 +6,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public partial class DSAImportExport
     {
+        public DSAImportExport()
+        {
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "ConditionalClass: PlatformSupport.IsDSASupported");
+        }
+
         [Fact]
         public static void ExportAutoKey()
         {

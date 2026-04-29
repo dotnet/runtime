@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public static class DSAKeyPemTests
     {
         private const string AmbiguousExceptionMarker = "multiple keys";

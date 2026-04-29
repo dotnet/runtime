@@ -8,7 +8,6 @@ using Xunit;
 namespace System.Xml.XslCompiledTransformApiTests
 {
     //[TestCase(Name = "OutputSettings", Desc = "This testcase tests the OutputSettings on XslCompiledTransform", Param = "Debug")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class COutputSettings : XsltApiTestCaseBase2
     {
         private XslCompiledTransform _xsl = null;
@@ -18,6 +17,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         private ITestOutputHelper _output;
         public COutputSettings(ITestOutputHelper output) : base(output)
         {
+            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "ConditionalClass: PlatformDetection.IsReflectionEmitSupported");
             _output = output;
         }
 

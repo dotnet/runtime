@@ -40,8 +40,6 @@ namespace System.Reflection.Context.Tests
             return c;
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
     public class MethodBodyTests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
@@ -51,6 +49,8 @@ namespace System.Reflection.Context.Tests
 
         public MethodBodyTests()
         {
+
+            Assert.SkipUnless(PlatformDetection.IsMethodBodySupported, "ConditionalClass: PlatformDetection.IsMethodBodySupported");
             TypeInfo typeInfo = typeof(TypeWithTryCatch).GetTypeInfo();
             TypeInfo customTypeInfo = _customReflectionContext.MapType(typeInfo);
             _methodWithTryCatch = customTypeInfo.GetMethod("MethodWithTryCatch");
@@ -125,8 +125,6 @@ namespace System.Reflection.Context.Tests
             Assert.NotEmpty(locals);
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
     public class ExceptionHandlingClauseTests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
@@ -135,6 +133,8 @@ namespace System.Reflection.Context.Tests
 
         public ExceptionHandlingClauseTests()
         {
+
+            Assert.SkipUnless(PlatformDetection.IsMethodBodySupported, "ConditionalClass: PlatformDetection.IsMethodBodySupported");
             TypeInfo typeInfo = typeof(TypeWithTryCatch).GetTypeInfo();
             TypeInfo customTypeInfo = _customReflectionContext.MapType(typeInfo);
             MethodInfo method = customTypeInfo.GetMethod("MethodWithTryCatch");
@@ -228,8 +228,6 @@ namespace System.Reflection.Context.Tests
             }
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
     public class LocalVariableInfoTests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
@@ -237,6 +235,8 @@ namespace System.Reflection.Context.Tests
 
         public LocalVariableInfoTests()
         {
+
+            Assert.SkipUnless(PlatformDetection.IsMethodBodySupported, "ConditionalClass: PlatformDetection.IsMethodBodySupported");
             TypeInfo typeInfo = typeof(TypeWithTryCatch).GetTypeInfo();
             TypeInfo customTypeInfo = _customReflectionContext.MapType(typeInfo);
             MethodInfo method = customTypeInfo.GetMethod("MethodWithLocals");

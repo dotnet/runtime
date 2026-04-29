@@ -11,9 +11,13 @@ using Xunit;
 namespace System.Reflection.Tests
 {
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport))]
     public class OleAutBinderTests
     {
+        public OleAutBinderTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport, "ConditionalClass: PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport");
+        }
+
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType("System.OleAutBinder")]
         private static extern object CreateOleAutBinder();

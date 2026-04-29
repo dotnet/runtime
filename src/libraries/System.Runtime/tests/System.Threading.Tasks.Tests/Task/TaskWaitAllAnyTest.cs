@@ -187,8 +187,6 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
 
         #endregion
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class TaskWaitAllAnyTest
     {
         #region Private Fields
@@ -210,6 +208,8 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
 
         public TaskWaitAllAnyTest(TestParameters_WaitAllAny parameters)
         {
+
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
             _api = parameters.Api;
             _waitBy = parameters.WaitBy;
             _waitTimeout = parameters.WaitTime;
@@ -447,10 +447,17 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
     }
 
     #endregion
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class TaskWaitAllAny
     {
+
+        public TaskWaitAllAny()
+
+        {
+
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+
+        }
+
         [Fact]
         [OuterLoop]
         public static void TaskWaitAllAny0()

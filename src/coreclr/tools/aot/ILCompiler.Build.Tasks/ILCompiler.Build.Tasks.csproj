@@ -9,6 +9,7 @@
     <OutputPath>$(RuntimeBinDir)/ilc-published/netstandard</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
   </PropertyGroup>
 
   <ItemGroup>

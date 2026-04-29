@@ -8,9 +8,13 @@ using Xunit;
 namespace System.Net.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerTimeoutManagerTests
     {
+        public HttpListenerTimeoutManagerTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "ConditionalClass: PlatformDetection.IsNotWindowsNanoServer");
+        }
+
         [Theory]
         [InlineData(-1)]
         [InlineData((long)uint.MaxValue + 1)]
@@ -47,8 +51,6 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.TimeoutManager);
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     [PlatformSpecific(TestPlatforms.Windows)]
     public class HttpListenerTimeoutManagerWindowsTests : IDisposable
     {
@@ -120,6 +122,8 @@ namespace System.Net.Tests
 
         public HttpListenerTimeoutManagerWindowsTests()
         {
+
+            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "ConditionalClass: PlatformDetection.IsNotWindowsNanoServer");
             _listener = new HttpListener();
         }
 

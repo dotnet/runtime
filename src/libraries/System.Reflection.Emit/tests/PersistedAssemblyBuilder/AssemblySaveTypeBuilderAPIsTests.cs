@@ -9,9 +9,13 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveTypeBuilderAPIsTests
     {
+        public AssemblySaveTypeBuilderAPIsTests()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+        }
+
         [Fact]
         public void DefineMethodOverride_InterfaceMethod()
         {

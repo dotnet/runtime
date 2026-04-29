@@ -6,9 +6,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
     public sealed class CompositeMLDsaImplementationTests : CompositeMLDsaTestsBase
     {
+        public CompositeMLDsaImplementationTests()
+        {
+            Assert.SkipUnless(CompositeMLDsa.IsSupported, "ConditionalClass: CompositeMLDsa.IsSupported");
+        }
+
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void CompositeMLDsaIsOnlyPublicAncestor_GenerateKey(CompositeMLDsaAlgorithm algorithm)

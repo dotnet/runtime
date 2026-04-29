@@ -439,9 +439,13 @@ namespace System.Net.WebSockets.Client.Tests
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     public abstract class CloseTest_External(ITestOutputHelper output) : CloseTestBase(output)
     {
+        public CloseTest_External() : this(null!)
+        {
+            Assert.SkipUnless(ClientWebSocketTestBase.WebSocketsSupported, "ConditionalClass: ClientWebSocketTestBase.WebSocketsSupported");
+        }
+
         #region Common (Echo Server) tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))] // See https://github.com/dotnet/runtime/issues/28957

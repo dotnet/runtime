@@ -17,7 +17,6 @@ using Xunit;
 
 namespace SampleSynthesisTests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // No SAPI on Nano or Server Core
     [SkipOnMono("No SAPI on Mono")]
     public static class SpeechRecognizerTests
     {

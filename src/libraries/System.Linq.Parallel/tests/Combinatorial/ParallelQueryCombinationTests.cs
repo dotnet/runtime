@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    [ConditionalClass(typeof(ParallelQueryCombinationTests), nameof(RunSlowTests))]
     public static partial class ParallelQueryCombinationTests
     {
         // On ARM platforms, many available cores make this unbearably slow: https://github.com/dotnet/runtime/issues/29123

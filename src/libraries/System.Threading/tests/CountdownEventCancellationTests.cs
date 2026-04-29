@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static class CountdownEventCancellationTests
     {
         [Fact]

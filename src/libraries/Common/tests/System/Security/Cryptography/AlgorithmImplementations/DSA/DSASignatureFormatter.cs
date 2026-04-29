@@ -7,9 +7,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public partial class DSASignatureFormatterTests : AsymmetricSignatureFormatterTests
     {
+        public DSASignatureFormatterTests()
+        {
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "ConditionalClass: PlatformSupport.IsDSASupported");
+        }
+
         [Fact]
         public static void VerifySignature_SHA1()
         {

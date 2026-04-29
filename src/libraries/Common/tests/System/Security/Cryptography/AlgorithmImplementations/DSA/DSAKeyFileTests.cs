@@ -10,7 +10,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public static class DSAKeyFileTests
     {
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;

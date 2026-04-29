@@ -6,9 +6,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public partial class DSAKeyGeneration
     {
+        public DSAKeyGeneration()
+        {
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "ConditionalClass: PlatformSupport.IsDSASupported");
+        }
+
         public static bool HasSecondMinSize { get; } = GetHasSecondMinSize();
 
         [Fact]

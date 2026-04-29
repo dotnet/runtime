@@ -18,9 +18,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
 {
-    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public class DSAKeyValueTest
     {
+        public DSAKeyValueTest()
+        {
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "ConditionalClass: PlatformSupport.IsDSASupported");
+        }
+
         [Fact]
         public void Ctor_Empty()
         {

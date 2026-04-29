@@ -28,10 +28,14 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     // PKCS1MaskGenerationMethod is annotated as RequiresUnreferencedCode
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class PKCS1MaskGenerationMethodTest
     {
+        public PKCS1MaskGenerationMethodTest()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "ConditionalClass: PlatformDetection.IsNotBuiltWithAggressiveTrimming");
+        }
+
         [Fact]
         public static void PropertyTest()
         {

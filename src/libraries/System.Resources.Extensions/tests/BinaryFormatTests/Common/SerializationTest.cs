@@ -7,10 +7,17 @@ using System.Formats.Nrbf;
 using System.Runtime.Serialization.Formatters;
 
 namespace System.Resources.Extensions.Tests.Common;
-
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
 public abstract class SerializationTest<TSerializer> where TSerializer : ISerializer
 {
+
+    public SerializationTest()
+
+    {
+
+        Assert.SkipUnless(PlatformDetection.IsBinaryFormatterSupported, "ConditionalClass: PlatformDetection.IsBinaryFormatterSupported");
+
+    }
+
     public static TheoryData<FormatterTypeStyle, FormatterAssemblyStyle> FormatterOptions => new()
     {
         // XsdString always writes strings inline (never as a record). Despite FormatterTypeStyle

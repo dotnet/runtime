@@ -23,7 +23,6 @@ using Xunit;
 
 #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
 // Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT.
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
 #endif
 public static partial class XmlSerializerTests
 {

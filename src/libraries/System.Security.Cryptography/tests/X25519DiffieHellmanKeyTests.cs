@@ -8,7 +8,6 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     // Tests static key-loading and generating. Static members always use the *Implementations.
-    [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
     public static class X25519DiffieHellmanKeyTests
     {
         public static bool IsNotStrictKeyValidatingPlatform => !X25519DiffieHellmanBaseTests.IsStrictKeyValidatingPlatform;

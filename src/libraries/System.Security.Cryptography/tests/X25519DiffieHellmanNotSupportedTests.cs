@@ -5,7 +5,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(X25519DiffieHellmanNotSupportedTests), nameof(X25519DiffieHellmanNotSupportedTests.IsNotSupported))]
     public static class X25519DiffieHellmanNotSupportedTests
     {
         public static bool IsNotSupported => !X25519DiffieHellman.IsSupported;

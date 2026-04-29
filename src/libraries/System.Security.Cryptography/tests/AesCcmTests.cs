@@ -8,9 +8,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(AesCcm), nameof(AesCcm.IsSupported))]
     public class AesCcmTests : CommonAEADTests
     {
+        public AesCcmTests()
+        {
+            Assert.SkipUnless(AesCcm.IsSupported, "ConditionalClass: AesCcm.IsSupported");
+        }
+
         [Theory]
         [MemberData(nameof(EncryptTamperAADDecryptTestInputs))]
         public static void EncryptTamperAADDecrypt(int dataLength, int additionalDataLength)

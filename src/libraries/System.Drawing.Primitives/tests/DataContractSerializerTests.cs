@@ -12,9 +12,13 @@ using System.Drawing;
 
 namespace System.Drawing.Primitives.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
     public class DataContractSerializerTests
     {
+        public DataContractSerializerTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "ConditionalClass: PlatformDetection.IsNotBuiltWithAggressiveTrimming");
+        }
+
         [Fact]
         public static void DCS_Point()
         {

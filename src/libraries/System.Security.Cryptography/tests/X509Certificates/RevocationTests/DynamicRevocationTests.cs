@@ -11,7 +11,6 @@ using Xunit;
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
     [OuterLoop("These tests run serially at about 1 second each, and the code shouldn't change that often.", ~TestPlatforms.Browser)]
-    [ConditionalClass(typeof(DynamicRevocationTests), nameof(SupportsDynamicRevocation))]
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static partial class DynamicRevocationTests
     {

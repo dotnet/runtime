@@ -13,9 +13,13 @@ using Xunit;
 
 namespace System.Net.Security.Enterprise.Tests
 {
-    [ConditionalClass(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
     public class NegotiateStreamLoopbackTest
     {
+        public NegotiateStreamLoopbackTest()
+        {
+            Assert.SkipUnless(EnterpriseTestConfiguration.Enabled, "ConditionalClass: EnterpriseTestConfiguration.Enabled");
+        }
+
         private const int TimeoutMilliseconds = 4 * 60 * 1000;
 
         private static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks) =>

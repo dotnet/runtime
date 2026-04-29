@@ -11,7 +11,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     public static class MLKemTests
     {
         private static readonly byte[] s_asnNull = new byte[] { 0x05, 0x00 };

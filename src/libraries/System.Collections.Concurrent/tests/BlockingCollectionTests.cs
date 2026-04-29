@@ -13,9 +13,13 @@ using Xunit;
 namespace System.Collections.Concurrent.Tests
 {
     /// <summary>The class that contains the unit tests of the BlockingCollection.</summary>
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class BlockingCollectionTests
     {
+        public BlockingCollectionTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
+
         [Fact]
         public static void TestBasicScenarios()
         {

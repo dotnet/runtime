@@ -14,7 +14,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 {
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/92467")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process), nameof(PlatformDetection.HasAssemblyFiles))] // https://github.com/dotnet/runtime/issues/71962
     public static class JsonSourceGeneratorIncrementalTests
     {
         [Theory]
