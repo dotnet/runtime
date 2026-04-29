@@ -1097,6 +1097,9 @@ void Compiler::fgCompactBlock(BasicBlock* block)
 
     block->CopyFlags(target, BBF_COMPACT_UPD);
 
+    // If target was a resumption block, block now plays that role.
+    block->CopyFlags(target, BBF_ASYNC_RESUMPTION);
+
     // mark target as removed
 
     target->SetFlags(BBF_REMOVED);
