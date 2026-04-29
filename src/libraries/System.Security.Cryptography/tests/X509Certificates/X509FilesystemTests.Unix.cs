@@ -85,6 +85,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static async Task CrlDiskCacheRecovers()
         {
