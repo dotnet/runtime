@@ -173,4 +173,8 @@
   <data name="NonKeyedDescriptorMisuse" xml:space="preserve">
     <value>This service descriptor is not keyed.</value>
   </data>
+  <data name="ServiceCollectionDoesNotSupportDecoration" xml:space="preserve">
+    <value>The IServiceCollection implementation '{0}' does not implement IDecorationServiceCollection. Use ServiceCollection or an implementation that supports decoration.</value>
+    <comment>{0} = IServiceCollection implementation type</comment>
+  </data>
 </root>

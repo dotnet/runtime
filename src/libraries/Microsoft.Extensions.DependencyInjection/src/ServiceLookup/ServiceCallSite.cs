@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public abstract Type ServiceType { get; }
         public abstract Type? ImplementationType { get; }
         public abstract CallSiteKind Kind { get; }
-        public ResultCache Cache { get; }
+        public ResultCache Cache { get; internal set; }
         public object? Value { get; set; }
         public object? Key { get; }
 

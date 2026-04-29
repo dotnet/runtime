@@ -57,7 +57,13 @@ namespace Microsoft.Extensions.DependencyInjection
             _createServiceAccessor = CreateServiceAccessor;
             _serviceAccessors = new ConcurrentDictionary<ServiceIdentifier, ServiceAccessor>();
 
-            CallSiteFactory = new CallSiteFactory(serviceDescriptors);
+            IReadOnlyList<ServiceDecoration>? decorations = null;
+            if (serviceDescriptors is IDecorationServiceCollection decorationCollection
+                && decorationCollection.Decorations.Count > 0)
+            {
+                decorations = new List<ServiceDecoration>(decorationCollection.Decorations);
+            }
+            CallSiteFactory = new CallSiteFactory(serviceDescriptors, decorations);
             // The list of built in services that aren't part of the list of service descriptors
             // keep this in sync with CallSiteFactory.IsService
             CallSiteFactory.Add(ServiceIdentifier.FromServiceType(typeof(IServiceProvider)), new ServiceProviderCallSite());

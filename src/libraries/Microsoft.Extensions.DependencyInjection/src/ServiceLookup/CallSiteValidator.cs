@@ -111,6 +111,23 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override Type? VisitFactory(FactoryCallSite factoryCallSite, CallSiteValidatorState state) => null;
 
+        protected override Type? VisitDecorator(DecoratorCallSite decoratorCallSite, CallSiteValidatorState state)
+        {
+            Type? result = VisitCallSite(decoratorCallSite.InnerCallSite, state);
+            if (decoratorCallSite.ParameterCallSites is { } parameterCallSites)
+            {
+                for (int i = 0; i < parameterCallSites.Length; i++)
+                {
+                    if (i != decoratorCallSite.InnerServiceParameterIndex)
+                    {
+                        Type? scoped = VisitCallSite(parameterCallSites[i], state);
+                        result ??= scoped;
+                    }
+                }
+            }
+            return result;
+        }
+
         internal struct CallSiteValidatorState
         {
             [DisallowNull]

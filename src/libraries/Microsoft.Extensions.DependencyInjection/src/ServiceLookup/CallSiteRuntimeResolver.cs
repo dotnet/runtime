@@ -210,6 +210,44 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             return factoryCallSite.Factory(context.Scope);
         }
+
+        protected override object VisitDecorator(DecoratorCallSite decoratorCallSite, RuntimeResolverContext context)
+        {
+            object inner = VisitCallSite(decoratorCallSite.InnerCallSite, context)!;
+
+            if (decoratorCallSite.DecoratorFactory is { } factory)
+            {
+                return factory(context.Scope, inner);
+            }
+
+            ServiceCallSite[] parameterCallSites = decoratorCallSite.ParameterCallSites!;
+            object?[] parameterValues = new object?[parameterCallSites.Length];
+            for (int i = 0; i < parameterValues.Length; i++)
+            {
+                if (i == decoratorCallSite.InnerServiceParameterIndex)
+                {
+                    parameterValues[i] = inner;
+                }
+                else
+                {
+                    parameterValues[i] = VisitCallSite(parameterCallSites[i], context);
+                }
+            }
+
+#if NETFRAMEWORK || NETSTANDARD2_0
+            try
+            {
+                return decoratorCallSite.DecoratorConstructor!.Invoke(parameterValues);
+            }
+            catch (Exception ex) when (ex.InnerException != null)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw;
+            }
+#else
+            return decoratorCallSite.DecoratorConstructor!.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameterValues, culture: null);
+#endif
+        }
     }
 
     internal struct RuntimeResolverContext

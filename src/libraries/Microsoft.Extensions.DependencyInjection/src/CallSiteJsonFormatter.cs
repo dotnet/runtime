@@ -108,6 +108,33 @@ namespace Microsoft.Extensions.DependencyInjection
             return null;
         }
 
+        protected override object? VisitDecorator(DecoratorCallSite decoratorCallSite, CallSiteFormatterContext argument)
+        {
+            argument.WriteProperty("decoratorType", decoratorCallSite.ImplementationType);
+
+            argument.StartProperty("innerService");
+            CallSiteFormatterContext childContext = argument.StartObject();
+            VisitCallSite(decoratorCallSite.InnerCallSite, childContext);
+            argument.EndObject();
+
+            if (decoratorCallSite.ParameterCallSites is { Length: > 0 } parameterCallSites)
+            {
+                argument.StartProperty("arguments");
+                CallSiteFormatterContext arrayContext = argument.StartArray();
+                for (int i = 0; i < parameterCallSites.Length; i++)
+                {
+                    if (i != decoratorCallSite.InnerServiceParameterIndex)
+                    {
+                        arrayContext.StartArrayItem();
+                        VisitCallSite(parameterCallSites[i], arrayContext);
+                    }
+                }
+                argument.EndArray();
+            }
+
+            return null;
+        }
+
         internal struct CallSiteFormatterContext
         {
             private readonly HashSet<ServiceCallSite> _processedCallSites;

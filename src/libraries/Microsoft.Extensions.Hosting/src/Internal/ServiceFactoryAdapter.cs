@@ -41,7 +41,24 @@ namespace Microsoft.Extensions.Hosting.Internal
                     throw new InvalidOperationException(SR.ResolverReturnedNull);
                 }
             }
-            return _serviceProviderFactory.CreateBuilder(services);
+            // Handle service decorations:
+            // - Non-aware adapters: materialize decorations into standard descriptors before CreateBuilder
+            // - Aware adapters: apply decorations natively to the builder after CreateBuilder
+            if (services is IDecorationServiceCollection { Decorations.Count: > 0 } decorations
+                && _serviceProviderFactory is not ISupportServiceDecoration<TContainerBuilder>)
+            {
+                DecorationMaterializer.Materialize(services, decorations.Decorations);
+            }
+
+            TContainerBuilder builder = _serviceProviderFactory.CreateBuilder(services);
+
+            if (services is IDecorationServiceCollection { Decorations.Count: > 0 } pendingDecorations
+                && _serviceProviderFactory is ISupportServiceDecoration<TContainerBuilder> decorationSupport)
+            {
+                decorationSupport.ApplyDecorations(builder, pendingDecorations);
+            }
+
+            return builder;
         }
 
         public IServiceProvider CreateServiceProvider(object containerBuilder)

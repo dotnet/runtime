@@ -13,9 +13,10 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     [DebuggerDisplay("{DebuggerToString(),nq}")]
     [DebuggerTypeProxy(typeof(ServiceCollectionDebugView))]
-    public class ServiceCollection : IServiceCollection
+    public class ServiceCollection : IDecorationServiceCollection
     {
         private readonly List<ServiceDescriptor> _descriptors = new List<ServiceDescriptor>();
+        private readonly List<ServiceDecoration> _decorations = new List<ServiceDecoration>();
         private bool _isReadOnly;
 
         /// <inheritdoc />
@@ -100,6 +101,9 @@ namespace Microsoft.Extensions.DependencyInjection
             CheckReadOnly();
             _descriptors.RemoveAt(index);
         }
+
+        /// <inheritdoc />
+        public IList<ServiceDecoration> Decorations => _decorations;
 
         /// <summary>
         /// Makes this collection read-only.

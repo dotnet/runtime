@@ -192,6 +192,42 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return expression;
         }
 
+        protected override Expression VisitDecorator(DecoratorCallSite decoratorCallSite, object? context)
+        {
+            Expression innerExpression = VisitCallSite(decoratorCallSite.InnerCallSite, context);
+
+            if (decoratorCallSite.DecoratorFactory is { } factory)
+            {
+                return Expression.Invoke(
+                    Expression.Constant(factory),
+                    ScopeParameter,
+                    innerExpression);
+            }
+
+            ParameterInfo[] parameters = decoratorCallSite.DecoratorConstructor!.GetParameters();
+            ServiceCallSite[] parameterCallSites = decoratorCallSite.ParameterCallSites!;
+            Expression[] parameterExpressions = new Expression[parameterCallSites.Length];
+
+            for (int i = 0; i < parameterExpressions.Length; i++)
+            {
+                if (i == decoratorCallSite.InnerServiceParameterIndex)
+                {
+                    parameterExpressions[i] = Convert(innerExpression, parameters[i].ParameterType);
+                }
+                else
+                {
+                    parameterExpressions[i] = Convert(VisitCallSite(parameterCallSites[i], context), parameters[i].ParameterType);
+                }
+            }
+
+            Expression expression = Expression.New(decoratorCallSite.DecoratorConstructor, parameterExpressions);
+            if (decoratorCallSite.ImplementationType!.IsValueType)
+            {
+                expression = Expression.Convert(expression, typeof(object));
+            }
+            return expression;
+        }
+
         private static Expression Convert(Expression expression, Type type, bool forceValueTypeConversion = false)
         {
             // Don't convert if the expression is already assignable

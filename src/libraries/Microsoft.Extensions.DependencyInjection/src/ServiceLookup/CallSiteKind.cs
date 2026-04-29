@@ -14,5 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         IEnumerable,
 
         ServiceProvider,
+
+        Decorator,
     }
 }

@@ -66,9 +66,17 @@ namespace Microsoft.Extensions.DependencyInjection
         object? GetKeyedService(System.Type serviceType, object? serviceKey);
         object GetRequiredKeyedService(System.Type serviceType, object? serviceKey);
     }
+    public partial interface IDecorationServiceCollection : Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
+    {
+        System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDecoration> Decorations { get; }
+    }
     public partial interface ISupportRequiredService
     {
         object GetRequiredService(System.Type serviceType);
+    }
+    public partial interface ISupportServiceDecoration<TContainerBuilder> where TContainerBuilder : notnull
+    {
+        void ApplyDecorations(TContainerBuilder builder, Microsoft.Extensions.DependencyInjection.IDecorationServiceCollection services);
     }
     public static partial class KeyedService
     {
@@ -76,10 +84,11 @@ namespace Microsoft.Extensions.DependencyInjection
     }
     public delegate object ObjectFactory(System.IServiceProvider serviceProvider, object?[]? arguments);
     public delegate T ObjectFactory<out T>(System.IServiceProvider serviceProvider, object?[]? arguments);
-    public partial class ServiceCollection : Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
+    public partial class ServiceCollection : Microsoft.Extensions.DependencyInjection.IDecorationServiceCollection, Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
     {
         public ServiceCollection() { }
         public int Count { get { throw null; } }
+        public System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDecoration> Decorations { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
         public Microsoft.Extensions.DependencyInjection.ServiceDescriptor this[int index] { get { throw null; } set { } }
         public void Clear() { }
@@ -93,6 +102,36 @@ namespace Microsoft.Extensions.DependencyInjection
         public void RemoveAt(int index) { }
         void System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>.Add(Microsoft.Extensions.DependencyInjection.ServiceDescriptor item) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
+    public static partial class ServiceCollectionDecorationExtensions
+    {
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection Decorate<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TDecorator>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) where TDecorator : TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection Decorate(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type decoratorType) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection Decorate<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Func<TService, System.IServiceProvider, TService> decorator) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection Decorate(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, System.Func<System.IServiceProvider, object, object> decorator) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection TryDecorate<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TDecorator>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) where TDecorator : TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection TryDecorate(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type decoratorType) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection TryDecorate<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Func<TService, System.IServiceProvider, TService> decorator) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection TryDecorate(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, System.Func<System.IServiceProvider, object, object> decorator) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection DecorateKeyed<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TDecorator>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey) where TDecorator : TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection DecorateKeyed(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type decoratorType) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection DecorateKeyed<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, System.Func<TService, System.IServiceProvider, TService> decorator) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection TryDecorateKeyed<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TDecorator>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey) where TDecorator : TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection TryDecorateKeyed(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type decoratorType) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection TryDecorateKeyed<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, System.Func<TService, System.IServiceProvider, TService> decorator) where TService : class { throw null; }
+        public static System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor> FindMatchingDescriptors(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, Microsoft.Extensions.DependencyInjection.ServiceDecoration decoration) { throw null; }
+    }
+    public sealed partial class ServiceDecoration
+    {
+        public ServiceDecoration(System.Type serviceType, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type decoratorType) { }
+        public ServiceDecoration(System.Type serviceType, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type decoratorType) { }
+        public ServiceDecoration(System.Type serviceType, System.Func<System.IServiceProvider, object, object> decoratorFactory) { }
+        public ServiceDecoration(System.Type serviceType, object? serviceKey, System.Func<System.IServiceProvider, object, object> decoratorFactory) { }
+        public System.Func<System.IServiceProvider, object, object>? DecoratorFactory { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+        public System.Type? DecoratorType { get { throw null; } }
+        public object? ServiceKey { get { throw null; } }
+        public System.Type ServiceType { get { throw null; } }
     }
     public static partial class ServiceCollectionServiceExtensions
     {

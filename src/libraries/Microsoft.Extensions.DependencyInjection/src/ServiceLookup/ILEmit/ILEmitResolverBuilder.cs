@@ -243,6 +243,56 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
+        protected override object? VisitDecorator(DecoratorCallSite decoratorCallSite, ILEmitResolverBuilderContext argument)
+        {
+            if (decoratorCallSite.DecoratorFactory is not null)
+            {
+                // Factory-based decorators: fall back to runtime resolver.
+                // Emitting IL for Func<IServiceProvider, object, object> invocation with
+                // the inner service is complex; this can be optimized in a future pass.
+                argument.Generator.Emit(OpCodes.Call, CallSiteRuntimeResolverInstanceField);
+                AddConstant(argument, decoratorCallSite);
+                argument.Generator.Emit(OpCodes.Ldarg_1);
+                argument.Generator.Emit(OpCodes.Callvirt, CallSiteRuntimeResolverResolveMethod);
+                return null;
+            }
+
+            // Type-based: emit constructor call with inner substituted
+            ServiceCallSite[] parameterCallSites = decoratorCallSite.ParameterCallSites!;
+
+            // First resolve inner and store in local
+            VisitCallSite(decoratorCallSite.InnerCallSite, argument);
+            LocalBuilder innerServiceLocal = argument.Generator.DeclareLocal(typeof(object));
+            argument.Generator.Emit(OpCodes.Stloc, innerServiceLocal);
+
+            // Now push all constructor parameters
+            for (int i = 0; i < parameterCallSites.Length; i++)
+            {
+                if (i == decoratorCallSite.InnerServiceParameterIndex)
+                {
+                    argument.Generator.Emit(OpCodes.Ldloc, innerServiceLocal);
+                }
+                else
+                {
+                    VisitCallSite(parameterCallSites[i], argument);
+                }
+
+                Type parameterType = decoratorCallSite.DecoratorConstructor!.GetParameters()[i].ParameterType;
+                if (parameterType.IsValueType)
+                {
+                    argument.Generator.Emit(OpCodes.Unbox_Any, parameterType);
+                }
+            }
+
+            argument.Generator.Emit(OpCodes.Newobj, decoratorCallSite.DecoratorConstructor!);
+            if (decoratorCallSite.ImplementationType!.IsValueType)
+            {
+                argument.Generator.Emit(OpCodes.Box, decoratorCallSite.ImplementationType);
+            }
+
+            return null;
+        }
+
         protected override object? VisitFactory(FactoryCallSite factoryCallSite, ILEmitResolverBuilderContext argument)
         {
             argument.Factories ??= new List<Func<IServiceProvider, object>>();
