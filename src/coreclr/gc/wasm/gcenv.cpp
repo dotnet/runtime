@@ -355,8 +355,9 @@ static uint64_t GetTotalPhysicalMemory()
 
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
-    // On 32-bit WASM, the entire address space is the limit
-    return (size_t)-1;
+    // WASM linear memory has a hard engine-enforced ceiling, so report that
+    // maximum rather than an unbounded virtual address space.
+    return GetVirtualMemoryMaxAddress();
 }
 
 size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
