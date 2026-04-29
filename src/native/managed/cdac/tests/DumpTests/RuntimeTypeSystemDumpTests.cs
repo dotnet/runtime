@@ -316,7 +316,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_IsValueType(TestConfiguration config)
     {
-        InitializeDumpTest(config, "LocalVariables", "full");
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         ILoader loader = Target.Contracts.Loader;
 
@@ -352,8 +352,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_GenericTypeDefinitionContainsGenericVariables(TestConfiguration config)
     {
-        // TODO: use default debuggee as soon as heap dumps are fixed
-        InitializeDumpTest(config, "LocalVariables", "full");
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         ILoader loader = Target.Contracts.Loader;
 

@@ -106,6 +106,26 @@ public class RedundantBranchDominating
         return 3;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Dom_05(int count)
+    {
+        if (count > 1)
+        {
+            if (count > 2)
+            {
+                if (count > 3)
+                {
+                    if (count > 4)
+                    {
+                        return 1;
+                    }
+                }
+            }
+        }
+
+        return 3;
+    }
+
     private static void RunTest(string name, Func<int, int> func, int[] expectedResults, int[] expectedEffects)
     {
         s_effects = 0;
@@ -141,4 +161,8 @@ public class RedundantBranchDominating
     [Fact]
     public static void TestDom04() =>
         RunTest(nameof(Dom_04), Dom_04, new[] { 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1 }, new[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+
+    [Fact]
+    public static void TestDom05() =>
+        RunTest(nameof(Dom_05), Dom_05, new[] { 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1 }, new[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
 }

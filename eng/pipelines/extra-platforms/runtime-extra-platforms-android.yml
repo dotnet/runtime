@@ -95,6 +95,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: coreclr
     platforms:
+    - android_arm
     - android_arm64
     variables:
       # map dependencies variables to local variables

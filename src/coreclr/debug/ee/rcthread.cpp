@@ -191,15 +191,6 @@ HRESULT DebuggerIPCControlBlock::Init(
 #else
     m_checkedBuild = false;
 #endif
-    m_bHostingInFiber = false;
-
-    // Are we in fiber mode? In Whidbey, we do not support launch a fiber mode process
-    // nor do we support attach to a fiber mode process.
-    //
-    if (g_CORDebuggerControlFlags & DBCF_FIBERMODE)
-    {
-        m_bHostingInFiber = true;
-    }
 
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
     // Copy RSEA and RSER into the control block.

@@ -23,6 +23,7 @@ internal readonly struct Loader_1 : ILoader
         JitOptimizationDisabled = 0x2,  // Cached flag: JIT optimizations are disabled
         EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
         ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
+        EncCapable = 0x200,             // Cached flag: module is Edit and Continue capable
     }
 
     private const uint DebuggerInfoMask = 0x0000FC00;
@@ -389,6 +390,8 @@ internal readonly struct Loader_1 : ILoader
             flags |= ModuleFlags.EditAndContinue;
         if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
             flags |= ModuleFlags.ReflectionEmit;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.EncCapable))
+            flags |= ModuleFlags.EncCapable;
 
         return flags;
     }
@@ -683,6 +686,22 @@ internal readonly struct Loader_1 : ILoader
         DynamicILBlobTable dynamicILBlobTable = _target.ProcessedData.GetOrAdd<DynamicILBlobTable>(module.DynamicILBlobTable);
         ISHash shashContract = _target.Contracts.SHash;
         return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
+    }
+
+    TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
+    {
+        return _target.ProcessedData.GetOrAdd<Data.LoaderHeap>(loaderHeap).FirstBlock;
+    }
+
+    LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)
+    {
+        Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
+        return new LoaderHeapBlockData
+        {
+            Address = blockData.VirtualAddress,
+            Size = blockData.VirtualSize,
+            NextBlock = blockData.Next,
+        };
     }
 
     IReadOnlyDictionary<string, TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
