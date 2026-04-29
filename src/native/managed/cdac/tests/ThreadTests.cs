@@ -227,7 +227,7 @@ public unsafe class ThreadTests
 
         IThread contract = target.Contracts.Thread;
         TargetPointer thrownObjectHandle = contract.GetCurrentExceptionHandle(new TargetPointer(thread!.Address));
-        // The handle is the address of the ThrownObject field — reading through it gives the object pointer
+        // The handle is the address of the ThrownObject field - reading through it gives the object pointer
         Assert.NotEqual(TargetPointer.Null, thrownObjectHandle);
         Assert.Equal(expectedObject, target.ReadPointer(thrownObjectHandle));
     }

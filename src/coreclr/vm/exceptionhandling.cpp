@@ -1448,7 +1448,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         }
 
         // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
-        // Do NOT also GCPROTECT it — reporting the same location twice corrupts
+        // Do NOT also GCPROTECT it - reporting the same location twice corrupts
         // the GC's relocation logic (see clr-code-guide.md §2.1.5).
         UnmanagedCallersOnlyCaller throwHwEx(METHOD__EH__RH_THROWHW_EX);
 
@@ -1621,7 +1621,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     }
 
     // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
-    // Do NOT also GCPROTECT it — reporting the same location twice corrupts
+    // Do NOT also GCPROTECT it - reporting the same location twice corrupts
     // the GC's relocation logic (see clr-code-guide.md §2.1.5).
     UnmanagedCallersOnlyCaller throwEx(METHOD__EH__RH_THROW_EX);
 
@@ -1675,7 +1675,7 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
     ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pExceptionContext, ExKind::None);
 
     // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
-    // Do NOT also GCPROTECT it — reporting the same location twice corrupts
+    // Do NOT also GCPROTECT it - reporting the same location twice corrupts
     // the GC's relocation logic (see clr-code-guide.md §2.1.5).
     UnmanagedCallersOnlyCaller rethrow(METHOD__EH__RH_RETHROW);
 

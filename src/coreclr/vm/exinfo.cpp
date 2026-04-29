@@ -40,7 +40,7 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     pThread->GetExceptionState()->m_pCurrentTracker = this;
 
     // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots
-    // (not via GCPROTECT — reporting the same location twice corrupts the GC
+    // (not via GCPROTECT - reporting the same location twice corrupts the GC
     // relocation logic; see clr-code-guide.md §2.1.5).  Mark the slot as
     // protected in the debug OBJECTREF tracking table so that checked-build
     // validation knows the reference is rooted.

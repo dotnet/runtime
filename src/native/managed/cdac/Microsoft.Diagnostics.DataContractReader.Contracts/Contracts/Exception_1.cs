@@ -19,7 +19,7 @@ internal readonly struct Exception_1 : IException
         Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exceptionInfoAddr);
         nextNestedExceptionInfo = exceptionInfo.PreviousNestedInfo;
         // ThrownObject is a direct object pointer stored in ExInfo::m_exception.
-        // Return the address of the field as a "handle" — reading through it yields the
+        // Return the address of the field as a "handle" - reading through it yields the
         // exception Object*. This has the same lifetime as the ExInfo (both are invalidated
         // when PopExInfos calls ReleaseResources). See dacimpl.h for the equivalent native
         // DAC documentation.

@@ -3402,7 +3402,7 @@ public:
                           // or the address of ExInfo::m_exception on the target stack.
                           // Both are valid: the ExInfo lives on the stack which is captured
                           // in dumps and stable while the target thread is suspended. The
-                          // slot has the same lifetime as the ExInfo — both become invalid
+                          // slot has the same lifetime as the ExInfo - both become invalid
                           // when ExInfo::PopExInfos calls ReleaseResources.
                           OBJECTHANDLE throwable,
                           ClrDataExStateType* prevExInfo);

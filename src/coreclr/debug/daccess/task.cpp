@@ -4557,7 +4557,7 @@ ClrDataExceptionState::GetPrevious(
         if (m_prevExInfo)
         {
             // Pass the address of the ExInfo's m_exception field as the "handle".
-            // This is not a real GC handle — it is a target address of an OBJECTREF
+            // This is not a real GC handle - it is a target address of an OBJECTREF
             // slot on the stack. It has the same lifetime as the ExInfo (both are
             // invalidated by PopExInfos/ReleaseResources). See dacimpl.h comment.
             *exState = new (nothrow)
