@@ -5469,7 +5469,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
                || IsKMOVInstruction(ins)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
                || isPrefetch(ins)
-               // cmov intructions reach this path with EA_2BYTE
+               // cmov instructions reach this path with EA_2BYTE
                || insIsCMOV(ins));
 
         size = (attrSize == EA_2BYTE) && (ins == INS_cmpxchg) ? 4 : 3;
@@ -17085,7 +17085,6 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         regCode = insEncodeReg012(id, reg2, size, &code);
     }
 
-    // ToDo: Handle CFCMOV 3 operand instruction properly
     if (TakesSimdPrefix(id) && !IsApxConditionalInstruction(ins))
     {
         // In case of AVX instructions that take 3 operands, we generally want to encode reg1

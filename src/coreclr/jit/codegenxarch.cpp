@@ -8635,7 +8635,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
 #ifdef TARGET_AMD64
 //-----------------------------------------------------------------------------------------
-// OptsFromCFlags - Convert condition flags into approxpriate insOpts.
+// OptsFromCFlags - Convert condition flags into appropriate insOpts.
 //
 // Arguments:
 //    flags - The condition flags to be converted.
@@ -8645,7 +8645,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 //
 // Notes:
 //    This function maps the condition flags (e.g., CF, ZF, SF, OF) to the appropriate
-//    instruction options used for setting the default flag values in extneded EVEX
+//    instruction options used for setting the default flag values in extended EVEX
 //    encoding conditional instructions.
 //
 insOpts CodeGen::OptsFromCFlags(insCflags flags)
@@ -8703,6 +8703,7 @@ void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
         if (intConst->IconValue() == 0)
         {
             // ctest reg, reg is 1-byte shorter encoding than ccmp reg, 0.
+            assert((FIRST_CTEST_INSTRUCTION - FIRST_APX_INSTRUCTION) == 32);
             instruction ctestIns = (instruction)(ccmpIns + FIRST_CTEST_INSTRUCTION - FIRST_CCMP_INSTRUCTION);
             emit->emitIns_R_R(ctestIns, cmpSize, srcReg1, srcReg1, opts);
         }
@@ -9488,6 +9489,7 @@ void CodeGen::genAmd64EmitterUnitTestsCCMP()
  */
 void CodeGen::genAmd64EmitterUnitTestsCTEST()
 {
+    assert(FIRST_CTEST_INSTRUCTION - FIRST_CCMP_INSTRUCTION == 32);
     emitter* theEmitter = GetEmitter();
     genDefineTempLabel(genCreateTempLabel());
     GenTreePhysReg physReg(REG_EDX);

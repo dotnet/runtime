@@ -1180,7 +1180,7 @@ INST3(cfcmovle,         "cfcmovle",         IUM_WR, 0x00004E,    BAD_CODE,    0x
 INST3(cfcmovg,          "cfcmovg",          IUM_WR, 0x00004F,    BAD_CODE,    0x00004F,                                  1C,           2X,    INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF | INS_Flags_Has_NDD | INS_Flags_Has_NF)
 #define LAST_CFCMOV_INSTRUCTION INS_cfcmovg
 #define FIRST_CTEST_INSTRUCTION INS_ctesto
-INST3(ctesto,            "ctesto",            IUM_RD, 0x000084,    0x00008F6,   BAD_CODE,                                  1C,           2X,    INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ctesto,            "ctesto",            IUM_RD, 0x000084,    0x00000F6,   BAD_CODE,                                  1C,           2X,    INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
 INST3(ctestno,           "ctestno",           IUM_RD, 0x000084,    0x00000F6,   BAD_CODE,                                  1C,           2X,    INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
 INST3(ctestb,            "ctestb",            IUM_RD, 0x000084,    0x00000F6,   BAD_CODE,                                  1C,           2X,    INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
 INST3(ctestae,           "ctestae",           IUM_RD, 0x000084,    0x00000F6,   BAD_CODE,                                  1C,           2X,    INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
