@@ -820,11 +820,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     continue;
                 }
 
-                // The decorator takes over the inner call site's cache — the decorated
-                // result is cached as a unit with the same lifetime as the inner service.
-                // The inner's cache is cleared to avoid duplicate cache entries.
+                // The decorator takes over the inner call site's cache so the decorated
+                // result is cached as a unit with the correct lifetime.
+                // The inner's cache becomes Dispose — not cached, but still tracked for disposal.
                 ResultCache decoratorCache = callSite.Cache;
-                callSite.Cache = ResultCache.None(callSite.ServiceType, callSite.Key);
+                callSite.Cache = new ResultCache(CallSiteResultCacheLocation.Dispose,
+                    callSite.Cache.Key);
 
                 if (decoration.DecoratorFactory is { } factory)
                 {

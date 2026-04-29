@@ -202,6 +202,85 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void Decorate_ExistingInstance_WrapsInstance()
+        {
+            var instance = new InnerService();
+            var services = new ServiceCollection();
+            services.AddSingleton<IService>(instance);
+            services.Decorate<IService, DecoratorService>();
+
+            var provider = services.BuildServiceProvider();
+            var service = provider.GetRequiredService<IService>();
+
+            var decorator = Assert.IsType<DecoratorService>(service);
+            Assert.Same(instance, decorator.Inner);
+        }
+
+        [Fact]
+        public void Decorate_FactoryRegistration_WrapsFactory()
+        {
+            var services = new ServiceCollection();
+            services.AddTransient<IService>(sp => new InnerService());
+            services.Decorate<IService, DecoratorService>();
+
+            var provider = services.BuildServiceProvider();
+            var service = provider.GetRequiredService<IService>();
+
+            var decorator = Assert.IsType<DecoratorService>(service);
+            Assert.IsType<InnerService>(decorator.Inner);
+        }
+
+        [Fact]
+        public void Decorate_DisposableDecoratorAndInner_BothDisposed()
+        {
+            var services = new ServiceCollection();
+            services.AddTransient<IService, DisposableInnerService>();
+            services.Decorate<IService, DisposableDecoratorService>();
+
+            DisposableInnerService inner;
+            DisposableDecoratorService decorator;
+
+            using (var provider = services.BuildServiceProvider())
+            {
+                using var scope = provider.CreateScope();
+                var service = scope.ServiceProvider.GetRequiredService<IService>();
+                decorator = Assert.IsType<DisposableDecoratorService>(service);
+                inner = Assert.IsType<DisposableInnerService>(decorator.Inner);
+            }
+
+            Assert.True(decorator.Disposed);
+            Assert.True(inner.Disposed);
+        }
+
+        [Fact]
+        public void Decorate_ConcreteType_WrapsService()
+        {
+            var services = new ServiceCollection();
+            services.AddTransient<ConcreteService>();
+            services.Decorate<ConcreteService, ConcreteServiceDecorator>();
+
+            var provider = services.BuildServiceProvider();
+            var service = provider.GetRequiredService<ConcreteService>();
+
+            var decorator = Assert.IsType<ConcreteServiceDecorator>(service);
+            Assert.NotNull(decorator.Inner);
+        }
+
+        [Fact]
+        public void Decorate_ServiceRegisteredAfterDecoration_StillApplies()
+        {
+            var services = new ServiceCollection();
+            services.Decorate<IService, DecoratorService>();
+            services.AddTransient<IService, InnerService>();
+
+            var provider = services.BuildServiceProvider();
+            var service = provider.GetRequiredService<IService>();
+
+            var decorator = Assert.IsType<DecoratorService>(service);
+            Assert.IsType<InnerService>(decorator.Inner);
+        }
+
+        [Fact]
         public void Decorate_OpenGenericWithConstraints_AppliesWhenConstraintsMet()
         {
             var services = new ServiceCollection();
@@ -352,6 +431,29 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 Inner = inner;
             }
+        }
+
+        public class ConcreteService { }
+
+        public class ConcreteServiceDecorator : ConcreteService
+        {
+            public ConcreteService Inner { get; }
+            public ConcreteServiceDecorator(ConcreteService inner) => Inner = inner;
+        }
+
+        public class DisposableInnerService : IService, IDisposable
+        {
+            public bool Disposed { get; private set; }
+            public void Dispose() => Disposed = true;
+        }
+
+        public class DisposableDecoratorService : IService, IDisposable
+        {
+            public IService Inner { get; }
+            public bool Disposed { get; private set; }
+
+            public DisposableDecoratorService(IService inner) => Inner = inner;
+            public void Dispose() => Disposed = true;
         }
 
         // Decorator without a constructor accepting IService — invalid
