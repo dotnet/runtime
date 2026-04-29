@@ -158,7 +158,7 @@ HRESULT GCHeap::Init(size_t hn)
 HRESULT GCHeap::Initialize()
 {
 #ifndef TRACE_GC
-    STRESS_LOG_VA (1, (ThreadStressLog::gcLoggingIsOffMsg()));
+    STRESS_LOG0 (LF_GC, LL_ALWAYS, "TraceGC is not turned on");
 #endif
     HRESULT hr = S_OK;
 

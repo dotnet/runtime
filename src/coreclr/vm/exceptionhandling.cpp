@@ -131,8 +131,8 @@ void FixContext(PCONTEXT pContextRecord)
 #define FIXUPREG(reg, value)                                                                \
     do {                                                                                    \
         STRESS_LOG2(LF_GCROOTS, LL_INFO100, "Updating " #reg " %p to %p\n",                 \
-                pContextRecord->reg,                                                        \
-                (value));                                                                   \
+                (void*)(size_t)(pContextRecord->reg),                                       \
+                (void*)(size_t)(value));                                                    \
         pContextRecord->reg = (value);                                                      \
     } while (0)
 
