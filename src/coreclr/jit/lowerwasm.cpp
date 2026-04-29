@@ -533,7 +533,7 @@ void Lowering::AfterLowerBlocks()
         Temporary*            m_availableTemps[TYP_COUNT] = {};
         Temporary*            m_inUseTemps[TYP_COUNT]     = {};
         unsigned              m_numInUseTemps;
-        bool                  m_anyChanges                = false;
+        bool                  m_anyChanges = false;
 
     public:
         Stackifier(Lowering* lower)
