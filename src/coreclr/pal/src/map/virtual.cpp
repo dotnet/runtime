@@ -766,7 +766,9 @@ VIRTUALCommitMemory(
 
     TRACE( "Committing the memory now..\n");
 
+#ifndef TARGET_WASM
     nProtect = W32toUnixAccessControl(flProtect);
+#endif
     pRetVal = (void *) StartBoundary;
 
 #ifndef TARGET_WASM

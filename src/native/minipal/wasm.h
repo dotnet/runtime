@@ -1,20 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef MINIPAL_WASM_H
-#define MINIPAL_WASM_H
+#ifndef HAVE_MINIPAL_WASM_H
+#define HAVE_MINIPAL_WASM_H
 
 #ifndef __wasm__
 #include <unistd.h>
 #endif
 
-// Cross-platform page size accessor
 #ifdef __cplusplus
-inline
-#else
-static inline
+extern "C" {
 #endif
-int minipal_getpagesize(void)
+
+static inline int minipal_getpagesize(void)
 {
 #ifdef __wasm__
     // The OS page size used by CoreCLR on WASM (16KB).
@@ -29,4 +27,8 @@ int minipal_getpagesize(void)
 #endif
 }
 
-#endif // MINIPAL_WASM_H
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
+#endif // HAVE_MINIPAL_WASM_H

@@ -241,17 +241,20 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags)
 
 void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags, uint16_t node)
 {
+    (void)node;
     return VirtualReserveInner(size, alignment, flags);
 }
 
 bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 {
+    (void)size;
     free(address);
     return true;
 }
 
 void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
 {
+    (void)node;
     // WASM has no large pages - just reserve+commit normally.
     return VirtualReserveInner(size, OS_PAGE_SIZE, 0);
 }
@@ -264,6 +267,7 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
     // allocation) or from VirtualDecommit (which zeroes on decommit).
     (void)address;
     (void)size;
+    (void)node;
     return true;
 }
 
@@ -282,6 +286,9 @@ bool GCToOSInterface::VirtualReset(void* address, size_t size, bool unlock)
     // Return false to indicate reset is not supported.
     // This forces the GC to use the decommit+commit fallback path instead.
     // On WASM, madvise is a no-op so reset cannot discard pages.
+    (void)address;
+    (void)size;
+    (void)unlock;
     return false;
 }
 
@@ -311,6 +318,7 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
 
 size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 {
+    (void)trueSize;
     // WASM doesn't expose cache topology.
     // Return a reasonable default (256 KB).
     return 256 * 1024;
@@ -322,6 +330,7 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 
 bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
+    (void)procNo;
     // No thread affinity on WASM
     return false;
 }
