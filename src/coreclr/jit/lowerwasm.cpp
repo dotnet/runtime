@@ -531,7 +531,9 @@ void Lowering::AfterLowerBlocks()
         ArrayStack<GenTree**> m_stack;
         unsigned              m_minimumTempLclNum;
         Temporary*            m_availableTemps[TYP_COUNT] = {};
+        Temporary*            m_inUseTemps[TYP_COUNT]     = {};
         Temporary*            m_unusedTempNodes           = nullptr;
+        Temporary*            m_inUseTempNodes            = nullptr;
         bool                  m_anyChanges                = false;
 
     public:
@@ -670,6 +672,8 @@ void Lowering::AfterLowerBlocks()
             *use = lclNode;
 
             JITDUMP("Replaced [%06u] with a temporary:\n", Compiler::dspTreeID(node));
+            DISPNODE(node);
+            DISPNODE(lclNode);
 
             if ((node->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::MultiplyUsed)
             {
@@ -690,16 +694,21 @@ void Lowering::AfterLowerBlocks()
             if (local != nullptr)
             {
                 lclNum = local->LclNum;
-                Append(&m_unusedTempNodes, local); // Free the node for later recycling.
                 assert(m_compiler->lvaGetDesc(lclNum)->TypeGet() == genActualType(type));
             }
             else
             {
                 lclNum            = m_compiler->lvaGrabTemp(true DEBUGARG("Stackifier temporary"));
+                assert(lclNum >= m_minimumTempLclNum);
                 LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
                 varDsc->lvType    = genActualType(type);
-                assert(lclNum >= m_minimumTempLclNum);
+
+                // Allocate a new temporary to describe this local
+                local = new (m_compiler, CMK_Lower) Temporary();
+                local->LclNum = lclNum;
             }
+            Append(&m_inUseTemps[genActualType(type)], local);
+
             JITDUMP("Temporary V%02u is now in use\n", lclNum);
             return lclNum;
         }
@@ -713,28 +722,34 @@ void Lowering::AfterLowerBlocks()
             }
             assert(m_minimumTempLclNum < m_compiler->lvaCount);
 
-            // Recycle all available temporaries as unused nodes
+            // Reclaim all in-use temporaries
             for (int i = 0; i < TYP_COUNT; i++)
             {
-                while (m_availableTemps[i] != nullptr)
+                while (m_inUseTemps[i] != nullptr)
                 {
-                    Temporary* temp = Remove(&m_availableTemps[i]);
-                    Append(&m_unusedTempNodes, temp);
+                    Temporary* temp = Remove(&m_inUseTemps[i]);
+                    assert(temp->LclNum >= m_minimumTempLclNum);
+                    Append(&m_availableTemps[i], temp);
+                    JITDUMP("Temporary V%02u is now available\n", temp->LclNum);
                 }
             }
 
-            for (unsigned lclNum = m_minimumTempLclNum; lclNum < m_compiler->lvaCount; lclNum++)
+#ifdef DEBUG
+            unsigned count = 0;
+            // Verify that all temporaries have been reclaimed
+            for (int i = 0; i < TYP_COUNT; i++)
             {
-                Temporary* local = Remove(&m_unusedTempNodes); // See if we have any free nodes in the pool.
-                if (local == nullptr)
+                Temporary* temp = m_availableTemps[i];
+                while (temp != nullptr)
                 {
-                    local = new (m_compiler, CMK_Lower) Temporary();
+                    count++;
+                    assert(temp->LclNum >= m_minimumTempLclNum);
+                    temp = temp->Prev;
                 }
-                local->LclNum = lclNum;
-
-                JITDUMP("Temporary V%02u is now free and can be re-used\n", lclNum);
-                Append(&m_availableTemps[genActualType(m_compiler->lvaGetDesc(lclNum)->TypeGet())], local);
             }
+
+            assert(count == (m_compiler->lvaCount - m_minimumTempLclNum));
+#endif
         }
 
         Temporary* Remove(Temporary** pTemps)
