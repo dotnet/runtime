@@ -312,8 +312,10 @@ internal static class R2RAssert
     }
 
     /// <summary>
-    /// Asserts that a method whose signature contains <paramref name="methodName"/>
-    /// has exactly <paramref name="expectedCount"/> fixups of the given kind.
+    /// Asserts that for every method whose signature contains <paramref name="methodName"/>
+    /// AND has at least one fixup of <paramref name="kind"/>, that method has exactly
+    /// <paramref name="expectedCount"/> fixups of that kind.
+    /// At least one such matching method must exist.
     /// Useful for ensuring fixups are properly deduplicated.
     /// </summary>
     public static void HasFixupKindCountOnMethod(ReadyToRunReader reader, ReadyToRunFixupKind kind, string methodName, int expectedCount)
@@ -333,11 +335,14 @@ internal static class R2RAssert
                     count++;
             }
 
-            matchingMethods.Add((method.SignatureString, count));
+            // Only consider methods that have at least one fixup of this kind so we
+            // don't false-fail on co-named thunks that legitimately have none.
+            if (count > 0)
+                matchingMethods.Add((method.SignatureString, count));
         }
 
         Assert.True(matchingMethods.Count > 0,
-            $"No method matching '{methodName}' was found.");
+            $"No method matching '{methodName}' was found with any '{kind}' fixup.");
 
         foreach (var (signature, count) in matchingMethods)
         {
