@@ -51,30 +51,9 @@ public:
     bool SawCrashThread() const { return m_sawCrashThread; }
     SignalSafeJsonWriter* Writer() const { return m_writer; }
 
-    // Close the per-thread stack_frames + thread objects opened by OnThread
-    // for the final thread in the enumeration, and flush the writer so the
-    // thread list reaches the crash report file even if later work (e.g.
-    // synthesizing a fallback crash thread) hangs or faults.
+    void EnumerateThreads(InProcCrashReportEnumerateThreadsCallback callback, uint64_t crashingTid);
+
     void EndEnumeration();
-
-    void OnThread(
-        uint64_t osThreadId,
-        bool isCrashThread,
-        const char* exceptionType,
-        uint32_t exceptionHResult);
-
-    void OnFrame(
-        uint64_t ip,
-        uint64_t stackPointer,
-        const char* methodName,
-        const char* className,
-        const char* moduleName,
-        uint32_t nativeOffset,
-        uint32_t token,
-        uint32_t ilOffset,
-        uint32_t moduleTimestamp,
-        uint32_t moduleSize,
-        const char* moduleGuid);
 
     static void ThreadCallback(
         uint64_t osThreadId,
@@ -98,6 +77,25 @@ public:
         void* ctx);
 
 private:
+    void OnThread(
+        uint64_t osThreadId,
+        bool isCrashThread,
+        const char* exceptionType,
+        uint32_t exceptionHResult);
+
+    void OnFrame(
+        uint64_t ip,
+        uint64_t stackPointer,
+        const char* methodName,
+        const char* className,
+        const char* moduleName,
+        uint32_t nativeOffset,
+        uint32_t token,
+        uint32_t ilOffset,
+        uint32_t moduleTimestamp,
+        uint32_t moduleSize,
+        const char* moduleGuid);
+
     SignalSafeJsonWriter* m_writer;
     void* m_signalContext;
     size_t m_threadCount;
@@ -122,11 +120,11 @@ public:
     int Fd() const { return m_fd; }
     bool WriteFailed() const { return m_writeFailed; }
 
-    bool HandleChunk(const char* buffer, size_t len);
-
     static bool ChunkCallback(const char* buffer, size_t len, void* ctx);
 
 private:
+    bool HandleChunk(const char* buffer, size_t len);
+
     int m_fd;
     bool m_writeFailed;
 };
@@ -209,7 +207,10 @@ void
 InProcCrashReporter::CreateReport(
     int signal,
     siginfo_t* siginfo,
-    void* context)
+    void* context,
+    bool hasException,
+    const char* exceptionType,
+    uint32_t exceptionHResult)
 {
     static LONG s_generating = 0;
     if (InterlockedCompareExchange(&s_generating, 1, 0) != 0)
@@ -234,13 +235,11 @@ InProcCrashReporter::CreateReport(
     (void)siginfo;
 
     char exTypeBuf[CRASHREPORT_STRING_BUFFER_SIZE];
-    uint32_t exHresult = 0;
     exTypeBuf[0] = '\0';
-
-    bool hasException = false;
-    if (m_getExceptionCallback != nullptr && signal != SIGSEGV && signal != SIGBUS)
+    uint32_t exHresult = exceptionHResult;
+    if (hasException && exceptionType != nullptr)
     {
-        hasException = m_getExceptionCallback(exTypeBuf, sizeof(exTypeBuf), &exHresult);
+        CrashReportHelpers::CopyString(exTypeBuf, sizeof(exTypeBuf), exceptionType);
     }
 
     CrashReportOutputContext outputContext(fd);
@@ -277,9 +276,7 @@ InProcCrashReporter::CreateReport(
         ThreadEnumerationContext threadContext(&m_jsonWriter, context, hasException, exTypeBuf, exHresult);
         uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
 
-        m_enumerateThreadsCallback(crashingTid, &ThreadEnumerationContext::ThreadCallback, &ThreadEnumerationContext::FrameCallback, &threadContext);
-
-        threadContext.EndEnumeration();
+        threadContext.EnumerateThreads(m_enumerateThreadsCallback, crashingTid);
 
         if (threadContext.ThreadCount() == 0 || !threadContext.SawCrashThread())
         {
@@ -360,10 +357,22 @@ InProcCrashReporter::Initialize(
     }
 }
 
-static void
+void
 InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
 {
-    InProcCrashReporter::GetInstance().CreateReport(signal, static_cast<siginfo_t*>(siginfo), context);
+    InProcCrashReporter& reporter = InProcCrashReporter::GetInstance();
+
+    char exTypeBuf[CRASHREPORT_STRING_BUFFER_SIZE];
+    exTypeBuf[0] = '\0';
+    uint32_t exHresult = 0;
+    bool hasException = false;
+
+    if (reporter.m_getExceptionCallback != nullptr && signal != SIGSEGV && signal != SIGBUS)
+    {
+        hasException = reporter.m_getExceptionCallback(exTypeBuf, sizeof(exTypeBuf), &exHresult);
+    }
+
+    reporter.CreateReport(signal, static_cast<siginfo_t*>(siginfo), context, hasException, exTypeBuf, exHresult);
 }
 
 void
@@ -569,13 +578,13 @@ CrashReportHelpers::GetVersionString(
 
     version += sizeof(versionPrefix) - 1;
 
-    size_t copied = strnlen(version, bufferSize - 1);
-    if (copied != 0)
+    size_t toCopy = strnlen(version, bufferSize - 1);
+    if (toCopy != 0)
     {
-        memcpy(buffer, version, copied);
+        memcpy(buffer, version, toCopy);
     }
 
-    buffer[copied] = '\0';
+    buffer[toCopy] = '\0';
 }
 
 // Appends |value| to |buffer| at *|pos|, advancing *|pos|, while leaving
@@ -753,16 +762,22 @@ const char*
 CrashReportHelpers::GetFilename(
     const char* path)
 {
-    const char* last = path;
-    for (const char* p = path; *p != '\0'; p++)
+    if (path == nullptr)
     {
-        if (*p == CRASHREPORT_DIRECTORY_SEPARATOR)
+        return nullptr;
+    }
+
+    const char* fileName = strrchr(path, CRASHREPORT_DIRECTORY_SEPARATOR);
+    if (fileName != nullptr)
+    {
+        ++fileName;
+        if (*fileName != '\0')
         {
-            last = p + 1;
+            return fileName;
         }
     }
 
-    return last;
+    return path;
 }
 
 void
@@ -782,13 +797,13 @@ CrashReportHelpers::CopyString(
         return;
     }
 
-    size_t copied = strnlen(value, bufferSize - 1);
-    if (copied != 0)
+    size_t toCopy = strnlen(value, bufferSize - 1);
+    if (toCopy != 0)
     {
-        memcpy(buffer, value, copied);
+        memcpy(buffer, value, toCopy);
     }
 
-    buffer[copied] = '\0';
+    buffer[toCopy] = '\0';
 }
 
 void
@@ -807,6 +822,10 @@ CrashReportHelpers::JsonFrameCallback(
     void* ctx)
 {
     SignalSafeJsonWriter* writer = reinterpret_cast<SignalSafeJsonWriter*>(ctx);
+    if (writer == nullptr)
+    {
+        return;
+    }
 
     writer->OpenObject();
     writer->WriteHexAsString("stack_pointer", stackPointer);
@@ -882,6 +901,10 @@ ThreadEnumerationContext::FrameCallback(
     const char* moduleGuid,
     void* ctx)
 {
+    if (ctx == nullptr)
+    {
+        return;
+    }
     reinterpret_cast<ThreadEnumerationContext*>(ctx)->OnFrame(ip, stackPointer, methodName, className, moduleName, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid);
 }
 
@@ -942,7 +965,25 @@ ThreadEnumerationContext::ThreadCallback(
     uint32_t exceptionHResult,
     void* ctx)
 {
+    if (ctx == nullptr)
+    {
+        return;
+    }
     reinterpret_cast<ThreadEnumerationContext*>(ctx)->OnThread(osThreadId, isCrashThread, exceptionType, exceptionHResult);
+}
+
+void
+ThreadEnumerationContext::EnumerateThreads(
+    InProcCrashReportEnumerateThreadsCallback callback,
+    uint64_t crashingTid)
+{
+    if (callback == nullptr)
+    {
+        return;
+    }
+
+    callback(crashingTid, &ThreadCallback, &FrameCallback, this);
+    EndEnumeration();
 }
 
 void

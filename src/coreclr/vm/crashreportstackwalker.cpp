@@ -41,6 +41,11 @@ FrameCallbackAdapter(
     CONTRACTL_END;
 
     WalkContext* ctx = static_cast<WalkContext*>(pData);
+    if (ctx == nullptr)
+    {
+        return SWA_CONTINUE;
+    }
+
     MethodDesc* pMD = pCF->GetFunction();
     if (pMD == nullptr)
     {
@@ -255,6 +260,11 @@ CrashReportGetExceptionForThread(
 
     bool result = false;
 
+    // GCX_COOP transitions into cooperative mode via DisablePreemptiveGC.
+    // On the crashing thread (which holds the thread store lock taken by
+    // CrashReportSuspendThreads), RareDisablePreemptiveGC's fast-path skips
+    // the suspend-blocking check, so the transition is safe even though the
+    // EE is suspended.
     GCX_COOP();
 
     OBJECTREF throwable = pThread->GetThrowable();

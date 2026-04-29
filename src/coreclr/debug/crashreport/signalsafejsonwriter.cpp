@@ -274,15 +274,6 @@ SignalSafeJsonWriter::FormatHexValue(
         return;
     }
 
-    if (bufferSize < MAX_HEX_FORMAT_BUFFER_SIZE)
-    {
-        buffer[0] = '\0';
-        return;
-    }
-
-    buffer[0] = '0';
-    buffer[1] = 'x';
-
     char reverse[MAX_HEX_DIGITS_UINT64];
     size_t reverseLength = 0;
     do
@@ -292,7 +283,16 @@ SignalSafeJsonWriter::FormatHexValue(
         value >>= 4;
     } while (value != 0 && reverseLength < sizeof(reverse));
 
-    size_t index = 2;
+    if (bufferSize < HEX_PREFIX_LEN + reverseLength + NULL_TERMINATOR_LEN)
+    {
+        buffer[0] = '\0';
+        return;
+    }
+
+    buffer[0] = '0';
+    buffer[1] = 'x';
+
+    size_t index = HEX_PREFIX_LEN;
     while (reverseLength > 0)
     {
         buffer[index++] = reverse[--reverseLength];
@@ -311,12 +311,6 @@ SignalSafeJsonWriter::FormatUnsignedDecimal(
         return 0;
     }
 
-    if (bufferSize < MAX_UNSIGNED_DECIMAL_BUFFER_SIZE)
-    {
-        buffer[0] = '\0';
-        return 0;
-    }
-
     char reverse[MAX_DECIMAL_DIGITS_UINT64];
     size_t reverseLength = 0;
     do
@@ -324,6 +318,12 @@ SignalSafeJsonWriter::FormatUnsignedDecimal(
         reverse[reverseLength++] = static_cast<char>('0' + (value % 10));
         value /= 10;
     } while (value != 0 && reverseLength < sizeof(reverse));
+
+    if (bufferSize < reverseLength + NULL_TERMINATOR_LEN)
+    {
+        buffer[0] = '\0';
+        return 0;
+    }
 
     size_t pos = 0;
     while (reverseLength > 0)
@@ -345,22 +345,27 @@ SignalSafeJsonWriter::FormatSignedDecimal(
         return 0;
     }
 
-    if (bufferSize < MAX_SIGNED_DECIMAL_BUFFER_SIZE)
-    {
-        buffer[0] = '\0';
-        return 0;
-    }
-
     if (value >= 0)
     {
         return FormatUnsignedDecimal(buffer, bufferSize, static_cast<uint64_t>(value));
+    }
+
+    if (bufferSize < SIGN_LEN + NULL_TERMINATOR_LEN)
+    {
+        buffer[0] = '\0';
+        return 0;
     }
 
     buffer[0] = '-';
     // Cast to unsigned first to handle INT64_MIN without signed overflow.
     uint64_t absValue = static_cast<uint64_t>(-(value + 1)) + 1;
     size_t written = FormatUnsignedDecimal(buffer + 1, bufferSize - 1, absValue);
-    return written == 0 ? 0 : written + 1;
+    if (written == 0)
+    {
+        buffer[0] = '\0';
+        return 0;
+    }
+    return written + 1;
 }
 
 bool

@@ -76,14 +76,24 @@ public:
     // before the PAL enables signal-handler dispatch to CreateReport.
     void Initialize(const InProcCrashReporterSettings& settings);
 
-    // Generate an in-proc crash report. Called from PROCCreateCrashDumpIfEnabled.
-    // All arguments come from the signal handler and are signal-safe to read.
-    void CreateReport(int signal, siginfo_t* siginfo, void* context);
+    void CreateReport(
+        int signal,
+        siginfo_t* siginfo,
+        void* context,
+        bool hasException,
+        const char* exceptionType,
+        uint32_t exceptionHResult);
 
 private:
     InProcCrashReporter() = default;
     InProcCrashReporter(const InProcCrashReporter&) = delete;
     InProcCrashReporter& operator=(const InProcCrashReporter&) = delete;
+
+    // The static signal-handler thunk needs to read m_getExceptionCallback to
+    // capture managed exception info on the crashing thread before invoking
+    // CreateReport. Friending the dispatcher avoids exposing the field via a
+    // public accessor that wouldn't have any other consumer.
+    friend void InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context);
 
     void EmitSynthesizedCrashThread(
         void* context,
