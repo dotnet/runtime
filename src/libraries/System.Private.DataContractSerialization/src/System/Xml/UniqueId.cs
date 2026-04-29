@@ -216,15 +216,7 @@ namespace System.Xml
 
                 // Force a single bounds check up front so the indexed writes below are bounds-check-free.
                 chars = chars.Slice(0, uuidLength);
-                chars[0] = 'u';
-                chars[1] = 'r';
-                chars[2] = 'n';
-                chars[3] = ':';
-                chars[4] = 'u';
-                chars[5] = 'u';
-                chars[6] = 'i';
-                chars[7] = 'd';
-                chars[8] = ':';
+                "urn:uuid:".AsSpan().CopyTo(chars);
                 chars[17] = '-';
                 chars[22] = '-';
                 chars[27] = '-';
