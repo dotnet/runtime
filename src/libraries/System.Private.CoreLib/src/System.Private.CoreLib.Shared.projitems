@@ -2903,24 +2903,24 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsWasi)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollOperationResults.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollableHandle.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollTriggeredOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Results.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Operation.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true' and '$(TargetsWasi)' != 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollOperationResults.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollableHandle.PlatformNotSupported.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollTriggeredOperation.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Results.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Operation.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollableHandle.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollThread.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.HandleEvents.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.HandleEvents.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollableHandle.Wasi.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Wasi.cs" />
     <Compile Include="$(CommonPath)Interop\Wasi\System.Native\Interop.HandleEvents.cs">
       <Link>Common\Interop\Wasi\System.Native\Interop.HandleEvents.cs</Link>
     </Compile>

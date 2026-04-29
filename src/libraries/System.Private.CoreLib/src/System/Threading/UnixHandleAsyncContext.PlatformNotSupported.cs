@@ -5,36 +5,31 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    public sealed partial class PollableHandle : IDisposable
+    public sealed partial class UnixHandleAsyncContext : IDisposable
     {
-        private PollableHandle() { }
+        internal UnixHandleAsyncContext(SafeHandle handle) { throw new PlatformNotSupportedException(); }
 
         public bool InlineCompletions { get; set; }
-
-        public static PollableHandle Create(SafeHandle handle, ref PollableHandle? field)
-        {
-            throw new PlatformNotSupportedException();
-        }
 
         public bool IsReadReady(out int observedSequenceNumber) { throw new PlatformNotSupportedException(); }
         public bool IsWriteReady(out int observedSequenceNumber) { throw new PlatformNotSupportedException(); }
 
-        public PollOperationAsyncResult ReadAsync(PollTriggeredOperation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+        public AsyncResult ReadAsync(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public PollOperationAsyncResult WriteAsync(PollTriggeredOperation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+        public AsyncResult WriteAsync(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public PollOperationSyncResult ReadSync(PollTriggeredOperation operation, int observedSequenceNumber, int timeout)
+        public SyncResult ReadSync(Operation operation, int observedSequenceNumber, int timeout)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public PollOperationSyncResult WriteSync(PollTriggeredOperation operation, int observedSequenceNumber, int timeout)
+        public SyncResult WriteSync(Operation operation, int observedSequenceNumber, int timeout)
         {
             throw new PlatformNotSupportedException();
         }

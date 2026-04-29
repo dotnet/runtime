@@ -10,7 +10,7 @@ namespace System.Threading
     /// <summary>
     /// Enables implementing asynchronous and synchronous I/O operations triggered by OS readiness notifications (epoll/kqueue).
     /// </summary>
-    public sealed partial class PollableHandle : IDisposable
+    public sealed partial class UnixHandleAsyncContext : IDisposable
     {
         private enum QueueResult
         {
@@ -85,7 +85,7 @@ namespace System.Threading
             private QueueState _state;
             private bool _nextMayBeInline;
             private int _sequenceNumber;
-            private PollTriggeredOperation? _tail;
+            private Operation? _tail;
 
             private object _queueLock;
 
@@ -123,11 +123,11 @@ namespace System.Threading
                 return isReady;
             }
 
-            public PollOperationAsyncResult StartOperation(PollableHandle pollHandle, PollTriggeredOperation node, bool isReadOperation, int observedSequenceNumber, CancellationToken cancellationToken)
+            public AsyncResult StartOperation(UnixHandleAsyncContext asyncContext, Operation node, bool isReadOperation, int observedSequenceNumber, CancellationToken cancellationToken)
             {
-                if (!pollHandle.IsRegistered && !pollHandle.Register(node))
+                if (!asyncContext.IsRegistered && !asyncContext.Register(node))
                 {
-                    return PollOperationAsyncResult.Completed;
+                    return AsyncResult.Completed;
                 }
 
                 while (true)
@@ -150,7 +150,7 @@ namespace System.Threading
 
                             case QueueState.Waiting:
                             case QueueState.Processing:
-                                node.Init(pollHandle, isReadOperation);
+                                node.Init(asyncContext, isReadOperation);
 
                                 if (_tail == null)
                                 {
@@ -171,13 +171,13 @@ namespace System.Threading
                                     node.CancellationRegistration = cancellationToken.UnsafeRegister(
                                         static s =>
                                         {
-                                            var n = (PollTriggeredOperation)s!;
+                                            var n = (Operation)s!;
                                             n.CancellationRegistration.Dispose();
                                             n.TryCancel(abort: false);
                                         }, node);
                                 }
 
-                                return PollOperationAsyncResult.Pending;
+                                return AsyncResult.Pending;
 
                             case QueueState.Stopped:
                                 Debug.Assert(_tail == null);
@@ -192,21 +192,21 @@ namespace System.Threading
 
                     if (doAbort)
                     {
-                        return PollOperationAsyncResult.Aborted;
+                        return AsyncResult.Aborted;
                     }
 
                     // Retry the operation.
                     // The node is not yet enqueued, so we can call TryCompleteOperation directly.
-                    if (node.TryCompleteOperation(pollHandle.Handle))
+                    if (node.TryCompleteOperation(asyncContext.Handle))
                     {
-                        return PollOperationAsyncResult.Completed;
+                        return AsyncResult.Completed;
                     }
                 }
             }
 
-            public PollTriggeredOperation? ProcessInlineOrGet(bool inlineOnly = false)
+            public Operation? ProcessInlineOrGet(bool inlineOnly = false)
             {
-                PollTriggeredOperation node;
+                Operation node;
                 using (Lock())
                 {
                     switch (_state)
@@ -257,7 +257,7 @@ namespace System.Threading
                 }
             }
 
-            public QueueResult TryCompleteQueued(PollTriggeredOperation node)
+            public QueueResult TryCompleteQueued(Operation node)
             {
                 int observedSequenceNumber;
                 using (Lock())
@@ -279,10 +279,10 @@ namespace System.Threading
                 QueueResult result;
                 while (true)
                 {
-                    PollOperationAsyncResult execResult = node.TryExecute();
-                    if (execResult != PollOperationAsyncResult.Pending)
+                    AsyncResult execResult = node.TryExecute();
+                    if (execResult != AsyncResult.Pending)
                     {
-                        result = execResult == PollOperationAsyncResult.Completed
+                        result = execResult == AsyncResult.Completed
                             ? QueueResult.Completed
                             : QueueResult.Aborted;
                         break;
@@ -314,7 +314,7 @@ namespace System.Threading
                 }
 
                 // Remove the node from the queue and see if there's more to process.
-                PollTriggeredOperation? nextNode = null;
+                Operation? nextNode = null;
                 using (Lock())
                 {
                     if (_state == QueueState.Stopped)
@@ -348,9 +348,9 @@ namespace System.Threading
             }
 
             // Removes a sync node from the queue on timeout and dispatches the next operation.
-            public void CancelSyncAndContinue(PollTriggeredOperation node)
+            public void CancelSyncAndContinue(Operation node)
             {
-                PollTriggeredOperation? nextNode = null;
+                Operation? nextNode = null;
                 using (Lock())
                 {
                     if (_state == QueueState.Stopped)
@@ -404,7 +404,7 @@ namespace System.Threading
                     {
                         // We're not the head of the queue.
                         // Just find this op and remove it.
-                        PollTriggeredOperation current = _tail.Next!;
+                        Operation current = _tail.Next!;
                         while (current.Next != node)
                         {
                             current = current.Next!;
@@ -437,7 +437,7 @@ namespace System.Threading
 
                     if (_tail != null)
                     {
-                        PollTriggeredOperation node = _tail;
+                        Operation node = _tail;
                         do
                         {
                             node.CancellationRegistration.Dispose();
@@ -461,28 +461,11 @@ namespace System.Threading
 
         internal bool IsDisposed => _writeQueue.IsStopped;
 
-        private PollableHandle(SafeHandle handle)
+        internal UnixHandleAsyncContext(SafeHandle handle)
         {
             Handle = handle;
             _readQueue.Init();
             _writeQueue.Init();
-        }
-
-        /// <summary>
-        /// Creates a <see cref="PollableHandle"/> for the specified handle.
-        /// </summary>
-        /// <param name="handle">The OS handle to bind.</param>
-        /// <param name="field">A reference to a field that will be atomically set to the new <see cref="PollableHandle"/>.</param>
-        public static PollableHandle Create(SafeHandle handle, ref PollableHandle? field)
-        {
-            PollableHandle ph = new PollableHandle(handle);
-            PollableHandle? existing = Interlocked.CompareExchange(ref field, ph, null);
-            if (existing != null)
-            {
-                ph.Dispose();
-                return existing;
-            }
-            return ph;
         }
 
         /// <summary>
@@ -513,8 +496,8 @@ namespace System.Threading
             => _writeQueue.IsReady(out observedSequenceNumber);
 
         /// <summary>
-        /// Executes the read operation asynchronously. If the handle is not ready, returns <see cref="PollOperationAsyncResult.Pending"/>.
-        /// <see cref="PollTriggeredOperation.OnCompleted"/> is then called when the operation completes/aborts/is cancelled.
+        /// Executes the read operation asynchronously. If the handle is not ready, returns <see cref="AsyncResult.Pending"/>.
+        /// <see cref="Operation.OnCompleted"/> is then called when the operation completes/aborts/is cancelled.
         /// </summary>
         /// <param name="operation">The operation to execute.</param>
         /// <param name="observedSequenceNumber">The sequence number obtained from <see cref="IsReadReady"/>.</param>
@@ -522,17 +505,17 @@ namespace System.Threading
         /// <remarks>
         /// <para>The caller must first try to execute the operation after <see cref="IsReadReady"/> returns <see langword="false"/> before calling this method.</para>
         /// <para>The <paramref name="cancellationToken"/> is used when the operation executes asynchronously.
-        /// If the token is cancelled, the operation completes with <see cref="PollOperationOnCompletedResult.Canceled"/>.</para>
-        /// <para>Returns <see cref="PollOperationAsyncResult.Aborted"/> when the instance is disposed.</para>
-        /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="PollOperationAsyncResult.Completed"/>.</para>
+        /// If the token is cancelled, the operation completes with <see cref="OnCompletedResult.Canceled"/>.</para>
+        /// <para>Returns <see cref="AsyncResult.Aborted"/> when the instance is disposed.</para>
+        /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="AsyncResult.Completed"/>.</para>
         /// </remarks>
         /// <returns>The result of the operation.</returns>
-        public PollOperationAsyncResult ReadAsync(PollTriggeredOperation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+        public AsyncResult ReadAsync(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
             => _readQueue.StartOperation(this, operation, isReadOperation: true, observedSequenceNumber, cancellationToken);
 
         /// <summary>
-        /// Executes the write operation asynchronously. If the handle is not ready, returns <see cref="PollOperationAsyncResult.Pending"/>.
-        /// <see cref="PollTriggeredOperation.OnCompleted"/> is then called when the operation completes/aborts/is cancelled.
+        /// Executes the write operation asynchronously. If the handle is not ready, returns <see cref="AsyncResult.Pending"/>.
+        /// <see cref="Operation.OnCompleted"/> is then called when the operation completes/aborts/is cancelled.
         /// </summary>
         /// <param name="operation">The operation to execute.</param>
         /// <param name="observedSequenceNumber">The sequence number obtained from <see cref="IsWriteReady"/>.</param>
@@ -540,12 +523,12 @@ namespace System.Threading
         /// <remarks>
         /// <para>The caller must first try to execute the operation after <see cref="IsWriteReady"/> returns <see langword="false"/> before calling this method.</para>
         /// <para>The <paramref name="cancellationToken"/> is used when the operation executes asynchronously.
-        /// If the token is cancelled, the operation completes with <see cref="PollOperationOnCompletedResult.Canceled"/>.</para>
-        /// <para>Returns <see cref="PollOperationAsyncResult.Aborted"/> when the instance is disposed.</para>
-        /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="PollOperationAsyncResult.Completed"/>.</para>
+        /// If the token is cancelled, the operation completes with <see cref="OnCompletedResult.Canceled"/>.</para>
+        /// <para>Returns <see cref="AsyncResult.Aborted"/> when the instance is disposed.</para>
+        /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="AsyncResult.Completed"/>.</para>
         /// </remarks>
         /// <returns>The result of the operation.</returns>
-        public PollOperationAsyncResult WriteAsync(PollTriggeredOperation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+        public AsyncResult WriteAsync(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
             => _writeQueue.StartOperation(this, operation, isReadOperation: false, observedSequenceNumber, cancellationToken);
 
         /// <summary>
@@ -556,11 +539,11 @@ namespace System.Threading
         /// <param name="timeout">Timeout in milliseconds. Use -1 for infinite timeout.</param>
         /// <remarks>
         /// <para>The caller must first try to execute the operation after <see cref="IsReadReady"/> returns <see langword="false"/> before calling this method.</para>
-        /// <para>Returns <see cref="PollOperationSyncResult.Aborted"/> when the instance is disposed.</para>
-        /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="PollOperationSyncResult.Completed"/> or <see cref="PollOperationSyncResult.TimedOut"/>.</para>
+        /// <para>Returns <see cref="SyncResult.Aborted"/> when the instance is disposed.</para>
+        /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="SyncResult.Completed"/> or <see cref="SyncResult.TimedOut"/>.</para>
         /// </remarks>
         /// <returns>The result of the operation.</returns>
-        public PollOperationSyncResult ReadSync(PollTriggeredOperation operation, int observedSequenceNumber, int timeout)
+        public SyncResult ReadSync(Operation operation, int observedSequenceNumber, int timeout)
             => ExecuteSync(ref _readQueue, operation, isReadOperation: true, observedSequenceNumber, timeout);
 
         /// <summary>
@@ -571,27 +554,33 @@ namespace System.Threading
         /// <param name="timeout">Timeout in milliseconds. Use -1 for infinite timeout.</param>
         /// <remarks>
         /// <para>The caller must first try to execute the operation after <see cref="IsWriteReady"/> returns <see langword="false"/> before calling this method.</para>
-        /// <para>Returns <see cref="PollOperationSyncResult.Aborted"/> when the instance is disposed.</para>
-        /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="PollOperationSyncResult.Completed"/> or <see cref="PollOperationSyncResult.TimedOut"/>.</para>
+        /// <para>Returns <see cref="SyncResult.Aborted"/> when the instance is disposed.</para>
+        /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="SyncResult.Completed"/> or <see cref="SyncResult.TimedOut"/>.</para>
         /// </remarks>
         /// <returns>The result of the operation.</returns>
-        public PollOperationSyncResult WriteSync(PollTriggeredOperation operation, int observedSequenceNumber, int timeout)
+        public SyncResult WriteSync(Operation operation, int observedSequenceNumber, int timeout)
             => ExecuteSync(ref _writeQueue, operation, isReadOperation: false, observedSequenceNumber, timeout);
 
-        private PollOperationSyncResult ExecuteSync(ref OperationQueue queue, PollTriggeredOperation operation, bool isReadOperation, int observedSequenceNumber, int timeout)
+        private SyncResult ExecuteSync(ref OperationQueue queue, Operation operation, bool isReadOperation, int observedSequenceNumber, int timeout)
         {
-            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
+            Debug.Assert(timeout >= -1, $"Unexpected timeout: {timeout}");
 
-            PollOperationSyncResult result;
+            // The caller has already called IsReady and attempted the operation.
+            if (timeout == 0)
+            {
+                return SyncResult.TimedOut;
+            }
+
+            SyncResult result;
 
             using var syncEvent = new ManualResetEventSlim(false, 0);
             operation.SyncEvent = syncEvent;
 
-            PollOperationAsyncResult startResult = queue.StartOperation(this, operation, isReadOperation, observedSequenceNumber, default);
-            if (startResult != PollOperationAsyncResult.Pending)
+            AsyncResult startResult = queue.StartOperation(this, operation, isReadOperation, observedSequenceNumber, default);
+            if (startResult != AsyncResult.Pending)
             {
                 // Completed synchronously or aborted.
-                result = (PollOperationSyncResult)startResult;
+                result = (SyncResult)startResult;
             }
             else
             {
@@ -604,7 +593,7 @@ namespace System.Threading
                     {
                         // Timeout expired. Remove node from queue.
                         queue.CancelSyncAndContinue(operation);
-                        result = PollOperationSyncResult.TimedOut;
+                        result = SyncResult.TimedOut;
                         break;
                     }
 
@@ -613,13 +602,13 @@ namespace System.Threading
                     QueueResult queueResult = queue.TryCompleteQueued(operation);
                     if (queueResult == QueueResult.Completed)
                     {
-                        result = PollOperationSyncResult.Completed;
+                        result = SyncResult.Completed;
                         break;
                     }
 
                     if (queueResult == QueueResult.Aborted)
                     {
-                        result = PollOperationSyncResult.Aborted;
+                        result = SyncResult.Aborted;
                         break;
                     }
 
@@ -630,7 +619,7 @@ namespace System.Threading
                         if (timeout <= 0)
                         {
                             queue.CancelSyncAndContinue(operation);
-                            result = PollOperationSyncResult.TimedOut;
+                            result = SyncResult.TimedOut;
                             break;
                         }
                     }
@@ -642,7 +631,7 @@ namespace System.Threading
             // The operation is in a poolable state, but we don't call ResetForReuse:
             // the Aborted result documents that the operation must not be pooled.
             // Most users don't have a use for pooling on Abort either.
-            if (result != PollOperationSyncResult.Aborted)
+            if (result != SyncResult.Aborted)
             {
                 operation.ResetForReuse();
             }
@@ -650,12 +639,12 @@ namespace System.Threading
             return result;
         }
 
-        internal void ProcessRead(PollTriggeredOperation node)
+        internal void ProcessRead(Operation node)
             => Process(ref _readQueue, node);
-        internal void ProcessWrite(PollTriggeredOperation node)
+        internal void ProcessWrite(Operation node)
             => Process(ref _writeQueue, node);
 
-        private static void Process(ref OperationQueue queue, PollTriggeredOperation node)
+        private static void Process(ref OperationQueue queue, Operation node)
         {
             QueueResult result = queue.TryCompleteQueued(node);
 
@@ -666,13 +655,13 @@ namespace System.Threading
                 if (result == QueueResult.Completed)
                 {
                     node.ResetForReuse();
-                    node.OnCompleted(PollOperationOnCompletedResult.Completed);
+                    node.OnCompleted(OnCompletedResult.Completed);
                 }
             }
         }
 
         /// <summary>
-        /// Aborts all pending operations and Disposes the PollableHandle.
+        /// Aborts all pending operations and Disposes the UnixHandleAsyncContext.
         /// </summary>
         /// <returns><see langword="true"/> if any operations were aborted; otherwise, <see langword="false"/>.</returns>
         public bool AbortAndDispose()
@@ -733,13 +722,13 @@ namespace System.Threading
 
             if ((events & Interop.Sys.HandleEvents.Read) != 0)
             {
-                PollTriggeredOperation? receiveNode = _readQueue.ProcessInlineOrGet();
+                Operation? receiveNode = _readQueue.ProcessInlineOrGet();
                 if (receiveNode != null) ProcessRead(receiveNode);
             }
 
             if ((events & Interop.Sys.HandleEvents.Write) != 0)
             {
-                PollTriggeredOperation? sendNode = _writeQueue.ProcessInlineOrGet();
+                Operation? sendNode = _writeQueue.ProcessInlineOrGet();
                 if (sendNode != null) ProcessWrite(sendNode);
             }
         }
@@ -748,9 +737,9 @@ namespace System.Threading
         {
             Debug.Assert((events & Interop.Sys.HandleEvents.Error) == 0);
 
-            PollTriggeredOperation? receiveNode =
+            Operation? receiveNode =
                 (events & Interop.Sys.HandleEvents.Read) != 0 ? _readQueue.ProcessInlineOrGet() : null;
-            PollTriggeredOperation? sendNode =
+            Operation? sendNode =
                 (events & Interop.Sys.HandleEvents.Write) != 0 ? _writeQueue.ProcessInlineOrGet() : null;
 
             if (sendNode == null)

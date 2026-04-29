@@ -4,10 +4,14 @@
 using System;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
+using AsyncResult = System.Threading.UnixHandleAsyncContext.AsyncResult;
+using OnCompletedResult = System.Threading.UnixHandleAsyncContext.OnCompletedResult;
+using SyncResult = System.Threading.UnixHandleAsyncContext.SyncResult;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -16,7 +20,7 @@ namespace Microsoft.Win32.SafeHandles
         private const int DefaultInvalidHandle = -1;
 
         private NullableBool _isBlocking;
-        private PollableHandle? _pollHandle;
+        private UnixHandleAsyncContext? _asyncContext;
         private ReadOperation? _cachedReadOp;
         private WriteOperation? _cachedWriteOp;
 
@@ -69,16 +73,16 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private PollableHandle PollHandle
+        private UnixHandleAsyncContext AsyncContext
         {
             get
             {
-                if (_pollHandle == null)
+                if (_asyncContext == null)
                 {
                     SetHandleNonBlocking();
-                    PollableHandle.Create(this, ref _pollHandle);
+                    Interlocked.CompareExchange(ref _asyncContext, CreateAsyncContext(this), null);
                 }
-                return _pollHandle!;
+                return _asyncContext!;
             }
         }
 
@@ -99,7 +103,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (disposing)
             {
-                _pollHandle?.Dispose();
+                _asyncContext?.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -134,7 +138,7 @@ namespace Microsoft.Win32.SafeHandles
             int sequenceNumber = 0;
             bool isBlocking = IsBlocking;
 
-            bool doSync = isBlocking || PollHandle.IsReadReady(out sequenceNumber);
+            bool doSync = isBlocking || AsyncContext.IsReadReady(out sequenceNumber);
             if (doSync)
             {
                 if (TryCompleteRead(buffer, out var result, out bool pending))
@@ -145,7 +149,7 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     // The handle changed to non-blocking due to a concurrent operation.
                     Debug.Assert(pending);
-                    if (PollHandle.IsReadReady(out sequenceNumber) && TryCompleteRead(buffer, out result, out _))
+                    if (AsyncContext.IsReadReady(out sequenceNumber) && TryCompleteRead(buffer, out result, out _))
                     {
                         return result;
                     }
@@ -157,9 +161,9 @@ namespace Microsoft.Win32.SafeHandles
             {
                 op.Init(bufPtr, buffer.Length);
 
-                PollOperationSyncResult result = PollHandle.ReadSync(op, sequenceNumber, timeout: -1);
+                SyncResult result = AsyncContext.ReadSync(op, sequenceNumber, timeout: -1);
 
-                if (result == PollOperationSyncResult.Completed)
+                if (result == SyncResult.Completed)
                 {
                     var readResult = op.Result;
 
@@ -174,7 +178,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal ValueTask<(int BytesRead, Interop.ErrorInfo ErrorInfo)> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
-            if (PollHandle.IsReadReady(out int sequenceNumber) &&
+            if (AsyncContext.IsReadReady(out int sequenceNumber) &&
                 TryCompleteRead(destination.Span, out var readResult, out _))
             {
                 return new ValueTask<(int, Interop.ErrorInfo)>(readResult);
@@ -183,13 +187,13 @@ namespace Microsoft.Win32.SafeHandles
             ReadOperation op = RentReadOperation();
             op.Init(destination, cancellationToken);
 
-            PollOperationAsyncResult result = PollHandle.ReadAsync(op, sequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.ReadAsync(op, sequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Pending)
+            if (result == AsyncResult.Pending)
             {
                 return new ValueTask<(int, Interop.ErrorInfo)>(op, op.Version);
             }
-            else if (result == PollOperationAsyncResult.Completed)
+            else if (result == AsyncResult.Completed)
             {
                 readResult = op.Result;
                 ReturnReadOperation(op);
@@ -204,7 +208,7 @@ namespace Microsoft.Win32.SafeHandles
             int sequenceNumber = 0;
             bool isBlocking = IsBlocking;
 
-            bool doSync = isBlocking || PollHandle.IsWriteReady(out sequenceNumber);
+            bool doSync = isBlocking || AsyncContext.IsWriteReady(out sequenceNumber);
             while (doSync)
             {
                 if (TryCompleteWrite(buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo, out bool pending))
@@ -216,7 +220,7 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     // The handle changed to non-blocking due to a concurrent operation.
                     isBlocking = false;
-                    doSync = PollHandle.IsWriteReady(out sequenceNumber);
+                    doSync = AsyncContext.IsWriteReady(out sequenceNumber);
                 }
                 else
                 {
@@ -231,9 +235,9 @@ namespace Microsoft.Win32.SafeHandles
             {
                 op.Init(bufPtr, buffer.Length);
 
-                PollOperationSyncResult result = PollHandle.WriteSync(op, sequenceNumber, timeout: -1);
+                SyncResult result = AsyncContext.WriteSync(op, sequenceNumber, timeout: -1);
 
-                if (result == PollOperationSyncResult.Completed)
+                if (result == SyncResult.Completed)
                 {
                     Interop.ErrorInfo errorInfo = op.WriteResult;
 
@@ -249,7 +253,7 @@ namespace Microsoft.Win32.SafeHandles
         internal ValueTask<Interop.ErrorInfo> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             int bytesWritten = 0;
-            if (PollHandle.IsWriteReady(out int sequenceNumber) &&
+            if (AsyncContext.IsWriteReady(out int sequenceNumber) &&
                 TryCompleteWrite(source.Span, out bytesWritten, out Interop.ErrorInfo writeResult, out _))
             {
                 return new ValueTask<Interop.ErrorInfo>(writeResult);
@@ -258,13 +262,13 @@ namespace Microsoft.Win32.SafeHandles
             WriteOperation op = RentWriteOperation();
             op.Init(source.Slice(bytesWritten), cancellationToken);
 
-            PollOperationAsyncResult result = PollHandle.WriteAsync(op, sequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.WriteAsync(op, sequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Pending)
+            if (result == AsyncResult.Pending)
             {
                 return new ValueTask<Interop.ErrorInfo>(op, op.Version);
             }
-            else if (result == PollOperationAsyncResult.Completed)
+            else if (result == AsyncResult.Completed)
             {
                 writeResult = op.WriteResult;
                 ReturnWriteOperation(op);
@@ -274,7 +278,7 @@ namespace Microsoft.Win32.SafeHandles
             return new ValueTask<Interop.ErrorInfo>(new Interop.ErrorInfo(Interop.Error.ECANCELED));
         }
 
-        private sealed unsafe class ReadOperation : PollTriggeredOperation, IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>
+        private sealed unsafe class ReadOperation : UnixHandleAsyncContext.Operation, IValueTaskSource<(int BytesRead, Interop.ErrorInfo ErrorInfo)>
         {
             private readonly SafePipeHandle _owner;
             internal (int BytesRead, Interop.ErrorInfo ErrorInfo) Result;
@@ -327,19 +331,19 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            protected override void OnCompleted(PollOperationOnCompletedResult result)
+            protected override void OnCompleted(OnCompletedResult result)
             {
-                if (result == PollOperationOnCompletedResult.Completed)
+                if (result == OnCompletedResult.Completed)
                 {
                     _mrvtsc.SetResult(Result);
                 }
-                else if (result == PollOperationOnCompletedResult.Canceled)
+                else if (result == OnCompletedResult.Canceled)
                 {
                     _mrvtsc.SetException(new OperationCanceledException(_cancellationToken));
                 }
                 else
                 {
-                    Debug.Assert(result == PollOperationOnCompletedResult.Aborted);
+                    Debug.Assert(result == OnCompletedResult.Aborted);
                     _mrvtsc.SetException(new OperationCanceledException());
                 }
             }
@@ -367,7 +371,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private sealed unsafe class WriteOperation : PollTriggeredOperation, IValueTaskSource<Interop.ErrorInfo>
+        private sealed unsafe class WriteOperation : UnixHandleAsyncContext.Operation, IValueTaskSource<Interop.ErrorInfo>
         {
             private readonly SafePipeHandle _owner;
             internal Interop.ErrorInfo WriteResult;
@@ -432,19 +436,19 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            protected override void OnCompleted(PollOperationOnCompletedResult result)
+            protected override void OnCompleted(OnCompletedResult result)
             {
-                if (result == PollOperationOnCompletedResult.Completed)
+                if (result == OnCompletedResult.Completed)
                 {
                     _mrvtsc.SetResult(WriteResult);
                 }
-                else if (result == PollOperationOnCompletedResult.Canceled)
+                else if (result == OnCompletedResult.Canceled)
                 {
                     _mrvtsc.SetException(new OperationCanceledException(_cancellationToken));
                 }
                 else
                 {
-                    Debug.Assert(result == PollOperationOnCompletedResult.Aborted);
+                    Debug.Assert(result == OnCompletedResult.Aborted);
                     _mrvtsc.SetException(new OperationCanceledException());
                 }
             }
@@ -533,5 +537,8 @@ namespace Microsoft.Win32.SafeHandles
 
         private static bool IsPending(Interop.ErrorInfo errorInfo)
             => errorInfo.Error is Interop.Error.EAGAIN or Interop.Error.EWOULDBLOCK;
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        private static extern UnixHandleAsyncContext CreateAsyncContext(SafeHandle handle);
     }
 }

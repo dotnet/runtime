@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    public sealed partial class PollableHandle
+    public sealed partial class UnixHandleAsyncContext
     {
         internal bool IsRegistered
         {
@@ -34,7 +34,7 @@ namespace System.Threading
                     if (PollThread.TryRegister(rawHandle, this, out error))
                     {
                         IsRegistered = true;
-                        return true; // Succesfully registered.
+                        return true; // Successfully registered.
                     }
                     else
                     {
@@ -51,7 +51,7 @@ namespace System.Threading
             }
         }
 
-        private bool Register(PollTriggeredOperation node)
+        private bool Register(Operation node)
         {
             if (TryRegisterWithPollThread(out Interop.Error error))
             {

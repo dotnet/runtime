@@ -8,6 +8,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
+using AsyncResult = System.Threading.UnixHandleAsyncContext.AsyncResult;
+using OnCompletedResult = System.Threading.UnixHandleAsyncContext.OnCompletedResult;
+using SyncResult = System.Threading.UnixHandleAsyncContext.SyncResult;
 
 namespace System.Net.Sockets
 {
@@ -108,7 +111,7 @@ namespace System.Net.Sockets
             Interlocked.Exchange(ref _cachedBufferListSendOperation, null) ??
             new BufferListSendOperation(this);
 
-        internal abstract class AsyncOperation : PollTriggeredOperation
+        internal abstract class AsyncOperation : UnixHandleAsyncContext.Operation
         {
 #if DEBUG
             private bool _callbackQueued; // When true, the callback has been queued.
@@ -136,17 +139,17 @@ namespace System.Net.Sockets
             protected sealed override bool TryCompleteOperation(SafeHandle handle)
                 => TryCompleteOperation(AssociatedContext);
 
-            protected override void OnCompleted(PollOperationOnCompletedResult result)
+            protected override void OnCompleted(OnCompletedResult result)
             {
 #if DEBUG
                 Debug.Assert(!Interlocked.Exchange(ref _callbackQueued, true), $"Unexpected _callbackQueued: {_callbackQueued}");
 #endif
-                if (result != PollOperationOnCompletedResult.Completed)
+                if (result != OnCompletedResult.Completed)
                 {
                     ErrorCode = SocketError.OperationAborted;
                 }
 
-                InvokeCallback(allowPooling: result == PollOperationOnCompletedResult.Completed);
+                InvokeCallback(allowPooling: result == OnCompletedResult.Completed);
             }
 
             protected abstract bool TryCompleteOperation(SocketAsyncContext context);
@@ -517,7 +520,7 @@ namespace System.Net.Sockets
         internal static readonly bool InlineSocketCompletionsEnabled = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
 
         internal readonly SafeSocketHandle _socket;
-        private PollableHandle? _pollHandle;
+        private UnixHandleAsyncContext? _asyncContext;
         private bool _isHandleNonBlocking = OperatingSystem.IsWasi(); // WASI sockets are always non-blocking, because we don't have another thread which could be blocked
 
         // Socket.PreferInlineCompletions is an experimental API with internal access modifier.
@@ -531,22 +534,23 @@ namespace System.Net.Sockets
                 return;
             }
 
-            if (_pollHandle is not null || value)
+            if (_asyncContext is not null || value)
             {
-                PollHandle.InlineCompletions = value;
+                AsyncContext.InlineCompletions = value;
             }
         }
 
-        internal PollableHandle PollHandle
+        internal UnixHandleAsyncContext AsyncContext
         {
             get
             {
-                if (_pollHandle == null)
+                if (_asyncContext == null)
                 {
-                    PollableHandle ph = PollableHandle.Create(_socket, ref _pollHandle);
-                    ph.InlineCompletions = InlineSocketCompletionsEnabled;
+                    var asyncContext = CreateAsyncContext(_socket);
+                    asyncContext.InlineCompletions = InlineSocketCompletionsEnabled;
+                    Interlocked.CompareExchange(ref _asyncContext, asyncContext, null);
                 }
-                return _pollHandle!;
+                return _asyncContext!;
             }
         }
 
@@ -557,7 +561,7 @@ namespace System.Net.Sockets
 
         public bool StopAndAbort()
         {
-            return _pollHandle?.AbortAndDispose() ?? false;
+            return _asyncContext?.AbortAndDispose() ?? false;
         }
 
         public void SetHandleNonBlocking()
@@ -613,15 +617,15 @@ namespace System.Net.Sockets
             if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
-            PollOperationSyncResult result =
-                isRead ? PollHandle.ReadSync(operation, observedSequenceNumber, timeout)
-                       : PollHandle.WriteSync(operation, observedSequenceNumber, timeout);
+            SyncResult result =
+                isRead ? AsyncContext.ReadSync(operation, observedSequenceNumber, timeout)
+                       : AsyncContext.WriteSync(operation, observedSequenceNumber, timeout);
 
-            if (result == PollOperationSyncResult.TimedOut)
+            if (result == SyncResult.TimedOut)
             {
                 operation.ErrorCode = SocketError.TimedOut;
             }
-            else if (result == PollOperationSyncResult.Aborted)
+            else if (result == SyncResult.Aborted)
             {
                 operation.ErrorCode = SocketError.OperationAborted;
             }
@@ -646,7 +650,7 @@ namespace System.Net.Sockets
 
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsReadReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsReadReady(out observedSequenceNumber) &&
                 SocketPal.TryCompleteAccept(_socket, socketAddress, out socketAddressLen, out acceptedFd, out errorCode))
             {
                 Debug.Assert(errorCode == SocketError.Success || acceptedFd == (IntPtr)(-1), $"Unexpected values: errorCode={errorCode}, acceptedFd={acceptedFd}");
@@ -674,7 +678,7 @@ namespace System.Net.Sockets
 
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsReadReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsReadReady(out observedSequenceNumber) &&
                 SocketPal.TryCompleteAccept(_socket, socketAddress, out socketAddressLen, out acceptedFd, out errorCode))
             {
                 Debug.Assert(errorCode == SocketError.Success || acceptedFd == (IntPtr)(-1), $"Unexpected values: errorCode={errorCode}, acceptedFd={acceptedFd}");
@@ -686,9 +690,9 @@ namespace System.Net.Sockets
             operation.Callback = callback;
             operation.SocketAddress = socketAddress;
 
-            PollOperationAsyncResult result = PollHandle.ReadAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.ReadAsync(operation, observedSequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Completed)
+            if (result == AsyncResult.Completed)
             {
                 errorCode = operation.ErrorCode;
                 socketAddressLen = operation.SocketAddress.Length;
@@ -714,7 +718,7 @@ namespace System.Net.Sockets
             // Thus, always call TryStartConnect regardless of readiness.
             SocketError errorCode;
             int observedSequenceNumber;
-            PollHandle.IsWriteReady(out observedSequenceNumber);
+            AsyncContext.IsWriteReady(out observedSequenceNumber);
             if (SocketPal.TryStartConnect(_socket, socketAddress, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode))
             {
@@ -744,7 +748,7 @@ namespace System.Net.Sockets
             // Thus, always call TryStartConnect regardless of readiness.
             SocketError errorCode;
             int observedSequenceNumber;
-            PollHandle.IsWriteReady(out observedSequenceNumber);
+            AsyncContext.IsWriteReady(out observedSequenceNumber);
 #if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
             if (SocketPal.TryStartConnect(_socket, socketAddress, out errorCode, buffer.Span, _socket.TfoEnabled, out sentBytes))
 #else
@@ -775,9 +779,9 @@ namespace System.Net.Sockets
                 BytesTransferred = sentBytes,
             };
 
-            PollOperationAsyncResult result = PollHandle.WriteAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.WriteAsync(operation, observedSequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Completed)
+            if (result == AsyncResult.Completed)
             {
                 errorCode = operation.ErrorCode;
                 if (errorCode == SocketError.Success)
@@ -820,7 +824,7 @@ namespace System.Net.Sockets
             SocketFlags receivedFlags;
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsReadReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsReadReady(out observedSequenceNumber) &&
                 (SocketPal.TryCompleteReceiveFrom(_socket, buffer.Span, flags, socketAddress.Span, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
@@ -851,7 +855,7 @@ namespace System.Net.Sockets
             SocketFlags receivedFlags;
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsReadReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsReadReady(out observedSequenceNumber) &&
                 (SocketPal.TryCompleteReceiveFrom(_socket, buffer, flags, socketAddress.Span, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
@@ -884,7 +888,7 @@ namespace System.Net.Sockets
 
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsReadReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsReadReady(out observedSequenceNumber) &&
                 SocketPal.TryCompleteReceive(_socket, buffer.Span, flags, out bytesReceived, out errorCode))
             {
                 return errorCode;
@@ -897,9 +901,9 @@ namespace System.Net.Sockets
             operation.Flags = flags;
             operation.SocketAddress = default;
 
-            PollOperationAsyncResult result = PollHandle.ReadAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.ReadAsync(operation, observedSequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Completed)
+            if (result == AsyncResult.Completed)
             {
                 errorCode = operation.ErrorCode;
                 bytesReceived = operation.BytesTransferred;
@@ -918,7 +922,7 @@ namespace System.Net.Sockets
 
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsReadReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsReadReady(out observedSequenceNumber) &&
                 SocketPal.TryCompleteReceiveFrom(_socket, buffer.Span, flags, socketAddress.Span, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
                 return errorCode;
@@ -931,9 +935,9 @@ namespace System.Net.Sockets
             operation.Flags = flags;
             operation.SocketAddress = socketAddress;
 
-            PollOperationAsyncResult result = PollHandle.ReadAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.ReadAsync(operation, observedSequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Completed)
+            if (result == AsyncResult.Completed)
             {
                 errorCode = operation.ErrorCode;
                 receivedFlags = operation.ReceivedFlags;
@@ -969,7 +973,7 @@ namespace System.Net.Sockets
             SocketFlags receivedFlags;
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsReadReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsReadReady(out observedSequenceNumber) &&
                 (SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress.Span, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
@@ -998,7 +1002,7 @@ namespace System.Net.Sockets
 
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsReadReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsReadReady(out observedSequenceNumber) &&
                 SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress.Span, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
                 // Synchronous success or failure
@@ -1011,9 +1015,9 @@ namespace System.Net.Sockets
             operation.Flags = flags;
             operation.SocketAddress = socketAddress;
 
-            PollOperationAsyncResult result = PollHandle.ReadAsync(operation, observedSequenceNumber, default);
+            AsyncResult result = AsyncContext.ReadAsync(operation, observedSequenceNumber, default);
 
-            if (result == PollOperationAsyncResult.Completed)
+            if (result == AsyncResult.Completed)
             {
                 errorCode = operation.ErrorCode;
                 socketAddressLen = operation.SocketAddress.Length;
@@ -1040,7 +1044,7 @@ namespace System.Net.Sockets
             SocketFlags receivedFlags;
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsReadReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsReadReady(out observedSequenceNumber) &&
                 (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer.Span, null, flags, socketAddress, out socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
@@ -1077,7 +1081,7 @@ namespace System.Net.Sockets
             SocketFlags receivedFlags;
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsReadReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsReadReady(out observedSequenceNumber) &&
                 (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, null, flags, socketAddress, out socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
@@ -1113,7 +1117,7 @@ namespace System.Net.Sockets
 
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsReadReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsReadReady(out observedSequenceNumber) &&
                 SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer.Span, buffers, flags, socketAddress, out socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
             {
                 return errorCode;
@@ -1130,9 +1134,9 @@ namespace System.Net.Sockets
                 IsIPv6 = isIPv6,
             };
 
-            PollOperationAsyncResult result = PollHandle.ReadAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.ReadAsync(operation, observedSequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Completed)
+            if (result == AsyncResult.Completed)
             {
                 errorCode = operation.ErrorCode;
                 socketAddressLen = operation.SocketAddress.Length;
@@ -1172,7 +1176,7 @@ namespace System.Net.Sockets
             bytesSent = 0;
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsWriteReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsWriteReady(out observedSequenceNumber) &&
                 (SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress.Span, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
@@ -1205,7 +1209,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int bufferIndexIgnored = 0, offset = 0, count = buffer.Length;
             int observedSequenceNumber;
-            if (PollHandle.IsWriteReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsWriteReady(out observedSequenceNumber) &&
                 (SocketPal.TryCompleteSendTo(_socket, buffer, null, ref bufferIndexIgnored, ref offset, ref count, flags, socketAddress.Span, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
@@ -1237,7 +1241,7 @@ namespace System.Net.Sockets
 
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsWriteReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsWriteReady(out observedSequenceNumber) &&
                 SocketPal.TryCompleteSendTo(_socket, buffer.Span, ref offset, ref count, flags, socketAddress.Span, ref bytesSent, out errorCode))
             {
                 return errorCode;
@@ -1252,9 +1256,9 @@ namespace System.Net.Sockets
             operation.SocketAddress = socketAddress;
             operation.BytesTransferred = bytesSent;
 
-            PollOperationAsyncResult result = PollHandle.WriteAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.WriteAsync(operation, observedSequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Completed)
+            if (result == AsyncResult.Completed)
             {
                 errorCode = operation.ErrorCode;
                 bytesSent = operation.BytesTransferred;
@@ -1287,7 +1291,7 @@ namespace System.Net.Sockets
             int offset = 0;
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsWriteReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsWriteReady(out observedSequenceNumber) &&
                 (SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress.Span, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
@@ -1319,7 +1323,7 @@ namespace System.Net.Sockets
             int offset = 0;
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsWriteReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsWriteReady(out observedSequenceNumber) &&
                 SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress.Span, ref bytesSent, out errorCode))
             {
                 return errorCode;
@@ -1334,9 +1338,9 @@ namespace System.Net.Sockets
             operation.SocketAddress = socketAddress;
             operation.BytesTransferred = bytesSent;
 
-            PollOperationAsyncResult result = PollHandle.WriteAsync(operation, observedSequenceNumber, default);
+            AsyncResult result = AsyncContext.WriteAsync(operation, observedSequenceNumber, default);
 
-            if (result == PollOperationAsyncResult.Completed)
+            if (result == AsyncResult.Completed)
             {
                 errorCode = operation.ErrorCode;
                 bytesSent = operation.BytesTransferred;
@@ -1357,7 +1361,7 @@ namespace System.Net.Sockets
             bytesSent = 0;
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsWriteReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsWriteReady(out observedSequenceNumber) &&
                 (SocketPal.TryCompleteSendFile(_socket, fileHandle, ref offset, ref count, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
@@ -1385,7 +1389,7 @@ namespace System.Net.Sockets
             bytesSent = 0;
             SocketError errorCode;
             int observedSequenceNumber;
-            if (PollHandle.IsWriteReady(out observedSequenceNumber) &&
+            if (AsyncContext.IsWriteReady(out observedSequenceNumber) &&
                 SocketPal.TryCompleteSendFile(_socket, fileHandle, ref offset, ref count, ref bytesSent, out errorCode))
             {
                 return errorCode;
@@ -1400,9 +1404,9 @@ namespace System.Net.Sockets
                 BytesTransferred = bytesSent
             };
 
-            PollOperationAsyncResult result = PollHandle.WriteAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.WriteAsync(operation, observedSequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Completed)
+            if (result == AsyncResult.Completed)
             {
                 errorCode = operation.ErrorCode;
                 bytesSent = operation.BytesTransferred;
@@ -1412,15 +1416,17 @@ namespace System.Net.Sockets
             return GetSocketErrorForNonCompleted(result);
         }
 
-        private static SocketError GetSocketErrorForNonCompleted(PollOperationAsyncResult result)
+        private static SocketError GetSocketErrorForNonCompleted(AsyncResult result)
         {
-            Debug.Assert(result is PollOperationAsyncResult.Pending or PollOperationAsyncResult.Aborted);
-            return result == PollOperationAsyncResult.Pending ? SocketError.IOPending : SocketError.OperationAborted;
+            Debug.Assert(result is AsyncResult.Pending or AsyncResult.Aborted);
+            return result == AsyncResult.Pending ? SocketError.IOPending : SocketError.OperationAborted;
         }
 
         //
         // Tracing stuff
         //
 
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        private static extern UnixHandleAsyncContext CreateAsyncContext(SafeHandle handle);
     }
 }

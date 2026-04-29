@@ -12,6 +12,9 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
+using AsyncResult = System.Threading.UnixHandleAsyncContext.AsyncResult;
+using OnCompletedResult = System.Threading.UnixHandleAsyncContext.OnCompletedResult;
+using SyncResult = System.Threading.UnixHandleAsyncContext.SyncResult;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -53,7 +56,7 @@ namespace Microsoft.Win32.SafeHandles
         private bool _deleteOnClose;
         private bool _isLocked;
         private NullableBool _isBlocking;
-        private PollableHandle? _pollHandle;
+        private UnixHandleAsyncContext? _asyncContext;
         private ReadOperation? _cachedReadOp;
         private WriteOperation? _cachedWriteOp;
 
@@ -124,16 +127,16 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private PollableHandle PollHandle
+        private UnixHandleAsyncContext AsyncContext
         {
             get
             {
-                if (_pollHandle == null)
+                if (_asyncContext == null)
                 {
                     SetHandleNonBlocking();
-                    PollableHandle.Create(this, ref _pollHandle);
+                    Interlocked.CompareExchange(ref _asyncContext, new UnixHandleAsyncContext(this), null);
                 }
-                return _pollHandle!;
+                return _asyncContext!;
             }
         }
 
@@ -227,7 +230,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (disposing)
             {
-                _pollHandle?.Dispose();
+                _asyncContext?.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -682,7 +685,7 @@ namespace Microsoft.Win32.SafeHandles
             int sequenceNumber = 0;
             bool isBlocking = IsBlocking;
 
-            bool doSync = isBlocking || PollHandle.IsReadReady(out sequenceNumber);
+            bool doSync = isBlocking || AsyncContext.IsReadReady(out sequenceNumber);
             if (doSync)
             {
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
@@ -694,7 +697,7 @@ namespace Microsoft.Win32.SafeHandles
                     if (isBlocking)
                     {
                         Debug.Assert(pending);
-                        if (PollHandle.IsReadReady(out sequenceNumber) && TryCompleteReadAt(offset, bufPtr, buffer.Length, out result, out _))
+                        if (AsyncContext.IsReadReady(out sequenceNumber) && TryCompleteReadAt(offset, bufPtr, buffer.Length, out result, out _))
                         {
                             return CheckFileCall(result.BytesRead, result.ErrorInfo);
                         }
@@ -707,9 +710,9 @@ namespace Microsoft.Win32.SafeHandles
             {
                 op.Init(offset, bufPtr, buffer.Length);
 
-                PollOperationSyncResult result = PollHandle.ReadSync(op, sequenceNumber, timeout: -1);
+                SyncResult result = AsyncContext.ReadSync(op, sequenceNumber, timeout: -1);
 
-                if (result == PollOperationSyncResult.Completed)
+                if (result == SyncResult.Completed)
                 {
                     int readResult = (int)op.BytesRead;
                     Exception? exception = op.Exception;
@@ -743,7 +746,7 @@ namespace Microsoft.Win32.SafeHandles
         private unsafe ValueTask<int> ReadAsyncPollable(long offset, Memory<byte> destination, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
             int sequenceNumber;
-            if (PollHandle.IsReadReady(out sequenceNumber))
+            if (AsyncContext.IsReadReady(out sequenceNumber))
             {
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination.Span))
                 {
@@ -758,13 +761,13 @@ namespace Microsoft.Win32.SafeHandles
             ReadOperation op = RentReadOperation();
             op.Init(offset, destination, cancellationToken, strategy);
 
-            PollOperationAsyncResult result = PollHandle.ReadAsync(op, sequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.ReadAsync(op, sequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Pending)
+            if (result == AsyncResult.Pending)
             {
                 return new ValueTask<int>(op, op.Version);
             }
-            else if (result == PollOperationAsyncResult.Completed)
+            else if (result == AsyncResult.Completed)
             {
                 int completedResult = (int)op.BytesRead;
                 Exception? exception = op.Exception;
@@ -792,7 +795,7 @@ namespace Microsoft.Win32.SafeHandles
             int sequenceNumber = 0;
             bool isBlocking = IsBlocking;
 
-            bool doSync = isBlocking || PollHandle.IsWriteReady(out sequenceNumber);
+            bool doSync = isBlocking || AsyncContext.IsWriteReady(out sequenceNumber);
             while (doSync)
             {
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
@@ -807,7 +810,7 @@ namespace Microsoft.Win32.SafeHandles
                     if (isBlocking && pending)
                     {
                         isBlocking = false;
-                        doSync = PollHandle.IsWriteReady(out sequenceNumber);
+                        doSync = AsyncContext.IsWriteReady(out sequenceNumber);
                     }
                     else
                     {
@@ -822,9 +825,9 @@ namespace Microsoft.Win32.SafeHandles
             {
                 op.Init(offset, bufPtr, buffer.Length);
 
-                PollOperationSyncResult result = PollHandle.WriteSync(op, sequenceNumber, timeout: -1);
+                SyncResult result = AsyncContext.WriteSync(op, sequenceNumber, timeout: -1);
 
-                if (result == PollOperationSyncResult.Completed)
+                if (result == SyncResult.Completed)
                 {
                     Exception? exception = op.Exception;
 
@@ -868,7 +871,7 @@ namespace Microsoft.Win32.SafeHandles
 
             int bytesWritten = 0;
             int sequenceNumber;
-            if (PollHandle.IsWriteReady(out sequenceNumber))
+            if (AsyncContext.IsWriteReady(out sequenceNumber))
             {
                 fixed (byte* bufPtr = &MemoryMarshal.GetReference(source.Span))
                 {
@@ -884,13 +887,13 @@ namespace Microsoft.Win32.SafeHandles
             WriteOperation op = RentWriteOperation();
             op.Init(offset + bytesWritten, source.Slice(bytesWritten), cancellationToken, strategy);
 
-            PollOperationAsyncResult result = PollHandle.WriteAsync(op, sequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.WriteAsync(op, sequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Pending)
+            if (result == AsyncResult.Pending)
             {
                 return new ValueTask(op, op.Version);
             }
-            else if (result == PollOperationAsyncResult.Completed)
+            else if (result == AsyncResult.Completed)
             {
                 Exception? exception = op.Exception;
                 UpdateFileStreamForAsyncWrite(strategy, op.Remaining);
@@ -912,19 +915,19 @@ namespace Microsoft.Win32.SafeHandles
             int sequenceNumber = 0;
             bool isBlocking = IsBlocking;
 
-            bool doSync = isBlocking || PollHandle.IsReadReady(out sequenceNumber);
+            bool doSync = isBlocking || AsyncContext.IsReadReady(out sequenceNumber);
             if (doSync)
             {
-                if (TryCompleteReadAt(offset, buffers, out var result, out bool pending))
+                if (TryCompleteReadAt(offset, buffers, out var readResult, out bool pending))
                 {
-                    return CheckFileCall(result.BytesRead, result.ErrorInfo);
+                    return CheckFileCall(readResult.BytesRead, readResult.ErrorInfo);
                 }
                 if (isBlocking)
                 {
                     Debug.Assert(pending);
-                    if (PollHandle.IsReadReady(out sequenceNumber) && TryCompleteReadAt(offset, buffers, out result, out _))
+                    if (AsyncContext.IsReadReady(out sequenceNumber) && TryCompleteReadAt(offset, buffers, out readResult, out _))
                     {
-                        return CheckFileCall(result.BytesRead, result.ErrorInfo);
+                        return CheckFileCall(readResult.BytesRead, readResult.ErrorInfo);
                     }
                 }
             }
@@ -932,9 +935,9 @@ namespace Microsoft.Win32.SafeHandles
             ReadOperation op = RentReadOperation();
             op.Init(offset, buffers);
 
-            PollOperationSyncResult result2 = PollHandle.ReadSync(op, sequenceNumber, timeout: -1);
+            SyncResult result = AsyncContext.ReadSync(op, sequenceNumber, timeout: -1);
 
-            if (result2 == PollOperationSyncResult.Completed)
+            if (result == SyncResult.Completed)
             {
                 long readResult = op.BytesRead;
                 Exception? exception = op.Exception;
@@ -967,7 +970,7 @@ namespace Microsoft.Win32.SafeHandles
         private ValueTask<long> ReadAsyncPollable(long offset, IReadOnlyList<Memory<byte>> buffers, CancellationToken cancellationToken)
         {
             int sequenceNumber;
-            if (PollHandle.IsReadReady(out sequenceNumber) &&
+            if (AsyncContext.IsReadReady(out sequenceNumber) &&
                 TryCompleteReadAt(offset, buffers, out var readResult, out _))
             {
                 return new ValueTask<long>(CheckFileCall(readResult.BytesRead, readResult.ErrorInfo));
@@ -976,13 +979,13 @@ namespace Microsoft.Win32.SafeHandles
             ReadOperation op = RentReadOperation();
             op.Init(offset, buffers, cancellationToken);
 
-            PollOperationAsyncResult result = PollHandle.ReadAsync(op, sequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.ReadAsync(op, sequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Pending)
+            if (result == AsyncResult.Pending)
             {
                 return new ValueTask<long>(op, op.Version);
             }
-            else if (result == PollOperationAsyncResult.Completed)
+            else if (result == AsyncResult.Completed)
             {
                 long completedResult = op.BytesRead;
                 Exception? exception = op.Exception;
@@ -1006,7 +1009,7 @@ namespace Microsoft.Win32.SafeHandles
             int sequenceNumber = 0;
             bool isBlocking = IsBlocking;
 
-            bool doSync = isBlocking || PollHandle.IsWriteReady(out sequenceNumber);
+            bool doSync = isBlocking || AsyncContext.IsWriteReady(out sequenceNumber);
             while (doSync)
             {
                 if (TryCompleteWriteAt(ref offset, buffers, ref bufferIndex, ref bufferOffset, out Interop.ErrorInfo errorInfo, out bool pending))
@@ -1017,7 +1020,7 @@ namespace Microsoft.Win32.SafeHandles
                 if (isBlocking && pending)
                 {
                     isBlocking = false;
-                    doSync = PollHandle.IsWriteReady(out sequenceNumber);
+                    doSync = AsyncContext.IsWriteReady(out sequenceNumber);
                 }
                 else
                 {
@@ -1028,9 +1031,9 @@ namespace Microsoft.Win32.SafeHandles
             WriteOperation op = RentWriteOperation();
             op.Init(offset, buffers, bufferIndex, bufferOffset);
 
-            PollOperationSyncResult result = PollHandle.WriteSync(op, sequenceNumber, timeout: -1);
+            SyncResult result = AsyncContext.WriteSync(op, sequenceNumber, timeout: -1);
 
-            if (result == PollOperationSyncResult.Completed)
+            if (result == SyncResult.Completed)
             {
                 Exception? exception = op.Exception;
 
@@ -1064,7 +1067,7 @@ namespace Microsoft.Win32.SafeHandles
             int bufferIndex = 0;
             int bufferOffset = 0;
             int sequenceNumber;
-            if (PollHandle.IsWriteReady(out sequenceNumber))
+            if (AsyncContext.IsWriteReady(out sequenceNumber))
             {
                 if (TryCompleteWriteAt(ref offset, buffers, ref bufferIndex, ref bufferOffset, out Interop.ErrorInfo writeResult, out _))
                 {
@@ -1076,13 +1079,13 @@ namespace Microsoft.Win32.SafeHandles
             WriteOperation op = RentWriteOperation();
             op.Init(offset, buffers, bufferIndex, bufferOffset, cancellationToken);
 
-            PollOperationAsyncResult result = PollHandle.WriteAsync(op, sequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.WriteAsync(op, sequenceNumber, cancellationToken);
 
-            if (result == PollOperationAsyncResult.Pending)
+            if (result == AsyncResult.Pending)
             {
                 return new ValueTask(op, op.Version);
             }
-            else if (result == PollOperationAsyncResult.Completed)
+            else if (result == AsyncResult.Completed)
             {
                 Exception? exception = op.Exception;
 
@@ -1098,7 +1101,7 @@ namespace Microsoft.Win32.SafeHandles
             throw new OperationCanceledException();
         }
 
-        private sealed unsafe class ReadOperation : PollTriggeredOperation, IValueTaskSource<int>, IValueTaskSource<long>
+        private sealed unsafe class ReadOperation : UnixHandleAsyncContext.Operation, IValueTaskSource<int>, IValueTaskSource<long>
         {
             private readonly SafeFileHandle _owner;
             private ManualResetValueTaskSourceCore<long> _mrvtsc;
@@ -1171,7 +1174,7 @@ namespace Microsoft.Win32.SafeHandles
                 bool completed = TryCompleteOperation(_owner);
                 Debug.Assert(completed);
                 _owner.DangerousRelease();
-                OnCompleted(PollOperationOnCompletedResult.Completed);
+                OnCompleted(OnCompletedResult.Completed);
             }
 
             protected override void ExecuteThreadPoolWorkItem()
@@ -1228,7 +1231,6 @@ namespace Microsoft.Win32.SafeHandles
                 else
                 {
                     Span<byte> span = _buffer.Span;
-                    Debug.Assert(!span.IsEmpty);
 
                     fixed (byte* bufPtr = &MemoryMarshal.GetReference(span))
                     {
@@ -1247,11 +1249,11 @@ namespace Microsoft.Win32.SafeHandles
                 return true;
             }
 
-            protected internal override void OnCompleted(PollOperationOnCompletedResult result)
+            protected internal override void OnCompleted(OnCompletedResult result)
             {
                 UpdateFileStreamForAsyncRead(_strategy, _buffer, (int)BytesRead);
 
-                if (result == PollOperationOnCompletedResult.Completed)
+                if (result == OnCompletedResult.Completed)
                 {
                     if (Exception != null)
                     {
@@ -1262,13 +1264,13 @@ namespace Microsoft.Win32.SafeHandles
                         _mrvtsc.SetResult(BytesRead);
                     }
                 }
-                else if (result == PollOperationOnCompletedResult.Canceled)
+                else if (result == OnCompletedResult.Canceled)
                 {
                     _mrvtsc.SetException(new OperationCanceledException(_cancellationToken));
                 }
                 else
                 {
-                    Debug.Assert(result == PollOperationOnCompletedResult.Aborted);
+                    Debug.Assert(result == OnCompletedResult.Aborted);
                     _mrvtsc.SetException(new OperationCanceledException());
                 }
             }
@@ -1308,7 +1310,7 @@ namespace Microsoft.Win32.SafeHandles
                 => GetResultAndPool(token);
         }
 
-        private sealed unsafe class WriteOperation : PollTriggeredOperation, IValueTaskSource
+        private sealed unsafe class WriteOperation : UnixHandleAsyncContext.Operation, IValueTaskSource
         {
             private readonly SafeFileHandle _owner;
             private ManualResetValueTaskSourceCore<bool> _mrvtsc;
@@ -1390,7 +1392,7 @@ namespace Microsoft.Win32.SafeHandles
                 {
                 }
                 _owner.DangerousRelease();
-                OnCompleted(PollOperationOnCompletedResult.Completed);
+                OnCompleted(OnCompletedResult.Completed);
             }
 
             protected override void ExecuteThreadPoolWorkItem()
@@ -1486,11 +1488,11 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            protected internal override void OnCompleted(PollOperationOnCompletedResult result)
+            protected internal override void OnCompleted(OnCompletedResult result)
             {
                 UpdateFileStreamForAsyncWrite(_strategy, _buffer);
 
-                if (result == PollOperationOnCompletedResult.Completed)
+                if (result == OnCompletedResult.Completed)
                 {
                     if (Exception != null)
                     {
@@ -1501,13 +1503,13 @@ namespace Microsoft.Win32.SafeHandles
                         _mrvtsc.SetResult(default);
                     }
                 }
-                else if (result == PollOperationOnCompletedResult.Canceled)
+                else if (result == OnCompletedResult.Canceled)
                 {
                     _mrvtsc.SetException(new OperationCanceledException(_cancellationToken));
                 }
                 else
                 {
-                    Debug.Assert(result == PollOperationOnCompletedResult.Aborted);
+                    Debug.Assert(result == OnCompletedResult.Aborted);
                     _mrvtsc.SetException(new OperationCanceledException());
                 }
             }

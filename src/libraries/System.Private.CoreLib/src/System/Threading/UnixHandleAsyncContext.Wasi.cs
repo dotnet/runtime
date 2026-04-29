@@ -221,7 +221,7 @@ namespace System.Threading
         public descriptor_table_entry_union entry;
     }
 
-    public sealed partial class PollableHandle
+    public sealed partial class UnixHandleAsyncContext
     {
         internal bool IsRegistered
         {
@@ -255,11 +255,11 @@ namespace System.Threading
                 Thread.RegisterWasiPollHook(this, BeforePollHook, HandlePollEvent, _unregisterPollHook.Token);
 
                 IsRegistered = true;
-                return true; // Succesfully registered.
+                return true; // Successfully registered.
             }
         }
 
-        private bool Register(PollTriggeredOperation _)
+        private bool Register(Operation _)
         {
             if (TryRegisterWithPollThread(out Interop.Error error))
             {
@@ -286,15 +286,15 @@ namespace System.Threading
 
         private static unsafe IList<int> BeforePollHook(object? state)
         {
-            var pollHandle = (PollableHandle)state!;
-            if (pollHandle.Handle.IsClosed)
+            var asyncContext = (UnixHandleAsyncContext)state!;
+            if (asyncContext.Handle.IsClosed)
             {
                 return [];
             }
 
             List<int> pollableHandles = new();
             nint entryPtr = default;
-            IntPtr socketHandle = pollHandle.Handle.DangerousGetHandle();
+            IntPtr socketHandle = asyncContext.Handle.DangerousGetHandle();
             var error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr);
             if (error != Interop.Error.SUCCESS)
             {
@@ -318,7 +318,7 @@ namespace System.Threading
                             pollableHandles.Add(socket->state.state.connected.output_pollable.handle);
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECT_FAILED:
-                            pollHandle.HandleEventsInline(Sys.HandleEvents.Error);
+                            asyncContext.HandleEventsInline(Sys.HandleEvents.Error);
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_UNBOUND:
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_BOUND:
@@ -335,7 +335,7 @@ namespace System.Threading
                     {
                         case udp_socket_state_tag.UDP_SOCKET_STATE_UNBOUND:
                         case udp_socket_state_tag.UDP_SOCKET_STATE_BOUND_NOSTREAMS:
-                            pollHandle.HandleEventsInline(Sys.HandleEvents.Read | Sys.HandleEvents.Write);
+                            asyncContext.HandleEventsInline(Sys.HandleEvents.Read | Sys.HandleEvents.Write);
                             break;
                         case udp_socket_state_tag.UDP_SOCKET_STATE_BOUND_STREAMING:
                         case udp_socket_state_tag.UDP_SOCKET_STATE_CONNECTED:
@@ -367,17 +367,17 @@ namespace System.Threading
 
         private static void HandlePollEvent(object? state)
         {
-            PollableHandle pollHandle = (PollableHandle)state!;
+            UnixHandleAsyncContext asyncContext = (UnixHandleAsyncContext)state!;
             try
             {
                 using (ExecutionContext.SuppressFlow())
                 {
-                    pollHandle.HandleEventsInline(Sys.HandleEvents.Write | Sys.HandleEvents.Read);
+                    asyncContext.HandleEventsInline(Sys.HandleEvents.Write | Sys.HandleEvents.Read);
                 }
             }
             catch (Exception e)
             {
-                Environment.FailFast("Exception thrown from PollableHandle event handler: " + e.ToString(), e);
+                Environment.FailFast("Exception thrown from UnixHandleAsyncContext event handler: " + e.ToString(), e);
             }
         }
 

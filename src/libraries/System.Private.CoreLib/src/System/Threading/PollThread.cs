@@ -57,11 +57,11 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Each <see cref="PollableHandle"/> is assigned an index into this table while registered with a <see cref="PollThread"/>.
-        /// <para>The index is used as the <see cref="Interop.Sys.HandleEvent.Data"/> to quickly map events to <see cref="PollableHandle"/>s.</para>
-        /// <para>It is also stored in <see cref="PollableHandle.ContextIndex"/> so that we can efficiently remove it when unregistering.</para>
+        /// Each <see cref="UnixHandleAsyncContext"/> is assigned an index into this table while registered with a <see cref="PollThread"/>.
+        /// <para>The index is used as the <see cref="Interop.Sys.HandleEvent.Data"/> to quickly map events to <see cref="UnixHandleAsyncContext"/>s.</para>
+        /// <para>It is also stored in <see cref="UnixHandleAsyncContext.ContextIndex"/> so that we can efficiently remove it when unregistering.</para>
         /// </summary>
-        private static PollableHandle?[] s_registeredHandles = [];
+        private static UnixHandleAsyncContext?[] s_registeredHandles = [];
         private static readonly Queue<int> s_registeredHandlesFreeList = [];
 
         private readonly IntPtr _port;
@@ -75,18 +75,18 @@ namespace System.Threading
         private int _hasOutstandingThreadRequest;
 
         //
-        // Registers a PollableHandle with a PollThread.
+        // Registers a UnixHandleAsyncContext with a PollThread.
         //
-        public static bool TryRegister(IntPtr socketHandle, PollableHandle pollHandle, out Interop.Error error)
+        public static bool TryRegister(IntPtr socketHandle, UnixHandleAsyncContext asyncContext, out Interop.Error error)
         {
             int engineIndex = Math.Abs(Interlocked.Increment(ref s_allocateFromEngine) % s_engines.Length);
             PollThread nextEngine = s_engines[engineIndex];
-            return nextEngine.TryRegisterCore(socketHandle, pollHandle, out error);
+            return nextEngine.TryRegisterCore(socketHandle, asyncContext, out error);
         }
 
-        private bool TryRegisterCore(IntPtr socketHandle, PollableHandle pollHandle, out Interop.Error error)
+        private bool TryRegisterCore(IntPtr socketHandle, UnixHandleAsyncContext asyncContext, out Interop.Error error)
         {
-            Debug.Assert(pollHandle.ContextIndex == -1);
+            Debug.Assert(asyncContext.ContextIndex == -1);
 
             lock (s_registeredHandlesFreeList)
             {
@@ -107,33 +107,33 @@ namespace System.Threading
 
                 Debug.Assert(s_registeredHandles[index] is null);
 
-                s_registeredHandles[index] = pollHandle;
-                pollHandle.ContextIndex = index;
+                s_registeredHandles[index] = asyncContext;
+                asyncContext.ContextIndex = index;
             }
 
             error = Interop.Sys.TryChangeHandleEventRegistration(_port, socketHandle, Interop.Sys.HandleEvents.None,
-                Interop.Sys.HandleEvents.Read | Interop.Sys.HandleEvents.Write, pollHandle.ContextIndex);
+                Interop.Sys.HandleEvents.Read | Interop.Sys.HandleEvents.Write, asyncContext.ContextIndex);
             if (error == Interop.Error.SUCCESS)
             {
                 return true;
             }
 
-            Unregister(pollHandle);
+            Unregister(asyncContext);
             return false;
         }
 
-        public static void Unregister(PollableHandle pollHandle)
+        public static void Unregister(UnixHandleAsyncContext asyncContext)
         {
-            Debug.Assert(pollHandle.ContextIndex >= 0);
-            Debug.Assert(ReferenceEquals(s_registeredHandles[pollHandle.ContextIndex], pollHandle));
+            Debug.Assert(asyncContext.ContextIndex >= 0);
+            Debug.Assert(ReferenceEquals(s_registeredHandles[asyncContext.ContextIndex], asyncContext));
 
             lock (s_registeredHandlesFreeList)
             {
-                s_registeredHandles[pollHandle.ContextIndex] = null;
-                s_registeredHandlesFreeList.Enqueue(pollHandle.ContextIndex);
+                s_registeredHandles[asyncContext.ContextIndex] = null;
+                s_registeredHandlesFreeList.Enqueue(asyncContext.ContextIndex);
             }
 
-            pollHandle.ContextIndex = -1;
+            asyncContext.ContextIndex = -1;
         }
 
         private PollThread()
@@ -236,7 +236,7 @@ namespace System.Threading
             int startTimeMs = Environment.TickCount;
             do
             {
-                ev.PollHandle.HandleEventsOnThreadPool(ev.Events);
+                ev.AsyncContext.HandleEventsOnThreadPool(ev.Events);
             } while (Environment.TickCount - startTimeMs < 15 && eventQueue.TryDequeue(out ev));
         }
 
@@ -273,21 +273,21 @@ namespace System.Threading
                 {
                     Debug.Assert((uint)handleEvent.Data < (uint)s_registeredHandles.Length);
 
-                    PollableHandle? pollHandle = s_registeredHandles[(uint)handleEvent.Data];
+                    UnixHandleAsyncContext? asyncContext = s_registeredHandles[(uint)handleEvent.Data];
 
-                    if (pollHandle is not null)
+                    if (asyncContext is not null)
                     {
-                        if (pollHandle.InlineCompletions)
+                        if (asyncContext.InlineCompletions)
                         {
-                            pollHandle.HandleEventsInline(handleEvent.Events);
+                            asyncContext.HandleEventsInline(handleEvent.Events);
                         }
                         else
                         {
-                            Interop.Sys.HandleEvents events = pollHandle.ProcessInlineSpeculatively(handleEvent.Events);
+                            Interop.Sys.HandleEvents events = asyncContext.ProcessInlineSpeculatively(handleEvent.Events);
 
                             if (events != Interop.Sys.HandleEvents.None)
                             {
-                                _eventQueue.Enqueue(new PollIOEvent(pollHandle, events));
+                                _eventQueue.Enqueue(new PollIOEvent(asyncContext, events));
                                 enqueuedEvent = true;
                             }
                         }
@@ -300,12 +300,12 @@ namespace System.Threading
 
         private readonly struct PollIOEvent
         {
-            public PollableHandle PollHandle { get; }
+            public UnixHandleAsyncContext AsyncContext { get; }
             public Interop.Sys.HandleEvents Events { get; }
 
-            public PollIOEvent(PollableHandle pollHandle, Interop.Sys.HandleEvents events)
+            public PollIOEvent(UnixHandleAsyncContext asyncContext, Interop.Sys.HandleEvents events)
             {
-                PollHandle = pollHandle;
+                AsyncContext = asyncContext;
                 Events = events;
             }
         }
