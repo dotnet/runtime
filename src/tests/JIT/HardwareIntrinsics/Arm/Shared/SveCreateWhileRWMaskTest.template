@@ -55,17 +55,7 @@ namespace {Namespace}
 
             {Op1BaseType}* ptr = stackalloc {Op1BaseType}[{RetVectorType}<{RetBaseType}>.Count];
             {RetVectorType}<{RetBaseType}> mask = {Isa}.{Method}(ptr, ptr);
-
-            for (int i = 0; i < {RetVectorType}<{RetBaseType}>.Count; i++)
-            {
-                if (mask.GetElement(i) == 0)
-                {
-                    TestLibrary.TestFramework.LogInformation(
-                        $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr): Expected element {i} to be true.");
-                    Succeeded = false;
-                    return;
-                }
-            }
+            ValidateElementsEqual(mask, 0, true);
         }
 
         public void RunReflectionScenario()
@@ -80,17 +70,7 @@ namespace {Namespace}
                                      });
 
             {RetVectorType}<{RetBaseType}> mask = ({RetVectorType}<{RetBaseType}>)result;
-
-            for (int i = 0; i < {RetVectorType}<{RetBaseType}>.Count; i++)
-            {
-                if (mask.GetElement(i) == 0)
-                {
-                    TestLibrary.TestFramework.LogInformation(
-                        $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr) via reflection: Expected element {i} to be true.");
-                    Succeeded = false;
-                    return;
-                }
-            }
+            ValidateElementsEqual(mask, 0, true);
         }
 
         public void RunOffsetByOneScenario()
@@ -108,12 +88,21 @@ namespace {Namespace}
                 return;
             }
 
-            for (int i = 1; i < {RetVectorType}<{RetBaseType}>.Count; i++)
+            ValidateElementsEqual(mask, 1, false);
+        }
+
+        private void ValidateElementsEqual({RetVectorType}<{RetBaseType}> mask, int startIndex, bool expectedVal, [CallerMemberName] string method = "")
+        {
+            int count = {RetVectorType}<{RetBaseType}>.Count;
+
+            for (int i = startIndex; i < count; i++)
             {
-                if (mask.GetElement(i) != 0)
+                bool actualVal = mask.GetElement(i) != 0;
+
+                if (actualVal != expectedVal)
                 {
                     TestLibrary.TestFramework.LogInformation(
-                        $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr+1): Expected element {i} to be false.");
+                        $"{nameof({Isa})}.{nameof({Isa}.{Method})}: {method} failed at element {i}: expected {(expectedVal ? "true" : "false")}.");
                     Succeeded = false;
                     return;
                 }
