@@ -1580,12 +1580,19 @@ public:
 
     static bool OperIsMul(genTreeOps gtOper)
     {
+        if (StaticOperIs(gtOper, GT_MUL, GT_MULHI))
+        {
+            return true;
+        }
+
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
-        static_assert(AreContiguous(GT_MUL, GT_MULHI, GT_MUL_LONG));
-        return (GT_MUL <= gtOper) && (gtOper <= GT_MUL_LONG);
-#else
-        return StaticOperIs(gtOper, GT_MUL, GT_MULHI);
+        if (StaticOperIs(gtOper, GT_MUL_LONG))
+        {
+            return true;
+        }
 #endif
+
+        return false;
     }
 
     bool OperIsMul() const
@@ -1873,9 +1880,14 @@ public:
 
     bool OperIsConditionalJump() const
     {
-        static_assert(AreContiguous(GT_JTRUE, GT_JCMP, GT_JTEST, GT_JCC));
+        if (OperIs(GT_JTRUE))
+        {
+            return true;
+        }
 
-        if ((GT_JTRUE <= gtOper) && (gtOper <= GT_JCC))
+        static_assert(AreContiguous(GT_JCMP, GT_JTEST, GT_JCC));
+
+        if ((GT_JCMP <= gtOper) && (gtOper <= GT_JCC))
         {
             return true;
         }
