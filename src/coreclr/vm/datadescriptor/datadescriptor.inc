@@ -45,9 +45,6 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackBase, cdac_data<Thread>::CachedSta
 CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackLimit, cdac_data<Thread>::CachedStackLimit)
 CDAC_TYPE_FIELD(Thread, T_POINTER, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, T_POINTER, DebuggerFilterContext, cdac_data<Thread>::DebuggerFilterContext)
-#ifdef PROFILING_SUPPORTED
-CDAC_TYPE_FIELD(Thread, T_POINTER, ProfilerFilterContext, cdac_data<Thread>::ProfilerFilterContext)
-#endif // PROFILING_SUPPORTED
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), ExposedObject, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, T_UINT32, LastThrownObjectIsUnhandled, cdac_data<Thread>::LastThrownObjectIsUnhandled)
@@ -154,6 +151,13 @@ CDAC_TYPE_END(ExceptionInfo)
 CDAC_TYPE_BEGIN(ObjectHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(ObjectHandle)
+
+CDAC_TYPE_BEGIN(JITNotification)
+CDAC_TYPE_SIZE(sizeof(::JITNotification))
+CDAC_TYPE_FIELD(JITNotification, T_UINT16, State, offsetof(::JITNotification, state))
+CDAC_TYPE_FIELD(JITNotification, T_NUINT, ClrModule, offsetof(::JITNotification, clrModule))
+CDAC_TYPE_FIELD(JITNotification, T_UINT32, MethodToken, offsetof(::JITNotification, methodToken))
+CDAC_TYPE_END(JITNotification)
 
 // Object
 
@@ -1456,6 +1460,8 @@ CDAC_GLOBAL(DispatchThisPtrMask, T_NUINT, InteropLib::ABI::DispatchThisPtrMask)
 CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, InteropLib::ABI::g_knownQueryInterfaceImplementations)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
+CDAC_GLOBAL_POINTER(JITNotificationTable, &::g_pNotificationTable)
+CDAC_GLOBAL(JITNotificationTableSize, T_UINT32, JIT_NOTIFICATION_TABLE_SIZE)
 CDAC_GLOBAL_POINTER(GlobalAllocContext, &::g_global_alloc_context)
 CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS
@@ -1513,6 +1519,7 @@ CDAC_GLOBAL_CONTRACT(AuxiliarySymbols, c1)
 CDAC_GLOBAL_CONTRACT(BuiltInCOM, c1)
 #endif // FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(CodeVersions, c1)
+CDAC_GLOBAL_CONTRACT(CodeNotifications, c1)
 #ifdef FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(ComWrappers, c1)
 #endif // FEATURE_COMWRAPPERS

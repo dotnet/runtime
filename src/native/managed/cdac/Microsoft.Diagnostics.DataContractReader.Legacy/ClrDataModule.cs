@@ -20,6 +20,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     private readonly TargetPointer _address;
     private readonly Target _target;
 
+    internal TargetPointer Address => _address;
+
     private bool _extentsSet;
     private CLRDataModuleExtent[] _extents = new CLRDataModuleExtent[2];
 
@@ -33,6 +35,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
     // This is an IUnknown pointer for the legacy implementation
     private readonly nint _legacyModulePointer;
+
+    private MetaDataImportImpl? _metaDataImportImpl;
 
     public ClrDataModule(TargetPointer address, Target target, IXCLRDataModule? legacyImpl)
     {
@@ -49,19 +53,70 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
     private const uint CORDEBUG_JIT_DEFAULT = 0x1;
     private const uint CORDEBUG_JIT_DISABLE_OPTIMIZATION = 0x3;
-    private static readonly Guid IID_IMetaDataImport = Guid.Parse("7DAC8207-D3AE-4c75-9B67-92801A497D44");
 
     CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
     {
         ppv = default;
-        if (!LegacyFallbackHelper.CanFallback() || _legacyModulePointer == 0)
-            return CustomQueryInterfaceResult.NotHandled;
 
         // Legacy DAC implementation of IXCLRDataModule handles QIs for IMetaDataImport by creating and
         // passing out an implementation of IMetaDataImport. Note that it does not do COM aggregation.
         // It simply returns a completely separate object. See ClrDataModule::QueryInterface in task.cpp
-        if (iid == IID_IMetaDataImport && Marshal.QueryInterface(_legacyModulePointer, iid, out ppv) >= 0)
+        // The returned MetaDataImportImpl also implements IMetaDataImport2 and IMetaDataAssemblyImport,
+        // so consumers can QI the returned object for those interfaces as well.
+        //
+        // IMPORTANT: Some consumers (e.g. ClrMD) QI for IMetaDataImport but then access IMetaDataImport2
+        // vtable slots beyond the IMetaDataImport vtable boundary. This works with native C++ COM objects
+        // (where the vtable for IMetaDataImport and IMetaDataImport2 is unified) but breaks with managed
+        // [GeneratedComInterface] CCWs which create separate vtables per interface. To handle this, we
+        // always return the IMetaDataImport2 vtable pointer when asked for IMetaDataImport. Since
+        // IMetaDataImport2 inherits from IMetaDataImport, the first slots are identical.
+        if (iid == typeof(IMetaDataImport).GUID)
+        {
+            MetaDataImportImpl? wrapper = _metaDataImportImpl;
+            if (wrapper is null)
+            {
+                MetadataReader? reader = null;
+                IMetaDataImport? legacyImport = null;
+
+                try
+                {
+                    ILoader loader = _target.Contracts.Loader;
+                    Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_address);
+                    reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+                }
+                catch
+                {
+                }
+
+                try
+                {
+                    Guid iidMetaDataImport = typeof(IMetaDataImport).GUID;
+                    if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, iidMetaDataImport, out nint ppMdi) >= 0)
+                    {
+                        legacyImport = ComInterfaceMarshaller<IMetaDataImport>.ConvertToManaged((void*)ppMdi);
+                        Marshal.Release(ppMdi);
+                    }
+                }
+                catch
+                {
+                }
+
+                if (reader is null)
+                    return CustomQueryInterfaceResult.NotHandled;
+
+                wrapper = new MetaDataImportImpl(reader, legacyImport);
+                _metaDataImportImpl ??= wrapper;
+                wrapper = _metaDataImportImpl;
+            }
+
+            nint pUnk = (nint)ComInterfaceMarshaller<IMetaDataImport2>.ConvertToUnmanaged(wrapper);
+
+            // ConvertToUnmanaged returns a COM pointer for IMetaDataImport2.
+            // We return this directly as ppv so that consumers (e.g. ClrMD) that QI for
+            // IMetaDataImport but access IMetaDataImport2 vtable slots get the full vtable.
+            ppv = pUnk;
             return CustomQueryInterfaceResult.Handled;
+        }
 
         return CustomQueryInterfaceResult.NotHandled;
     }

@@ -329,6 +329,15 @@ GTNODE(NO_OP            , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE) // A NOP
 // Lowering then removes all successor nodes and leaves it as the terminator node.
 GTNODE(RETURN_SUSPEND   , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 
+// Transfer control to an OSR method variant via patchpoint helper.
+// Operands are the counter address (op1) and IL offset (op2).
+// Codegen emits the helper call and an unconditional jump to the returned address.
+GTNODE(PATCHPOINT       , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE)
+
+// Forced OSR patchpoint (partial compilation). Operand is the IL offset.
+// Codegen emits the forced patchpoint helper call and a jump to the returned address.
+GTNODE(PATCHPOINT_FORCED, GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
+
 GTNODE(START_NONGC      , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group that will be non-gc interruptible.
 GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group where preemptive GC is enabled.
 GTNODE(PROF_HOOK        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Profiler Enter/Leave/TailCall hook.

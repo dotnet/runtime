@@ -4491,6 +4491,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; this node is a marker for debug info.
             break;
 
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            genPatchpoint(treeNode->AsOp());
+            break;
+
         default:
         {
 #ifdef DEBUG

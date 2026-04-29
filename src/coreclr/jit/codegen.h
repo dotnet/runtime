@@ -1304,6 +1304,7 @@ protected:
 
     void genReturn(GenTree* treeNode);
     void genReturnSuspend(GenTreeUnOp* treeNode);
+    void genPatchpoint(GenTreeOp* treeNode);
     void genMarkReturnGCInfo();
 
 #ifdef SWIFT_SUPPORT

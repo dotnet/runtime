@@ -351,32 +351,62 @@ private:
 
     struct LoadStoreCoalescingData
     {
-        var_types targetType;
-        GenTree*  baseAddr;
-        GenTree*  index;
-        GenTree*  value;
-        uint32_t  scale;
-        int       offset;
-        GenTree*  rangeStart;
-        GenTree*  rangeEnd;
+        var_types    targetType       = TYP_UNDEF;
+        GenTree*     baseAddr         = nullptr;
+        GenTree*     index            = nullptr;
+        GenTree*     value            = nullptr;
+        uint32_t     scale            = 1;
+        int          offset           = 0;
+        unsigned     accessSize       = 0;
+        unsigned     lclNum           = BAD_VAR_NUM;
+        GenTreeFlags storeFlags       = GTF_EMPTY;
+        bool         isLocalStoreNode = false;
+        bool         isAddressExposed = false;
+        GenTree*     rangeStart       = nullptr;
+        GenTree*     rangeEnd         = nullptr;
 
         bool IsStore() const
         {
             return value != nullptr;
         }
 
-        bool IsAddressEqual(const LoadStoreCoalescingData& other, bool ignoreOffset) const
+        bool IsLocalStore() const
         {
-            if ((scale != other.scale) || (targetType != other.targetType) ||
-                !GenTree::Compare(baseAddr, other.baseAddr) || !GenTree::Compare(index, other.index))
+            return isLocalStoreNode;
+        }
+
+        bool AllowsNonAtomic() const
+        {
+            return (storeFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0;
+        }
+
+        bool IsAddressEqual(const LoadStoreCoalescingData& other,
+                            bool                           ignoreOffset,
+                            bool                           allowDifferentTypes = false) const
+        {
+            if ((scale != other.scale) || (!allowDifferentTypes && (targetType != other.targetType)))
             {
                 return false;
             }
+
+            if (IsLocalStore() || other.IsLocalStore())
+            {
+                if (!IsLocalStore() || !other.IsLocalStore() || (lclNum != other.lclNum))
+                {
+                    return false;
+                }
+            }
+            else if (!GenTree::Compare(baseAddr, other.baseAddr) || !GenTree::Compare(index, other.index))
+            {
+                return false;
+            }
+
             return ignoreOffset || (offset == other.offset);
         }
     };
 
     bool GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const;
+    bool GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* data) const;
 
     // Per tree node member functions
     GenTree* LowerStoreIndirCommon(GenTreeStoreInd* ind);
@@ -389,7 +419,11 @@ private:
     void     MarkTree(GenTree* root);
     void     UnmarkTree(GenTree* root);
     GenTree* LowerStoreIndir(GenTreeStoreInd* node);
+    void     LowerStoreCoalescing(GenTree* node);
     void     LowerStoreIndirCoalescing(GenTreeIndir* node);
+    bool     LowerCheckCoalescedStoreAtomicity(GenTree*                       currStore,
+                                               const LoadStoreCoalescingData& currData,
+                                               const LoadStoreCoalescingData& prevData);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
     bool     TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);

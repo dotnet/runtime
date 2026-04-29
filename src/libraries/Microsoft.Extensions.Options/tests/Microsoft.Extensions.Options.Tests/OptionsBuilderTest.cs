@@ -814,5 +814,92 @@ namespace Microsoft.Extensions.Options.Tests
 
             Assert.NotNull(value);
         }
+
+        [Fact]
+        public void ValidateWithValidatorType_ValidatesFailureCorrectly()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<ComplexOptions>()
+                .Configure(o => o.Boolean = false)
+                .Validate<ComplexOptionsValidator>();
+
+            var sp = services.BuildServiceProvider();
+
+            var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<ComplexOptions>>().Value);
+            ValidateFailure<ComplexOptions>(error, Options.DefaultName, 1, "Boolean != true");
+        }
+
+        [Fact]
+        public void ValidateWithValidatorType_ValidationSuccessful()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<ComplexOptions>()
+                .Configure(o => o.Boolean = true)
+                .Validate<ComplexOptionsValidator>();
+
+            var sp = services.BuildServiceProvider();
+
+            var value = sp.GetRequiredService<IOptions<ComplexOptions>>().Value;
+
+            Assert.NotNull(value);
+        }
+
+        [Fact]
+        public void ValidateWithValidatorType_WithDependencies_ValidationSuccessful()
+        {
+            var services = new ServiceCollection();
+            var dependency = new ObservableDependency();
+            services.AddSingleton(dependency);
+            services.AddOptions<FakeOptions>()
+                .Validate<FakeOptionsValidatorWithDependencies>();
+
+            var sp = services.BuildServiceProvider();
+
+            var value = sp.GetRequiredService<IOptions<FakeOptions>>().Value;
+
+            Assert.NotNull(value);
+            Assert.True(dependency.HasBeenCalled);
+        }
+
+        private class FakeOptionsValidatorWithDependencies(ObservableDependency dependency) : IValidateOptions<FakeOptions>
+        {
+            public ValidateOptionsResult Validate(string? name, FakeOptions options)
+            {
+                dependency.Call();
+                return ValidateOptionsResult.Success;
+            }
+        }
+
+        private class ObservableDependency
+        {
+            public bool HasBeenCalled { get; private set; }
+
+            public void Call()
+            {
+                HasBeenCalled = true;
+            }
+        }
+
+        [Fact]
+        public void ValidateWithValidatorType_AreScopedToNamedOptions()
+        {
+            var services = new ServiceCollection();
+
+            services.AddOptions<ComplexOptions>("unvalidated")
+                .Configure(o => o.Boolean = false);
+
+            services.AddOptions<ComplexOptions>("validated")
+                .Configure(o => o.Boolean = false)
+                .Validate<ComplexOptionsValidator>();
+
+            var sp = services.BuildServiceProvider();
+            var monitor = sp.GetRequiredService<IOptionsMonitor<ComplexOptions>>();
+
+            var error = Assert.Throws<OptionsValidationException>(() => monitor.Get("validated"));
+            ValidateFailure<ComplexOptions>(error, "validated", 1, "Boolean != true");
+
+            var unvalidated = monitor.Get("unvalidated");
+            Assert.NotNull(unvalidated);
+        }
     }
 }
