@@ -430,7 +430,7 @@ namespace System.Runtime.CompilerServices
         {
             private const int MaxAsyncMethodFrameSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size;
 
-            public struct CaptureRuntimeAsyncCallstackState
+            public ref struct CaptureRuntimeAsyncCallstackState
             {
                 public Continuation? Continuation;
                 public ulong LastNativeIP;
@@ -458,27 +458,22 @@ namespace System.Runtime.CompilerServices
                     currentNativeIP = (ulong)state.Continuation.ResumeInfo->DiagnosticIP;
                 }
 
-                Span<byte> callstackSpan = buffer.AsSpan(index, maxAsyncCallstackFrames * MaxAsyncMethodFrameSize);
+                Span<byte> callstackSpan = buffer.AsSpan(index);
                 int callstackSpanIndex = 0;
-
-                Span<byte> frameSpan = callstackSpan.Slice(callstackSpanIndex, MaxAsyncMethodFrameSize);
-                int frameSpanIndex = 0;
 
                 // First frame (Count == 0) is written as absolute; subsequent frames
                 // (including the first frame of a continuation call after overflow)
                 // are written as deltas from the previous frame.
                 if (state.Count == 0)
                 {
-                    frameSpanIndex += Serializer.WriteCompressedUInt64(frameSpan.Slice(frameSpanIndex, Serializer.MaxCompressedUInt64Size), currentNativeIP);
+                    callstackSpanIndex += Serializer.WriteCompressedUInt64(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedUInt64Size), currentNativeIP);
                 }
                 else
                 {
-                    frameSpanIndex += Serializer.WriteCompressedInt64(frameSpan.Slice(frameSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
+                    callstackSpanIndex += Serializer.WriteCompressedInt64(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
                 }
 
-                frameSpanIndex += Serializer.WriteCompressedInt32(frameSpan.Slice(frameSpanIndex, Serializer.MaxCompressedInt32Size), state.Continuation.State);
-
-                callstackSpanIndex += frameSpanIndex;
+                callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), state.Continuation.State);
                 state.Count++;
 
                 state.Continuation = state.Continuation.Next;
@@ -491,13 +486,8 @@ namespace System.Runtime.CompilerServices
                         currentNativeIP = (ulong)state.Continuation.ResumeInfo->DiagnosticIP;
                     }
 
-                    frameSpan = callstackSpan.Slice(callstackSpanIndex, MaxAsyncMethodFrameSize);
-                    frameSpanIndex = 0;
-
-                    frameSpanIndex += Serializer.WriteCompressedInt64(frameSpan.Slice(frameSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
-                    frameSpanIndex += Serializer.WriteCompressedInt32(frameSpan.Slice(frameSpanIndex, Serializer.MaxCompressedInt32Size), state.Continuation.State);
-
-                    callstackSpanIndex += frameSpanIndex;
+                    callstackSpanIndex += Serializer.WriteCompressedInt64(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
+                    callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), state.Continuation.State);
 
                     state.Count++;
                     state.Continuation = state.Continuation.Next;
@@ -541,7 +531,7 @@ namespace System.Runtime.CompilerServices
                     // Static callstack payload: type (1) + callstackId (1) + frameCount (1) + id (max 10 bytes compressed).
                     const int MaxStaticEventPayloadSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
 
-                    if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, MaxStaticEventPayloadSize, out var rollbackData))
+                    if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, MaxStaticEventPayloadSize, out Serializer.AsyncEventHeaderRollbackData rollbackData))
                     {
                         int frameCountOffset = CallstackHeader(ref eventBuffer, id, type, 0);
 

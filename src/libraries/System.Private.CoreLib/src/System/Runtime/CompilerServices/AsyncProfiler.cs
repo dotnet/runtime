@@ -281,7 +281,7 @@ namespace System.Runtime.CompilerServices
                 public const int MaxEventHeaderSize = 37;
                 public const int MaxAsyncEventHeaderSize = 11;
 
-                public struct AsyncEventHeaderRollbackData
+                public ref struct AsyncEventHeaderRollbackData
                 {
                     public int Index;
                     public uint EventCount;
@@ -354,7 +354,7 @@ namespace System.Runtime.CompilerServices
                     eventBuffer.EventCount = 0;
                     context.LastEventTimestamp = currentTimestamp;
 
-                    var headerSpan = eventBuffer.Data.AsSpan(0, MaxEventHeaderSize);
+                    Span<byte> headerSpan = eventBuffer.Data.AsSpan(0, MaxEventHeaderSize);
                     int headerSpanIndex = 0;
 
                     // Version
@@ -641,7 +641,7 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    Log.AsyncEvents(eventBuffer.Data.AsSpan().Slice(0, eventBuffer.Index));
+                    Log.AsyncEvents(eventBuffer.Data.AsSpan(0, eventBuffer.Index));
                 }
                 catch
                 {
@@ -1040,7 +1040,7 @@ namespace System.Runtime.CompilerServices
                 // Make sure all dead threads are flushed and removed from the cache.
                 for (int i = s_cache.Count - 1; i >= 0; i--)
                 {
-                    var contextHolder = s_cache[i];
+                    AsyncThreadContextHolder contextHolder = s_cache[i];
                     if (!contextHolder.OwnerThread.TryGetTarget(out Thread? target) || !target.IsAlive)
                     {
                         // Thread is dead, flush its buffer and remove from cache.
@@ -1070,7 +1070,7 @@ namespace System.Runtime.CompilerServices
                 // Spin wait timeout, 100 milliseconds.
                 long spinWaitTimeout = frequency / 10;
 
-                foreach (var contextHolder in s_cache)
+                foreach (AsyncThreadContextHolder contextHolder in s_cache)
                 {
                     AsyncThreadContext context = contextHolder.Context;
 
