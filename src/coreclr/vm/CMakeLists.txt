@@ -68,7 +68,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     debuginfostore.cpp
     decodemd.cpp
     disassembler.cpp
-    domainassembly.cpp
     dynamicmethod.cpp
     ebr.cpp
     ecall.cpp
@@ -169,7 +168,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     debuginfostore.h
     decodemd.h
     disassembler.h
-    domainassembly.h
     dynamicmethod.h
     ebr.h
     ecall.h
@@ -411,7 +409,6 @@ set(VM_HEADERS_WKS
     cachelinealloc.h
     callhelpers.h
     callconvbuilder.hpp
-    cdacdata.h
     ceemain.h
     clrconfignative.h
     clrex.h

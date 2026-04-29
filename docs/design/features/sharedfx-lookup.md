@@ -44,6 +44,20 @@ In the first case the app file path should have been specified as an argument to
 In the second case the `dotnet.dll` from SDK must be invoked as a framework-dependent app. At first the running program searches for the `global.json` file which may have specified a CLI version. It starts from the current working directory and looks for it inside all parent folder hierarchy. After that, it searches for the dotnet.dll file inside the `sdk\<CLI_version>` sub-folder in the executable directory.
 The exact algorithm how versions as matched is described (with some history) in the [docs](https://learn.microsoft.com/dotnet/core/tools/global-json#matching-rules)
 
+Starting in .NET 11, once the SDK directory is resolved, the muxer checks for a `dotnet-aot` shared library in that directory. If the library exists and exports the `dotnet_execute` entry point, the muxer invokes it instead of running the managed `dotnet.dll`:
+
+``` C
+int dotnet_execute(
+    const char_t *host_path,     // path to the dotnet host executable
+    const char_t *dotnet_root,   // path to the dotnet root directory
+    const char_t *sdk_dir,       // path to the resolved SDK directory
+    const char_t *hostfxr_path,  // path to the hostfxr library
+    int argc,                    // user's command-line arguments (excluding dotnet executable itself)
+    const char_t **argv);
+```
+
+If the `dotnet-aot` library is not found or does not have the expected entry point, the muxer falls back to running the managed `dotnet.dll` as a framework-dependent app.
+
 Note: if the SDK lookup is invoked through `hostfxr_resolve_sdk2` the algorithm is the same, expect that the function can disallow pre-release versions via the `hostfxr_resolve_sdk2_flags_t::disallow_prerelease` flag.
 
 ### Framework search and rolling forward

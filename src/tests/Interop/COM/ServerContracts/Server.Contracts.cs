@@ -312,6 +312,14 @@ namespace Server.Contract
         System.Collections.IEnumerator GetEnumerator();
 
         int Sum_IntArray_SafeArray([MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_I4)] int[] d);
+
+        // Test matching signatures and different metadata (ie DISPID)
+
+        [DispId(1000)]
+        string GetDispIdAsString();
+
+        [DispId(1001)]
+        string GetDispIdAsString2();
     }
 
     [ComVisible(true)]

@@ -52,7 +52,8 @@ public class RuntimeInfoDumpTests : DumpTestBase
         RuntimeInfoOperatingSystem expected = DumpMetadata.Os switch
         {
             "windows" => RuntimeInfoOperatingSystem.Windows,
-            "linux" or "osx" or "freebsd" => RuntimeInfoOperatingSystem.Unix,
+            "osx" => RuntimeInfoOperatingSystem.Apple,
+            "linux" or "freebsd" => RuntimeInfoOperatingSystem.Unix,
             _ => RuntimeInfoOperatingSystem.Unknown,
         };
 

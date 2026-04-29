@@ -113,4 +113,16 @@ public class DispatchTesting : Server.Contract.IDispatchTesting
 
         return sum;
     }
+
+    [DispId(1000)]
+    public string GetDispIdAsString()
+    {
+        return "1000";
+    }
+
+    [DispId(1001)]
+    public string GetDispIdAsString2()
+    {
+        return "1001";
+    }
 }

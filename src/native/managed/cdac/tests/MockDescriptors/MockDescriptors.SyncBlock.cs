@@ -86,8 +86,6 @@ internal sealed class MockSyncBlock : TypedView
         set => WritePointerField(LinkNextFieldName, value);
     }
 
-    public ulong CleanupLinkAddress
-        => GetFieldAddress(LinkNextFieldName);
 }
 
 internal sealed class MockSyncBlockBuilder
@@ -139,7 +137,7 @@ internal sealed class MockSyncBlockBuilder
 
         if (initializeCacheAndGlobals)
         {
-            MockMemorySpace.HeapFragment syncBlockCacheFragment = AllocateAndAdd((ulong)SyncBlockCacheLayout.Size, "SyncBlockCache");
+            MockMemorySpace.HeapFragment syncBlockCacheFragment = _allocator.Allocate((ulong)SyncBlockCacheLayout.Size, "SyncBlockCache");
             _syncBlockCache = SyncBlockCacheLayout.Create(syncBlockCacheFragment);
             _syncBlockCache.FreeSyncTableIndex = 1;
 
@@ -156,7 +154,7 @@ internal sealed class MockSyncBlockBuilder
         string name = "SyncBlock")
     {
         int totalSize = SyncBlockLayout.Size + (hasInteropInfo ? InteropSyncBlockInfoLayout.Size : 0);
-        MockMemorySpace.HeapFragment fragment = AllocateAndAdd((ulong)totalSize, name);
+        MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)totalSize, name);
         MockSyncBlock syncBlock = SyncBlockLayout.Create(
             fragment.Data.AsMemory(0, SyncBlockLayout.Size),
             fragment.Address);
@@ -193,7 +191,7 @@ internal sealed class MockSyncBlockBuilder
 
         MockSyncBlock syncBlock = AddSyncBlock(rcw, ccw, ccf, hasInteropInfo, "SyncBlock (cleanup)");
         syncBlock.LinkNext = _cleanupListHeadAddress;
-        _cleanupListHeadAddress = syncBlock.CleanupLinkAddress;
+        _cleanupListHeadAddress = syncBlock.Address;
         _syncBlockCache.CleanupBlockList = _cleanupListHeadAddress;
         return syncBlock;
     }
@@ -201,15 +199,8 @@ internal sealed class MockSyncBlockBuilder
     private ulong AddPointerGlobal(string name, ulong value)
     {
         TargetTestHelpers helpers = Builder.TargetTestHelpers;
-        MockMemorySpace.HeapFragment global = AllocateAndAdd((ulong)helpers.PointerSize, $"[global pointer] {name}");
+        MockMemorySpace.HeapFragment global = _allocator.Allocate((ulong)helpers.PointerSize, $"[global pointer] {name}");
         helpers.WritePointer(global.Data, value);
         return global.Address;
-    }
-
-    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name)
-    {
-        MockMemorySpace.HeapFragment fragment = _allocator.Allocate(size, name);
-        Builder.AddHeapFragment(fragment);
-        return fragment;
     }
 }

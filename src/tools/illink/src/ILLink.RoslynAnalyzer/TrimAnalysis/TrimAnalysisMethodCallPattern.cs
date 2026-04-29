@@ -78,12 +78,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         public void ReportDiagnostics(DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
         {
             Location location = Operation.Syntax.GetLocation();
-            if (context.EnableTrimAnalyzer &&
+            if (context.TrimAnalyzer is not null &&
                 !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
                 !FeatureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
             {
                 var typeNameResolver = new TypeNameResolver(context.Compilation);
-                TrimAnalysisVisitor.HandleCall(context, FeatureContext, typeNameResolver, Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, out var _);
+                TrimAnalysisVisitor.HandleCall(context.TrimAnalyzer, FeatureContext, typeNameResolver, Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, out var _);
             }
             // For Requires, make the location the reference to the method, not the entire invocation.
             // The parameters are not part of the issue, and including them in the location can be misleading.
