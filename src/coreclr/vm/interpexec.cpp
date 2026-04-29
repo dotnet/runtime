@@ -293,8 +293,8 @@ void InvokeUnmanagedCalliWithTransition(UnmanagedCalliWithTransiationParam *pPar
     {
         THROWS;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer((void*)ftn));
-        PRECONDITION(CheckPointer(cookie));
+        PRECONDITION(CheckPointer((void*)pParam->ftn));
+        PRECONDITION(CheckPointer(pParam->cookie));
     }
     CONTRACTL_END
 
