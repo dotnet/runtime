@@ -44,21 +44,19 @@ namespace Microsoft.Extensions.Hosting.Internal
             // Handle service decorations:
             // - Non-aware adapters: materialize decorations into standard descriptors before CreateBuilder
             // - Aware adapters: apply decorations natively to the builder after CreateBuilder
-            if (services is IDecorationServiceCollection { Decorations.Count: > 0 } decorations
-                && _serviceProviderFactory is not ISupportServiceDecoration<TContainerBuilder>)
+            if (services is IDecorationServiceCollection { Decorations.Count: > 0 } decorations)
             {
+                if (_serviceProviderFactory is ISupportServiceDecoration<TContainerBuilder> decorationSupport)
+                {
+                    TContainerBuilder builder = _serviceProviderFactory.CreateBuilder(services);
+                    decorationSupport.ApplyDecorations(builder, decorations);
+                    return builder;
+                }
+
                 DecorationMaterializer.Materialize(services, decorations.Decorations);
             }
 
-            TContainerBuilder builder = _serviceProviderFactory.CreateBuilder(services);
-
-            if (services is IDecorationServiceCollection { Decorations.Count: > 0 } pendingDecorations
-                && _serviceProviderFactory is ISupportServiceDecoration<TContainerBuilder> decorationSupport)
-            {
-                decorationSupport.ApplyDecorations(builder, pendingDecorations);
-            }
-
-            return builder;
+            return _serviceProviderFactory.CreateBuilder(services);
         }
 
         public IServiceProvider CreateServiceProvider(object containerBuilder)
