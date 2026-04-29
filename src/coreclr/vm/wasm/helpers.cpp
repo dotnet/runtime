@@ -736,8 +736,6 @@ void InvokeCalliStub(CalliStubParam* pParam)
     _ASSERTE(pParam->ftn != (PCODE)NULL);
     _ASSERTE(pParam->cookie != NULL);
 
-    MethodDesc* md = PortableEntryPoint::GetMethodDesc(pParam->ftn);
-
     (pParam->cookie)(pParam->ftn, pParam->pArgs, pParam->pRet);
 }
 
