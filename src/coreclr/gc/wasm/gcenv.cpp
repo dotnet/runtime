@@ -386,13 +386,23 @@ size_t GetRestrictedPhysicalMemoryLimit()
 bool GetPhysicalMemoryUsed(size_t* val)
 {
     // __builtin_wasm_memory_size(0) returns count of 64KB WASM pages, not GC pages.
-    *val = __builtin_wasm_memory_size(0) * WasmPageSize;
-    if (*val == 0)
+    // Compute in 64 bits so a legitimate 0-page memory is not conflated with wasm32 overflow.
+    uint64_t pages = static_cast<uint64_t>(__builtin_wasm_memory_size(0));
+    if (pages > (UINT64_MAX / WasmPageSize))
     {
-        // This overflow can happen when all 4GB of memory are in use.
         *val = GetTotalPhysicalMemory();
+        return true;
     }
 
+    uint64_t bytesUsed = pages * static_cast<uint64_t>(WasmPageSize);
+    if (bytesUsed > static_cast<uint64_t>(SIZE_MAX))
+    {
+        // Clamp when the byte count cannot be represented in size_t on wasm32.
+        *val = GetTotalPhysicalMemory();
+        return true;
+    }
+
+    *val = static_cast<size_t>(bytesUsed);
     return true;
 }
 
@@ -420,14 +430,10 @@ static uint64_t GetAvailablePhysicalMemory()
 #ifdef TARGET_BROWSER
     return emscripten_get_heap_max() - emscripten_get_heap_size();
 #else // TARGET_WASI
-    // Best approximation: total minus currently used
+    // Best approximation: total minus currently used.
     // __builtin_wasm_memory_size(0) returns count of 64KB WASM pages, not GC pages.
-    size_t used = __builtin_wasm_memory_size(0) * WasmPageSize;
-    if (used == 0)
-    {
-        // This overflow can happen when all 4GB of memory are in use.
-        return 0;
-    }
+    // Compute in 64 bits so a legitimate 0-page memory is not conflated with wasm32 overflow.
+    uint64_t used = static_cast<uint64_t>(__builtin_wasm_memory_size(0)) * static_cast<uint64_t>(WasmPageSize);
     uint64_t total = GetTotalPhysicalMemory();
     return (total > used) ? (total - used) : 0;
 #endif
