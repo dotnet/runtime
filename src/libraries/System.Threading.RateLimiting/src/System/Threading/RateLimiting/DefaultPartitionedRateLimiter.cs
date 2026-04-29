@@ -16,14 +16,14 @@ namespace System.Threading.RateLimiting
         private static readonly TimeSpan s_idleTimeLimit = TimeSpan.FromSeconds(10);
 
         // TODO: Look at ConcurrentDictionary to try and avoid a global lock
-        private readonly Dictionary<TKey, Lazy<RateLimiter>> _limiters;
+        private readonly Dictionary<TKey, Lazy<LimiterEntry>> _limiters;
         private bool _disposed;
         private readonly TaskCompletionSource<object?> _disposeComplete = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // Used by the Timer to call TryRelenish on ReplenishingRateLimiters
         // We use a separate list to avoid running TryReplenish (which might be user code) inside our lock
         // And we cache the list to amortize the allocation cost to as close to 0 as we can get
-        private readonly List<KeyValuePair<TKey, Lazy<RateLimiter>>> _cachedLimiters = new();
+        private readonly List<KeyValuePair<TKey, Lazy<LimiterEntry>>> _cachedLimiters = new();
         private bool _cacheInvalid;
         private readonly List<RateLimiter> _limitersToDispose = new();
         private readonly TimerAwaitable _timer;
@@ -42,7 +42,7 @@ namespace System.Threading.RateLimiting
         private DefaultPartitionedRateLimiter(Func<TResource, RateLimitPartition<TKey>> partitioner,
             IEqualityComparer<TKey>? equalityComparer, TimeSpan timerInterval)
         {
-            _limiters = new Dictionary<TKey, Lazy<RateLimiter>>(equalityComparer);
+            _limiters = new Dictionary<TKey, Lazy<LimiterEntry>>(equalityComparer);
             _partitioner = partitioner;
 
             _timer = new TimerAwaitable(timerInterval, timerInterval);
@@ -87,20 +87,31 @@ namespace System.Threading.RateLimiting
         private RateLimiter GetRateLimiter(TResource resource)
         {
             RateLimitPartition<TKey> partition = _partitioner(resource);
-            Lazy<RateLimiter>? limiter;
+            Lazy<LimiterEntry>? entry;
             lock (Lock)
             {
                 ThrowIfDisposed();
-                if (!_limiters.TryGetValue(partition.PartitionKey, out limiter))
+                if (!_limiters.TryGetValue(partition.PartitionKey, out entry))
                 {
                     // Using Lazy avoids calling user code (partition.Factory) inside the lock
-                    limiter = new Lazy<RateLimiter>(() => partition.Factory(partition.PartitionKey));
-                    _limiters.Add(partition.PartitionKey, limiter);
+                    entry = new Lazy<LimiterEntry>(() => new LimiterEntry(partition.Factory(partition.PartitionKey)));
+                    _limiters.Add(partition.PartitionKey, entry);
                     // Cache is invalid now
                     _cacheInvalid = true;
                 }
+                else if (entry.IsValueCreated)
+                {
+                    // Refresh the last-access timestamp under the lock so the Heartbeat won't observe
+                    // a stale value and concurrently evict a limiter that's actively being used.
+                    entry.Value.LastAccessTimestamp = Stopwatch.GetTimestamp();
+                }
             }
-            return limiter.Value;
+
+            LimiterEntry limiterEntry = entry.Value;
+            // Refresh the last-access timestamp so that the Heartbeat can evict limiters whose
+            // IdleDuration is always null (e.g. NoopLimiter) once they stop being accessed.
+            limiterEntry.LastAccessTimestamp = Stopwatch.GetTimestamp();
+            return limiterEntry.Limiter;
         }
 
         protected override void Dispose(bool disposing)
@@ -125,11 +136,11 @@ namespace System.Threading.RateLimiting
 
             // Safe to access _limiters outside the lock
             // The timer is no longer running and _disposed is set so anyone trying to access fields will be checking that first
-            foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in _limiters)
+            foreach (KeyValuePair<TKey, Lazy<LimiterEntry>> limiter in _limiters)
             {
                 try
                 {
-                    limiter.Value.Value.Dispose();
+                    limiter.Value.Value.Limiter.Dispose();
                 }
                 catch (Exception ex)
                 {
@@ -160,11 +171,11 @@ namespace System.Threading.RateLimiting
             }
 
             List<Exception>? exceptions = null;
-            foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in _limiters)
+            foreach (KeyValuePair<TKey, Lazy<LimiterEntry>> limiter in _limiters)
             {
                 try
                 {
-                    await limiter.Value.Value.DisposeAsync().ConfigureAwait(false);
+                    await limiter.Value.Value.Limiter.DisposeAsync().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -225,18 +236,25 @@ namespace System.Threading.RateLimiting
             List<Exception>? aggregateExceptions = null;
 
             // cachedLimiters is safe to use outside the lock because it is only updated by the Timer
-            foreach (KeyValuePair<TKey, Lazy<RateLimiter>> rateLimiter in _cachedLimiters)
+            foreach (KeyValuePair<TKey, Lazy<LimiterEntry>> rateLimiter in _cachedLimiters)
             {
                 if (!rateLimiter.Value.IsValueCreated)
                 {
                     continue;
                 }
-                if (rateLimiter.Value.Value.IdleDuration is TimeSpan idleDuration && idleDuration > s_idleTimeLimit)
+                LimiterEntry limiterEntry = rateLimiter.Value.Value;
+                // Fall back to our internally tracked last-access timestamp when the limiter
+                // does not report an idle duration (e.g. NoopLimiter always returns null).
+                // This ensures idle partitions are eventually evicted regardless of the limiter implementation.
+                TimeSpan idleDuration = limiterEntry.Limiter.IdleDuration
+                    ?? RateLimiterHelper.GetElapsedTime(limiterEntry.LastAccessTimestamp).GetValueOrDefault();
+                if (idleDuration > s_idleTimeLimit)
                 {
                     lock (Lock)
                     {
                         // Check time again under lock to make sure no one calls Acquire or WaitAsync after checking the time and removing the limiter
-                        idleDuration = rateLimiter.Value.Value.IdleDuration ?? TimeSpan.Zero;
+                        idleDuration = limiterEntry.Limiter.IdleDuration
+                            ?? RateLimiterHelper.GetElapsedTime(limiterEntry.LastAccessTimestamp).GetValueOrDefault();
                         if (idleDuration > s_idleTimeLimit)
                         {
                             // Remove limiter from the lookup table and mark cache as invalid
@@ -246,12 +264,12 @@ namespace System.Threading.RateLimiting
                             _limiters.Remove(rateLimiter.Key);
 
                             // We don't want to dispose inside the lock so we need to defer it
-                            _limitersToDispose.Add(rateLimiter.Value.Value);
+                            _limitersToDispose.Add(limiterEntry.Limiter);
                         }
                     }
                 }
                 // We know the limiter can be replenished so let's attempt to replenish tokens
-                else if (rateLimiter.Value.Value is ReplenishingRateLimiter replenishingRateLimiter)
+                else if (limiterEntry.Limiter is ReplenishingRateLimiter replenishingRateLimiter)
                 {
                     try
                     {
@@ -283,6 +301,21 @@ namespace System.Threading.RateLimiting
             {
                 throw new AggregateException(aggregateExceptions);
             }
+        }
+
+        // Wraps a RateLimiter with a timestamp of when it was last accessed by the partitioned limiter.
+        // The timestamp is used by the Heartbeat to evict limiters whose IdleDuration is always null
+        // (e.g. NoopLimiter), which would otherwise never be cleaned up.
+        private sealed class LimiterEntry
+        {
+            public LimiterEntry(RateLimiter limiter)
+            {
+                Limiter = limiter;
+                LastAccessTimestamp = Stopwatch.GetTimestamp();
+            }
+
+            public RateLimiter Limiter { get; }
+            public long LastAccessTimestamp;
         }
     }
 }
