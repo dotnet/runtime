@@ -120,6 +120,8 @@ set( JIT_SOURCES
   fgstmt.cpp
   flowgraph.cpp
   forwardsub.cpp
+  gcdecode.cpp
+  gcencode.cpp
   gcinfo.cpp
   gentree.cpp
   gschecks.cpp
@@ -186,8 +188,6 @@ set ( JIT_NATIVE_TARGET_SOURCES
   lsra.cpp
   lsrabuild.cpp
   regMaskTPOps.cpp
-  gcdecode.cpp
-  gcencode.cpp
   unwind.cpp
 )
 
@@ -292,8 +292,6 @@ set( JIT_RISCV64_SOURCES
 )
 
 set( JIT_WASM_SOURCES
-  gcdecode.cpp
-  gcencode.cpp
   codegenwasm.cpp
   emitwasm.cpp
   fgwasm.cpp
