@@ -1840,8 +1840,7 @@ PTR_InterpreterFrame InterpreterFrame::TryGetOwningFrameFromContext(T_CONTEXT * 
         return NULL;
     }
 
-    PTR_InterpreterFrame pOwningInterpFrame =
-        dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(pContext));
+    PTR_InterpreterFrame pOwningInterpFrame = dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(pContext));
     _ASSERTE(pOwningInterpFrame != NULL);
     _ASSERTE(pOwningInterpFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
     return pOwningInterpFrame;

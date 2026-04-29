@@ -1100,12 +1100,11 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     // process the REGDISPLAY and stop at the first frame
     ProcessIp(GetControlPC(m_crawl.pRD));
 #ifdef FEATURE_INTERPRETER
-    // Tripwire: callers must advance pStartFrame past the owning InterpreterFrame
+    // Callers must advance pStartFrame past the owning InterpreterFrame
     // when the CONTEXT references interpreted code.
     if (m_crawl.codeInfo.IsInterpretedCode())
     {
-        PTR_InterpreterFrame pOwning =
-            InterpreterFrame::TryGetOwningFrameFromContext(m_crawl.pRD->pCurrentContext);
+        PTR_InterpreterFrame pOwning = InterpreterFrame::TryGetOwningFrameFromContext(m_crawl.pRD->pCurrentContext);
         _ASSERTE(pOwning != NULL);
         _ASSERTE(m_crawl.pFrame != dac_cast<PTR_Frame>(pOwning));
     }
@@ -1188,8 +1187,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
     {
         // Advance past the owning InterpreterFrame so we don't re-enter its
         // InterpMethodContextFrame chain via the explicit Frame link.
-        PTR_InterpreterFrame pOwningInterpFrame =
-            InterpreterFrame::TryGetOwningFrameFromContext(m_crawl.pRD->pCurrentContext);
+        PTR_InterpreterFrame pOwningInterpFrame = InterpreterFrame::TryGetOwningFrameFromContext(m_crawl.pRD->pCurrentContext);
         _ASSERTE(pOwningInterpFrame != NULL);
         m_crawl.pFrame = pOwningInterpFrame->PtrNextFrame();
     }

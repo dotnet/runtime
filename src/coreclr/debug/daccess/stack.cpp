@@ -491,8 +491,7 @@ ClrDataStackWalk::Init(void)
 
     PTR_Frame pStartFrame = NULL;
 #ifdef FEATURE_INTERPRETER
-    PTR_InterpreterFrame pOwningInterpFrame =
-        InterpreterFrame::TryGetOwningFrameFromContext(m_regDisp.pCurrentContext);
+    PTR_InterpreterFrame pOwningInterpFrame =InterpreterFrame::TryGetOwningFrameFromContext(m_regDisp.pCurrentContext);
     if (pOwningInterpFrame != NULL)
     {
         pStartFrame = pOwningInterpFrame->PtrNextFrame();

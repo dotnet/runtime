@@ -2238,13 +2238,6 @@ public:
     PTR_InterpMethodContextFrame GetTopInterpMethodContextFrame();
 
     void SetContextToInterpMethodContextFrame(T_CONTEXT * pContext);
-
-    // If the IP in the supplied CONTEXT lies in interpreted code (i.e. the CONTEXT
-    // was set up by SetContextToInterpMethodContextFrame), returns the owning
-    // InterpreterFrame extracted from the first-arg register slot. Otherwise returns
-    // NULL. Callers that build a StackFrameIterator from such a CONTEXT should pass
-    // pOwner->PtrNextFrame() as the start frame to skip the InterpreterFrame that
-    // owns the executing InterpMethodContextFrame chain.
     static PTR_InterpreterFrame TryGetOwningFrameFromContext(T_CONTEXT * pContext);
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)

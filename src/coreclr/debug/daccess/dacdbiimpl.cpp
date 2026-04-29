@@ -5658,8 +5658,7 @@ BOOL DacDbiInterfaceImpl::IsThreadAtGCSafePlace(VMPTR_Thread vmThread)
 
     PTR_Frame pStartFrame = pThread->GetFrame();
 #ifdef FEATURE_INTERPRETER
-    PTR_InterpreterFrame pOwningInterpFrame =
-        InterpreterFrame::TryGetOwningFrameFromContext(rd.pCurrentContext);
+    PTR_InterpreterFrame pOwningInterpFrame = InterpreterFrame::TryGetOwningFrameFromContext(rd.pCurrentContext);
     if (pOwningInterpFrame != NULL)
     {
         pStartFrame = pOwningInterpFrame->PtrNextFrame();
