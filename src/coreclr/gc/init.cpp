@@ -931,26 +931,25 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         assert (false);
 #endif //!HOST_64BIT && !HOST_WASM
 
-#ifndef HOST_WASM
-        // On real large-page platforms the OS pre-committed all the memory during
-        // reserve_initial_memory, so we tighten the hard limit to match the
-        // actual segment sizes.  On WASM, use_large_pages_p is only a decommit-
-        // skip flag — the original auto-detected hard limit (75% of WASM linear
-        // memory max) must be preserved so that bookkeeping commits and later
-        // allocations have room within the limit.
-        if (heap_hard_limit_oh[soh])
+        // With real OS large pages the entire reservation is pre-committed, so
+        // tighten the hard limit to match the actual segment sizes. In emulation
+        // mode (and on WASM) memory is not pre-committed via OS large pages so
+        // preserve the original hard limit for bookkeeping headroom.
+        if (!large_pages_emulation_mode_p)
         {
-            heap_hard_limit_oh[soh] = soh_segment_size * number_of_heaps;
-            heap_hard_limit_oh[loh] = loh_segment_size * number_of_heaps;
-            heap_hard_limit_oh[poh] = poh_segment_size * number_of_heaps;
-            heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+            if (heap_hard_limit_oh[soh])
+            {
+                heap_hard_limit_oh[soh] = soh_segment_size * number_of_heaps;
+                heap_hard_limit_oh[loh] = loh_segment_size * number_of_heaps;
+                heap_hard_limit_oh[poh] = poh_segment_size * number_of_heaps;
+                heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+            }
+            else
+            {
+                assert (heap_hard_limit);
+                heap_hard_limit = (soh_segment_size + loh_segment_size + poh_segment_size) * number_of_heaps;
+            }
         }
-        else
-        {
-            assert (heap_hard_limit);
-            heap_hard_limit = (soh_segment_size + loh_segment_size + poh_segment_size) * number_of_heaps;
-        }
-#endif //HOST_WASM
     }
 #endif //USE_REGIONS
 
@@ -1305,7 +1304,9 @@ bool gc_heap::compute_hard_limit()
 #elif defined(HOST_WASM)
     // On WASM, reserve == commit (posix_memalign allocates real memory) and there is
     // no way to decommit. Enabling the large-pages path makes the GC skip VirtualDecommit.
+    // Emulation mode tells the GC that memory is not pre-committed via OS large pages.
     use_large_pages_p = true;
+    large_pages_emulation_mode_p = true;
 #endif //HOST_64BIT
 
     if (heap_hard_limit_oh[soh] || heap_hard_limit_oh[loh] || heap_hard_limit_oh[poh])

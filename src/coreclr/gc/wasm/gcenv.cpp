@@ -260,18 +260,10 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 {
     // The GC skips this for heap memory when use_large_pages_p is true (which
     // it always is on WASM). This is still called for bookkeeping memory.
-    // If previously decommitted (sentinel at page boundary), zero the range.
-#ifdef FEATURE_MULTITHREADING
-    // Under MT, VirtualDecommit already zeroes the full range on decommit, and
-    // VirtualReserveInner zeroes on allocation - so commit is a no-op.
+    // Memory is always zero here: either from VirtualReserveInner (initial
+    // allocation) or from VirtualDecommit (which zeroes on decommit).
     (void)address;
     (void)size;
-#else
-    if (size && *(uint8_t*)address != 0)
-    {
-        memset(address, 0, size);
-    }
-#endif
     return true;
 }
 
@@ -280,30 +272,16 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // The GC skips this for heap memory when use_large_pages_p is true (which
     // it always is on WASM). This is still called for bookkeeping memory.
     // On WASM, we cannot return memory to the OS or change page protection.
-#ifdef FEATURE_MULTITHREADING
-    // Under MT, VirtualCommit always zeroes unconditionally, so we just zero
-    // here immediately - no sentinel trick needed, and no races to worry about.
+    // Zero the range so it is clean for any future VirtualCommit (which is a no-op).
     memset(address, 0, size);
-#else
-    // Instead of zeroing the entire range here (expensive), write a non-zero
-    // sentinel at each page boundary. VirtualCommit checks the first byte to
-    // decide whether a zeroing pass is needed. Writing every page guarantees
-    // the sentinel is visible even if a sub-range is recommitted at an offset.
-    for (size_t offset = 0; offset < size; offset += OS_PAGE_SIZE)
-    {
-        *((uint8_t*)address + offset) = 1;
-    }
-#endif
     return true;
 }
 
 bool GCToOSInterface::VirtualReset(void* address, size_t size, bool unlock)
 {
     // Return false to indicate reset is not supported.
-    // This forces the GC to use the decommit+commit fallback path instead:
-    // VirtualDecommit marks the range with sentinels, and VirtualCommit
-    // performs the actual zeroing pass when the range is recommitted.
-    // That behavior is more correct on WASM, where madvise is a no-op.
+    // This forces the GC to use the decommit+commit fallback path instead.
+    // On WASM, madvise is a no-op so reset cannot discard pages.
     return false;
 }
 
