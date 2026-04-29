@@ -662,11 +662,6 @@ protected:
         {
             return _amDisp;
         }
-        void amDisp(int disp)
-        {
-            _amDisp = disp;
-            assert(disp == _amDisp);
-        }
         void amDisp(ssize_t disp)
         {
             _amDisp = static_cast<int>(disp);

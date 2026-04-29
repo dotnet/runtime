@@ -4682,7 +4682,6 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
             regFlags = (GcSlotFlags)(regFlags | GC_SLOT_INTERIOR);
         }
 
-        assert(regNum == (regNumber)regNum);
         RegSlotIdKey rskey((unsigned short)regNum, regFlags);
         GcSlotId     regSlotId;
         if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)

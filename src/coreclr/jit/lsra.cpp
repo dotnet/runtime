@@ -2115,9 +2115,7 @@ VarToRegMap LinearScan::getOutVarToRegMap(unsigned int bbNum)
 void LinearScan::setVarReg(VarToRegMap bbVarToRegMap, unsigned int trackedVarIndex, regNumber reg)
 {
     assert(trackedVarIndex < m_compiler->lvaTrackedCount);
-    regNumber regSmall = (regNumber)reg;
-    assert((regNumber)regSmall == reg);
-    bbVarToRegMap[trackedVarIndex] = regSmall;
+    bbVarToRegMap[trackedVarIndex] = reg;
 }
 
 //------------------------------------------------------------------------

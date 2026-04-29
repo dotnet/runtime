@@ -1085,9 +1085,8 @@ public:
     void SetRegNum(regNumber reg)
     {
         genIsValidReg(reg);
-        _gtRegNum = (regNumber)reg;
+        _gtRegNum = reg;
         INDEBUG(gtRegTag = GT_REGTAG_REG;)
-        assert(_gtRegNum == reg);
     }
 
     void ClearRegNum()
