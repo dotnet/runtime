@@ -15,9 +15,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_CustomDocumentWithXmlAttributesAsNodes()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var customDoc = new CustomDocument();
         var customElement = new CustomElement() { Name = "testElement" };
         customElement.AddAttribute(customDoc.CreateAttribute("regularAttribute", "regularValue"));
@@ -39,9 +36,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DerivedIXmlSerializable()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var dClass = new XmlSerializableDerivedClass() { AttributeString = "derivedIXmlSerTest", DateTimeValue = DateTime.Parse("Dec 31, 1999"), BoolValue = true };
 
         var expectedXml = WithXmlHeader(@$"<BaseIXmlSerializable xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:type=""DerivedIXmlSerializable"" AttributeString=""derivedIXmlSerTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""True"" xmlns=""{XmlSerializableBaseClass.XmlNamespace}"" />");
@@ -66,9 +60,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void XML_TypeWithFieldsOrdered()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithFieldsOrdered()
         {
             IntField1 = 1,
@@ -90,9 +81,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_XmlSchema()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var expectedXml = WithXmlHeader("<xsd:schema xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" elementFormDefault=\"qualified\" targetNamespace=\"http://example.com/my-schema\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <xsd:element name=\"MyElement\" type=\"xsd:string\" />\r\n  <xsd:group name=\"MyGroup\">\r\n    <xsd:sequence>\r\n      <xsd:element name=\"Item1\" />\r\n      <xsd:element name=\"Item2\" />\r\n    </xsd:sequence>\r\n  </xsd:group>\r\n</xsd:schema>");
 
         XmlSchema schema = new XmlSchema

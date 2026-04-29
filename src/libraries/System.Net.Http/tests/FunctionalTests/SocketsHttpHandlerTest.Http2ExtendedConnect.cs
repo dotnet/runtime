@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
     public sealed class SocketsHttpHandler_Http2ExtendedConnect_Test : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_Http2ExtendedConnect_Test(ITestOutputHelper output) : base(output) { }
@@ -20,8 +21,6 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> UseSsl_MemberData()
         {
-            Assert.SkipUnless(SocketsHttpHandler.IsSupported, "Precondition not met");
-
             yield return new object[] { false };
 
             if (PlatformDetection.SupportsAlpn)

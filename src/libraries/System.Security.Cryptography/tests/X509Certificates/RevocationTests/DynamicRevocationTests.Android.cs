@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
-    public partial class DynamicRevocationTests
+    public static partial class DynamicRevocationTests
     {
         public static bool SupportsDynamicRevocation { get; } = OperatingSystem.IsAndroidVersionAtLeast(24);
     }

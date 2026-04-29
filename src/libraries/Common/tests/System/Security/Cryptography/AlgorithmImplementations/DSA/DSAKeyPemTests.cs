@@ -7,19 +7,15 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    public class DSAKeyPemTests
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
+    public static class DSAKeyPemTests
     {
-        public DSAKeyPemTests()
-        {
-            Assert.SkipUnless(PlatformSupport.IsDSASupported, "Precondition not met");
-        }
-
         private const string AmbiguousExceptionMarker = "multiple keys";
         private const string EncryptedExceptionMarker = "encrypted key";
         private const string NoPemExceptionMarker = "No supported key";
 
         [Fact]
-        public void ImportFromPem_NoPem()
+        public static void ImportFromPem_NoPem()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -30,7 +26,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public void ImportFromPem_Pkcs8UnEncrypted_Simple()
+        public static void ImportFromPem_Pkcs8UnEncrypted_Simple()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -50,7 +46,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [Fact]
-        public void ImportFromPem_Pkcs8UnEncrypted_IgnoresUnrelatedAlgorithm()
+        public static void ImportFromPem_Pkcs8UnEncrypted_IgnoresUnrelatedAlgorithm()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -75,7 +71,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [Fact]
-        public void ImportFromPem_Pkcs8_UnrelatedPrecedingPem()
+        public static void ImportFromPem_Pkcs8_UnrelatedPrecedingPem()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -98,7 +94,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [Fact]
-        public void ImportFromPem_Pkcs8_PrecedingMalformedPem()
+        public static void ImportFromPem_Pkcs8_PrecedingMalformedPem()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -121,7 +117,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [Fact]
-        public void ImportFromPem_SubjectPublicKeyInfo_Simple()
+        public static void ImportFromPem_SubjectPublicKeyInfo_Simple()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -137,12 +133,12 @@ PKRWBQ==
                 dsa.ImportFromPem(pem);
                 DSAParameters dsaParameters = dsa.ExportParameters(false);
 
-                DSAImportExport.AssertKeyEquals(ToPublic(DSATestData.Dsa512Parameters), dsaParameters);
+                DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters.ToPublic(), dsaParameters);
             }
         }
 
         [Fact]
-        public void ImportFromPem_Pkcs8_AmbiguousKey_Pkcs8()
+        public static void ImportFromPem_Pkcs8_AmbiguousKey_Pkcs8()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -167,7 +163,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [Fact]
-        public void ImportFromPem_Pkcs8_AmbiguousKey_Spki()
+        public static void ImportFromPem_Pkcs8_AmbiguousKey_Spki()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -193,7 +189,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [Fact]
-        public void ImportFromPem_Pkcs8_AmbiguousKey_EncryptedPkcs8()
+        public static void ImportFromPem_Pkcs8_AmbiguousKey_EncryptedPkcs8()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -220,7 +216,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [Fact]
-        public void ImportFromPem_EncryptedPrivateKeyFails()
+        public static void ImportFromPem_EncryptedPrivateKeyFails()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -240,7 +236,7 @@ v8pi3w==
         }
 
         [Fact]
-        public void ImportFromPem_SpkiAlgorithmMismatch_Throws()
+        public static void ImportFromPem_SpkiAlgorithmMismatch_Throws()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -255,7 +251,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_Pkcs8_Encrypted_Char_Simple()
+        public static void ImportFromEncryptedPem_Pkcs8_Encrypted_Char_Simple()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -277,7 +273,7 @@ v8pi3w==
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_Pkcs8_Encrypted_Byte_Simple()
+        public static void ImportFromEncryptedPem_Pkcs8_Encrypted_Byte_Simple()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -300,7 +296,7 @@ xTL6VO9mx52x6h5WDAQAisMVeMkBoxQUWLANXiw1zSfVbsmB7mDknsRcvD3tcgMs
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_Pkcs8_Encrypted_AmbiguousPem()
+        public static void ImportFromEncryptedPem_Pkcs8_Encrypted_AmbiguousPem()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -330,7 +326,7 @@ v8pi3w==
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_Pkcs8_Byte_NoPem()
+        public static void ImportFromEncryptedPem_Pkcs8_Byte_NoPem()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -342,7 +338,7 @@ v8pi3w==
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_Pkcs8_Char_NoPem()
+        public static void ImportFromEncryptedPem_Pkcs8_Char_NoPem()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -354,7 +350,7 @@ v8pi3w==
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_Pkcs8_NoEncryptedPem()
+        public static void ImportFromEncryptedPem_Pkcs8_NoEncryptedPem()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -372,7 +368,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
             }
         }
 
-        private static DSAParameters ToPublic(DSAParameters dsaParams)
+        private static DSAParameters ToPublic(this DSAParameters dsaParams)
         {
             dsaParams.X = null;
             return dsaParams;

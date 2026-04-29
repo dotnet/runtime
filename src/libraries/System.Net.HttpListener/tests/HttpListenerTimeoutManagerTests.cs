@@ -8,13 +8,9 @@ using Xunit;
 namespace System.Net.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerTimeoutManagerTests
     {
-        public HttpListenerTimeoutManagerTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "Precondition not met");
-        }
-
         [Theory]
         [InlineData(-1)]
         [InlineData((long)uint.MaxValue + 1)]
@@ -52,9 +48,11 @@ namespace System.Net.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     [PlatformSpecific(TestPlatforms.Windows)]
     public class HttpListenerTimeoutManagerWindowsTests : IDisposable
-    {        private const string HTTPAPI = "httpapi.dll";
+    {
+        private const string HTTPAPI = "httpapi.dll";
 
         [DllImport(HTTPAPI, ExactSpelling = true, CallingConvention = CallingConvention.StdCall, SetLastError = true)]
         internal static extern uint HttpQueryUrlGroupProperty(
@@ -122,7 +120,6 @@ namespace System.Net.Tests
 
         public HttpListenerTimeoutManagerWindowsTests()
         {
-            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "Precondition not met");
             _listener = new HttpListener();
         }
 

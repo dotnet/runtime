@@ -11,23 +11,19 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class MLKemTests
+    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
+    public static class MLKemTests
     {
-        public MLKemTests()
-        {
-            Assert.SkipUnless(MLKem.IsSupported, "Precondition not met");
-        }
-
         private static readonly byte[] s_asnNull = new byte[] { 0x05, 0x00 };
 
         [Fact]
-        public void Generate_NullAlgorithm()
+        public static void Generate_NullAlgorithm()
         {
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => MLKem.GenerateKey(null));
         }
 
         [Fact]
-        public void ImportPrivateSeed_NullAlgorithm()
+        public static void ImportPrivateSeed_NullAlgorithm()
         {
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () =>
                 MLKem.ImportPrivateSeed(null, new byte[MLKemAlgorithm.MLKem512.PrivateSeedSizeInBytes]));
@@ -37,7 +33,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPrivateSeed_NullSource()
+        public static void ImportPrivateSeed_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 MLKem.ImportPrivateSeed(MLKemAlgorithm.MLKem512, null));
@@ -45,7 +41,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportPrivateSeed_WrongSize_Array(MLKemAlgorithm algorithm)
+        public static void ImportPrivateSeed_WrongSize_Array(MLKemAlgorithm algorithm)
         {
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 MLKem.ImportPrivateSeed(algorithm, new byte[algorithm.PrivateSeedSizeInBytes + 1]));
@@ -59,7 +55,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportPrivateSeed_WrongSize_Span(MLKemAlgorithm algorithm)
+        public static void ImportPrivateSeed_WrongSize_Span(MLKemAlgorithm algorithm)
         {
             byte[] seed = new byte[algorithm.PrivateSeedSizeInBytes + 1];
 
@@ -74,14 +70,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportDecapsulationKey_NullAlgorithm()
+        public static void ImportDecapsulationKey_NullAlgorithm()
         {
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () =>
                 MLKem.ImportDecapsulationKey(null, new byte[MLKemAlgorithm.MLKem512.DecapsulationKeySizeInBytes]));
         }
 
         [Fact]
-        public void ImportDecapsulationKey_NullSource()
+        public static void ImportDecapsulationKey_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 MLKem.ImportDecapsulationKey(MLKemAlgorithm.MLKem512, null));
@@ -89,7 +85,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportDecapsulationKey_WrongSize_Array(MLKemAlgorithm algorithm)
+        public static void ImportDecapsulationKey_WrongSize_Array(MLKemAlgorithm algorithm)
         {
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 MLKem.ImportDecapsulationKey(algorithm, new byte[algorithm.DecapsulationKeySizeInBytes + 1]));
@@ -103,7 +99,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportDecapsulationKey_WrongSize_Span(MLKemAlgorithm algorithm)
+        public static void ImportDecapsulationKey_WrongSize_Span(MLKemAlgorithm algorithm)
         {
             byte[] destination = new byte[algorithm.DecapsulationKeySizeInBytes + 1];
 
@@ -118,14 +114,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncapsulationKey_NullAlgorithm()
+        public static void ImportEncapsulationKey_NullAlgorithm()
         {
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () =>
                 MLKem.ImportEncapsulationKey(null, new byte[MLKemAlgorithm.MLKem512.EncapsulationKeySizeInBytes]));
         }
 
         [Fact]
-        public void ImportEncapsulationKey_NullSource()
+        public static void ImportEncapsulationKey_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 MLKem.ImportEncapsulationKey(MLKemAlgorithm.MLKem512, null));
@@ -133,7 +129,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportEncapsulationKey_WrongSize_Array(MLKemAlgorithm algorithm)
+        public static void ImportEncapsulationKey_WrongSize_Array(MLKemAlgorithm algorithm)
         {
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 MLKem.ImportEncapsulationKey(algorithm, new byte[algorithm.EncapsulationKeySizeInBytes + 1]));
@@ -147,7 +143,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportEncapsulationKey_WrongSize_Span(MLKemAlgorithm algorithm)
+        public static void ImportEncapsulationKey_WrongSize_Span(MLKemAlgorithm algorithm)
         {
             byte[] destination = new byte[algorithm.EncapsulationKeySizeInBytes + 1];
 
@@ -162,14 +158,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_NullSource()
+        public static void ImportSubjectPublicKeyInfo_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 MLKem.ImportSubjectPublicKeyInfo((byte[])null));
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_WrongAlgorithm()
+        public static void ImportSubjectPublicKeyInfo_WrongAlgorithm()
         {
             byte[] ecP256Spki = Convert.FromBase64String(@"
                 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEuiPJ2IV089LVrXZGDo9Mc542UZZE
@@ -178,14 +174,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_NotAsn()
+        public static void ImportSubjectPublicKeyInfo_NotAsn()
         {
             Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo("potatoes"u8));
             Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo("potatoes"u8.ToArray()));
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_WrongParameters()
+        public static void ImportSubjectPublicKeyInfo_WrongParameters()
         {
             byte[] mlKem512BadParameters = (
                 "30820342301B0609608648016503040401040E62616420706172616D65746572" +
@@ -219,14 +215,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_WrongSize()
+        public static void ImportSubjectPublicKeyInfo_WrongSize()
         {
             byte[] mlKem512BadEncapKey = "3014300B060960864801650304040103050000264512".HexToByteArray();
             Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(mlKem512BadEncapKey));
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_TrailingData()
+        public static void ImportSubjectPublicKeyInfo_TrailingData()
         {
             byte[] spki = new byte[MLKemTestData.IetfMlKem512Spki.Length + 1];
             MLKemTestData.IetfMlKem512Spki.AsSpan().CopyTo(spki);
@@ -235,14 +231,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_NullSource()
+        public static void ImportPkcs8PrivateKey_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 MLKem.ImportPkcs8PrivateKey((byte[])null));
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_WrongAlgorithm()
+        public static void ImportPkcs8PrivateKey_WrongAlgorithm()
         {
             byte[] ecP256Key = Convert.FromBase64String(@"
                 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgZg/vYKeaTgco6dGx
@@ -256,7 +252,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void ImportPkcs8PrivateKey_BogusAsnChoice(bool useSpanImport)
+        public static void ImportPkcs8PrivateKey_BogusAsnChoice(bool useSpanImport)
         {
             // SEQUENCE {
             //   INTEGER 0
@@ -278,7 +274,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_Seed_Array()
+        public static void ImportPkcs8PrivateKey_Seed_Array()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
             {
@@ -289,7 +285,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_Seed_Span()
+        public static void ImportPkcs8PrivateKey_Seed_Span()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
             {
@@ -301,17 +297,17 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportPkcs8PrivateKey_Seed_BadLength(MLKemAlgorithm algorithm)
+        public static void ImportPkcs8PrivateKey_Seed_BadLength(MLKemAlgorithm algorithm)
         {
-            byte[] encoded = Pkcs8Encode(GetOid(algorithm), seed: new byte[algorithm.PrivateSeedSizeInBytes - 1]);
+            byte[] encoded = Pkcs8Encode(algorithm.GetOid(), seed: new byte[algorithm.PrivateSeedSizeInBytes - 1]);
             Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(encoded));
 
-            encoded = Pkcs8Encode(GetOid(algorithm), seed: new byte[algorithm.PrivateSeedSizeInBytes + 1]);
+            encoded = Pkcs8Encode(algorithm.GetOid(), seed: new byte[algorithm.PrivateSeedSizeInBytes + 1]);
             Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(encoded));
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_Seed_TrailingData()
+        public static void ImportPkcs8PrivateKey_Seed_TrailingData()
         {
             foreach ((_, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
             {
@@ -325,10 +321,10 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportPkcs8PrivateKey_Seed_BadAlgorithmIdentifier(MLKemAlgorithm algorithm)
+        public static void ImportPkcs8PrivateKey_Seed_BadAlgorithmIdentifier(MLKemAlgorithm algorithm)
         {
             byte[] encoded = Pkcs8Encode(
-                GetOid(algorithm),
+                algorithm.GetOid(),
                 seed: MLKemTestData.IncrementalSeed.ToArray(),
                 algorithmParameters: s_asnNull);
             Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(encoded.AsSpan()));
@@ -336,7 +332,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_ExpandedKey_Array()
+        public static void ImportPkcs8PrivateKey_ExpandedKey_Array()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyExpandedKeyTestData)
             {
@@ -348,7 +344,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_ExpandedKey_Span()
+        public static void ImportPkcs8PrivateKey_ExpandedKey_Span()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyExpandedKeyTestData)
             {
@@ -360,7 +356,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_ExpandedKey_WrongAlgorithm()
+        public static void ImportPkcs8PrivateKey_ExpandedKey_WrongAlgorithm()
         {
             byte[] pkcs8 = Pkcs8Encode(
                 MLKemTestData.MlKem768Oid,
@@ -372,10 +368,10 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportPkcs8PrivateKey_ExpandedKey_BadAlgorithmIdentifier(MLKemAlgorithm algorithm)
+        public static void ImportPkcs8PrivateKey_ExpandedKey_BadAlgorithmIdentifier(MLKemAlgorithm algorithm)
         {
             byte[] pkcs8 = Pkcs8Encode(
-                GetOid(algorithm),
+                algorithm.GetOid(),
                 expandedKey: MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
                 algorithmParameters: s_asnNull);
             Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(pkcs8.AsSpan()));
@@ -383,7 +379,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_ExpandedKey_TrailingData()
+        public static void ImportPkcs8PrivateKey_ExpandedKey_TrailingData()
         {
             foreach ((_, byte[] pkcs8, _) in Pkcs8PrivateKeyExpandedKeyTestData)
             {
@@ -396,7 +392,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_Both_Array()
+        public static void ImportPkcs8PrivateKey_Both_Array()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyBothTestData)
             {
@@ -410,7 +406,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_Both_Span()
+        public static void ImportPkcs8PrivateKey_Both_Span()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyBothTestData)
             {
@@ -425,34 +421,34 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportPkcs8PrivateKey_Both_Array_MismatchedKeys(MLKemAlgorithm algorithm)
+        public static void ImportPkcs8PrivateKey_Both_Array_MismatchedKeys(MLKemAlgorithm algorithm)
         {
             using MLKem kem1 = MLKem.GenerateKey(algorithm);
             using MLKem kem2 = MLKem.GenerateKey(algorithm);
             byte[] seed = kem1.ExportPrivateSeed();
             byte[] decapKey = kem2.ExportDecapsulationKey();
-            byte[] encoded = Pkcs8Encode(GetOid(algorithm), seed: seed, expandedKey: decapKey);
+            byte[] encoded = Pkcs8Encode(algorithm.GetOid(), seed: seed, expandedKey: decapKey);
             Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(encoded));
         }
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportPkcs8PrivateKey_Both_Span_MismatchedKeys(MLKemAlgorithm algorithm)
+        public static void ImportPkcs8PrivateKey_Both_Span_MismatchedKeys(MLKemAlgorithm algorithm)
         {
             using MLKem kem1 = MLKem.GenerateKey(algorithm);
             using MLKem kem2 = MLKem.GenerateKey(algorithm);
             byte[] seed = kem1.ExportPrivateSeed();
             byte[] decapKey = kem2.ExportDecapsulationKey();
-            byte[] encoded = Pkcs8Encode(GetOid(algorithm), seed: seed, expandedKey: decapKey);
+            byte[] encoded = Pkcs8Encode(algorithm.GetOid(), seed: seed, expandedKey: decapKey);
             Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(encoded.AsSpan()));
         }
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void ImportPkcs8PrivateKey_Both_BadAlgorithmIdentifier(MLKemAlgorithm algorithm)
+        public static void ImportPkcs8PrivateKey_Both_BadAlgorithmIdentifier(MLKemAlgorithm algorithm)
         {
             byte[] pkcs8 = Pkcs8Encode(
-                GetOid(algorithm),
+                algorithm.GetOid(),
                 expandedKey: MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
                 seed: MLKemTestData.IncrementalSeed.ToArray(),
                 algorithmParameters: s_asnNull);
@@ -461,7 +457,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_Both_TrailingData()
+        public static void ImportPkcs8PrivateKey_Both_TrailingData()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyBothTestData)
             {
@@ -474,14 +470,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_NotAsn()
+        public static void ImportPkcs8PrivateKey_NotAsn()
         {
             Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey("potatoes"u8));
             Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey("potatoes"u8.ToArray()));
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_WrongAlgorithm()
+        public static void ImportEncryptedPkcs8PrivateKey_WrongAlgorithm()
         {
             byte[] ecP256Key = Convert.FromBase64String(@"
                 MIHrMFYGCSqGSIb3DQEFDTBJMDEGCSqGSIb3DQEFDDAkBBCr0ipJGBOnThng8uXT
@@ -501,7 +497,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_TrailingData()
+        public static void ImportEncryptedPkcs8PrivateKey_TrailingData()
         {
             foreach ((_, byte[] pkcs8) in Pkcs8EncryptedPrivateKeySeedTestData)
             {
@@ -520,7 +516,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_NotAsn()
+        public static void ImportEncryptedPkcs8PrivateKey_NotAsn()
         {
             Assert.Throws<CryptographicException>(() =>
                 MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER", "potatoes"u8.ToArray()));
@@ -533,7 +529,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_DoesNotProcessUnencryptedData()
+        public static void ImportEncryptedPkcs8PrivateKey_DoesNotProcessUnencryptedData()
         {
             foreach ((_, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
             {
@@ -549,7 +545,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_Seed_CharPassword()
+        public static void ImportEncryptedPkcs8PrivateKey_Seed_CharPassword()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8EncryptedPrivateKeySeedTestData)
             {
@@ -561,7 +557,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_Seed_StringPassword()
+        public static void ImportEncryptedPkcs8PrivateKey_Seed_StringPassword()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8EncryptedPrivateKeySeedTestData)
             {
@@ -572,7 +568,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_Seed_BytePassword()
+        public static void ImportEncryptedPkcs8PrivateKey_Seed_BytePassword()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8EncryptedPrivateKeySeedTestData)
             {
@@ -583,7 +579,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_ExpandedKey_CharPassword()
+        public static void ImportEncryptedPkcs8PrivateKey_ExpandedKey_CharPassword()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyExpandedKeyTestData)
             {
@@ -595,7 +591,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_ExpandedKey_StringPassword()
+        public static void ImportEncryptedPkcs8PrivateKey_ExpandedKey_StringPassword()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyExpandedKeyTestData)
             {
@@ -607,7 +603,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_ExpandedKey_BytePassword()
+        public static void ImportEncryptedPkcs8PrivateKey_ExpandedKey_BytePassword()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyExpandedKeyTestData)
             {
@@ -619,7 +615,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_Both_CharPassword()
+        public static void ImportEncryptedPkcs8PrivateKey_Both_CharPassword()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyBothTestData)
             {
@@ -633,7 +629,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_Both_StringPassword()
+        public static void ImportEncryptedPkcs8PrivateKey_Both_StringPassword()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyBothTestData)
             {
@@ -647,7 +643,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_Both_BytePassword()
+        public static void ImportEncryptedPkcs8PrivateKey_Both_BytePassword()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyBothTestData)
             {
@@ -661,7 +657,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_NullArgs()
+        public static void ImportEncryptedPkcs8PrivateKey_NullArgs()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword, (byte[])null));
@@ -671,13 +667,13 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_NullSource()
+        public static void ImportFromPem_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () => MLKem.ImportFromPem((string)null));
         }
 
         [Fact]
-        public void ImportFromPem_PublicKey_Roundtrip()
+        public static void ImportFromPem_PublicKey_Roundtrip()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] spki) in SubjectPublicKeyInfoTestData)
             {
@@ -692,7 +688,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_PublicKey_IgnoresNotUnderstoodPems()
+        public static void ImportFromPem_PublicKey_IgnoresNotUnderstoodPems()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] spki) in SubjectPublicKeyInfoTestData)
             {
@@ -713,7 +709,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_PrivateKey_Seed_Roundtrip()
+        public static void ImportFromPem_PrivateKey_Seed_Roundtrip()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
             {
@@ -728,7 +724,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_PrivateKey_ExpandedKey_Roundtrip()
+        public static void ImportFromPem_PrivateKey_ExpandedKey_Roundtrip()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyExpandedKeyTestData)
             {
@@ -743,7 +739,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_PrivateKey_Both_Roundtrip()
+        public static void ImportFromPem_PrivateKey_Both_Roundtrip()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyBothTestData)
             {
@@ -758,7 +754,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_AmbiguousImportWithPublicKey_Throws()
+        public static void ImportFromPem_AmbiguousImportWithPublicKey_Throws()
         {
             string pem = $"""
             {WritePem("PUBLIC KEY", MLKemTestData.IetfMlKem512Spki)}
@@ -772,7 +768,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_AmbiguousImportWithPrivateKey_Throws()
+        public static void ImportFromPem_AmbiguousImportWithPrivateKey_Throws()
         {
             string pem = $"""
             {WritePem("PUBLIC KEY", MLKemTestData.IetfMlKem512Spki)}
@@ -786,7 +782,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_AmbiguousImportWithEncryptedPrivateKey_Throws()
+        public static void ImportFromPem_AmbiguousImportWithEncryptedPrivateKey_Throws()
         {
             string pem = $"""
             {WritePem("PUBLIC KEY", MLKemTestData.IetfMlKem512Spki)}
@@ -800,7 +796,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_EncryptedPrivateKey_Throws()
+        public static void ImportFromPem_EncryptedPrivateKey_Throws()
         {
             string pem = WritePem("ENCRYPTED PRIVATE KEY", MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed);
             AssertImportFromPem(importer =>
@@ -810,7 +806,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_NoUnderstoodPem_Throws()
+        public static void ImportFromPem_NoUnderstoodPem_Throws()
         {
             string pem = """
             -----BEGIN UNKNOWN-----
@@ -825,7 +821,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_PrivateKey_IgnoresNotUnderstoodPems()
+        public static void ImportFromPem_PrivateKey_IgnoresNotUnderstoodPems()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
             {
@@ -846,7 +842,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_NullSource()
+        public static void ImportFromEncryptedPem_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source",
                 static () => MLKem.ImportFromEncryptedPem((string)null, "PLACEHOLDER"));
@@ -856,7 +852,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_NullPassword()
+        public static void ImportFromEncryptedPem_NullPassword()
         {
             AssertExtensions.Throws<ArgumentNullException>("password",
                 static () => MLKem.ImportFromEncryptedPem("the pem", (string)null));
@@ -866,7 +862,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_Seed_Roundtrip()
+        public static void ImportFromEncryptedPem_PrivateKey_Seed_Roundtrip()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8EncryptedPrivateKeySeedTestData)
             {
@@ -881,7 +877,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_ExpandedKey_Roundtrip()
+        public static void ImportFromEncryptedPem_PrivateKey_ExpandedKey_Roundtrip()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyExpandedKeyTestData)
             {
@@ -896,7 +892,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_Both_Roundtrip()
+        public static void ImportFromEncryptedPem_PrivateKey_Both_Roundtrip()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyBothTestData)
             {
@@ -911,7 +907,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_Ambiguous_Throws()
+        public static void ImportFromEncryptedPem_PrivateKey_Ambiguous_Throws()
         {
             string pem = $"""
             {WritePem("ENCRYPTED PRIVATE KEY", MLKemTestData.IetfMlKem512EncryptedPrivateKeyBoth)}
@@ -925,7 +921,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_DoesNotImportNonEncrypted()
+        public static void ImportFromEncryptedPem_PrivateKey_DoesNotImportNonEncrypted()
         {
             string pem = WritePem("PRIVATE KEY", MLKemTestData.IetfMlKem512PrivateKeyBoth);
             AssertImportFromEncryptedPem(importer =>
@@ -936,7 +932,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_NoUnderstoodPem_Throws()
+        public static void ImportFromEncryptedPem_NoUnderstoodPem_Throws()
         {
             string pem = """
             -----BEGIN UNKNOWN-----
@@ -951,7 +947,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_IgnoresNotUnderstoodPems()
+        public static void ImportFromEncryptedPem_PrivateKey_IgnoresNotUnderstoodPems()
         {
             string pem = $"""
             -----BEGIN UNKNOWN-----
@@ -968,7 +964,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_WrongPassword()
+        public static void ImportFromEncryptedPem_PrivateKey_WrongPassword()
         {
             string pem = WritePem("ENCRYPTED PRIVATE KEY", MLKemTestData.IetfMlKem768EncryptedPrivateKeyBoth);
             AssertImportFromEncryptedPem(importer =>
@@ -1001,7 +997,7 @@ namespace System.Security.Cryptography.Tests
                 new ReadOnlySpan<byte>(Encoding.UTF8.GetBytes(password))));
         }
 
-        public IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Seed)> Pkcs8PrivateKeySeedTestData
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Seed)> Pkcs8PrivateKeySeedTestData
         {
             get
             {
@@ -1011,7 +1007,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Seed)> Pkcs8EncryptedPrivateKeySeedTestData
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Seed)> Pkcs8EncryptedPrivateKeySeedTestData
         {
             get
             {
@@ -1021,7 +1017,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8ExpandedKey, byte[] DecapsulationKey)> Pkcs8PrivateKeyExpandedKeyTestData
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8ExpandedKey, byte[] DecapsulationKey)> Pkcs8PrivateKeyExpandedKeyTestData
         {
             get
             {
@@ -1046,7 +1042,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8ExpandedKey, byte[] DecapsulationKey)> Pkcs8EncryptedPrivateKeyExpandedKeyTestData
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8ExpandedKey, byte[] DecapsulationKey)> Pkcs8EncryptedPrivateKeyExpandedKeyTestData
         {
             get
             {
@@ -1071,7 +1067,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Both, byte[] DecapsulationKey)> Pkcs8PrivateKeyBothTestData
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Both, byte[] DecapsulationKey)> Pkcs8PrivateKeyBothTestData
         {
             get
             {
@@ -1096,7 +1092,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Both, byte[] DecapsulationKey)> Pkcs8EncryptedPrivateKeyBothTestData
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] Pkcs8Both, byte[] DecapsulationKey)> Pkcs8EncryptedPrivateKeyBothTestData
         {
             get
             {
@@ -1121,7 +1117,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public IEnumerable<(MLKemAlgorithm Algorithm, byte[] spki)> SubjectPublicKeyInfoTestData
+        public static IEnumerable<(MLKemAlgorithm Algorithm, byte[] spki)> SubjectPublicKeyInfoTestData
         {
             get
             {
@@ -1193,7 +1189,7 @@ namespace System.Security.Cryptography.Tests
             return writer.Encode();
         }
 
-        private static string GetOid(MLKemAlgorithm algorithm)
+        private static string GetOid(this MLKemAlgorithm algorithm)
         {
             if (algorithm == MLKemAlgorithm.MLKem512)
             {

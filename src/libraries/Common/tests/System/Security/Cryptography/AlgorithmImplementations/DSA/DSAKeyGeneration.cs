@@ -6,17 +6,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public partial class DSAKeyGeneration
     {
-        public DSAKeyGeneration()
-        {
-            Assert.SkipUnless(PlatformSupport.IsDSASupported, "Precondition not met");
-        }
-
         public static bool HasSecondMinSize { get; } = GetHasSecondMinSize();
 
         [Fact]
-        public void VerifyDefaultKeySize_Fips186_2()
+        public static void VerifyDefaultKeySize_Fips186_2()
         {
             if (!DSAFactory.SupportsFips186_3)
             {
@@ -28,19 +24,19 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public void GenerateMinKey()
+        public static void GenerateMinKey()
         {
             GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
         }
 
         [ConditionalFact(typeof(DSAKeyGeneration), nameof(HasSecondMinSize))]
-        public void GenerateSecondMinKey()
+        public static void GenerateSecondMinKey()
         {
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));
         }
 
         [Fact]
-        public void GenerateKey_1024()
+        public static void GenerateKey_1024()
         {
             GenerateKey(1024);
         }

@@ -17,15 +17,9 @@ namespace System.Text.RegularExpressions.Tests
 {
     // Tests don't actually use reflection emit, but they do generate assembly via Roslyn in-memory at run time and expect it to be JIT'd.
     // The tests also use typeof(object).Assembly.Location, which returns an empty string on wasm.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser))]
     public class RegexGeneratorParserTests
     {
-        public RegexGeneratorParserTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "Precondition not met");
-            Assert.SkipUnless(PlatformDetection.IsNotMobile, "Precondition not met");
-            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
-        }
-
         [Fact]
         public async Task Diagnostic_Method_MultipleAttributes()
         {

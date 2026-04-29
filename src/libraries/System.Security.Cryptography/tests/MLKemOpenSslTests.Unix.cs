@@ -5,13 +5,9 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     public sealed class MLKemOpenSslTests : MLKemBaseTests
     {
-        public MLKemOpenSslTests()
-        {
-            Assert.SkipUnless(MLKem.IsSupported, "Precondition not met");
-        }
-
         public override MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
             using SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(algorithm.Name);

@@ -8,13 +8,9 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
     public abstract class MLDsaTestsBase
     {
-        public MLDsaTestsBase()
-        {
-            Assert.SkipUnless(MLDsa.IsSupported, "Precondition not met");
-        }
-
         protected abstract MLDsa GenerateKey(MLDsaAlgorithm algorithm);
         protected abstract MLDsa ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> seed);
         protected abstract MLDsa ImportPrivateKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);

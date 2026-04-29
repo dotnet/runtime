@@ -6,13 +6,9 @@ using Xunit;
 
 namespace System.DirectoryServices.ActiveDirectory.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public class DomainControllerTests
     {
-        public DomainControllerTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "Precondition not met");
-        }
-
         [Fact]
         public void GetDomainController_NullContext_ThrowsArgumentNullException()
         {

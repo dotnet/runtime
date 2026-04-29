@@ -33,6 +33,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     }
 
     //[TestCase(Name = "Same instance testing: Transform() - READER")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class SameInstanceXslTransformReader : SameInstanceXslTransformTestCase
     {
         private XPathDocument _xd;           // Loads XML file
@@ -41,7 +42,6 @@ namespace System.Xml.XslCompiledTransformApiTests
         private ITestOutputHelper _output;
         public SameInstanceXslTransformReader(ITestOutputHelper output) : base(output)
         {
-            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "Precondition not met");
             _output = output;
         }
 
@@ -317,6 +317,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     }
 
     //[TestCase(Name = "Same instance testing: Transform() - TEXTWRITER")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class SameInstanceXslTransformWriter : SameInstanceXslTransformTestCase
     {
         private XPathDocument _xd; // Loads XML file
@@ -325,7 +326,6 @@ namespace System.Xml.XslCompiledTransformApiTests
         private ITestOutputHelper _output;
         public SameInstanceXslTransformWriter(ITestOutputHelper output) : base(output)
         {
-            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "Precondition not met");
             _output = output;
         }
 

@@ -10,13 +10,9 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class LdapConnectionTests
     {
-        public LdapConnectionTests()
-        {
-            Assert.SkipUnless(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled, "Precondition not met");
-        }
-
         [Theory]
         [InlineData(null, new string[0])]
         [InlineData("server", new string[] { "server" })]

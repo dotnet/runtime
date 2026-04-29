@@ -35,6 +35,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     // Base class for test cases
     //
     ////////////////////////////////////////////////////////////////
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class XsltApiTestCaseBase2
     {
         // Generic data for all derived test cases
@@ -66,7 +67,6 @@ namespace System.Xml.XslCompiledTransformApiTests
         private ITestOutputHelper _output;
         public XsltApiTestCaseBase2(ITestOutputHelper output)
         {
-            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "Precondition not met");
             AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
             _output = output;
             this.Init(null);

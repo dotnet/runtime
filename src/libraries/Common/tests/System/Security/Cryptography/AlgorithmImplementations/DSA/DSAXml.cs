@@ -8,15 +8,11 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    public class DSAXml
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
+    public static class DSAXml
     {
-        public DSAXml()
-        {
-            Assert.SkipUnless(PlatformSupport.IsDSASupported, "Precondition not met");
-        }
-
         [Fact]
-        public void TestRead512Parameters_Public()
+        public static void TestRead512Parameters_Public()
         {
             DSAParameters expectedParameters = DSATestData.Dsa512Parameters;
             expectedParameters.X = null;
@@ -34,7 +30,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public void TestRead512Parameters_Private()
+        public static void TestRead512Parameters_Private()
         {
             TestReadXml(
                 // Bonus trait of this XML, it shows that the order doesn't matter in the elements,
@@ -52,7 +48,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public void TestRead576Parameters_Public()
+        public static void TestRead576Parameters_Public()
         {
             DSAParameters expectedParameters = DSATestData.Dsa576Parameters;
             expectedParameters.X = null;
@@ -82,7 +78,7 @@ gVpUm2/QztrwRLALfP4TUZAtdyfW1/tzYAOk4cTNjfv0MeT/RzPz+pLHZfDP+UTj7VaoW3WVPrFpASSJ
         }
 
         [Fact]
-        public void TestRead576Parameters_Private()
+        public static void TestRead576Parameters_Private()
         {
             TestReadXml(
                 // Bonus trait of this XML: it shows the root element name is not considered.
@@ -112,7 +108,7 @@ rDJpPhzXKtY+GgtugVfrvKZx09s=
         }
 
         [Fact]
-        public void TestRead1024Parameters_Public()
+        public static void TestRead1024Parameters_Public()
         {
             DSAParameters expectedParameters = DSATestData.GetDSA1024Params();
             expectedParameters.X = null;
@@ -147,7 +143,7 @@ wTus47S0TeE=
         }
 
         [Fact]
-        public void TestRead1024Parameters_Private()
+        public static void TestRead1024Parameters_Private()
         {
             TestReadXml(
                 // Bonus trait of this XML: very odd whitespace
@@ -188,7 +184,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
-        public void TestRead2048Parameters_Public()
+        public static void TestRead2048Parameters_Public()
         {
             DSAParameters expectedParameters = DSATestData.Dsa2048DeficientXParameters;
             expectedParameters.X = null;
@@ -228,7 +224,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
-        public void TestRead2048Parameters_Private_CryptoBinary()
+        public static void TestRead2048Parameters_Private_CryptoBinary()
         {
             TestReadXml(
                 // Bonus trait of this XML: The X parameter is encoded as a CryptoBinary,
@@ -266,7 +262,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
-        public void TestRead2048Parameters_Private_Base64Binary()
+        public static void TestRead2048Parameters_Private_Base64Binary()
         {
             TestReadXml(
                 // Bonus trait of this XML: The X parameter is encoded as a Base64Binary,
@@ -306,7 +302,7 @@ S      9      R      /       j       6       9        C        v        C
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void TestWrite512Parameters(bool includePrivateParameters)
+        public static void TestWrite512Parameters(bool includePrivateParameters)
         {
             TestWriteXml(
                 DSATestData.Dsa512Parameters,
@@ -330,7 +326,7 @@ S      9      R      /       j       6       9        C        v        C
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void TestWrite576Parameters(bool includePrivateParameters)
+        public static void TestWrite576Parameters(bool includePrivateParameters)
         {
             TestWriteXml(
                 DSATestData.Dsa576Parameters,
@@ -354,7 +350,7 @@ S      9      R      /       j       6       9        C        v        C
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void TestWrite1024Parameters(bool includePrivateParameters)
+        public static void TestWrite1024Parameters(bool includePrivateParameters)
         {
             TestWriteXml(
                 DSATestData.GetDSA1024Params(),
@@ -381,7 +377,7 @@ S      9      R      /       j       6       9        C        v        C
         [ConditionalTheory(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
         [InlineData(true)]
         [InlineData(false)]
-        public void TestWriteDeficientXParameters(bool includePrivateParameters)
+        public static void TestWriteDeficientXParameters(bool includePrivateParameters)
         {
             TestWriteXml(
                 DSATestData.Dsa2048DeficientXParameters,
@@ -421,7 +417,7 @@ S      9      R      /       j       6       9        C        v        C
 
         [Fact]
         [OuterLoop("DSA key generation is very slow")]
-        public void FromToXml()
+        public static void FromToXml()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -449,7 +445,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromNullXml()
+        public static void FromNullXml()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -460,7 +456,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromInvalidXml()
+        public static void FromInvalidXml()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -478,7 +474,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromNonsenseXml()
+        public static void FromNonsenseXml()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -510,7 +506,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromXml_MissingP()
+        public static void FromXml_MissingP()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -529,7 +525,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromXml_MissingQ()
+        public static void FromXml_MissingQ()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -548,7 +544,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromXml_MissingG()
+        public static void FromXml_MissingG()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -567,7 +563,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromXml_MissingY()
+        public static void FromXml_MissingY()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -586,7 +582,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromXmlWithSeedAndCounterAndJ()
+        public static void FromXmlWithSeedAndCounterAndJ()
         {
             // This key comes from FIPS-186-2, Appendix 5, Example of the DSA.
             // The version in DSATestData does not have the seed or counter supplied.
@@ -620,7 +616,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromXmlWrongJ_OK()
+        public static void FromXmlWrongJ_OK()
         {
             // No one really reads the J value on import, but xmldsig defined it,
             // so we read it.
@@ -657,7 +653,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromXmlInvalidJ_Fails()
+        public static void FromXmlInvalidJ_Fails()
         {
             // No one really reads the J value on import, but xmldsig defined it,
             // so we read it and pass it to ImportParameters.
@@ -693,7 +689,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromXmlWrongCounter_SometimesOK()
+        public static void FromXmlWrongCounter_SometimesOK()
         {
             // DSACryptoServiceProvider doesn't check this error state, DSACng does.
             //
@@ -745,7 +741,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromXml_CounterOverflow_Succeeds()
+        public static void FromXml_CounterOverflow_Succeeds()
         {
             // The counter value should be 105 (0x69).
             // This payload says 0x01_00000069 (4294967401).
@@ -783,7 +779,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromXmlSeedWithoutCounter()
+        public static void FromXmlSeedWithoutCounter()
         {
             // This key comes from FIPS-186-2, Appendix 5, Example of the DSA.
             // The version in DSATestData does not have the seed or counter supplied.
@@ -814,7 +810,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
-        public void FromXmlCounterWithoutSeed()
+        public static void FromXmlCounterWithoutSeed()
         {
             // This key comes from FIPS-186-2, Appendix 5, Example of the DSA.
             // The version in DSATestData does not have the seed or counter supplied.

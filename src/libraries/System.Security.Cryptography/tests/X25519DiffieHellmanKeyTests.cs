@@ -8,18 +8,14 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     // Tests static key-loading and generating. Static members always use the *Implementations.
-    public class X25519DiffieHellmanKeyTests
+    [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
+    public static class X25519DiffieHellmanKeyTests
     {
-        public X25519DiffieHellmanKeyTests()
-        {
-            Assert.SkipUnless(X25519DiffieHellman.IsSupported, "Precondition not met");
-        }
-
-        public bool IsNotStrictKeyValidatingPlatform => !X25519DiffieHellmanBaseTests.IsStrictKeyValidatingPlatform;
+        public static bool IsNotStrictKeyValidatingPlatform => !X25519DiffieHellmanBaseTests.IsStrictKeyValidatingPlatform;
         private static readonly PbeParameters s_aes128Pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 2);
 
         [Fact]
-        public void Generate_Roundtrip()
+        public static void Generate_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.GenerateKey();
 
@@ -43,7 +39,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Rfc7748_TestVector_Alice()
+        public static void Rfc7748_TestVector_Alice()
         {
             using X25519DiffieHellman alice = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             using X25519DiffieHellman bob = X25519DiffieHellman.ImportPublicKey(X25519DiffieHellmanTestData.BobPublicKey);
@@ -56,7 +52,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Rfc7748_TestVector_Bob()
+        public static void Rfc7748_TestVector_Bob()
         {
             using X25519DiffieHellman bob = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.BobPrivateKey);
             using X25519DiffieHellman alice = X25519DiffieHellman.ImportPublicKey(X25519DiffieHellmanTestData.AlicePublicKey);
@@ -69,7 +65,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void DeriveSecretAgreement_Symmetric()
+        public static void DeriveSecretAgreement_Symmetric()
         {
             using X25519DiffieHellman key1 = X25519DiffieHellman.GenerateKey();
             using X25519DiffieHellman key2 = X25519DiffieHellman.GenerateKey();
@@ -81,7 +77,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPrivateKey_Roundtrip_Array()
+        public static void ImportPrivateKey_Roundtrip_Array()
         {
             byte[] privateKeyBytes = X25519DiffieHellmanTestData.AlicePrivateKey;
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(privateKeyBytes);
@@ -91,7 +87,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPrivateKey_Roundtrip_Span()
+        public static void ImportPrivateKey_Roundtrip_Span()
         {
             ReadOnlySpan<byte> privateKeyBytes = X25519DiffieHellmanTestData.AlicePrivateKey;
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(privateKeyBytes);
@@ -102,7 +98,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPublicKey_Roundtrip_Array()
+        public static void ImportPublicKey_Roundtrip_Array()
         {
             byte[] publicKeyBytes = X25519DiffieHellmanTestData.AlicePublicKey;
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPublicKey(publicKeyBytes);
@@ -112,7 +108,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPublicKey_Roundtrip_Span()
+        public static void ImportPublicKey_Roundtrip_Span()
         {
             ReadOnlySpan<byte> publicKeyBytes = X25519DiffieHellmanTestData.AlicePublicKey;
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPublicKey(publicKeyBytes);
@@ -123,7 +119,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ExportSubjectPublicKeyInfo_Roundtrip()
+        public static void ExportSubjectPublicKeyInfo_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             byte[] spki = xdh.ExportSubjectPublicKeyInfo();
@@ -133,7 +129,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void TryExportSubjectPublicKeyInfo_Roundtrip()
+        public static void TryExportSubjectPublicKeyInfo_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             byte[] buffer = new byte[256];
@@ -144,14 +140,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_KnownValue()
+        public static void ImportSubjectPublicKeyInfo_KnownValue()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportSubjectPublicKeyInfo(X25519DiffieHellmanTestData.AliceSpki);
             AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePublicKey, xdh.ExportPublicKey());
         }
 
         [Fact]
-        public void ExportPkcs8PrivateKey_Roundtrip()
+        public static void ExportPkcs8PrivateKey_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             byte[] pkcs8 = xdh.ExportPkcs8PrivateKey();
@@ -162,7 +158,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void TryExportPkcs8PrivateKey_Roundtrip()
+        public static void TryExportPkcs8PrivateKey_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             byte[] buffer = new byte[256];
@@ -173,7 +169,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_KnownValue()
+        public static void ImportPkcs8PrivateKey_KnownValue()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPkcs8PrivateKey(X25519DiffieHellmanTestData.AlicePkcs8);
             AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKey, xdh.ExportPrivateKey());
@@ -181,7 +177,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ExportEncryptedPkcs8PrivateKey_Roundtrip()
+        public static void ExportEncryptedPkcs8PrivateKey_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             byte[] encrypted = xdh.ExportEncryptedPkcs8PrivateKey("test", s_aes128Pbe);
@@ -191,7 +187,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ExportEncryptedPkcs8PrivateKey_Roundtrip_BytePassword()
+        public static void ExportEncryptedPkcs8PrivateKey_Roundtrip_BytePassword()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             byte[] encrypted = xdh.ExportEncryptedPkcs8PrivateKey("test"u8, s_aes128Pbe);
@@ -201,7 +197,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_PublicKey()
+        public static void ImportFromPem_PublicKey()
         {
             string pem =
                 "-----BEGIN PUBLIC KEY-----\n" +
@@ -213,7 +209,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_PrivateKey()
+        public static void ImportFromPem_PrivateKey()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             string pem = xdh.ExportPkcs8PrivateKeyPem();
@@ -223,7 +219,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_Roundtrip()
+        public static void ImportFromEncryptedPem_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             string pem = xdh.ExportEncryptedPkcs8PrivateKeyPem("test", s_aes128Pbe);
@@ -233,7 +229,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ExportSubjectPublicKeyInfoPem_Roundtrip()
+        public static void ExportSubjectPublicKeyInfoPem_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             string pem = xdh.ExportSubjectPublicKeyInfoPem();
@@ -246,7 +242,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ExportPkcs8PrivateKeyPem_Roundtrip()
+        public static void ExportPkcs8PrivateKeyPem_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             string pem = xdh.ExportPkcs8PrivateKeyPem();
@@ -259,7 +255,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void DeriveSecretAgreement_PublicKeyOnly_Throws()
+        public static void DeriveSecretAgreement_PublicKeyOnly_Throws()
         {
             using X25519DiffieHellman publicOnly = X25519DiffieHellman.ImportPublicKey(X25519DiffieHellmanTestData.AlicePublicKey);
             using X25519DiffieHellman other = X25519DiffieHellman.ImportPublicKey(X25519DiffieHellmanTestData.BobPublicKey);
@@ -268,7 +264,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ExportPrivateKey_PublicKeyOnly_Throws()
+        public static void ExportPrivateKey_PublicKeyOnly_Throws()
         {
             using X25519DiffieHellman publicOnly = X25519DiffieHellman.ImportPublicKey(X25519DiffieHellmanTestData.AlicePublicKey);
 
@@ -276,7 +272,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void PrivateKey_Roundtrip_UnclampedScalar_AllPreservationBits()
+        public static void PrivateKey_Roundtrip_UnclampedScalar_AllPreservationBits()
         {
             // A private key where bytes[0] low 3 bits = 0b111 AND bytes[31] high 2 bits = 0b11.
             // This exercises the maximum scalar fixup on Windows CNG (all preservation bits set).
@@ -300,7 +296,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void PrivateKey_Roundtrip_UnclampedScalar_NoPreservationBits()
+        public static void PrivateKey_Roundtrip_UnclampedScalar_NoPreservationBits()
         {
             byte[] privateKey = (byte[])X25519DiffieHellmanTestData.AlicePrivateKey.Clone();
             privateKey[0] &= 0b11111000;
@@ -318,7 +314,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void PrivateKey_Roundtrip_ClampedScalar()
+        public static void PrivateKey_Roundtrip_ClampedScalar()
         {
             // Construct a private key that is ALREADY properly clamped per RFC 7748:
             // bytes[0] low 3 bits = 0, bytes[31] bit 7 = 0 and bit 6 = 1.
@@ -341,7 +337,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void PrivateKey_ClampedAndUnclamped_SamePublicKey()
+        public static void PrivateKey_ClampedAndUnclamped_SamePublicKey()
         {
             // The unclamped and clamped forms of the same key should produce the same public key,
             // because the DH computation always operates on the clamped scalar.
@@ -358,7 +354,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void PrivateKey_Roundtrip_MaxPreservation()
+        public static void PrivateKey_Roundtrip_MaxPreservation()
         {
             // A key with bytes[0]=0xFF and bytes[31]=0xFF — maximum preservation needed.
             // The scalar fixup would clamp bytes[0] to 0xF8 and bytes[31] to 0x7F,
@@ -376,7 +372,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(9)]
         [InlineData(18)]
         [ConditionalTheory(typeof(X25519DiffieHellmanKeyTests), nameof(IsNotStrictKeyValidatingPlatform))]
-        public void PublicKey_NonCanonical_Roundtrip(int offset)
+        public static void PublicKey_NonCanonical_Roundtrip(int offset)
         {
             // RFC 7748 Section 5: Non-canonical u-coordinates are p through 2^255 - 1.
             // Construct p + offset in little-endian.
@@ -394,7 +390,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(3)]
         [InlineData(18)]
         [ConditionalTheory(typeof(X25519DiffieHellmanKeyTests), nameof(IsNotStrictKeyValidatingPlatform))]
-        public void PublicKey_NonCanonical_HighBitSet_Roundtrip(int offset)
+        public static void PublicKey_NonCanonical_HighBitSet_Roundtrip(int offset)
         {
             // RFC 7748 says the high bit MUST be masked, but the original
             // byte should be preserved on export for roundtripping.

@@ -9,13 +9,9 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public abstract class DSASignatureFormatTests : DsaFamilySignatureFormatTests
     {
-        public DSASignatureFormatTests()
-        {
-            Assert.SkipUnless(PlatformSupport.IsDSASupported, "Precondition not met");
-        }
-
         protected override bool SupportsSha2 => DSAFactory.SupportsFips186_3;
         protected override string HashParameterName => "rgbHash";
         protected override string SignatureParameterName => "rgbSignature";

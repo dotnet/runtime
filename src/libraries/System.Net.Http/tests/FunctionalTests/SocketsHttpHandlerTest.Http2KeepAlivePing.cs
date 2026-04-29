@@ -15,6 +15,7 @@ using Xunit;
 namespace System.Net.Http.Functional.Tests
 {
     [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(SocketsHttpHandler_Http2KeepAlivePing_Test), nameof(IsSupported))]
     public sealed class SocketsHttpHandler_Http2KeepAlivePing_Test : HttpClientHandlerTestBase
     {
         public static readonly bool IsSupported = PlatformDetection.SupportsAlpn && PlatformDetection.IsNotBrowser;
@@ -36,7 +37,6 @@ namespace System.Net.Http.Functional.Tests
 
         public SocketsHttpHandler_Http2KeepAlivePing_Test(ITestOutputHelper output) : base(output)
         {
-            Assert.SkipUnless(SocketsHttpHandler_Http2KeepAlivePing_Test.IsSupported, "Precondition not met");
         }
 
         [OuterLoop("Runs long")]

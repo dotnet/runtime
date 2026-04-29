@@ -8,13 +8,9 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class BerConverterTests
     {
-        public BerConverterTests()
-        {
-            Assert.SkipUnless(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled, "Precondition not met");
-        }
-
         public static IEnumerable<object[]> Encode_TestData()
         {
             yield return new object[] { "", null, new byte[0] };

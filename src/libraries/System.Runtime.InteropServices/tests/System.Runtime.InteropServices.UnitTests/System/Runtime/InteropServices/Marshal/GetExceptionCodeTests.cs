@@ -7,20 +7,16 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMarshalGetExceptionPointersSupported))]
     public class GetExceptionCodeTests
     {
-        public GetExceptionCodeTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsMarshalGetExceptionPointersSupported, "Marshal.GetExceptionCode not supported on this platform");
-        }
-
-        [Fact]
+        [Fact(SkipUnless = nameof(PlatformDetection.IsNotNativeAot), SkipType = typeof(PlatformDetection), Skip = "Marshal.GetExceptionCode not supported on NativeAOT")]
         public void GetExceptionCode_NoException_ReturnsZero()
         {
             Assert.Equal(0, Marshal.GetExceptionCode());
         }
 
-        [Theory]
+        [Theory(SkipUnless = nameof(PlatformDetection.IsNotNativeAot), SkipType = typeof(PlatformDetection), Skip = "Marshal.GetExceptionCode not supported on NativeAOT")]
         [InlineData(-1)]
         [InlineData(10)]
         public void GetExceptionCode_NormalExceptionInsideCatch_ReturnsExpected(int hresult)

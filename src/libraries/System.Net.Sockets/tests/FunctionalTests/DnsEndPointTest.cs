@@ -9,13 +9,9 @@ namespace System.Net.Sockets.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class DnsEndPointTest : DualModeBase
     {
-        public DnsEndPointTest()
-        {
-            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-        }
-
         private void OnConnectAsyncCompleted(object sender, SocketAsyncEventArgs args)
         {
             ManualResetEvent complete = (ManualResetEvent)args.UserToken;

@@ -11,17 +11,13 @@ using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
-    public class BinaryFormatterEventSourceTests
+    [ConditionalClass(typeof(TestConfiguration), nameof(TestConfiguration.IsBinaryFormatterEnabled))]
+    public static class BinaryFormatterEventSourceTests
     {
-        public BinaryFormatterEventSourceTests()
-        {
-            Assert.SkipUnless(TestConfiguration.IsBinaryFormatterEnabled, "Precondition not met");
-        }
-
         private const string BinaryFormatterEventSourceName = "System.Runtime.Serialization.Formatters.Binary.BinaryFormatterEventSource";
 
         [Fact]
-        public void RecordsSerialization()
+        public static void RecordsSerialization()
         {
             using LoggingEventListener listener = new LoggingEventListener();
 
@@ -41,7 +37,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
-        public void RecordsDeserialization()
+        public static void RecordsDeserialization()
         {
             MemoryStream ms = new MemoryStream();
             BinaryFormatter formatter = new BinaryFormatter();
@@ -64,7 +60,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
-        public void RecordsNestedSerializationCalls()
+        public static void RecordsNestedSerializationCalls()
         {
             // First, serialization
 

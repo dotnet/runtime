@@ -6,14 +6,10 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
     public class GetExceptionForHRTests
     {
-        public GetExceptionForHRTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsNotNativeAot, "COM interop not supported on NativeAOT");
-        }
-
-        [Theory]
+        [Theory(SkipUnless = nameof(PlatformDetection.IsNotNativeAot), SkipType = typeof(PlatformDetection), Skip = "COM interop not supported on NativeAOT")]
         [ActiveIssue("https://github.com/mono/mono/issues/15093", TestRuntimes.Mono)]
         [InlineData(unchecked((int)0x80020006))]
         [InlineData(unchecked((int)0x80020101))]
@@ -39,7 +35,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { unchecked((int)0x80020101), (IntPtr)(-1) };
         }
 
-        [Theory]
+        [Theory(SkipUnless = nameof(PlatformDetection.IsNotNativeAot), SkipType = typeof(PlatformDetection), Skip = "COM interop not supported on NativeAOT")]
         [ActiveIssue("https://github.com/mono/mono/issues/15093", TestRuntimes.Mono)]
         [MemberData(nameof(GetExceptionForHR_ErrorInfo_TestData))]
         public void GetExceptionForHR_ErrorInfo_ReturnsValidException(int errorCode, IntPtr errorInfo)
@@ -75,7 +71,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Theory]
+        [Theory(SkipUnless = nameof(PlatformDetection.IsNotNativeAot), SkipType = typeof(PlatformDetection), Skip = "COM interop not supported on NativeAOT")]
         [InlineData(0)]
         [InlineData(1)]
         public void GetExceptionForHR_InvalidHR_ReturnsNull(int errorCode)

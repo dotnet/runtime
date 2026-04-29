@@ -16,6 +16,7 @@ using System.Xml;
 using Xunit;
 namespace SampleSynthesisTests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // No SAPI on Nano or Server Core
     [SkipOnMono("No SAPI on Mono")]
     public class SynthesizeRecognizeTests : FileCleanupTestBase
     {
@@ -28,7 +29,6 @@ namespace SampleSynthesisTests
 
         public SynthesizeRecognizeTests(ITestOutputHelper output)
         {
-            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoNorServerCore, "Precondition not met");
             _output = output;
         }
 

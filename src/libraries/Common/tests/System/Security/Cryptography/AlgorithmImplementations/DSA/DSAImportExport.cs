@@ -6,15 +6,11 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public partial class DSAImportExport
     {
-        public DSAImportExport()
-        {
-            Assert.SkipUnless(PlatformSupport.IsDSASupported, "Precondition not met");
-        }
-
         [Fact]
-        public void ExportAutoKey()
+        public static void ExportAutoKey()
         {
             DSAParameters privateParams;
             DSAParameters publicParams;
@@ -43,7 +39,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public void Import_512()
+        public static void Import_512()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -54,7 +50,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public void Import_576()
+        public static void Import_576()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -65,7 +61,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public void Import_1024()
+        public static void Import_1024()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -76,7 +72,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
-        public void Import_2048()
+        public static void Import_2048()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -87,7 +83,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public void MultiExport()
+        public static void MultiExport()
         {
             DSAParameters imported = DSATestData.GetDSA1024Params();
 
@@ -117,7 +113,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void ImportRoundTrip(bool includePrivate)
+        public static void ImportRoundTrip(bool includePrivate)
         {
             DSAParameters imported = DSATestData.GetDSA1024Params();
 
@@ -137,7 +133,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void ExportAfterDispose(bool importKey)
+        public static void ExportAfterDispose(bool importKey)
         {
             DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(1024);
             byte[] hash = new byte[20];

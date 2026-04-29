@@ -10,16 +10,12 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class MLKemKeyTests
+    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
+    public static class MLKemKeyTests
     {
-        public MLKemKeyTests()
-        {
-            Assert.SkipUnless(MLKem.IsSupported, "Precondition not met");
-        }
-
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void Generate_Roundtrip(MLKemAlgorithm algorithm)
+        public static void Generate_Roundtrip(MLKemAlgorithm algorithm)
         {
             using MLKem kem = MLKem.GenerateKey(algorithm);
             Assert.Equal(algorithm, kem.Algorithm);
@@ -40,7 +36,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Generate_NistVectors_Span()
+        public static void Generate_NistVectors_Span()
         {
             foreach (MLKemGenerateTestVector vector in MLKemGenerateTestVectors)
             {
@@ -59,7 +55,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Generate_NistVectors_Array()
+        public static void Generate_NistVectors_Array()
         {
             foreach (MLKemGenerateTestVector vector in MLKemGenerateTestVectors)
             {
@@ -76,7 +72,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncapsulationKey_Array_Roundtrip()
+        public static void ImportEncapsulationKey_Array_Roundtrip()
         {
             foreach (MLKemGenerateTestVector vector in MLKemGenerateTestVectors)
             {
@@ -90,7 +86,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncapsulationKey_Span_Roundtrip()
+        public static void ImportEncapsulationKey_Span_Roundtrip()
         {
             foreach (MLKemGenerateTestVector vector in MLKemGenerateTestVectors)
             {
@@ -105,7 +101,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportDecapsulationKey_Span_Roundtrip()
+        public static void ImportDecapsulationKey_Span_Roundtrip()
         {
             foreach (MLKemGenerateTestVector vector in MLKemGenerateTestVectors)
             {
@@ -125,7 +121,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportDecapsulationKey_Array_Roundtrip()
+        public static void ImportDecapsulationKey_Array_Roundtrip()
         {
             foreach (MLKemGenerateTestVector vector in MLKemGenerateTestVectors)
             {
@@ -144,7 +140,7 @@ namespace System.Security.Cryptography.Tests
 
         public record class MLKemGenerateTestVector(MLKemAlgorithm Algorithm, string Seed, string EncapsulationKey, string DecapsulationKey);
 
-        public IEnumerable<MLKemGenerateTestVector> MLKemGenerateTestVectors
+        public static IEnumerable<MLKemGenerateTestVector> MLKemGenerateTestVectors
         {
             get
             {

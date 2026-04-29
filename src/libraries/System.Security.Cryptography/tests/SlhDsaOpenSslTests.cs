@@ -8,13 +8,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
     /// <summary>
     /// Tests for <see cref="SlhDsaOpenSsl"/> that depend on OpenSSL support for SLH-DSA.
     /// </summary>
+    [ConditionalClass(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
     public sealed class SlhDsaOpenSslTests : SlhDsaTests
     {
-        public SlhDsaOpenSslTests()
-        {
-            Assert.SkipUnless(SlhDsa.IsSupported, "Precondition not met");
-        }
-
         [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         public void SlhDsaOpenSsl_DuplicateKeyHandle()
         {

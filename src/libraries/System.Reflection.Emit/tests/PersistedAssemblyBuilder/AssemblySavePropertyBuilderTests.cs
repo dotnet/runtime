@@ -10,13 +10,9 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySavePropertyBuilderTests
     {
-        public AssemblySavePropertyBuilderTests()
-        {
-            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "Precondition not met");
-        }
-
         [Fact]
         public void GetPropertiesAndGetProperty()
         {

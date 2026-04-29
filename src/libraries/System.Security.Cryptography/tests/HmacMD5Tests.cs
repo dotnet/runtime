@@ -9,14 +9,9 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [ConditionalClass(typeof(HmacMD5Tests.Traits), nameof(HmacMD5Tests.Traits.IsSupported))]
     public class HmacMD5Tests : Rfc2202HmacTests<HmacMD5Tests.Traits>
     {
-        public HmacMD5Tests()
-            : base(s_testKeys2202, s_testMacs2202)
-        {
-            Assert.SkipUnless(HmacMD5Tests.Traits.IsSupported, "Precondition not met");
-        }
-
         public sealed class Traits : IHmacTrait
         {
             public static bool IsSupported => !PlatformDetection.IsSymCryptOpenSsl && !PlatformDetection.IsBrowser;
@@ -48,6 +43,11 @@ namespace System.Security.Cryptography.Tests
             ByteUtils.HexToByteArray("6b1ab7fe4bd7bf8f0b62e6ce61b9d0cd"),
             ByteUtils.HexToByteArray("6f630fad67cda0ee1fb1f562db3aa53e"),
         };
+
+        public HmacMD5Tests()
+            : base(s_testKeys2202, s_testMacs2202)
+        {
+        }
 
         protected override int BlockSize => 64;
         protected override int MacSize => HMACMD5.HashSizeInBytes;

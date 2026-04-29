@@ -6,13 +6,9 @@ using Xunit;
 
 namespace System.DirectoryServices.ActiveDirectory.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     public class DirectoryContextTests
     {
-        public DirectoryContextTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoNorServerCore, "Precondition not met");
-        }
-
         [Theory]
         [InlineData(DirectoryContextType.Domain)]
         [InlineData(DirectoryContextType.Forest)]

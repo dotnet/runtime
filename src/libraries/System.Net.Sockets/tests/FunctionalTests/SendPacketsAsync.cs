@@ -12,6 +12,7 @@ using Xunit;
 namespace System.Net.Sockets.Tests
 {
     [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class SendPacketsAsync : IDisposable
     {
         private readonly ITestOutputHelper _log;
@@ -24,7 +25,6 @@ namespace System.Net.Sockets.Tests
 
         public SendPacketsAsync(ITestOutputHelper output)
         {
-            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
             _log = output;
 
             byte[] buffer = new byte[s_testFileSize];

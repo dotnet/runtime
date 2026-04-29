@@ -7,18 +7,14 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class DSACreateTests
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
+    public static class DSACreateTests
     {
-        public DSACreateTests()
-        {
-            Assert.SkipUnless(PlatformSupport.IsDSASupported, "Precondition not met");
-        }
-
         [Theory]
         [SkipOnPlatform(TestPlatforms.Android, "Android only supports key sizes that are a multiple of 1024")]
         [InlineData(512)]
         [InlineData(960)]
-        public void CreateWithKeysize_SmallKeys(int keySizeInBits)
+        public static void CreateWithKeysize_SmallKeys(int keySizeInBits)
         {
             using (DSA dsa = DSA.Create(keySizeInBits))
             {
@@ -31,7 +27,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void CreateWithKeysize()
+        public static void CreateWithKeysize()
         {
             const int KeySizeInBits = 1024;
 
@@ -47,7 +43,7 @@ namespace System.Security.Cryptography.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Android only supports key sizes that are a multiple of 1024")]
-        public void CreateWithKeysize_BigKey()
+        public static void CreateWithKeysize_BigKey()
         {
             const int KeySizeInBits = 1088;
 
@@ -65,25 +61,25 @@ namespace System.Security.Cryptography.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1023)]
-        public void CreateWithKeysize_InvalidKeySize(int keySizeInBits)
+        public static void CreateWithKeysize_InvalidKeySize(int keySizeInBits)
         {
             Assert.Throws<CryptographicException>(() => DSA.Create(keySizeInBits));
         }
 
         [Fact]
-        public void CreateWithParameters_512()
+        public static void CreateWithParameters_512()
         {
             CreateWithParameters(DSATestData.Dsa512Parameters);
         }
 
         [Fact]
-        public void CreateWithParameters_1024()
+        public static void CreateWithParameters_1024()
         {
             CreateWithParameters(DSATestData.GetDSA1024Params());
         }
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
-        public void CreateWithParameters_2048()
+        public static void CreateWithParameters_2048()
         {
             CreateWithParameters(DSATestData.GetDSA2048Params());
         }
@@ -101,7 +97,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void CreateWithInvalidParameters()
+        public static void CreateWithInvalidParameters()
         {
             DSAParameters parameters = DSATestData.GetDSA1024Params();
             parameters.X = null;

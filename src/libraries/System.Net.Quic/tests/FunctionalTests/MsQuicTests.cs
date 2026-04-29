@@ -47,6 +47,7 @@ namespace System.Net.Quic.Tests
     }
 
     [Collection(nameof(QuicTestCollection))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public class MsQuicTests : QuicTestBase, IClassFixture<CertificateSetup>
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
@@ -54,7 +55,6 @@ namespace System.Net.Quic.Tests
 
         public MsQuicTests(ITestOutputHelper output, CertificateSetup setup) : base(output)
         {
-            Assert.SkipUnless(QuicTestBase.IsNotArm32CoreClrStressTest, "Precondition not met");
             _certificates = setup;
         }
 

@@ -13,12 +13,10 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
     public abstract class SocketsHttpHandler_Cancellation_Test : HttpClientHandler_Cancellation_Test
     {
- public SocketsHttpHandler_Cancellation_Test(ITestOutputHelper output) : base(output)
- {
-            Assert.SkipUnless(SocketsHttpHandler.IsSupported, "Precondition not met");
- }
+        protected SocketsHttpHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
         private async Task ValidateConnectTimeout(HttpMessageInvoker invoker, Uri uri, int minElapsed, int maxElapsed)
         {

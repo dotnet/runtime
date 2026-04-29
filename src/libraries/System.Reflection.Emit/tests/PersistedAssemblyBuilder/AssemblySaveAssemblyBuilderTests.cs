@@ -14,13 +14,9 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveAssemblyBuilderTests
     {
-        public AssemblySaveAssemblyBuilderTests()
-        {
-            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "Precondition not met");
-        }
-
         private readonly AssemblyName _assemblyName = new AssemblyName("MyAssembly");
         public class Outer
         {

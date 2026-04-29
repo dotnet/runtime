@@ -6,15 +6,11 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    public class SemaphoreSlimCancellationTests
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    public static class SemaphoreSlimCancellationTests
     {
-        public SemaphoreSlimCancellationTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-        }
-
         [Fact]
-        public void CancelBeforeWait()
+        public static void CancelBeforeWait()
         {
             SemaphoreSlim semaphoreSlim = new SemaphoreSlim(2);
 
@@ -31,7 +27,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public void CancelAfterWait()
+        public static void CancelAfterWait()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationTokenSource.Token;
@@ -57,7 +53,7 @@ namespace System.Threading.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task Cancel_WaitAsync_ContinuationInvokedAsynchronously(bool withTimeout)
+        public static async Task Cancel_WaitAsync_ContinuationInvokedAsynchronously(bool withTimeout)
         {
             await Task.Run(async () => // escape xunit's SynchronizationContext
             {

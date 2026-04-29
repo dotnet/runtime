@@ -16,6 +16,7 @@ namespace System.Net.Http.Functional.Tests
     // - Parallel test execution is disabled
     // - Using extreme parameters, and checks which are very unlikely to fail, if the implementation is correct
     [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(SocketsHttpHandler_Http2FlowControl_Test), nameof(IsSupported))]
     public sealed class SocketsHttpHandler_Http2FlowControl_Test : HttpClientHandlerTestBase
     {
         public static readonly bool IsSupported = PlatformDetection.SupportsAlpn && PlatformDetection.IsNotBrowser;
@@ -24,7 +25,6 @@ namespace System.Net.Http.Functional.Tests
 
         public SocketsHttpHandler_Http2FlowControl_Test(ITestOutputHelper output) : base(output)
         {
-            Assert.SkipUnless(SocketsHttpHandler_Http2FlowControl_Test.IsSupported, "Precondition not met");
         }
 
         private static Http2Options NoAutoPingResponseHttp2Options => new Http2Options() { EnableTransparentPingResponse = false };

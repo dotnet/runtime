@@ -53,12 +53,12 @@ namespace System.Xml.XslCompiledTransformApiTests
     }
 
     //[TestCase(Name = "Same instance testing: XsltArgList - GetParam", Desc = "GetParam test cases")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CSameInstanceXsltArgumentListGetParam : CSameInstanceXsltArgTestCase2
     {
         private ITestOutputHelper _output;
         public CSameInstanceXsltArgumentListGetParam(ITestOutputHelper output) : base(output)
         {
-            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "Precondition not met");
             _output = output;
         }
 
@@ -139,12 +139,12 @@ namespace System.Xml.XslCompiledTransformApiTests
     }
 
     //[TestCase(Name = "Same instance testing: XsltArgList - GetExtensionObject", Desc = "GetExtensionObject test cases")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CSameInstanceXsltArgumentListGetExtnObject : CSameInstanceXsltArgTestCase2
     {
         private ITestOutputHelper _output;
         public CSameInstanceXsltArgumentListGetExtnObject(ITestOutputHelper output) : base(output)
         {
-            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "Precondition not met");
             _output = output;
         }
 
@@ -224,12 +224,12 @@ namespace System.Xml.XslCompiledTransformApiTests
     }
 
     //[TestCase(Name = "Same instance testing: XsltArgList - Transform", Desc = "Multiple transforms")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CSameInstanceXsltArgumentListTransform : CSameInstanceXsltArgTestCase2
     {
         private ITestOutputHelper _output;
         public CSameInstanceXsltArgumentListTransform(ITestOutputHelper output) : base(output)
         {
-            Assert.SkipUnless(PlatformDetection.IsReflectionEmitSupported, "Precondition not met");
             _output = output;
         }
 

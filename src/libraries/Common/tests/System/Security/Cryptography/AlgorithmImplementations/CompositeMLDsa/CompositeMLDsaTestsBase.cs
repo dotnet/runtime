@@ -7,13 +7,9 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [ConditionalClass(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
     public abstract class CompositeMLDsaTestsBase
     {
-        public CompositeMLDsaTestsBase()
-        {
-            Assert.SkipUnless(CompositeMLDsa.IsSupported, "Precondition not met");
-        }
-
         protected abstract CompositeMLDsa GenerateKey(CompositeMLDsaAlgorithm algorithm);
         protected abstract CompositeMLDsa ImportPrivateKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         protected abstract CompositeMLDsa ImportPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);

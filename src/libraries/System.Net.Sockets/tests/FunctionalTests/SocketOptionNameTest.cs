@@ -13,13 +13,9 @@ using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public partial class SocketOptionNameTest
     {
-        public SocketOptionNameTest()
-        {
-            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-        }
-
         private static bool SocketsReuseUnicastPortSupport => Capability.SocketsReuseUnicastPortSupport().HasValue;
         // Does not work on Nano and Qemu and AzureLinux has firewall enabled by default
         private static readonly bool CanRunMulticastTests = !(PlatformDetection.IsWindowsNanoServer || PlatformDetection.IsWindowsServerCore ||
@@ -735,13 +731,9 @@ namespace System.Net.Sockets.Tests
 
     [Collection(nameof(DisableParallelization))]
     // Set of tests to not run  together with any other tests.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class NoParallelTests
     {
-        public NoParallelTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-        }
-
         [Fact]
         public void BindDuringTcpWait_Succeeds()
         {

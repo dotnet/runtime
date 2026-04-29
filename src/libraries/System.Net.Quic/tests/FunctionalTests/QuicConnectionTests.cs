@@ -18,18 +18,13 @@ namespace System.Net.Quic.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [Collection(nameof(QuicTestCollection))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicConnectionTests : QuicTestBase
     {
         const int ExpectedErrorCode = 1234;
         public static IEnumerable<object[]> LocalAddresses = Configuration.Sockets.LocalAddresses();
 
-        public QuicConnectionTests(ITestOutputHelper output) : base(output)
-
-        {
-
-            Assert.SkipUnless(QuicTestBase.IsNotArm32CoreClrStressTest, "Precondition not met");
-
-        }
+        public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
 
         [Theory]
         [MemberData(nameof(LocalAddresses))]

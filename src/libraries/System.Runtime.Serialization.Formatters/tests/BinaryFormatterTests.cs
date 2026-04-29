@@ -18,13 +18,9 @@ using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
+    [ConditionalClass(typeof(TestConfiguration), nameof(TestConfiguration.IsBinaryFormatterEnabled))]
     public partial class BinaryFormatterTests : FileCleanupTestBase
     {
-        public BinaryFormatterTests()
-        {
-            Assert.SkipUnless(TestConfiguration.IsBinaryFormatterEnabled, "Precondition not met");
-        }
-
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
         [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/11191", ~RuntimeConfiguration.Release)]

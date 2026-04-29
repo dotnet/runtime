@@ -23,6 +23,7 @@ using Xunit;
 
 #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
 // Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT.
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
 #endif
 public static partial class XmlSerializerTests
 {
@@ -47,9 +48,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TypeWithDateTimePropertyAsXmlTime()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         DateTime localTime = new DateTime(549269870000L, DateTimeKind.Local);
         TypeWithDateTimePropertyAsXmlTime localTimeObject = new TypeWithDateTimePropertyAsXmlTime()
         {
@@ -78,9 +76,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_NamespaceTypeNameClashTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var serializer = new XmlSerializer(typeof(NamespaceTypeNameClashContainer));
 
         Assert.NotNull(serializer);
@@ -119,9 +114,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_ArrayAsGetSet()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         TypeWithGetSetArrayMembers x = new TypeWithGetSetArrayMembers
         {
             F1 = new SimpleType[] { new SimpleType { P1 = "ab", P2 = 1 }, new SimpleType { P1 = "cd", P2 = 2 } },
@@ -193,9 +185,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_ArrayAsGetOnly()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         TypeWithGetOnlyArrayProperties x = new TypeWithGetOnlyArrayProperties();
         x.P1[0] = new SimpleType { P1 = "ab", P2 = 1 };
         x.P1[1] = new SimpleType { P1 = "cd", P2 = 2 };
@@ -212,9 +201,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_ArraylikeMembers()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var assertEqual = (TypeWithArraylikeMembers a, TypeWithArraylikeMembers b) => {
             Assert.Equal(a.IntAField, b.IntAField);
             Assert.Equal(a.NIntAField, b.NIntAField);
@@ -259,9 +245,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_ListRoot()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         MyList x = new MyList("a1", "a2");
         MyList y = SerializeAndDeserialize<MyList>(x,
 @"<?xml version=""1.0""?>
@@ -284,9 +267,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_ReadOnlyCollection()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         ReadOnlyCollection<string> roc = new ReadOnlyCollection<string>(new string[] { "one", "two" });
 
 #if ReflectionOnly
@@ -308,9 +288,6 @@ public static partial class XmlSerializerTests
     [MemberData(nameof(Xml_ImmutableCollections_MemberData))]
     public static void Xml_ImmutableCollections(Type type, object collection, Type createException, Type addException, string expectedXml, string exMsg = null)
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         XmlSerializer serializer;
 
         // Some collections implement the required enumerator/Add combo (ImmutableList, ImmutableArray) and some don't (ImmutableStack,
@@ -382,9 +359,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_EnumAsRoot()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         Assert.Equal(MyEnum.Two, SerializeAndDeserialize<MyEnum>(MyEnum.Two,
 @"<?xml version=""1.0""?>
 <MyEnum>Two</MyEnum>"));
@@ -414,9 +388,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_EnumAsMember()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         TypeWithEnumMembers x = new TypeWithEnumMembers { F1 = MyEnum.Three, P1 = MyEnum.Two };
         TypeWithEnumMembers y = SerializeAndDeserialize<TypeWithEnumMembers>(x,
 @"<?xml version=""1.0""?>
@@ -434,9 +405,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_EnumAsObject()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         object o = MyEnum.Three;
         object o2 = SerializeAndDeserialize<object>(o,
             WithXmlHeader(@"<anyType xmlns:q1=""http://www.w3.org/2001/XMLSchema"" p2:type=""q1:int"" xmlns:p2=""http://www.w3.org/2001/XMLSchema-instance"">2</anyType>"));
@@ -449,9 +417,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DCClassWithEnumAndStruct()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         DCClassWithEnumAndStruct value = new DCClassWithEnumAndStruct(true);
         DCClassWithEnumAndStruct actual = SerializeAndDeserialize<DCClassWithEnumAndStruct>(value,
 @"<?xml version=""1.0""?>
@@ -469,9 +434,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_BuiltInTypes()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         BuiltInTypes x = new BuiltInTypes
         {
             ByteArray = new byte[] { 1, 2 }
@@ -489,9 +451,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TypesWithArrayOfOtherTypes()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         SerializeAndDeserialize<TypeHasArrayOfASerializedAsB>(new TypeHasArrayOfASerializedAsB(true),
 @"<?xml version=""1.0""?>
 <TypeHasArrayOfASerializedAsB xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
@@ -509,9 +468,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TypeNamesWithSpecialCharacters()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         SerializeAndDeserialize<__TypeNameWithSpecialCharacters\u6F22\u00F1>(
             new __TypeNameWithSpecialCharacters\u6F22\u00F1() { PropertyNameWithSpecialCharacters\u6F22\u00F1 = "Test" },
             "<?xml version=\"1.0\"?><__TypeNameWithSpecialCharacters\u6F22\u00F1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">  <PropertyNameWithSpecialCharacters\u6F22\u00F1>Test</PropertyNameWithSpecialCharacters\u6F22\u00F1></__TypeNameWithSpecialCharacters\u6F22\u00F1>");
@@ -520,9 +476,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_KnownTypesThroughConstructor()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         KnownTypesThroughConstructor value = new KnownTypesThroughConstructor() { EnumValue = MyEnum.One, SimpleTypeValue = new SimpleKnownTypeValue() { StrProperty = "PropertyValue" } };
         KnownTypesThroughConstructor actual = SerializeAndDeserialize<KnownTypesThroughConstructor>(value,
 @"<?xml version=""1.0""?>
@@ -541,9 +494,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_BaseClassAndDerivedClassWithSameProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         DerivedClassWithSameProperty value = new DerivedClassWithSameProperty() { DateTimeProperty = new DateTime(100), IntProperty = 5, StringProperty = "TestString", ListProperty = new List<string>() };
         value.ListProperty.AddRange(new string[] { "one", "two", "three" });
 
@@ -594,9 +544,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_EnumFlags()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         EnumFlags value1 = EnumFlags.One | EnumFlags.Four;
         var value2 = SerializeAndDeserialize<EnumFlags>(value1,
 @"<?xml version=""1.0""?>
@@ -607,9 +554,6 @@ public static partial class XmlSerializerTests
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public static void Xml_SerializeClassThatImplementsInterface()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         ClassImplementsInterface value = new ClassImplementsInterface() { ClassID = "ClassID", DisplayName = "DisplayName", Id = "Id", IsLoaded = true };
         ClassImplementsInterface actual = SerializeAndDeserialize<ClassImplementsInterface>(value,
 @"<?xml version=""1.0""?>
@@ -629,9 +573,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_XmlAttributesTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new XmlSerializerAttributes();
         var actual = SerializeAndDeserialize(value,
 @"<?xml version=""1.0""?>
@@ -662,9 +603,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_XmlAnyAttributeTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var serializer = new XmlSerializer(typeof(TypeWithAnyAttribute));
         string format = WithXmlHeader(@"<TypeWithAnyAttribute xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" GroupType = '{0}' IntProperty = '{1}' GroupBase = '{2}'><Name>{3}</Name></TypeWithAnyAttribute>");
         const int intProperty = 42;
@@ -690,9 +628,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_Struct()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new WithStruct { Some = new SomeStruct { A = 1, B = 2 } };
         var result = SerializeAndDeserialize(value,
 @"<?xml version=""1.0""?>
@@ -711,9 +646,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_Enums()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var item = new WithEnums() { Int = IntEnum.Option1, Short = ShortEnum.Option2 };
         var actual = SerializeAndDeserialize(item,
 @"<?xml version=""1.0""?>
@@ -728,9 +660,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_Nullables()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var item = new WithNullables() { Optional = IntEnum.Option1, OptionalInt = 42, Struct1 = new SomeStruct { A = 1, B = 2 } };
         var actual = SerializeAndDeserialize(item,
 @"<?xml version=""1.0""?>
@@ -757,9 +686,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DerivedClasses()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var dClass = new SimpleDerivedClass() { AttributeString = "derivedClassTest", DateTimeValue = DateTime.Parse("Dec 31, 1999"), BoolValue = true };
 
         var expectedXml = WithXmlHeader(@"<SimpleBaseClass xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xsi:type=""SimpleDerivedClass"" AttributeString=""derivedClassTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""true"" />");
@@ -779,9 +705,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_ClassImplementingIXmlSerializable()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new ClassImplementingIXmlSerializable() { StringValue = "Hello world" };
         var actual = SerializeAndDeserialize<ClassImplementingIXmlSerializable>(value,
 @"<?xml version=""1.0""?>
@@ -795,9 +718,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_StructImplementingIXmlSerializableWithoutParameterlessConstructor()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         StructImplementingIXmlSerializableWithoutParameterlessConstructor value = new()
         {
             StringValue = "Hello world"
@@ -817,9 +737,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_StructImplementingIXmlSerializableWithParameterlessConstructor()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         StructImplementingIXmlSerializableWithParameterlessConstructor value = new()
         {
             StringValue = "Hello world"
@@ -839,9 +756,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TypeWithFieldNameEndBySpecified()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithPropertyNameSpecified() { MyField = "MyField", MyFieldIgnored = 99, MyFieldSpecified = true, MyFieldIgnoredSpecified = false };
         var actual = SerializeAndDeserialize<TypeWithPropertyNameSpecified>(value,
 @"<?xml version=""1.0""?><TypeWithPropertyNameSpecified xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><MyField>MyField</MyField></TypeWithPropertyNameSpecified>");
@@ -852,9 +766,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void XML_TypeWithXmlSchemaFormAttribute()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithXmlSchemaFormAttribute() { NoneSchemaFormListProperty = new List<string> { "abc" }, QualifiedSchemaFormListProperty = new List<bool> { true }, UnqualifiedSchemaFormListProperty = new List<int> { 1 } };
         var actual = SerializeAndDeserialize<TypeWithXmlSchemaFormAttribute>(value,
 @"<?xml version=""1.0""?><TypeWithXmlSchemaFormAttribute xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><UnqualifiedSchemaFormListProperty><int>1</int></UnqualifiedSchemaFormListProperty><NoneSchemaFormListProperty><NoneParameter>abc</NoneParameter></NoneSchemaFormListProperty><QualifiedSchemaFormListProperty><QualifiedParameter>true</QualifiedParameter></QualifiedSchemaFormListProperty></TypeWithXmlSchemaFormAttribute>");
@@ -870,9 +781,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void XML_TypeWithTypeNameInXmlTypeAttribute()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithTypeNameInXmlTypeAttribute();
 
         SerializeAndDeserialize<TypeWithTypeNameInXmlTypeAttribute>(value,
@@ -882,9 +790,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void XML_TypeWithXmlTextAttributeOnArray()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var original = new TypeWithXmlTextAttributeOnArray() { Text = new string[] { "val1", "val2" } };
 
         var actual = SerializeAndDeserialize<TypeWithXmlTextAttributeOnArray>(original,
@@ -898,9 +803,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TypeWithSchemaFormInXmlAttribute()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithSchemaFormInXmlAttribute() { TestProperty = "hello" };
         var actual = SerializeAndDeserialize<TypeWithSchemaFormInXmlAttribute>(value,
 @"<?xml version=""1.0""?><TypeWithSchemaFormInXmlAttribute xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" d1p1:TestProperty=""hello"" xmlns:d1p1=""http://test.com"" />");
@@ -911,9 +813,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TypeWithXmlElementProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         XmlDocument xDoc = new XmlDocument();
         xDoc.LoadXml(@"<html></html>");
         XmlElement productElement = xDoc.CreateElement("Product");
@@ -933,9 +832,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TypeWithXmlDocumentProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         XmlDocument xmlDoc = new XmlDocument();
         xmlDoc.LoadXml(@"<html><head>Head content</head><body><h1>Heading1</h1><div>Text in body</div></body></html>");
         var expected = new TypeWithXmlDocumentProperty() { Document = xmlDoc };
@@ -949,9 +845,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TypeWithNonPublicDefaultConstructor()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         System.Reflection.TypeInfo ti = System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(TypeWithNonPublicDefaultConstructor));
         TypeWithNonPublicDefaultConstructor value = null;
         value = (TypeWithNonPublicDefaultConstructor)FindDefaultConstructor(ti).Invoke(null);
@@ -979,9 +872,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TestIgnoreWhitespaceForDeserialization()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         string xml = WithXmlHeader(@"<ServerSettings>
   <DS2Root>
     <![CDATA[ http://wxdata.weather.com/wxdata/]]>
@@ -1000,9 +890,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TypeWithBinaryProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var obj = new TypeWithBinaryProperty();
         var str = "The quick brown fox jumps over the lazy dog.";
         obj.Base64Content = Encoding.Unicode.GetBytes(str);
@@ -1016,9 +903,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DifferentSerializeDeserializeOverloads()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var expected = new SimpleType() { P1 = "p1 value", P2 = 123 };
         var serializer = new XmlSerializer(typeof(SimpleType));
         var writerTypes = new Type[] { typeof(TextWriter), typeof(XmlWriter) };
@@ -1069,9 +953,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TypeWithTimeSpanProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var obj = new TypeWithTimeSpanProperty { TimeSpanProperty = TimeSpan.FromMilliseconds(1) };
         var deserializedObj = SerializeAndDeserialize(obj, WithXmlHeader(@"<TypeWithTimeSpanProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
 <TimeSpanProperty>PT0.001S</TimeSpanProperty>
@@ -1082,9 +963,6 @@ public static partial class XmlSerializerTests
     [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDefaultTimeSpanProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var obj = new TypeWithDefaultTimeSpanProperty { TimeSpanProperty2 = new TimeSpan(0, 1, 0) };
         var deserializedObj = SerializeAndDeserialize(obj, WithXmlHeader(@"<TypeWithDefaultTimeSpanProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><TimeSpanProperty2>PT1M</TimeSpanProperty2></TypeWithDefaultTimeSpanProperty>"));
         Assert.NotNull(deserializedObj);
@@ -1095,9 +973,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DeserializeTypeWithEmptyTimeSpanProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         string xml =
             @"<?xml version=""1.0""?>
             <TypeWithTimeSpanProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
@@ -1116,9 +991,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DeserializeEmptyTimeSpanType()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         string xml =
     @"<?xml version=""1.0""?>
      <TimeSpan />";
@@ -1134,9 +1006,6 @@ public static partial class XmlSerializerTests
     [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDateTimeOffsetProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var now = new DateTimeOffset(DateTime.Now);
         var defDTO = default(DateTimeOffset);
         var obj = new TypeWithDateTimeOffsetProperties { DTO = now };
@@ -1162,9 +1031,6 @@ public static partial class XmlSerializerTests
     [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         //var def = DateTimeOffset.Parse("3/17/1977 5:00:01 PM -05:00");  //  "1977-03-17T17:00:01-05:00"
         var defDTO = default(DateTimeOffset);
         string xml = @"<?xml version=""1.0""?>
@@ -1191,9 +1057,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DeserializeDateTimeOffsetType()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var now = new DateTimeOffset(DateTime.Now);
         string xml = $@"<?xml version=""1.0""?><dateTimeOffset>{now:o}</dateTimeOffset>";
         XmlSerializer serializer = new XmlSerializer(typeof(DateTimeOffset));
@@ -1208,9 +1071,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DeserializeEmptyDateTimeOffsetType()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         string xml = @"<?xml version=""1.0""?><dateTimeOffset />";
         XmlSerializer serializer = new XmlSerializer(typeof(DateTimeOffset));
 
@@ -1227,9 +1087,6 @@ public static partial class XmlSerializerTests
     [InlineData("2345-12-1")]
     public static void Xml_DateOnlyAsRoot(string dateString)
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var doObj = DateOnly.Parse(dateString);
         var result = SerializeAndDeserialize<DateOnly>(doObj, WithXmlHeader($"""
             <dateOnly>{FormatDateString(doObj)}</dateOnly>
@@ -1246,9 +1103,6 @@ public static partial class XmlSerializerTests
     [InlineData("98-01-01")]            // Rose Bowl
     public static void Xml_DateOnlyParseErrors(string badDateString)
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var badXml = WithXmlHeader($"""
             <dateOnly>{badDateString}</dateOnly>
             """);
@@ -1261,9 +1115,6 @@ public static partial class XmlSerializerTests
     [InlineData("10:45 PM")]  // Tear down this wall
     public static void Xml_TimeOnlyAsRoot(string timeString)
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var toObj = TimeOnly.Parse(timeString);
         var result = SerializeAndDeserialize<TimeOnly>(toObj, WithXmlHeader($"""
             <timeOnly>{FormatTimeString(toObj)}</timeOnly>
@@ -1278,9 +1129,6 @@ public static partial class XmlSerializerTests
     [InlineData("08:32 AM", false)]       // Helen errupts
     public static void Xml_TimeOnlyParseErrors(string timeString, bool succeedsWithCompat, string expected = "")
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         // Try straight up
         var xml = WithXmlHeader($"<timeOnly>{timeString}</timeOnly>");
         TimeOnly result = default;
@@ -1328,9 +1176,6 @@ public static partial class XmlSerializerTests
     [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDateOnlyAndTimeOnly()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var doSerializer = new XmlSerializer(typeof(TypeWithDateAndTimeOnlyProperties), new XmlRootAttribute("DateAndTime"));
         DateOnly defaultDateOnly = DateOnly.Parse(TypeWithDateAndTimeOnlyProperties.DefaultDateString);
         TimeOnly defaultTimeOnly = TimeOnly.Parse(TypeWithDateAndTimeOnlyProperties.DefaultTimeString);
@@ -1391,9 +1236,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_XsdDate_With_DateOnly_And_DateTime()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var doSerializer = new XmlSerializer(typeof(DateOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
         var dtdSerializer = new XmlSerializer(typeof(DateTimeDateWrapper), new XmlRootAttribute("DateAndTimeTest"));
 
@@ -1459,9 +1301,6 @@ public static partial class XmlSerializerTests
     [InlineData("08:32:00"/*-07:00*/, DateTimeKind.Local)]      // Helen errupts
     public static void Xml_XsdTime_With_TimeOnly_And_DateTime(string dateTimeString, DateTimeKind kind)
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var toSerializer = new XmlSerializer(typeof(TimeOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
         var toaxtSerializer = new XmlSerializer(typeof(TimeOnlyAsXsdTimeWrapper), new XmlRootAttribute("DateAndTimeTest"));
         var dttSerializer = new XmlSerializer(typeof(DateTimeTimeWrapper), new XmlRootAttribute("DateAndTimeTest"));
@@ -1505,9 +1344,6 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_TypeWithByteProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var obj = new TypeWithByteProperty() { ByteProperty = 123 };
         var deserializedObj = SerializeAndDeserialize(obj,
 WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
@@ -1519,9 +1355,6 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     [Fact]
     public static void Xml_DeserializeOutOfRangeByteProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         //Deserialize an instance with out-of-range value for the byte property, expecting exception from deserialization process
         var serializer = new XmlSerializer(typeof(TypeWithByteProperty));
         using (var stream = new MemoryStream())
@@ -1540,9 +1373,6 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     [Fact]
     public static void Xml_XmlAttributes_RemoveXmlElementAttribute()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         XmlAttributes attrs = new XmlAttributes();
 
         XmlElementAttribute item = new XmlElementAttribute("elem1");
@@ -1556,18 +1386,12 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     [Fact]
     public static void Xml_XmlAttributes_CtorWithNullArgument()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         Assert.Throws<ArgumentNullException>(() => new XmlAttributes(default(ICustomAttributeProvider)));
     }
 
     [Fact]
     public static void Xml_ArrayOfXmlNodeProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var obj = new TypeWithXmlNodeArrayProperty()
         {
             CDATA = new[] { new XmlDocument().CreateCDataSection("test&test") }
@@ -1580,9 +1404,6 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     [Fact]
     public static void Xml_TypeWithTwoDimensionalArrayProperty2()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         SimpleType[][] simpleType2D = GetObjectwith2DArrayOfSimpleType();
 
         var obj = new TypeWith2DArrayProperty2()
@@ -1614,9 +1435,6 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     [Fact]
     public static void Xml_TypeWithByteArrayAsXmlText()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithByteArrayAsXmlText() { Value = new byte[] { 1, 2, 3 } };
         var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithByteArrayAsXmlText xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">AQID</TypeWithByteArrayAsXmlText>"));
 
@@ -1629,9 +1447,6 @@ WithXmlHeader(@"<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSche
     [Fact]
     public static void Xml_SimpleType()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var obj = new SimpleType { P1 = "foo", P2 = 1 };
         var deserializedObj = SerializeAndDeserialize(obj,
 WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
@@ -1646,9 +1461,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_SerializedFormat()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var obj = new SimpleType { P1 = "foo", P2 = 1 };
         XmlSerializer serializer = new XmlSerializer(typeof(SimpleType));
         using (MemoryStream ms = new MemoryStream())
@@ -1674,9 +1486,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_BaseClassAndDerivedClass2WithSameProperty()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new DerivedClassWithSameProperty2() { DateTimeProperty = new DateTime(100, DateTimeKind.Utc), IntProperty = 5, StringProperty = "TestString", ListProperty = new List<string>() };
         value.ListProperty.AddRange(new string[] { "one", "two", "three" });
 
@@ -1749,9 +1558,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithPropertiesHavingDefaultValue_DefaultValue()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithPropertiesHavingDefaultValue()
         {
             StringProperty = "DefaultString",
@@ -1772,9 +1578,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithStringPropertyWithDefaultValue_NonDefaultValue()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithPropertiesHavingDefaultValue()
         {
             StringProperty = "NonDefaultValue",
@@ -1792,9 +1595,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithEnumPropertyHavingDefaultValue()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithEnumPropertyHavingDefaultValue() { EnumProperty = IntEnum.Option0 };
         var actual = SerializeAndDeserialize(value,
             WithXmlHeader("<TypeWithEnumPropertyHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <EnumProperty>Option0</EnumProperty>\r\n</TypeWithEnumPropertyHavingDefaultValue>"),
@@ -1816,9 +1616,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithEnumFlagPropertyHavingDefaultValue()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithEnumFlagPropertyHavingDefaultValue() { EnumProperty = EnumFlags.Two | EnumFlags.Three };
         var actual = SerializeAndDeserialize(value,
             WithXmlHeader("<TypeWithEnumFlagPropertyHavingDefaultValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <EnumProperty>Two Three</EnumProperty>\r\n</TypeWithEnumFlagPropertyHavingDefaultValue>"));
@@ -1838,9 +1635,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_Soap_TypeWithEnumFlagPropertyHavingDefaultValue()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var mapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithEnumFlagPropertyHavingDefaultValue));
         var serializer = new XmlSerializer(mapping);
 
@@ -1867,9 +1661,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithXmlQualifiedName()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithXmlQualifiedName()
         {
             Value = new XmlQualifiedName("FooName")
@@ -1884,9 +1675,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_Soap_TypeWithXmlQualifiedName()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var mapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithXmlQualifiedName));
         var serializer = new XmlSerializer(mapping);
 
@@ -1907,9 +1695,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithShouldSerializeMethod_WithDefaultValue()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithShouldSerializeMethod();
 
         var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithShouldSerializeMethod xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
@@ -1921,9 +1706,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithShouldSerializeMethod_WithNonDefaultValue()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithShouldSerializeMethod() { Foo = "SomeValue" };
 
         var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithShouldSerializeMethod xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></TypeWithShouldSerializeMethod>"));
@@ -1935,9 +1717,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_InheritedShouldSerializeMethod_WithDefaultValue()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new DerivedTypeWithInheritedShouldSerialize();
 
         var actual = SerializeAndDeserialize(value, WithXmlHeader("<DerivedTypeWithInheritedShouldSerialize xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
@@ -1950,9 +1729,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_InheritedShouldSerializeMethod_WithNonDefaultValue()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new DerivedTypeWithInheritedShouldSerialize() { Foo = "SomeValue", Bar = "SomeBar" };
 
         var actual = SerializeAndDeserialize(value, WithXmlHeader("<DerivedTypeWithInheritedShouldSerialize Bar=\"SomeBar\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></DerivedTypeWithInheritedShouldSerialize>"));
@@ -1965,9 +1741,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_FieldBackedSpecifiedMember_SetOnDeserialize()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithFieldBackedSpecifiedMember() { Foo = "SomeValue", FooSpecified = true };
 
         var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithFieldBackedSpecifiedMember xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></TypeWithFieldBackedSpecifiedMember>"));
@@ -1980,9 +1753,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_KnownTypesThroughConstructorWithArrayProperties()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         int[] intArray = new int[] { 1, 2, 3 };
         string[] stringArray = new string[] { "a", "b" };
 
@@ -2008,9 +1778,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_KnownTypesThroughConstructorWithEnumFlags()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var enumFlags = EnumFlags.One | EnumFlags.Four;
         var value = new KnownTypesThroughConstructorWithValue() { Value = enumFlags };
         var actual = SerializeAndDeserialize(value,
@@ -2025,9 +1792,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_KnownTypesThroughConstructorWithEnumFlagsXmlQualifiedName()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new KnownTypesThroughConstructorWithValue() { Value = new XmlQualifiedName("foo") };
         var actual = SerializeAndDeserialize(value,
             WithXmlHeader("<KnownTypesThroughConstructorWithValue xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Value xsi:type=\"xsd:QName\">foo</Value>\r\n</KnownTypesThroughConstructorWithValue>"),
@@ -2041,9 +1805,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithTypesHavingCustomFormatter()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var str = "The quick brown fox jumps over the lazy dog.";
         var value = new TypeWithTypesHavingCustomFormatter()
         {
@@ -2080,9 +1841,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithArrayPropertyHavingChoice()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         object[] choices = new object[] { "Food", 5 };
 
         // For each item in the choices array, add an
@@ -2108,9 +1866,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithArrayPropertyHavingComplexChoice()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         object[] choices = new object[] { new ComplexChoiceB { Name = "Beef" }, 5 };
 
         // For each item in the choices array, add an enumeration value.
@@ -2129,9 +1884,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void XML_TypeWithTypeNameInXmlTypeAttribute_WithValue()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithTypeNameInXmlTypeAttribute() { XmlAttributeForm = "SomeValue" };
 
         var actual = SerializeAndDeserialize(value,
@@ -2165,9 +1917,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void XmlSerializerFactoryTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         string baseline = "<?xml version=\"1.0\"?>\r\n<Dog xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Age>5</Age>\r\n  <Name>Bear</Name>\r\n  <Breed>GermanShepherd</Breed>\r\n</Dog>";
         var xsf = new XmlSerializerFactory();
         Func<XmlSerializer> serializerfunc = () => xsf.CreateSerializer(typeof(Dog));
@@ -2181,9 +1930,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void XmlUnknownElementAndEventHandlerTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         List<string> grouplists = new List<string>();
         int count = 0;
         XmlSerializer serializer = new XmlSerializer(typeof(Group));
@@ -2213,9 +1959,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void XmlUnknownNodeAndEventHandlerTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         List<string> grouplists = new List<string>();
         int count = 0;
         XmlSerializer serializer = new XmlSerializer(typeof(Group));
@@ -2251,9 +1994,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void XmlUnknownAttributeAndEventHandlerTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         List<string> grouplists = new List<string>();
         int count = 0;
         XmlSerializer serializer = new XmlSerializer(typeof(Group));
@@ -2280,9 +2020,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void XmlDeserializationEventsTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         List<string> grouplists = new List<string>();
         int count = 0;
         // Create an instance of the XmlSerializer class.
@@ -2320,9 +2057,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void XmlSerializerImplementationTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         Employee emp = new Employee() { EmployeeName = "Allice" };
         SerializeIm sm = new SerializeIm();
         Func<XmlSerializer> serializerfunc = () => sm.GetSerializer(typeof(Employee));
@@ -2333,9 +2067,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_HiddenDerivedFieldTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new DerivedClass { value = "on derived" };
         var actual = SerializeAndDeserialize<BaseClass>(value,
 @"<?xml version=""1.0""?>
@@ -2353,9 +2084,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_XmlIncludedTypesInCollection()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new MyList() {
             new BaseClass() { Value = "base class" },
             new DerivedClass() { Value = "derived class" }
@@ -2383,9 +2111,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_XmlIncludedTypesInCollectionSingle()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new MyList() {
             new DerivedClass() { Value = "derived class" }
         };
@@ -2407,9 +2132,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_NullRefInXmlSerializerCtorTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         string defaultNamespace = "http://www.contoso.com";
         var value = PurchaseOrder.CreateInstance();
         string baseline =
@@ -2488,9 +2210,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_AliasedPropertyTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var inputList = new List<string> { "item0", "item1", "item2", "item3", "item4" };
         var value = new AliasedTestType { Aliased = inputList };
         var actual = SerializeAndDeserialize(value,
@@ -2518,9 +2237,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_DeserializeHiddenMembersTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var xmlSerializer = new XmlSerializer(typeof(DerivedClass1));
         string inputXml = "<DerivedClass1><Prop>2012-07-07T00:18:29.7538612Z</Prop></DerivedClass1>";
         var dateTime = new DateTime(634772171097538612);
@@ -2537,9 +2253,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_SerializeClassNestedInStaticClassTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new Outer.Person()
         {
             FirstName = "Harry",
@@ -2564,9 +2277,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_XSCoverTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var band = new Orchestra();
         var brass = new Brass()
         {
@@ -2695,9 +2405,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithMyCollectionField()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithMyCollectionField();
         value.Collection = new MyCollection<string>() { "s1", "s2" };
         var actual = SerializeAndDeserializeWithWrapper(value, new XmlSerializer(typeof(TypeWithMyCollectionField)), "<root><TypeWithMyCollectionField xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Collection><string>s1</string><string>s2</string></Collection></TypeWithMyCollectionField></root>");
@@ -2709,9 +2416,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_Soap_TypeWithMyCollectionField()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         XmlTypeMapping myTypeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithMyCollectionField));
         var serializer = new XmlSerializer(myTypeMapping);
         var value = new TypeWithMyCollectionField();
@@ -2725,9 +2429,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_DefaultValueAttributeSetToNaNTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new DefaultValuesSetToNaN();
         var actual = SerializeAndDeserialize(value,
 @"<?xml version=""1.0""?>
@@ -2744,9 +2445,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_DefaultValueAttributeSetToPositiveInfinityTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new DefaultValuesSetToPositiveInfinity();
         var actual = SerializeAndDeserialize(value,
 @"<?xml version=""1.0""?>
@@ -2763,9 +2461,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_DefaultValueAttributeSetToNegativeInfinityTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new DefaultValuesSetToNegativeInfinity();
         var actual = SerializeAndDeserialize(value,
 @"<?xml version=""1.0""?>
@@ -2782,9 +2477,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void SerializeWithDefaultValueSetToPositiveInfinityTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new DefaultValuesSetToPositiveInfinity();
         value.DoubleField = double.PositiveInfinity;
         value.SingleField = float.PositiveInfinity;
@@ -2800,9 +2492,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void SerializeWithDefaultValueSetToNegativeInfinityTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new DefaultValuesSetToNegativeInfinity();
         value.DoubleField = double.NegativeInfinity;
         value.SingleField = float.NegativeInfinity;
@@ -2818,9 +2507,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void DeserializeIDREFSIntoStringTest()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         string xmlstring = WithXmlHeader(@"<Document xmlns = ""http://example.com"" id = ""ID1"" refs=""ID1 ID2 ID3"" ></Document>");
         Stream ms = GenerateStreamFromString(xmlstring);
         XmlSerializer ser = new XmlSerializer(typeof(MsgDocumentType));
@@ -2861,9 +2547,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithMismatchBetweenAttributeAndPropertyType()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var value = new TypeWithMismatchBetweenAttributeAndPropertyType();
         var actual = SerializeAndDeserialize(value,
 @"<?xml version=""1.0""?><RootElement xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" IntValue=""120"" />");
@@ -2873,9 +2556,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_XsdValidationAndDeserialization()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         var xsdstring = WithXmlHeader(@"<xs:schema attributeFormDefault='unqualified' elementFormDefault='unqualified' xmlns:xs='http://www.w3.org/2001/XMLSchema'>
   <xs:element name='RootClass'>
     <xs:complexType>
@@ -2945,9 +2625,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void Xml_TypeWithSpecialCharacterInStringMember()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         TypeA x = new TypeA() { Name = "Lily&Lucy" };
         TypeA y = SerializeAndDeserialize<TypeA>(x,
 @"<?xml version=""1.0""?>
@@ -2969,9 +2646,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_TypeInCollectibleALC()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
 
         for (int i = 0; weakRef.IsAlive && i < 10; i++)
@@ -2985,9 +2659,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void ValidateXElement()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         XElement xe = new XElement("Root");
         XElementWrapper wrapper = new XElementWrapper() { Value = xe };
 
@@ -3002,9 +2673,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void ValidateXElementStruct()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
 
         XElement ele = new XElement("Test");
         XElementStruct xstruct;
@@ -3020,9 +2688,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void ValidateXElementArray()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         XElementArrayWrapper xarray = new XElementArrayWrapper
         {
             xelements = new XElement[] { new XElement("Root"), new XElement("Member") }
@@ -3040,9 +2705,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void ObsoleteAttribute_DoesNotAffectSerialization()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         // Test that properties marked with [Obsolete(IsError=false)] are still serialized (not ignored like [XmlIgnore])
         var testObject = new TypeWithObsoleteProperty
         {
@@ -3073,9 +2735,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void ObsoleteAttribute_IsError_ThrowsException()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         // Test that properties marked with [Obsolete(IsError=true)] throw an exception during serializer creation
         var testObject = new TypeWithObsoleteErrorProperty
         {
@@ -3100,9 +2759,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void ObsoleteAttribute_WithAppContextSwitch_IgnoresObsoleteMembers()
     {
-        #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-        Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        #endif
         // Enable compat switch
         using (var compatSwitch = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.IgnoreObsoleteMembers", true))
         {

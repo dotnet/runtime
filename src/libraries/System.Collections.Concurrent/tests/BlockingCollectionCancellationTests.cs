@@ -8,15 +8,11 @@ using Xunit;
 
 namespace System.Collections.Concurrent.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class BlockingCollectionCancellationTests
     {
-        public BlockingCollectionCancellationTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-        }
-
         [Fact]
-        public void InternalCancellation_CompleteAdding_Negative()
+        public static void InternalCancellation_CompleteAdding_Negative()
         {
             BlockingCollection<int> coll1 = new BlockingCollection<int>();
 
@@ -32,7 +28,7 @@ namespace System.Collections.Concurrent.Tests
 
         //This tests that Take/TryTake wake up correctly if CompleteAdding() is called while waiting
         [Fact]
-        public void InternalCancellation_WakingUp()
+        public static void InternalCancellation_WakingUp()
         {
             for (int test = 0; test < 2; test++)
             {
@@ -66,7 +62,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public void ExternalCancel_Negative()
+        public static void ExternalCancel_Negative()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>(); //empty collection.
 
@@ -102,7 +98,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public void ExternalCancel_AddToAny()
+        public static void ExternalCancel_AddToAny()
         {
             for (int test = 0; test < 3; test++)
             {
@@ -135,7 +131,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public void ExternalCancel_GetConsumingEnumerable()
+        public static void ExternalCancel_GetConsumingEnumerable()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>();
             bc.Add(1);
@@ -156,7 +152,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public void ExternalCancel_TakeFromAny_PreCanceled_WithAvailableItems()
+        public static void ExternalCancel_TakeFromAny_PreCanceled_WithAvailableItems()
         {
             BlockingCollection<int> bc1 = new BlockingCollection<int>();
             BlockingCollection<int> bc2 = new BlockingCollection<int>();

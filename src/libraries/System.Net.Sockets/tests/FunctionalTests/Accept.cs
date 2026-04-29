@@ -377,28 +377,22 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptSync : Accept<SocketHelperArraySync>
     {
-        public AcceptSync(ITestOutputHelper output) : base(output)
-        {
-            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-        }
+        public AcceptSync(ITestOutputHelper output) : base(output) {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptSyncForceNonBlocking : Accept<SocketHelperSyncForceNonBlocking>
     {
-        public AcceptSyncForceNonBlocking(ITestOutputHelper output) : base(output)
-        {
-            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-        }
+        public AcceptSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptApm : Accept<SocketHelperApm>
     {
-        public AcceptApm(ITestOutputHelper output) : base(output)
-        {
-            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-        }
+        public AcceptApm(ITestOutputHelper output) : base(output) {}
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task AbortedByDispose_LeaksNoUnobservedExceptions()

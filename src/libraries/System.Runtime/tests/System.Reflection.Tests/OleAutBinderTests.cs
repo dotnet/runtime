@@ -11,13 +11,9 @@ using Xunit;
 namespace System.Reflection.Tests
 {
     [PlatformSpecific(TestPlatforms.Windows)]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport))]
     public class OleAutBinderTests
     {
-        public OleAutBinderTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport, "Precondition not met");
-        }
-
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType("System.OleAutBinder")]
         private static extern object CreateOleAutBinder();
@@ -29,13 +25,13 @@ namespace System.Reflection.Tests
         [InlineData(0, TestEnum.Value2)]
         [InlineData(1, TestEnum.Value3)]
         [InlineData(2, (TestEnum)2)]
-        public void OleAutBinder_Enum(int value, TestEnum expected)
+        public static void OleAutBinder_Enum(int value, TestEnum expected)
         {
             Assert.Equal(expected, OleAutBinder.ChangeType(value, typeof(TestEnum), null));
         }
 
         [Fact]
-        public void OleAutBinder_DBNull()
+        public static void OleAutBinder_DBNull()
         {
             Assert.Null(OleAutBinder.ChangeType(DBNull.Value, typeof(string), null));
             Assert.Equal(DBNull.Value, OleAutBinder.ChangeType(DBNull.Value, typeof(object), null));
@@ -55,7 +51,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(OleAutBinder_Color_TestData))]
-        public void OleAutBinder_Color(int r, int g, int b, Color expected)
+        public static void OleAutBinder_Color(int r, int g, int b, Color expected)
         {
             // Convert to OLE's COLORREF - https://learn.microsoft.com/windows/win32/gdi/colorref
             int bgr = (b << 16) | (g << 8) | r;
@@ -65,7 +61,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(true, "True")]
         [InlineData(false, "False")]
-        public void OleAutBinder_Bool(bool value, string expected)
+        public static void OleAutBinder_Bool(bool value, string expected)
         {
             Assert.Equal(expected, OleAutBinder.ChangeType(value, typeof(string), null));
         }

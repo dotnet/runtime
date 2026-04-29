@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
     public sealed class SocketsHttpHandler_Http1KeepAlive_Test : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_Http1KeepAlive_Test(ITestOutputHelper output) : base(output) { }
@@ -15,8 +16,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task Http10Response_ConnectionIsReusedFor10And11()
         {
-            Assert.SkipUnless(SocketsHttpHandler.IsSupported, "Precondition not met");
-
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClient client = CreateHttpClient();

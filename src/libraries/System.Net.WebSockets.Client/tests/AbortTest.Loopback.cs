@@ -6,14 +6,10 @@ using System.Threading.Tasks;
 using Xunit;
 namespace System.Net.WebSockets.Client.Tests
 {
+    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets are not supported on browser")]
-    public abstract class AbortTest_LoopbackBase : AbortTestBase
+    public abstract class AbortTest_LoopbackBase(ITestOutputHelper output) : AbortTestBase(output)
     {
-        public AbortTest_LoopbackBase(ITestOutputHelper output)
-            : base(output)
-        {
-            Assert.SkipUnless(ClientWebSocketTestBase.WebSocketsSupported, "Precondition not met");
-        }
         #region Common (Echo Server) tests
 
         [Theory, MemberData(nameof(UseSsl))]

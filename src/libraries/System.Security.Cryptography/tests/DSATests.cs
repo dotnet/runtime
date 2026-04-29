@@ -9,13 +9,9 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public class DSATests
     {
-        public DSATests()
-        {
-            Assert.SkipUnless(PlatformSupport.IsDSASupported, "Precondition not met");
-        }
-
         [Fact]
         public void TryCreateSignature_UsesCreateSignature()
         {

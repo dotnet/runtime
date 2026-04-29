@@ -10,13 +10,9 @@ using Xunit;
 
 namespace ComInterfaceGenerator.Tests
 {
+    [ConditionalClass(typeof(GeneratedComInterfaceComImportInteropTests), nameof(IsSupported))]
     public unsafe partial class GeneratedComInterfaceComImportInteropTests
     {
-        public GeneratedComInterfaceComImportInteropTests()
-        {
-            Assert.SkipUnless(IsSupported, "Precondition not met");
-        }
-
         public static bool IsSupported =>
             RemoteExecutor.IsSupported
             && PlatformDetection.IsWindows

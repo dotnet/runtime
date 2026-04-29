@@ -9,13 +9,9 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
     // NanoServer doesn't have any of the OLE Automation stack available, so we can't run these tests there.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public class ComVariantTests
     {
-        public ComVariantTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoServer, "Precondition not met");
-        }
-
         [Fact]
         public void DefaultVariantIsEmpty()
         {

@@ -385,22 +385,14 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public class Synchronous : PolymorphicTests<SocketHelperArraySync>
         {
-            public Synchronous()
-            {
-                Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-            }
-
         }
 
+        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public class Apm : PolymorphicTests<SocketHelperApm>
         {
-            public Apm()
-            {
-                Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-            }
-
         }
 
         public class TaskBased : PolymorphicTests<SocketHelperTask>

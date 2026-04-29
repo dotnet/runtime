@@ -14,14 +14,9 @@ using Xunit;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicStreamConformanceTests : ConnectedStreamConformanceTests
     {
-        public QuicStreamConformanceTests()
-        {
-            Assert.SkipUnless(QuicTestBase.IsSupported, "Precondition not met");
-            Assert.SkipUnless(QuicTestBase.IsNotArm32CoreClrStressTest, "Precondition not met");
-        }
-
         protected override bool UsableAfterCanceledReads => false;
         protected override bool BlocksOnZeroByteReads => true;
         protected override bool CanTimeout => true;

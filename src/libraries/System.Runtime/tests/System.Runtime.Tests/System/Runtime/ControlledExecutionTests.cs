@@ -10,13 +10,9 @@ using Xunit;
 
 namespace System.Runtime.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ControlledExecutionTests
     {
-        public ControlledExecutionTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-        }
-
         private volatile bool _readyForCancellation;
         private bool _caughtException, _finishedExecution;
         private Exception _exception;

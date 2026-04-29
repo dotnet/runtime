@@ -17,14 +17,10 @@ using Xunit;
 
 namespace SampleSynthesisTests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // No SAPI on Nano or Server Core
     [SkipOnMono("No SAPI on Mono")]
-    public class SpeechRecognizerTests
+    public static class SpeechRecognizerTests
     {
-        public SpeechRecognizerTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoNorServerCore, "Precondition not met");
-        }
-
         private static bool RecognizerInstalledAndEnabled()
         {
             if (PlatformDetection.IsMonoRuntime ||
@@ -54,7 +50,7 @@ namespace SampleSynthesisTests
 
         [ConditionalFact(typeof(SpeechRecognizerTests), nameof(RecognizerInstalledAndEnabled))]
         [OuterLoop] // Pops UI
-        public void SpeechRecognizer()
+        public static void SpeechRecognizer()
         {
             if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
                 return;

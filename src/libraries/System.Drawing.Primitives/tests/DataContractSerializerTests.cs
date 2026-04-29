@@ -12,15 +12,11 @@ using System.Drawing;
 
 namespace System.Drawing.Primitives.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
     public class DataContractSerializerTests
     {
-        public DataContractSerializerTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Precondition not met");
-        }
-
         [Fact]
-        public void DCS_Point()
+        public static void DCS_Point()
         {
             var objs = new Point[]
             {
@@ -41,7 +37,7 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Fact]
-        public void DCS_PointF()
+        public static void DCS_PointF()
         {
             var objs = new PointF[]
             {
@@ -62,7 +58,7 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Fact]
-        public void DCS_Rectangle()
+        public static void DCS_Rectangle()
         {
             var objs = new Rectangle[]
             {
@@ -85,7 +81,7 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Fact]
-        public void DCS_RectangleF()
+        public static void DCS_RectangleF()
         {
             var objs = new RectangleF[]
             {
@@ -106,7 +102,7 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Fact]
-        public void DCS_Size()
+        public static void DCS_Size()
         {
             var objs = new Size[]
             {
@@ -127,7 +123,7 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Fact]
-        public void DCS_SizeF()
+        public static void DCS_SizeF()
         {
             var objs = new SizeF[]
             {

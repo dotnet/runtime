@@ -8,13 +8,9 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class X25519DiffieHellmanTests
+    [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
+    public static class X25519DiffieHellmanTests
     {
-        public X25519DiffieHellmanTests()
-        {
-            Assert.SkipUnless(X25519DiffieHellman.IsSupported, "Precondition not met");
-        }
-
         private static readonly byte[] s_asnNull = [0x05, 0x00];
 
         private static readonly byte[] AliceSpki = X25519DiffieHellmanTestData.AliceSpki;
@@ -22,14 +18,14 @@ namespace System.Security.Cryptography.Tests
         private static readonly byte[] AliceEncryptedPkcs8 = X25519DiffieHellmanTestData.AliceEncryptedPkcs8;
 
         [Fact]
-        public void ImportPrivateKey_NullSource()
+        public static void ImportPrivateKey_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 X25519DiffieHellman.ImportPrivateKey((byte[])null));
         }
 
         [Fact]
-        public void ImportPrivateKey_WrongSize_Array()
+        public static void ImportPrivateKey_WrongSize_Array()
         {
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 X25519DiffieHellman.ImportPrivateKey(new byte[X25519DiffieHellman.PrivateKeySizeInBytes + 1]));
@@ -42,7 +38,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPrivateKey_WrongSize_Span()
+        public static void ImportPrivateKey_WrongSize_Span()
         {
             byte[] key = new byte[X25519DiffieHellman.PrivateKeySizeInBytes + 1];
 
@@ -57,14 +53,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPublicKey_NullSource()
+        public static void ImportPublicKey_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 X25519DiffieHellman.ImportPublicKey((byte[])null));
         }
 
         [Fact]
-        public void ImportPublicKey_WrongSize_Array()
+        public static void ImportPublicKey_WrongSize_Array()
         {
             AssertExtensions.Throws<ArgumentException>("source", () =>
                 X25519DiffieHellman.ImportPublicKey(new byte[X25519DiffieHellman.PublicKeySizeInBytes + 1]));
@@ -77,7 +73,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPublicKey_WrongSize_Span()
+        public static void ImportPublicKey_WrongSize_Span()
         {
             byte[] key = new byte[X25519DiffieHellman.PublicKeySizeInBytes + 1];
 
@@ -92,14 +88,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_NullSource()
+        public static void ImportSubjectPublicKeyInfo_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 X25519DiffieHellman.ImportSubjectPublicKeyInfo((byte[])null));
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_WrongAlgorithm()
+        public static void ImportSubjectPublicKeyInfo_WrongAlgorithm()
         {
             byte[] ecP256Spki = Convert.FromBase64String(
                 "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEuiPJ2IV089LVrXZGDo9Mc542UZZE" +
@@ -108,14 +104,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_NotAsn()
+        public static void ImportSubjectPublicKeyInfo_NotAsn()
         {
             Assert.Throws<CryptographicException>(() => X25519DiffieHellman.ImportSubjectPublicKeyInfo("potatoes"u8));
             Assert.Throws<CryptographicException>(() => X25519DiffieHellman.ImportSubjectPublicKeyInfo("potatoes"u8.ToArray()));
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_WrongParameters()
+        public static void ImportSubjectPublicKeyInfo_WrongParameters()
         {
             // RFC 8410: AlgorithmIdentifier parameters MUST be absent
             byte[] spki = SpkiEncode(
@@ -127,7 +123,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_WrongSize()
+        public static void ImportSubjectPublicKeyInfo_WrongSize()
         {
             byte[] spki = SpkiEncode(
                 X25519DiffieHellmanTestData.X25519Oid,
@@ -143,7 +139,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportSubjectPublicKeyInfo_TrailingData()
+        public static void ImportSubjectPublicKeyInfo_TrailingData()
         {
             byte[] oversized = new byte[AliceSpki.Length + 1];
             AliceSpki.AsSpan().CopyTo(oversized);
@@ -154,14 +150,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_NullSource()
+        public static void ImportPkcs8PrivateKey_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 X25519DiffieHellman.ImportPkcs8PrivateKey((byte[])null));
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_WrongAlgorithm()
+        public static void ImportPkcs8PrivateKey_WrongAlgorithm()
         {
             byte[] ecP256Key = Convert.FromBase64String(
                 "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgZg/vYKeaTgco6dGx" +
@@ -177,7 +173,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void ImportPkcs8PrivateKey_BogusAsnChoice(bool useSpanImport)
+        public static void ImportPkcs8PrivateKey_BogusAsnChoice(bool useSpanImport)
         {
             // SEQUENCE {
             //   INTEGER 0
@@ -200,7 +196,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_WrongKeySize()
+        public static void ImportPkcs8PrivateKey_WrongKeySize()
         {
             byte[] pkcs8 = Pkcs8Encode(
                 X25519DiffieHellmanTestData.X25519Oid,
@@ -216,7 +212,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_BadAlgorithmIdentifier()
+        public static void ImportPkcs8PrivateKey_BadAlgorithmIdentifier()
         {
             // RFC 8410: AlgorithmIdentifier parameters MUST be absent
             byte[] pkcs8 = Pkcs8Encode(
@@ -229,7 +225,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_TrailingData()
+        public static void ImportPkcs8PrivateKey_TrailingData()
         {
             byte[] oversized = new byte[AlicePkcs8.Length + 1];
             AlicePkcs8.AsSpan().CopyTo(oversized);
@@ -239,28 +235,28 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_NotAsn()
+        public static void ImportPkcs8PrivateKey_NotAsn()
         {
             Assert.Throws<CryptographicException>(() => X25519DiffieHellman.ImportPkcs8PrivateKey("potatoes"u8));
             Assert.Throws<CryptographicException>(() => X25519DiffieHellman.ImportPkcs8PrivateKey("potatoes"u8.ToArray()));
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_Array_Roundtrip()
+        public static void ImportPkcs8PrivateKey_Array_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPkcs8PrivateKey(AlicePkcs8);
             AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKey, xdh.ExportPrivateKey());
         }
 
         [Fact]
-        public void ImportPkcs8PrivateKey_Span_Roundtrip()
+        public static void ImportPkcs8PrivateKey_Span_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(AlicePkcs8));
             AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKey, xdh.ExportPrivateKey());
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_WrongAlgorithm()
+        public static void ImportEncryptedPkcs8PrivateKey_WrongAlgorithm()
         {
             byte[] ecP256Key = Convert.FromBase64String(
                 "MIHrMFYGCSqGSIb3DQEFDTBJMDEGCSqGSIb3DQEFDDAkBBCr0ipJGBOnThng8uXT" +
@@ -286,7 +282,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_TrailingData()
+        public static void ImportEncryptedPkcs8PrivateKey_TrailingData()
         {
             byte[] oversized = new byte[AliceEncryptedPkcs8.Length + 1];
             AliceEncryptedPkcs8.AsSpan().CopyTo(oversized);
@@ -308,7 +304,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_NotAsn()
+        public static void ImportEncryptedPkcs8PrivateKey_NotAsn()
         {
             Assert.Throws<CryptographicException>(() =>
                 X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(
@@ -327,7 +323,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_DoesNotProcessUnencryptedData()
+        public static void ImportEncryptedPkcs8PrivateKey_DoesNotProcessUnencryptedData()
         {
             Assert.Throws<CryptographicException>(() =>
                 X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, AlicePkcs8));
@@ -340,7 +336,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_CharPassword()
+        public static void ImportEncryptedPkcs8PrivateKey_CharPassword()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(
                 X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword.AsSpan(), AliceEncryptedPkcs8);
@@ -348,7 +344,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_StringPassword()
+        public static void ImportEncryptedPkcs8PrivateKey_StringPassword()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(
                 X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword, AliceEncryptedPkcs8);
@@ -356,7 +352,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_BytePassword()
+        public static void ImportEncryptedPkcs8PrivateKey_BytePassword()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(
                 X25519DiffieHellmanTestData.EncryptedPrivateKeyPasswordBytes, AliceEncryptedPkcs8);
@@ -364,7 +360,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportEncryptedPkcs8PrivateKey_NullArgs()
+        public static void ImportEncryptedPkcs8PrivateKey_NullArgs()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(
@@ -376,14 +372,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_NullSource()
+        public static void ImportFromPem_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
                 X25519DiffieHellman.ImportFromPem((string)null));
         }
 
         [Fact]
-        public void ImportFromPem_PublicKey_Roundtrip()
+        public static void ImportFromPem_PublicKey_Roundtrip()
         {
             string pem = WritePem("PUBLIC KEY", AliceSpki);
             AssertImportFromPem(importer =>
@@ -395,7 +391,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_PublicKey_IgnoresNotUnderstoodPems()
+        public static void ImportFromPem_PublicKey_IgnoresNotUnderstoodPems()
         {
             string pem = $"""
             -----BEGIN POTATO-----
@@ -413,7 +409,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_PrivateKey_Roundtrip()
+        public static void ImportFromPem_PrivateKey_Roundtrip()
         {
             string pem = WritePem("PRIVATE KEY", AlicePkcs8);
             AssertImportFromPem(importer =>
@@ -424,7 +420,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_PrivateKey_IgnoresNotUnderstoodPems()
+        public static void ImportFromPem_PrivateKey_IgnoresNotUnderstoodPems()
         {
             string pem = $"""
             -----BEGIN UNKNOWN-----
@@ -441,7 +437,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_AmbiguousImportWithPublicKey_Throws()
+        public static void ImportFromPem_AmbiguousImportWithPublicKey_Throws()
         {
             string pem = $"""
             {WritePem("PUBLIC KEY", AliceSpki)}
@@ -455,7 +451,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_AmbiguousImportWithPrivateKey_Throws()
+        public static void ImportFromPem_AmbiguousImportWithPrivateKey_Throws()
         {
             string pem = $"""
             {WritePem("PUBLIC KEY", AliceSpki)}
@@ -469,7 +465,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_AmbiguousImportWithEncryptedPrivateKey_Throws()
+        public static void ImportFromPem_AmbiguousImportWithEncryptedPrivateKey_Throws()
         {
             string pem = $"""
             {WritePem("PUBLIC KEY", AliceSpki)}
@@ -483,7 +479,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_AmbiguousImportWithPrivateKeyAndEncryptedPrivateKey_Throws()
+        public static void ImportFromPem_AmbiguousImportWithPrivateKeyAndEncryptedPrivateKey_Throws()
         {
             string pem = $"""
             {WritePem("PRIVATE KEY", AlicePkcs8)}
@@ -497,7 +493,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKeyAndEncryptedPrivateKey_ImportsEncrypted()
+        public static void ImportFromEncryptedPem_PrivateKeyAndEncryptedPrivateKey_ImportsEncrypted()
         {
             string pem = $"""
             {WritePem("PRIVATE KEY", AlicePkcs8)}
@@ -512,7 +508,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_EncryptedPrivateKey_Throws()
+        public static void ImportFromPem_EncryptedPrivateKey_Throws()
         {
             string pem = WritePem("ENCRYPTED PRIVATE KEY", AliceEncryptedPkcs8);
             AssertImportFromPem(importer =>
@@ -522,7 +518,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromPem_NoUnderstoodPem_Throws()
+        public static void ImportFromPem_NoUnderstoodPem_Throws()
         {
             string pem = """
             -----BEGIN UNKNOWN-----
@@ -537,7 +533,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_NullSource()
+        public static void ImportFromEncryptedPem_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source",
                 static () => X25519DiffieHellman.ImportFromEncryptedPem(
@@ -551,7 +547,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_NullPassword()
+        public static void ImportFromEncryptedPem_NullPassword()
         {
             AssertExtensions.Throws<ArgumentNullException>("password",
                 static () => X25519DiffieHellman.ImportFromEncryptedPem("the pem", (string)null));
@@ -561,7 +557,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_Roundtrip()
+        public static void ImportFromEncryptedPem_PrivateKey_Roundtrip()
         {
             string pem = WritePem("ENCRYPTED PRIVATE KEY", AliceEncryptedPkcs8);
             AssertImportFromEncryptedPem(importer =>
@@ -572,7 +568,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_Ambiguous_Throws()
+        public static void ImportFromEncryptedPem_PrivateKey_Ambiguous_Throws()
         {
             string pem = $"""
             {WritePem("ENCRYPTED PRIVATE KEY", AliceEncryptedPkcs8)}
@@ -586,7 +582,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_DoesNotImportNonEncrypted()
+        public static void ImportFromEncryptedPem_PrivateKey_DoesNotImportNonEncrypted()
         {
             string pem = WritePem("PRIVATE KEY", AlicePkcs8);
             AssertImportFromEncryptedPem(importer =>
@@ -597,7 +593,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_NoUnderstoodPem_Throws()
+        public static void ImportFromEncryptedPem_NoUnderstoodPem_Throws()
         {
             string pem = """
             -----BEGIN UNKNOWN-----
@@ -612,7 +608,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_IgnoresNotUnderstoodPems()
+        public static void ImportFromEncryptedPem_PrivateKey_IgnoresNotUnderstoodPems()
         {
             string pem = $"""
             -----BEGIN UNKNOWN-----
@@ -628,7 +624,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void ImportFromEncryptedPem_PrivateKey_WrongPassword()
+        public static void ImportFromEncryptedPem_PrivateKey_WrongPassword()
         {
             string pem = WritePem("ENCRYPTED PRIVATE KEY", AliceEncryptedPkcs8);
             AssertImportFromEncryptedPem(importer =>

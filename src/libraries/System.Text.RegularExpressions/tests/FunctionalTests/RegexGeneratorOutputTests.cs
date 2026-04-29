@@ -11,13 +11,9 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
+    [ConditionalClass(typeof(RegexGeneratorOutputTests), nameof(GeneratorOutputTestsSupported))]
     public partial class RegexGeneratorOutputTests
     {
-        public RegexGeneratorOutputTests()
-        {
-            Assert.SkipUnless(RegexGeneratorOutputTests.GeneratorOutputTestsSupported, "Precondition not met");
-        }
-
         public static bool GeneratorOutputTestsSupported =>
             PlatformDetection.IsReflectionEmitSupported &&
             PlatformDetection.IsNotMobile &&

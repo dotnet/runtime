@@ -469,36 +469,27 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectSync : Connect<SocketHelperArraySync>
     {
-        public ConnectSync(ITestOutputHelper output) : base(output)
- {
-     Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
- }
+        public ConnectSync(ITestOutputHelper output) : base(output) {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking>
     {
-            public ConnectSyncForceNonBlocking(ITestOutputHelper output) : base(output)
-            {
-                Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-            }
+        public ConnectSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectApm : Connect<SocketHelperApm>
     {
-        public ConnectApm(ITestOutputHelper output) : base(output)
- {
-     Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
- }
+        public ConnectApm(ITestOutputHelper output) : base(output) {}
     }
 
     public sealed class ConnectTask : Connect<SocketHelperTask>
     {
-        public ConnectTask(ITestOutputHelper output) : base(output)
-        {
-            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-        }
+        public ConnectTask(ITestOutputHelper output) : base(output) {}
     }
 
     public sealed class ConnectEap : Connect<SocketHelperEap>
@@ -779,20 +770,16 @@ namespace System.Net.Sockets.Tests
         public ConnectSync_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectSyncForceNonBlocking_NonParallel : Connect_NonParallel<SocketHelperSyncForceNonBlocking>
     {
-        public ConnectSyncForceNonBlocking_NonParallel(ITestOutputHelper output) : base(output)
- {
-     Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
- }
+        public ConnectSyncForceNonBlocking_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectApm_NonParallel : Connect_NonParallel<SocketHelperApm>
     {
-            public ConnectApm_NonParallel(ITestOutputHelper output) : base(output)
-            {
-                Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "Precondition not met");
-            }
+        public ConnectApm_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class ConnectTask_NonParallel : Connect_NonParallel<SocketHelperTask>

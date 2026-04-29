@@ -12,13 +12,9 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class AssemblySaveResourceTests
     {
-        public AssemblySaveResourceTests()
-        {
-            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "Precondition not met");
-        }
-
         [Theory]
         [InlineData(new byte[] { 1 })]
         [InlineData(new byte[] { 1, 2 })] // Verify blob alignment padding by adding a byte.

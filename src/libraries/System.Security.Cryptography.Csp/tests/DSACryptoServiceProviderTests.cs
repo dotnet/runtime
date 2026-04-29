@@ -7,17 +7,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Csp.Tests
 {
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public class DSACryptoServiceProviderTests
     {
-        public DSACryptoServiceProviderTests()
-        {
-            Assert.SkipUnless(PlatformSupport.IsDSASupported, "Precondition not met");
-        }
-
         const int PROV_DSS_DH = 13;
 
         [Fact]
-        public void DefaultKeySize()
+        public static void DefaultKeySize()
         {
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -26,7 +22,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void PublicOnly_DefaultKey()
+        public static void PublicOnly_DefaultKey()
         {
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -38,7 +34,7 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51331", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        public void PublicOnly_WithPrivateKey()
+        public static void PublicOnly_WithPrivateKey()
         {
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -50,7 +46,7 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters on Unix
-        public void CreateKey()
+        public static void CreateKey()
         {
             CspParameters cspParameters = new CspParameters(PROV_DSS_DH);
 
@@ -63,7 +59,7 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters on Unix
-        public void CreateKey_RoundtripBlob()
+        public static void CreateKey_RoundtripBlob()
         {
             const int KeySize = 512;
 
@@ -93,7 +89,7 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // No support for CspKeyContainerInfo on Unix
-        public void DefaultKey_Parameters()
+        public static void DefaultKey_Parameters()
         {
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -123,7 +119,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void DefaultKey_NotPersisted()
+        public static void DefaultKey_NotPersisted()
         {
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -133,7 +129,7 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters on Unix
-        public void NamedKey_DefaultProvider()
+        public static void NamedKey_DefaultProvider()
         {
             const int KeySize = 1024;
 
@@ -179,7 +175,7 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters on Unix
-        public void NonExportable_Ephemeral()
+        public static void NonExportable_Ephemeral()
         {
             CspParameters cspParameters = new CspParameters
             {
@@ -199,7 +195,7 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters on Unix
-        public void NonExportable_Persisted()
+        public static void NonExportable_Persisted()
         {
             CspParameters cspParameters = new CspParameters
             {
@@ -222,7 +218,7 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void Ctor_UseCspParameter_Throws_Unix()
+        public static void Ctor_UseCspParameter_Throws_Unix()
         {
             var cspParameters = new CspParameters();
             Assert.Throws<PlatformNotSupportedException>(() => new DSACryptoServiceProvider(cspParameters));
@@ -231,7 +227,7 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void CspKeyContainerInfo_Throws_Unix()
+        public static void CspKeyContainerInfo_Throws_Unix()
         {
 
             using (var dsa = new DSACryptoServiceProvider())
@@ -241,7 +237,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void ImportParameters_KeyTooBig_Throws()
+        public static void ImportParameters_KeyTooBig_Throws()
         {
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -251,7 +247,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void VerifyHash_InvalidHashAlgorithm_Throws()
+        public static void VerifyHash_InvalidHashAlgorithm_Throws()
         {
             byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
@@ -263,7 +259,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void SignHash_DefaultAlgorithm_Success()
+        public static void SignHash_DefaultAlgorithm_Success()
         {
             byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
@@ -275,7 +271,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void SignHash_InvalidHashAlgorithm_Throws()
+        public static void SignHash_InvalidHashAlgorithm_Throws()
         {
             byte[] hashVal = SHA256.HashData(DSATestData.HelloBytes);
 
@@ -286,7 +282,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void VerifyHash_DefaultAlgorithm_Success()
+        public static void VerifyHash_DefaultAlgorithm_Success()
         {
             byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
@@ -298,7 +294,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void VerifyHash_CaseInsensitive_Success()
+        public static void VerifyHash_CaseInsensitive_Success()
         {
             byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
@@ -313,7 +309,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void SignData_CaseInsensitive_Throws()
+        public static void SignData_CaseInsensitive_Throws()
         {
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -322,7 +318,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void SignData_InvalidHashAlgorithm_Throws()
+        public static void SignData_InvalidHashAlgorithm_Throws()
         {
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -333,7 +329,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void VerifyData_InvalidHashAlgorithm_Throws()
+        public static void VerifyData_InvalidHashAlgorithm_Throws()
         {
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -345,7 +341,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public void SignatureAlgorithm_Success()
+        public static void SignatureAlgorithm_Success()
         {
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -355,7 +351,7 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Only Unix has _impl shim pattern
-        public void TestShimOverrides_Unix()
+        public static void TestShimOverrides_Unix()
         {
             ShimHelpers.VerifyAllBaseMembersOverridden(typeof(DSACryptoServiceProvider));
         }

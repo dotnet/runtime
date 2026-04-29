@@ -9,13 +9,9 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveTypeBuilderAPIsTests
     {
-        public AssemblySaveTypeBuilderAPIsTests()
-        {
-            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "Precondition not met");
-        }
-
         [Fact]
         public void DefineMethodOverride_InterfaceMethod()
         {
@@ -654,7 +650,7 @@ namespace System.Reflection.Emit.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
-        public void DefinePInvokeMethodExecution_Windows()
+        public static void DefinePInvokeMethodExecution_Windows()
         {
             const string EnvironmentVariable = "COMPUTERNAME";
 
@@ -725,7 +721,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(TestData))]
-        public void TestDefinePInvokeMethod(DpmParams p)
+        public static void TestDefinePInvokeMethod(DpmParams p)
         {
             using (TempFile file = TempFile.Create())
             {
@@ -881,7 +877,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void DefineUninitializedDataTest()
+        public static void DefineUninitializedDataTest()
         {
             using (TempFile file = TempFile.Create())
             {

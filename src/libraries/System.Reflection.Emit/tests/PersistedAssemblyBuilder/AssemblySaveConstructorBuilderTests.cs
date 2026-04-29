@@ -7,13 +7,9 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveConstructorBuilderTests
     {
-        public AssemblySaveConstructorBuilderTests()
-        {
-            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "Precondition not met");
-        }
-
         [Fact]
         public void DefineConstructorsTest()
         {

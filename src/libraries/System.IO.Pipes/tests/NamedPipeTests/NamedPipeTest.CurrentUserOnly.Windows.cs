@@ -118,6 +118,7 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// Negative tests for PipeOptions.CurrentUserOnly in Windows.
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
     public class NamedPipeTest_CurrentUserOnly_Windows : IClassFixture<TestAccountImpersonator>
     {
         public static bool IsSupportedWindowsVersionAndPrivilegedProcess => PlatformDetection.IsPrivilegedProcess
@@ -129,7 +130,6 @@ namespace System.IO.Pipes.Tests
 
         public NamedPipeTest_CurrentUserOnly_Windows(TestAccountImpersonator testAccountImpersonator)
         {
-            Assert.SkipUnless(PlatformDetection.IsBuiltInComEnabled, "Precondition not met");
             _testAccountImpersonator = testAccountImpersonator;
         }
 

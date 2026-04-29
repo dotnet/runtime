@@ -8,12 +8,10 @@ using Xunit;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
+    [ConditionalClass(typeof(QuicTestBase))]
     public class MsQuicPlatformDetectionTests : QuicTestBase
     {
-        public MsQuicPlatformDetectionTests(ITestOutputHelper output) : base(output)
-        {
-            Assert.SkipUnless(QuicTestBase.IsSupported, "Precondition not met");
-        }
+        public MsQuicPlatformDetectionTests(ITestOutputHelper output) : base(output) { }
 
         public static bool IsQuicUnsupported => !IsSupported;
 

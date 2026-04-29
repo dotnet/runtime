@@ -36,16 +36,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/92467")]
-    public class SourceGeneratedOutputTests
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))]
+    public class SourceGeneratedOutputTests(ITestOutputHelper logger)
     {
-        private readonly ITestOutputHelper logger;
-
-        public SourceGeneratedOutputTests(ITestOutputHelper logger)
-        {
-            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "Precondition not met");
-            this.logger = logger;
-        }
-
         [Fact]
         public void SimplePoco()
         {
