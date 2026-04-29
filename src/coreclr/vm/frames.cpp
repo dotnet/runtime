@@ -1823,6 +1823,30 @@ void InterpreterFrame::SetContextToInterpMethodContextFrame(T_CONTEXT * pContext
     }
 }
 
+// static
+PTR_InterpreterFrame InterpreterFrame::TryGetOwningFrameFromContext(T_CONTEXT * pContext)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (pContext == NULL)
+    {
+        return NULL;
+    }
+
+    EECodeInfo codeInfo;
+    codeInfo.Init(::GetIP(pContext));
+    if (!codeInfo.IsInterpretedCode())
+    {
+        return NULL;
+    }
+
+    PTR_InterpreterFrame pOwningInterpFrame =
+        dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(pContext));
+    _ASSERTE(pOwningInterpFrame != NULL);
+    _ASSERTE(pOwningInterpFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+    return pOwningInterpFrame;
+}
+
 void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     SyncRegDisplayToCurrentContext(pRD);

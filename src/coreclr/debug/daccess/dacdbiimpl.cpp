@@ -5656,8 +5656,18 @@ BOOL DacDbiInterfaceImpl::IsThreadAtGCSafePlace(VMPTR_Thread vmThread)
 
     ULONG32 flags = (QUICKUNWIND | HANDLESKIPPEDFRAMES | DISABLE_MISSING_FRAME_DETECTION);
 
+    PTR_Frame pStartFrame = pThread->GetFrame();
+#ifdef FEATURE_INTERPRETER
+    PTR_InterpreterFrame pOwningInterpFrame =
+        InterpreterFrame::TryGetOwningFrameFromContext(rd.pCurrentContext);
+    if (pOwningInterpFrame != NULL)
+    {
+        pStartFrame = pOwningInterpFrame->PtrNextFrame();
+    }
+#endif // FEATURE_INTERPRETER
+
     StackFrameIterator iter;
-    iter.Init(pThread, pThread->GetFrame(), &rd, flags);
+    iter.Init(pThread, pStartFrame, &rd, flags);
 
     CrawlFrame * pCF = &(iter.m_crawl);
     if (pCF->IsFrameless() && pCF->IsActiveFunc())
