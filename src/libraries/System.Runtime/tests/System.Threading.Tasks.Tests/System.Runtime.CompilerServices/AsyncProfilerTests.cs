@@ -950,10 +950,10 @@ namespace System.Threading.Tasks.Tests
                 });
             });
 
-            var eventIds = CollectAsyncEventIds(events);
+            var eventIds = CollectAsyncEventIdsWithTimestamps(events);
 
-            int suspendIdx = eventIds.IndexOf(AsyncEventID.SuspendAsyncCallstack);
-            int completeIdx = eventIds.IndexOf(AsyncEventID.CompleteAsyncContext);
+            int suspendIdx = eventIds.FindIndex(e => e.EventId == AsyncEventID.SuspendAsyncCallstack);
+            int completeIdx = eventIds.FindIndex(e => e.EventId == AsyncEventID.CompleteAsyncContext);
 
             Assert.True(suspendIdx >= 0, "Expected SuspendAsyncCallstack event");
             Assert.True(completeIdx >= 0, "Expected CompleteAsyncContext event");
