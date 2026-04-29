@@ -671,7 +671,9 @@ namespace System.Runtime.CompilerServices
             private static void WaitOnBlockedAsyncThreadContext(AsyncThreadContext context)
             {
                 context.InUse = false;
-                lock (AsyncThreadContextCache.CacheLock) {; }
+                // Intentionally acquire and release CacheLock to wait for the flush thread
+                // to finish any work that is currently synchronized on this lock.
+                lock (AsyncThreadContextCache.CacheLock) { }
                 context.InUse = true;
             }
 
