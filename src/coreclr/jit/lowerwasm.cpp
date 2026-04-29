@@ -722,6 +722,7 @@ void Lowering::AfterLowerBlocks()
             }
             assert(m_minimumTempLclNum < m_compiler->lvaCount);
 
+            JITDUMP("Releasing stackifier temporaries:\n");
             // Reclaim all in-use temporaries
             for (int i = 0; i < TYP_COUNT; i++)
             {
