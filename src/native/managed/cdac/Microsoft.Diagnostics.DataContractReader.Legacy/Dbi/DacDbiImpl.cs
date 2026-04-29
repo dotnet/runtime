@@ -152,14 +152,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
-            if (!loader.TryGetSimpleName(handle, out cdacSimpleName))
-            {
-                hr = HResults.E_FAIL;
-            }
-            else
-            {
-                hr = StringHolderAssignCopy(pStrFilename, cdacSimpleName);
-            }
+            cdacSimpleName = loader.GetSimpleName(handle);
+            hr = StringHolderAssignCopy(pStrFilename, cdacSimpleName);
         }
         catch (System.Exception ex)
         {
@@ -171,7 +165,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             using var legacyHolder = new NativeStringHolder();
             int hrLocal = _legacy.GetModuleSimpleName(vmModule, legacyHolder.Ptr);
             Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0 && hrLocal >= 0)
+            if (hr == HResults.S_OK)
             {
                 Debug.Assert(
                     string.Equals(cdacSimpleName, legacyHolder.Value, System.StringComparison.Ordinal),
