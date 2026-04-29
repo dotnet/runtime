@@ -93,6 +93,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual INotifications Notifications => GetContract<INotifications>();
     /// <summary>
+    /// Gets an instance of the CodeNotifications contract for the target.
+    /// </summary>
+    public virtual ICodeNotifications CodeNotifications => GetContract<ICodeNotifications>();
+    /// <summary>
     /// Gets an instance of the SignatureDecoder contract for the target.
     /// </summary>
     public virtual ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
@@ -150,7 +154,7 @@ public abstract class ContractRegistry
     /// Register a contract implementation for a specific version.
     /// External packages use this to add contract versions or entirely new contract interfaces.
     /// </summary>
-    public abstract void Register<TContract>(int version, Func<Target, TContract> creator)
+    public abstract void Register<TContract>(string version, Func<Target, TContract> creator)
         where TContract : IContract;
 
     /// <summary>

@@ -143,12 +143,14 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void VTVariantNotSupported()
         {
             Assert.Throws<ArgumentException>("vt", () => ComVariant.CreateRaw(VarEnum.VT_VARIANT, 1));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Unknown_NotSupported()
         {
             UnknownWrapper wrapper = new(new TestObject());

@@ -532,7 +532,7 @@
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
 
       <!-- Linker error limit -->
-      <_EmccLinkStepArgs Include="-Wl,-error-limit=0" />
+      <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
     </ItemGroup>
 
     <!-- Collect all link dependencies for incremental build -->
