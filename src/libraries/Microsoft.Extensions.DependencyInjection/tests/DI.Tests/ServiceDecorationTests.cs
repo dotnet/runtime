@@ -201,6 +201,62 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 DecorationMaterializer.Materialize(services, services.Decorations));
         }
 
+        [Theory]
+        [InlineData(ServiceProviderMode.Runtime)]
+        [InlineData(ServiceProviderMode.Expressions)]
+        [InlineData(ServiceProviderMode.ILEmit)]
+        [InlineData(ServiceProviderMode.Dynamic)]
+        private void Decorate_TypeBased_AllEngines(ServiceProviderMode mode)
+        {
+            var services = new ServiceCollection();
+            services.AddTransient<IService, InnerService>();
+            services.Decorate<IService, DecoratorService>();
+
+            var provider = services.BuildServiceProvider(mode);
+            var service = provider.GetRequiredService<IService>();
+
+            var decorator = Assert.IsType<DecoratorService>(service);
+            Assert.IsType<InnerService>(decorator.Inner);
+        }
+
+        [Theory]
+        [InlineData(ServiceProviderMode.Runtime)]
+        [InlineData(ServiceProviderMode.Expressions)]
+        [InlineData(ServiceProviderMode.ILEmit)]
+        [InlineData(ServiceProviderMode.Dynamic)]
+        private void Decorate_FactoryBased_AllEngines(ServiceProviderMode mode)
+        {
+            var services = new ServiceCollection();
+            services.AddTransient<IService, InnerService>();
+            services.Decorate<IService>((inner, sp) => new DecoratorService(inner));
+
+            var provider = services.BuildServiceProvider(mode);
+            var service = provider.GetRequiredService<IService>();
+
+            var decorator = Assert.IsType<DecoratorService>(service);
+            Assert.IsType<InnerService>(decorator.Inner);
+        }
+
+        [Theory]
+        [InlineData(ServiceProviderMode.Runtime)]
+        [InlineData(ServiceProviderMode.Expressions)]
+        [InlineData(ServiceProviderMode.ILEmit)]
+        [InlineData(ServiceProviderMode.Dynamic)]
+        private void Decorate_MultipleDecorators_AllEngines(ServiceProviderMode mode)
+        {
+            var services = new ServiceCollection();
+            services.AddTransient<IService, InnerService>();
+            services.Decorate<IService, DecoratorService>();
+            services.Decorate<IService, OuterDecoratorService>();
+
+            var provider = services.BuildServiceProvider(mode);
+            var service = provider.GetRequiredService<IService>();
+
+            var outer = Assert.IsType<OuterDecoratorService>(service);
+            var inner = Assert.IsType<DecoratorService>(outer.Inner);
+            Assert.IsType<InnerService>(inner.Inner);
+        }
+
         // --- Test types ---
 
         public interface IService { }
