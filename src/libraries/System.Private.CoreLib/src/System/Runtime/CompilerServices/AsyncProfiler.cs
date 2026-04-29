@@ -404,6 +404,7 @@ namespace System.Runtime.CompilerServices
                 {
                     byte[] buffer = eventBuffer.Data;
                     int index = eventBuffer.Index;
+                    long previousTimestamp = context.LastEventTimestamp;
 
                     if ((index + MaxAsyncEventHeaderSize + maxEventPayloadSize) <= buffer.Length && delta >= 0)
                     {
@@ -420,6 +421,7 @@ namespace System.Runtime.CompilerServices
 
                         context.Flush();
 
+                        previousTimestamp = context.LastEventTimestamp;
                         delta = 0;
                         index = eventBuffer.Index;
                     }
@@ -429,7 +431,7 @@ namespace System.Runtime.CompilerServices
                     {
                         Index = index,
                         EventCount = eventBuffer.EventCount,
-                        LastEventTimestamp = context.LastEventTimestamp,
+                        LastEventTimestamp = previousTimestamp,
                     };
 
                     Span<byte> headerSpan = buffer.AsSpan(index, MaxAsyncEventHeaderSize);
