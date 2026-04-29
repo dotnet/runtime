@@ -94,7 +94,10 @@ namespace System.Threading.RateLimiting
                 if (!_limiters.TryGetValue(partition.PartitionKey, out entry))
                 {
                     // Using Lazy avoids calling user code (partition.Factory) inside the lock.
-                    // The LimiterEntry constructor initializes LastAccessTimestamp when the factory runs.
+                    // The LimiterEntry constructor initializes LastAccessTimestamp to Stopwatch.GetTimestamp()
+                    // when the factory runs (on the first access of entry.Value below). Until then,
+                    // Lazy.IsValueCreated is false and Heartbeat skips this entry, so there is no window
+                    // in which the entry could be observed without a timestamp.
                     entry = new Lazy<LimiterEntry>(() => new LimiterEntry(partition.Factory(partition.PartitionKey)));
                     _limiters.Add(partition.PartitionKey, entry);
                     // Cache is invalid now
@@ -102,10 +105,10 @@ namespace System.Threading.RateLimiting
                 }
                 else if (entry.IsValueCreated)
                 {
-                    // Refresh the last-access timestamp under the lock so the Heartbeat won't
-                    // observe a stale value and concurrently evict a limiter that's actively being used.
-                    // Use Interlocked.Exchange so the write is atomic on 32-bit platforms where the
-                    // outside-lock read in Heartbeat may otherwise observe a torn value.
+                    // For subsequent accesses on an already-materialized entry, refresh the timestamp
+                    // under the lock so the Heartbeat won't observe a stale value and concurrently evict
+                    // a limiter that's actively being used. Use Interlocked.Exchange so the write is atomic
+                    // on 32-bit platforms where the outside-lock read in Heartbeat may otherwise tear.
                     Interlocked.Exchange(ref entry.Value.LastAccessTimestamp, Stopwatch.GetTimestamp());
                 }
             }
