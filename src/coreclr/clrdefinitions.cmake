@@ -292,7 +292,8 @@ function(set_target_definitions_to_custom_os_and_arch)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_WASM32)
   endif()
 
-  if (TARGETDETAILS_ARCH STREQUAL "armel")
+  if (TARGETDETAILS_ARCH STREQUAL "armel" OR
+      (TARGETDETAILS_ARCH STREQUAL "arm" AND CLR_CMAKE_TARGET_ANDROID))
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE ARM_SOFTFP)
   endif()
 endfunction()
