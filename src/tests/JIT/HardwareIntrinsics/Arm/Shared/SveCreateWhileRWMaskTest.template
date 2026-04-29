@@ -61,7 +61,7 @@ namespace {Namespace}
                 if (mask.GetElement(i) == 0)
                 {
                     TestLibrary.TestFramework.LogInformation(
-                        $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr): Expected all elements true, but element {i} was false.");
+                        $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr): Expected element {i} to be true.");
                     Succeeded = false;
                     return;
                 }
@@ -86,7 +86,7 @@ namespace {Namespace}
                 if (mask.GetElement(i) == 0)
                 {
                     TestLibrary.TestFramework.LogInformation(
-                        $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr) via reflection: Expected all elements true, but element {i} was false.");
+                        $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr) via reflection: Expected element {i} to be true.");
                     Succeeded = false;
                     return;
                 }
@@ -103,7 +103,7 @@ namespace {Namespace}
             if (mask.GetElement(0) == 0)
             {
                 TestLibrary.TestFramework.LogInformation(
-                    $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr+1): Expected element 0 to be true, but was false.");
+                    $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr+1): Expected element 0 to be true.");
                 Succeeded = false;
                 return;
             }
@@ -113,7 +113,7 @@ namespace {Namespace}
                 if (mask.GetElement(i) != 0)
                 {
                     TestLibrary.TestFramework.LogInformation(
-                        $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr+1): Expected element {i} to be false, but was true.");
+                        $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr+1): Expected element {i} to be false.");
                     Succeeded = false;
                     return;
                 }
