@@ -282,6 +282,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     argument.Generator.Emit(OpCodes.Unbox_Any, parameterType);
                 }
+                else if (parameterType != typeof(object))
+                {
+                    argument.Generator.Emit(OpCodes.Castclass, parameterType);
+                }
             }
 
             argument.Generator.Emit(OpCodes.Newobj, decoratorCallSite.DecoratorConstructor!);

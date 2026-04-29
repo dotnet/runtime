@@ -144,4 +144,8 @@
   <data name="ResolverReturnedNull" xml:space="preserve">
     <value>The resolver returned a null IServiceProviderFactory</value>
   </data>
+  <data name="ServiceDecorationNotSupported" xml:space="preserve">
+    <value>The service provider factory '{0}' does not support service decoration. Implement ISupportServiceDecoration&lt;{1}&gt; to handle decorations, or use the built-in container.</value>
+    <comment>{0} = factory type, {1} = container builder type</comment>
+  </data>
 </root>

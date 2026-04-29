@@ -876,7 +876,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                         for (int p = 0; p < parameters.Length; p++)
                         {
-                            if (innerIndex == -1 && serviceIdentifier.ServiceType.IsAssignableFrom(parameters[p].ParameterType))
+                            if (innerIndex == -1 && parameters[p].ParameterType.IsAssignableFrom(serviceIdentifier.ServiceType))
                             {
                                 // This parameter receives the inner service
                                 innerIndex = p;

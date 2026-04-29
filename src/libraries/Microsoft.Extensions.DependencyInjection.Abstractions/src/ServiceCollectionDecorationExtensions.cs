@@ -156,6 +156,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static void AddDecoration(IServiceCollection services, ServiceDecoration decoration)
         {
+            if (decoration.DecoratorType is { } decoratorType)
+            {
+                ValidateDecoratorType(decoration.ServiceType, decoratorType);
+            }
+
             if (services is IDecorationServiceCollection decorationCollection)
             {
                 decorationCollection.Decorations.Add(decoration);
@@ -163,6 +168,30 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             throw new InvalidOperationException(SR.Format(SR.ServiceCollectionDoesNotSupportDecoration, services.GetType()));
+        }
+
+        private static void ValidateDecoratorType(Type serviceType, Type decoratorType)
+        {
+            if (serviceType.IsGenericTypeDefinition && !decoratorType.IsGenericTypeDefinition)
+            {
+                throw new ArgumentException(
+                    $"Open generic service type '{serviceType}' requires an open generic decorator type, but '{decoratorType}' is not.",
+                    nameof(decoratorType));
+            }
+
+            if (!serviceType.IsGenericTypeDefinition && decoratorType.IsGenericTypeDefinition)
+            {
+                throw new ArgumentException(
+                    $"Closed service type '{serviceType}' cannot be decorated with open generic decorator type '{decoratorType}'.",
+                    nameof(decoratorType));
+            }
+
+            if (decoratorType.IsAbstract || decoratorType.IsInterface)
+            {
+                throw new ArgumentException(
+                    $"The decorator type '{decoratorType}' cannot be abstract or an interface.",
+                    nameof(decoratorType));
+            }
         }
 
     }

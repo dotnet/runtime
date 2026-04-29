@@ -128,7 +128,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public void Decorate_Singleton_ReturnssSameDecoratedInstance()
+        public void Decorate_Singleton_ReturnsSameDecoratedInstance()
         {
             var services = new ServiceCollection();
             services.AddSingleton<IService, InnerService>();

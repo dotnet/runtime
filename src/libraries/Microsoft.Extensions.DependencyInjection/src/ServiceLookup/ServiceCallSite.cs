@@ -19,6 +19,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public abstract Type ServiceType { get; }
         public abstract Type? ImplementationType { get; }
         public abstract CallSiteKind Kind { get; }
+        // Setter is used by ApplyDecorations to transfer the cache to the decorator.
+        // This mutation happens during call site creation under the per-service lock
+        // in CreateCallSite, so it is safe from concurrent access.
         public ResultCache Cache { get; internal set; }
         public object? Value { get; set; }
         public object? Key { get; }
