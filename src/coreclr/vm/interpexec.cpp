@@ -1157,9 +1157,7 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
     MethodDesc* pOriginalMethod = targetMethod;
     if (targetMethod->IsVtableSlot())
     {
-        MethodDesc* pResolved = MethodTable::MapMethodDeclToMethodImpl(targetMethod);
-        if (pResolved != targetMethod)
-            targetMethod = pResolved;
+        targetMethod = MethodTable::MapMethodDeclToMethodImpl(targetMethod);
     }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
