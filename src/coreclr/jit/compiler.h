@@ -6829,7 +6829,6 @@ private:
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclToFieldList(GenTreeLclVar* lcl);
-    GenTreeCall* fgMorphArgs(GenTreeCall* call);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
 
@@ -6937,7 +6936,8 @@ private:
     GenTree* fgMorphReduceAddOps(GenTree* tree);
 
 public:
-    GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTreeCall* fgMorphArgs(GenTreeCall* call);
+    GenTree*     fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
 
 private:
     void fgAssertionGen(GenTree* tree);

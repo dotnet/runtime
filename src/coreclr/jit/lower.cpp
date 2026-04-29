@@ -3711,7 +3711,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
         // 'this' arg clone is not inserted, so no need to use a placeholder for that.
         resolve->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(thisArgClone));
 
-        m_compiler->fgMorphTree(resolve);
+        m_compiler->fgMorphArgs(resolve);
 
         LIR::Range resolveRange = LIR::SeqTree(m_compiler, resolve);
         GenTree*   resolveFirst = resolveRange.FirstNode();
@@ -3859,7 +3859,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                 NewCallArg::Primitive(targetPlaceholder).WellKnown(WellKnownArg::ValidateIndirectCallTarget);
             validate->gtArgs.PushFront(m_compiler, newArg);
 
-            m_compiler->fgMorphTree(validate);
+            m_compiler->fgMorphArgs(validate);
 
             LIR::Range validateRange = LIR::SeqTree(m_compiler, validate);
             GenTree*   validateFirst = validateRange.FirstNode();
@@ -6887,7 +6887,7 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(varDsc->lvType == TYP_I_IMPL);
 
     GenTree* store = m_compiler->gtNewStoreLclVarNode(lclNum, call);
-    m_compiler->fgMorphTree(store);
+    m_compiler->fgMorphArgs(call);
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(m_compiler, store));
     DISPTREERANGE(firstBlockRange, store);
 
@@ -7041,13 +7041,13 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         const unsigned numStkArgBytes = call->gtArgs.OutgoingArgsStackSize();
         GenTree*       stackBytes     = m_compiler->gtNewIconNode(numStkArgBytes, TYP_INT);
         // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
-        GenTree* helperCall =
+        GenTreeCall* helperCall =
             m_compiler->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, frameAddr, stackBytes);
 #else
-        GenTree* helperCall = m_compiler->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, frameAddr);
+        GenTreeCall* helperCall = m_compiler->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, frameAddr);
 #endif
 
-        m_compiler->fgMorphTree(helperCall);
+        m_compiler->fgMorphArgs(helperCall);
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(m_compiler, helperCall));
         LowerNode(helperCall); // helper call is inserted before current node and should be lowered here.
         return;
@@ -7196,7 +7196,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
         // Insert call to CORINFO_HELP_JIT_PINVOKE_END
         GenTreeCall* helperCall = m_compiler->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_END, TYP_VOID, frameAddr);
 
-        m_compiler->fgMorphTree(helperCall);
+        m_compiler->fgMorphArgs(helperCall);
         BlockRange().InsertAfter(call, LIR::SeqTree(m_compiler, helperCall));
         ContainCheckCallOperands(helperCall);
         return;
@@ -10230,7 +10230,7 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     GenTreeIntCon* size = m_compiler->gtNewIconNode((ssize_t)blk->GetLayout()->GetSize(), TYP_I_IMPL);
     BlockRange().InsertBefore(data, size);
 
-    // A hacky way to safely call fgMorphTree in Lower
+    // Use placeholders for the actual nodes so we can safely call fgMorphArgs in Lower
     GenTree* destPlaceholder = m_compiler->gtNewZeroConNode(dest->TypeGet());
     GenTree* dataPlaceholder = m_compiler->gtNewZeroConNode(genActualType(data));
     GenTree* sizePlaceholder = m_compiler->gtNewZeroConNode(genActualType(size));
@@ -10353,7 +10353,7 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     size = m_compiler->gtNewIconNode(blkNode->Size(), TYP_I_IMPL);
     BlockRange().InsertBefore(data, size);
 
-    // A hacky way to safely call fgMorphTree in Lower
+    // Use placeholders for the actual nodes so we can safely call fgMorphArgs in Lower
     GenTree* destPlaceholder = m_compiler->gtNewZeroConNode(dest->TypeGet());
     GenTree* dataPlaceholder = m_compiler->gtNewZeroConNode(genActualType(data));
     GenTree* sizePlaceholder = m_compiler->gtNewZeroConNode(genActualType(size));
