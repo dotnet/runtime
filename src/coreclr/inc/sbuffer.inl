@@ -106,7 +106,7 @@ inline SBuffer::SBuffer(const SBuffer &buffer)
     m_revision = 0;
 #endif
 
-    _ASSERTE(Equals(buffer));
+    _ASSERTE(buffer.m_size == 0 || Equals(buffer));
     CONSISTENCY_CHECK(Check());
 }
 
@@ -262,7 +262,7 @@ inline void SBuffer::Set(const SBuffer &buffer)
         MoveMemory(m_buffer, buffer.m_buffer, buffer.m_size);
     }
 
-    _ASSERTE(Equals(buffer));
+    _ASSERTE(buffer.m_size == 0 || Equals(buffer));
 }
 
 inline void SBuffer::Set(const BYTE *buffer, COUNT_T size)
@@ -287,7 +287,7 @@ inline void SBuffer::Set(const BYTE *buffer, COUNT_T size)
     if (size != 0)
         MoveMemory(m_buffer, buffer, size);
 
-    _ASSERTE(Equals(buffer, size));
+    _ASSERTE(size == 0 || Equals(buffer, size));
 }
 
 inline void SBuffer::SetImmutable(const BYTE *buffer, COUNT_T size)
@@ -312,7 +312,7 @@ inline void SBuffer::SetImmutable(const BYTE *buffer, COUNT_T size)
         Set(temp);
     }
 
-    _ASSERTE(Equals(buffer, size));
+    _ASSERTE(size == 0 || Equals(buffer, size));
 }
 
 inline COUNT_T SBuffer::GetSize() const
