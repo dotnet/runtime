@@ -93,7 +93,8 @@ namespace System.Threading.RateLimiting
                 ThrowIfDisposed();
                 if (!_limiters.TryGetValue(partition.PartitionKey, out entry))
                 {
-                    // Using Lazy avoids calling user code (partition.Factory) inside the lock
+                    // Using Lazy avoids calling user code (partition.Factory) inside the lock.
+                    // The LimiterEntry constructor initializes LastAccessTimestamp when the factory runs.
                     entry = new Lazy<LimiterEntry>(() => new LimiterEntry(partition.Factory(partition.PartitionKey)));
                     _limiters.Add(partition.PartitionKey, entry);
                     // Cache is invalid now
@@ -101,17 +102,15 @@ namespace System.Threading.RateLimiting
                 }
                 else if (entry.IsValueCreated)
                 {
-                    // Refresh the last-access timestamp under the lock so the Heartbeat won't observe
-                    // a stale value and concurrently evict a limiter that's actively being used.
-                    entry.Value.LastAccessTimestamp = Stopwatch.GetTimestamp();
+                    // Refresh the last-access timestamp under the lock so the Heartbeat won't
+                    // observe a stale value and concurrently evict a limiter that's actively being used.
+                    // Use Interlocked.Exchange so the write is atomic on 32-bit platforms where the
+                    // outside-lock read in Heartbeat may otherwise observe a torn value.
+                    Interlocked.Exchange(ref entry.Value.LastAccessTimestamp, Stopwatch.GetTimestamp());
                 }
             }
 
-            LimiterEntry limiterEntry = entry.Value;
-            // Refresh the last-access timestamp so that the Heartbeat can evict limiters whose
-            // IdleDuration is always null (e.g. NoopLimiter) once they stop being accessed.
-            limiterEntry.LastAccessTimestamp = Stopwatch.GetTimestamp();
-            return limiterEntry.Limiter;
+            return entry.Value.Limiter;
         }
 
         protected override void Dispose(bool disposing)
@@ -246,15 +245,17 @@ namespace System.Threading.RateLimiting
                 // Fall back to our internally tracked last-access timestamp when the limiter
                 // does not report an idle duration (e.g. NoopLimiter always returns null).
                 // This ensures idle partitions are eventually evicted regardless of the limiter implementation.
+                // Use Interlocked.Read so the value is read atomically on 32-bit platforms where 64-bit
+                // reads are not guaranteed to be atomic.
                 TimeSpan idleDuration = limiterEntry.Limiter.IdleDuration
-                    ?? RateLimiterHelper.GetElapsedTime(limiterEntry.LastAccessTimestamp).GetValueOrDefault();
+                    ?? RateLimiterHelper.GetElapsedTime(Interlocked.Read(ref limiterEntry.LastAccessTimestamp)).GetValueOrDefault();
                 if (idleDuration > s_idleTimeLimit)
                 {
                     lock (Lock)
                     {
                         // Check time again under lock to make sure no one calls Acquire or WaitAsync after checking the time and removing the limiter
                         idleDuration = limiterEntry.Limiter.IdleDuration
-                            ?? RateLimiterHelper.GetElapsedTime(limiterEntry.LastAccessTimestamp).GetValueOrDefault();
+                            ?? RateLimiterHelper.GetElapsedTime(Interlocked.Read(ref limiterEntry.LastAccessTimestamp)).GetValueOrDefault();
                         if (idleDuration > s_idleTimeLimit)
                         {
                             // Remove limiter from the lookup table and mark cache as invalid
