@@ -1772,7 +1772,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> CreateWhileGreaterThanOrEqualMaskUInt64(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
 
 
-        // While read-after-write ordering
+        // While free of read-after-write conflicts
 
         /// <summary>
         ///   <para>svbool_t svwhilerw[_u8](const uint8_t *op1, const uint8_t *op2)</para>
