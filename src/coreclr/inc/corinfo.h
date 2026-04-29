@@ -1834,8 +1834,6 @@ struct CORINFO_ASYNC_INFO
     CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
     // Method handle for AsyncHelpers.CaptureExecutionContext, used during suspension
     CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
-    // Method handle for AsyncHelpers.RestoreExecutionContext, used during resumption
-    CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
     // Method handle for AsyncHelpers.CaptureContinuationContext, used during suspension
     CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
     // Method handle for AsyncHelpers.CaptureContexts, used at the beginning of async methods
