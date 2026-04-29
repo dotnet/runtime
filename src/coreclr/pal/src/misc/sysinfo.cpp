@@ -24,7 +24,7 @@ Revision History:
 #include <sched.h>
 #include <errno.h>
 #include <unistd.h>
-#include <minipal/wasm.h>
+#include <minipal/utils.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <sys/types.h>

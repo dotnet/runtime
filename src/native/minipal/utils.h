@@ -146,4 +146,15 @@
     #define __asan_handle_no_return()
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Returns the OS page size in bytes. The value is cached after the first call.
+int minipal_getpagesize(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // HAVE_MINIPAL_UTILS_H

@@ -39,7 +39,7 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include <unistd.h>
 #include <limits.h>
 #include <dlfcn.h>
-#include <minipal/wasm.h>
+#include <minipal/utils.h>
 
 #if HAVE_VM_ALLOCATE
 #include <mach/vm_map.h>

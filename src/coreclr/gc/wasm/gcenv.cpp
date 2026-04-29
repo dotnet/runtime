@@ -30,7 +30,7 @@
 
 #include <minipal/thread.h>
 #include <minipal/time.h>
-#include <minipal/wasm.h>
+#include <minipal/utils.h>
 
 #include "globals.h"
 
