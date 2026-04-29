@@ -403,10 +403,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             if (fpCallback == null)
+            {
                 throw new ArgumentNullException(nameof(fpCallback));
+            }
 
             if (vmAppDomain == 0)
+            {
                 return hr;
+            }
 
             Contracts.ILoader loader = _target.Contracts.Loader;
             foreach (Contracts.ModuleHandle handle in loader.GetModuleHandles(
@@ -436,7 +440,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 Debug.Assert(
                     cdacAssemblies!.SequenceEqual(dacAssemblies),
-                    $"Assembly enumeration mismatch - cDAC: [{string.Join(",", cdacAssemblies!.Select(a => $"0x{a:x}"))}], DAC: [{string.Join(",", dacAssemblies.Select(a => $"0x{a:x}"))}]");
+                    $"Assembly enumeration mismatch - "
+                    + $"cDAC: [{string.Join(",", cdacAssemblies!.Select(a => $"0x{a:x}"))}], "
+                    + $"DAC: [{string.Join(",", dacAssemblies.Select(a => $"0x{a:x}"))}]");
             }
         }
 #endif
