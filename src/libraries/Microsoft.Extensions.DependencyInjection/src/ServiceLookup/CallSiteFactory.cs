@@ -103,6 +103,37 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 _descriptorLookup.TryGetValue(cacheKey, out ServiceDescriptorCacheItem cacheItem);
                 _descriptorLookup[cacheKey] = cacheItem.Add(descriptor);
             }
+
+            // Validate open generic decorations
+            foreach (ServiceDecoration decoration in _decorations)
+            {
+                if (decoration.DecoratorType is not { IsGenericTypeDefinition: true } decoratorType)
+                {
+                    continue;
+                }
+
+                Type serviceType = decoration.ServiceType;
+                if (!serviceType.IsGenericTypeDefinition)
+                {
+                    throw new ArgumentException(
+                        SR.Format(SR.OpenGenericServiceRequiresOpenGenericImplementation, serviceType),
+                        "decorations");
+                }
+
+                if (decoratorType.IsAbstract || decoratorType.IsInterface)
+                {
+                    throw new ArgumentException(
+                        SR.Format(SR.TypeCannotBeActivated, decoratorType, serviceType));
+                }
+
+                Type[] serviceTypeGenericArguments = serviceType.GetGenericArguments();
+                Type[] decoratorTypeGenericArguments = decoratorType.GetGenericArguments();
+                if (serviceTypeGenericArguments.Length != decoratorTypeGenericArguments.Length)
+                {
+                    throw new ArgumentException(
+                        SR.Format(SR.ArityOfOpenGenericServiceNotEqualArityOfOpenGenericImplementation, serviceType, decoratorType), "decorations");
+                }
+            }
         }
 
         /// <summary>
@@ -187,7 +218,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             var serviceIdentifier = ServiceIdentifier.FromDescriptor(serviceDescriptor);
             if (_descriptorLookup.TryGetValue(serviceIdentifier, out ServiceDescriptorCacheItem descriptor))
             {
-                return TryCreateExact(serviceDescriptor, serviceIdentifier, callSiteChain, descriptor.GetSlot(serviceDescriptor));
+                ServiceCallSite? callSite = TryCreateExact(serviceDescriptor, serviceIdentifier, callSiteChain, descriptor.GetSlot(serviceDescriptor));
+                if (callSite != null && _decorations.Length > 0)
+                {
+                    callSite = ApplyDecorations(callSite, serviceIdentifier, callSiteChain);
+                }
+                return callSite;
             }
 
             Debug.Fail("_descriptorLookup didn't contain requested serviceDescriptor");

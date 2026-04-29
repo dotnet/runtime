@@ -201,6 +201,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 DecorationMaterializer.Materialize(services, services.Decorations));
         }
 
+        [Fact]
+        public void ValidateOnBuild_InvalidDecorator_Throws()
+        {
+            var services = new ServiceCollection();
+            services.AddTransient<IService, InnerService>();
+            services.Decorate<IService, InvalidDecoratorService>();
+
+            var ex = Assert.Throws<AggregateException>(() =>
+                services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true }));
+            Assert.NotEmpty(ex.InnerExceptions);
+        }
+
         [Theory]
         [InlineData(ServiceProviderMode.Runtime)]
         [InlineData(ServiceProviderMode.Expressions)]
@@ -313,6 +325,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 Inner = inner;
             }
+        }
+        // Decorator without a constructor accepting IService — invalid
+        public class InvalidDecoratorService : IService
+        {
+            public InvalidDecoratorService(string notAService) { }
         }
     }
 }
