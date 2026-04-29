@@ -148,6 +148,8 @@ namespace ILCompiler
             new("--strip-inlining-info") { Description = SR.StripInliningInfoOption };
         public Option<bool> StripDebugInfo { get; } =
             new("--strip-debug-info") { Description = SR.StripDebugInfoOption };
+        public Option<bool> StripILBodies { get; } =
+            new("--strip-il-bodies") { Description = SR.StripILBodiesOption };
         public Option<bool> SynthesizeRandomMibc { get; } =
             new("--synthesize-random-mibc");
 
@@ -228,6 +230,7 @@ namespace ILCompiler
             Options.Add(HotColdSplitting);
             Options.Add(StripInliningInfo);
             Options.Add(StripDebugInfo);
+            Options.Add(StripILBodies);
             Options.Add(SynthesizeRandomMibc);
             Options.Add(DeterminismStress);
 

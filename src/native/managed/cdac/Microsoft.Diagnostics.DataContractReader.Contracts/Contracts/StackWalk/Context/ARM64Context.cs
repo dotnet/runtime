@@ -24,7 +24,7 @@ internal struct ARM64Context : IPlatformContext
         CONTEXT_X18 = CONTEXT_ARM64 | 0x10,
         CONTEXT_XSTATE = CONTEXT_ARM64 | 0x20,
         CONTEXT_FULL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
-        CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS | CONTEXT_X18,
+        CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS,
 
         //
         // This flag is set by the unwinder if it has unwound to a call
@@ -38,10 +38,9 @@ internal struct ARM64Context : IPlatformContext
 
     public readonly uint Size => 0x390;
 
-    public readonly uint DefaultContextFlags => (uint)(ContextFlagsValues.CONTEXT_CONTROL |
-                                                       ContextFlagsValues.CONTEXT_INTEGER |
-                                                       ContextFlagsValues.CONTEXT_FLOATING_POINT |
-                                                       ContextFlagsValues.CONTEXT_DEBUG_REGISTERS);
+    public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+
+    public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
     public readonly int StackPointerRegister => 31;
 

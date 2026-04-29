@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Xml;
@@ -38,20 +39,28 @@ namespace System.ServiceModel.Syndication
             _bufferElementIndex = 0;
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public SyndicationElementExtension(object dataContractExtension) : this(dataContractExtension, (XmlObjectSerializer)null)
         {
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public SyndicationElementExtension(object dataContractExtension, XmlObjectSerializer dataContractSerializer)
             : this(null, null, dataContractExtension, dataContractSerializer)
         {
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension)
             : this(outerName, outerNamespace, dataContractExtension, null)
         {
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
             ArgumentNullException.ThrowIfNull(dataContractExtension);
@@ -68,6 +77,8 @@ namespace System.ServiceModel.Syndication
             _extensionDataWriter = new ExtensionDataWriter(_extensionData, dataContractSerializer, _outerName, _outerNamespace);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public SyndicationElementExtension(object xmlSerializerExtension, XmlSerializer serializer)
         {
             ArgumentNullException.ThrowIfNull(xmlSerializerExtension);
@@ -87,6 +98,8 @@ namespace System.ServiceModel.Syndication
 
         public string OuterName
         {
+            [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "Constructors not marked RequiresUnreferencedCode always set _outerName to a non-null value.")]
+            [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "Constructors not marked RequiresUnreferencedCode always set _outerName to a non-null value.")]
             get
             {
                 if (_outerName == null)
@@ -100,6 +113,8 @@ namespace System.ServiceModel.Syndication
 
         public string OuterNamespace
         {
+            [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "Constructors not marked RequiresUnreferencedCode always set _outerName to a non-null value.")]
+            [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "Constructors not marked RequiresUnreferencedCode always set _outerName to a non-null value.")]
             get
             {
                 if (_outerName == null)
@@ -111,8 +126,12 @@ namespace System.ServiceModel.Syndication
             }
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public TExtension GetObject<TExtension>() => GetObject<TExtension>(new DataContractSerializer(typeof(TExtension)));
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public TExtension GetObject<TExtension>(XmlObjectSerializer serializer)
         {
             ArgumentNullException.ThrowIfNull(serializer);
@@ -127,6 +146,8 @@ namespace System.ServiceModel.Syndication
             }
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public TExtension GetObject<TExtension>(XmlSerializer serializer)
         {
             ArgumentNullException.ThrowIfNull(serializer);
@@ -159,6 +180,8 @@ namespace System.ServiceModel.Syndication
             return reader;
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "Constructors not marked RequiresUnreferencedCode always set _extensionDataWriter to null.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "Constructors not marked RequiresUnreferencedCode always set _extensionDataWriter to null.")]
         public void WriteTo(XmlWriter writer)
         {
             ArgumentNullException.ThrowIfNull(writer);
@@ -193,6 +216,8 @@ namespace System.ServiceModel.Syndication
             }
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         private void EnsureOuterNameAndNs()
         {
             Debug.Assert(_extensionDataWriter != null, "outer name is null only for datacontract and xmlserializer cases");
@@ -224,6 +249,8 @@ namespace System.ServiceModel.Syndication
                 _extensionData = extensionData;
             }
 
+            [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+            [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
             public void WriteTo(XmlWriter writer)
             {
                 if (_xmlSerializer != null)
@@ -247,6 +274,8 @@ namespace System.ServiceModel.Syndication
                 }
             }
 
+            [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+            [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
             internal void ComputeOuterNameAndNs(out string name, out string ns)
             {
                 Debug.Assert(_outerName == null, "All callers of this function should already check for a null outer name.");
@@ -284,6 +313,8 @@ namespace System.ServiceModel.Syndication
                 }
             }
 
+            [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+            [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
             internal void ReadOuterNameAndNs(out string name, out string ns)
             {
                 using (MemoryStream stream = new MemoryStream())

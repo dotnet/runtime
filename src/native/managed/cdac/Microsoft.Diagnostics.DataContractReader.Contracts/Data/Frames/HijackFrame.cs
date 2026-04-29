@@ -11,8 +11,8 @@ internal class HijackFrame : IData<HijackFrame>
     public HijackFrame(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HijackFrame);
-        ReturnAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(ReturnAddress)].Offset);
-        HijackArgsPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(HijackArgsPtr)].Offset);
+        ReturnAddress = target.ReadPointerField(address, type, nameof(ReturnAddress));
+        HijackArgsPtr = target.ReadPointerField(address, type, nameof(HijackArgsPtr));
         Address = address;
     }
 

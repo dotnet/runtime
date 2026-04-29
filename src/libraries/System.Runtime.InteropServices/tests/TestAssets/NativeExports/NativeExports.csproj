@@ -40,7 +40,7 @@
 
   <Target Name="GetUnixBuildArgumentsForDNNE" Condition="'$(OS)' == 'Unix'">
     <PropertyGroup>
-      <NativeCompiler>$(Compiler)</NativeCompiler>
+      <NativeCompiler>$(CppCompilerAndLinker)</NativeCompiler>
       <NativeCompiler Condition="'$(NativeCompiler)' == ''">clang</NativeCompiler>
     </PropertyGroup>
 

@@ -8,6 +8,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -118,6 +119,29 @@ namespace System.Diagnostics
         public bool RedirectStandardInput { get; set; }
         public bool RedirectStandardOutput { get; set; }
         public bool RedirectStandardError { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the process should be started in a detached manner.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Starts a new detached process with standard input, output, and error redirected to the null device
+        /// (<c>NUL</c> on Windows, <c>/dev/null</c> on Unix) unless explicitly configured by the user with
+        /// <see cref="RedirectStandardInput"/>, <see cref="RedirectStandardOutput"/>, <see cref="RedirectStandardError"/>,
+        /// <see cref="StandardInputHandle"/>, <see cref="StandardOutputHandle"/>, or <see cref="StandardErrorHandle"/>.
+        /// </para>
+        /// <para>
+        /// On Windows, the process is started with the
+        /// <see href="https://learn.microsoft.com/windows/win32/procthread/process-creation-flags">DETACHED_PROCESS</see> flag.
+        /// </para>
+        /// <para>
+        /// On Unix, the process is started as a leader of a new session.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="UseShellExecute"/> set to <see langword="true"/>.
+        /// </para>
+        /// </remarks>
+        public bool StartDetached { get; set; }
 
         /// <summary>
         /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard input of the child process.
@@ -241,6 +265,26 @@ namespace System.Diagnostics
         /// or <see langword="null"/> to use the default handle inheritance behavior.
         /// </value>
         public IList<SafeHandle>? InheritedHandles { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the child process should be terminated when the parent process exits.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// When this property is set to <see langword="true"/>, the operating system will automatically terminate
+        /// the child process when the parent process exits, regardless of whether the parent exits gracefully or crashes.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="UseShellExecute"/> set to <see langword="true"/>.
+        /// </para>
+        /// <para>
+        /// On Windows, this is implemented using Job Objects with the
+        /// <see href="https://learn.microsoft.com/windows/win32/api/winnt/ns-winnt-jobobject_basic_limit_information">JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE</see> flag.
+        /// </para>
+        /// </remarks>
+        /// <value><see langword="true"/> to terminate the child process when the parent exits; otherwise, <see langword="false"/>. The default is <see langword="false"/>.</value>
+        [SupportedOSPlatform("windows")]
+        public bool KillOnParentExit { get; set; }
 
         public Encoding? StandardInputEncoding { get; set; }
 
@@ -394,9 +438,21 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
+            if (StartDetached && UseShellExecute)
+            {
+                throw new InvalidOperationException(SR.StartDetachedNotCompatible);
+            }
+
             if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
             {
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
+            }
+
+#pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the attribute guards the actual effect
+            if (KillOnParentExit && UseShellExecute)
+#pragma warning restore CA1416
+            {
+                throw new InvalidOperationException(SR.KillOnParentExitCannotBeUsedWithUseShellExecute);
             }
 
             if (InheritedHandles is not null)

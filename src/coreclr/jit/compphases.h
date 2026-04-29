@@ -128,6 +128,7 @@ CompPhaseNameMacro(PHASE_DFS_BLOCKS_WASM,            "Wasm remove unreachable bl
 CompPhaseNameMacro(PHASE_WASM_EH_FLOW,               "Wasm eh control flow",           false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_TRANSFORM_SCCS,        "Wasm transform sccs",            false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_CONTROL_FLOW,          "Wasm control flow",              false, -1, false)
+CompPhaseNameMacro(PHASE_WASM_VIRTUAL_IP,            "Wasm virtual IP",                false, -1, false)
 
 CompPhaseNameMacro(PHASE_ASYNC,                      "Transform async",                false, -1, true)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS,             "Local var liveness",             true,  -1, false)
