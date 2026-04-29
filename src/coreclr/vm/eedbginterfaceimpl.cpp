@@ -262,7 +262,7 @@ bool EEDbgInterfaceImpl::IsThreadExceptionNull(Thread *pThread)
     }
     CONTRACTL_END;
 
-    return pThread->IsThrowableNull() && pThread->IsLastThrownObjectNull();
+    return pThread->IsThrowableNull();
 }
 
 void EEDbgInterfaceImpl::ClearThreadException(Thread *pThread)

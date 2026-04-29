@@ -2546,42 +2546,7 @@ OBJECTREF StackTraceInfo::GetKeepAliveObject(MethodDesc* pMethod)
 }
 
 //
-// Append stack frame to an exception stack trace - handle version.
-//
-void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        NOTHROW;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END
-
-    Thread *pThread = GetThread();
-    MethodTable* pMT = ObjectFromHandle(hThrowable)->GetMethodTable();
-    _ASSERTE(IsException(pMT));
-
-    PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
-    // Check if the flag indicating foreign exception raise has been setup or not,
-    // and then reset it so that subsequent processing of managed frames proceeds
-    // normally.
-    BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
-    pCurTES->ResetRaisingForeignException();
-
-    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
-
-    // Do not save stacktrace to preallocated exception.  These are shared.
-    if (CLRException::IsPreallocatedExceptionObject(ObjectFromHandle(hThrowable)))
-    {
-        return;
-    }
-
-    AppendElementImpl(ObjectFromHandle(hThrowable), currentIP, currentSP, pFunc, pCf, pThread, fRaisingForeignException);
-}
-
-//
-// Append stack frame to an exception stack trace - objectref version for runtime-async stack frames.
+// Append stack frame to an exception stack trace
 //
 void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
 {
@@ -2597,8 +2562,22 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
     MethodTable* pMT = pThrowable->GetMethodTable();
     _ASSERTE(IsException(pMT));
 
+    PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
+    // Check if the flag indicating foreign exception raise has been setup or not,
+    // and then reset it so that subsequent processing of managed frames proceeds
+    // normally.
+    BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
+    pCurTES->ResetRaisingForeignException();
+
     LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
-    AppendElementImpl(pThrowable, currentIP, currentSP, pFunc, pCf, pThread, FALSE /* fRaisingForeignException */);
+
+    // Do not save stacktrace to preallocated exception.  These are shared.
+    if (CLRException::IsPreallocatedExceptionObject(pThrowable))
+    {
+        return;
+    }
+
+    AppendElementImpl(pThrowable, currentIP, currentSP, pFunc, pCf, pThread, fRaisingForeignException);
 }
 
 //

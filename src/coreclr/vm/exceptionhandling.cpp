@@ -2973,7 +2973,7 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
             _ASSERTE(pMD == codeInfo.GetMethodDesc());
 #endif // _DEBUG
 
-            StackTraceInfo::AppendElement((OBJECTHANDLE)&pExInfo->m_exception, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
+            StackTraceInfo::AppendElement(pExInfo->m_exception, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
         }
     }
 
@@ -3772,7 +3772,7 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
                 if (pMD != NULL)
                 {
                     GCX_COOP();
-                    StackTraceInfo::AppendElement((OBJECTHANDLE)&pExInfo->m_exception, 0, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
+                    StackTraceInfo::AppendElement(pExInfo->m_exception, 0, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
 
 #if defined(DEBUGGING_SUPPORTED)
                     if (NotifyDebuggerOfStub(pThread, pFrame))
@@ -4091,7 +4091,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 if (pMD != NULL)
                 {
                     GCX_COOP();
-                    StackTraceInfo::AppendElement((OBJECTHANDLE)&pTopExInfo->m_exception, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
+                    StackTraceInfo::AppendElement(pTopExInfo->m_exception, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
 
 #if defined(DEBUGGING_SUPPORTED)
                     if (NotifyDebuggerOfStub(pThread, pFrame))

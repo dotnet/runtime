@@ -64,11 +64,6 @@ BOOL ThreadExceptionState::IsThrowableNull()
 
 #ifndef DACCESS_COMPILE
 
-Thread* ThreadExceptionState::GetMyThread()
-{
-    return (Thread*)(((BYTE*)this) - offsetof(Thread, m_ExceptionState));
-}
-
 
 DWORD ThreadExceptionState::GetExceptionCode()
 {

@@ -114,8 +114,6 @@ public:
     }
 
 private:
-    Thread* GetMyThread();
-
     PTR_ExInfo m_pCurrentTracker;
 public:
     PTR_ExInfo GetCurrentExceptionTracker()
