@@ -430,20 +430,26 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 #if DEBUG
-        if (_legacy is not null)
+        if (_legacy is not null && fpCallback != null)
         {
             List<ulong> dacAssemblies = new();
             GCHandle dacHandle = GCHandle.Alloc(dacAssemblies);
-            int hrLocal = _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, &CollectEnumerationCallback, GCHandle.ToIntPtr(dacHandle));
-            dacHandle.Free();
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
+            try
             {
-                Debug.Assert(
-                    cdacAssemblies!.SequenceEqual(dacAssemblies),
-                    $"Assembly enumeration mismatch - "
-                    + $"cDAC: [{string.Join(",", cdacAssemblies!.Select(a => $"0x{a:x}"))}], "
-                    + $"DAC: [{string.Join(",", dacAssemblies.Select(a => $"0x{a:x}"))}]");
+                int hrLocal = _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, &CollectEnumerationCallback, GCHandle.ToIntPtr(dacHandle));
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK)
+                {
+                    Debug.Assert(
+                        cdacAssemblies!.SequenceEqual(dacAssemblies),
+                        $"Assembly enumeration mismatch - "
+                        + $"cDAC: [{string.Join(",", cdacAssemblies!.Select(a => $"0x{a:x}"))}], "
+                        + $"DAC: [{string.Join(",", dacAssemblies.Select(a => $"0x{a:x}"))}]");
+                }
+            }
+            finally
+            {
+                dacHandle.Free();
             }
         }
 #endif
