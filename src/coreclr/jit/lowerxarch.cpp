@@ -297,7 +297,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     ContainCheckBinary(binOp);
 
 #ifdef TARGET_AMD64
-    if (JitConfig.EnableApxConditionalChaining())
+    if (m_compiler->canUseApxEvexEncoding() && JitConfig.EnableApxConditionalChaining())
     {
         if (binOp->OperIs(GT_AND, GT_OR))
         {
@@ -7402,6 +7402,26 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
     else if (addr->OperIs(GT_LEA) && IsInvariantInRange(addr, node))
     {
         MakeSrcContained(node, addr);
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   Check if we can contain the memory operand of a GT_NONLOCAL_JMP.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
+{
+    GenTree* addr = node->gtGetOp1();
+    if (IsContainableMemoryOp(addr) && IsSafeToContainMem(node, addr))
+    {
+        MakeSrcContained(node, addr);
+    }
+    else if (IsSafeToMarkRegOptional(node, addr))
+    {
+        MakeSrcRegOptional(node, addr);
     }
 }
 

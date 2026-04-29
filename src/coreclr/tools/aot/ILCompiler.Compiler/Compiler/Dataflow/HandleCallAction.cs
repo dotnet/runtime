@@ -783,10 +783,6 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 var list = new DependencyList();
                 TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
-
-                // InstantiateSignature could end up with a denormalized shape (Foo<object, __Canon>) so normalize.
-                instantiatedType = instantiatedType.NormalizeInstantiation();
-
                 if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
                     RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, instantiatedType, "MakeGenericType");
                 return list;
