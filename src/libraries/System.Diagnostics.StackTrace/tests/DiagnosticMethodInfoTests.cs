@@ -23,7 +23,7 @@ namespace System.Diagnostics.Tests
         public static IEnumerable<object[]> Create_OpenDelegate_TestData()
         {
             // Tracked at https://github.com/dotnet/runtime/issues/100748
-            bool hasGvmOpenDelegateBug = !PlatformDetection.IsMonoRuntime && !PlatformDetection.IsNativeAot && !PlatformDetection.IsAppleMobile;
+            bool hasGvmOpenDelegateBug = !PlatformDetection.IsMonoRuntime && !PlatformDetection.IsNativeAot;
 
             const string TestNamespace = nameof(System) + "." + nameof(System.Diagnostics) + "." + nameof(System.Diagnostics.Tests) + ".";
 
@@ -71,6 +71,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [MemberData(nameof(Create_OpenDelegate_TestData))]
         public void Create_OpenDelegate(Delegate del, string expectedName, string expectedTypeName)
         {
