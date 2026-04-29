@@ -248,7 +248,7 @@ internal static class R2RAssert
     /// <summary>
     /// Asserts the R2R image contains exactly one [ASYNC] variant entry whose signature contains the given method name.
     /// Fails if no match is found or if more than one [ASYNC] method signature matches the search token.
-    /// Use a precise token (e.g. <c>"::MethodName("</c>) to avoid unintended substring matches.
+    /// Use a precise token (e.g. <c>".MethodName("</c>) to avoid unintended substring matches.
     /// </summary>
     public static void HasAsyncVariant(ReadyToRunReader reader, string methodName)
     {
@@ -326,7 +326,7 @@ internal static class R2RAssert
     /// <paramref name="expectedCount"/> fixups of that kind.
     /// Fails if no match is found, if more than one method matches the search token, or if
     /// the fixup count differs from <paramref name="expectedCount"/>.
-    /// Use a precise token (e.g. <c>"::MethodName("</c>) to avoid unintended substring matches.
+    /// Use a precise token (e.g. <c>".MethodName("</c>) to avoid unintended substring matches.
     /// Useful for ensuring fixups are properly deduplicated.
     /// </summary>
     public static void HasFixupKindCountOnMethod(ReadyToRunReader reader, ReadyToRunFixupKind kind, string methodName, int expectedCount)
@@ -392,7 +392,7 @@ internal static class R2RAssert
     /// Asserts exactly one method whose signature contains <paramref name="methodName"/>
     /// has at least one fixup of the given kind.
     /// Fails if no match is found or if more than one method matches the search token.
-    /// Use a precise token (e.g. <c>"::MethodName("</c>) to avoid unintended substring matches.
+    /// Use a precise token (e.g. <c>".MethodName("</c>) to avoid unintended substring matches.
     /// </summary>
     public static void HasFixupKindOnMethod(ReadyToRunReader reader, ReadyToRunFixupKind kind, string methodName)
     {
