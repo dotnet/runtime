@@ -3072,7 +3072,7 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM());
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }

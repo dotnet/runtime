@@ -1786,53 +1786,60 @@ namespace System.StubHelpers
     {
         public static unsafe void ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
         {
-            char* pChars = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(managedArray));
+            fixed (byte* pCharBytes = &MemoryMarshal.GetArrayDataReference(managedArray))
+            {
+                char* pChars = (char*)pCharBytes;
 #if TARGET_WINDOWS
-            uint flags = TBestFit.Enabled ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
-            Interop.BOOL defaultCharUsed = Interop.BOOL.FALSE;
-            int result = Interop.Kernel32.WideCharToMultiByte(
-                Interop.Kernel32.CP_ACP,
-                flags,
-                pChars,
-                length,
-                unmanaged,
-                length,
-                null,
-                TThrowOnUnmappable.Enabled ? &defaultCharUsed : null);
+                uint flags = TBestFit.Enabled ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
+                Interop.BOOL defaultCharUsed = Interop.BOOL.FALSE;
+                int result = Interop.Kernel32.WideCharToMultiByte(
+                    Interop.Kernel32.CP_ACP,
+                    flags,
+                    pChars,
+                    length,
+                    unmanaged,
+                    length,
+                    null,
+                    TThrowOnUnmappable.Enabled ? &defaultCharUsed : null);
 
-            if (result == 0 && length > 0)
-            {
-                throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
-            }
+                if (result == 0 && length > 0)
+                {
+                    throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
+                }
 
-            if (defaultCharUsed != Interop.BOOL.FALSE)
-            {
-                throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
-            }
+                if (defaultCharUsed != Interop.BOOL.FALSE)
+                {
+                    throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
+                }
 #else
-            Encoding.UTF8.GetBytes(pChars, length, unmanaged, length);
+                Encoding.UTF8.GetBytes(pChars, length, unmanaged, length);
 #endif
+            }
+
         }
 
         public static unsafe void ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
         {
-            char* pChars = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(managedArray));
-#if TARGET_WINDOWS
-            int result = Interop.Kernel32.MultiByteToWideChar(
-                Interop.Kernel32.CP_ACP,
-                Interop.Kernel32.MB_PRECOMPOSED,
-                unmanaged,
-                length,
-                pChars,
-                length);
-
-            if (result == 0 && length > 0)
+            fixed (byte* pCharBytes = &MemoryMarshal.GetArrayDataReference(managedArray))
             {
-                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-            }
+                char* pChars = (char*)pCharBytes;
+#if TARGET_WINDOWS
+                int result = Interop.Kernel32.MultiByteToWideChar(
+                    Interop.Kernel32.CP_ACP,
+                    Interop.Kernel32.MB_PRECOMPOSED,
+                    unmanaged,
+                    length,
+                    pChars,
+                    length);
+
+                if (result == 0 && length > 0)
+                {
+                    Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                }
 #else
-            Encoding.UTF8.GetChars(unmanaged, length, pChars, length);
+                Encoding.UTF8.GetChars(unmanaged, length, pChars, length);
 #endif
+            }
         }
 
         public static unsafe void FreeContents(byte* unmanaged, int length)
@@ -2455,9 +2462,6 @@ namespace System.StubHelpers
             where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
             // Assert that the array is actually an array of compatible type.
-            // This assert should only fire if a caller manually used Unsafe.As to cast an object of incompatible type
-            // before passing to a P/Invoke or COM stub.
-            // Any other instances where it fires should be a bug in the interop stack.
             Debug.Assert(managed is not null);
             Debug.Assert(managed.GetType().GetElementType()!.MakeArrayType().IsAssignableTo(typeof(T[])), $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
             TMarshaler.ConvertContentsToUnmanaged(managed, pNative, numElements);
@@ -2467,9 +2471,6 @@ namespace System.StubHelpers
             where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
             // Assert that the array is actually an array of compatible type.
-            // This assert should only fire if a caller manually used Unsafe.As to cast an object of incompatible type
-            // before passing to a P/Invoke or COM stub.
-            // Any other instances where it fires should be a bug in the interop stack.
             Debug.Assert(managed is not null);
             Debug.Assert(managed.GetType().GetElementType()!.MakeArrayType().IsAssignableTo(typeof(T[])), $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
             TMarshaler.ConvertContentsToManaged(managed, pNative, numElements);

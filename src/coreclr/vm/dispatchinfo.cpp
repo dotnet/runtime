@@ -700,7 +700,7 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(!pMD->IsAsyncMethod());
     }
@@ -842,10 +842,7 @@ void DispatchMemberInfo::SetUpDispParamMarshalerForMarshalInfo(int iParam, Marsh
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pInfo));
     }
     CONTRACTL_END;

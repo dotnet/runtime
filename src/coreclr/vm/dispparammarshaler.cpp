@@ -218,13 +218,7 @@ DispParamArrayMarshaler::DispParamArrayMarshaler(VARTYPE ElementVT, MethodTable 
     m_pConvertContentsToManagedCode(NULL),
     m_pConvertContentsToUnmanagedCode(NULL)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (ElementVT != VT_EMPTY && pElementMT != NULL)
     {
