@@ -484,7 +484,7 @@ public static class Program
             throw new InvalidOperationException("Invalid memory-mapped stress log.");
         }
 
-        int contractVersion = (int)(header->version & 0xFFFF);
+        string contractVersion = $"c{(int)(header->version & 0xFFFF)}";
 
         return (CreateTarget, header->moduleTable, header->logs);
 
@@ -494,6 +494,7 @@ public static class Program
             (address, buffer) => ReadFromMemoryMappedLog(address, buffer, header),
             (address, buffer) => throw new NotImplementedException("StressLogAnalyzer does not provide WriteToTarget implementation"),
             (threadId, contextFlags, bufferToFill) => throw new NotImplementedException("StressLogAnalyzer does not provide GetTargetThreadContext implementation"),
+            (ulong size, out ulong allocatedAddress) => throw new NotImplementedException("StressLogAnalyzer does not provide AllocVirtual implementation"),
             true,
             nuint.Size,
             [CoreCLRContracts.Register]);
@@ -514,7 +515,7 @@ public static class Program
         }
     }
 
-    private static ContractDescriptorParser.ContractDescriptor GetDescriptor(int stressLogVersion)
+    private static ContractDescriptorParser.ContractDescriptor GetDescriptor(string stressLogVersion)
     {
         return new ContractDescriptorParser.ContractDescriptor
         {

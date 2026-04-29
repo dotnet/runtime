@@ -644,6 +644,17 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genNonLocalJmp: Not supported for arm32.
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    NYI_ARM("GT_NONLOCAL_JMP is not supported on arm32");
+}
+
+//------------------------------------------------------------------------
 // genJumpTable: emits the table and an instruction to get the address of the first element
 //
 void CodeGen::genJumpTable(GenTree* treeNode)
@@ -667,6 +678,17 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
     genMov32RelocatableDataLabel(m_compiler->eeGetJitDataOffs(fieldOffs), treeNode->GetRegNum());
 
     genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genFtnEntry: Not supported for arm32.
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    NYI_ARM("GT_FTN_ENTRY is not supported on arm32");
 }
 
 //------------------------------------------------------------------------
@@ -1852,6 +1874,15 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 }
 
 #endif // PROFILING_SUPPORTED
+
+//------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Not called for arm without OSR support.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
+}
 
 //------------------------------------------------------------------------
 // genEstablishFramePointer: Set up the frame pointer by adding an offset to the stack pointer.

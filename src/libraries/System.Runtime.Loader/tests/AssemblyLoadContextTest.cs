@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Runtime.Loader.Tests
@@ -277,7 +278,7 @@ namespace System.Runtime.Loader.Tests
             Assert.IsType<InvalidOperationException>(error.InnerException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public static void InvalidCastException_DifferentALC_ShowsAssemblyInfo()
         {
             var alc = new AssemblyLoadContext("TestALC");
@@ -298,7 +299,7 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains("TestALC", ice.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public static void InvalidCastException_GenericTypeArg_DifferentALC_ShowsAssemblyInfo()
         {
             var alc = new AssemblyLoadContext("TestALC");
@@ -321,6 +322,94 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains($"generic argument '{typeof(InvalidCastSharedType).FullName}", ice.Message);
             Assert.Contains("Default", ice.Message);
             Assert.Contains("TestALC", ice.Message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void LoadFromAssemblyPath_CustomAlc_VersionMismatch()
+        {
+            string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
+            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion2");
+
+            try
+            {
+                var alc = new AssemblyLoadContext("TestALC");
+
+                Assembly loaded = alc.LoadFromAssemblyPath(v1Path);
+                string v1DisplayName = loaded.GetName().FullName;
+
+                var ex = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyPath(v2Path));
+                Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
+                Assert.Contains($"'{v1DisplayName}'", ex.Message);
+                Assert.Contains(v1Path, ex.Message);
+                Assert.Equal(HResults.COR_E_FILELOAD, ex.HResult);
+            }
+            finally
+            {
+                try { File.Delete(v1Path); } catch { }
+                try { File.Delete(v2Path); } catch { }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void LoadFromAssemblyPath_DefaultAlc_Tpa_VersionMismatch()
+        {
+            Assembly referencedAssembly = typeof(ReferencedClassLib.Program).Assembly;
+            string tpaPath = referencedAssembly.Location;
+            string tpaDisplayName = referencedAssembly.GetName().FullName;
+            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.ReferencedClassLibVersion2");
+
+            try
+            {
+                var ex = Assert.Throws<FileLoadException>(() => AssemblyLoadContext.Default.LoadFromAssemblyPath(v2Path));
+                Assert.Contains("'ReferencedClassLib'", ex.Message);
+                Assert.Contains($"'{tpaDisplayName}'", ex.Message);
+                Assert.Contains(tpaPath, ex.Message);
+                Assert.Equal(HResults.FUSION_E_REF_DEF_MISMATCH, ex.HResult);
+            }
+            finally
+            {
+                try { File.Delete(v2Path); } catch { }
+            }
+        }
+
+        [ConditionalFact(typeof(AssemblyLoadContextTest), nameof(IsRemoteExecutorSupportedAndCoreCLR))]
+        public static void LoadFromAssemblyPath_DefaultAlc_NonTpaAssembly_MvidMismatch()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
+                string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion2");
+
+                try
+                {
+                    Assembly loaded = AssemblyLoadContext.Default.LoadFromAssemblyPath(v1Path);
+                    string v1DisplayName = loaded.GetName().FullName;
+
+                    var ex = Assert.Throws<FileLoadException>(() => AssemblyLoadContext.Default.LoadFromAssemblyPath(v2Path));
+                    Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
+                    Assert.Contains($"'{v1DisplayName}'", ex.Message);
+                    Assert.Contains(v1Path, ex.Message);
+                    Assert.Equal(HResults.COR_E_FILELOAD, ex.HResult);
+                }
+                finally
+                {
+                    try { File.Delete(v1Path); } catch { }
+                    try { File.Delete(v2Path); } catch { }
+                }
+            }).Dispose();
+        }
+
+        private static bool IsRemoteExecutorSupportedAndCoreCLR => RemoteExecutor.IsSupported && PlatformDetection.IsAssemblyLoadingSupported && PlatformDetection.IsCoreCLR;
+
+        private static string ExtractEmbeddedAssembly(string name)
+        {
+            string tempPath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(name)}_{Guid.NewGuid()}.dll");
+            using Stream resourceStream = typeof(AssemblyLoadContextTest).Assembly.GetManifestResourceStream($"{name}.dll");
+            Assert.NotNull(resourceStream);
+            using FileStream fileStream = File.Create(tempPath);
+            resourceStream.CopyTo(fileStream);
+
+            return tempPath;
         }
     }
 
