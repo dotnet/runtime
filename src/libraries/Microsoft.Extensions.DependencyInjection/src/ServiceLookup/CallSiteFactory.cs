@@ -876,8 +876,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                         for (int p = 0; p < parameters.Length; p++)
                         {
-                            if (innerIndex == -1 && parameters[p].ParameterType == serviceIdentifier.ServiceType)
+                            if (parameters[p].ParameterType == serviceIdentifier.ServiceType)
                             {
+                                if (innerIndex != -1)
+                                {
+                                    // Multiple parameters of the decorated service type — skip this constructor
+                                    valid = false;
+                                    break;
+                                }
+
                                 // This parameter receives the inner service
                                 innerIndex = p;
                                 paramCallSites[p] = callSite; // placeholder, will be resolved at runtime

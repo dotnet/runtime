@@ -192,6 +192,14 @@ namespace Microsoft.Extensions.DependencyInjection
                     $"The decorator type '{decoratorType}' cannot be abstract or an interface.",
                     nameof(decoratorType));
             }
+
+            // For closed types, validate that the decorator is assignable to the service type
+            if (!serviceType.IsGenericTypeDefinition && !serviceType.IsAssignableFrom(decoratorType))
+            {
+                throw new ArgumentException(
+                    $"The decorator type '{decoratorType}' is not assignable to service type '{serviceType}'.",
+                    nameof(decoratorType));
+            }
         }
 
     }

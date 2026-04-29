@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
-    internal class ServiceDecorationTests
+    public class ServiceDecorationTests
     {
         [Fact]
         public void Decorate_TypeBased_WrapsService()
@@ -393,7 +393,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [InlineData(ServiceProviderMode.Expressions)]
         [InlineData(ServiceProviderMode.ILEmit)]
         [InlineData(ServiceProviderMode.Dynamic)]
-        public void Decorate_TypeBased_AllEngines(ServiceProviderMode mode)
+        private void Decorate_TypeBased_AllEngines(ServiceProviderMode mode)
         {
             var services = new ServiceCollection();
             services.AddTransient<IService, InnerService>();
@@ -411,7 +411,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [InlineData(ServiceProviderMode.Expressions)]
         [InlineData(ServiceProviderMode.ILEmit)]
         [InlineData(ServiceProviderMode.Dynamic)]
-        public void Decorate_FactoryBased_AllEngines(ServiceProviderMode mode)
+        private void Decorate_FactoryBased_AllEngines(ServiceProviderMode mode)
         {
             var services = new ServiceCollection();
             services.AddTransient<IService, InnerService>();
@@ -429,7 +429,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [InlineData(ServiceProviderMode.Expressions)]
         [InlineData(ServiceProviderMode.ILEmit)]
         [InlineData(ServiceProviderMode.Dynamic)]
-        public void Decorate_MultipleDecorators_AllEngines(ServiceProviderMode mode)
+        private void Decorate_MultipleDecorators_AllEngines(ServiceProviderMode mode)
         {
             var services = new ServiceCollection();
             services.AddTransient<IService, InnerService>();
@@ -442,6 +442,29 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var outer = Assert.IsType<OuterDecoratorService>(service);
             var inner = Assert.IsType<DecoratorService>(outer.Inner);
             Assert.IsType<InnerService>(inner.Inner);
+        }
+
+        [Fact]
+        public void Decorate_MultipleParametersOfServiceType_Rejects()
+        {
+            var services = new ServiceCollection();
+            services.AddTransient<IService, InnerService>();
+            services.Decorate<IService, DecoratorWithDuplicateServiceParam>();
+
+            // The decorator has two IService parameters — should fail to activate
+            var provider = services.BuildServiceProvider();
+            Assert.Throws<InvalidOperationException>(() =>
+                provider.GetRequiredService<IService>());
+        }
+
+        [Fact]
+        public void Decorate_IncompatibleDecoratorType_ThrowsAtRegistration()
+        {
+            var services = new ServiceCollection();
+            services.AddTransient<IService, InnerService>();
+
+            Assert.Throws<ArgumentException>(() =>
+                services.Decorate(typeof(IService), typeof(Logger)));
         }
 
         // --- Test types ---
@@ -544,6 +567,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Inner = inner;
                 Extra = extra;
             }
+        }
+
+        public class DecoratorWithDuplicateServiceParam : IService
+        {
+            public DecoratorWithDuplicateServiceParam(IService first, IService second) { }
         }
 
         // Decorator without a constructor accepting IService — invalid

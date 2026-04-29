@@ -266,6 +266,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             argument.Generator.Emit(OpCodes.Stloc, innerServiceLocal);
 
             // Now push all constructor parameters
+            ParameterInfo[] parameters = decoratorCallSite.DecoratorConstructor!.GetParameters();
             for (int i = 0; i < parameterCallSites.Length; i++)
             {
                 if (i == decoratorCallSite.InnerServiceParameterIndex)
@@ -277,7 +278,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     VisitCallSite(parameterCallSites[i], argument);
                 }
 
-                Type parameterType = decoratorCallSite.DecoratorConstructor!.GetParameters()[i].ParameterType;
+                Type parameterType = parameters[i].ParameterType;
                 if (parameterType.IsValueType)
                 {
                     argument.Generator.Emit(OpCodes.Unbox_Any, parameterType);

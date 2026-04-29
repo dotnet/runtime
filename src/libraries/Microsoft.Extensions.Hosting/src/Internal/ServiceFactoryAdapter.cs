@@ -53,9 +53,6 @@ namespace Microsoft.Extensions.Hosting.Internal
                     return builder;
                 }
 
-                // TODO: Consider throwing instead of materializing (see PR open questions)
-                // throw new InvalidOperationException(SR.Format(SR.ServiceDecorationNotSupported,
-                //     _serviceProviderFactory.GetType(), typeof(TContainerBuilder)));
                 DecorationMaterializer.Materialize(services, decorations.Decorations);
                 decorations.Decorations.Clear();
             }
