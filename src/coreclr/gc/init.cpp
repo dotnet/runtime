@@ -931,10 +931,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         assert (false);
 #endif //!HOST_64BIT && !HOST_WASM
 
-        // With real OS large pages the entire reservation is pre-committed, so
-        // tighten the hard limit to match the actual segment sizes. In emulation
-        // mode (and on WASM) memory is not pre-committed via OS large pages so
-        // preserve the original hard limit for bookkeeping headroom.
         if (!large_pages_emulation_mode_p)
         {
             if (heap_hard_limit_oh[soh])
