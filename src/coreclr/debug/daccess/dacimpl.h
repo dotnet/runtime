@@ -3397,13 +3397,6 @@ public:
                           Thread* thread,
                           ULONG32 flags,
                           ClrDataExStateType* exInfo,
-                          // Target address of a slot containing the exception Object*.
-                          // This may be a GC handle table slot (e.g. m_LastThrownObjectHandle)
-                          // or the address of ExInfo::m_exception on the target stack.
-                          // Both are valid: the ExInfo lives on the stack which is captured
-                          // in dumps and stable while the target thread is suspended. The
-                          // slot has the same lifetime as the ExInfo - both become invalid
-                          // when ExInfo::PopExInfos calls ReleaseResources.
                           OBJECTHANDLE throwable,
                           ClrDataExStateType* prevExInfo);
     virtual ~ClrDataExceptionState(void);
