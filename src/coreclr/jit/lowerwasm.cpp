@@ -530,7 +530,6 @@ void Lowering::AfterLowerBlocks()
         Compiler*             m_compiler;
         ArrayStack<GenTree**> m_stack;
         unsigned              m_minimumTempLclNum;
-        unsigned              m_maximumTempLclNum;
         Temporary*            m_availableTemps[TYP_COUNT] = {};
         Temporary*            m_unusedTempNodes           = nullptr;
         bool                  m_anyChanges                = false;
@@ -541,7 +540,6 @@ void Lowering::AfterLowerBlocks()
             , m_compiler(lower->m_compiler)
             , m_stack(m_compiler->getAllocator(CMK_Lower))
             , m_minimumTempLclNum(m_compiler->lvaCount)
-            , m_maximumTempLclNum(m_compiler->lvaCount)
         {
         }
 
