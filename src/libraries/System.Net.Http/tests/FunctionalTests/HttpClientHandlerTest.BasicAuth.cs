@@ -11,11 +11,11 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class HttpClientHandlerTest_BasicAuth : HttpClientHandlerTestBase
     {
         public HttpClientHandlerTest_BasicAuth(ITestOutputHelper output) : base(output)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "ConditionalClass: PlatformDetection.IsNotBrowser");
         }
 
         protected override Version UseVersion => HttpVersion.Version20;

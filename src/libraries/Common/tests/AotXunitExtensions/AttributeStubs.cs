@@ -18,16 +18,12 @@
 // decorated with [Fact]/[Theory] + [ActiveIssue] are skipped at runtime
 // when their conditions match, rather than running and failing.
 //
-// ConditionalClassAttribute extends BeforeAfterTestAttribute so that tests
-// inside [ConditionalClass]-decorated classes are skipped at runtime when
-// conditions are not met. The xUnit v3 AOT runner supports class-level
-// BeforeAfterTestAttribute, so this runs for every [Fact]/[Theory] in the
-// decorated class (and its descendants).
+// ConditionalClassAttribute is intentionally NOT stubbed — see comment in the
+// Xunit namespace below. Use Assert.SkipUnless in constructors instead.
 
 #nullable enable
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -59,135 +55,12 @@ namespace Xunit
         public int Timeout { get; set; }
     }
 
-    /// <summary>
-    /// Marks a class as conditional — tests inside this class are skipped when
-    /// the conditions are not met. In NativeAOT builds, this attribute extends
-    /// <see cref="BeforeAfterTestAttribute"/> so that the conditions are evaluated
-    /// at runtime before each test method. The xUnit v3 AOT runner supports
-    /// class-level <c>BeforeAfterTestAttribute</c>, so this runs for every
-    /// <c>[Fact]</c>/<c>[Theory]</c> in the decorated class.
-    /// </summary>
-    /// <remarks>
-    /// Like <see cref="ActiveIssueAttribute"/>, the AOT source generator
-    /// instantiates this via the parameterless constructor, discarding the
-    /// original constructor arguments. The <see cref="Before"/> method recovers
-    /// them from <see cref="CustomAttributeData"/> on the test class (and its
-    /// base types).
-    /// </remarks>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-    public sealed class ConditionalClassAttribute : BeforeAfterTestAttribute
-    {
-        private static readonly ConcurrentDictionary<Type, string?> s_skipReasonCache = new();
-
-        public ConditionalClassAttribute() { }
-
-        public ConditionalClassAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type conditionType,
-            params string[] conditionMemberNames) { }
-
-        public override void Before(ICodeGenTest test)
-        {
-            Type classType = test.TestCase.TestMethod.TestClass.Class;
-            string? skipReason = s_skipReasonCache.GetOrAdd(classType, EvaluateForType);
-            if (skipReason is not null)
-            {
-                throw SkipException.ForSkip(skipReason);
-            }
-        }
-
-        private static string? EvaluateForType(Type classType)
-        {
-            // Walk the class hierarchy to find ConditionalClassAttribute on any ancestor
-            for (Type? t = classType; t is not null; t = t.BaseType)
-            {
-                foreach (var attr in CustomAttributeData.GetCustomAttributes(t))
-                {
-                    if (attr.AttributeType != typeof(ConditionalClassAttribute))
-                        continue;
-
-                    var args = attr.ConstructorArguments;
-                    if (args.Count < 2)
-                        continue;
-
-                    Type? conditionType = args[0].Value as Type;
-                    if (conditionType is null)
-                        continue;
-
-                    string[] memberNames = ExtractStringArray(args[1]);
-                    List<string>? falseConditions = null;
-
-                    foreach (string memberName in memberNames)
-                    {
-                        if (string.IsNullOrWhiteSpace(memberName))
-                            continue;
-
-                        Func<bool>? conditionFunc = LookupConditionalMember(conditionType, memberName);
-                        if (conditionFunc is null)
-                        {
-                            (falseConditions ??= []).Add($"{memberName} (not found on {conditionType.Name})");
-                            continue;
-                        }
-
-                        try
-                        {
-                            if (!conditionFunc())
-                                (falseConditions ??= []).Add(memberName);
-                        }
-                        catch (Exception ex)
-                        {
-                            (falseConditions ??= []).Add($"{memberName} ({ex.GetType().Name})");
-                        }
-                    }
-
-                    if (falseConditions is { Count: > 0 })
-                    {
-                        return $"Condition(s) not met: \"{string.Join("\", \"", falseConditions)}\"";
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private static string[] ExtractStringArray(CustomAttributeTypedArgument arg)
-        {
-            if (arg.Value is System.Collections.ObjectModel.ReadOnlyCollection<CustomAttributeTypedArgument> collection)
-            {
-                return collection.Select(e => (string)e.Value!).ToArray();
-            }
-
-            return [];
-        }
-
-        // Mirrors arcade's ConditionalTestDiscoverer.LookupConditionalMember:
-        // looks for static bool method, property, or field of any visibility,
-        // recursively walking ancestor types.
-        private static Func<bool>? LookupConditionalMember(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type t,
-            string name)
-        {
-            for (Type? current = t; current is not null; current = current.BaseType)
-            {
-                TypeInfo ti = current.GetTypeInfo();
-
-                MethodInfo? mi = ti.GetDeclaredMethod(name);
-                if (mi is { IsStatic: true, ReturnType.Name: "Boolean" } && mi.GetParameters().Length == 0)
-                    return () => (bool)mi.Invoke(null, null)!;
-
-                PropertyInfo? pi = ti.GetDeclaredProperty(name);
-                if (pi is { PropertyType.Name: "Boolean" } && pi.GetMethod is { IsStatic: true } getter && getter.GetParameters().Length == 0)
-                    return () => (bool)pi.GetValue(null)!;
-
-                FieldInfo? fi = ti.GetDeclaredField(name);
-                if (fi is { FieldType.Name: "Boolean", IsStatic: true })
-                    return () => (bool)fi.GetValue(null)!;
-            }
-
-            return null;
-        }
-    }
+    // ConditionalClassAttribute is intentionally NOT stubbed here. The real
+    // implementation in Microsoft.DotNet.XUnitV3Extensions works via traits in
+    // non-AOT builds. For NativeAOT builds, classes should use Assert.SkipUnless
+    // in the constructor instead — this works in both AOT and non-AOT modes.
+    // Removing the stub ensures any new usage produces a compile error, forcing
+    // an explicit fix rather than silently running tests that should be skipped.
 
     /// <summary>
     /// Marks a test as having a known active issue. In NativeAOT builds, this

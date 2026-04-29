@@ -1189,11 +1189,11 @@ namespace System.Net.Sockets.Tests
             }, maxAttempts: 10);
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_Sync : SendReceive<SocketHelperArraySync>
     {
-        public SendReceive_Sync(ITestOutputHelper output) : base(output) { }
+        public SendReceive_Sync(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1246,17 +1246,17 @@ namespace System.Net.Sockets.Tests
             }).DisposeAsync();
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_SyncForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking>
     {
-        public SendReceive_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+        public SendReceive_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_Apm : SendReceive<SocketHelperApm>
     {
-        public SendReceive_Apm(ITestOutputHelper output) : base(output) {}
+        public SendReceive_Apm(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
 
     public sealed class SendReceive_Task : SendReceive<SocketHelperTask>
@@ -1268,11 +1268,11 @@ namespace System.Net.Sockets.Tests
     {
         public SendReceive_Eap(ITestOutputHelper output) : base(output) {}
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_SpanSync : SendReceive<SocketHelperSpanSync>
     {
-        public SendReceive_SpanSync(ITestOutputHelper output) : base(output) { }
+        public SendReceive_SpanSync(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
 
         [Fact]
         public async Task Send_0ByteSend_Span_Success()
@@ -1342,11 +1342,11 @@ namespace System.Net.Sockets.Tests
         }
 
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_SpanSyncForceNonBlocking : SendReceive<SocketHelperSpanSyncForceNonBlocking>
     {
-        public SendReceive_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+        public SendReceive_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
 
     public sealed class SendReceive_MemoryArrayTask : SendReceive<SocketHelperMemoryArrayTask>

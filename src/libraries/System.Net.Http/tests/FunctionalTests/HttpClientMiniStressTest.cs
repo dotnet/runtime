@@ -29,11 +29,11 @@ namespace System.Net.Http.Functional.Tests
             }
         }
     }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3 : HttpClientMiniStress
     {
-        public SocketsHttpHandler_HttpClientMiniStress_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientMiniStress_Http3(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(HttpClientHandlerTestBase.IsHttp3Supported, "ConditionalClass: HttpClientHandlerTestBase.IsHttp3Supported");
+        }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 

@@ -376,23 +376,23 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.SequenceEqual(new byte[] { 42 }, recvBuffer);
         }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptSync : Accept<SocketHelperArraySync>
     {
-        public AcceptSync(ITestOutputHelper output) : base(output) {}
+        public AcceptSync(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptSyncForceNonBlocking : Accept<SocketHelperSyncForceNonBlocking>
     {
-        public AcceptSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+        public AcceptSyncForceNonBlocking(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
     }
-
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptApm : Accept<SocketHelperApm>
     {
-        public AcceptApm(ITestOutputHelper output) : base(output) {}
+        public AcceptApm(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task AbortedByDispose_LeaksNoUnobservedExceptions()

@@ -10,9 +10,13 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class DisposedSocket
     {
+
+        public DisposedSocket()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
         private static readonly byte[] s_buffer = new byte[1];
         private static readonly IList<ArraySegment<byte>> s_buffers = new List<ArraySegment<byte>> { new ArraySegment<byte>(s_buffer) };
         private static readonly SocketAsyncEventArgs s_eventArgs = new SocketAsyncEventArgs();

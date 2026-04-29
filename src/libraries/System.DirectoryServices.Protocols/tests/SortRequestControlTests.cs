@@ -7,9 +7,13 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class SortRequestControlTests
     {
+
+        public SortRequestControlTests()
+        {
+            Assert.SkipUnless(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled, "ConditionalClass: DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled");
+        }
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

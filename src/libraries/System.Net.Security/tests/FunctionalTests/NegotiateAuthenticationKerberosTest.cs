@@ -6,13 +6,13 @@ using System.Net.Security.Kerberos;
 using Xunit;
 namespace System.Net.Security.Tests
 {
-    [ConditionalClass(typeof(KerberosExecutor), nameof(KerberosExecutor.IsSupported))]
     public class NegotiateAuthenticationKerberosTest
     {
         private readonly ITestOutputHelper _testOutputHelper;
 
         public NegotiateAuthenticationKerberosTest(ITestOutputHelper testOutputHelper)
         {
+            Assert.SkipUnless(KerberosExecutor.IsSupported, "ConditionalClass: KerberosExecutor.IsSupported");
             _testOutputHelper = testOutputHelper;
         }
     

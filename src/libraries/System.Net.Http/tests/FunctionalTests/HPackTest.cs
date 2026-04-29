@@ -17,13 +17,13 @@ using System.Runtime.InteropServices.ComTypes;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class HPackTest : HttpClientHandlerTestBase
     {
         protected override Version UseVersion => HttpVersion.Version20;
 
         public HPackTest(ITestOutputHelper output) : base(output)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "ConditionalClass: PlatformDetection.IsNotBrowser");
         }
 
         private const string LiteralHeaderName = "x-literal-header";

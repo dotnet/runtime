@@ -10,13 +10,13 @@ using Xunit;
 using Xunit.Sdk;
 namespace System.Net.Sockets.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class SelectTest
     {
         private readonly ITestOutputHelper _log;
 
         public SelectTest(ITestOutputHelper output)
         {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
             _log = output;
         }
 
@@ -353,9 +353,13 @@ namespace System.Net.Sockets.Tests
     }
 
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class SelectTest_NonParallel
     {
+
+        public SelectTest_NonParallel()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
         [OuterLoop]
         [Fact]
         public static async Task Select_AcceptNonBlocking_Success()
@@ -421,10 +425,14 @@ namespace System.Net.Sockets.Tests
     }
 
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     // Set of tests to not run  together with any other tests.
     public class NoParallelSelectTests
     {
+
+        public NoParallelSelectTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Select_LargeNumber_Succcess()

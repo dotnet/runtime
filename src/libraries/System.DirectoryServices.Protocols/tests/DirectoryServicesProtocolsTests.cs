@@ -14,9 +14,13 @@ using LdapTestServer = System.DirectoryServices.Protocols.Tests.TestServer.LdapT
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ConditionalClass(typeof(DirectoryServicesProtocolsTests), nameof(LdapConfigurationExists))]
     public sealed class DirectoryServicesProtocolsTests : DirectoryServicesProtocolsTests<DirectoryServicesProtocolsTests.ExternalCapabilities>
     {
+
+        public DirectoryServicesProtocolsTests()
+        {
+            Assert.SkipUnless(DirectoryServicesProtocolsTests.LdapConfigurationExists, "ConditionalClass: DirectoryServicesProtocolsTests.LdapConfigurationExists");
+        }
         private static readonly int s_port =
             LdapConfiguration.Configuration?.Port is null ?
                 389 :
@@ -122,9 +126,13 @@ namespace System.DirectoryServices.Protocols.Tests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/127070", TestRuntimes.Mono)]
-    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public sealed partial class DirectoryServicesProtocolsTests_Local : DirectoryServicesProtocolsTests<DirectoryServicesProtocolsTests_Local.LocalCapabilities>
     {
+
+        public DirectoryServicesProtocolsTests_Local()
+        {
+            Assert.SkipUnless(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled, "ConditionalClass: DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled");
+        }
         private class LocalConnectionState : ConnectionState
         {
             private LdapTestServer TestServer { get; }

@@ -11,9 +11,13 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class ArgumentValidation
     {
+
+        public ArgumentValidation()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
         // This type is used to test Socket.Select's argument validation.
         private sealed class LargeList : IList
         {

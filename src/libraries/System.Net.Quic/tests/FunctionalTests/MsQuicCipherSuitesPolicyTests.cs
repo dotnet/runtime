@@ -9,11 +9,13 @@ using Xunit;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     [SkipOnPlatform(TestPlatforms.Windows, "CipherSuitesPolicy is not supported on Windows")]
     public class MsQuicCipherSuitesPolicyTests : QuicTestBase
     {
-        public MsQuicCipherSuitesPolicyTests(ITestOutputHelper output) : base(output) { }
+        public MsQuicCipherSuitesPolicyTests(ITestOutputHelper output) : base(output) {
+            Assert.SkipUnless(QuicTestBase.IsSupported, "ConditionalClass: QuicTestBase.IsSupported");
+            Assert.SkipUnless(QuicTestBase.IsNotArm32CoreClrStressTest, "ConditionalClass: QuicTestBase.IsNotArm32CoreClrStressTest");
+        }
 
         private async Task TestConnection(CipherSuitesPolicy serverPolicy, CipherSuitesPolicy clientPolicy)
         {
