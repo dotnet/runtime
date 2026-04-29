@@ -655,8 +655,8 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Helper that wraps both the sync and async line-reading APIs, populating
-        /// the provided output and error lists.
+        /// Helper that wraps both the sync and async line-reading APIs and returns
+        /// the captured output and error lines.
         /// </summary>
         private static async Task<(List<string> capturedOutput, List<string> capturedError)> EnumerateLines(Process process, bool useAsync)
         {

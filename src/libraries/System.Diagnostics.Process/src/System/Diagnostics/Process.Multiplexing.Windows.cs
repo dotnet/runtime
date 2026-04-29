@@ -111,7 +111,7 @@ namespace System.Diagnostics
 
                         if (!preambleChecked)
                         {
-                            if (bytes.Length >= 4)
+                            if (bytes.Length >= MaxEncodingBytesLength)
                             {
                                 bytes = bytes.Slice(SkipPreambleOrDetectEncoding(bytes, ref currentEncoding, ref currentDecoder));
                                 preambleChecked = true;
