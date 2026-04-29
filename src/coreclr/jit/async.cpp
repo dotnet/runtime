@@ -1201,16 +1201,15 @@ void AsyncTransformation::BuildContinuation(BasicBlock*                block,
         JITDUMP("  Call has return; continuation will have return value\n");
     }
 
-    // For OSR, we store the IL offset that inspired the OSR method at the
-    // beginning of the data (and store -1 in the tier0 version). This must be
-    // at the beginning because the tier0 and OSR versions need to agree on
-    // this.
+    // For OSR, we store the address of the OSR function at the beginning of
+    // the data (and store 0 in the tier0 version). This must be at the
+    // beginning because the tier0 and OSR versions need to agree on this.
     if (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR())
     {
-        JITDUMP("  Method %s; keeping IL offset that inspired OSR method at the beginning of non-GC data\n",
+        JITDUMP("  Method %s; keeping OSR address at the beginning of non-GC data\n",
                 m_compiler->doesMethodHavePatchpoints() ? "has patchpoints" : "is an OSR method");
         // Must be pointer sized for compatibility with Continuation methods that access fields
-        layoutBuilder->SetNeedsOSRILOffset();
+        layoutBuilder->SetNeedsOSRAddress();
     }
 
     if (HasNonContextRestoreExceptionalFlow(block))
@@ -1252,9 +1251,9 @@ void AsyncTransformation::BuildContinuation(BasicBlock*                block,
 void ContinuationLayout::Dump(int indent)
 {
     printf("%*sContinuation layout (%u bytes):\n", indent, "", Size);
-    if (OSRILOffset != UINT_MAX)
+    if (OSRAddressOffset != UINT_MAX)
     {
-        printf("%*s  +%03u OSR IL offset\n", indent, "", OSRILOffset);
+        printf("%*s  +%03u OSR address\n", indent, "", OSRAddressOffset);
     }
 
     if (ExceptionOffset != UINT_MAX)
@@ -1415,10 +1414,10 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
         return offset;
     };
 
-    if (m_needsOSRILOffset)
+    if (m_needsOSRAddress)
     {
         // Must be pointer sized for compatibility with Continuation methods that access fields
-        layout->OSRILOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+        layout->OSRAddressOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
     if (m_needsException)
@@ -1825,7 +1824,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 
     FillInDataOnSuspension(call, layout, subLayout, suspendBB, mutatedSinceResumption, tailSaveSet);
 
-    RestoreContexts(callBlock, call, suspendBB);
+    FinishContextHandlingOnSuspension(callBlock, call, suspendBB, layout, subLayout);
 
     if (suspendBB->KindIs(BBJ_RETURN))
     {
@@ -1876,7 +1875,7 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(bool              
 //------------------------------------------------------------------------
 // AsyncTransformation::FillInDataOnSuspension:
 //   Create IR that fills the data array of the continuation object with
-//   live local values, OSR IL offset, continuation context, and execution
+//   live local values, OSR address, continuation context, and execution
 //   context.
 //
 // Parameters:
@@ -1894,19 +1893,23 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
 {
     if ((saveSet != SaveSet::MutatedLocals) && (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR()))
     {
-        GenTree* ilOffsetToStore;
+        GenTree* osrAddressToStore;
         if (m_compiler->doesMethodHavePatchpoints())
-            ilOffsetToStore = m_compiler->gtNewIconNode(-1);
+        {
+            osrAddressToStore = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+        }
         else
-            ilOffsetToStore = m_compiler->gtNewIconNode((int)m_compiler->info.compILEntry);
+        {
+            osrAddressToStore = new (m_compiler, GT_FTN_ENTRY) GenTree(GT_FTN_ENTRY, TYP_I_IMPL);
+        }
 
-        // OSR IL offset needs to be at offset 0 because OSR and tier0 methods
+        // OSR address needs to be at offset 0 because OSR and tier0 methods
         // need to agree on that.
-        assert(layout.OSRILOffset == 0);
+        assert(layout.OSRAddressOffset == 0);
         GenTree* newContinuation       = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned offset                = OFFSETOF__CORINFO_Continuation__data;
-        GenTree* storePatchpointOffset = StoreAtOffset(newContinuation, offset, ilOffsetToStore, TYP_INT);
-        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storePatchpointOffset));
+        GenTree* storeOSRAddressOffset = StoreAtOffset(newContinuation, offset, osrAddressToStore, TYP_I_IMPL);
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeOSRAddressOffset));
     }
 
     // Fill in data
@@ -1960,8 +1963,85 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         // that to the backend.
         m_compiler->compLongUsed |= dsc->TypeIs(TYP_LONG);
     }
+}
 
-    if ((saveSet != SaveSet::UnmutatedLocals) && subLayout.NeedsContinuationContext())
+//------------------------------------------------------------------------
+// AsyncTransformation::GetLocalSaveSet:
+//   Get the save set that a local should be saved as part of.
+//
+// Parameters:
+//   dsc - The local
+//   mutatedSinceResumption - Set of locals that may have been mutated since a resumption
+//
+// Returns:
+//   The set to save the local as part of.
+//
+SaveSet AsyncTransformation::GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption)
+{
+    if (dsc->lvPromoted)
+    {
+        for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+        {
+            LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
+            if (!fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, fieldDsc->lvVarIndex))
+            {
+                return SaveSet::MutatedLocals;
+            }
+        }
+
+        return SaveSet::UnmutatedLocals;
+    }
+
+    // We should only see struct fields for independently promoted structs
+    assert(!dsc->lvIsStructField ||
+           (m_compiler->lvaGetPromotionType(dsc->lvParentLcl) == Compiler::PROMOTION_TYPE_INDEPENDENT));
+
+    if (!dsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, dsc->lvVarIndex))
+    {
+        return SaveSet::MutatedLocals;
+    }
+
+    return SaveSet::UnmutatedLocals;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::FinishContextHandlingOnSuspension:
+//   Generate code to finish handling of contexts on suspension:
+//   - Capture SynchronizationContext or TaskScheduler into the continuation
+//     if needed when later resuming
+//   - Capture ExecutionContext into the continuation
+//   - Restore current Thread._synchronizationContext and
+//     Thread._executionContext from the state before the async call
+//
+// Parameters:
+//   callBlock - The block containing the async call
+//   call      - The async call
+//   suspendBB - Basic block to add IR to.
+//   layout    - Information about the continuation layout.
+//   subLayout - Per-call layout builder indicating which fields are needed.
+//
+void AsyncTransformation::FinishContextHandlingOnSuspension(BasicBlock*                      callBlock,
+                                                            GenTreeCall*                     call,
+                                                            BasicBlock*                      suspendBB,
+                                                            const ContinuationLayout&        layout,
+                                                            const ContinuationLayoutBuilder& subLayout)
+{
+    CallArg* execContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
+    CallArg* syncContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    assert((execContextArg != nullptr) == (syncContextArg != nullptr));
+
+    // In most cases we can use a helper. It is not the case when the call has
+    // no contexts to restore, which is the case for task-returning thunks or
+    // more specifically when the EE told us !CORINFO_ASYNC_SAVE_CONTEXTS.
+    if (execContextArg != nullptr && subLayout.NeedsExecutionContext())
+    {
+        JITDUMP("    Call [%06u] has async context and captured execution context; using finish-suspension helper\n",
+                Compiler::dspTreeID(call));
+        FinishContextHandlingOnSuspensionWithHelper(callBlock, call, suspendBB, layout, subLayout);
+        return;
+    }
+
+    if (subLayout.NeedsContinuationContext())
     {
         // Insert call
         //   AsyncHelpers.CaptureContinuationContext(
@@ -2012,7 +2092,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         LIR::AsRange(suspendBB).Remove(flagsPlaceholder);
     }
 
-    if ((saveSet != SaveSet::UnmutatedLocals) && subLayout.NeedsExecutionContext())
+    if (subLayout.NeedsExecutionContext())
     {
         GenTreeCall* captureExecContext =
             m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureExecutionContextMethHnd, TYP_REF);
@@ -2026,45 +2106,180 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         GenTree* store           = StoreAtOffset(newContinuation, offset, captureExecContext, TYP_REF);
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
     }
+
+    RestoreContexts(callBlock, call, suspendBB);
 }
 
 //------------------------------------------------------------------------
-// AsyncTransformation::GetLocalSaveSet:
-//   Get the save set that a local should be saved as part of.
+// AsyncTransformation::FinishContextHandlingOnSuspensionWithHelper:
+//   Generate code to finish handling of contexts on suspension by calling into a helper.
 //
 // Parameters:
-//   dsc - The local
-//   mutatedSinceResumption - Set of locals that may have been mutated since a resumption
+//   callBlock - The block containing the async call
+//   call      - The async call
+//   suspendBB - Basic block to add IR to.
+//   layout    - Information about the continuation layout.
+//   subLayout - Per-call layout builder indicating which fields are needed.
 //
-// Returns:
-//   The set to save the local as part of.
+// Remarks:
+//   This is the common case where we need capture of execution context +
+//   context restores. We do that with a single helper call that does
+//   everything, for both size and to avoid multiple loads of the Thread TLS.
 //
-SaveSet AsyncTransformation::GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption)
+void AsyncTransformation::FinishContextHandlingOnSuspensionWithHelper(BasicBlock*                      callBlock,
+                                                                      GenTreeCall*                     call,
+                                                                      BasicBlock*                      suspendBB,
+                                                                      const ContinuationLayout&        layout,
+                                                                      const ContinuationLayoutBuilder& subLayout)
 {
-    if (dsc->lvPromoted)
-    {
-        for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
-            if (!fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, fieldDsc->lvVarIndex))
-            {
-                return SaveSet::MutatedLocals;
-            }
-        }
+    CORINFO_METHOD_HANDLE helper = subLayout.NeedsContinuationContext()
+                                       ? m_asyncInfo->finishSuspensionWithContinuationContextMethHnd
+                                       : m_asyncInfo->finishSuspensionNoContinuationContextMethHnd;
 
-        return SaveSet::UnmutatedLocals;
+    // Insert call
+    //   finishSuspension[With|No]ContinuationContext(
+    //     ref newContinuation.ContinuationContext, // optional
+    //     ref newContinuation.Flags,               // optional
+    //     ref newContinuation.ExecutionContext,
+    //     resumed,
+    //     execContext,
+    //     syncContext)
+    //
+
+    CallArg* execContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
+    CallArg* syncContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    assert((execContextArg != nullptr) && (syncContextArg != nullptr));
+
+    GenTree* contContextAddrPlaceholder = nullptr;
+    GenTree* flagsPlaceholder           = nullptr;
+    GenTree* execContextAddrPlaceholder = m_compiler->gtNewZeroConNode(TYP_BYREF);
+    GenTree* resumedPlaceholder         = m_compiler->gtNewIconNode(0);
+    GenTree* execContextPlaceholder     = m_compiler->gtNewNull();
+    GenTree* syncContextPlaceholder     = m_compiler->gtNewNull();
+
+    GenTreeCall* finishCall = m_compiler->gtNewCallNode(CT_USER_FUNC, helper, TYP_VOID);
+    SetCallEntrypointForR2R(finishCall, m_compiler, helper);
+
+    finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(syncContextPlaceholder));
+    finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(execContextPlaceholder));
+    finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(resumedPlaceholder));
+    finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(execContextAddrPlaceholder));
+
+    if (subLayout.NeedsContinuationContext())
+    {
+        contContextAddrPlaceholder = m_compiler->gtNewZeroConNode(TYP_BYREF);
+        flagsPlaceholder           = m_compiler->gtNewZeroConNode(TYP_BYREF);
+        finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(flagsPlaceholder));
+        finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(contContextAddrPlaceholder));
     }
 
-    // We should only see struct fields for independently promoted structs
-    assert(!dsc->lvIsStructField ||
-           (m_compiler->lvaGetPromotionType(dsc->lvParentLcl) == Compiler::PROMOTION_TYPE_INDEPENDENT));
+    m_compiler->compCurBB = suspendBB;
+    m_compiler->fgMorphTree(finishCall);
 
-    if (!dsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, dsc->lvVarIndex))
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, finishCall));
+
+    if (subLayout.NeedsContinuationContext())
     {
-        return SaveSet::MutatedLocals;
+        // Replace contContextAddrPlaceholder with actual address of the continuation context
+        LIR::Use use;
+        bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(contContextAddrPlaceholder, &use);
+        assert(gotUse);
+
+        GenTree* newContinuation   = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        unsigned contContextOffset = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationContextOffset;
+        GenTree* contContextAddrOffset =
+            m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
+                                      m_compiler->gtNewIconNode((ssize_t)contContextOffset, TYP_I_IMPL));
+
+        LIR::AsRange(suspendBB).InsertBefore(contContextAddrPlaceholder,
+                                             LIR::SeqTree(m_compiler, contContextAddrOffset));
+        use.ReplaceWith(contContextAddrOffset);
+        LIR::AsRange(suspendBB).Remove(contContextAddrPlaceholder);
+
+        // Replace flagsPlaceholder with actual address of the flags
+        gotUse = LIR::AsRange(suspendBB).TryGetUse(flagsPlaceholder, &use);
+        assert(gotUse);
+
+        newContinuation      = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
+        GenTree* flagsOffsetNode =
+            m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
+                                      m_compiler->gtNewIconNode((ssize_t)flagsOffset, TYP_I_IMPL));
+
+        LIR::AsRange(suspendBB).InsertBefore(flagsPlaceholder, LIR::SeqTree(m_compiler, flagsOffsetNode));
+        use.ReplaceWith(flagsOffsetNode);
+        LIR::AsRange(suspendBB).Remove(flagsPlaceholder);
     }
 
-    return SaveSet::UnmutatedLocals;
+    // Replace execContextAddrPlaceholder with actual address of the execution context
+    LIR::Use use;
+    bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(execContextAddrPlaceholder, &use);
+    assert(gotUse);
+
+    GenTree* newContinuation   = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    unsigned execContextOffset = OFFSETOF__CORINFO_Continuation__data + layout.ExecutionContextOffset;
+    GenTree* execContextAddrOffset =
+        m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
+                                  m_compiler->gtNewIconNode((ssize_t)execContextOffset, TYP_I_IMPL));
+
+    LIR::AsRange(suspendBB).InsertBefore(execContextAddrPlaceholder, LIR::SeqTree(m_compiler, execContextAddrOffset));
+    use.ReplaceWith(execContextAddrOffset);
+    LIR::AsRange(suspendBB).Remove(execContextAddrPlaceholder);
+
+    // Replace resumedPlaceholder with actual "continuationParameter != null" arg
+    gotUse = LIR::AsRange(suspendBB).TryGetUse(resumedPlaceholder, &use);
+    assert(gotUse);
+
+    GenTree* continuation = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+    GenTree* null         = m_compiler->gtNewNull();
+    GenTree* resumed      = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+
+    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_compiler, resumed));
+    use.ReplaceWith(resumed);
+    LIR::AsRange(suspendBB).Remove(resumedPlaceholder);
+
+    // Replace execContextPlaceholder with actual value
+    GenTree* execContext = execContextArg->GetNode();
+    if (!execContext->OperIs(GT_LCL_VAR))
+    {
+        // We are moving execContext into a different BB so create a temp for it.
+        LIR::Use use(LIR::AsRange(callBlock), &execContextArg->NodeRef(), call);
+        use.ReplaceWithLclVar(m_compiler);
+        execContext = use.Def();
+    }
+
+    gotUse = LIR::AsRange(suspendBB).TryGetUse(execContextPlaceholder, &use);
+    assert(gotUse);
+
+    LIR::AsRange(callBlock).Remove(execContext);
+    LIR::AsRange(suspendBB).InsertBefore(execContextPlaceholder, execContext);
+    use.ReplaceWith(execContext);
+    LIR::AsRange(suspendBB).Remove(execContextPlaceholder);
+
+    call->gtArgs.RemoveUnsafe(execContextArg);
+
+    // Replace syncContextPlaceholder with actual value
+    GenTree* syncContext = syncContextArg->GetNode();
+    if (!syncContext->OperIs(GT_LCL_VAR))
+    {
+        // We are moving syncContext into a different BB so create a temp for it.
+        LIR::Use use(LIR::AsRange(callBlock), &syncContextArg->NodeRef(), call);
+        use.ReplaceWithLclVar(m_compiler);
+        syncContext = use.Def();
+    }
+
+    gotUse = LIR::AsRange(suspendBB).TryGetUse(syncContextPlaceholder, &use);
+    assert(gotUse);
+
+    LIR::AsRange(callBlock).Remove(syncContext);
+    LIR::AsRange(suspendBB).InsertBefore(syncContextPlaceholder, syncContext);
+    use.ReplaceWith(syncContext);
+    LIR::AsRange(suspendBB).Remove(syncContextPlaceholder);
+
+    call->gtArgs.RemoveUnsafe(syncContextArg);
+
+    JITDUMP("    Created FinishSuspension call on suspension:\n");
+    DISPTREERANGE(LIR::AsRange(suspendBB), finishCall);
 }
 
 //------------------------------------------------------------------------
@@ -2871,7 +3086,7 @@ ContinuationLayoutBuilder* ContinuationLayoutBuilder::CreateSharedLayout(Compile
     for (const AsyncState& state : states)
     {
         ContinuationLayoutBuilder* layout = state.Layout;
-        sharedLayout->m_needsOSRILOffset |= layout->m_needsOSRILOffset;
+        sharedLayout->m_needsOSRAddress |= layout->m_needsOSRAddress;
         sharedLayout->m_needsException |= layout->m_needsException;
         sharedLayout->m_needsContinuationContext |= layout->m_needsContinuationContext;
         sharedLayout->m_needsKeepAlive |= layout->m_needsKeepAlive;
@@ -3004,55 +3219,50 @@ void AsyncTransformation::CreateResumptionSwitch()
     {
         JITDUMP("  Method has patch points...\n");
         // If we have patchpoints then first check if we need to resume in the OSR version.
-        BasicBlock* callHelperBB = m_compiler->fgNewBBafter(BBJ_THROW, m_compiler->fgLastBBInMainFunction(), false);
-        callHelperBB->bbSetRunRarely();
-        callHelperBB->clearTryIndex();
-        callHelperBB->clearHndIndex();
+        BasicBlock* jmpOSR = m_compiler->fgNewBBafter(BBJ_THROW, m_compiler->fgLastBBInMainFunction(), false);
+        jmpOSR->bbSetRunRarely();
+        jmpOSR->clearTryIndex();
+        jmpOSR->clearHndIndex();
 
-        JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", callHelperBB->bbNum);
+        JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", jmpOSR->bbNum);
 
-        BasicBlock* onContinuationBB = newEntryBB->GetTrueTarget();
-        BasicBlock* checkILOffsetBB  = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
+        BasicBlock* onContinuationBB        = newEntryBB->GetTrueTarget();
+        BasicBlock* checkOSRAddressOffsetBB = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
 
         JITDUMP("    Created " FMT_BB " to check whether we should transition immediately to OSR\n",
-                checkILOffsetBB->bbNum);
+                checkOSRAddressOffsetBB->bbNum);
 
-        // Redirect newEntryBB -> onContinuationBB into newEntryBB -> checkILOffsetBB -> onContinuationBB
-        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkILOffsetBB);
+        // Redirect newEntryBB -> onContinuationBB into newEntryBB -> checkOSRAddressOffsetBB -> onContinuationBB
+        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkOSRAddressOffsetBB);
         newEntryBB->GetTrueEdge()->setLikelihood(0);
-        checkILOffsetBB->inheritWeightPercentage(newEntryBB, 0);
+        checkOSRAddressOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
-        FlowEdge* toOnContinuationBB = m_compiler->fgAddRefPred(onContinuationBB, checkILOffsetBB);
-        FlowEdge* toCallHelperBB     = m_compiler->fgAddRefPred(callHelperBB, checkILOffsetBB);
-        checkILOffsetBB->SetCond(toCallHelperBB, toOnContinuationBB);
-        toCallHelperBB->setLikelihood(0);
+        FlowEdge* toOnContinuationBB = m_compiler->fgAddRefPred(onContinuationBB, checkOSRAddressOffsetBB);
+        FlowEdge* toJmpOSRBB         = m_compiler->fgAddRefPred(jmpOSR, checkOSRAddressOffsetBB);
+        checkOSRAddressOffsetBB->SetCond(toJmpOSRBB, toOnContinuationBB);
+        toJmpOSRBB->setLikelihood(0);
         toOnContinuationBB->setLikelihood(1);
-        callHelperBB->inheritWeightPercentage(checkILOffsetBB, 0);
+        jmpOSR->inheritWeightPercentage(checkOSRAddressOffsetBB, 0);
 
-        // We need to dispatch to the OSR version if the IL offset is non-negative.
-        continuationArg           = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
-        unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Continuation__data;
-        GenTree* ilOffset         = LoadFromOffset(continuationArg, offsetOfIlOffset, TYP_INT);
-        unsigned ilOffsetLclNum   = m_compiler->lvaGrabTemp(false DEBUGARG("IL offset for tier0 OSR method"));
-        m_compiler->lvaGetDesc(ilOffsetLclNum)->lvType = TYP_INT;
-        GenTree* storeIlOffset                         = m_compiler->gtNewStoreLclVarNode(ilOffsetLclNum, ilOffset);
-        LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeIlOffset));
+        // We need to dispatch to the OSR version if the OSR address is non-zero.
+        continuationArg                   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfOSRAddressOffset = OFFSETOF__CORINFO_Continuation__data;
+        GenTree* osrAddress               = LoadFromOffset(continuationArg, offsetOfOSRAddressOffset, TYP_I_IMPL);
+        unsigned osrAddressLclNum         = m_compiler->lvaGrabTemp(false DEBUGARG("OSR address for tier0 OSR method"));
+        m_compiler->lvaGetDesc(osrAddressLclNum)->lvType = TYP_I_IMPL;
+        GenTree* storeOsrAddress = m_compiler->gtNewStoreLclVarNode(osrAddressLclNum, osrAddress);
+        LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeOsrAddress));
 
-        ilOffset        = m_compiler->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
-        GenTree* zero   = m_compiler->gtNewIconNode(0);
-        GenTree* geZero = m_compiler->gtNewOperNode(GT_GE, TYP_INT, ilOffset, zero);
-        GenTree* jtrue  = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, geZero);
-        LIR::AsRange(checkILOffsetBB).InsertAtEnd(ilOffset, zero, geZero, jtrue);
+        osrAddress      = m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL);
+        GenTree* zero   = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+        GenTree* neZero = m_compiler->gtNewOperNode(GT_NE, TYP_INT, osrAddress, zero);
+        GenTree* jtrue  = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neZero);
+        LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(osrAddress, zero, neZero, jtrue);
 
-        ilOffset = m_compiler->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
+        osrAddress = m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL);
 
-        GenTreeCall* callHelper = m_compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffset);
-        callHelper->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-
-        m_compiler->compCurBB = callHelperBB;
-        m_compiler->fgMorphTree(callHelper);
-
-        LIR::AsRange(callHelperBB).InsertAtEnd(LIR::SeqTree(m_compiler, callHelper));
+        GenTree* jmpOsr = m_compiler->gtNewOperNode(GT_NONLOCAL_JMP, TYP_VOID, osrAddress);
+        LIR::AsRange(jmpOSR).InsertAtEnd(LIR::SeqTree(m_compiler, jmpOsr));
     }
     else if (m_compiler->opts.IsOSR())
     {
@@ -3061,33 +3271,33 @@ void AsyncTransformation::CreateResumptionSwitch()
         // version by normal means then we will see a non-zero continuation
         // here that belongs to the tier0 method. In that case we should just
         // ignore it, so create a BB that jumps back.
-        BasicBlock* onContinuationBB   = newEntryBB->GetTrueTarget();
-        BasicBlock* onNoContinuationBB = newEntryBB->GetFalseTarget();
-        BasicBlock* checkILOffsetBB    = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
+        BasicBlock* onContinuationBB        = newEntryBB->GetTrueTarget();
+        BasicBlock* onNoContinuationBB      = newEntryBB->GetFalseTarget();
+        BasicBlock* checkOSRAddressOffsetBB = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
 
-        // Switch newEntryBB -> onContinuationBB into newEntryBB -> checkILOffsetBB
-        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkILOffsetBB);
+        // Switch newEntryBB -> onContinuationBB into newEntryBB -> checkOSRAddressOffsetBB
+        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkOSRAddressOffsetBB);
         newEntryBB->GetTrueEdge()->setLikelihood(0);
-        checkILOffsetBB->inheritWeightPercentage(newEntryBB, 0);
+        checkOSRAddressOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
-        // Make checkILOffsetBB ->(true)  onNoContinuationBB
-        //                      ->(false) onContinuationBB
+        // Make checkOSRAddressOffsetBB ->(true)  onNoContinuationBB
+        //                        ->(false) onContinuationBB
 
-        FlowEdge* toOnContinuationBB   = m_compiler->fgAddRefPred(onContinuationBB, checkILOffsetBB);
-        FlowEdge* toOnNoContinuationBB = m_compiler->fgAddRefPred(onNoContinuationBB, checkILOffsetBB);
-        checkILOffsetBB->SetCond(toOnNoContinuationBB, toOnContinuationBB);
+        FlowEdge* toOnContinuationBB   = m_compiler->fgAddRefPred(onContinuationBB, checkOSRAddressOffsetBB);
+        FlowEdge* toOnNoContinuationBB = m_compiler->fgAddRefPred(onNoContinuationBB, checkOSRAddressOffsetBB);
+        checkOSRAddressOffsetBB->SetCond(toOnNoContinuationBB, toOnContinuationBB);
         toOnContinuationBB->setLikelihood(0);
         toOnNoContinuationBB->setLikelihood(1);
 
-        JITDUMP("    Created " FMT_BB " to check for Tier-0 continuations\n", checkILOffsetBB->bbNum);
+        JITDUMP("    Created " FMT_BB " to check for Tier-0 continuations\n", checkOSRAddressOffsetBB->bbNum);
 
-        continuationArg           = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
-        unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Continuation__data;
-        GenTree* ilOffset         = LoadFromOffset(continuationArg, offsetOfIlOffset, TYP_INT);
-        GenTree* zero             = m_compiler->gtNewIconNode(0);
-        GenTree* ltZero           = m_compiler->gtNewOperNode(GT_LT, TYP_INT, ilOffset, zero);
-        GenTree* jtrue            = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, ltZero);
-        LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, jtrue));
+        continuationArg                   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfOSRAddressOffset = OFFSETOF__CORINFO_Continuation__data;
+        GenTree* osrAddress               = LoadFromOffset(continuationArg, offsetOfOSRAddressOffset, TYP_I_IMPL);
+        GenTree* zero                     = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+        GenTree* eqZero                   = m_compiler->gtNewOperNode(GT_EQ, TYP_INT, osrAddress, zero);
+        GenTree* jtrue                    = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, eqZero);
+        LIR::AsRange(checkOSRAddressOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, jtrue));
 
         if (ReuseContinuations())
         {

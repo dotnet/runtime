@@ -2224,10 +2224,9 @@ public:
     {
         return m_PreventAbort != 0;
     }
-    // The ThreadStore manages a list of all the threads in the system.  I
-    // can't figure out how to expand the ThreadList template type without
-    // making m_Link public.
-    SLink       m_Link;
+    // The ThreadStore manages a list of all the threads in the system.
+    // Next pointer for SList linkage (ThreadStore::m_ThreadList).
+    PTR_Thread  m_pNext = NULL;
 
     // Debugger per-thread flag for enabling notification on "manual"
     // method calls,  for stepping logic
@@ -3761,7 +3760,7 @@ struct cdac_data<Thread>
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t LastThrownObjectIsUnhandled = offsetof(Thread, m_ltoIsUnhandled);
-    static constexpr size_t Link = offsetof(Thread, m_Link);
+    static constexpr size_t Link = offsetof(Thread, m_pNext);
     static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
     static constexpr size_t CurrentCustomDebuggerNotification = offsetof(Thread, m_hCurrNotification);
 
@@ -3769,9 +3768,6 @@ struct cdac_data<Thread>
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
     static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
-#ifdef PROFILING_SUPPORTED
-    static constexpr size_t ProfilerFilterContext = offsetof(Thread, m_pProfilerFilterContext);
-#endif // PROFILING_SUPPORTED
 #ifndef TARGET_UNIX
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
@@ -3795,7 +3791,7 @@ void UndoRevert(BOOL bReverted, HANDLE hToken);
 // ThreadStore::m_pThreadStore.
 // ---------------------------------------------------------------------------
 
-typedef SList<Thread, false, PTR_Thread> ThreadList;
+typedef SListTail<Thread> ThreadList;
 
 
 // The ThreadStore is a singleton class
@@ -4034,7 +4030,7 @@ public:
 template<>
 struct cdac_data<ThreadStore>
 {
-    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_link);
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_pHead);
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
     static constexpr size_t UnstartedCount = offsetof(ThreadStore, m_UnstartedThreadCount);
     static constexpr size_t BackgroundCount = offsetof(ThreadStore, m_BackgroundThreadCount);

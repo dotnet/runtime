@@ -5,12 +5,14 @@ This contract is for reading debugger state from the target process, including i
 ## APIs of contract
 
 ```csharp
-record struct DebuggerData(uint DefinesBitField, uint MDStructuresVersion);
+record struct DebuggerData(bool IsLeftSideInitialized, uint DefinesBitField, uint MDStructuresVersion);
 ```
 
 ```csharp
 bool TryGetDebuggerData(out DebuggerData data);
 int GetAttachStateFlags();
+void MarkDebuggerAttachPending();
+void MarkDebuggerAttached(bool fAttached);
 bool MetadataUpdatesApplied();
 void RequestSyncAtEvent();
 void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC);
@@ -26,6 +28,7 @@ The contract depends on the following globals
 | --- | --- | --- |
 | `Debugger` | TargetPointer | Address of the pointer to the Debugger instance (`&g_pDebugger`) |
 | `CLRJitAttachState` | TargetPointer | Pointer to the CLR JIT attach state flags |
+| `CORDebuggerControlFlags` | TargetPointer | Pointer to `g_CORDebuggerControlFlags` |
 | `MetadataUpdatesApplied` | TargetPointer | Pointer to the g_metadataUpdatesApplied flag |
 
 The contract additionally depends on these data descriptors
@@ -42,6 +45,13 @@ The contract additionally depends on these data descriptors
 | `DebuggerRCThread` | `DCB` | Pointer to `DebuggerIPCControlBlock` |
 
 ```csharp
+
+private enum DebuggerControlFlag_1 : uint
+{
+    PendingAttach = 0x0100,
+    Attached = 0x0200,
+}
+
 bool TryGetDebuggerData(out DebuggerData data)
 {
     data = default;
@@ -53,10 +63,9 @@ bool TryGetDebuggerData(out DebuggerData data)
     TargetPointer debuggerPtr = target.ReadPointer(debuggerPtrPtr);
     if (debuggerPtr == TargetPointer.Null)
         return false;
-    int leftSideInitialized = target.Read<int>(debuggerPtr + /* Debugger::LeftSideInitialized offset */);
-    if (leftSideInitialized == 0)
-        return false;
+    bool leftSideInitialized = target.Read<int>(debuggerPtr + /* Debugger::LeftSideInitialized offset */) != 0;
     data = new DebuggerData(
+        IsLeftSideInitialized: leftSideInitialized,
         DefinesBitField: target.Read<uint>(debuggerPtr + /* Debugger::Defines offset */),
         MDStructuresVersion: target.Read<uint>(debuggerPtr + /* Debugger::MDStructuresVersion offset */));
     return true;
@@ -66,6 +75,17 @@ int GetAttachStateFlags()
 {
     TargetPointer addr = target.ReadGlobalPointer("CLRJitAttachState");
     return (int)target.Read<uint>(addr);
+}
+
+void MarkDebuggerAttachPending()
+{
+    /* OR global "CORDebuggerControlFlags" with PendingAttach flag */;
+}
+
+void MarkDebuggerAttached(bool fAttached)
+{
+    // if fAttached is true, OR global "CORDebuggerControlFlags" with Attached flag
+    // otherwise clear both Attached and PendingAttach flags
 }
 
 bool MetadataUpdatesApplied()

@@ -1925,8 +1925,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // SWIFT_SUPPORT
 
-        case GT_RETURN_SUSPEND:
-            genReturnSuspend(treeNode->AsUnOp());
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            genPatchpoint(treeNode->AsOp());
             break;
 
         case GT_LEA:
@@ -2106,17 +2107,33 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForCatchArg(treeNode);
             break;
 
-        case GT_ASYNC_CONTINUATION:
-            genCodeForAsyncContinuation(treeNode);
-            break;
-
         case GT_LABEL:
             genPendingCallLabel = genCreateTempLabel();
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
             break;
 
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
         case GT_ASYNC_RESUME_INFO:
             genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
+            break;
+
+        case GT_FTN_ENTRY:
+            genFtnEntry(treeNode);
+            break;
+
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
             break;
 
         case GT_STORE_BLK:
@@ -2140,10 +2157,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_IL_OFFSET:
             // Do nothing; this node is a marker for debug info.
-            break;
-
-        case GT_RECORD_ASYNC_RESUME:
-            genRecordAsyncResume(treeNode->AsVal());
             break;
 
 #if defined(TARGET_AMD64)
@@ -4261,6 +4274,18 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     GetEmitter()->emitIns_R(INS_i_jmp, emitTypeSize(TYP_I_IMPL), baseReg);
 }
 
+//------------------------------------------------------------------------
+// genNonLocalJmp: Emit jump to the specified address.
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    genConsumeOperands(tree->AsOp());
+    inst_TT(INS_i_jmp, EA_PTRSIZE, tree->gtGetOp1());
+}
+
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
@@ -4283,6 +4308,18 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {
     GetEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), treeNode->GetRegNum(),
                               genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1), 0);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genFtnEntry: emits address of the current function being compiled
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
     genProduceReg(treeNode);
 }
 
@@ -9853,11 +9890,11 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #ifdef TARGET_AMD64
 
 //------------------------------------------------------------------------
-// genOSRRecordTier0CalleeSavedRegistersAndFrame: for OSR methods, record the
+// genOSRHandleTier0CalleeSavedRegistersAndFrame: for OSR methods, record the
 //  subset of callee saves already saved by the Tier0 method, and the frame
 //  created by Tier0.
 //
-void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
     assert(m_compiler->compGeneratingProlog);
     assert(m_compiler->opts.IsOSR());
@@ -9909,13 +9946,14 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     // We must account for the post-callee-saves push SP movement
     // done by the Tier0 frame and by the OSR transition.
     //
-    // tier0FrameSize is the Tier0 FP-SP delta plus the fake call slot added by
-    // JIT_Patchpoint. We add one slot to account for the saved FP.
+    // tier0FrameSize is the Tier0 FP-SP delta plus the fake call slot we push in genFnProlog.
+    // We subtract the fake call slot since we will add it as unwind after the instruction itself.
+    // We then add back one slot to account for the saved FP.
     //
     // We then need to subtract off the size the Tier0 callee saves as SP
     // adjusts for those will have been modelled by the unwind pushes above.
     //
-    int const tier0FrameSize = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
+    int const tier0FrameSize = patchpointInfo->TotalFrameSize() - REGSIZE_BYTES + REGSIZE_BYTES;
     int const tier0NetSize   = tier0FrameSize - tier0IntCalleeSaveUsedSize;
     m_compiler->unwindAllocStack(tier0NetSize);
 }
@@ -9999,18 +10037,29 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
         osrAdditionalIntCalleeSaves &= ~regBit;
     }
 }
+#else
+
+//------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Not called for x86 without OSR support.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
+}
+
 #endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
 //
-void CodeGen::genPushCalleeSavedRegisters()
+void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
     assert(m_compiler->compGeneratingProlog);
 
 #if DEBUG
     // OSR root frames must handle this differently. See
-    //   genOSRRecordTier0CalleeSavedRegisters()
+    //   genOSRHandleTier0CalleeSavedRegistersAndFrame()
     //   genOSRSaveRemainingCalleeSavedRegisters()
     //
     if (m_compiler->opts.IsOSR())

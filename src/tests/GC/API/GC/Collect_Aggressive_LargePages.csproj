@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <!-- Large pages and GCHeapHardLimit=0xC0000000 are not supported on 32-bit -->
+    <CLRTestTargetUnsupported Condition="'$(TargetBits)' == '32'">true</CLRTestTargetUnsupported>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Collect_Aggressive_LargePages.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CLRTestEnvironmentVariable Include="DOTNET_GCLargePages" Value="2" />
+    <CLRTestEnvironmentVariable Include="DOTNET_GCHeapHardLimit" Value="0xC0000000" />
+  </ItemGroup>
+</Project>
