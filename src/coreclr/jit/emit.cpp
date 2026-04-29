@@ -1393,7 +1393,7 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
     insExecutionCharacteristics result        = getInsExecutionCharacteristics(id);
     float                       throughput    = result.insThroughput;
     float                       latency       = result.insLatency;
-    unsigned                    memAccessKind = result.insMemoryAccessKind;
+    PerfScoreMemoryAccessKind   memAccessKind = result.insMemoryAccessKind;
 
     // Check for PERFSCORE_THROUGHPUT_ILLEGAL and PERFSCORE_LATENCY_ILLEGAL.
     // Note that 0.0 throughput is allowed for pseudo-instructions in the instrDesc list that won't actually
@@ -1401,7 +1401,7 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
     assert(throughput >= 0.0);
     assert(latency >= 0.0);
 
-    if (memAccessKind == PERFSCORE_MEMORY_WRITE || memAccessKind == PERFSCORE_MEMORY_READ_WRITE)
+    if ((memAccessKind == PerfScoreMemoryAccessKind::Write) || (memAccessKind == PerfScoreMemoryAccessKind::ReadWrite))
     {
         // We assume that we won't read back from memory for the next WR_GENERAL cycles
         // Thus we normally won't pay latency costs for writes.

@@ -45,6 +45,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _cache.GetOrAdd(key, _creator);
         }
+
+        public ICollection<TValue> Values => _cache.Values;
     }
 
     public enum TypeValidationRule
@@ -88,6 +90,8 @@ namespace ILCompiler.DependencyAnalysis
         public NameMangler NameMangler { get; }
 
         public MetadataManager MetadataManager { get; }
+
+        public ObjectDataInterner ObjectInterner { get; }
 
         public CompositeImageSettings CompositeImageSettings { get; set; }
 
@@ -241,6 +245,8 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             CreateNodeCaches();
+
+            ObjectInterner = new ObjectDataInterner(new CopiedMethodILDeduplicator(() => _copiedMethodIL.Values));
 
             if (genericCycleBreadthCutoff >= 0 || genericCycleDepthCutoff >= 0)
             {

@@ -119,11 +119,8 @@ inline BOOL CompareControlRegisters(const DT_CONTEXT * pCtx1, const DT_CONTEXT *
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // TODO-RISCV64: Sort out frame registers
-
     if ((pCtx1->Pc == pCtx2->Pc) &&
-        (pCtx1->Sp == pCtx2->Sp) &&
-        (pCtx1->Fp == pCtx2->Fp))
+        (pCtx1->Sp == pCtx2->Sp))
     {
         return TRUE;
     }
