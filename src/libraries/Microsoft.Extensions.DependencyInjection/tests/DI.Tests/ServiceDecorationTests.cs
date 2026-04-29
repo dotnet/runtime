@@ -202,6 +202,24 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void Decorate_OpenGenericWithConstraints_AppliesWhenConstraintsMet()
+        {
+            var services = new ServiceCollection();
+            services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
+            services.Decorate(typeof(IRepository<>), typeof(ConstrainedCachingRepository<>));
+
+            var provider = services.BuildServiceProvider();
+
+            // string is a class — constraint met, decoration applied
+            var stringRepo = provider.GetRequiredService<IRepository<string>>();
+            Assert.IsType<ConstrainedCachingRepository<string>>(stringRepo);
+
+            // int is a value type — constraint not met, decoration skipped
+            var intRepo = provider.GetRequiredService<IRepository<int>>();
+            Assert.IsType<Repository<int>>(intRepo);
+        }
+
+        [Fact]
         public void ValidateOnBuild_InvalidDecorator_Throws()
         {
             var services = new ServiceCollection();
@@ -326,6 +344,16 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Inner = inner;
             }
         }
+        public class ConstrainedCachingRepository<T> : IRepository<T> where T : class
+        {
+            public IRepository<T> Inner { get; }
+
+            public ConstrainedCachingRepository(IRepository<T> inner)
+            {
+                Inner = inner;
+            }
+        }
+
         // Decorator without a constructor accepting IService — invalid
         public class InvalidDecoratorService : IService
         {

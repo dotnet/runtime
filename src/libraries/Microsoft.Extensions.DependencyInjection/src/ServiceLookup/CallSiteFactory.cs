@@ -591,13 +591,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             serviceType.IsConstructedGenericType &&
             serviceType.GetGenericTypeDefinition() == descriptorType;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
-            Justification = "MakeGenericType here is used to create a closed generic implementation type given the closed service type. " +
-            "Trimming annotations on the generic types are verified when 'Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability' is set, which is set by default when PublishTrimmed=true. " +
-            "That check informs developers when these generic types don't have compatible trimming annotations.")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "When ServiceProvider.VerifyAotCompatibility is true, which it is by default when PublishAot=true, " +
-            "this method ensures the generic types being created aren't using ValueTypes.")]
         private ServiceCallSite? CreateOpenGeneric(ServiceDescriptor descriptor, ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain, int slot, bool throwOnConstraintViolation)
         {
             ServiceCacheKey callSiteKey = new ServiceCacheKey(serviceIdentifier, slot);
@@ -609,24 +602,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Type? implementationType = descriptor.GetImplementationType();
             Debug.Assert(implementationType != null, "descriptor.ImplementationType != null");
             var lifetime = new ResultCache(descriptor.Lifetime, serviceIdentifier, slot);
-            Type closedType;
-            try
-            {
-                Type[] genericTypeArguments = serviceIdentifier.ServiceType.GenericTypeArguments;
-                if (ServiceProvider.VerifyAotCompatibility)
-                {
-                    VerifyOpenGenericAotCompatibility(serviceIdentifier.ServiceType, genericTypeArguments);
-                }
 
-                closedType = implementationType.MakeGenericType(genericTypeArguments);
-            }
-            catch (ArgumentException)
+            if (!TryCloseGenericType(implementationType, serviceIdentifier.ServiceType, throwOnConstraintViolation, out Type? closedType))
             {
-                if (throwOnConstraintViolation)
-                {
-                    throw;
-                }
-
                 return null;
             }
 
@@ -831,10 +809,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         /// has been generated. To catch these problems early, this verification is enabled at development-time
         /// to inform the developer early that this scenario will not work once AOT'd.
         /// </remarks>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
-            Justification = "Open generic decorator types are validated at registration time.")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "Open generic decorator types are validated at registration time.")]
         private ServiceCallSite ApplyDecorations(ServiceCallSite callSite, ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain)
         {
             for (int i = 0; i < _decorations.Length; i++)
@@ -870,7 +844,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     // Close generic decorator type if needed
                     if (decoratorType.IsGenericTypeDefinition)
                     {
-                        decoratorType = decoratorType.MakeGenericType(serviceIdentifier.ServiceType.GenericTypeArguments);
+                        if (!TryCloseGenericType(decoratorType, serviceIdentifier.ServiceType, throwOnConstraintViolation: false, out Type? closedType))
+                        {
+                            // Generic constraints don't match — skip this decoration
+                            continue;
+                        }
+                        decoratorType = closedType;
                     }
 
                     // Find the best constructor and build parameter call sites
@@ -964,6 +943,39 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
 
             return decoration.ServiceType == serviceIdentifier.ServiceType;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
+            Justification = "MakeGenericType here is used to create a closed generic type given the closed service type.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "When ServiceProvider.VerifyAotCompatibility is true, this method ensures the generic types being created aren't using ValueTypes.")]
+        private static bool TryCloseGenericType(
+            Type openGenericType,
+            Type serviceType,
+            bool throwOnConstraintViolation,
+            [NotNullWhen(true)] out Type? closedType)
+        {
+            try
+            {
+                Type[] genericTypeArguments = serviceType.GenericTypeArguments;
+                if (ServiceProvider.VerifyAotCompatibility)
+                {
+                    VerifyOpenGenericAotCompatibility(serviceType, genericTypeArguments);
+                }
+
+                closedType = openGenericType.MakeGenericType(genericTypeArguments);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                if (throwOnConstraintViolation)
+                {
+                    throw;
+                }
+
+                closedType = null;
+                return false;
+            }
         }
 
         private static void VerifyOpenGenericAotCompatibility(Type serviceType, Type[] genericTypeArguments)
