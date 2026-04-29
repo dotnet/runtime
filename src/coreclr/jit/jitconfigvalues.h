@@ -347,7 +347,7 @@ CONFIG_INTEGER(JitDisasmWithDebugInfo, "JitDisasmWithDebugInfo", 0)
 CONFIG_INTEGER(JitDisasmSpilled, "JitDisasmSpilled", 0)
 
 // Print the process address next to each instruction of the disassembly
-CONFIG_INTEGER(JitDasmWithAddress, "JitDasmWithAddress", 0)
+CONFIG_INTEGER(JitDisasmWithAddress, "JitDisasmWithAddress", 0)
 
 RELEASE_CONFIG_STRING(JitStdOutFile, "JitStdOutFile") // If set, sends JIT's stdout output to this file.
 

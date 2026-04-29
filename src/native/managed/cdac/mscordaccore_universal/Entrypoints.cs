@@ -18,9 +18,34 @@ internal static class Entrypoints
         delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget,
         delegate* unmanaged<ulong, byte*, uint, void*, int> writeToTarget,
         delegate* unmanaged<uint, uint, uint, byte*, void*, int> readThreadContext,
+        delegate* unmanaged<uint, ulong*, void*, int> allocVirtual,
         void* delegateContext,
         IntPtr* handle)
     {
+        // Build the allocVirtual delegate if the caller provided a callback
+        ContractDescriptorTarget.AllocVirtualDelegate allocDelegate = (ulong size, out ulong allocatedAddress) =>
+        {
+            allocatedAddress = 0;
+            return HResults.E_NOTIMPL;
+        };
+
+        if (allocVirtual != null)
+        {
+            allocDelegate = (ulong size, out ulong allocatedAddress) =>
+            {
+                if (size > uint.MaxValue)
+                {
+                    allocatedAddress = 0;
+                    return HResults.E_INVALIDARG;
+                }
+
+                fixed (ulong* addrPtr = &allocatedAddress)
+                {
+                    return allocVirtual((uint)size, addrPtr, delegateContext);
+                }
+            };
+        }
+
         // TODO: [cdac] Better error code/details
         if (!ContractDescriptorTarget.TryCreate(
             descriptor,
@@ -45,6 +70,7 @@ internal static class Entrypoints
                     return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
                 }
             },
+            allocDelegate,
             [Contracts.CoreCLRContracts.Register],
             out ContractDescriptorTarget? target))
             return -1;
@@ -153,12 +179,37 @@ internal static class Entrypoints
         ICLRContractLocator contractLocator = legacyTarget as ICLRContractLocator ?? throw new ArgumentException(
             $"{nameof(pLegacyTarget)} does not implement {nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
 
+        // Try to get ICLRDataTarget2 for memory allocation support (optional)
+        ICLRDataTarget2? dataTarget2 = legacyTarget as ICLRDataTarget2;
+
         ulong contractAddress;
         int hr = contractLocator.GetContractDescriptor(&contractAddress);
         if (hr != 0)
         {
             throw new InvalidOperationException(
                 $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
+        }
+
+        // Build the allocVirtual delegate if the target supports ICLRDataTarget2
+        ContractDescriptorTarget.AllocVirtualDelegate allocVirtual = (ulong size, out ulong allocatedAddress) =>
+        {
+            allocatedAddress = 0;
+            return HResults.E_NOTIMPL;
+        };
+
+        if (dataTarget2 is not null)
+        {
+            // Windows virtual memory allocation flags used by ICLRDataTarget2::AllocVirtual.
+            const uint MEM_COMMIT = 0x1000;
+            const uint PAGE_READWRITE = 0x04;
+
+            allocVirtual = (ulong size, out ulong allocatedAddress) =>
+            {
+                ClrDataAddress addr;
+                int result = dataTarget2.AllocVirtual(0, (uint)size, MEM_COMMIT, PAGE_READWRITE, &addr);
+                allocatedAddress = (ulong)addr;
+                return result;
+            };
         }
 
         if (!ContractDescriptorTarget.TryCreate(
@@ -186,6 +237,7 @@ internal static class Entrypoints
                     return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
                 }
             },
+            allocVirtual,
             [Contracts.CoreCLRContracts.Register],
             out ContractDescriptorTarget? target))
         {

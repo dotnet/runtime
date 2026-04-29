@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -268,5 +269,32 @@ internal readonly struct Thread_1 : IThread
         byte[] rval = new byte[_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock)];
         _target.ReadBuffer(readFrom, rval);
         return rval;
+    }
+
+    byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags)
+    {
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+        byte[] bytes = new byte[context.Size];
+        Span<byte> buffer = new Span<byte>(bytes);
+
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+
+        TargetPointer filterContext = TargetPointer.Null;
+
+        if (contextSource.HasFlag(ThreadContextSource.Debugger))
+            filterContext = thread.DebuggerFilterContext;
+
+        if (filterContext != TargetPointer.Null)
+        {
+            _target.ReadBuffer(filterContext.Value, buffer);
+            return bytes;
+        }
+
+        if (!_target.TryGetThreadContext(thread.OSId.Value, contextFlags, buffer))
+        {
+            throw new InvalidOperationException($"GetThreadContext failed for thread {thread.OSId.Value}");
+        }
+
+        return bytes;
     }
 }

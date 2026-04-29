@@ -5,6 +5,13 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+[Flags]
+public enum ThreadContextSource
+{
+    None = 0,
+    Debugger = 1,
+}
+
 public record struct ThreadStoreData(
     int ThreadCount,
     TargetPointer FirstThread,
@@ -60,6 +67,7 @@ public interface IThread : IContract
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
     TargetPointer GetCurrentExceptionHandle(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
+    byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
 }
 
 public readonly struct Thread : IThread

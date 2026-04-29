@@ -210,6 +210,17 @@ namespace System
 #endif
 
         /// <summary>
+        /// Indicates whether the current application is running on Haiku.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsHaiku() =>
+#if TARGET_HAIKU
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
         /// Indicates whether the current application is running on Android.
         /// </summary>
         [NonVersionable]
