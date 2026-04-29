@@ -116,6 +116,9 @@ typedef cpuset_t cpu_set_t;
 // The cached total number of CPUs that can be used in the OS.
 uint32_t g_totalCpuCount = 0;
 
+// The number of CPUs that are configured in the OS.
+uint32_t g_configuredCpuCount = 0;
+
 size_t GetRestrictedPhysicalMemoryLimit();
 bool GetPhysicalMemoryUsed(size_t* val);
 
@@ -158,6 +161,7 @@ bool GCToOSInterface::Initialize()
     }
 
     g_totalCpuCount = cpuCount;
+    g_configuredCpuCount = configuredCpuCount;
 
     if (!g_processAffinitySet.Initialize(configuredCpuCount))
     {
@@ -904,9 +908,11 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
 #if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
-    cpu_set_t cpuSet;
-    CPU_ZERO(&cpuSet);
-    CPU_SET((int)procNo, &cpuSet);
+
+    cpu_set_t* pCpuSet = CPU_ALLOC(g_configuredCpuCount);
+    size_t cpuSetSize = CPU_ALLOC_SIZE(g_configuredCpuCount);
+    CPU_ZERO_S(cpuSetSize, pCpuSet);
+    CPU_SET_S((int)procNo, cpuSetSize, pCpuSet);
 
     // Snap's default strict confinement does not allow sched_setaffinity(<nonzeroPid>, ...) without manually connecting the
     // process-control plug. sched_setaffinity(<currentThreadPid>, ...) is also currently not allowed, only
@@ -917,11 +923,13 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
     // - https://github.com/dotnet/runtime/pull/38795
     // - https://github.com/dotnet/runtime/issues/1634
     // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
-#if HAVE_SCHED_SETAFFINITY
-    int st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
-#else
-    int st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
-#endif
+ #if HAVE_SCHED_SETAFFINITY
+    int st = sched_setaffinity(0, cpuSetSize, pCpuSet);
+ #else
+    int st = pthread_setaffinity_np(pthread_self(), cpuSetSize, pCpuSet);
+ #endif
+
+    CPU_FREE(pCpuSet);
 
     return (st == 0);
 
