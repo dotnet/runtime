@@ -246,7 +246,9 @@ internal static class R2RAssert
     }
 
     /// <summary>
-    /// Asserts the R2R image contains an [ASYNC] variant entry whose signature contains the given method name.
+    /// Asserts the R2R image contains exactly one [ASYNC] variant entry whose signature contains the given method name.
+    /// Fails if no match is found or if more than one [ASYNC] method signature matches the search token.
+    /// Use a precise token (e.g. <c>"::MethodName("</c>) to avoid unintended substring matches.
     /// </summary>
     public static void HasAsyncVariant(ReadyToRunReader reader, string methodName)
     {
@@ -255,10 +257,17 @@ internal static class R2RAssert
             .Select(m => m.SignatureString)
             .ToList();
 
-        Assert.True(
-            asyncSigs.Any(s => s.Contains(methodName, StringComparison.OrdinalIgnoreCase)),
+        var matchingSigs = asyncSigs
+            .Where(s => s.Contains(methodName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        Assert.True(matchingSigs.Count > 0,
             $"Expected [ASYNC] variant for '{methodName}' not found. " +
             $"Async methods: [{string.Join(", ", asyncSigs)}]");
+
+        Assert.True(matchingSigs.Count == 1,
+            $"Expected exactly one [ASYNC] variant matching '{methodName}', " +
+            $"but found {matchingSigs.Count}: [{string.Join(", ", matchingSigs)}]");
     }
 
     /// <summary>
@@ -312,10 +321,12 @@ internal static class R2RAssert
     }
 
     /// <summary>
-    /// Asserts that for every method whose signature contains <paramref name="methodName"/>
-    /// AND has at least one fixup of <paramref name="kind"/>, that method has exactly
+    /// Asserts that exactly one method whose signature contains <paramref name="methodName"/>
+    /// has at least one fixup of <paramref name="kind"/>, and that method has exactly
     /// <paramref name="expectedCount"/> fixups of that kind.
-    /// At least one such matching method must exist.
+    /// Fails if no match is found, if more than one method matches the search token, or if
+    /// the fixup count differs from <paramref name="expectedCount"/>.
+    /// Use a precise token (e.g. <c>"::MethodName("</c>) to avoid unintended substring matches.
     /// Useful for ensuring fixups are properly deduplicated.
     /// </summary>
     public static void HasFixupKindCountOnMethod(ReadyToRunReader reader, ReadyToRunFixupKind kind, string methodName, int expectedCount)
@@ -343,6 +354,10 @@ internal static class R2RAssert
 
         Assert.True(matchingMethods.Count > 0,
             $"No method matching '{methodName}' was found with any '{kind}' fixup.");
+
+        Assert.True(matchingMethods.Count == 1,
+            $"Expected exactly one method matching '{methodName}' with '{kind}' fixup, " +
+            $"but found {matchingMethods.Count}: [{string.Join(", ", matchingMethods.Select(m => m.Signature))}]");
 
         foreach (var (signature, count) in matchingMethods)
         {
@@ -374,11 +389,14 @@ internal static class R2RAssert
     }
 
     /// <summary>
-    /// Asserts a method whose signature contains <paramref name="methodName"/>
+    /// Asserts exactly one method whose signature contains <paramref name="methodName"/>
     /// has at least one fixup of the given kind.
+    /// Fails if no match is found or if more than one method matches the search token.
+    /// Use a precise token (e.g. <c>"::MethodName("</c>) to avoid unintended substring matches.
     /// </summary>
     public static void HasFixupKindOnMethod(ReadyToRunReader reader, ReadyToRunFixupKind kind, string methodName)
     {
+        var matchingMethods = new List<string>();
         var methodsWithFixup = new List<string>();
         foreach (var method in GetAllMethods(reader))
         {
@@ -399,13 +417,17 @@ internal static class R2RAssert
             {
                 methodsWithFixup.Add(method.SignatureString);
                 if (method.SignatureString.Contains(methodName, StringComparison.OrdinalIgnoreCase))
-                    return;
+                    matchingMethods.Add(method.SignatureString);
             }
         }
 
-        Assert.Fail(
+        Assert.True(matchingMethods.Count > 0,
             $"Expected fixup kind '{kind}' on method matching '{methodName}', but not found.\n" +
             $"Methods with '{kind}' fixups: [{string.Join(", ", methodsWithFixup)}]");
+
+        Assert.True(matchingMethods.Count == 1,
+            $"Expected exactly one method matching '{methodName}' with fixup kind '{kind}', " +
+            $"but found {matchingMethods.Count}: [{string.Join(", ", matchingMethods)}]");
     }
 }
 

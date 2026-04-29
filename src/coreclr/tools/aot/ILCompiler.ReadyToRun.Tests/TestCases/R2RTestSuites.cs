@@ -271,7 +271,8 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasAsyncVariant(reader, "GetValueAsync");
+            R2RAssert.HasAsyncVariant(reader, "OpenImpl::GetValueAsync(");
+            R2RAssert.HasAsyncVariant(reader, "SealedImpl::GetValueAsync(");
         }
     }
 
@@ -347,12 +348,12 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            R2RAssert.HasAsyncVariant(reader, "MultipleAwaits");
-            R2RAssert.HasAsyncVariant(reader, "MultipleAwaitsWithRefs");
-            R2RAssert.HasResumptionStubFixup(reader, "MultipleAwaits");
-            R2RAssert.HasResumptionStubFixup(reader, "MultipleAwaitsWithRefs");
-            R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, "MultipleAwaits", 1);
-            R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, "MultipleAwaitsWithRefs", 1);
+            R2RAssert.HasAsyncVariant(reader, "::MultipleAwaits(");
+            R2RAssert.HasAsyncVariant(reader, "::MultipleAwaitsWithRefs(");
+            R2RAssert.HasResumptionStubFixup(reader, "::MultipleAwaits(");
+            R2RAssert.HasResumptionStubFixup(reader, "::MultipleAwaitsWithRefs(");
+            R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, "::MultipleAwaits(", 1);
+            R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, "::MultipleAwaitsWithRefs(", 1);
         }
     }
 
