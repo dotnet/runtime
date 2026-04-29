@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Needed for IsLongRunningGCTest -->
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
