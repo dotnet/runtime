@@ -55,6 +55,68 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void Decorate_DeeplyNested_ThreeLevels()
+        {
+            var services = new ServiceCollection();
+            services.AddTransient<IService, InnerService>();
+            services.Decorate<IService, DecoratorService>();
+            services.Decorate<IService, DecoratorWithLogger>();
+            services.AddSingleton<ILogger, Logger>();
+            services.Decorate<IService, OuterDecoratorService>();
+
+            var provider = services.BuildServiceProvider();
+            var service = provider.GetRequiredService<IService>();
+
+            var outer = Assert.IsType<OuterDecoratorService>(service);
+            var middle = Assert.IsType<DecoratorWithLogger>(outer.Inner);
+            Assert.IsType<Logger>(middle.Logger);
+            var inner = Assert.IsType<DecoratorService>(middle.Inner);
+            Assert.IsType<InnerService>(inner.Inner);
+        }
+
+        [Fact]
+        public void Decorate_TransientDecoratorOnScopedService()
+        {
+            var services = new ServiceCollection();
+            services.AddScoped<IService, InnerService>();
+            services.Decorate<IService, DecoratorService>();
+
+            var provider = services.BuildServiceProvider();
+            using var scope1 = provider.CreateScope();
+            using var scope2 = provider.CreateScope();
+
+            var service1a = scope1.ServiceProvider.GetRequiredService<IService>();
+            var service1b = scope1.ServiceProvider.GetRequiredService<IService>();
+            var service2 = scope2.ServiceProvider.GetRequiredService<IService>();
+
+            // Same decorated instance within a scope
+            Assert.Same(service1a, service1b);
+            // Different across scopes
+            Assert.NotSame(service1a, service2);
+            // Both are decorated
+            Assert.IsType<DecoratorService>(service1a);
+            Assert.IsType<DecoratorService>(service2);
+        }
+
+        [Fact]
+        public void Decorate_SingletonInner_TransientOuter_SameInnerDifferentDecorator()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IService, InnerService>();
+            services.Decorate<IService, DecoratorService>();
+
+            var provider = services.BuildServiceProvider();
+            var service1 = provider.GetRequiredService<IService>();
+            var service2 = provider.GetRequiredService<IService>();
+
+            // Singleton: same decorated instance
+            Assert.Same(service1, service2);
+            var d1 = Assert.IsType<DecoratorService>(service1);
+            var d2 = Assert.IsType<DecoratorService>(service2);
+            Assert.Same(d1.Inner, d2.Inner);
+        }
+
+        [Fact]
         public void Decorate_NoMatchingService_IsIgnoredAtResolution()
         {
             var services = new ServiceCollection();
