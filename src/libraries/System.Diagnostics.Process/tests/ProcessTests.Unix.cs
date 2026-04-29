@@ -173,7 +173,8 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(filename, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
             File.SetUnixFileMode(filename, ExecutablePermissions);
 
-            using (var process = Process.Start(new ProcessStartInfo { FileName = filename }))
+            var psi = new ProcessStartInfo { FileName = filename, RedirectStandardOutput = true, RedirectStandardError = true };
+            using (var process = Process.Start(psi))
             {
                 try
                 {
@@ -186,7 +187,7 @@ namespace System.Diagnostics.Tests
                 }
                 finally
                 {
-                    process.Kill();
+                    process.Kill(entireProcessTree: true);
                     process.WaitForExit();
                 }
             }
