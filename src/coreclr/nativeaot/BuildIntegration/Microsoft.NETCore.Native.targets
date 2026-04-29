@@ -159,11 +159,12 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
     <PropertyGroup Condition="$(BuildingFrameworkLibrary) != 'true'">
       <_IlcIntermediateAssemblyNames>@(IntermediateAssembly->'%(Filename)%(Extension)', ';')</_IlcIntermediateAssemblyNames>
+      <_WrappedIlcIntermediateAssemblyNames>;$(_IlcIntermediateAssemblyNames);</_WrappedIlcIntermediateAssemblyNames>
     </PropertyGroup>
 
     <ItemGroup Condition="$(BuildingFrameworkLibrary) != 'true'">
       <_ResolvedManagedBinary Include="@(ResolvedFileToPublish)"
-                              Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true' and $([System.String]::Copy(';$(_IlcIntermediateAssemblyNames);').Contains(';%(ResolvedFileToPublish.Filename)%(ResolvedFileToPublish.Extension);'))" />
+                              Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true' and $(_WrappedIlcIntermediateAssemblyNames.Contains(';%(ResolvedFileToPublish.Filename)%(ResolvedFileToPublish.Extension);'))" />
       <ManagedBinary Condition="'@(_ResolvedManagedBinary)' != ''" Include="@(_ResolvedManagedBinary)" />
       <ManagedBinary Condition="'@(_ResolvedManagedBinary)' == ''" Include="@(IntermediateAssembly)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
