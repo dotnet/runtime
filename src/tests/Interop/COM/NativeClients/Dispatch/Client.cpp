@@ -724,10 +724,12 @@ void Validate_Sum_IntArray_SafeArray()
         params.cNamedArgs = 0;
         params.rgdispidNamedArgs = nullptr;
 
+        VariantInit(&params.rgvarg[0]);
         V_VT(&params.rgvarg[0]) = VT_ARRAY | VT_I4;
         V_ARRAY(&params.rgvarg[0]) = sa;
 
         VARIANT result;
+        VariantInit(&result);
 
         THROW_IF_FAILED(dispatchTesting->Invoke(
             methodId,
