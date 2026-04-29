@@ -20302,9 +20302,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     // Model the memory throughput, latency, kind
 
-    float    memThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
-    float    memLatency    = PERFSCORE_LATENCY_ILLEGAL;
-    unsigned memAccessKind = 0;
+    float                     memThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
+    float                     memLatency    = PERFSCORE_LATENCY_ILLEGAL;
+    PerfScoreMemoryAccessKind memAccessKind = PerfScoreMemoryAccessKind::None;
 
     switch (memFmt)
     {
@@ -20314,7 +20314,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RD;
             memLatency    = PERFSCORE_LATENCY_RD_STACK;
-            memAccessKind = PERFSCORE_MEMORY_READ;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
         }
 
@@ -20322,7 +20322,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_WR;
             memLatency    = PERFSCORE_LATENCY_WR_STACK;
-            memAccessKind = PERFSCORE_MEMORY_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
         }
 
@@ -20330,7 +20330,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RW;
             memLatency    = PERFSCORE_LATENCY_RD_WR_STACK;
-            memAccessKind = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
         }
 
@@ -20340,7 +20340,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RD;
             memLatency    = PERFSCORE_LATENCY_RD_CONST_ADDR;
-            memAccessKind = PERFSCORE_MEMORY_READ;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
         }
 
@@ -20348,7 +20348,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_WR;
             memLatency    = PERFSCORE_LATENCY_WR_CONST_ADDR;
-            memAccessKind = PERFSCORE_MEMORY_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
         }
 
@@ -20356,7 +20356,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RW;
             memLatency    = PERFSCORE_LATENCY_RD_WR_CONST_ADDR;
-            memAccessKind = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
         }
 
@@ -20366,7 +20366,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RD;
             memLatency    = PERFSCORE_LATENCY_RD_GENERAL;
-            memAccessKind = PERFSCORE_MEMORY_READ;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
         }
 
@@ -20374,7 +20374,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_WR;
             memLatency    = PERFSCORE_LATENCY_WR_GENERAL;
-            memAccessKind = PERFSCORE_MEMORY_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
         }
 
@@ -20382,7 +20382,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RW;
             memLatency    = PERFSCORE_LATENCY_RD_WR_GENERAL;
-            memAccessKind = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
         }
 
@@ -20390,7 +20390,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_ZERO;
             memLatency    = PERFSCORE_LATENCY_ZERO;
-            memAccessKind = PERFSCORE_MEMORY_NONE;
+            memAccessKind = PerfScoreMemoryAccessKind::None;
             break;
         }
 
@@ -20399,7 +20399,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             assert(!"Unhandled insFmt for switch (memFmt)");
             memThroughput = PERFSCORE_THROUGHPUT_ZERO;
             memLatency    = PERFSCORE_LATENCY_ZERO;
-            memAccessKind = PERFSCORE_MEMORY_NONE;
+            memAccessKind = PerfScoreMemoryAccessKind::None;
             break;
         }
     }
@@ -20522,7 +20522,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else
             {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE); // _SHF form never emitted
+                assert(memAccessKind == PerfScoreMemoryAccessKind::Write); // _SHF form never emitted
                 insThroughput = PERFSCORE_THROUGHPUT_2C;
             }
             break;
@@ -20617,7 +20617,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             insThroughput = PERFSCORE_THROUGHPUT_1C;
             insLatency    = PERFSCORE_LATENCY_3C;
 
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (memAccessKind == PerfScoreMemoryAccessKind::Read)
             {
                 // The reads have twice the throughput of the register to register variants
                 insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -20639,7 +20639,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             insThroughput = PERFSCORE_THROUGHPUT_1C;
             insLatency    = PERFSCORE_LATENCY_1C;
 
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (memAccessKind == PerfScoreMemoryAccessKind::Read)
             {
                 // The reads have twice the throughput of the register to register variants
                 insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -20909,7 +20909,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             insLatency = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
 
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::None)
             {
                 insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
@@ -20925,7 +20925,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pinsrd:
         case INS_pinsrq:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::None)
             {
                 insThroughput = PERFSCORE_THROUGHPUT_2C;
                 insLatency    = PERFSCORE_LATENCY_4C;
@@ -21320,7 +21320,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     }
     else
     {
-        if (memAccessKind != PERFSCORE_MEMORY_NONE)
+        if (memAccessKind != PerfScoreMemoryAccessKind::None)
         {
             if (IsSimdInstruction(ins))
             {
