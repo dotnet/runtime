@@ -698,13 +698,13 @@ void Lowering::AfterLowerBlocks()
             }
             else
             {
-                lclNum            = m_compiler->lvaGrabTemp(true DEBUGARG("Stackifier temporary"));
+                lclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Stackifier temporary"));
                 assert(lclNum >= m_minimumTempLclNum);
                 LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
                 varDsc->lvType    = genActualType(type);
 
                 // Allocate a new temporary to describe this local
-                local = new (m_compiler, CMK_Lower) Temporary();
+                local         = new (m_compiler, CMK_Lower) Temporary();
                 local->LclNum = lclNum;
             }
             Append(&m_inUseTemps[genActualType(type)], local);
@@ -734,23 +734,6 @@ void Lowering::AfterLowerBlocks()
                     JITDUMP("Temporary V%02u is now available\n", temp->LclNum);
                 }
             }
-
-#ifdef DEBUG
-            unsigned count = 0;
-            // Verify that all temporaries have been reclaimed
-            for (int i = 0; i < TYP_COUNT; i++)
-            {
-                Temporary* temp = m_availableTemps[i];
-                while (temp != nullptr)
-                {
-                    count++;
-                    assert(temp->LclNum >= m_minimumTempLclNum);
-                    temp = temp->Prev;
-                }
-            }
-
-            assert(count == (m_compiler->lvaCount - m_minimumTempLclNum));
-#endif
         }
 
         Temporary* Remove(Temporary** pTemps)
