@@ -53,7 +53,19 @@
     <TrimmerRootAssembly Include="TestUtilities" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
   </ItemGroup>
 
-
+  <!-- Copy createdump next to the published NativeAOT test binary so crash dumps can be collected on Helix. -->
+  <Target Name="CopyCreatedumpForNativeAot"
+          Condition="'$(TestNativeAot)' == 'true' and '$(TargetOS)' != 'windows'"
+          AfterTargets="Publish">
+    <PropertyGroup>
+      <_CreatedumpSource Condition="'$(TargetOS)' == 'osx'">$(CoreCLRArtifactsPath)sharedFramework/createdump</_CreatedumpSource>
+      <_CreatedumpSource Condition="'$(TargetOS)' != 'osx'">$(CoreCLRArtifactsPath)createdump</_CreatedumpSource>
+    </PropertyGroup>
+    <Copy SourceFiles="$(_CreatedumpSource)"
+          DestinationFolder="$(BundleDir)"
+          Condition="Exists('$(_CreatedumpSource)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 
   <Target Name="__ExcludeAssembliesFromSingleFile"
           Inputs="%(ResolvedFileToPublish.Identity)"
