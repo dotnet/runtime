@@ -44,6 +44,7 @@
          category-based filters in xunit-excludes.txt do not apply. -->
     <TrimmerRootAssembly Include="Microsoft.DotNet.XUnitExtensions" />
     <TrimmerRootAssembly Include="xunit.core" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" />
   </ItemGroup>
 
   <PropertyGroup>
