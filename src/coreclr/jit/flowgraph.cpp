@@ -1339,12 +1339,8 @@ bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool o
     }
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
-    if (varTypeIsFloating(fromType) && varTypeIsLong(toType))
-    {
-        return true;
-    }
-
-    if (varTypeIsLong(fromType) && varTypeIsFloating(toType))
+    if ((varTypeIsLong(fromType) && varTypeIsFloating(toType)) ||
+        (varTypeIsFloating(fromType) && varTypeIsLong(toType)))
     {
 #if defined(TARGET_X86)
         return !compOpportunisticallyDependsOn(InstructionSet_AVX512);

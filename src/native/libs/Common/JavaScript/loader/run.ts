@@ -1,59 +1,108 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, EmscriptenModuleInternal, JsAsset } from "./types";
+import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource } from "./types";
 
 import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
 import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
-import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded } from "./assets";
+import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks } from "./assets";
 import { initPolyfills } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
-// WASM-TODO: downloadOnly https://github.com/dotnet/runtime/issues/124896
-// WASM-TODO: debugLevel
+type DownloadMode = "none" | "cacheOnly" | "intoMemory";
+let downloadMode: DownloadMode = "none";
+let downloadDeferred: PromiseCompletionSource<void> | undefined;
+let downloadedIntoMemory = false;
+let configInitialized = false;
+let modulesAfterConfigLoadedCache: [JsAsset, Promise<any>][] = [];
 
 // many things happen in parallel here, but order matters for performance!
 // ideally we want to utilize network and CPU at the same time
-export async function createRuntime(downloadOnly: boolean): Promise<any> {
+export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolean = false): Promise<any> {
     if (!loaderConfig.resources || !loaderConfig.resources.coreAssembly || !loaderConfig.resources.coreAssembly.length) throw new Error("Invalid config, resources is not set");
     try {
         runtimeState.creatingRuntime = true;
+
+        // Re-entrancy guard: await any in-flight download, skip if already at requested level
+        if (downloadOnly) {
+            if (downloadDeferred) {
+                await downloadDeferred.promise;
+            }
+            if (downloadMode === "intoMemory" || (httpCacheOnly && downloadMode === "cacheOnly")) {
+                return;
+            }
+            downloadDeferred = createPromiseCompletionSource<void>();
+        }
+
+        // Fast path: download() already loaded everything into memory, create() just needs to init
+        if (downloadedIntoMemory && !downloadOnly) {
+            Module.runtimeKeepalivePush();
+            await initializeCoreCLR();
+
+            if (typeof Module.onDotnetReady === "function") {
+                await Module.onDotnetReady();
+            }
+
+            const resources = loaderConfig.resources;
+            // modulesAfterRuntimeReady were only prefetched during download(), now load and call onRuntimeReady.
+            const modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = normalizeCollection(resources.modulesAfterRuntimeReady).map((a) => [a, loadJSModule(a)]);
+            // modulesAfterConfigLoaded were loaded during download() — call onRuntimeReady for them too.
+            await Promise.all([...modulesAfterConfigLoadedCache, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
+            return;
+        }
+
         const resources = loaderConfig.resources;
 
-        await validateEngineFeatures();
+        // Run config initialization once: onConfigLoaded, modulesAfterConfigLoaded, polyfills.
+        // This must happen before any asset fetches so that URL overrides take effect.
+        let modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = [];
+        if (!configInitialized) {
+            await validateEngineFeatures();
 
-        if (typeof Module.onConfigLoaded === "function") {
-            await Module.onConfigLoaded(loaderConfig);
-        }
-        validateLoaderConfig();
+            if (typeof Module.onConfigLoaded === "function") {
+                await Module.onConfigLoaded(loaderConfig);
+            }
+            validateLoaderConfig();
 
-        const modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = normalizeCollection(resources.modulesAfterConfigLoaded).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
-        await Promise.all(modulesAfterConfigLoadedPromises.map(([, p]) => p));
+            modulesAfterConfigLoadedPromises = normalizeCollection(resources.modulesAfterConfigLoaded).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
+            await Promise.all(modulesAfterConfigLoadedPromises.map(([, p]) => p));
 
-        // Wire user-provided out/err overrides to Emscripten's print/printErr.
-        // This must happen before the native module loads so Emscripten picks them up.
-        if (!Module.out) {
-            // eslint-disable-next-line no-console
-            Module.out = console.log.bind(console);
-        }
-        if (!Module.err) {
-            // eslint-disable-next-line no-console
-            Module.err = console.error.bind(console);
-        }
-        if (!Module.print) {
-            Module.print = Module.out;
-        }
-        if (!Module.printErr) {
-            Module.printErr = Module.err;
+            // Wire user-provided out/err overrides to Emscripten's print/printErr.
+            // This must happen before the native module loads so Emscripten picks them up.
+            if (!Module.out) {
+                // eslint-disable-next-line no-console
+                Module.out = console.log.bind(console);
+            }
+            if (!Module.err) {
+                // eslint-disable-next-line no-console
+                Module.err = console.error.bind(console);
+            }
+            if (!Module.print) {
+                Module.print = Module.out;
+            }
+            if (!Module.printErr) {
+                Module.printErr = Module.err;
+            }
+
+            // after onConfigLoaded hooks that could install polyfills, our polyfills can be initialized
+            await initPolyfills();
+
+            configInitialized = true;
+            modulesAfterConfigLoadedCache = modulesAfterConfigLoadedPromises;
         }
 
-        // after onConfigLoaded hooks that could install polyfills, our polyfills can be initialized
-        await initPolyfills();
+        // HTTP cache only path: just fetch all resources into browser cache and discard
+        if (downloadOnly && httpCacheOnly) {
+            await prefetchAllResources();
+            downloadMode = "cacheOnly";
+            downloadDeferred?.resolve(undefined as unknown as void);
+            return;
+        }
 
         if (resources.jsModuleDiagnostics && resources.jsModuleDiagnostics.length > 0) {
             const diagnosticsModule = await loadDotnetModule(resources.jsModuleDiagnostics[0]);
@@ -82,7 +131,14 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         const isDebuggingSupported = loaderConfig.debugLevel != 0;
         const corePDBsPromise = forEachResource(resources.corePdb, fetchPdb, () => isDebuggingSupported);
         const pdbsPromise = forEachResource(resources.pdb, fetchPdb, () => isDebuggingSupported);
-        const modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = normalizeCollection(resources.modulesAfterRuntimeReady).map((a) => [a, loadJSModule(a)]);
+        // In download-only mode, just add prefetch hints for runtime-ready modules so create() loads them from cache.
+        // In create mode, load them now so onRuntimeReady can be called later.
+        let modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = [];
+        if (downloadOnly) {
+            prefetchJSModuleLinks(normalizeCollection(resources.modulesAfterRuntimeReady));
+        } else {
+            modulesAfterRuntimeReadyPromises = normalizeCollection(resources.modulesAfterRuntimeReady).map((a) => [a, loadJSModule(a)]);
+        }
 
         const nativeModule = await nativeModulePromise;
         const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetInternals);
@@ -113,6 +169,9 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         verifyAllAssetsDownloaded();
 
         if (downloadOnly) {
+            downloadMode = "intoMemory";
+            downloadedIntoMemory = true;
+            downloadDeferred?.resolve(undefined as unknown as void);
             return;
         }
 
@@ -123,6 +182,7 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         await Promise.all([...modulesAfterConfigLoadedPromises, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
 
     } catch (err) {
+        downloadDeferred?.reject(err);
         exit(1, err);
     } finally {
         runtimeState.creatingRuntime = false;

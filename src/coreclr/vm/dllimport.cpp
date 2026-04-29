@@ -1288,7 +1288,8 @@ public:
 
     void MarshalArgument(MarshalInfo* pInfo, int argOffset)
     {
-        LIMITED_METHOD_CONTRACT;
+        STANDARD_VM_CONTRACT;
+        pInfo->SetupArgumentSizes();
     }
 
     void MarshalLCID(int argIdx)
@@ -2381,9 +2382,21 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         {
             _ASSERTE(pMD->IsPInvoke());
             PInvokeMethodDesc* pTargetMD = (PInvokeMethodDesc*)pMD;
-            pcsEmit->EmitLDC((DWORD_PTR)&pTargetMD->m_pPInvokeTarget);
-            pcsEmit->EmitCONV_I();
-            pcsEmit->EmitLDIND_I();
+
+            // Resolve the P/Invoke target now if our P/Invoke is one that must be resolved eagerly
+            // (ie SuppressGCTransition)
+            void* pInvokeTarget = nullptr;
+            if (PInvokeMethodDesc::TryGetResolvedPInvokeTarget(pTargetMD, &pInvokeTarget))
+            {
+                pcsEmit->EmitLDC((DWORD_PTR)pInvokeTarget);
+                pcsEmit->EmitCONV_I();
+            }
+            else
+            {
+                pcsEmit->EmitLDC((DWORD_PTR)&pTargetMD->m_pPInvokeTarget);
+                pcsEmit->EmitCONV_I();
+                pcsEmit->EmitLDIND_I();
+            }
         }
     }
     else // native-to-managed
@@ -4539,7 +4552,7 @@ static void CreatePInvokeStubAccessMetadata(
 
     (*pNumArgs) = msig.NumFixedArgs();
 
-    IMDInternalImport* pInternalImport = pSigDesc->m_pModule->GetMDImport();
+    IMDInternalImport* pInternalImport = pSigDesc->m_pMetadataModule->GetMDImport();
 
     _ASSERTE(!SF_IsHRESULTSwapping(*pdwStubFlags));
 
@@ -4742,6 +4755,7 @@ COR_ILMETHOD_DECODER* PInvoke::CreatePInvokeMethodIL(PInvokeMethodDesc* pMD, Dyn
     pResolver->SetStubMethodDesc(pMD);
 
     COR_ILMETHOD_DECODER* pIL = CreatePInvokeStubWorker(&stubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), stubState.GetFlags(), pMD, pParamTokenArray, iLCIDArg);
+
     *ppResolver = pResolver.Extract();
     return pIL;
 }
@@ -5986,8 +6000,6 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
 //==========================================================================
 EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 {
-    LPVOID ret = NULL;
-
     PreserveLastErrorHolder preserveLastError;
 
     CONTRACTL
@@ -6006,12 +6018,10 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 
     PInvoke::ResolvePInvokeTarget(pMD);
 
-    ret = pMD->GetPInvokeTarget();
-
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
-    return ret;
+    return pMD->GetPInvokeTarget();
 }
 
 //===========================================================================

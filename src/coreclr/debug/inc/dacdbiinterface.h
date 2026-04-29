@@ -490,23 +490,7 @@ public:
     //    vmModule - vm handle to a module
     //    pData - required out parameter which will be filled out with module properties
     //
-    // Notes:
-    //    See definition of AssemblyInfo for more details about what properties
-    //    this gives back.
     virtual HRESULT STDMETHODCALLTYPE GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData) = 0;
-
-
-    //
-    // Get properties for a Assembly
-    //
-    // Arguments:
-    //    vmAssembly - vm handle to a Assembly
-    //    pData - required out parameter which will be filled out with module properties
-    //
-    // Notes:
-    //    See definition of AssemblyInfo for more details about what properties
-    //    this gives back.
-    virtual HRESULT STDMETHODCALLTYPE GetAssemblyInfo(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule) = 0;
 

@@ -6322,6 +6322,7 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
+        case GT_NOT:
         case GT_NEG:
         case GT_CAST:
         case GT_BITCAST:
