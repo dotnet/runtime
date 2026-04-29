@@ -2235,8 +2235,10 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         if (IsCCMP(ins) || IsCTEST(ins))
         {
             // CCMP and CTEST have 2 special fields in the EVEX prefix:
-            // 1. Source condition code (SCC): EVEX.[3:0] — the instruction executes only when this condition is satisfied.
-            // 2. Default flags value (DFV): EVEX.[15:12] — the value written to EFLAGS when the SCC condition is not met.
+            // 1. Source condition code (SCC): EVEX.[3:0] — the instruction executes only when this condition is
+            // satisfied.
+            // 2. Default flags value (DFV): EVEX.[15:12] — the value written to EFLAGS when the SCC condition is not
+            // met.
             code &= 0xFFFF87F0FFFFFFFF;
             code |= ((size_t)GetCCFromIns(ins)) << 32;  // SCC goes to EVEX.[3:0]
             code |= ((size_t)id->idGetEvexDFV()) << 43; // DFV goes to EVEX.[15:12]
@@ -7110,8 +7112,9 @@ void emitter::emitIns_R_I(instruction         ins,
 
     UNATIVE_OFFSET sz;
     instrDesc*     id;
-    insFormat      fmt       = emitInsModeFormat(ins, IF_RRD_CNS);
-    bool           valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
+    insFormat      fmt = emitInsModeFormat(ins, IF_RRD_CNS);
+    bool           valInByte =
+        ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
 
     // BT reg,imm might be useful but it requires special handling of the immediate value
     // (it is always encoded in a byte). Let's not complicate things until this is needed.
@@ -8344,8 +8347,8 @@ void emitter::emitIns_R_R_A(
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_R_AR
-    (instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs, insOpts instOptions)
+void emitter::emitIns_R_R_AR(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs, insOpts instOptions)
 {
     assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins) || IsApxExtendedEvexInstruction(ins));
@@ -9042,7 +9045,8 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
  *  Add an instruction with a static member + constant.
  */
 
-void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, int val, insOpts instOptions)
+void emitter::emitIns_C_I(
+    instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, int val, insOpts instOptions)
 {
     // Static always need relocs
     if (!jitStaticFldIsGlobAddr(fldHnd))
@@ -9255,9 +9259,8 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-
     sz = emitInsSizeAM(id, insCodeMI(ins), val);
-    
+
     id->idCodeSize(sz);
 
     SetEvexNfIfNeeded(id, instOptions);
@@ -14797,7 +14800,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
                 if (IsCFCMOV(ins))
                 {
-                    // XArch-APX-TODO: JIT does not emitt sub-32b CMOV, whether to use 16b operands in CFCMOV is to be determined.
+                    // XArch-APX-TODO: JIT does not emitt sub-32b CMOV, whether to use 16b operands in CFCMOV is to be
+                    // determined.
                     break;
                 }
                 FALLTHROUGH;
@@ -17341,11 +17345,12 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 {
     code_t      code;
-    emitAttr    size      = id->idOpSize();
-    instruction ins       = id->idIns();
-    regNumber   reg       = id->idReg1();
-    ssize_t     val       = emitGetInsSC(id);
-    bool        valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
+    emitAttr    size = id->idOpSize();
+    instruction ins  = id->idIns();
+    regNumber   reg  = id->idReg1();
+    ssize_t     val  = emitGetInsSC(id);
+    bool        valInByte =
+        ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
 
     assert(!id->idHasReg2());
 

@@ -971,12 +971,12 @@ void emitIns_R_R_A(instruction   ins,
                    insOpts       instOptions = INS_OPTS_NONE);
 
 void emitIns_R_R_AR(instruction ins,
-                    emitAttr attr,
-                    regNumber reg1,
-                    regNumber reg2,
-                    regNumber base,
-                    int offs,
-                    insOpts       instOptions = INS_OPTS_NONE);
+                    emitAttr    attr,
+                    regNumber   reg1,
+                    regNumber   reg2,
+                    regNumber   base,
+                    int         offs,
+                    insOpts     instOptions = INS_OPTS_NONE);
 
 void emitIns_R_AR_R(instruction ins,
                     emitAttr    attr,
@@ -1104,7 +1104,12 @@ void emitIns_R_C(instruction          ins,
 
 void emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs);
 
-void emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs, int val, insOpts instOptions = INS_OPTS_NONE);
+void emitIns_C_I(instruction          ins,
+                 emitAttr             attr,
+                 CORINFO_FIELD_HANDLE fdlHnd,
+                 int                  offs,
+                 int                  val,
+                 insOpts              instOptions = INS_OPTS_NONE);
 
 void emitIns_IJ(emitAttr attr, regNumber reg, unsigned base);
 
