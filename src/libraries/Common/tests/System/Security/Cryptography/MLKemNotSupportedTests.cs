@@ -6,8 +6,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public static class MLKemNotSupportedTests
+    public class MLKemNotSupportedTests
     {
+        public MLKemNotSupportedTests()
+        {
+            Assert.SkipUnless(MLKemNotSupportedTests.IsNotSupported, "ConditionalClass: MLKemNotSupportedTests.IsNotSupported");
+        }
+
         public static bool IsNotSupported => !MLKem.IsSupported;
 
         [Theory]

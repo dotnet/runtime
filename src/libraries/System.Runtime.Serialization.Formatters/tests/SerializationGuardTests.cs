@@ -9,8 +9,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
 {
     // When BinaryFormatter was built-in to the platform we used to activate SerializationGuard in ObjectReader.Deserialize,
     // but now that it has moved to an OOB offering it no longer does.
-    public static class SerializationGuardTests
+    public class SerializationGuardTests
     {
+        public SerializationGuardTests()
+        {
+            Assert.SkipUnless(TestConfiguration.IsBinaryFormatterEnabled, "ConditionalClass: TestConfiguration.IsBinaryFormatterEnabled");
+        }
+
         [Fact]
         public static void IsNoLongerActivated()
         {

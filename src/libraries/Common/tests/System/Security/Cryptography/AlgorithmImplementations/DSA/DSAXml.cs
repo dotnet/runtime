@@ -8,8 +8,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    public static class DSAXml
+    public class DSAXml
     {
+        public DSAXml()
+        {
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "ConditionalClass: PlatformSupport.IsDSASupported");
+        }
+
         [Fact]
         public static void TestRead512Parameters_Public()
         {

@@ -6,8 +6,13 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    public static class SemaphoreSlimCancellationTests
+    public class SemaphoreSlimCancellationTests
     {
+        public SemaphoreSlimCancellationTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
+
         [Fact]
         public static void CancelBeforeWait()
         {

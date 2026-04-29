@@ -7,8 +7,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    public static class DSAKeyPemTests
+    public class DSAKeyPemTests
     {
+        public DSAKeyPemTests()
+        {
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "ConditionalClass: PlatformSupport.IsDSASupported");
+        }
+
         private const string AmbiguousExceptionMarker = "multiple keys";
         private const string EncryptedExceptionMarker = "encrypted key";
         private const string NoPemExceptionMarker = "No supported key";

@@ -35,6 +35,11 @@ using System.Text.RegularExpressions;
 
 public class Program
 {
+    public Program()
+    {
+        Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+    }
+
     public static void Main(string[] args)
     {
         var regex = new Regex("""", RegexOptions.None, TimeSpan.FromSeconds(10));
@@ -322,6 +327,11 @@ using System.Text.RegularExpressions;
 
 public class PatternConstants
 {
+    public PatternConstants()
+    {
+        Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+    }
+
     public const string EmailPattern = @""^[^@]+@[^@]+\.[^@]+$"";
 }
 
@@ -517,6 +527,11 @@ public partial class Program
 
 public class RegexConstants
 {
+    public RegexConstants()
+    {
+        Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+    }
+
     public const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 }
 
@@ -668,8 +683,13 @@ public partial class Program
                 // Test external constants for both pattern and options
                 yield return new object[] { @"using System.Text.RegularExpressions;
 
-public static class RegexConfig
+public class RegexConfig
 {
+    public RegexConfig()
+    {
+        Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+    }
+
     public const string EmailPattern = @""^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"";
     public const RegexOptions EmailOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 }
@@ -682,7 +702,7 @@ public class Program
     }
 }", @"using System.Text.RegularExpressions;
 
-public static class RegexConfig
+public class RegexConfig
 {
     public const string EmailPattern = @""^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"";
     public const RegexOptions EmailOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
@@ -954,12 +974,32 @@ public partial class Program
 
 public class A
 {
+    public A()
+    {
+        Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+    }
+
     public partial class B
     {
+        public B()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+        }
+
         public class C
         {
+            public C()
+            {
+                Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+            }
+
             public partial class D
             {
+                public D()
+                {
+                    Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+                }
+
                 public void Foo()
                 {
                     Regex regex = [|new Regex|](""pattern"", RegexOptions.IgnorePatternWhitespace);

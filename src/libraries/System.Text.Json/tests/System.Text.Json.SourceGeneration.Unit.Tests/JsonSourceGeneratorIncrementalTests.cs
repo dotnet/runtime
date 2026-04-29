@@ -14,8 +14,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 {
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/92467")]
-    public static class JsonSourceGeneratorIncrementalTests
+    public class JsonSourceGeneratorIncrementalTests
     {
+        public JsonSourceGeneratorIncrementalTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+        }
+
         [Theory]
         [MemberData(nameof(GetCompilationHelperFactories))]
         public static void CompilingTheSameSourceResultsInEqualModels(Func<Compilation> factory)
@@ -47,10 +53,22 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 namespace Test
                 {
                     [JsonSerializable(typeof(MyPoco))]
-                    public partial class JsonContext : JsonSerializerContext { }
+                    public partial class JsonContext : JsonSerializerContext {
+                        public JsonContext()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+                        }
+ }
 
                     public class MyPoco
                     {
+                        public MyPoco()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+                        }
+
                         public int MyProperty { get; set; } = 42;
                     }
                 }

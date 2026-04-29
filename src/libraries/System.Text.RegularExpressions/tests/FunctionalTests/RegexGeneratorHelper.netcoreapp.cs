@@ -22,8 +22,13 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public static class RegexGeneratorHelper
+    public class RegexGeneratorHelper
     {
+        public RegexGeneratorHelper()
+        {
+            Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+        }
+
         private static readonly CSharpParseOptions s_previewParseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview).WithDocumentationMode(DocumentationMode.Diagnose);
         private static readonly EmitOptions s_emitOptions = new EmitOptions(debugInformationFormat: DebugInformationFormat.Embedded);
         private static readonly CSharpGeneratorDriver s_generatorDriver = CSharpGeneratorDriver.Create(new[] { new RegexGenerator().AsSourceGenerator() }, parseOptions: s_previewParseOptions);
@@ -177,7 +182,12 @@ namespace System.Text.RegularExpressions.Tests
             var code = new StringBuilder();
             code.AppendLine("using System.Text.RegularExpressions;");
             code.AppendLine("/// <summary>Container for generated regex method.</summary>");
-            code.AppendLine("public partial class C {");
+            code.AppendLine("public partial class C {
+                public C()
+                {
+                    Assert.SkipUnless(PlatformDetection.HasAssemblyFiles, "ConditionalClass: PlatformDetection.HasAssemblyFiles");
+                }
+");
 
             // Build up the code for all of the regexes
             int count = 0;

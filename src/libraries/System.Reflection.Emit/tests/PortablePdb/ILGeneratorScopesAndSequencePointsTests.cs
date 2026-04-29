@@ -438,6 +438,11 @@ namespace System.Reflection.Emit.Tests
 
     public class TestClass : object
     {
+        public TestClass()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "ConditionalClass: PlatformDetection.IsNotBrowser");
+        }
+
         public static TestClass New()
         {
             return new TestClass();
@@ -445,8 +450,13 @@ namespace System.Reflection.Emit.Tests
     }
 
 
-    public static class Util
+    public class Util
     {
+        public Util()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser, "ConditionalClass: PlatformDetection.IsNotBrowser");
+        }
+
         public static bool CCC() => false;
 
         public static void EEE(TestClass b) { }

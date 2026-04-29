@@ -5,8 +5,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public static class X25519DiffieHellmanNotSupportedTests
+    public class X25519DiffieHellmanNotSupportedTests
     {
+        public X25519DiffieHellmanNotSupportedTests()
+        {
+            Assert.SkipUnless(X25519DiffieHellmanNotSupportedTests.IsNotSupported, "ConditionalClass: X25519DiffieHellmanNotSupportedTests.IsNotSupported");
+        }
+
         public static bool IsNotSupported => !X25519DiffieHellman.IsSupported;
 
         [Fact]

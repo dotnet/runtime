@@ -102,8 +102,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
-    public static partial class TimersJS
+    public partial class TimersJS
     {
+        public TimersJS()
+        {
+            Assert.SkipUnless(PlatformDetection.IsBrowserDomSupported, "ConditionalClass: PlatformDetection.IsBrowserDomSupported");
+        }
+
         [JSImport("log", "Timers")]
         public static partial void Log(string message);
 

@@ -7,8 +7,13 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public static partial class ParallelQueryCombinationTests
+    public partial class ParallelQueryCombinationTests
     {
+        public ParallelQueryCombinationTests()
+        {
+            Assert.SkipUnless(ParallelQueryCombinationTests.RunSlowTests, "ConditionalClass: ParallelQueryCombinationTests.RunSlowTests");
+        }
+
         // On ARM platforms, many available cores make this unbearably slow: https://github.com/dotnet/runtime/issues/29123
         public static bool RunSlowTests => PlatformDetection.IsNotArmNorArm64Process || Environment.ProcessorCount <= 8;
 

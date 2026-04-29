@@ -11,8 +11,13 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
     using RC2 = System.Security.Cryptography.RC2;
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static partial class RC2CipherTests
+    public partial class RC2CipherTests
     {
+        public RC2CipherTests()
+        {
+            Assert.SkipUnless(RC2Factory.IsSupported, "ConditionalClass: RC2Factory.IsSupported");
+        }
+
         // These are the expected output of many decryptions. Changing these values requires re-generating test input.
         private static readonly string s_multiBlockString = new ASCIIEncoding().GetBytes(
             "This is a sentence that is longer than a block, it ensures that multi-block functions work.").ByteArrayToHex();

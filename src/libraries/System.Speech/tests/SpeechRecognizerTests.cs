@@ -18,8 +18,13 @@ using Xunit;
 namespace SampleSynthesisTests
 {
     [SkipOnMono("No SAPI on Mono")]
-    public static class SpeechRecognizerTests
+    public class SpeechRecognizerTests
     {
+        public SpeechRecognizerTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsNotWindowsNanoNorServerCore, "ConditionalClass: PlatformDetection.IsNotWindowsNanoNorServerCore");
+        }
+
         private static bool RecognizerInstalledAndEnabled()
         {
             if (PlatformDetection.IsMonoRuntime ||

@@ -6,8 +6,13 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    public static class BarrierCancellationTests
+    public class BarrierCancellationTests
     {
+        public BarrierCancellationTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
+
         [Fact]
         public static void BarrierCancellationTestsCancelBeforeWait()
         {

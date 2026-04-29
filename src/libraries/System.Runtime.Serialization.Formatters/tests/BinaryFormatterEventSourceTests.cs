@@ -11,8 +11,13 @@ using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
-    public static class BinaryFormatterEventSourceTests
+    public class BinaryFormatterEventSourceTests
     {
+        public BinaryFormatterEventSourceTests()
+        {
+            Assert.SkipUnless(TestConfiguration.IsBinaryFormatterEnabled, "ConditionalClass: TestConfiguration.IsBinaryFormatterEnabled");
+        }
+
         private const string BinaryFormatterEventSourceName = "System.Runtime.Serialization.Formatters.Binary.BinaryFormatterEventSource";
 
         [Fact]

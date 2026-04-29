@@ -11,8 +11,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public static class MLKemTests
+    public class MLKemTests
     {
+        public MLKemTests()
+        {
+            Assert.SkipUnless(MLKem.IsSupported, "ConditionalClass: MLKem.IsSupported");
+        }
+
         private static readonly byte[] s_asnNull = new byte[] { 0x05, 0x00 };
 
         [Fact]

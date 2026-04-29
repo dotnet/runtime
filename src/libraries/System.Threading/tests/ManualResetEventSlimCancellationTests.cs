@@ -6,8 +6,13 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    public static class ManualResetEventCancellationTests
+    public class ManualResetEventCancellationTests
     {
+        public ManualResetEventCancellationTests()
+        {
+            Assert.SkipUnless(PlatformDetection.IsMultithreadingSupported, "ConditionalClass: PlatformDetection.IsMultithreadingSupported");
+        }
+
         [Fact]
         public static void CancelBeforeWait()
         {

@@ -7,8 +7,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public static class DSACreateTests
+    public class DSACreateTests
     {
+        public DSACreateTests()
+        {
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "ConditionalClass: PlatformSupport.IsDSASupported");
+        }
+
         [Theory]
         [SkipOnPlatform(TestPlatforms.Android, "Android only supports key sizes that are a multiple of 1024")]
         [InlineData(512)]

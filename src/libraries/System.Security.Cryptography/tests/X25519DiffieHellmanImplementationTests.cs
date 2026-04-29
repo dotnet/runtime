@@ -21,8 +21,13 @@ namespace System.Security.Cryptography.Tests
             X25519DiffieHellman.ImportPublicKey(source);
     }
 
-    public static class X25519DiffieHellmanImplementationSupportedTests
+    public class X25519DiffieHellmanImplementationSupportedTests
     {
+        public X25519DiffieHellmanImplementationSupportedTests()
+        {
+            Assert.SkipUnless(X25519DiffieHellman.IsSupported, "ConditionalClass: X25519DiffieHellman.IsSupported");
+        }
+
         [Fact]
         public static void IsSupported_AgreesWithPlatform()
         {

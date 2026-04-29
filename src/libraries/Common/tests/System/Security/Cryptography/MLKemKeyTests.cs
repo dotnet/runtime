@@ -10,8 +10,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public static class MLKemKeyTests
+    public class MLKemKeyTests
     {
+        public MLKemKeyTests()
+        {
+            Assert.SkipUnless(MLKem.IsSupported, "ConditionalClass: MLKem.IsSupported");
+        }
+
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public static void Generate_Roundtrip(MLKemAlgorithm algorithm)

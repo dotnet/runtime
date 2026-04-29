@@ -34,8 +34,13 @@ namespace System.Security.Cryptography.Tests
         protected override CngExportPolicies ExportPolicies => CngExportPolicies.AllowExport;
     }
     [PlatformSpecific(TestPlatforms.Windows)]
-    public static class MLKemCngNonExportableTests
+    public class MLKemCngNonExportableTests
     {
+        public MLKemCngNonExportableTests()
+        {
+            Assert.SkipUnless(MLKem.IsSupported, "ConditionalClass: MLKem.IsSupported");
+        }
+
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public static void MLKemCng_NonExportable_ExportPrivateSeedThrows(MLKemAlgorithm algorithm)
@@ -68,8 +73,13 @@ namespace System.Security.Cryptography.Tests
         }
     }
     [PlatformSpecific(TestPlatforms.Windows)]
-    public static class MLKemCngContractTests
+    public class MLKemCngContractTests
     {
+        public MLKemCngContractTests()
+        {
+            Assert.SkipUnless(MLKem.IsSupported, "ConditionalClass: MLKem.IsSupported");
+        }
+
         [Fact]
         public static void MLKemCng_Ctor_ArgValidation()
         {

@@ -8,8 +8,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public static class X25519DiffieHellmanTests
+    public class X25519DiffieHellmanTests
     {
+        public X25519DiffieHellmanTests()
+        {
+            Assert.SkipUnless(X25519DiffieHellman.IsSupported, "ConditionalClass: X25519DiffieHellman.IsSupported");
+        }
+
         private static readonly byte[] s_asnNull = [0x05, 0x00];
 
         private static readonly byte[] AliceSpki = X25519DiffieHellmanTestData.AliceSpki;

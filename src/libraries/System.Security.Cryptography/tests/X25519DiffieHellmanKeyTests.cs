@@ -8,8 +8,13 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     // Tests static key-loading and generating. Static members always use the *Implementations.
-    public static class X25519DiffieHellmanKeyTests
+    public class X25519DiffieHellmanKeyTests
     {
+        public X25519DiffieHellmanKeyTests()
+        {
+            Assert.SkipUnless(X25519DiffieHellman.IsSupported, "ConditionalClass: X25519DiffieHellman.IsSupported");
+        }
+
         public static bool IsNotStrictKeyValidatingPlatform => !X25519DiffieHellmanBaseTests.IsStrictKeyValidatingPlatform;
         private static readonly PbeParameters s_aes128Pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 2);
 

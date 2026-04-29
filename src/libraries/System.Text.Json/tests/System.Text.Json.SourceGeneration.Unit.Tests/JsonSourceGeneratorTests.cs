@@ -34,6 +34,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                         public class MyType
                         {
+                            public MyType()
+                            {
+                                Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                            }
+
                             public int PublicPropertyInt { get; set; }
                             public string PublicPropertyString { get; set; }
                             private int PrivatePropertyInt { get; set; }
@@ -262,6 +267,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                     public class WeatherForecastWithPOCOs
                     {
+                        public WeatherForecastWithPOCOs()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public DateTimeOffset Date { get; set; }
                         public int TemperatureCelsius { get; set; }
                         public string Summary { get; set; }
@@ -509,10 +519,20 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 namespace Test
                 {
                     [JsonSerializable(typeof(ClassWithObsolete))]
-                    public partial class JsonContext : JsonSerializerContext { }
+                    public partial class JsonContext : JsonSerializerContext {
+                        public JsonContext()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+ }
 
                     public class ClassWithObsolete
                     {
+                        public ClassWithObsolete()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         [Obsolete("This is a test")]
                         public bool Test { get; set; }
 
@@ -539,6 +559,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                     public class ClassWithPropertiesAndFieldsThatAreReservedKeywords
                     {
+                        public ClassWithPropertiesAndFieldsThatAreReservedKeywords()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public int @class;
                         public string @event { get; set; }
                     }
@@ -589,6 +614,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 {
                     public class Foo
                     {
+                        public Foo()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public override bool Equals(object obj) => false;
 
                         public static bool operator ==(Foo left, Foo right) => false;
@@ -625,6 +655,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                     public class ClassWithPropertyNameThatIsAReservedKeyword
                     {
+                        public ClassWithPropertyNameThatIsAReservedKeyword()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         [JsonIgnore]
                         public string @event { get; set; }
                     }
@@ -655,9 +690,19 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         [JsonSerializable(typeof(Sample))]
                         public partial class SourceGenerationContext : JsonSerializerContext
                         {
+                            public SourceGenerationContext()
+                            {
+                                Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                            }
+
                         }
                         public class Sample
                         {
+                            public Sample()
+                            {
+                                Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                            }
+
                             [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
                             public DateTimeOffset Start { get; set; }
                             [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
@@ -665,6 +710,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         }
                         public class DateTimeOffsetToTimestampJsonConverter : JsonConverter<DateTimeOffset>
                         {
+                            public DateTimeOffsetToTimestampJsonConverter()
+                            {
+                                Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                            }
+
                             internal const long TicksPerMicroseconds = 10;
                             public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
                             {
@@ -710,15 +760,35 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                     public class MyClass
                     {
+                        public MyClass()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public class NestedGenericClass<T>
                         {
+                            public NestedGenericClass()
+                            {
+                                Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                            }
+
                         }
                     }
 
                     public class MyGenericClass<T1>
                     {
+                        public MyGenericClass()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public class NestedClass
                         {
+                            public NestedClass()
+                            {
+                                Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                            }
+
                         }
                         public class NestedGenericClass<T2>
                         {
@@ -790,7 +860,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                     namespace HelloWorld
                     {
-                        public static class MyClass
+                        public class MyClass
                         {
                             public static string Test()
                             {
@@ -829,6 +899,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 [JsonSerializable(typeof(Derived))]
                 public partial class MyContext : JsonSerializerContext
                 {
+                    public MyContext()
+                    {
+                        Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                    }
+
                 }
                 """;
 
@@ -847,6 +922,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                 public class Model
                 {
+                    public Model()
+                    {
+                        Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                    }
+
                     public string type { get; set; }
                     public string alias { get; set; }
                     public string @class { get; set; }
@@ -898,6 +978,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                 public class MyPoco
                 {
+                    public MyPoco()
+                    {
+                        Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                    }
+
                     [JsonIgnore]
                     public ReadOnlySpan<char> Values => "abc".AsSpan();
                 }
@@ -923,6 +1008,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 [Experimental("EXP001")]
                 public class ExperimentalType
                 {
+                    public ExperimentalType()
+                    {
+                        Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                    }
+
                     public int Value { get; set; }
                 }
 
@@ -1054,11 +1144,21 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 {
                     public class MyClass1
                     {
+                        public MyClass1()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public int Value { get; set; }
                     }
 
                     public class MyClass2
                     {
+                        public MyClass2()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public string Name { get; set; }
                     }
 
@@ -1131,17 +1231,37 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 {
                     public class MyBase
                     {
+                        public MyBase()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public int Id { get; set; }
                     }
 
                     public class ConstrainedGenericType<T> where T : notnull, MyBase
                     {
+                        public ConstrainedGenericType()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public T Response { get; init; }
                         public string Name { get; init; }
                     }
 
                     public class DerivedType : MyBase
                     {
+                        public Derived()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
+                        public DerivedType()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public string Extra { get; set; }
                     }
 
@@ -1169,7 +1289,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                 namespace TestApp
                 {
-                    public class GenericWithConstraint<T> where T : {{constraint}}
+                    public class GenericWithConstraint<T> where T : {
+                        public GenericWithConstraint()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+{constraint}}
                     {
                         public string Label { get; init; }
                     }
@@ -1196,6 +1321,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         where TKey : notnull
                         where TValue : class, new()
                     {
+                        public MultiConstraint()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public TKey Key { get; init; }
                         public TValue Value { get; init; }
                     }
@@ -1230,6 +1360,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                     public class GenericWithMultiConstraint<T> where T : MyBase, IDisposable
                     {
+                        public GenericWithMultiConstraint()
+                        {
+                            Assert.SkipUnless(PlatformDetection.IsNotX86Process, "ConditionalClass: PlatformDetection.IsNotX86Process");
+                        }
+
                         public T Item { get; init; }
                         public string Label { get; init; }
                     }
