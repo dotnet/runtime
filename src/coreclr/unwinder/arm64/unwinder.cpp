@@ -32,7 +32,7 @@
 #endif
 
 #if !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
-extern "C" void* PacStripPtr(void* ptr);
+extern "C" void* PacAuthPtr(void* ptr, void* sp);
 #endif // !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
 
 #ifdef HOST_UNIX
@@ -258,22 +258,24 @@ do {                                                                            
 // Macros for stripping pointer authentication (PAC) bits.
 #if !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
 
-#define STRIP_PAC(pointer)    RtlStripPacOnline(pointer)
+#define HANDLE_PAC(pointer, sp)    RtlStripPacOnline(pointer, sp)
 
 FORCEINLINE
-VOID RtlStripPacOnline(_Inout_ PULONG64 Pointer)
+VOID RtlStripPacOnline(_Inout_ PULONG64 Pointer, _In_ ULONG64 Sp)
 
 /*++
 
 Routine Description:
 
-   This routine strips the ARM64 Pointer Authentication Code (PAC) from a
-   pointer using the ARM64-native xpaci intrinsic directly. Hence this should
-   only be called when stripping a pointer at runtime (not debugger)
+   This routine authenticates an ARM64 pointer authenticated with PACIASP
+   using the supplied stack pointer as the modifier. Hence this should only
+   be called when authenticating a pointer at runtime (not debugger).
 
 Arguments:
 
-   Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
+   Pointer - Supplies a pointer to the pointer whose PAC will be authenticated.
+
+   Sp - Supplies the stack pointer value that was used as the PAC modifier.
 
 Return Value:
 
@@ -282,17 +284,18 @@ Return Value:
 --*/
 
 {
-    *Pointer = (ULONG64)PacStripPtr((void *) (*Pointer));
+    *Pointer = (ULONG64)PacAuthPtr((void *)(*Pointer), (void *)Sp);
 }
 #else
 
-#define STRIP_PAC(pointer)    RtlStripPacManual(pointer)
+#define HANDLE_PAC(pointer, sp)    RtlStripPacManual(pointer, sp)
 
 FORCEINLINE
 VOID
 RtlStripPacManual(
-    _Inout_ PULONG64 Pointer
-)
+    _Inout_ PULONG64 Pointer,
+    _In_ ULONG64 Sp
+    )
 /*++
 
 Routine Description:
@@ -315,6 +318,7 @@ Return Value:
 
 --*/
 {
+    UNREFERENCED_PARAMETER(Sp);
     *Pointer &= 0x0000FFFFFFFFFFFF;
     return;
 }
@@ -2403,7 +2407,7 @@ ExecuteCodes:
             }
 
             // TODO-PAC: Authenticate instead of stripping the return address.
-            STRIP_PAC(&ContextRecord->Lr);
+            HANDLE_PAC(&ContextRecord->Lr, ContextRecord->Sp);
 
             //
             // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
