@@ -461,7 +461,7 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 
 1. Get the code block handle and relative offset from the `ExecutionManager` contract.
 2. Decode the GCInfo for the code block via the `GCInfo` contract.
-3. Determine `CodeManagerFlags`: set `ActiveStackFrame` if this is the leaf frame (`IsFirst`), `ExecutionAborted` if the frame was interrupted, `ParentOfFuncletStackFrame` if funclet GC reporting was delegated to the parent, `NoReportUntracked` if the code block is a filter funclet.
+3. Determine `GcSlotEnumerationOptions`: set `IsActiveFrame` if this is the leaf frame (`IsFirst`), `IsExecutionAborted` if the frame was interrupted, `IsParentOfFuncletStackFrame` if funclet GC reporting was delegated to the parent, `SuppressUntrackedSlots` if the code block is a filter funclet.
 4. **Catch handler offset override**: When `ShouldParentFrameUseUnwindTargetPCforGCReporting` is set (parent frame resuming from a catch handler), the GC liveness offset is overridden to the first interruptible point within the catch handler clause range. This uses `GetInterruptibleRanges` from the `GCInfo` contract. See [How EH affects GC info/reporting](../coreclr/botr/clr-abi.md#how-eh-affects-gc-inforeporting) for background on why this override is needed.
 5. Call `GcInfoDecoder.EnumerateLiveSlots` with the computed offset and flags to report all live register and stack slots. See the [GCInfo contract — EnumerateLiveSlots](./GCInfo.md#enumerateliveslots) for details on the algorithm.
 

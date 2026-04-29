@@ -200,7 +200,7 @@ internal sealed class FrameIterator
             case FrameType.FuncEvalFrame:
                 Data.FuncEvalFrame funcEval = target.ProcessedData.GetOrAdd<Data.FuncEvalFrame>(currentFramePointer);
                 Data.DebuggerEval dbgEval = target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEval.DebuggerEvalPtr);
-                if (dbgEval.EvalDuringException)
+                if (dbgEval.EvalUsesHijack)
                     return TargetPointer.Null;
                 Data.FramedMethodFrame funcEvalFmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(currentFramePointer);
                 Data.TransitionBlock funcEvalTb = target.ProcessedData.GetOrAdd<Data.TransitionBlock>(funcEvalFmf.TransitionBlockPtr);

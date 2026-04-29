@@ -29,8 +29,33 @@ uint GetStackBaseRegister(IGCInfoHandle handle);
 // Returns the list of interruptible code offset ranges from the GCInfo
 IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle);
 
-// Enumerates all live GC slots at the given instruction offset, invoking the callback for each
-bool EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, CodeManagerFlags flags, LiveSlotCallback reportSlot);
+// Returns all live GC slots at the given instruction offset
+IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options);
+```
+
+```csharp
+// Describes a code region where the GC can safely interrupt execution.
+public readonly record struct InterruptibleRange(
+    uint StartOffset,   // Start of the interruptible region (byte offset from method start)
+    uint EndOffset);    // End of the interruptible region, exclusive (byte offset from method start)
+
+// Describes a live GC slot at a given instruction offset.
+public readonly record struct LiveSlot(
+    bool IsRegister,       // True if the slot is a CPU register; false if stack location
+    uint RegisterNumber,   // Register number (meaningful only when IsRegister is true)
+    int SpOffset,          // Stack offset from the base (meaningful only when IsRegister is false)
+    uint SpBase,           // Stack base: 0 = CALLER_SP_REL, 1 = SP_REL, 2 = FRAMEREG_REL
+    uint GcFlags);         // GC slot flags: 0x1 = interior pointer, 0x2 = pinned
+
+// Options controlling which GC slots are reported by EnumerateLiveSlots.
+public record struct GcSlotEnumerationOptions
+{
+    bool IsActiveFrame;                  // True if this is the active (leaf) stack frame
+    bool IsExecutionAborted;             // True if execution was interrupted by an exception
+    bool IsParentOfFuncletStackFrame;    // True if a funclet already reported GC references
+    bool SuppressUntrackedSlots;         // True to suppress untracked slots (e.g., filter funclets)
+    bool ReportFPBasedSlotsOnly;         // True to report only frame-register-relative stack slots
+}
 ```
 
 ## Version 1
@@ -499,7 +524,7 @@ For **fully interruptible** methods (within interruptible ranges), the interrupt
 
 `EnumerateLiveSlots` determines which GC-tracked slots (registers and stack locations) are live at a given instruction offset, then reports each live slot via a callback. The algorithm handles two distinct cases depending on whether the instruction offset falls at a **safe point** (partially-interruptible) or within an **interruptible range** (fully-interruptible).
 
-**Input**: instruction offset, `CodeManagerFlags`, slot report callback.
+**Input**: instruction offset, `GcSlotEnumerationOptions`, slot report callback.
 
 **Step 1 — Find safe point**: Search the safe point offset table for an exact match against the normalized instruction offset. If found, the safe point index is used for the partially-interruptible path.
 
@@ -535,20 +560,20 @@ uint GetCodeLength(IGCInfoHandle handle)
     // Ensure header is decoded, then return the code length field.
 }
 
-IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle)
-{
-    // Ensure header and body are decoded through interruptible ranges,
-    // then return the decoded range list.
-}
-
 uint GetStackBaseRegister(IGCInfoHandle handle)
 {
     // Ensure header is decoded through the stack base register field,
     // then return the denormalized register number (e.g., RBP on x64).
 }
 
-bool EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset,
-    CodeManagerFlags flags, LiveSlotCallback reportSlot)
+IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle)
+{
+    // Ensure header and body are decoded through interruptible ranges,
+    // then return the decoded range list.
+}
+
+IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle,
+    uint instructionOffset, GcSlotEnumerationOptions options)
 {
     // Ensure header, body, and slot table are fully decoded.
     // Then execute the EnumerateLiveSlots algorithm described above:
@@ -557,9 +582,8 @@ bool EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset,
     //   3. If not found: compute pseudo-offset into interruptible ranges,
     //      locate the chunk, read couldBeLive/finalState/transitions
     //      (fully-interruptible path)
-    //   4. Report untracked slots unconditionally (unless suppressed by flags)
+    //   4. Report untracked slots unconditionally (unless SuppressUntrackedSlots)
     //   5. Apply slot filtering (scratch registers, FP-based-only mode)
-    // Invokes reportSlot callback for each live slot with:
-    //   isRegister, registerNumber, spOffset, spBase, gcFlags
+    // Collect each live slot into a list and return it.
 }
 ```
