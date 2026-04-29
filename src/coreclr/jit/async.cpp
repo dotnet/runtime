@@ -1824,7 +1824,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 
     FillInDataOnSuspension(call, layout, subLayout, suspendBB, mutatedSinceResumption, tailSaveSet);
 
-    RestoreContexts(callBlock, call, suspendBB);
+    FinishContextHandlingOnSuspension(callBlock, call, suspendBB, layout, subLayout);
 
     if (suspendBB->KindIs(BBJ_RETURN))
     {
@@ -1963,8 +1963,85 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         // that to the backend.
         m_compiler->compLongUsed |= dsc->TypeIs(TYP_LONG);
     }
+}
 
-    if ((saveSet != SaveSet::UnmutatedLocals) && subLayout.NeedsContinuationContext())
+//------------------------------------------------------------------------
+// AsyncTransformation::GetLocalSaveSet:
+//   Get the save set that a local should be saved as part of.
+//
+// Parameters:
+//   dsc - The local
+//   mutatedSinceResumption - Set of locals that may have been mutated since a resumption
+//
+// Returns:
+//   The set to save the local as part of.
+//
+SaveSet AsyncTransformation::GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption)
+{
+    if (dsc->lvPromoted)
+    {
+        for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+        {
+            LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
+            if (!fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, fieldDsc->lvVarIndex))
+            {
+                return SaveSet::MutatedLocals;
+            }
+        }
+
+        return SaveSet::UnmutatedLocals;
+    }
+
+    // We should only see struct fields for independently promoted structs
+    assert(!dsc->lvIsStructField ||
+           (m_compiler->lvaGetPromotionType(dsc->lvParentLcl) == Compiler::PROMOTION_TYPE_INDEPENDENT));
+
+    if (!dsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, dsc->lvVarIndex))
+    {
+        return SaveSet::MutatedLocals;
+    }
+
+    return SaveSet::UnmutatedLocals;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::FinishContextHandlingOnSuspension:
+//   Generate code to finish handling of contexts on suspension:
+//   - Capture SynchronizationContext or TaskScheduler into the continuation
+//     if needed when later resuming
+//   - Capture ExecutionContext into the continuation
+//   - Restore current Thread._synchronizationContext and
+//     Thread._executionContext from the state before the async call
+//
+// Parameters:
+//   callBlock - The block containing the async call
+//   call      - The async call
+//   suspendBB - Basic block to add IR to.
+//   layout    - Information about the continuation layout.
+//   subLayout - Per-call layout builder indicating which fields are needed.
+//
+void AsyncTransformation::FinishContextHandlingOnSuspension(BasicBlock*                      callBlock,
+                                                            GenTreeCall*                     call,
+                                                            BasicBlock*                      suspendBB,
+                                                            const ContinuationLayout&        layout,
+                                                            const ContinuationLayoutBuilder& subLayout)
+{
+    CallArg* execContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
+    CallArg* syncContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    assert((execContextArg != nullptr) == (syncContextArg != nullptr));
+
+    // In most cases we can use a helper. It is not the case when the call has
+    // no contexts to restore, which is the case for task-returning thunks or
+    // more specifically when the EE told us !CORINFO_ASYNC_SAVE_CONTEXTS.
+    if (execContextArg != nullptr && subLayout.NeedsExecutionContext())
+    {
+        JITDUMP("    Call [%06u] has async context and captured execution context; using finish-suspension helper\n",
+                Compiler::dspTreeID(call));
+        FinishContextHandlingOnSuspensionWithHelper(callBlock, call, suspendBB, layout, subLayout);
+        return;
+    }
+
+    if (subLayout.NeedsContinuationContext())
     {
         // Insert call
         //   AsyncHelpers.CaptureContinuationContext(
@@ -2015,7 +2092,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         LIR::AsRange(suspendBB).Remove(flagsPlaceholder);
     }
 
-    if ((saveSet != SaveSet::UnmutatedLocals) && subLayout.NeedsExecutionContext())
+    if (subLayout.NeedsExecutionContext())
     {
         GenTreeCall* captureExecContext =
             m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureExecutionContextMethHnd, TYP_REF);
@@ -2029,45 +2106,180 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         GenTree* store           = StoreAtOffset(newContinuation, offset, captureExecContext, TYP_REF);
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
     }
+
+    RestoreContexts(callBlock, call, suspendBB);
 }
 
 //------------------------------------------------------------------------
-// AsyncTransformation::GetLocalSaveSet:
-//   Get the save set that a local should be saved as part of.
+// AsyncTransformation::FinishContextHandlingOnSuspensionWithHelper:
+//   Generate code to finish handling of contexts on suspension by calling into a helper.
 //
 // Parameters:
-//   dsc - The local
-//   mutatedSinceResumption - Set of locals that may have been mutated since a resumption
+//   callBlock - The block containing the async call
+//   call      - The async call
+//   suspendBB - Basic block to add IR to.
+//   layout    - Information about the continuation layout.
+//   subLayout - Per-call layout builder indicating which fields are needed.
 //
-// Returns:
-//   The set to save the local as part of.
+// Remarks:
+//   This is the common case where we need capture of execution context +
+//   context restores. We do that with a single helper call that does
+//   everything, for both size and to avoid multiple loads of the Thread TLS.
 //
-SaveSet AsyncTransformation::GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption)
+void AsyncTransformation::FinishContextHandlingOnSuspensionWithHelper(BasicBlock*                      callBlock,
+                                                                      GenTreeCall*                     call,
+                                                                      BasicBlock*                      suspendBB,
+                                                                      const ContinuationLayout&        layout,
+                                                                      const ContinuationLayoutBuilder& subLayout)
 {
-    if (dsc->lvPromoted)
-    {
-        for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
-            if (!fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, fieldDsc->lvVarIndex))
-            {
-                return SaveSet::MutatedLocals;
-            }
-        }
+    CORINFO_METHOD_HANDLE helper = subLayout.NeedsContinuationContext()
+                                       ? m_asyncInfo->finishSuspensionWithContinuationContextMethHnd
+                                       : m_asyncInfo->finishSuspensionNoContinuationContextMethHnd;
 
-        return SaveSet::UnmutatedLocals;
+    // Insert call
+    //   finishSuspension[With|No]ContinuationContext(
+    //     ref newContinuation.ContinuationContext, // optional
+    //     ref newContinuation.Flags,               // optional
+    //     ref newContinuation.ExecutionContext,
+    //     resumed,
+    //     execContext,
+    //     syncContext)
+    //
+
+    CallArg* execContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
+    CallArg* syncContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    assert((execContextArg != nullptr) && (syncContextArg != nullptr));
+
+    GenTree* contContextAddrPlaceholder = nullptr;
+    GenTree* flagsPlaceholder           = nullptr;
+    GenTree* execContextAddrPlaceholder = m_compiler->gtNewZeroConNode(TYP_BYREF);
+    GenTree* resumedPlaceholder         = m_compiler->gtNewIconNode(0);
+    GenTree* execContextPlaceholder     = m_compiler->gtNewNull();
+    GenTree* syncContextPlaceholder     = m_compiler->gtNewNull();
+
+    GenTreeCall* finishCall = m_compiler->gtNewCallNode(CT_USER_FUNC, helper, TYP_VOID);
+    SetCallEntrypointForR2R(finishCall, m_compiler, helper);
+
+    finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(syncContextPlaceholder));
+    finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(execContextPlaceholder));
+    finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(resumedPlaceholder));
+    finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(execContextAddrPlaceholder));
+
+    if (subLayout.NeedsContinuationContext())
+    {
+        contContextAddrPlaceholder = m_compiler->gtNewZeroConNode(TYP_BYREF);
+        flagsPlaceholder           = m_compiler->gtNewZeroConNode(TYP_BYREF);
+        finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(flagsPlaceholder));
+        finishCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(contContextAddrPlaceholder));
     }
 
-    // We should only see struct fields for independently promoted structs
-    assert(!dsc->lvIsStructField ||
-           (m_compiler->lvaGetPromotionType(dsc->lvParentLcl) == Compiler::PROMOTION_TYPE_INDEPENDENT));
+    m_compiler->compCurBB = suspendBB;
+    m_compiler->fgMorphTree(finishCall);
 
-    if (!dsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, dsc->lvVarIndex))
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, finishCall));
+
+    if (subLayout.NeedsContinuationContext())
     {
-        return SaveSet::MutatedLocals;
+        // Replace contContextAddrPlaceholder with actual address of the continuation context
+        LIR::Use use;
+        bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(contContextAddrPlaceholder, &use);
+        assert(gotUse);
+
+        GenTree* newContinuation   = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        unsigned contContextOffset = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationContextOffset;
+        GenTree* contContextAddrOffset =
+            m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
+                                      m_compiler->gtNewIconNode((ssize_t)contContextOffset, TYP_I_IMPL));
+
+        LIR::AsRange(suspendBB).InsertBefore(contContextAddrPlaceholder,
+                                             LIR::SeqTree(m_compiler, contContextAddrOffset));
+        use.ReplaceWith(contContextAddrOffset);
+        LIR::AsRange(suspendBB).Remove(contContextAddrPlaceholder);
+
+        // Replace flagsPlaceholder with actual address of the flags
+        gotUse = LIR::AsRange(suspendBB).TryGetUse(flagsPlaceholder, &use);
+        assert(gotUse);
+
+        newContinuation      = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
+        GenTree* flagsOffsetNode =
+            m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
+                                      m_compiler->gtNewIconNode((ssize_t)flagsOffset, TYP_I_IMPL));
+
+        LIR::AsRange(suspendBB).InsertBefore(flagsPlaceholder, LIR::SeqTree(m_compiler, flagsOffsetNode));
+        use.ReplaceWith(flagsOffsetNode);
+        LIR::AsRange(suspendBB).Remove(flagsPlaceholder);
     }
 
-    return SaveSet::UnmutatedLocals;
+    // Replace execContextAddrPlaceholder with actual address of the execution context
+    LIR::Use use;
+    bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(execContextAddrPlaceholder, &use);
+    assert(gotUse);
+
+    GenTree* newContinuation   = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    unsigned execContextOffset = OFFSETOF__CORINFO_Continuation__data + layout.ExecutionContextOffset;
+    GenTree* execContextAddrOffset =
+        m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
+                                  m_compiler->gtNewIconNode((ssize_t)execContextOffset, TYP_I_IMPL));
+
+    LIR::AsRange(suspendBB).InsertBefore(execContextAddrPlaceholder, LIR::SeqTree(m_compiler, execContextAddrOffset));
+    use.ReplaceWith(execContextAddrOffset);
+    LIR::AsRange(suspendBB).Remove(execContextAddrPlaceholder);
+
+    // Replace resumedPlaceholder with actual "continuationParameter != null" arg
+    gotUse = LIR::AsRange(suspendBB).TryGetUse(resumedPlaceholder, &use);
+    assert(gotUse);
+
+    GenTree* continuation = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+    GenTree* null         = m_compiler->gtNewNull();
+    GenTree* resumed      = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+
+    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_compiler, resumed));
+    use.ReplaceWith(resumed);
+    LIR::AsRange(suspendBB).Remove(resumedPlaceholder);
+
+    // Replace execContextPlaceholder with actual value
+    GenTree* execContext = execContextArg->GetNode();
+    if (!execContext->OperIs(GT_LCL_VAR))
+    {
+        // We are moving execContext into a different BB so create a temp for it.
+        LIR::Use use(LIR::AsRange(callBlock), &execContextArg->NodeRef(), call);
+        use.ReplaceWithLclVar(m_compiler);
+        execContext = use.Def();
+    }
+
+    gotUse = LIR::AsRange(suspendBB).TryGetUse(execContextPlaceholder, &use);
+    assert(gotUse);
+
+    LIR::AsRange(callBlock).Remove(execContext);
+    LIR::AsRange(suspendBB).InsertBefore(execContextPlaceholder, execContext);
+    use.ReplaceWith(execContext);
+    LIR::AsRange(suspendBB).Remove(execContextPlaceholder);
+
+    call->gtArgs.RemoveUnsafe(execContextArg);
+
+    // Replace syncContextPlaceholder with actual value
+    GenTree* syncContext = syncContextArg->GetNode();
+    if (!syncContext->OperIs(GT_LCL_VAR))
+    {
+        // We are moving syncContext into a different BB so create a temp for it.
+        LIR::Use use(LIR::AsRange(callBlock), &syncContextArg->NodeRef(), call);
+        use.ReplaceWithLclVar(m_compiler);
+        syncContext = use.Def();
+    }
+
+    gotUse = LIR::AsRange(suspendBB).TryGetUse(syncContextPlaceholder, &use);
+    assert(gotUse);
+
+    LIR::AsRange(callBlock).Remove(syncContext);
+    LIR::AsRange(suspendBB).InsertBefore(syncContextPlaceholder, syncContext);
+    use.ReplaceWith(syncContext);
+    LIR::AsRange(suspendBB).Remove(syncContextPlaceholder);
+
+    call->gtArgs.RemoveUnsafe(syncContextArg);
+
+    JITDUMP("    Created FinishSuspension call on suspension:\n");
+    DISPTREERANGE(LIR::AsRange(suspendBB), finishCall);
 }
 
 //------------------------------------------------------------------------
