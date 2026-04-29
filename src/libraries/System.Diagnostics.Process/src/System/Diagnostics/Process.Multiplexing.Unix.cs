@@ -251,7 +251,7 @@ namespace System.Diagnostics
             }
             else if (bytesRead == 0)
             {
-                done = FlushDecoderAndEmitRemainingChars(decoder, byteBuffer.AsSpan(0, unconsumedBytesCount),
+                done = FlushDecoderAndEmitRemainingChars(preambleChecked, encoding, decoder, byteBuffer.AsSpan(0, unconsumedBytesCount),
                     ref charBuffer, ref charStart, ref charEnd, standardError, lines);
             }
             // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.

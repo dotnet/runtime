@@ -201,8 +201,6 @@ namespace System.Diagnostics
         /// </summary>
         private static int SkipPreambleOrDetectEncoding(ReadOnlySpan<byte> byteBuffer, ref Encoding encoding, ref Decoder decoder)
         {
-            Debug.Assert(byteBuffer.Length >= MaxEncodingBytesLength);
-
             // Check for the encoding's own preamble first (like StreamReader.IsPreamble).
             ReadOnlySpan<byte> preamble = encoding.Preamble;
             if (preamble.Length > 0 && byteBuffer.Length >= preamble.Length
@@ -349,8 +347,13 @@ namespace System.Diagnostics
             ParseLinesFromCharBuffer(charBuffer, ref charStart, charEnd, standardError, lines);
         }
 
-        private static bool FlushDecoderAndEmitRemainingChars(Decoder decoder, ReadOnlySpan<byte> unconsumedBytes, ref char[] charBuffer, ref int charStart, ref int charEnd, bool standardError, List<ProcessOutputLine> lines)
+        private static bool FlushDecoderAndEmitRemainingChars(bool preambleChecked, Encoding encoding, Decoder decoder, ReadOnlySpan<byte> unconsumedBytes, ref char[] charBuffer, ref int charStart, ref int charEnd, bool standardError, List<ProcessOutputLine> lines)
         {
+            if (!preambleChecked && unconsumedBytes.Length > 0)
+            {
+                unconsumedBytes = unconsumedBytes.Slice(SkipPreambleOrDetectEncoding(unconsumedBytes, ref encoding, ref decoder));
+            }
+
             DecodeAndAppendChars(decoder, unconsumedBytes, flush: true, ref charBuffer, ref charStart, ref charEnd);
             EmitRemainingCharsAsLine(charBuffer, ref charStart, ref charEnd, standardError, lines);
             return true;

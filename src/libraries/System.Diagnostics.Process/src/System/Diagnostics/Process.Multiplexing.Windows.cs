@@ -156,12 +156,12 @@ namespace System.Diagnostics
                     {
                         if (isError)
                         {
-                            errorDone = FlushDecoderAndEmitRemainingChars(errorDecoder, errorByteBuffer.AsSpan(0, unconsumedErrorBytesCount),
+                            errorDone = FlushDecoderAndEmitRemainingChars(errorPreambleChecked, errorEncoding, errorDecoder, errorByteBuffer.AsSpan(0, unconsumedErrorBytesCount),
                                 ref errorCharBuffer, ref errorCharStart, ref errorCharEnd, isError, lines);
                         }
                         else
                         {
-                            outputDone = FlushDecoderAndEmitRemainingChars(outputDecoder, outputByteBuffer.AsSpan(0, unconsumedOutputBytesCount),
+                            outputDone = FlushDecoderAndEmitRemainingChars(outputPreambleChecked, outputEncoding, outputDecoder, outputByteBuffer.AsSpan(0, unconsumedOutputBytesCount),
                                 ref outputCharBuffer, ref outputCharStart, ref outputCharEnd, isError, lines);
                         }
 
