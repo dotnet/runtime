@@ -1967,6 +1967,22 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
 //
 void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
 {
+#if defined(TARGET_WASM)
+    // Fail at this point for any method with funclets, since the Wasm we produce
+    // for such methods requires post-processing by the host before it can be validated.
+    // This must be done BEFORE codegen, because of the edge case of a method
+    // which only needs funclets if compiled with optimizations (e.g., if we inline a method that has EH into a method
+    // that does not). In these cases, if we fail compilation of the optimized method AFTER codegen and then go to
+    // recompile the same method with minopts and succeed, we may be leaving stale relocs on the host side that only
+    // applied to the optimized version, which will cause unexpected behavior.
+    // TODO-WASM: Remove this once the host can do the processing.
+    //
+    if ((JitConfig.JitWasmFunclets() == 0) && (m_compiler->compFuncCount() > 1))
+    {
+        JITDUMP("Failing R2R codegen because method has funclets.\n");
+        implReadyToRunUnsupported();
+    }
+#endif
 
 #ifdef DEBUG
     if (verbose)
@@ -2014,18 +2030,6 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     }
 #endif // defined(TARGET_WASM)
 #endif // DEBUG
-
-#if defined(TARGET_WASM)
-    // Also fail at this point for any method with funclets, since the Wasm we produce
-    // for such methods requires post-processing by the host before it can be validated.
-    // TODO-WASM: Remove this once the host can do the processing.
-    //
-    if ((JitConfig.JitWasmFunclets() == 0) && (m_compiler->compFuncCount() > 1))
-    {
-        JITDUMP("Failing R2R codegen because method has funclets.\n");
-        implReadyToRunUnsupported();
-    }
-#endif
 }
 
 //----------------------------------------------------------------------
@@ -2418,11 +2422,6 @@ void CodeGen::genEmitMachineCode()
 //
 void CodeGen::genEmitUnwindDebugGCandEH()
 {
-#ifdef TARGET_WASM
-    // TODO-WASM: Fix this phase causing an assertion failure even for methods with no GC locals or EH clauses
-    return;
-#endif
-
     /* Now that the code is issued, we can finalize and emit the unwind data */
 
     m_compiler->unwindEmit(*codePtr, coldCodePtr);
@@ -2529,11 +2528,9 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 }
 
 #ifndef TARGET_WASM
-/*****************************************************************************
- *
- *  Report EH clauses to the VM
- */
-
+//----------------------------------------------------------------------
+// genReportEH: create and report EH info to the VM
+//
 void CodeGen::genReportEH()
 {
     if (m_compiler->compHndBBtabCount == 0)
@@ -2560,12 +2557,6 @@ void CodeGen::genReportEH()
     // Tell the VM how many EH clauses to expect.
     m_compiler->eeSetEHcount(m_compiler->compHndBBtabCount);
     m_compiler->Metrics.EHClauseCount = (int)m_compiler->compHndBBtabCount;
-
-    struct EHClauseInfo
-    {
-        CORINFO_EH_CLAUSE clause;
-        EHblkDsc*         HBtab;
-    };
 
     EHClauseInfo* clauses = new (m_compiler, CMK_Codegen) EHClauseInfo[m_compiler->compHndBBtabCount];
 
@@ -2605,6 +2596,19 @@ void CodeGen::genReportEH()
         clauses[XTnum++]     = {clause, HBtab};
     }
 
+    genReportEHClauses(clauses);
+}
+
+#endif // !defined(TARGET_WASM)
+
+//----------------------------------------------------------------------
+// genReportEH: create and report EH info to the VM
+//
+// Arguments:
+//    clauses -- eh clause data to report
+//
+void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
+{
     // The JIT's ordering of EH clauses does not guarantee that clauses covering the same try region are contiguous.
     // We need this property to hold true so the CORINFO_EH_CLAUSE_SAMETRY flag is accurate.
     jitstd::sort(clauses, clauses + m_compiler->compHndBBtabCount,
@@ -2623,6 +2627,8 @@ void CodeGen::genReportEH()
 
         return leftTryIndex < rightTryIndex;
     });
+
+    unsigned XTnum;
 
     // Now, report EH clauses to the VM in order of increasing try region index.
     for (XTnum = 0; XTnum < m_compiler->compHndBBtabCount; XTnum++)
@@ -2652,6 +2658,8 @@ void CodeGen::genReportEH()
 
     assert(XTnum == m_compiler->compHndBBtabCount);
 }
+
+#ifndef TARGET_WASM
 
 //----------------------------------------------------------------------
 // genUseOptimizedWriteBarriers: Determine if an optimized write barrier
@@ -5385,6 +5393,10 @@ void CodeGen::genFnProlog()
         // allocating the local frame.
         //
         extraFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES;
+
+        // Simulate a return address being pushed by a call to get expected misalignment on entry.
+        GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_EAX);
+        m_compiler->unwindAllocStack(REGSIZE_BYTES);
 #endif
     }
 
@@ -7290,6 +7302,61 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
     }
 
     genMarkReturnGCInfo();
+}
+
+//------------------------------------------------------------------------
+// genPatchpoint:
+//   Generate code for GT_PATCHPOINT / GT_PATCHPOINT_FORCED nodes.
+//   Emits a call to the patchpoint helper followed by an unconditional jump
+//   to the returned address.
+//
+// Arguments:
+//   treeNode - The patchpoint node (GT_PATCHPOINT or GT_PATCHPOINT_FORCED)
+//
+void CodeGen::genPatchpoint(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_PATCHPOINT, GT_PATCHPOINT_FORCED));
+
+    genConsumeOperands(treeNode);
+
+    // Move operands into the expected argument registers if needed.
+    genCopyRegIfNeeded(treeNode->gtGetOp1(), REG_ARG_0);
+    if (treeNode->OperIs(GT_PATCHPOINT))
+    {
+        genCopyRegIfNeeded(treeNode->gtGetOp2(), REG_ARG_1);
+    }
+
+    CorInfoHelpFunc helper = treeNode->OperIs(GT_PATCHPOINT) ? CORINFO_HELP_PATCHPOINT : CORINFO_HELP_PATCHPOINT_FORCED;
+
+    genEmitHelperCall(helper, 0, EA_UNKNOWN);
+
+    // On non-x64 targets, mark the method as having tail calls so that
+    // return-address hijacking is disabled — after the jump the return
+    // address may have moved in the frame and unhijacking will write
+    // to the wrong slot.
+    // On x64 this is unnecessary because the return address is always at
+    // the same stack slot regardless of tail calls.
+#ifndef TARGET_XARCH
+    SetHasTailCalls(true);
+#endif
+
+    // Jump to the address returned by the patchpoint helper.
+    // Must not use INS_tail_i_jmp: it is a REX-prefixed jump that the
+    // win-x64 unwinder detects as an epilog instruction, which would
+    // incorrectly signal that callee saves / RSP have been restored.
+#ifdef TARGET_XARCH
+    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_ARM64)
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_ARM)
+    GetEmitter()->emitIns_R(INS_bx, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_LOONGARCH64)
+    GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+#elif defined(TARGET_RISCV64)
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+#else
+#error "Unsupported target architecture for GT_PATCHPOINT"
+#endif
 }
 
 //------------------------------------------------------------------------

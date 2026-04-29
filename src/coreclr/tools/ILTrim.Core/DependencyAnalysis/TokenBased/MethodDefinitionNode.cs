@@ -99,6 +99,32 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.ConstructedType((EcmaType)method.OwningType), "Type with a kept constructor");
             }
 
+            // TODO-SIZE: Property/event metadata is not strictly necessary for accessor method calls —
+            // it's only needed for reflection and debugger scenarios. We could skip keeping property/event
+            // rows when we know they won't be accessed via reflection, producing smaller output.
+            if ((methodDef.Attributes & MethodAttributes.SpecialName) != 0)
+            {
+                TypeDefinition declaringTypeDef = reader.GetTypeDefinition(declaringType);
+                foreach (PropertyDefinitionHandle propertyHandle in declaringTypeDef.GetProperties())
+                {
+                    PropertyAccessors propertyAccessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
+                    if (propertyAccessors.Getter == Handle || propertyAccessors.Setter == Handle)
+                    {
+                        dependencies.Add(factory.PropertyDefinition(_module, propertyHandle), "Owning property of accessor method");
+                        break;
+                    }
+                }
+                foreach (EventDefinitionHandle eventHandle in declaringTypeDef.GetEvents())
+                {
+                    EventAccessors eventAccessors = reader.GetEventDefinition(eventHandle).GetAccessors();
+                    if (eventAccessors.Adder == Handle || eventAccessors.Remover == Handle || eventAccessors.Raiser == Handle)
+                    {
+                        dependencies.Add(factory.EventDefinition(_module, eventHandle), "Owning event of accessor method");
+                        break;
+                    }
+                }
+            }
+
             var ecmaOwningType = (EcmaType)_module.GetObject(declaringType);
             if (ecmaOwningType.IsDelegate)
             {

@@ -43,7 +43,7 @@ public unsafe class LoaderTests
         return target.Contracts.Loader;
     }
 
-    private static (ILoader Contract, TestPlaceholderTarget Target) CreateLoaderContractWithTarget(
+    internal static (ILoader Contract, TestPlaceholderTarget Target) CreateLoaderContractWithTarget(
         MockTarget.Architecture arch,
         Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
     {
@@ -805,5 +805,43 @@ public unsafe class LoaderTests
 
         uint rawFlags = target.Read<uint>(moduleAddr + (ulong)flagsOffset);
         Assert.True((rawFlags & IsEditAndContinue) != 0, "IS_EDIT_AND_CONTINUE should be set when DACF_ENC_ENABLED is explicitly requested");
+    }
+
+    public static IEnumerable<object[]> GetCompilerFlagsData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [IsJitOptimizationDisabled | IsEditAndContinue, Interop.BOOL.FALSE, Interop.BOOL.TRUE, arch[0]];
+            yield return [0u, Interop.BOOL.TRUE, Interop.BOOL.FALSE, arch[0]];
+            yield return [IsJitOptimizationDisabled, Interop.BOOL.FALSE, Interop.BOOL.FALSE, arch[0]];
+            yield return [IsEditAndContinue, Interop.BOOL.TRUE, Interop.BOOL.TRUE, arch[0]];
+            // Debugger allows JIT opts but profiler disables them (IS_JIT_OPTIMIZATION_DISABLED wins)
+            yield return [DebuggerAllowJitOptsPriv | IsJitOptimizationDisabled, Interop.BOOL.FALSE, Interop.BOOL.FALSE, arch[0]];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCompilerFlagsData))]
+    public void GetCompilerFlags(uint rawFlags, Interop.BOOL expectedAllowJITOpts, Interop.BOOL expectedEnableEnC, MockTarget.Architecture arch)
+    {
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockLoaderBuilder loader = new(targetBuilder.MemoryBuilder);
+
+        MockLoaderModule module = loader.AddModule(flags: rawFlags);
+        ulong assemblyAddr = module.Assembly;
+
+        var target = targetBuilder
+            .AddTypes(CreateContractTypes(loader))
+            .AddContract<ILoader>(version: "c1")
+            .Build();
+
+        DacDbiImpl dbi = new(target, legacyObj: null);
+
+        Interop.BOOL allowJITOpts;
+        Interop.BOOL enableEnC;
+        int hr = dbi.GetCompilerFlags(assemblyAddr, &allowJITOpts, &enableEnC);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(expectedAllowJITOpts, allowJITOpts);
+        Assert.Equal(expectedEnableEnC, enableEnC);
     }
 }

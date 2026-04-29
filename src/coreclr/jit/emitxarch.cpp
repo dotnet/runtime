@@ -9121,6 +9121,68 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     emitCurIGsize += sz;
 }
 
+//--------------------------------------------------------------------
+// emitIns_R_L: Emit an instruction with a label operand.
+//
+// Arguments:
+//   ins - The instruction
+//   attr - Size of the instruction
+//   dst - Instruction group
+//   reg - Register destination
+//
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(ins == INS_lea);
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idReg1(reg);
+    id->idInsFmt(IF_RWR_LABEL);
+    id->idOpSize(EA_SIZE(attr)); // emitNewInstrJmp() sets the size (incorrectly) to EA_1BYTE
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound();
+
+    /* The label reference is always long */
+
+    id->idjShort    = 0;
+    id->idjKeepLong = 1;
+
+    /* Record the current IG and offset within it */
+
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this instruction to this IG's jump list */
+
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#ifdef DEBUG
+    // Mark the catch return
+    if (m_compiler->compCurBB->KindIs(BBJ_EHCATCHRET))
+    {
+        id->idDebugOnlyInfo()->idCatchRet = true;
+    }
+#endif // DEBUG
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    // Set the relocation flags - these give hint to zap to perform
+    // relocation of the specified 32bit address.
+    //
+    // Note the relocation flags influence the size estimate.
+    id->idSetRelocFlags(attr);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
 /*****************************************************************************
  *
  *  The following adds instructions referencing address modes.
@@ -12677,86 +12739,6 @@ void emitter::emitDispIns(
 
 #define ID_INFO_DSP_RELOC ((bool)(id->idIsDspReloc()))
 
-    /* Display a constant value if the instruction references one */
-
-    if (!isNew && id->idHasMemGen())
-    {
-        /* Is this actually a reference to a data section? */
-        int offs = Compiler::eeGetJitDataOffs(id->idAddr()->iiaFieldHnd);
-
-        if (offs >= 0)
-        {
-            void* addr;
-
-            /* Display a data section reference */
-
-            assert((unsigned)offs < emitConsDsc.dsdOffs);
-            addr = emitDataOffsetToPtr((UNATIVE_OFFSET)offs);
-
-#if 0
-            // TODO-XArch-Cleanup: Fix or remove this code.
-            /* Is the operand an integer or floating-point value? */
-
-            bool isFP = false;
-
-            if  (CodeGen::instIsFP(id->idIns()))
-            {
-                switch (id->idIns())
-                {
-                case INS_fild:
-                case INS_fildl:
-                    break;
-
-                default:
-                    isFP = true;
-                    break;
-                }
-            }
-
-            if (offs & 1)
-                printf("@CNS%02u", offs);
-            else
-                printf("@RWD%02u", offs);
-
-            printf("      ");
-
-            if  (addr)
-            {
-                addr = 0;
-                // TODO-XArch-Bug?:
-                //          This was busted by switching the order
-                //          in which we output the code block vs.
-                //          the data blocks -- when we get here,
-                //          the data block has not been filled in
-                //          yet, so we'll display garbage.
-
-                if  (isFP)
-                {
-                    if  (id->idOpSize() == EA_4BYTE)
-                        printf("DF      %f \n", addr ? *(float   *)addr : 0);
-                    else
-                        printf("DQ      %lf\n", addr ? *(double  *)addr : 0);
-                }
-                else
-                {
-                    if  (id->idOpSize() <= EA_4BYTE)
-                        printf("DD      %d \n", addr ? *(int     *)addr : 0);
-                    else
-                        printf("DQ      %D \n", addr ? *(int64_t *)addr : 0);
-                }
-            }
-#endif
-        }
-    }
-
-    // printf("[F=%s] "   , emitIfName(id->idInsFmt()));
-    // printf("INS#%03u: ", id->idDebugOnlyInfo()->idNum);
-    // printf("[S=%02u] " , emitCurStackLvl); if (isNew) printf("[M=%02u] ", emitMaxStackDepth);
-    // printf("[S=%02u] " , emitCurStackLvl/sizeof(INT32));
-    // printf("[A=%08X] " , emitSimpleStkMask);
-    // printf("[A=%08X] " , emitSimpleByrefStkMask);
-    // printf("[L=%02u] " , id->idCodeSize());
-
     if (!isNew && !asmfm)
     {
         doffs = true;
@@ -16202,15 +16184,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     else
     {
         // Special case: mov reg, fs:[ddd] or mov reg, [ddd]
-        if (jitStaticFldIsGlobAddr(fldh))
-        {
-            addr = nullptr;
-        }
-        else
-        {
-            assert(jitStaticFldIsGlobAddr(fldh));
-            addr = nullptr;
-        }
+        assert(jitStaticFldIsGlobAddr(fldh));
+        addr = nullptr;
     }
 
     BYTE* target = (addr + offs);
@@ -20327,9 +20302,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     // Model the memory throughput, latency, kind
 
-    float    memThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
-    float    memLatency    = PERFSCORE_LATENCY_ILLEGAL;
-    unsigned memAccessKind = 0;
+    float                     memThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
+    float                     memLatency    = PERFSCORE_LATENCY_ILLEGAL;
+    PerfScoreMemoryAccessKind memAccessKind = PerfScoreMemoryAccessKind::None;
 
     switch (memFmt)
     {
@@ -20339,7 +20314,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RD;
             memLatency    = PERFSCORE_LATENCY_RD_STACK;
-            memAccessKind = PERFSCORE_MEMORY_READ;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
         }
 
@@ -20347,7 +20322,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_WR;
             memLatency    = PERFSCORE_LATENCY_WR_STACK;
-            memAccessKind = PERFSCORE_MEMORY_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
         }
 
@@ -20355,7 +20330,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RW;
             memLatency    = PERFSCORE_LATENCY_RD_WR_STACK;
-            memAccessKind = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
         }
 
@@ -20365,7 +20340,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RD;
             memLatency    = PERFSCORE_LATENCY_RD_CONST_ADDR;
-            memAccessKind = PERFSCORE_MEMORY_READ;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
         }
 
@@ -20373,7 +20348,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_WR;
             memLatency    = PERFSCORE_LATENCY_WR_CONST_ADDR;
-            memAccessKind = PERFSCORE_MEMORY_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
         }
 
@@ -20381,7 +20356,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RW;
             memLatency    = PERFSCORE_LATENCY_RD_WR_CONST_ADDR;
-            memAccessKind = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
         }
 
@@ -20391,7 +20366,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RD;
             memLatency    = PERFSCORE_LATENCY_RD_GENERAL;
-            memAccessKind = PERFSCORE_MEMORY_READ;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
         }
 
@@ -20399,7 +20374,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_WR;
             memLatency    = PERFSCORE_LATENCY_WR_GENERAL;
-            memAccessKind = PERFSCORE_MEMORY_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
         }
 
@@ -20407,7 +20382,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_RW;
             memLatency    = PERFSCORE_LATENCY_RD_WR_GENERAL;
-            memAccessKind = PERFSCORE_MEMORY_READ_WRITE;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
         }
 
@@ -20415,7 +20390,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             memThroughput = PERFSCORE_THROUGHPUT_ZERO;
             memLatency    = PERFSCORE_LATENCY_ZERO;
-            memAccessKind = PERFSCORE_MEMORY_NONE;
+            memAccessKind = PerfScoreMemoryAccessKind::None;
             break;
         }
 
@@ -20424,7 +20399,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             assert(!"Unhandled insFmt for switch (memFmt)");
             memThroughput = PERFSCORE_THROUGHPUT_ZERO;
             memLatency    = PERFSCORE_LATENCY_ZERO;
-            memAccessKind = PERFSCORE_MEMORY_NONE;
+            memAccessKind = PerfScoreMemoryAccessKind::None;
             break;
         }
     }
@@ -20547,7 +20522,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else
             {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE); // _SHF form never emitted
+                assert(memAccessKind == PerfScoreMemoryAccessKind::Write); // _SHF form never emitted
                 insThroughput = PERFSCORE_THROUGHPUT_2C;
             }
             break;
@@ -20642,7 +20617,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             insThroughput = PERFSCORE_THROUGHPUT_1C;
             insLatency    = PERFSCORE_LATENCY_3C;
 
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (memAccessKind == PerfScoreMemoryAccessKind::Read)
             {
                 // The reads have twice the throughput of the register to register variants
                 insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -20664,7 +20639,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             insThroughput = PERFSCORE_THROUGHPUT_1C;
             insLatency    = PERFSCORE_LATENCY_1C;
 
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (memAccessKind == PerfScoreMemoryAccessKind::Read)
             {
                 // The reads have twice the throughput of the register to register variants
                 insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -20934,7 +20909,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             insLatency = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
 
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::None)
             {
                 insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
@@ -20950,7 +20925,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pinsrd:
         case INS_pinsrq:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::None)
             {
                 insThroughput = PERFSCORE_THROUGHPUT_2C;
                 insLatency    = PERFSCORE_LATENCY_4C;
@@ -21345,7 +21320,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     }
     else
     {
-        if (memAccessKind != PERFSCORE_MEMORY_NONE)
+        if (memAccessKind != PerfScoreMemoryAccessKind::None)
         {
             if (IsSimdInstruction(ins))
             {

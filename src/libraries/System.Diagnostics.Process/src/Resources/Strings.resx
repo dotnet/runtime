@@ -363,7 +363,13 @@
   <data name="InheritedHandles_MustNotContainDuplicates" xml:space="preserve">
     <value>InheritedHandles must not contain duplicates.</value>
   </data>
-  <data name="StartAndForget_UseShellExecuteNotSupported" xml:space="preserve">
-    <value>UseShellExecute is not supported by StartAndForget. On Windows, shell execution may not create a new process, which would make it impossible to return a valid process ID.</value>
+  <data name="UseShellExecuteNotSupportedForScenario" xml:space="preserve">
+    <value>UseShellExecute is not supported by Process.{0}. On Windows, shell execution may not create a new process, which would make it impossible to return a valid process ID.</value>
+  </data>
+  <data name="RedirectStandardOutputAndErrorRequired" xml:space="preserve">
+    <value>RedirectStandardOutput and RedirectStandardError must both be set to true when calling Process.{0} with a ProcessStartInfo.</value>
+  </data>
+  <data name="NotSupportedForNonChildProcess" xml:space="preserve">
+    <value>On Unix, it's impossible to obtain the exit status of a non-child process.</value>
   </data>
 </root>

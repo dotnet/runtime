@@ -138,6 +138,13 @@ public struct COR_FIELD
 
 #pragma warning restore CS0649
 
+public enum DynamicMethodType
+{
+    kNone = 0,
+    kDiagnosticHidden = 1,
+    kLCGMethod = 2,
+}
+
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
 // Parameter shapes are intentionally coarse placeholders and will be refined with method implementation work.
 [GeneratedComInterface]
@@ -185,9 +192,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData);
-
-    [PreserveSig]
-    int GetAssemblyInfo(ulong vmAssembly, DacDbiAssemblyInfo* pData);
 
     [PreserveSig]
     int GetModuleForAssembly(ulong vmAssembly, ulong* pModule);
@@ -316,10 +320,10 @@ public unsafe partial interface IDacDbiInterface
     int GetFramePointer(nuint pSFIHandle, ulong* pRetVal);
 
     [PreserveSig]
-    int IsLeafFrame(ulong vmThread, nint pContext, Interop.BOOL* pResult);
+    int IsLeafFrame(ulong vmThread, byte* pContext, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetContext(ulong vmThread, nint pContextBuffer);
+    int GetContext(ulong vmThread, byte* pContextBuffer);
 
     [PreserveSig]
     int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, Interop.BOOL fActive);

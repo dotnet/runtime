@@ -911,7 +911,7 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
 void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, NativeCodeVersion activeCodeVersion, DacpReJitData * pReJitData)
 {
     pReJitData->rejitID = nativeCodeVersion.GetILCodeVersion().GetVersionId();
-    pReJitData->NativeCodeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCodeVersion.GetNativeCode());
+    pReJitData->NativeCodeAddr = GetInterpreterCodeFromEntryPointIfPresent(nativeCodeVersion.GetNativeCode());
 
     if (nativeCodeVersion != activeCodeVersion)
     {
@@ -1021,7 +1021,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
         if (!requestedNativeCodeVersion.IsNull() && requestedNativeCodeVersion.GetNativeCode() != (PCODE)NULL)
         {
             methodDescData->bHasNativeCode = TRUE;
-            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode())));
+            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode())));
         }
         else
         {
@@ -1245,7 +1245,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
         int count = 0;
         for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
         {
-            TADDR pNativeCode = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent((*iter).GetNativeCode()));
+            TADDR pNativeCode = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent((*iter).GetNativeCode()));
             nativeCodeAddrs[count].NativeCodeAddr = pNativeCode;
             PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
             nativeCodeAddrs[count].NativeCodeVersionNodePtr = PTR_CDADDR(pNode);
@@ -3575,7 +3575,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFun
 
     SOSDacEnter();
 
-    hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBase(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pFunc);
+    hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBaseTraversable(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pFunc);
 
     SOSDacLeave();
     return hr;
@@ -3591,20 +3591,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind
 
     SOSDacEnter();
 
-    switch (kind)
-    {
-        case LoaderHeapKindNormal:
-            hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBase(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
-            break;
-
-        case LoaderHeapKindExplicitControl:
-            hr = TraverseLoaderHeapBlock(PTR_ExplicitControlLoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
-            break;
-
-        default:
-            hr = E_NOTIMPL;
-            break;
-    }
+    hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBaseTraversable(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
 
     SOSDacLeave();
     return hr;
@@ -3822,9 +3809,9 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
                 // TODO: Microsoft, implement the wait list
                 pSyncBlockData->AdditionalThreadCount = 0;
 
-                if (pBlock->m_Link.m_pNext != NULL)
+                if (pBlock->m_pNext != NULL)
                 {
-                    PTR_SLink pLink = pBlock->m_Link.m_pNext;
+                    PTR_SyncBlock pLink = pBlock->m_pNext;
                     do
                     {
                         pSyncBlockData->AdditionalThreadCount++;
@@ -3855,7 +3842,7 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
     if (syncBlock == (CLRDATA_ADDRESS)NULL && SyncBlockCache::s_pSyncBlockCache->m_pCleanupBlockList)
     {
         pBlock = (SyncBlock *) PTR_SyncBlock(
-            PTR_HOST_TO_TADDR(SyncBlockCache::s_pSyncBlockCache->m_pCleanupBlockList) - offsetof(SyncBlock, m_Link));
+            PTR_HOST_TO_TADDR(SyncBlockCache::s_pSyncBlockCache->m_pCleanupBlockList));
     }
     else
     {
@@ -3865,10 +3852,10 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
     if (pBlock)
     {
         syncBlockCData->SyncBlockPointer = HOST_CDADDR(pBlock);
-        if (pBlock->m_Link.m_pNext)
+        if (pBlock->m_pNext)
         {
             syncBlockCData->nextSyncBlock = (CLRDATA_ADDRESS)
-                (PTR_HOST_TO_TADDR(pBlock->m_Link.m_pNext) - offsetof(SyncBlock, m_Link));
+                PTR_HOST_TO_TADDR(pBlock->m_pNext);
         }
 
 #ifdef FEATURE_COMINTEROP
