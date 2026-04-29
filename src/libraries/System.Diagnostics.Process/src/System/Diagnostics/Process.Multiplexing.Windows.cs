@@ -61,6 +61,7 @@ namespace System.Diagnostics
                 Decoder errorDecoder = errorEncoding.GetDecoder();
                 int outputCharStart = 0, outputCharEnd = 0;
                 int errorCharStart = 0, errorCharEnd = 0;
+                int unconsumedOutputBytesCount = 0, unconsumedErrorBytesCount = 0;
                 bool outputPreambleChecked = false, errorPreambleChecked = false;
 
                 unsafe
@@ -98,15 +99,37 @@ namespace System.Diagnostics
 
                     if (bytesRead > 0)
                     {
-                        if (isError)
+                        ReadOnlySpan<byte> bytes = new ReadOnlySpan<byte>(
+                            isError ? errorByteBuffer : outputByteBuffer,
+                            0,
+                            (isError ? unconsumedErrorBytesCount : unconsumedOutputBytesCount) + bytesRead);
+
+                        ref bool preambleChecked = ref (isError ? ref errorPreambleChecked : ref outputPreambleChecked);
+                        ref Encoding currentEncoding = ref (isError ? ref errorEncoding : ref outputEncoding);
+                        ref Decoder currentDecoder = ref (isError ? ref errorDecoder : ref outputDecoder);
+                        ref int unconsumedBytesCount = ref (isError ? ref unconsumedErrorBytesCount : ref unconsumedOutputBytesCount);
+
+                        if (!preambleChecked)
                         {
-                            DecodeBytesAndParseLines(ref errorDecoder, ref errorEncoding, errorByteBuffer, bytesRead, ref errorCharBuffer, ref errorCharStart,
-                                ref errorCharEnd, ref errorPreambleChecked, isError, lines);
+                            if (bytes.Length >= 4)
+                            {
+                                bytes = bytes.Slice(SkipPreambleOrDetectEncoding(bytes, ref currentEncoding, ref currentDecoder));
+                                preambleChecked = true;
+                                unconsumedBytesCount = 0;
+                            }
+                            else
+                            {
+                                unconsumedBytesCount += bytesRead;
+                            }
                         }
-                        else
+
+                        if (preambleChecked)
                         {
-                            DecodeBytesAndParseLines(ref outputDecoder, ref outputEncoding, outputByteBuffer, bytesRead, ref outputCharBuffer, ref outputCharStart,
-                                ref outputCharEnd, ref outputPreambleChecked, isError, lines);
+                            DecodeBytesAndParseLines(currentDecoder, bytes,
+                                ref isError ? ref errorCharBuffer : ref outputCharBuffer,
+                                ref isError ? ref errorCharStart : ref outputCharStart,
+                                ref isError ? ref errorCharEnd : ref outputCharEnd,
+                                isError, lines);
                         }
 
                         unsafe
@@ -114,12 +137,14 @@ namespace System.Diagnostics
                             ResetOverlapped(currentEvent, (NativeOverlapped*)currentOverlappedNint);
 
                             byte* pinPointer = isError
-                                ? errorPin.GetAddressOfArrayData()
-                                : outputPin.GetAddressOfArrayData();
-                            byte[] currentByteBuffer = isError ? errorByteBuffer : outputByteBuffer;
+                                ? (errorPin.GetAddressOfArrayData() + unconsumedErrorBytesCount)
+                                : (outputPin.GetAddressOfArrayData() + unconsumedOutputBytesCount);
+                            int currentByteLength = isError
+                                ? errorByteBuffer.Length - unconsumedErrorBytesCount
+                                : outputByteBuffer.Length - unconsumedOutputBytesCount;
 
                             if (!QueueRead(currentHandle, pinPointer,
-                                currentByteBuffer.Length,
+                                currentByteLength,
                                 (NativeOverlapped*)currentOverlappedNint, currentEvent))
                             {
                                 bytesRead = 0; // EOF during QueueRead
@@ -131,11 +156,13 @@ namespace System.Diagnostics
                     {
                         if (isError)
                         {
-                            errorDone = FlushDecoderAndEmitRemainingChars(errorDecoder, ref errorCharBuffer, ref errorCharStart, ref errorCharEnd, isError, lines);
+                            errorDone = FlushDecoderAndEmitRemainingChars(errorDecoder, errorByteBuffer.AsSpan(0, unconsumedErrorBytesCount),
+                                ref errorCharBuffer, ref errorCharStart, ref errorCharEnd, isError, lines);
                         }
                         else
                         {
-                            outputDone = FlushDecoderAndEmitRemainingChars(outputDecoder, ref outputCharBuffer, ref outputCharStart, ref outputCharEnd, isError, lines);
+                            outputDone = FlushDecoderAndEmitRemainingChars(outputDecoder, outputByteBuffer.AsSpan(0, unconsumedOutputBytesCount),
+                                ref outputCharBuffer, ref outputCharStart, ref outputCharEnd, isError, lines);
                         }
 
                         currentEvent.Reset();

@@ -18,6 +18,7 @@ namespace System.Diagnostics
     {
         /// <summary>Initial buffer size for reading process output.</summary>
         private const int InitialReadAllBufferSize = 4096;
+        private const int MaxEncodingBytesLength = 4;
 
         /// <summary>
         /// Reads all standard output and standard error of the process as text.
@@ -164,15 +165,13 @@ namespace System.Diagnostics
         /// </summary>
         private static void DecodeAndAppendChars(
             Decoder decoder,
-            byte[] byteBuffer,
-            int byteIndex,
-            int byteCount,
+            ReadOnlySpan<byte> byteBuffer,
             bool flush,
             ref char[] charBuffer,
             ref int charStartIndex,
             ref int charEndIndex)
         {
-            int charCount = decoder.GetCharCount(byteBuffer, byteIndex, byteCount, flush);
+            int charCount = decoder.GetCharCount(byteBuffer, flush);
 
             // If there isn't enough room at the end, compact the consumed space at the start first
             // so that if growth is still needed, RentLargerBuffer copies only the unconsumed data.
@@ -189,7 +188,7 @@ namespace System.Diagnostics
                 RentLargerBuffer(ref charBuffer, charEndIndex);
             }
 
-            int decoded = decoder.GetChars(byteBuffer, byteIndex, byteCount, charBuffer, charEndIndex, flush);
+            int decoded = decoder.GetChars(byteBuffer, charBuffer.AsSpan(charEndIndex), flush);
             charEndIndex += decoded;
         }
 
@@ -200,18 +199,20 @@ namespace System.Diagnostics
         /// If a different encoding's BOM is detected, updates <paramref name="encoding"/> and
         /// <paramref name="decoder"/> and returns the BOM length to skip.
         /// </summary>
-        private static int SkipPreambleOrDetectEncoding(byte[] byteBuffer, int byteCount, ref Encoding encoding, ref Decoder decoder)
+        private static int SkipPreambleOrDetectEncoding(ReadOnlySpan<byte> byteBuffer, ref Encoding encoding, ref Decoder decoder)
         {
+            Debug.Assert(byteBuffer.Length >= MaxEncodingBytesLength);
+
             // Check for the encoding's own preamble first (like StreamReader.IsPreamble).
             ReadOnlySpan<byte> preamble = encoding.Preamble;
-            if (preamble.Length > 0 && byteCount >= preamble.Length
-                && byteBuffer.AsSpan(0, preamble.Length).SequenceEqual(preamble))
+            if (preamble.Length > 0 && byteBuffer.Length >= preamble.Length
+                && byteBuffer.Slice(0, preamble.Length).SequenceEqual(preamble))
             {
                 return preamble.Length;
             }
 
             // No preamble match — check for BOM from other encodings (like StreamReader.DetectEncoding).
-            if (byteCount >= 2)
+            if (byteBuffer.Length >= 2)
             {
                 ushort firstTwoBytes = BinaryPrimitives.ReadUInt16LittleEndian(byteBuffer);
 
@@ -225,7 +226,7 @@ namespace System.Diagnostics
 
                 if (firstTwoBytes == 0xFEFF)
                 {
-                    if (byteCount >= 4 && byteBuffer[2] == 0 && byteBuffer[3] == 0)
+                    if (byteBuffer.Length >= 4 && byteBuffer[2] == 0 && byteBuffer[3] == 0)
                     {
                         encoding = Encoding.UTF32;
                         decoder = encoding.GetDecoder();
@@ -237,14 +238,14 @@ namespace System.Diagnostics
                     return 2;
                 }
 
-                if (byteCount >= 3 && firstTwoBytes == 0xBBEF && byteBuffer[2] == 0xBF)
+                if (byteBuffer.Length >= 3 && firstTwoBytes == 0xBBEF && byteBuffer[2] == 0xBF)
                 {
                     encoding = Encoding.UTF8;
                     decoder = encoding.GetDecoder();
                     return 3;
                 }
 
-                if (byteCount >= 4 && firstTwoBytes == 0 && byteBuffer[2] == 0xFE && byteBuffer[3] == 0xFF)
+                if (byteBuffer.Length >= 4 && firstTwoBytes == 0 && byteBuffer[2] == 0xFE && byteBuffer[3] == 0xFF)
                 {
                     encoding = new UTF32Encoding(bigEndian: true, byteOrderMark: true);
                     decoder = encoding.GetDecoder();
@@ -342,22 +343,15 @@ namespace System.Diagnostics
             }
         }
 
-        private static void DecodeBytesAndParseLines(ref Decoder decoder, ref Encoding encoding, byte[] byteBuffer, int bytesRead, ref char[] charBuffer, ref int charStart, ref int charEnd, ref bool preambleChecked, bool standardError, List<ProcessOutputLine> lines)
+        private static void DecodeBytesAndParseLines(Decoder decoder, ReadOnlySpan<byte> byteBuffer, ref char[] charBuffer, ref int charStart, ref int charEnd, bool standardError, List<ProcessOutputLine> lines)
         {
-            int byteOffset = 0;
-            if (!preambleChecked)
-            {
-                preambleChecked = true;
-                byteOffset = SkipPreambleOrDetectEncoding(byteBuffer, bytesRead, ref encoding, ref decoder);
-            }
-
-            DecodeAndAppendChars(decoder, byteBuffer, byteOffset, bytesRead - byteOffset, flush: false, ref charBuffer, ref charStart, ref charEnd);
+            DecodeAndAppendChars(decoder, byteBuffer, flush: false, ref charBuffer, ref charStart, ref charEnd);
             ParseLinesFromCharBuffer(charBuffer, ref charStart, charEnd, standardError, lines);
         }
 
-        private static bool FlushDecoderAndEmitRemainingChars(Decoder decoder, ref char[] charBuffer, ref int charStart, ref int charEnd, bool standardError, List<ProcessOutputLine> lines)
+        private static bool FlushDecoderAndEmitRemainingChars(Decoder decoder, ReadOnlySpan<byte> unconsumedBytes, ref char[] charBuffer, ref int charStart, ref int charEnd, bool standardError, List<ProcessOutputLine> lines)
         {
-            DecodeAndAppendChars(decoder, Array.Empty<byte>(), 0, 0, flush: true, ref charBuffer, ref charStart, ref charEnd);
+            DecodeAndAppendChars(decoder, unconsumedBytes, flush: true, ref charBuffer, ref charStart, ref charEnd);
             EmitRemainingCharsAsLine(charBuffer, ref charStart, ref charEnd, standardError, lines);
             return true;
         }

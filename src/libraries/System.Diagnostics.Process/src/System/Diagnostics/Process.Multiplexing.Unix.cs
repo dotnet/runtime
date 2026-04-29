@@ -28,7 +28,8 @@ namespace System.Diagnostics
             SafePipeHandle outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
             SafePipeHandle errorHandle = GetSafeHandleFromStreamReader(_standardError!);
 
-            byte[] byteBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            byte[] outputByteBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            byte[] errorByteBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
             char[] outputCharBuffer = ArrayPool<char>.Shared.Rent(InitialReadAllBufferSize);
             char[] errorCharBuffer = ArrayPool<char>.Shared.Rent(InitialReadAllBufferSize);
             bool outputRefAdded = false, errorRefAdded = false;
@@ -56,6 +57,7 @@ namespace System.Diagnostics
                 Decoder errorDecoder = errorEncoding.GetDecoder();
                 int outputCharStart = 0, outputCharEnd = 0;
                 int errorCharStart = 0, errorCharEnd = 0;
+                int unconsumedOutputBytesCount = 0, unconsumedErrorBytesCount = 0;
                 bool outputDone = false, errorDone = false;
                 bool outputPreambleChecked = false, errorPreambleChecked = false;
 
@@ -79,15 +81,17 @@ namespace System.Diagnostics
                         // Use explicit branching to avoid ref locals across yield points.
                         if (isError)
                         {
-                            HandlePipeLineRead(currentHandle, ref errorDecoder, ref errorEncoding, byteBuffer,
+                            HandlePipeLineRead(currentHandle, ref errorDecoder, ref errorEncoding,
+                                errorByteBuffer, ref unconsumedErrorBytesCount,
                                 ref errorCharBuffer, ref errorCharStart, ref errorCharEnd,
-                                ref errorPreambleChecked, ref errorDone, standardError: true, lines);
+                                ref errorPreambleChecked, ref errorDone, isError, lines);
                         }
                         else
                         {
-                            HandlePipeLineRead(currentHandle, ref outputDecoder, ref outputEncoding, byteBuffer,
+                            HandlePipeLineRead(currentHandle, ref outputDecoder, ref outputEncoding,
+                                outputByteBuffer, ref unconsumedOutputBytesCount,
                                 ref outputCharBuffer, ref outputCharStart, ref outputCharEnd,
-                                ref outputPreambleChecked, ref outputDone, standardError: false, lines);
+                                ref outputPreambleChecked, ref outputDone, isError, lines);
                         }
                     }
 
@@ -112,7 +116,8 @@ namespace System.Diagnostics
                     errorHandle.DangerousRelease();
                 }
 
-                ArrayPool<byte>.Shared.Return(byteBuffer);
+                ArrayPool<byte>.Shared.Return(outputByteBuffer);
+                ArrayPool<byte>.Shared.Return(errorByteBuffer);
                 ArrayPool<char>.Shared.Return(outputCharBuffer);
                 ArrayPool<char>.Shared.Return(errorCharBuffer);
             }
@@ -211,6 +216,7 @@ namespace System.Diagnostics
             ref Decoder decoder,
             ref Encoding encoding,
             byte[] byteBuffer,
+            ref int unconsumedBytesCount,
             ref char[] charBuffer,
             ref int charStart,
             ref int charEnd,
@@ -219,14 +225,34 @@ namespace System.Diagnostics
             bool standardError,
             List<ProcessOutputLine> lines)
         {
-            int bytesRead = ReadNonBlocking(handle, byteBuffer, 0);
+            int bytesRead = ReadNonBlocking(handle, byteBuffer, offset: unconsumedBytesCount);
             if (bytesRead > 0)
             {
-                DecodeBytesAndParseLines(ref decoder, ref encoding, byteBuffer, bytesRead, ref charBuffer, ref charStart, ref charEnd, ref preambleChecked, standardError, lines);
+                ReadOnlySpan<byte> bytes = byteBuffer.AsSpan(0, unconsumedBytesCount + bytesRead);
+
+                if (!preambleChecked)
+                {
+                    if (bytes.Length >= MaxEncodingBytesLength)
+                    {
+                        bytes = bytes.Slice(SkipPreambleOrDetectEncoding(bytes, ref encoding, ref decoder));
+                        preambleChecked = true;
+                        unconsumedBytesCount = 0;
+                    }
+                    else
+                    {
+                        unconsumedBytesCount += bytesRead;
+                    }
+                }
+
+                if (preambleChecked)
+                {
+                    DecodeBytesAndParseLines(decoder, bytes, ref charBuffer, ref charStart, ref charEnd, standardError, lines);
+                }
             }
             else if (bytesRead == 0)
             {
-                done = FlushDecoderAndEmitRemainingChars(decoder, ref charBuffer, ref charStart, ref charEnd, standardError, lines);
+                done = FlushDecoderAndEmitRemainingChars(decoder, byteBuffer.AsSpan(0, unconsumedBytesCount),
+                    ref charBuffer, ref charStart, ref charEnd, standardError, lines);
             }
             // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.
         }

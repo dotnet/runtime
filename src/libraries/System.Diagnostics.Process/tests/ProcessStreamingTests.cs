@@ -214,10 +214,7 @@ namespace System.Diagnostics.Tests
                 string.IsNullOrEmpty(standardOutput) ? DontPrintAnything : standardOutput,
                 string.IsNullOrEmpty(standardError) ? DontPrintAnything : standardError);
 
-            List<string> capturedOutput = new();
-            List<string> capturedError = new();
-
-            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
+            (List<string> capturedOutput, List<string> capturedError) = await EnumerateLines(process, useAsync);
 
             if (string.IsNullOrEmpty(standardOutput))
             {
@@ -263,10 +260,7 @@ namespace System.Diagnostics.Tests
             process.StartInfo.RedirectStandardError = true;
             process.Start();
 
-            List<string> capturedOutput = new();
-            List<string> capturedError = new();
-
-            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
+            (List<string> capturedOutput, List<string> capturedError) = await EnumerateLines(process, useAsync);
 
             List<string> expectedOutput = new();
             List<string> expectedError = new();
@@ -302,10 +296,7 @@ namespace System.Diagnostics.Tests
             process.StartInfo.RedirectStandardError = true;
             process.Start();
 
-            List<string> capturedOutput = new();
-            List<string> capturedError = new();
-
-            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
+            (List<string> capturedOutput, List<string> capturedError) = await EnumerateLines(process, useAsync);
 
             Assert.Equal(lineCount, capturedOutput.Count);
             for (int i = 0; i < lineCount; i++)
@@ -341,10 +332,7 @@ namespace System.Diagnostics.Tests
             process.StartInfo.RedirectStandardError = true;
             process.Start();
 
-            List<string> capturedOutput = new();
-            List<string> capturedError = new();
-
-            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
+            (List<string> capturedOutput, List<string> capturedError) = await EnumerateLines(process, useAsync);
 
             Assert.Equal(lineCount, capturedOutput.Count);
             Assert.Equal(lineCount, capturedError.Count);
@@ -407,10 +395,7 @@ namespace System.Diagnostics.Tests
         {
             using Process process = StartLinePrintingProcess("stdout_line", "stderr_line");
 
-            List<string> capturedOutput = new();
-            List<string> capturedError = new();
-
-            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
+            (List<string> capturedOutput, List<string> capturedError) = await EnumerateLines(process, useAsync);
 
             Assert.Single(capturedOutput, line => line == "stdout_line");
             Assert.Single(capturedError, line => line == "stderr_line");
@@ -496,10 +481,7 @@ namespace System.Diagnostics.Tests
             process.StartInfo.StandardErrorEncoding = encoding;
             process.Start();
 
-            List<string> capturedOutput = new();
-            List<string> capturedError = new();
-
-            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
+            (List<string> capturedOutput, List<string> capturedError) = await EnumerateLines(process, useAsync);
 
             Assert.Equal(new[] { "stdout_line" }, capturedOutput);
             Assert.Equal(new[] { "stderr_line" }, capturedError);
@@ -548,10 +530,7 @@ namespace System.Diagnostics.Tests
             process.StartInfo.StandardErrorEncoding = encoding;
             process.Start();
 
-            List<string> capturedOutput = new();
-            List<string> capturedError = new();
-
-            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
+            (List<string> capturedOutput, List<string> capturedError) = await EnumerateLines(process, useAsync);
 
             Assert.Equal(new[] { "hello_\u4e16\u754c_stdout" }, capturedOutput);
             Assert.Equal(new[] { "hello_\u4e16\u754c_stderr" }, capturedError);
@@ -578,13 +557,76 @@ namespace System.Diagnostics.Tests
             process.StartInfo.RedirectStandardError = true;
             process.Start();
 
-            List<string> capturedOutput = new();
-            List<string> capturedError = new();
-
-            await EnumerateLines(process, useAsync, capturedOutput, capturedError);
+            (List<string> capturedOutput, List<string> capturedError) = await EnumerateLines(process, useAsync);
 
             Assert.Equal(new[] { "lineA", "lineB", "lineC", "lineD" }, capturedOutput);
             Assert.Empty(capturedError);
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAllLines_HandlesPartialBomAcrossReads(bool useAsync)
+        {
+            // Write a UTF-32 LE BOM (FF FE 00 00) as two separate flushed writes so the
+            // first read can deliver only the first two BOM bytes. Without BOM accumulation,
+            // FF FE would be misclassified as a UTF-16 LE BOM and the content would be
+            // decoded with the wrong encoding.
+            using Process process = CreateProcess(static () =>
+            {
+                Stream stdout = Console.OpenStandardOutput();
+                stdout.Write([0xFF, 0xFE]); // First half of UTF-32 LE BOM
+                stdout.Flush();
+                stdout.Write([0x00, 0x00]); // Second half of BOM
+                stdout.Write(Encoding.UTF32.GetBytes("hello\n")); // Content (no BOM from GetBytes)
+                stdout.Flush();
+                return RemoteExecutor.SuccessExitCode;
+            });
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.StandardOutputEncoding = Encoding.UTF32;
+            process.Start();
+
+            (List<string> capturedOutput, List<string> capturedError) = await EnumerateLines(process, useAsync);
+
+            Assert.Equal(new[] { "hello" }, capturedOutput);
+            Assert.Empty(capturedError);
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAllLines_LessThanFourBytes(bool useAsync)
+        {
+            using Process process = CreateProcess(static () =>
+            {
+                Stream stdout = Console.OpenStandardOutput();
+                stdout.Write([(byte)'h']);
+                stdout.Flush();
+                stdout.Write([(byte)'i']);
+                stdout.Flush();
+
+                Stream error = Console.OpenStandardError();
+                error.Write([(byte)'b']);
+                error.Flush();
+                error.Write([(byte)'y']);
+                error.Flush();
+                error.Write([(byte)'e']);
+                error.Flush();
+
+                return RemoteExecutor.SuccessExitCode;
+            });
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            process.Start();
+
+            (List<string> capturedOutput, List<string> capturedError) = await EnumerateLines(process, useAsync);
+
+            Assert.Equal(new[] { "hi" }, capturedOutput);
+            Assert.Equal(new[] { "bye" }, capturedError);
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
@@ -616,8 +658,11 @@ namespace System.Diagnostics.Tests
         /// Helper that wraps both the sync and async line-reading APIs, populating
         /// the provided output and error lists.
         /// </summary>
-        private static async Task EnumerateLines(Process process, bool useAsync, List<string> capturedOutput, List<string> capturedError)
+        private static async Task<(List<string> capturedOutput, List<string> capturedError)> EnumerateLines(Process process, bool useAsync)
         {
+            List<string> capturedOutput = new();
+            List<string> capturedError = new();
+
             if (useAsync)
             {
                 await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
@@ -646,6 +691,8 @@ namespace System.Diagnostics.Tests
                     }
                 }
             }
+
+            return (capturedOutput, capturedError);
         }
     }
 }
