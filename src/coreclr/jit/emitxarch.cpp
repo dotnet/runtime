@@ -2536,8 +2536,8 @@ bool emitter::HasExtendedGPReg(const instrDesc* id) const
 {
 #if defined(TARGET_AMD64)
     // First check if addressing mode is used and if any of those uses eGPRs.
-    if (id->idHasMemAdr() &&
-        (IsExtendedGPReg(id->idAddr()->iiaAddrMode.amBaseReg()) || IsExtendedGPReg(id->idAddr()->iiaAddrMode.amIndxReg())))
+    if (id->idHasMemAdr() && (IsExtendedGPReg(id->idAddr()->iiaAddrMode.amBaseReg()) ||
+                              IsExtendedGPReg(id->idAddr()->iiaAddrMode.amIndxReg())))
     {
         return true;
     }
