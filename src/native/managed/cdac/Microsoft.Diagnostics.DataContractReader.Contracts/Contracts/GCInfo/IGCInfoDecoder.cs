@@ -7,40 +7,10 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
-/// <summary>
-/// Flags controlling GC reference reporting behavior.
-/// These match the native ICodeManager flags in eetwain.h.
-/// </summary>
-[Flags]
-internal enum CodeManagerFlags : uint
-{
-    ActiveStackFrame = 0x1,
-    ExecutionAborted = 0x2,
-    ParentOfFuncletStackFrame = 0x40,
-    NoReportUntracked = 0x80,
-    ReportFPBasedSlotsOnly = 0x200,
-}
-
 internal interface IGCInfoDecoder : IGCInfoHandle
 {
     uint GetCodeLength();
-    uint StackBaseRegister { get; }
-
-    /// <summary>
-    /// Gets the interruptible code ranges decoded from the GC info.
-    /// </summary>
+    uint GetStackBaseRegister();
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges();
-
-    /// <summary>
-    /// Enumerates all live GC slots at the given instruction offset.
-    /// </summary>
-    /// <param name="instructionOffset">Relative offset from method start.</param>
-    /// <param name="flags">CodeManagerFlags controlling reporting.</param>
-    /// <param name="reportSlot">Callback: (isRegister, registerNumber, spOffset, spBase, gcFlags).</param>
-    bool EnumerateLiveSlots(
-        uint instructionOffset,
-        CodeManagerFlags flags,
-        LiveSlotCallback reportSlot);
+    IReadOnlyList<LiveSlot> EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options);
 }
-
-internal delegate void LiveSlotCallback(bool isRegister, uint registerNumber, int spOffset, uint spBase, uint gcFlags);

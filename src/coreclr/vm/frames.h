@@ -1490,8 +1490,6 @@ struct cdac_data<StubDispatchFrame>
 {
     static constexpr size_t RepresentativeMTPtr = offsetof(StubDispatchFrame, m_pRepresentativeMT);
     static constexpr uint32_t RepresentativeSlot = offsetof(StubDispatchFrame, m_representativeSlot);
-    static constexpr size_t GCRefMap = offsetof(StubDispatchFrame, m_pGCRefMap);
-    static constexpr size_t ZapModule = offsetof(StubDispatchFrame, m_pZapModule);
     static constexpr size_t Indirection = offsetof(StubDispatchFrame, m_pIndirection);
 };
 
@@ -1573,9 +1571,7 @@ typedef DPTR(class ExternalMethodFrame) PTR_ExternalMethodFrame;
 template <>
 struct cdac_data<ExternalMethodFrame>
 {
-    static constexpr size_t GCRefMap = offsetof(ExternalMethodFrame, m_pGCRefMap);
     static constexpr size_t Indirection = offsetof(ExternalMethodFrame, m_pIndirection);
-    static constexpr size_t ZapModule = offsetof(ExternalMethodFrame, m_pZapModule);
 };
 
 class DynamicHelperFrame : public FramedMethodFrame

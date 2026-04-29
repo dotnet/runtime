@@ -28,10 +28,22 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
         return handle.GetCodeLength();
     }
 
+    uint IGCInfo.GetStackBaseRegister(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetStackBaseRegister();
+    }
+
     IReadOnlyList<InterruptibleRange> IGCInfo.GetInterruptibleRanges(IGCInfoHandle gcInfoHandle)
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
         return handle.GetInterruptibleRanges();
+    }
+
+    IReadOnlyList<LiveSlot> IGCInfo.EnumerateLiveSlots(IGCInfoHandle gcInfoHandle, uint instructionOffset, GcSlotEnumerationOptions options)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.EnumerateLiveSlots(instructionOffset, options);
     }
 
     private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)

@@ -335,11 +335,11 @@ internal sealed class FrameIterator
             {
                 Data.FramedMethodFrame fmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 Data.StubDispatchFrame sdf = target.ProcessedData.GetOrAdd<Data.StubDispatchFrame>(frameAddress);
-                TargetPointer gcRefMap = sdf.GCRefMap;
 
-                // Resolve GCRefMap via indirection if not yet cached
-                if (gcRefMap == TargetPointer.Null && sdf.Indirection != TargetPointer.Null)
-                    gcRefMap = FindGCRefMap(sdf.ZapModule, sdf.Indirection);
+                // Always resolve GCRefMap via FindGCRefMap from the indirection address.
+                TargetPointer gcRefMap = sdf.Indirection != TargetPointer.Null
+                    ? FindGCRefMap(sdf.Indirection)
+                    : TargetPointer.Null;
 
                 if (gcRefMap != TargetPointer.Null)
                     PromoteCallerStackUsingGCRefMap(fmf.TransitionBlockPtr, gcRefMap, scanContext);
@@ -352,11 +352,11 @@ internal sealed class FrameIterator
             {
                 Data.FramedMethodFrame fmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 Data.ExternalMethodFrame emf = target.ProcessedData.GetOrAdd<Data.ExternalMethodFrame>(frameAddress);
-                TargetPointer gcRefMap = emf.GCRefMap;
 
-                // Resolve GCRefMap via FindGCRefMap if not yet cached by the runtime
-                if (gcRefMap == TargetPointer.Null && emf.Indirection != TargetPointer.Null)
-                    gcRefMap = FindGCRefMap(emf.ZapModule, emf.Indirection);
+                // Always resolve GCRefMap via FindGCRefMap from the indirection address.
+                TargetPointer gcRefMap = emf.Indirection != TargetPointer.Null
+                    ? FindGCRefMap(emf.Indirection)
+                    : TargetPointer.Null;
 
                 if (gcRefMap != TargetPointer.Null)
                     PromoteCallerStackUsingGCRefMap(fmf.TransitionBlockPtr, gcRefMap, scanContext);
@@ -465,24 +465,20 @@ internal sealed class FrameIterator
     }
 
     /// <summary>
-    /// Resolves the GCRefMap for a Frame with m_pIndirection set but m_pGCRefMap not yet cached.
-    /// Port of native FindGCRefMap (frames.cpp:853).
+    /// Resolves the GCRefMap for a Frame with m_pIndirection.
+    /// Port of native FindGCRefMap (frames.cpp).
     /// </summary>
-    private TargetPointer FindGCRefMap(TargetPointer zapModule, TargetPointer indirection)
+    private TargetPointer FindGCRefMap(TargetPointer indirection)
     {
         if (indirection == TargetPointer.Null)
             return TargetPointer.Null;
 
-        // If ZapModule is null, resolve it from the indirection address.
+        // Resolve the module from the indirection address.
         // Matches native GetGCRefMap which calls FindModuleForGCRefMap(m_pIndirection)
-        // → ExecutionManager::FindReadyToRunModule.
+        IExecutionManager eman = target.Contracts.ExecutionManager;
+        TargetPointer zapModule = eman.FindReadyToRunModule(indirection);
         if (zapModule == TargetPointer.Null)
-        {
-            IExecutionManager eman = target.Contracts.ExecutionManager;
-            zapModule = eman.FindReadyToRunModule(indirection);
-            if (zapModule == TargetPointer.Null)
-                return TargetPointer.Null;
-        }
+            return TargetPointer.Null;
 
         // Get the ReadyToRunInfo from the module
         Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(zapModule);

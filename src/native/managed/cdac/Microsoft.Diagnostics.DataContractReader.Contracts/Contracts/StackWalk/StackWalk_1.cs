@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
-using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Linq;
 
@@ -213,19 +212,18 @@ internal partial class StackWalk_1 : IStackWalk
                         if (!IsManaged(gcFrame.Frame.Context.InstructionPointer, out CodeBlockHandle? cbh))
                             throw new InvalidOperationException("Expected managed code");
 
-                        CodeManagerFlags codeManagerFlags = gcFrame.Frame.IsActiveFrame
-                            ? CodeManagerFlags.ActiveStackFrame
-                            : 0;
+                        GcSlotEnumerationOptions gcOptions = new()
+                        {
+                            IsActiveFrame = gcFrame.Frame.IsActiveFrame,
 
-                        // If the frame was interrupted by an exception (reached via a
-                        // FaultingExceptionFrame), set ExecutionAborted so the GcInfoDecoder
-                        // skips live slot reporting at non-interruptible offsets. This matches
-                        // native CrawlFrame::GetCodeManagerFlags (stackwalk.h).
-                        if (gcFrame.IsInterrupted)
-                            codeManagerFlags |= CodeManagerFlags.ExecutionAborted;
-
-                        if (gcFrame.ShouldParentToFuncletSkipReportingGCReferences)
-                            codeManagerFlags |= CodeManagerFlags.ParentOfFuncletStackFrame;
+                            // If the frame was interrupted by an exception (reached via a
+                            // FaultingExceptionFrame), set ExecutionAborted so the GcInfoDecoder
+                            // skips live slot reporting at non-interruptible offsets. This matches
+                            // native CrawlFrame::GetCodeManagerFlags (stackwalk.h).
+                            IsExecutionAborted = gcFrame.IsInterrupted,
+                            IsParentOfFuncletStackFrame = gcFrame.ShouldParentToFuncletSkipReportingGCReferences,
+                            SuppressUntrackedSlots = _eman.IsFilterFunclet(cbh.Value),
+                        };
 
                         uint? relOffsetOverride = null;
                         if (gcFrame.ShouldParentFrameUseUnwindTargetPCforGCReporting)
@@ -251,7 +249,7 @@ internal partial class StackWalk_1 : IStackWalk
                             }
                         }
 
-                        EnumGcRefsForManagedFrame(gcFrame.Frame.Context, cbh.Value, codeManagerFlags, scanContext, relOffsetOverride);
+                        EnumGcRefsForManagedFrame(gcFrame.Frame.Context, cbh.Value, gcOptions, scanContext, relOffsetOverride);
                     }
                     else
                     {
@@ -894,67 +892,61 @@ internal partial class StackWalk_1 : IStackWalk
     private void EnumGcRefsForManagedFrame(
         IPlatformAgnosticContext context,
         CodeBlockHandle cbh,
-        CodeManagerFlags flags,
+        GcSlotEnumerationOptions options,
         GcScanContext scanContext,
         uint? relOffsetOverride = null)
     {
         TargetNUInt relativeOffset = _eman.GetRelativeOffset(cbh);
         _eman.GetGCInfo(cbh, out TargetPointer gcInfoAddr, out uint gcVersion);
 
-        if (_eman.IsFilterFunclet(cbh))
-            flags |= CodeManagerFlags.NoReportUntracked;
+        IGCInfo gcInfo = _target.Contracts.GCInfo;
+        IGCInfoHandle handle = gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
 
-        IGCInfoHandle handle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
-        if (handle is not IGCInfoDecoder decoder)
-            return;
-
-        uint stackBaseRegister = decoder.StackBaseRegister;
+        uint stackBaseRegister = gcInfo.GetStackBaseRegister(handle);
         TargetPointer? callerSP = null;
         uint offsetToUse = relOffsetOverride ?? (uint)relativeOffset.Value;
 
-        decoder.EnumerateLiveSlots(
-            offsetToUse,
-            flags,
-            (bool isRegister, uint registerNumber, int spOffset, uint spBase, uint gcFlags) =>
+        IReadOnlyList<LiveSlot> liveSlots = gcInfo.EnumerateLiveSlots(handle, offsetToUse, options);
+        foreach (LiveSlot slot in liveSlots)
+        {
+            GcScanFlags scanFlags = GcScanFlags.None;
+            if ((slot.GcFlags & 0x1) != 0)
+                scanFlags |= GcScanFlags.GC_CALL_INTERIOR;
+            if ((slot.GcFlags & 0x2) != 0)
+                scanFlags |= GcScanFlags.GC_CALL_PINNED;
+
+            if (slot.IsRegister)
             {
-                GcScanFlags scanFlags = GcScanFlags.None;
-                if ((gcFlags & 0x1) != 0)
-                    scanFlags |= GcScanFlags.GC_CALL_INTERIOR;
-                if ((gcFlags & 0x2) != 0)
-                    scanFlags |= GcScanFlags.GC_CALL_PINNED;
-
-                if (isRegister)
+                if (!context.TryReadRegister((int)slot.RegisterNumber, out TargetNUInt regValue))
+                    continue;
+                GcScanSlotLocation loc = new((int)slot.RegisterNumber, 0, false);
+                scanContext.GCEnumCallback(new TargetPointer(regValue.Value), scanFlags, loc);
+            }
+            else
+            {
+                int spReg = context.StackPointerRegister;
+                int reg = slot.SpBase switch
                 {
-                    if (!context.TryReadRegister((int)registerNumber, out TargetNUInt regValue))
-                        return;
-                    GcScanSlotLocation loc = new((int)registerNumber, 0, false);
-                    scanContext.GCEnumCallback(new TargetPointer(regValue.Value), scanFlags, loc);
-                }
-                else
+                    1 => spReg,
+                    2 => (int)stackBaseRegister,
+                    0 => -(spReg + 1),
+                    _ => throw new InvalidOperationException($"Unknown stack slot base: {slot.SpBase}"),
+                };
+                TargetPointer baseAddr = slot.SpBase switch
                 {
-                    int spReg = context.StackPointerRegister;
-                    int reg = spBase switch
-                    {
-                        1 => spReg,
-                        2 => (int)stackBaseRegister,
-                        0 => -(spReg + 1),
-                        _ => throw new InvalidOperationException($"Unknown stack slot base: {spBase}"),
-                    };
-                    TargetPointer baseAddr = spBase switch
-                    {
-                        1 => context.StackPointer,
-                        2 => context.TryReadRegister((int)stackBaseRegister, out TargetNUInt val)
-                            ? new TargetPointer(val.Value)
-                            : throw new InvalidOperationException($"Failed to read register {stackBaseRegister}"),
-                        0 => GetCallerSP(context, ref callerSP),
-                        _ => throw new InvalidOperationException($"Unknown stack slot base: {spBase}"),
-                    };
+                    1 => context.StackPointer,
+                    2 => context.TryReadRegister((int)stackBaseRegister, out TargetNUInt val)
+                        ? new TargetPointer(val.Value)
+                        : throw new InvalidOperationException($"Failed to read register {stackBaseRegister}"),
+                    0 => GetCallerSP(context, ref callerSP),
+                    _ => throw new InvalidOperationException($"Unknown stack slot base: {slot.SpBase}"),
+                };
 
-                    TargetPointer addr = new(baseAddr.Value + (ulong)(long)spOffset);
-                    GcScanSlotLocation loc = new(reg, spOffset, true);
-                    scanContext.GCEnumCallback(addr, scanFlags, loc);
-                }
-            });
+                TargetPointer addr = new(baseAddr.Value + (ulong)(long)slot.SpOffset);
+                GcScanSlotLocation loc = new(reg, slot.SpOffset, true);
+                scanContext.GCEnumCallback(addr, scanFlags, loc);
+            }
+        }
     }
 
     private TargetPointer GetCallerSP(IPlatformAgnosticContext context, ref TargetPointer? cached)

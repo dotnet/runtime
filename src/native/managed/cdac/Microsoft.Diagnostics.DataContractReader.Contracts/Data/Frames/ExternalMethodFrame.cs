@@ -11,12 +11,8 @@ internal class ExternalMethodFrame : IData<ExternalMethodFrame>
     public ExternalMethodFrame(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ExternalMethodFrame);
-        GCRefMap = target.ReadPointerField(address, type, nameof(GCRefMap));
         Indirection = target.ReadPointerField(address, type, nameof(Indirection));
-        ZapModule = target.ReadPointerField(address, type, nameof(ZapModule));
     }
 
-    public TargetPointer GCRefMap { get; }
     public TargetPointer Indirection { get; }
-    public TargetPointer ZapModule { get; }
 }

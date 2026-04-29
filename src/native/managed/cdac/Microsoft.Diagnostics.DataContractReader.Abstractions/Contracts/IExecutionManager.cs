@@ -101,12 +101,6 @@ public interface IExecutionManager : IContract
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
-
-    /// <summary>
-    /// Finds the R2R module that contains the given address.
-    /// Used by FindGCRefMap to resolve m_pZapModule when it's null.
-    /// Matches native ExecutionManager::FindReadyToRunModule (codeman.cpp).
-    /// </summary>
     TargetPointer FindReadyToRunModule(TargetPointer address) => throw new NotImplementedException();
 }
 
