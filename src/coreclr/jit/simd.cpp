@@ -853,8 +853,7 @@ bool simdscalable_t::IsAllBitsSet() const
         return false;
     }
     const unsigned elementBitSize = genTypeSize(gtSimdScalableBaseType) * 8;
-    const uint64_t allBitsSetMask =
-        (elementBitSize == 64) ? UINT64_MAX : (((uint64_t)1 << elementBitSize) - 1);
+    const uint64_t allBitsSetMask = (elementBitSize == 64) ? UINT64_MAX : (((uint64_t)1 << elementBitSize) - 1);
     return gtSimdScalableIndex == allBitsSetMask;
 }
 
