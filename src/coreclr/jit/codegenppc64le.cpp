@@ -405,23 +405,42 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
                       break;
 
                   case GT_MOD:
-                      // PowerPC64LE doesn't have a direct modulo instruction
-                      // Use: mod = dividend - (quotient * divisor)
-                      // For now, use divd/divw and calculate remainder
-                      // TODO-PPC64: Implement proper modulo using div + mul + sub sequence
-                      ins = (attr == EA_8BYTE) ? INS_divd : INS_divw;
-                      emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
-                      // This is incomplete - need to add mul and sub to get remainder
-                      break;
-
                   case GT_UMOD:
-                      // Similar to GT_MOD but for unsigned
-                      ins = (attr == EA_8BYTE) ? INS_divdu : INS_divwu;
-                      emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
-                      // This is incomplete - need to add mul and sub to get remainder
-                      break;
+		  {
+			// Compute: remainder = dividend - (quotient * divisor)
+			// Algorithm:
+			//   1. quotient = dividend / divisor  (divd/divw or divdu/divwu)
+			//   2. temp = quotient * divisor      (mulld/mullw)
+			//   3. remainder = dividend - temp    (subf)
 
-                  default:
+			// Need a temporary register for the quotient
+			regNumber tempReg = internalRegisters.GetSingle(treeNode);
+
+			// Step 1: Compute quotient in tempReg
+			instruction divIns;
+			if (oper == GT_MOD)
+			{
+			    // Signed division
+			    divIns = (attr == EA_8BYTE) ? INS_divd : INS_divw;
+			}
+			else // GT_UMOD
+			{
+			    // Unsigned division
+			    divIns = (attr == EA_8BYTE) ? INS_divdu : INS_divwu;
+			}
+			emit->emitIns_R_R_R(divIns, attr, tempReg, op1reg, op2reg);
+
+			// Step 2: Multiply quotient by divisor, result in tempReg
+			instruction mulIns = (attr == EA_8BYTE) ? INS_mulld : INS_mullw;
+			emit->emitIns_R_R_R(mulIns, attr, tempReg, tempReg, op2reg);
+
+			// Step 3: Subtract to get remainder: targetReg = op1reg - tempReg
+			// subf rD, rA, rB computes rD = rB - rA, so we use subf targetReg, tempReg, op1reg
+			emit->emitIns_R_R_R(INS_subf, attr, targetReg, tempReg, op1reg);
+		    }
+		    break;
+
+		  default:
                       unreached();
               }
           }

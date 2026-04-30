@@ -463,9 +463,28 @@ int LinearScan::BuildNode(GenTree* tree)
 
               case GT_DIV:
               case GT_UDIV:
-              case GT_MOD:
+  	            // Division operations don't need internal registers
+    	            srcCount = BuildBinaryUses(tree->AsOp());
+      	            buildInternalRegisterUses();
+		    assert(dstCount == 1);
+		    BuildDef(tree);
+		    break;
+
+	      case GT_MOD:
               case GT_UMOD:
-              case GT_MULHI:
+	      {
+		    // PowerPC64 doesn't have a direct MOD instruction
+  	            // We compute: remainder = dividend - (quotient * divisor)
+		    // This requires a temporary register to hold the quotient
+		    buildInternalIntRegisterDefForNode(tree);
+		    srcCount = BuildBinaryUses(tree->AsOp());
+		    buildInternalRegisterUses();
+		    assert(dstCount == 1);
+		    BuildDef(tree);
+	      }
+	      break;
+
+	      case GT_MULHI:
               {
                   srcCount = BuildBinaryUses(tree->AsOp());
                   buildInternalRegisterUses();
