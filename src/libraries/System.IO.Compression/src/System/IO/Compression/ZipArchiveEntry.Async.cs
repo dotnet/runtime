@@ -64,7 +64,7 @@ public partial class ZipArchiveEntry
     /// <para>The allowed <paramref name="access"/> values depend on the <see cref="ZipArchiveMode"/>:</para>
     /// <list type="bullet">
     /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
-    /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> is allowed; <see cref="FileAccess.Read"/> is not allowed. The <paramref name="password"/> is only used when decrypting existing encrypted entries and is not used when opening a newly created entry for writing.</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed; <see cref="FileAccess.Read"/> is not allowed. The <paramref name="password"/> is only used when decrypting existing encrypted entries and is not used when opening a newly created entry for writing.</description></item>
     /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed for encrypted entries.</description></item>
     /// </list>
     /// </remarks>
@@ -122,6 +122,10 @@ public partial class ZipArchiveEntry
             case ZipArchiveMode.Update:
             default:
                 Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                // Encrypted entries always require a password for re-encryption,
+                // even when discarding existing content (write-only access).
+                if (IsEncrypted && password.IsEmpty && access != FileAccess.Read)
+                    throw new ArgumentException(SR.PasswordRequired, nameof(password));
                 return access switch
                 {
                     FileAccess.Read => OpenInReadModeAsync(checkOpenable: true, password, cancellationToken),
