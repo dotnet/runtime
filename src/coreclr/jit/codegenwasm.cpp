@@ -39,6 +39,16 @@ static const instruction INS_I_gt_u  = INS_i32_gt_u;
 #endif // !TARGET_64BIT
 
 //------------------------------------------------------------------------
+// ensureCurrentFuncIsUnwindable: ensure we set up an unwindable frame
+//    for the current function or funclet.
+//
+void CodeGen::ensureCurrentFuncIsUnwindable()
+{
+    FuncInfoDsc* const func = m_compiler->funCurrentFunc();
+    func->ensureUnwindableFrame(m_compiler);
+}
+
+//------------------------------------------------------------------------
 // GetStackPointerRegIndex: get the Wasm local index for the stack pointer
 //
 unsigned CodeGen::GetStackPointerRegIndex() const
@@ -58,10 +68,32 @@ unsigned CodeGen::GetFramePointerRegIndex() const
     return WasmRegToIndex(fpReg);
 }
 
+//------------------------------------------------------------------------
+// genMarkLabelsForCodegen: mark labels for codegen
+//
 void CodeGen::genMarkLabelsForCodegen()
 {
-    // No work needed here for now.
-    // We mark labels as needed in genEmitStartBlock.
+    assert(!m_compiler->fgSafeBasicBlockCreation);
+
+    JITDUMP("Mark labels for codegen\n");
+
+#ifdef DEBUG
+    // No label flags should be set before this.
+    for (BasicBlock* const block : m_compiler->Blocks())
+    {
+        assert(!block->HasFlag(BBF_HAS_LABEL));
+    }
+#endif // DEBUG
+
+    // Mark all the funclet boundaries.
+    //
+    for (FuncInfoDsc* const func : m_compiler->Funcs())
+    {
+        BasicBlock* const firstBlock = func->GetStartBlock(m_compiler);
+        firstBlock->SetFlags(BBF_HAS_LABEL);
+
+        JITDUMP("  " FMT_BB " : %s begin\n", firstBlock->bbNum, (func->funKind == FUNC_ROOT) ? "method" : "funclet");
+    }
 }
 
 //------------------------------------------------------------------------
@@ -85,7 +117,7 @@ void CodeGen::genBeginFnProlog()
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: no-op since we don't need to save anything.
 //
-void CodeGen::genPushCalleeSavedRegisters()
+void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
 }
 
@@ -107,6 +139,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(!isFramePointerUsed());
         return;
     }
+
+    m_compiler->unwindAllocStack(frameSize);
 
     // TODO-WASM: reverse pinvoke frame allocation
     //
@@ -132,14 +166,39 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, spLclIndex);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, WasmRegToIndex(fpReg));
     }
+
+    FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
+
+    if (func->needsUnwindableFrame)
+    {
+        assert(m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM);
+        assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
+
+        // fp[0] == functionIndex
+        //
+        // TODO-WASM: Save the actual function index. For now we save a fixed constant
+        //
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xBBBB);
+        GetEmitter()->emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaWasmFunctionIndex, 0);
+    }
 }
 
 //------------------------------------------------------------------------
 // genEnregisterOSRArgsAndLocals: enregister OSR args and locals.
 //
-void CodeGen::genEnregisterOSRArgsAndLocals()
+void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
 {
     unreached(); // OSR not supported on WASM.
+}
+
+//------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Not called for WASM without OSR support.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
 }
 
 //------------------------------------------------------------------------
@@ -306,6 +365,32 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     // All the funclet params are used from their home registers, so nothing
     // needs homing here.
+    //
+    // If the funclet needs to be unwindable (contains any calls), set up
+    // what we need.
+    //
+    if (func->needsUnwindableFrame)
+    {
+        // We need two stack slots for the function index and for the funclet virtual IP.
+        // We also need to keep SP aligned.
+        //
+        size_t slotSize  = 2 * TARGET_POINTER_SIZE;
+        size_t frameSize = AlignUp(slotSize, STACK_ALIGN);
+        m_compiler->unwindAllocStack((unsigned)frameSize);
+
+        // Move SP
+        //
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, frameSize);
+        GetEmitter()->emitIns(INS_I_sub);
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
+
+        // TODO-WASM: Save the funclet index. For now we save a fixed constant
+        //
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xAAAA);
+        GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2375,6 +2460,8 @@ void CodeGen::genCall(GenTreeCall* call)
 //
 void CodeGen::genCallInstruction(GenTreeCall* call)
 {
+    ensureCurrentFuncIsUnwindable();
+
     EmitCallParams params;
     params.isJump      = call->IsFastTailCall();
     params.hasAsyncRet = call->IsAsync();
@@ -2428,6 +2515,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
 
+    // A non-null target expression always indicates an indirect call on Wasm,
+    // as currently the only possible result of the target expression would be a
+    // table index which must be used via call_indirect
     if (target != nullptr)
     {
         // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
@@ -2439,52 +2529,28 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else
     {
-        // If we have no target and this is a call with indirection cell then
-        // we do an optimization where we load the call address directly from
-        // the indirection cell instead of duplicating the tree. In BuildCall
-        // we ensure that get an extra register for the purpose. Note that for
-        // CFG the call might have changed to
-        // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
-        // indirection cell but we should not try to optimize.
-        WellKnownArg indirectionCellArgKind = WellKnownArg::None;
-        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
-        {
-            indirectionCellArgKind = call->GetIndirectionCellArgKind();
-        }
+        // Generate a direct call to a non-virtual user defined or helper method
+        assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
 
-        if (indirectionCellArgKind != WellKnownArg::None)
-        {
-            assert(call->IsR2ROrVirtualStubRelativeIndir());
+        assert(call->gtEntryPoint.addr == NULL);
 
-            params.callType = EC_INDIR_R;
-            // params.ireg     = targetAddrReg;
-            genEmitCallWithCurrentGC(params);
+        if (call->IsHelperCall())
+        {
+            assert(!call->IsFastTailCall());
+            CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
+            noway_assert(helperNum != CORINFO_HELP_UNDEF);
+            CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
+            assert(helperLookup.accessType == IAT_VALUE);
+            params.addr = helperLookup.addr;
         }
         else
         {
-            // Generate a direct call to a non-virtual user defined or helper method
-            assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
-
-            assert(call->gtEntryPoint.addr == NULL);
-
-            if (call->IsHelperCall())
-            {
-                assert(!call->IsFastTailCall());
-                CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-                noway_assert(helperNum != CORINFO_HELP_UNDEF);
-                CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-                assert(helperLookup.accessType == IAT_VALUE);
-                params.addr = helperLookup.addr;
-            }
-            else
-            {
-                // Direct call to a non-virtual user function.
-                params.addr = call->gtDirectCallAddress;
-            }
-
-            params.callType = EC_FUNC_TOKEN;
-            genEmitCallWithCurrentGC(params);
+            // Direct call to a non-virtual user function.
+            params.addr = call->gtDirectCallAddress;
         }
+
+        params.callType = EC_FUNC_TOKEN;
+        genEmitCallWithCurrentGC(params);
     }
 }
 
@@ -2504,6 +2570,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 //
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
+    ensureCurrentFuncIsUnwindable();
+
     EmitCallParams params;
 
     CORINFO_CONST_LOOKUP helperFunction = m_compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
@@ -2587,16 +2655,21 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     if (helperIsManaged)
     {
         // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
+        // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP
+        // address to push.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 
     if (params.callType == EC_INDIR_R)
     {
-        // Push the call target onto the wasm evaluation stack by dereferencing the PEP.
+        // Push the call target onto the wasm evaluation stack by dereferencing the indirection cell
+        // and then the PEP pointed to by the indirection cell.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 
     genEmitCallWithCurrentGC(params);
@@ -2788,9 +2861,9 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 //   * whether the size operand is a constant or not
 //   * whether the allocated memory needs to be zeroed or not (info.compInitMem)
 //
-//   If the sp is changed, the value at sp[0] must be the frame pointer
-//   so that the runtime unwinder can locate the base of the fixed area
-//   in the shadow stack.
+//   If the sp is changed, the value at sp[0] must be set to zero and
+//   the frame pointer stored at sp[TARGET_POINTER_SIZE] so that the runtime unwinder
+//   can locate the base of the fixed area in the shadow stack.
 //
 void CodeGen::genLclHeap(GenTree* tree)
 {
@@ -2845,10 +2918,16 @@ void CodeGen::genLclHeap(GenTree* tree)
             }
 
             // SP now points at the reserved space just below the allocation.
-            // Save the frame pointer at sp[0].
+            // Save the frame pointer at sp[TARGET_POINTER_SIZE].
             //
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TARGET_POINTER_SIZE);
+
+            // Set sp[0] zero.
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
             GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
 
             // Leave the base address of the allocated region on the stack.
@@ -2918,9 +2997,17 @@ void CodeGen::genLclHeap(GenTree* tree)
                 GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
             }
 
-            // Re-establish unwind invariant: store FP at SP[0]
+            // SP now points at the reserved space just below the allocation.
+            // Save the frame pointer at sp[TARGET_POINTER_SIZE].
+            //
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TARGET_POINTER_SIZE);
+
+            // Set sp[0] zero.
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
             GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
 
             // Return value
@@ -3175,7 +3262,11 @@ void CodeGen::genCallFinally(BasicBlock* block)
 //
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    // No codegen needed for Wasm
+    // TODO-WASM: return the actual ResumeIP here?
+    // The runtime expects a return value from a catch funclet,
+    // but nothing will depend on it.
+    //
+    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, 0);
 }
 
 void CodeGen::genStructReturn(GenTree* treeNode)
@@ -3262,9 +3353,23 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
     // GCInfo not captured/created by codegen.
 }
 
+//---------------------------------------------------------------------
+// genReportEH - report EH info to the VM
+//
 void CodeGen::genReportEH()
 {
-    // EHInfo not captured/created by codegen.
+    // We created the EH info earlier, during fgWasmVirtualIP.
+    //
+    EHClauseInfo* const info = m_compiler->fgWasmEHInfo;
+    if (info != nullptr)
+    {
+
+        // Tell the VM how many EH clauses to expect.
+        m_compiler->eeSetEHcount(m_compiler->compHndBBtabCount);
+        m_compiler->Metrics.EHClauseCount = (int)m_compiler->compHndBBtabCount;
+
+        genReportEHClauses(info);
+    }
 }
 
 //---------------------------------------------------------------------

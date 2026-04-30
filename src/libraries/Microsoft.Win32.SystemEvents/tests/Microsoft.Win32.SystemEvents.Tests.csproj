@@ -3,6 +3,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkCurrent)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"

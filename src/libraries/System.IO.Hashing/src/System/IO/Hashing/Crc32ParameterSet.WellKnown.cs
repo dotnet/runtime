@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if NET
+using System.Buffers.Binary;
+#endif
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.IO.Hashing
@@ -133,20 +135,12 @@ namespace System.IO.Hashing
                 Debug.Assert(System.Runtime.Intrinsics.Arm.Crc32.Arm64.IsSupported, "ARM CRC support is required.");
 
                 // Compute in 8 byte chunks
-                if (source.Length >= sizeof(ulong))
+                while (source.Length >= sizeof(ulong))
                 {
-                    ref byte ptr = ref MemoryMarshal.GetReference(source);
-
-                    // Exclude trailing bytes not a multiple of 8
-                    int longLength = source.Length & ~0x7;
-
-                    for (int i = 0; i < longLength; i += sizeof(ulong))
-                    {
-                        crc = System.Runtime.Intrinsics.Arm.Crc32.Arm64.ComputeCrc32(
-                            crc,
-                            Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref ptr, i)));
-                    }
-                    source = source.Slice(longLength);
+                    crc = System.Runtime.Intrinsics.Arm.Crc32.Arm64.ComputeCrc32(
+                        crc,
+                        BinaryPrimitives.ReadUInt64LittleEndian(source));
+                    source = source.Slice(sizeof(ulong));
                 }
 
                 // Compute remaining bytes
@@ -163,21 +157,12 @@ namespace System.IO.Hashing
                 Debug.Assert(System.Runtime.Intrinsics.Arm.Crc32.IsSupported, "ARM CRC support is required.");
 
                 // Compute in 4 byte chunks
-                if (source.Length >= sizeof(uint))
+                while (source.Length >= sizeof(uint))
                 {
-                    ref byte ptr = ref MemoryMarshal.GetReference(source);
-
-                    // Exclude trailing bytes not a multiple of 4
-                    int intLength = source.Length & ~0x3;
-
-                    for (int i = 0; i < intLength; i += sizeof(uint))
-                    {
-                        crc = System.Runtime.Intrinsics.Arm.Crc32.ComputeCrc32(
-                            crc,
-                            Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref ptr, i)));
-                    }
-
-                    source = source.Slice(intLength);
+                    crc = System.Runtime.Intrinsics.Arm.Crc32.ComputeCrc32(
+                        crc,
+                        BinaryPrimitives.ReadUInt32LittleEndian(source));
+                    source = source.Slice(sizeof(uint));
                 }
 
                 // Compute remaining bytes
@@ -243,33 +228,27 @@ namespace System.IO.Hashing
                 else
                 {
                     Debug.Assert(System.Runtime.Intrinsics.Arm.Crc32.IsSupported);
-                    ref byte ptr = ref MemoryMarshal.GetReference(source);
-                    int offset = 0;
 
                     if (System.Runtime.Intrinsics.Arm.Crc32.Arm64.IsSupported)
                     {
-                        int longLength = source.Length & ~0x7; // Exclude trailing bytes not a multiple of 8
-
-                        for (; offset < longLength; offset += sizeof(ulong))
+                        while (source.Length >= sizeof(ulong))
                         {
                             crc = System.Runtime.Intrinsics.Arm.Crc32.Arm64.ComputeCrc32C(
                                 crc,
-                                Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref ptr, offset)));
+                                BinaryPrimitives.ReadUInt64LittleEndian(source));
+                            source = source.Slice(sizeof(ulong));
                         }
                     }
 
-                    int intLength = source.Length & ~0x3; // Exclude trailing bytes not a multiple of 4
-
-                    for (; offset < intLength; offset += sizeof(uint))
+                    while (source.Length >= sizeof(uint))
                     {
                         crc = System.Runtime.Intrinsics.Arm.Crc32.ComputeCrc32C(
                             crc,
-                            Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref ptr, offset)));
+                            BinaryPrimitives.ReadUInt32LittleEndian(source));
+                        source = source.Slice(sizeof(uint));
                     }
 
-                    ReadOnlySpan<byte> remainingBytes = source.Slice(offset);
-
-                    foreach (byte value in remainingBytes)
+                    foreach (byte value in source)
                     {
                         crc = System.Runtime.Intrinsics.Arm.Crc32.ComputeCrc32C(crc, value);
                     }

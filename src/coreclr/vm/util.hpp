@@ -566,6 +566,11 @@ inline bool IsInCantStopRegion()
 
 BOOL IsValidMethodCodeNotification(ULONG32 Notification);
 
+// Number of usable JIT notification entries. The allocated table has
+// JIT_NOTIFICATION_TABLE_SIZE + 1 slots; slot 0 stores bookkeeping (length).
+// Referenced by the cDAC via CDAC_GLOBAL(JITNotificationTableSize, ...).
+constexpr UINT JIT_NOTIFICATION_TABLE_SIZE = 1000;
+
 typedef DPTR(struct JITNotification) PTR_JITNotification;
 struct JITNotification
 {
@@ -598,7 +603,7 @@ GVAL_DECL(ULONG32, g_dacNotificationFlags);
 inline void
 InitializeJITNotificationTable()
 {
-    g_pNotificationTable = new (nothrow) JITNotification[1001];
+    g_pNotificationTable = new (nothrow) JITNotification[JIT_NOTIFICATION_TABLE_SIZE + 1];
 }
 
 #endif // TARGET_UNIX && !DACCESS_COMPILE
