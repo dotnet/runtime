@@ -14,8 +14,14 @@ set(SOURCES
     utf8.c
     xoshiro128pp.c
     log.c
-    ospagesize.c
 )
+
+# ospagesize is provided inline in the header on Windows and WASM; the .c file
+# only contains the POSIX implementation. Including it on those platforms would
+# produce an empty translation unit (which some toolchains warn/error on).
+if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND SOURCES ospagesize.c)
+endif()
 
 # Provide an object library for scenarios where we ship static libraries
 include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})

@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cassert>
 #include <cstring>
+#include <cstdlib>
 
 #include "config.gc.h"
 #include "common.h"
@@ -68,7 +69,7 @@ static uint64_t GetAvailablePhysicalMemory();
 
 bool GCToOSInterface::Initialize()
 {
-    g_pageSizeUnixInl = minipal_getpagesize();
+    g_pageSizeUnixInl = (uint32_t)minipal_getpagesize();
 
     // WASM is single-threaded
     g_totalCpuCount = 1;
@@ -353,23 +354,11 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 static bool GetPhysicalMemoryUsed(size_t* val)
 {
     // __builtin_wasm_memory_size(0) returns count of 64KB WASM pages, not GC pages.
-    // Compute in 64 bits so a legitimate 0-page memory is not conflated with wasm32 overflow.
-    uint64_t pages = static_cast<uint64_t>(__builtin_wasm_memory_size(0));
-    if (pages > (UINT64_MAX / WasmPageSize))
-    {
-        *val = GetTotalPhysicalMemory();
-        return true;
-    }
-
-    uint64_t bytesUsed = pages * static_cast<uint64_t>(WasmPageSize);
-    if (bytesUsed > static_cast<uint64_t>(SIZE_MAX))
-    {
-        // Clamp when the byte count cannot be represented in size_t on wasm32.
-        *val = GetTotalPhysicalMemory();
-        return true;
-    }
-
-    *val = static_cast<size_t>(bytesUsed);
+    // On wasm32 the spec maximum is 65536 pages = exactly 4GiB, which overflows
+    // size_t (UINT32_MAX) by one. No engine actually permits allocating the full
+    // 4GiB, but compute in uint64_t and clamp to be safe.
+    uint64_t bytesUsed = static_cast<uint64_t>(__builtin_wasm_memory_size(0)) * WasmPageSize;
+    *val = (bytesUsed > SIZE_MAX) ? GetTotalPhysicalMemory() : static_cast<size_t>(bytesUsed);
     return true;
 }
 

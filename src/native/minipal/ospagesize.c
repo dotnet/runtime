@@ -1,27 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// On WASM and Windows the page size is a compile-time constant and minipal_getpagesize
-// is defined inline in the header. This file provides the POSIX implementation, which
-// must call getpagesize() once per process and cache the result.
-
-#if !defined(__wasm__) && !defined(HOST_WINDOWS) && !defined(_WIN32)
+// POSIX implementation of minipal_getpagesize. On WASM and Windows the page size
+// is a compile-time constant and minipal_getpagesize is defined inline in the
+// header; this file is excluded from the build on those platforms by
+// src/native/minipal/CMakeLists.txt to avoid an empty translation unit.
 
 #include <unistd.h>
 #include "ospagesize.h"
 
-int minipal_getpagesize(void)
+size_t minipal_getpagesize(void)
 {
     // Process-wide constant. Any thread that races to initialize the cache writes
     // the same value, so no synchronization is required.
-    static int cached_page_size = 0;
-    int page_size = cached_page_size;
+    static size_t cached_page_size = 0;
+    size_t page_size = cached_page_size;
     if (page_size == 0)
     {
-        page_size = getpagesize();
+        page_size = (size_t)getpagesize();
         cached_page_size = page_size;
     }
     return page_size;
 }
-
-#endif
