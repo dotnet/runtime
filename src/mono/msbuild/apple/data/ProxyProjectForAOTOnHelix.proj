@@ -50,19 +50,16 @@
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
 
-  <!-- Pre-built NativeAOT static library produced by the host publish step.
-       Defined after the .props import so $(AssemblyName) (written by the host build)
-       is available. Only library tests (IncludesTestRunner != false) ship a pre-built
-       lib; functional/smoke tests with a custom Main still need ILC to run on Helix. -->
+  <!-- Pre-built NativeAOT static library from the host publish step. Defined after the
+       .props import so $(AssemblyName) is available. Library tests only; functional
+       tests (IncludesTestRunner=false) still ILC on Helix. -->
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(IncludesTestRunner)' != 'false'">
     <_PrebuiltNativeAOTLib>$(OriginalPublishDir)lib$(AssemblyName).a</_PrebuiltNativeAOTLib>
   </PropertyGroup>
 
-  <!-- On Helix ILC has already run (during host-side Publish) for library tests. Stub
-       out the NativeAOT compile step in the AppleBuild chain so it doesn't require
-       ILC targets (SetupProperties, ComputeIlcCompileInputs, …) which aren't imported
-       here. Fully rewrite AppleBuildDependsOn (AppleBuild.props's default contains
-       embedded newlines that break property-function expansion via $(…Replace…)). -->
+  <!-- ILC has already run on the host. Replace _AppleNativeAotCompile with a no-op and
+       fully rewrite AppleBuildDependsOn (the default in AppleBuild.props contains embedded
+       newlines that break $(...Replace...) expansion). -->
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(IncludesTestRunner)' != 'false'">
     <_AotCompileTargetName>_NoOpNativeAotCompileOnHelix</_AotCompileTargetName>
     <AppleBuildDependsOn>PrepareForAppleBuild;_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;_RunR2RCompilationOnHelix;_InitializeCommonProperties;_BeforeAppleBuild;_AppleResolveReferences;_NoOpNativeAotCompileOnHelix;_AppleGenerateAppBundle;_AfterAppleBuild;_AfterAppleBuildOnHelix</AppleBuildDependsOn>
@@ -75,14 +72,9 @@
 
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
-  <!-- For NativeAOT on Helix: the host publish produced a pre-linked static lib
-       (lib$(AssemblyName).a) that already contains all managed code, the NativeAOT
-       runtime, and the test-runner Main entrypoint. The iOS PAL static libs and
-       ILC aotsdk libs were shipped alongside under publish/nativeaot-link-inputs/.
-       Wire them into the final Xcode link step via NativeDependencies. The system
-       frameworks / system libs (-framework Foundation/UIKit/..., -lc++, -liconv,
-       -licucore, -lz, swift) are contributed by AppleBuild.targets via
-       @(_CommonLinkerArgs), so we do not duplicate them here. -->
+  <!-- Wire the pre-built static lib and aotsdk objects into NativeDependencies for the
+       Xcode link step. System frameworks/libs come from AppleBuild.targets via
+       @(_CommonLinkerArgs). -->
   <Target Name="_NoOpNativeAotCompileOnHelix"
           Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(IncludesTestRunner)' != 'false'">
     <Error Condition="!Exists('$(_PrebuiltNativeAOTLib)')"
@@ -100,9 +92,8 @@
 
       <_NativeAotHelixLinkLibs Include="$(_NativeAotLinkInputsDir)*.a"
                                Exclude="$(_NativeAotLinkInputsDir)libRuntime.ServerGC.a;$(_NativeAotLinkInputsDir)libRuntime.VxsortEnabled.a;$(_NativeAotLinkInputsDir)libstandalonegc-enabled.a;$(_NativeAotLinkInputsDir)libeventpipe-enabled.a" />
-      <!-- For NativeLib=Static with a C-supplied main (AppleAppBuilder), we use
-           libbootstrapperdll.o, not libbootstrapper.o. Including both would cause
-           duplicate symbol errors. -->
+      <!-- AppleAppBuilder supplies its own C main, so use libbootstrapperdll.o (not
+           libbootstrapper.o) to avoid duplicate-symbol errors. -->
       <_NativeAotHelixLinkLibs Include="$(_NativeAotLinkInputsDir)libbootstrapperdll.o" />
 
       <NativeDependencies Include="$(_PrebuiltNativeAOTLib)" />
@@ -136,13 +127,11 @@
       <AppleNativeFilesToBundle Include="$(OriginalPublishDir)\**\*.*" Exclude="$(OriginalPublishDir)\*.dll" />
     </ItemGroup>
 
-    <!-- For NativeAOT library tests, the host build already produced a pre-linked static
-         lib containing everything. Feed it directly to AppleAppBuilder as a native
-         dependency and skip any managed-DLL enumeration (there are none in publish).
-         For NativeAOT functional/smoke tests with IncludesTestRunner=false, ILC still
-         runs on Helix so we keep the legacy enumeration above. -->
+    <!-- Library tests: the host build's static lib already contains everything; skip
+         managed-DLL enumeration. Functional tests with custom Main keep the legacy
+         enumeration above. -->
     <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(IncludesTestRunner)' != 'false'">
-      <!-- Empty: NativeDependencies will be routed via ManagedBinary.IlcOutputFile below. -->
+      <!-- NativeDependencies are populated in _NoOpNativeAotCompileOnHelix. -->
     </ItemGroup>
 
     <!-- For NativeAOT library mode we need to manually create the 'obj' dir and copy all assemblies in there to properly build the library -->
@@ -156,10 +145,8 @@
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
     </PropertyGroup>
 
-    <!-- Explicitly set IntermediateAssembly so ManagedBinary resolves correctly for NativeAOT.
-         When SkipIlcCompile=true (Helix case) we do not depend on a .dll file existing: the
-         host publish produced a pre-linked static lib and no IlcCompile will run here. A dummy
-         path is fine; only the filename is used to shape derived metadata. -->
+    <!-- Set IntermediateAssembly so ManagedBinary metadata resolves. With SkipIlcCompile=true
+         the file doesn't need to exist; only its name shapes derived metadata. -->
     <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' == 'true'">
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
       <IntermediateAssembly Include="$(OriginalPublishDir)$(AssemblyName).dll" />

@@ -53,9 +53,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestSingleFile)' == 'true' and '$(TargetsAppleMobile)' != 'true'">
-    <!-- Pass the results file. Skipped for Apple mobile because xharness launcher
-         (open on maccatalyst, mlaunch on ios-device) does not reliably forward args
-         past the separator to the app, and AppleTestRunner does not consume -xml. -->
+    <!-- Skipped on Apple mobile: AppleTestRunner doesn't consume -xml and xharness
+         doesn't reliably forward args past the separator. -->
     <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
   </PropertyGroup>
 

@@ -3,18 +3,9 @@
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestAppleApp</BundleTestAppTargets>
   </PropertyGroup>
 
-  <!-- For NativeAOT library tests on Apple mobile, use the shared library-test NativeAOT
-       infrastructure (tests.singlefile.targets). The test project's own publish runs
-       trimming and ILC, producing a static library that AppleAppBuilder consumes in
-       library-mode. The test project becomes OutputType=Exe with AppleTestRunner.cs
-       supplying Main, matching how desktop NativeAOT library tests are structured.
-
-       Functional/smoke tests with their own custom Main (IncludesTestRunner=false,
-       e.g. iOS.Device.Aot.Test) stay on the legacy proxy-on-Helix path: they don't
-       use the AppleTestRunner / xunit, and routing them through tests.singlefile.targets
-       would set TestSingleFile=true and cause xunit.console.targets to append
-       "-xml testResults.xml" to RunScriptCommand, which xharness apple run forwards
-       past the dash-dash separator and breaks mlaunch on iOS device. -->
+  <!-- NativeAOT library tests: host publish runs trim + ILC and produces a static lib;
+       AppleAppBuilder consumes it in library mode. Functional tests with their own Main
+       (IncludesTestRunner=false) stay on the legacy proxy-on-Helix ILC path. -->
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
     <TestNativeAot>true</TestNativeAot>
     <TestSingleFile Condition="'$(TestSingleFile)' == ''">true</TestSingleFile>
@@ -31,17 +22,13 @@
                       Version="$(MicrosoftDotNetXHarnessTestRunnersXunitVersion)" />
   </ItemGroup>
 
-  <!-- AppleTestRunner.cs P/Invokes into "__Internal" to reach symbols defined by the
-       AppleAppBuilder-generated objc main (e.g. mono_ios_set_summary). With NativeAOT
-       these must be DirectPInvoke so ILC emits static references instead of runtime
-       dlopen("__Internal"). -->
+  <!-- DirectPInvoke for __Internal so ILC emits static references to symbols in the
+       AppleAppBuilder-generated objc main (e.g. mono_ios_set_summary). -->
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
     <DirectPInvoke Include="__Internal" />
-    <!-- xunit2 discovers TraitDiscoverer/DataDiscoverer types via Type.GetType from
-         attribute strings (e.g. PlatformSpecific, OuterLoop, ActiveIssue, MemberData).
-         Without rooting the entire XUnitExtensions/xunit.core assemblies, ILC trims
-         these dynamically-referenced types and trait discovery silently no-ops, so
-         category-based filters in xunit-excludes.txt do not apply. -->
+    <!-- Root xunit assemblies so ILC keeps TraitDiscoverer/DataDiscoverer types that
+         xunit2 resolves via Type.GetType from attribute strings. Without these,
+         xunit-excludes.txt category filters silently no-op. -->
     <TrimmerRootAssembly Include="Microsoft.DotNet.XUnitExtensions" />
     <TrimmerRootAssembly Include="xunit.core" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" />
@@ -124,11 +111,9 @@
                    Include="@(AppleAssembliesToBundle)"          TargetDir="extraFiles\%(AppleAssembliesToBundle.RecursiveDir)" />
     </ItemGroup>
 
-    <!-- For NativeAOT on Helix: the host Publish already ran ILC+trim and produced
-         lib$(AssemblyName).a (already in AppleNativeFilesToBundle above), but not a
-         fully-linked binary. The Xcode link + .app bundling happens on Helix via the
-         proxy project. Package the NativeAOT link inputs (PAL static libs from the
-         iOS runtime pack and ILC aotsdk libs/objects) so the proxy can link them. -->
+    <!-- Ship NativeAOT link inputs (PAL static libs from the runtime pack and ILC
+         aotsdk libs/objects) for the Helix-side Xcode link step. lib$(AssemblyName).a
+         is already in AppleNativeFilesToBundle. -->
     <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
       <_NativeAotHelixLinkInputs Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/*.a" />
       <_NativeAotHelixLinkInputs Include="$(CoreCLRAotSdkDir)*.a" />
