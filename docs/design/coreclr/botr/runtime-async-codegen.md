@@ -37,7 +37,7 @@ call       <Await> One of the functions which matches NI_System_Runtime_Compiler
 
 A search for this sequence is done if Method is known to be async.
 
-The dispatch to async functions save the `ExecutionContext` on suspension to be restored before resumption by `DispatchContinuations`.
+The dispatch to async functions saves the `ExecutionContext` on suspension to be restored before resumption by `DispatchContinuations`.
 
 If PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT, then continuation mode shall be ContinuationContextHandling::ContinueOnCapturedContext otherwise ContinuationContextHandling::ContinueOnThreadPool.
 
