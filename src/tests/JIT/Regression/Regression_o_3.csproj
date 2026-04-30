@@ -150,7 +150,6 @@
     <Compile Include="JitBlue\Runtime_97625\Runtime_97625.cs" />
     <Compile Include="JitBlue\Runtime_98068\Runtime_98068.cs" />
     <Compile Include="JitBlue\Runtime_99391\Runtime_99391.cs" />
-    <Compile Include="JitBlue\Runtime_127446\Runtime_127446.cs" />
     <Compile Include="JitBlue\WPF_3226\CSharpRepro\WPF_3226.cs" />
   </ItemGroup>
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
