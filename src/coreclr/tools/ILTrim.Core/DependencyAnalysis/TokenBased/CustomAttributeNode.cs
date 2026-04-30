@@ -254,57 +254,7 @@ namespace ILCompiler.DependencyAnalysis
                 return;
             }
 
-            bool needsRewrite = false;
-            CheckArgumentsForRewrite(decodedValue, ref needsRewrite);
-
-            if (!needsRewrite)
-            {
-                blobBuilder.WriteBytes(_module.MetadataReader.GetBlobBytes(customAttribute.Value));
-                return;
-            }
-
             EncodeCustomAttributeBlob(customAttribute, decodedValue, blobBuilder);
-        }
-
-        private static void CheckArgumentsForRewrite(CustomAttributeValue<TypeDesc> decodedValue, ref bool needsRewrite)
-        {
-            foreach (CustomAttributeTypedArgument<TypeDesc> fixedArg in decodedValue.FixedArguments)
-            {
-                CheckArgumentValueForRewrite(fixedArg.Type, fixedArg.Value, ref needsRewrite);
-                if (needsRewrite) return;
-            }
-
-            foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
-            {
-                CheckArgumentValueForRewrite(namedArg.Type, namedArg.Value, ref needsRewrite);
-                if (needsRewrite) return;
-            }
-        }
-
-        private static void CheckArgumentValueForRewrite(TypeDesc type, object value, ref bool needsRewrite)
-        {
-            if (value is null || type is null)
-                return;
-
-            if (value is TypeDesc)
-            {
-                // Any typeof() with a type forwarder reference might need rewriting
-                needsRewrite = true;
-                return;
-            }
-
-            if (type.IsSzArray && value is ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> arrayElements)
-            {
-                TypeDesc elementType = ((ArrayType)type).ElementType;
-                if (!elementType.UnderlyingType.IsPrimitive && !elementType.IsString)
-                {
-                    foreach (CustomAttributeTypedArgument<TypeDesc> element in arrayElements)
-                    {
-                        CheckArgumentValueForRewrite(element.Type, element.Value, ref needsRewrite);
-                        if (needsRewrite) return;
-                    }
-                }
-            }
         }
 
         private void EncodeCustomAttributeBlob(
