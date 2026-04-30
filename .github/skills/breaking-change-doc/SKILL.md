@@ -64,7 +64,7 @@ Extract the PR number. The source repository is always `dotnet/runtime`.
 
 Use GitHub tools to read comprehensive PR data. Collect **all** of the following:
 
-1. **PR metadata**: title, author, base branch, merge commit SHA, merged-at date, labels, state.
+1. **PR metadata**: title, author, assignees, base branch, merge commit SHA, merged-at date, labels, state.
 2. **PR body**: the full description.
 3. **Changed files**: list of file paths modified.
 4. **PR comments and reviews**: read all comments and review comments for context about the change's impact.
@@ -105,17 +105,22 @@ Run the helper script to determine the .NET version context:
 pwsh .github/skills/breaking-change-doc/Get-VersionInfo.ps1 -PrNumber <number>
 ```
 
-The script outputs JSON with:
+**You MUST display the complete script output.** The script outputs JSON that includes:
 - `LastTagBeforeMerge` — the closest release tag before the merge commit
 - `FirstTagWithChange` — the first tag that contains this commit (or "Not yet released")
 - `EstimatedVersion` — human-readable version string like ".NET 11 Preview 3"
 - `MergeCommit` — the merge commit SHA
 - `MergedAt` — when the PR was merged
+- `BaseRef` — the PR base branch used to determine version context
 
-Use `EstimatedVersion` as the version for the breaking change issue.
+After running the script, **print the full JSON output** so it is visible in the
+workflow log. Then check the JSON:
 
-If the script returns an error, fall back to reading the PR's base branch and recent
-tags manually to estimate the version.
+- If the JSON contains an `Error` field, report the error and fall back to
+  reading the PR's base branch and recent tags manually to estimate the version.
+- If the JSON does **not** contain an `Error` field, use `EstimatedVersion` as
+  the version for the breaking change issue. **Do not fall back to manual
+  detection when the script succeeds.**
 
 ---
 
@@ -229,20 +234,31 @@ mkdir -p artifacts/docs/breakingChanges
 
 ### Build the PR comment file
 
-Run the helper script to produce a PR comment with a URL-encoded issue link:
+Run the helper script to produce a PR comment with a URL-encoded issue link.
+Pass the PR assignees so they are `@`-mentioned in the comment and receive a
+GitHub notification:
 
 ```bash
 pwsh .github/skills/breaking-change-doc/Build-IssueComment.ps1 \
   -IssueDraftPath artifacts/docs/breakingChanges/issue-draft.md \
   -Title "<the [Breaking change]: ... title from Step 5>" \
+  -Assignees "@user1 @user2" \
   -OutputPath artifacts/docs/breakingChanges/pr-comment.md
 ```
+
+Build the `-Assignees` value from the PR's assignee list (from Step 1 metadata),
+prefixing each GitHub username with `@` and separating with spaces.
 
 The script:
 - URL-encodes the title, body, and labels using `[Uri]::EscapeDataString`
 - Builds a clickable `https://github.com/dotnet/docs/issues/new?...` link
-- Writes `pr-comment.md` containing the full draft, the link, and an email reminder
+- Writes a **brief** `pr-comment.md` with instructions, the link, an email
+  reminder, and `/cc` mentions of the assignees
 - Warns if the URL exceeds browser length limits
+
+The comment intentionally does **not** duplicate the full issue draft. The draft
+is available in the `issue-draft.md` workflow artifact and is pre-filled in the
+issue creation link.
 
 ### Post the comment
 

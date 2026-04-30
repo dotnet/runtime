@@ -2164,11 +2164,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             code |= EXTENDED_EVEX_PP_BITS;
         }
 
-        if (instrIsExtendedReg3opImul(ins))
-        {
-            // EVEX.R3
-            code &= 0xFF7FFFFFFFFFFFFFULL;
-        }
 #ifdef TARGET_AMD64
         if (IsCCMP(ins))
         {
@@ -2381,9 +2376,16 @@ emitter::code_t emitter::AddRex2Prefix(instruction ins, code_t code)
 {
     assert(IsRex2EncodableInstruction(ins));
 
+#ifdef TARGET_AMD64
+    if (ins >= INS_imul_08 && ins <= INS_imul_15)
+    {
+        // These instructions have a built-in REX prefix, so it needs to be zeroed out when adding the prefix.
+        code &= 0xFFFFFFFFULL;
+    }
+#endif
+
     // Note that there are cases that some register field might be filled before adding prefix,
     // So we don't check if the code has REX2 prefix already or not.
-
     code |= DEFAULT_2BYTE_REX2_PREFIX;
     if (IsLegacyMap1(code)) // 2-byte opcode on Map-1
     {
@@ -7188,6 +7190,19 @@ void emitter::emitIns_R_I(instruction         ins,
     {
         // ACC form is not promoted into EVEX space, need to emit with MI form.
         sz += 1;
+    }
+
+    if (ins == INS_test && reg == REG_EAX && TakesRex2Prefix(id))
+    {
+        // test eax/rax will use ACC form, which is not REX2 compatible.
+        if (size == EA_8BYTE)
+        {
+            sz -= 1;
+        }
+        else
+        {
+            sz -= 2;
+        }
     }
 #endif // TARGET_AMD64
 
@@ -14697,11 +14712,13 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_4BYTE:
 #ifdef TARGET_AMD64
             case EA_8BYTE:
+                // EVEX.MOVBE is assigned with RM opcode that does not follow the following rule.
+                if (ins != INS_movbe_apx)
 #endif
-
-                /* Set the 'w' bit to get the large version */
-
-                code |= 0x1;
+                {
+                    /* Set the 'w' bit to get the large version */
+                    code |= 0x1;
+                }
                 break;
 
 #ifdef TARGET_X86
@@ -14719,9 +14736,11 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
+        if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
-            code |= (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+            // The built-in REX has been zeroed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
+            // addressing bits in the prefix.
+            insEncodeReg345(id, inst3opImulReg(ins), size, &code);
         }
 #endif // TARGET_AMD64
     }
@@ -15608,11 +15627,11 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
+        if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
-            // The promoted CRC32 is in 1-byte opcode, unlike other instructions on this path, the register encoding for
-            // CRC32 need to be done here.
-            code |= (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+            // The built-in REX has been zero-ed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
+            // addressing bits in the prefix.
+            insEncodeReg345(id, inst3opImulReg(ins), size, &code);
         }
 #endif // TARGET_AMD64
     }
@@ -17420,6 +17439,12 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             code = insCodeMI(ins);
             code = AddX86PrefixIfNeeded(id, code, size);
             code = insEncodeMIreg(id, reg, size, code);
+#ifdef TARGET_AMD64
+            if (ins >= INS_imul_08 && ins <= INS_imul_31)
+            {
+                insEncodeReg345(id, inst3opImulReg(ins), size, &code);
+            }
+#endif // TARGET_AMD64
         }
     }
 

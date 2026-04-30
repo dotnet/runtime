@@ -5,18 +5,34 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
-    internal sealed class X25519DiffieHellmanImplementation : X25519DiffieHellman
+    public sealed partial class X25519DiffieHellmanOpenSsl
     {
         private readonly SafeEvpPKeyHandle _key;
         private readonly bool _hasPrivate;
 
-        internal static new bool IsSupported { get; } = Interop.Crypto.X25519Available();
-        internal SafeEvpPKeyHandle Key => _key;
-
-        private X25519DiffieHellmanImplementation(SafeEvpPKeyHandle key, bool hasPrivate)
+        public partial X25519DiffieHellmanOpenSsl(SafeEvpPKeyHandle pkeyHandle)
         {
-            _key = key;
-            _hasPrivate = hasPrivate;
+            ArgumentNullException.ThrowIfNull(pkeyHandle);
+
+            if (pkeyHandle.IsInvalid)
+            {
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
+            }
+
+            _key = pkeyHandle.DuplicateHandle();
+            bool isValid = Interop.Crypto.X25519IsValidHandle(_key, out _hasPrivate);
+
+            if (!isValid)
+            {
+                _key.Dispose();
+                throw new CryptographicException(SR.Cryptography_X25519InvalidAlgorithmHandle);
+            }
+        }
+
+        public partial SafeEvpPKeyHandle DuplicateKeyHandle()
+        {
+            ThrowIfDisposed();
+            return _key.DuplicateHandle();
         }
 
         protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
@@ -26,9 +42,13 @@ namespace System.Security.Cryptography
 
             int written;
 
-            if (otherParty is X25519DiffieHellmanImplementation x25519Impl)
+            if (otherParty is X25519DiffieHellmanOpenSsl x25519OpenSsl)
             {
-                written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(_key, x25519Impl._key, destination);
+                written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(_key, x25519OpenSsl._key, destination);
+            }
+            else if (otherParty is X25519DiffieHellmanImplementation x25519Impl)
+            {
+                written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(_key, x25519Impl.Key, destination);
             }
             else
             {
@@ -75,30 +95,6 @@ namespace System.Security.Cryptography
             }
 
             base.Dispose(disposing);
-        }
-
-        internal static X25519DiffieHellmanImplementation GenerateKeyImpl()
-        {
-            Debug.Assert(IsSupported);
-            SafeEvpPKeyHandle key = Interop.Crypto.X25519GenerateKey();
-            Debug.Assert(!key.IsInvalid);
-            return new X25519DiffieHellmanImplementation(key, hasPrivate: true);
-        }
-
-        internal static X25519DiffieHellmanImplementation ImportPrivateKeyImpl(ReadOnlySpan<byte> source)
-        {
-            Debug.Assert(IsSupported);
-            SafeEvpPKeyHandle key = Interop.Crypto.X25519ImportPrivateKey(source);
-            Debug.Assert(!key.IsInvalid);
-            return new X25519DiffieHellmanImplementation(key, hasPrivate: true);
-        }
-
-        internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
-        {
-            Debug.Assert(IsSupported);
-            SafeEvpPKeyHandle key = Interop.Crypto.X25519ImportPublicKey(source);
-            Debug.Assert(!key.IsInvalid);
-            return new X25519DiffieHellmanImplementation(key, hasPrivate: false);
         }
 
         private void ThrowIfPrivateNeeded()
