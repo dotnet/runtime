@@ -7890,7 +7890,7 @@ bool Compiler::gtTreeHasLocalRead(GenTree* tree, unsigned lclNum)
 //   lclNum - The local to look for.
 //
 // Returns:
-//   True if there is any GT_STORE_LCL_VAR or GT_STORE_LCL_FLD that affects "lclNum".
+//   True if there is any definition that affects "lclNum".
 //
 bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
 {
