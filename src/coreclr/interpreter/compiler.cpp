@@ -1054,7 +1054,9 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         if (ilOffset < (uint32_t)m_ILCodeSizeFromILHeader)
         {
             uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
-            if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
+            // Only emit mapping entries at IL offsets where the evaluation stack is empty
+            if ((ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK) &&
+                ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset)))
             {
                 // This code assumes that instructions for the same IL offset are emitted in a single run without
                 // any other IL offsets in between and that they don't repeat again after the run ends.
@@ -1076,7 +1078,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
                 m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
                 m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
-                m_pILToNativeMap[m_ILToNativeMapSize].source = (ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK) ? ICorDebugInfo::STACK_EMPTY : ICorDebugInfo::SOURCE_TYPE_INVALID;
+                m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::STACK_EMPTY;
                 m_ILToNativeMapSize++;
             }
         }
@@ -1120,6 +1122,14 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
         if (InterpOpIsEmitNop(ins->opcode))
         {
             ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
+            if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+            {
+                // Emit a debug sequence point so that eliminated IL instructions
+                // still occupy a bytecode slot. This ensures return addresses after
+                // calls land within the call's native offset range rather than on
+                // the next statement boundary.
+                *ip++ = INTOP_DEBUG_SEQ_POINT;
+            }
             continue;
         }
 

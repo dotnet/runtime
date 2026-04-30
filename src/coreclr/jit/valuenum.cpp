@@ -5372,10 +5372,26 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 
             if (!ovf)
             {
+                // x - (x + a) == -a
+                // x - (a + x) == -a
+                ValueNum arg1Op1;
+                ValueNum arg1Op2;
+                if (IsVNBinFunc(arg1VN, VNF_ADD, &arg1Op1, &arg1Op2))
+                {
+                    if (arg1Op1 == arg0VN)
+                    {
+                        return VNForFunc(typ, VNF_NEG, arg1Op2);
+                    }
+                    if (arg1Op2 == arg0VN)
+                    {
+                        return VNForFunc(typ, VNF_NEG, arg1Op1);
+                    }
+                }
+
                 // (x + a) - x == a
                 // (a + x) - x == a
                 VNFuncApp add;
-                if (GetVNFunc(arg0VN, &add) && (add.m_func == (VNFunc)GT_ADD))
+                if (GetVNFunc(arg0VN, &add) && (add.m_func == VNF_ADD))
                 {
                     if (add.m_args[0] == arg1VN)
                         return add.m_args[1];
@@ -5387,7 +5403,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                     // (x + a) - (b + x) == a - b
                     // (a + x) - (b + x) == a - b
                     VNFuncApp add2;
-                    if (GetVNFunc(arg1VN, &add2) && (add2.m_func == (VNFunc)GT_ADD))
+                    if (GetVNFunc(arg1VN, &add2) && (add2.m_func == VNF_ADD))
                     {
                         for (int a = 0; a < 2; a++)
                         {
@@ -5395,7 +5411,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                             {
                                 if (add.m_args[a] == add2.m_args[b])
                                 {
-                                    return VNForFunc(typ, (VNFunc)GT_SUB, add.m_args[1 - a], add2.m_args[1 - b]);
+                                    return VNForFunc(typ, VNF_SUB, add.m_args[1 - a], add2.m_args[1 - b]);
                                 }
                             }
                         }
@@ -8591,14 +8607,13 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     }
                 }
 #elif defined(TARGET_ARM64)
-                CorInfoType auxJitType = tree->GetAuxiliaryJitType();
-                if (auxJitType != CORINFO_TYPE_UNDEF &&
-                    genTypeSize(JITtype2varType(auxJitType)) != genTypeSize(baseType))
+                var_types auxType = tree->GetAuxiliaryType();
+                if (auxType != TYP_UNKNOWN && genTypeSize(auxType) != genTypeSize(baseType))
                 {
                     // Handle the "wide elements" variant of shift, where arg1 is a vector of ulongs,
                     // which is looped over to read the shift values. The values can safely be narrowed
                     // to the result type.
-                    assert(auxJitType == CORINFO_TYPE_ULONG);
+                    assert(auxType == TYP_ULONG);
                     assert(tree->TypeIs(TYP_SIMD16));
 
                     simd16_t arg1 = GetConstantSimd16(arg1VN);
@@ -11071,8 +11086,9 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_NOP,
 
                                                  // These control-flow operations need no values.
-                                                 GT_JTRUE, GT_RETURN, GT_RETURN_SUSPEND, GT_SWITCH, GT_RETFILT,
-                                                 GT_CKFINITE, GT_SWIFT_ERROR_RET};
+                                                 GT_JTRUE, GT_RETURN, GT_RETURN_SUSPEND, GT_PATCHPOINT,
+                                                 GT_PATCHPOINT_FORCED, GT_SWITCH, GT_RETFILT, GT_CKFINITE,
+                                                 GT_SWIFT_ERROR_RET};
 
 void ValueNumStore::ValidateValueNumStoreStatics()
 {

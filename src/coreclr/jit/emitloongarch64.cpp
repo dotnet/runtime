@@ -5256,7 +5256,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     result.insThroughput       = PERFSCORE_THROUGHPUT_ILLEGAL;
     result.insLatency          = PERFSCORE_LATENCY_ILLEGAL;
-    result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
+    result.insMemoryAccessKind = PerfScoreMemoryAccessKind::None;
 
     // Calculate merge emit instructions cost.
     unsigned CombinedInsCnt = id->idCodeSize() / sizeof(code_t);
@@ -5273,7 +5273,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else // ins == load
             {    // pcaddu12i + load or lu12i.w + lu32i.d + load
-                result.insMemoryAccessKind = PERFSCORE_MEMORY_READ;
+                result.insMemoryAccessKind = PerfScoreMemoryAccessKind::Read;
                 result.insThroughput       = (CombinedInsCnt == 2) ? PERFSCORE_THROUGHPUT_4C : PERFSCORE_THROUGHPUT_7C;
                 if ((INS_ld_b <= ins) && (ins <= INS_ld_wu))
                 {
@@ -5322,9 +5322,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         }
         else if (id->idInsOpt() == INS_OPTS_RELOC)
         { // pcalau12i + (addi.d or ld.d)
-            result.insLatency          = id->idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
-            result.insThroughput       = id->idIsCnsReloc() ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_4C;
-            result.insMemoryAccessKind = id->idIsCnsReloc() ? PERFSCORE_MEMORY_NONE : PERFSCORE_MEMORY_READ;
+            result.insLatency    = id->idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
+            result.insThroughput = id->idIsCnsReloc() ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_4C;
+            result.insMemoryAccessKind =
+                id->idIsCnsReloc() ? PerfScoreMemoryAccessKind::None : PerfScoreMemoryAccessKind::Read;
         }
         else
         {
@@ -5340,12 +5341,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     {
         if (emitInsIsLoad(ins))
         {
-            result.insMemoryAccessKind = emitInsIsStore(ins) ? PERFSCORE_MEMORY_READ_WRITE : PERFSCORE_MEMORY_READ;
+            result.insMemoryAccessKind =
+                emitInsIsStore(ins) ? PerfScoreMemoryAccessKind::ReadWrite : PerfScoreMemoryAccessKind::Read;
         }
         else
         {
             assert(emitInsIsStore(ins));
-            result.insMemoryAccessKind = PERFSCORE_MEMORY_WRITE;
+            result.insMemoryAccessKind = PerfScoreMemoryAccessKind::Write;
         }
     }
 

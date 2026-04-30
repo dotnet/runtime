@@ -2515,6 +2515,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
 
+    // A non-null target expression always indicates an indirect call on Wasm,
+    // as currently the only possible result of the target expression would be a
+    // table index which must be used via call_indirect
     if (target != nullptr)
     {
         // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
@@ -2526,52 +2529,28 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else
     {
-        // If we have no target and this is a call with indirection cell then
-        // we do an optimization where we load the call address directly from
-        // the indirection cell instead of duplicating the tree. In BuildCall
-        // we ensure that get an extra register for the purpose. Note that for
-        // CFG the call might have changed to
-        // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
-        // indirection cell but we should not try to optimize.
-        WellKnownArg indirectionCellArgKind = WellKnownArg::None;
-        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
-        {
-            indirectionCellArgKind = call->GetIndirectionCellArgKind();
-        }
+        // Generate a direct call to a non-virtual user defined or helper method
+        assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
 
-        if (indirectionCellArgKind != WellKnownArg::None)
-        {
-            assert(call->IsR2ROrVirtualStubRelativeIndir());
+        assert(call->gtEntryPoint.addr == NULL);
 
-            params.callType = EC_INDIR_R;
-            // params.ireg     = targetAddrReg;
-            genEmitCallWithCurrentGC(params);
+        if (call->IsHelperCall())
+        {
+            assert(!call->IsFastTailCall());
+            CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
+            noway_assert(helperNum != CORINFO_HELP_UNDEF);
+            CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
+            assert(helperLookup.accessType == IAT_VALUE);
+            params.addr = helperLookup.addr;
         }
         else
         {
-            // Generate a direct call to a non-virtual user defined or helper method
-            assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
-
-            assert(call->gtEntryPoint.addr == NULL);
-
-            if (call->IsHelperCall())
-            {
-                assert(!call->IsFastTailCall());
-                CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-                noway_assert(helperNum != CORINFO_HELP_UNDEF);
-                CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-                assert(helperLookup.accessType == IAT_VALUE);
-                params.addr = helperLookup.addr;
-            }
-            else
-            {
-                // Direct call to a non-virtual user function.
-                params.addr = call->gtDirectCallAddress;
-            }
-
-            params.callType = EC_FUNC_TOKEN;
-            genEmitCallWithCurrentGC(params);
+            // Direct call to a non-virtual user function.
+            params.addr = call->gtDirectCallAddress;
         }
+
+        params.callType = EC_FUNC_TOKEN;
+        genEmitCallWithCurrentGC(params);
     }
 }
 
@@ -2676,16 +2655,21 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     if (helperIsManaged)
     {
         // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
+        // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP
+        // address to push.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 
     if (params.callType == EC_INDIR_R)
     {
-        // Push the call target onto the wasm evaluation stack by dereferencing the PEP.
+        // Push the call target onto the wasm evaluation stack by dereferencing the indirection cell
+        // and then the PEP pointed to by the indirection cell.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 
     genEmitCallWithCurrentGC(params);
