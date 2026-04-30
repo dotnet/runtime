@@ -1067,7 +1067,7 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
         {
             ((CObjectHeader*)o)->Validate();
         }
-#endif
+#endif //_DEBUG
         return;
     }
 
