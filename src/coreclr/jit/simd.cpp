@@ -883,8 +883,27 @@ bool EvaluateSimdCvtScalableVectorToMask(var_types baseType, simdmaskscalable_t*
         return false;
     }
 
+    uint64_t allBitsSet = 0;
+    switch (genTypeSize(baseType))
+    {
+        case 1:
+            allBitsSet = 0xFF;
+            break;
+        case 2:
+            allBitsSet = 0xFFFF;
+            break;
+        case 4:
+            allBitsSet = 0xFFFFFFFFull;
+            break;
+        case 8:
+            allBitsSet = 0xFFFFFFFFFFFFFFFFull;
+            break;
+        default:
+            unreached();
+    }
+
     maskCon->gtSimdMaskScalableBaseType = baseType;
-    maskCon->gtSimdMaskScalableIndex    = (vecCon.gtSimdScalableIndex == 1);
+    maskCon->gtSimdMaskScalableIndex    = (vecCon.gtSimdScalableIndex == allBitsSet);
     return true;
 }
 
@@ -908,7 +927,25 @@ bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vec
 
     vecCon->gtSimdScalableBaseType = baseType;
     vecCon->gtSimdScalableKind     = SimdScalableRepeated;
-    vecCon->gtSimdScalableIndex    = 1;
+
+    switch (genTypeSize(baseType))
+    {
+        case 1:
+            vecCon->gtSimdScalableIndex = 0xFF;
+            break;
+        case 2:
+            vecCon->gtSimdScalableIndex = 0xFFFF;
+            break;
+        case 4:
+            vecCon->gtSimdScalableIndex = 0xFFFFFFFFull;
+            break;
+        case 8:
+            vecCon->gtSimdScalableIndex = 0xFFFFFFFFFFFFFFFFull;
+            break;
+        default:
+            unreached();
+    }
+
     return true;
 }
 #endif // TARGET_ARM64
