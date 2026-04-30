@@ -3085,8 +3085,7 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     /* Are we in the prolog or epilog of the method, or is this a
      * non-interruptible method that will not resume execution at this offset?
      * In either case, GC slots may not be initialized at the current offset
-     * and we can simply skip all reporting.
-     * (mirrors the fix in gcinfodecoder.cpp for non-interruptible aborted frames) */
+     * and we can simply skip all reporting. */
 
     if (info.prologOffs != hdrInfo::NOT_IN_PROLOG ||
         info.epilogOffs != hdrInfo::NOT_IN_EPILOG ||
