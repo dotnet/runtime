@@ -176,7 +176,7 @@ internal class GcScanner
         Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
         GCRefMapDecoder decoder = new(_target, gcRefMapBlob);
 
-        if (_target.PointerSize == 4)
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
             decoder.ReadStackPop();
 
         while (!decoder.AtEnd)
