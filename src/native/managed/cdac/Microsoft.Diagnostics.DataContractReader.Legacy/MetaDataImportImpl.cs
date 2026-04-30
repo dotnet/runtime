@@ -1456,8 +1456,11 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
                     Debug.Assert(*pchString == pchLocal, $"String length mismatch: cDAC={*pchString}, DAC={pchLocal}");
                 if (szString is not null && cchString > 0)
                 {
-                    string cdacStr = new string(szString);
-                    string dacStr = new string(szLocal);
+                    // GetUserString does not null-terminate its output buffer (matching native behavior),
+                    // so we must use length-bounded string construction instead of new string(char*).
+                    int compareLen = Math.Min((int)pchLocal, (int)cchString);
+                    string cdacStr = new string(szString, 0, compareLen);
+                    string dacStr = new string(szLocal, 0, compareLen);
                     Debug.Assert(cdacStr == dacStr, $"UserString content mismatch: cDAC='{cdacStr}', DAC='{dacStr}'");
                 }
             }
