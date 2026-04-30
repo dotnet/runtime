@@ -585,16 +585,6 @@ static LPVOID ReserveVirtualMemory(
     // munmap of partial ranges doesn't return memory, and MAP_FIXED is broken.
     // Use posix_memalign/free instead.
 
-#ifndef FEATURE_MULTITHREADING
-    // sbrk optimization: posix_memalign (dlmemalign) either recycles a free()'d
-    // block or grows the WASM linear memory via sbrk() → memory.grow. The WASM
-    // spec guarantees that memory.grow zero-initializes new pages, so only
-    // recycled blocks need explicit zeroing. We detect which case occurred by
-    // probing sbrk(0) before the allocation - safe because WASM is single-threaded.
-    void* old_brk = sbrk(0);
-    uintptr_t old_brk_val = (old_brk != (void*)-1) ? (uintptr_t)old_brk : 0;
-#endif
-
     LPVOID pRetVal = nullptr;
     if (posix_memalign(&pRetVal, GetVirtualPageSize(), MemSize) != 0 || pRetVal == nullptr)
     {
@@ -603,19 +593,11 @@ static LPVOID ReserveVirtualMemory(
         return nullptr;
     }
 
-#ifndef FEATURE_MULTITHREADING
-    // Only zero recycled memory. Fresh pages from memory.grow are guaranteed zero.
-    // Compare as uintptr_t to avoid UB from relational comparison of unrelated pointers.
-    // When sbrk failed (old_brk_val == 0), fall back to unconditional zeroing.
-    if (old_brk_val == 0 || (uintptr_t)pRetVal < old_brk_val)
-    {
-        memset(pRetVal, 0, MemSize);
-    }
-#else
-    // The sbrk optimization is not safe with multiple threads. Fall back to
-    // always zeroing.
+    // posix_memalign may return either freshly grown linear memory (zeroed by the
+    // WASM spec) or a recycled block from the allocator's free list (which may
+    // contain stale data from a previous free()). Always zero to match the
+    // "reserved memory starts zeroed" contract of this function.
     memset(pRetVal, 0, MemSize);
-#endif
 #else // !TARGET_WASM
     // Most platforms will only commit memory if it is dirtied,
     // so this should not consume too much swap space.
@@ -767,12 +749,10 @@ VIRTUALCommitMemory(
 
     TRACE( "Committing the memory now..\n");
 
-#ifndef TARGET_WASM
-    nProtect = W32toUnixAccessControl(flProtect);
-#endif
     pRetVal = (void *) StartBoundary;
 
 #ifndef TARGET_WASM
+    nProtect = W32toUnixAccessControl(flProtect);
     // Commit the pages
     if (mprotect((void *) StartBoundary, MemSize, nProtect) != 0)
     {

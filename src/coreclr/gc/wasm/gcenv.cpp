@@ -158,19 +158,18 @@ void GCToOSInterface::Sleep(uint32_t sleepMSec)
     // On single-threaded WASM, nanosleep is either a no-op or stalls the
     // event loop. There are no other threads to wait for, and no signals
     // to deliver EINTR.
-    (void)sleepMSec;
 #endif
+    (void)sleepMSec;
 }
 
 void GCToOSInterface::YieldThread(uint32_t switchCount)
 {
 #ifdef FEATURE_MULTITHREADING
-    (void)switchCount;
     sched_yield();
 #else
     // No-op on single-threaded WASM - there are no other threads to yield to.
-    (void)switchCount;
 #endif
+    (void)switchCount;
 }
 
 // ============================================================================
@@ -181,24 +180,13 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 // munmap cannot unmap partial allocations, mmap(PROT_NONE) still consumes
 // linear memory, and MAP_FIXED is broken.
 // Emscripten does provide an implementation of posix_memalign which is used here.
-
-// sbrk optimization: posix_memalign (dlmemalign) obtains memory in one of two ways:
-//   1. Recycling a previously free()'d block from the allocator's free list.
-//   2. Growing the WASM linear memory via sbrk() → memory.grow.
 //
-// The WebAssembly spec guarantees that memory.grow zero-initializes new pages,
-// so freshly grown memory does not need an explicit memset. Only recycled blocks
-// (which may contain stale data from a previous VirtualDecommit→free cycle) must
-// be zeroed.
-//
-// We detect which case occurred by recording sbrk(0) (the current program break)
-// before the allocation. If posix_memalign returns a pointer at or above the old
-// break, the memory came from heap growth and is already zero. If it falls below,
-// it was recycled and must be explicitly zeroed.
-//
-// This is safe because WASM is single-threaded - no concurrent sbrk calls can
-// occur between our sbrk(0) probe and the posix_memalign call. This is the same
-// approach used by Mono's WASM mmap implementation (mono-mmap-wasm.c).
+// posix_memalign returns either freshly grown linear memory (zero by the WASM
+// spec) or a recycled block from the allocator's free list (which may contain
+// stale data from a previous VirtualDecommit -> free cycle). Since we cannot
+// portably distinguish the two without relying on dlmalloc implementation
+// details, we always zero the returned memory to match VirtualReserve's
+// "memory starts zeroed" contract.
 
 static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags)
 {
@@ -208,12 +196,6 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags)
         alignment = OS_PAGE_SIZE;
     }
 
-#ifndef FEATURE_MULTITHREADING
-    // Capture the program break before allocation to detect heap growth vs recycling.
-    void* old_brk = sbrk(0);
-    uintptr_t old_brk_val = (old_brk != (void*)-1) ? (uintptr_t)old_brk : 0;
-#endif
-
     void* pRetVal;
     int result = posix_memalign(&pRetVal, alignment, size);
     if (result != 0)
@@ -221,21 +203,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags)
         return nullptr;
     }
 
-#ifndef FEATURE_MULTITHREADING
-    // Only zero recycled memory. Fresh memory from heap growth (memory.grow) is
-    // guaranteed to be zero by the WebAssembly spec.
-    // Compare as uintptr_t to avoid UB from relational comparison of unrelated pointers.
-    // When sbrk failed (old_brk_val == 0), fall back to unconditional zeroing.
-    if (old_brk_val == 0 || (uintptr_t)pRetVal < old_brk_val)
-    {
-        memset(pRetVal, 0, size);
-    }
-#else
-    // The sbrk optimization is not safe with multiple threads - another thread
-    // could call sbrk between our probe and posix_memalign, giving a false
-    // "fresh memory" result. Fall back to always zeroing.
     memset(pRetVal, 0, size);
-#endif
 
     return pRetVal;
 }
