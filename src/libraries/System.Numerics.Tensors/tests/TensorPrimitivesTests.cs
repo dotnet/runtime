@@ -106,7 +106,10 @@ namespace System.Numerics.Tensors.Tests
 
         protected virtual bool IsFloatingPoint => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
-        protected abstract int? IndexOfSizeExceedingMaxValue();
+        protected virtual int? IndexOfSizeExceedingMaxValue() =>
+            (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte)) ? Helpers.SizeGreaterThanByte :
+            (typeof(T) == typeof(ushort) || typeof(T) == typeof(short) || typeof(T) == typeof(char)) ? Helpers.SizeGreaterThanInt16 :
+            null;
 
         protected abstract T ConvertFromSingle(float f);
 

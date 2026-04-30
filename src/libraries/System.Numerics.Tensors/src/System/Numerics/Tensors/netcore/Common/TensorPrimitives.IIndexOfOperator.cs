@@ -20,8 +20,11 @@ namespace System.Numerics.Tensors
             static abstract T Aggregate(Vector512<T> value);
             /// <summary>Returns true if x precedes y.</summary>
             static abstract bool Compare(T x, T y);
+            /// <summary>Returns mask of all ones where x precedes y.</summary>
             static abstract Vector128<T> Compare(Vector128<T> x, Vector128<T> y);
+            /// <summary>Returns mask of all ones where x precedes y.</summary>
             static abstract Vector256<T> Compare(Vector256<T> x, Vector256<T> y);
+            /// <summary>Returns mask of all ones where x precedes y.</summary>
             static abstract Vector512<T> Compare(Vector512<T> x, Vector512<T> y);
         }
 
@@ -35,32 +38,32 @@ namespace System.Numerics.Tensors
 
             if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && x.Length >= Vector512<T>.Count)
             {
-                return sizeof(T) == 8 ? IndexOfMinMaxVector512Size4Plus<T, TOperator, ulong>(x) :
-                    sizeof(T) == 4 ? IndexOfMinMaxVector512Size4Plus<T, TOperator, uint>(x) :
-                    sizeof(T) == 2 ? IndexOfMinMaxVector512Size2<T, TOperator>(x) :
-                    IndexOfMinMaxVector512Size1<T, TOperator>(x);
+                return sizeof(T) == 8 ? IndexOfMinMaxVectorized512Size4Plus<T, TOperator, ulong>(x) :
+                    sizeof(T) == 4 ? IndexOfMinMaxVectorized512Size4Plus<T, TOperator, uint>(x) :
+                    sizeof(T) == 2 ? IndexOfMinMaxVectorized512Size2<T, TOperator>(x) :
+                    IndexOfMinMaxVectorized512Size1<T, TOperator>(x);
             }
 
             if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && x.Length >= Vector256<T>.Count)
             {
-                return sizeof(T) == 8 ? IndexOfMinMaxVector256Size4Plus<T, TOperator, ulong>(x) :
-                    sizeof(T) == 4 ? IndexOfMinMaxVector256Size4Plus<T, TOperator, uint>(x) :
-                    sizeof(T) == 2 ? IndexOfMinMaxVector256Size2<T, TOperator>(x) :
-                    IndexOfMinMaxVector256Size1<T, TOperator>(x);
+                return sizeof(T) == 8 ? IndexOfMinMaxVectorized256Size4Plus<T, TOperator, ulong>(x) :
+                    sizeof(T) == 4 ? IndexOfMinMaxVectorized256Size4Plus<T, TOperator, uint>(x) :
+                    sizeof(T) == 2 ? IndexOfMinMaxVectorized256Size2<T, TOperator>(x) :
+                    IndexOfMinMaxVectorized256Size1<T, TOperator>(x);
             }
 
             if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && x.Length >= Vector128<T>.Count)
             {
-                return sizeof(T) == 8 ? IndexOfMinMaxVector128Size4Plus<T, TOperator, ulong>(x) :
-                    sizeof(T) == 4 ? IndexOfMinMaxVector128Size4Plus<T, TOperator, uint>(x) :
-                    sizeof(T) == 2 ? IndexOfMinMaxVector128Size2<T, TOperator>(x) :
-                    IndexOfMinMaxVector128Size1<T, TOperator>(x);
+                return sizeof(T) == 8 ? IndexOfMinMaxVectorized128Size4Plus<T, TOperator, ulong>(x) :
+                    sizeof(T) == 4 ? IndexOfMinMaxVectorized128Size4Plus<T, TOperator, uint>(x) :
+                    sizeof(T) == 2 ? IndexOfMinMaxVectorized128Size2<T, TOperator>(x) :
+                    IndexOfMinMaxVectorized128Size1<T, TOperator>(x);
             }
 
-            return IndexOfMinMaxNaive<T, TOperator>(x);
+            return IndexOfMinMaxFallback<T, TOperator>(x);
         }
 
-        private static int IndexOfMinMaxNaive<T, TOperator>(ReadOnlySpan<T> x)
+        private static int IndexOfMinMaxFallback<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
             T result = x[0];
@@ -87,7 +90,7 @@ namespace System.Numerics.Tensors
             return resultIndex;
         }
 
-        private static int IndexOfMinMaxVector128Size4Plus<T, TOperator, TInt>(ReadOnlySpan<T> x)
+        private static int IndexOfMinMaxVectorized128Size4Plus<T, TOperator, TInt>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T> where TInt : IBinaryInteger<TInt>
         {
             Debug.Assert(sizeof(T) == 4 || sizeof(T) == 8);
@@ -150,7 +153,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static int IndexOfMinMaxVector128Size2<T, TOperator>(ReadOnlySpan<T> x)
+        private static int IndexOfMinMaxVectorized128Size2<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
             Debug.Assert(sizeof(T) == 2);
@@ -219,7 +222,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static int IndexOfMinMaxVector128Size1<T, TOperator>(ReadOnlySpan<T> x)
+        private static int IndexOfMinMaxVectorized128Size1<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
             Debug.Assert(sizeof(T) == 1);
@@ -300,7 +303,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static int IndexOfMinMaxVector256Size4Plus<T, TOperator, TInt>(ReadOnlySpan<T> x)
+        private static int IndexOfMinMaxVectorized256Size4Plus<T, TOperator, TInt>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T> where TInt : IBinaryInteger<TInt>
         {
             Debug.Assert(sizeof(T) == 4 || sizeof(T) == 8);
@@ -363,7 +366,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static int IndexOfMinMaxVector256Size2<T, TOperator>(ReadOnlySpan<T> x)
+        private static int IndexOfMinMaxVectorized256Size2<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
             Debug.Assert(sizeof(T) == 2);
@@ -432,7 +435,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static int IndexOfMinMaxVector256Size1<T, TOperator>(ReadOnlySpan<T> x)
+        private static int IndexOfMinMaxVectorized256Size1<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
             Debug.Assert(sizeof(T) == 1);
@@ -513,7 +516,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static int IndexOfMinMaxVector512Size4Plus<T, TOperator, TInt>(ReadOnlySpan<T> x)
+        private static int IndexOfMinMaxVectorized512Size4Plus<T, TOperator, TInt>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T> where TInt : IBinaryInteger<TInt>
         {
             Debug.Assert(sizeof(T) == 4 || sizeof(T) == 8);
@@ -576,7 +579,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static int IndexOfMinMaxVector512Size2<T, TOperator>(ReadOnlySpan<T> x)
+        private static int IndexOfMinMaxVectorized512Size2<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
             Debug.Assert(sizeof(T) == 2);
@@ -645,7 +648,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static int IndexOfMinMaxVector512Size1<T, TOperator>(ReadOnlySpan<T> x)
+        private static int IndexOfMinMaxVectorized512Size1<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
             Debug.Assert(sizeof(T) == 1);

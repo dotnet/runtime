@@ -320,100 +320,39 @@ namespace System.Numerics.Tensors.Tests
 
     // The tests for some types have been marked as OuterLoop simply to decrease inner loop testing time.
 
-    public class DoubleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<double>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => null;
-    }
-
-    public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => null;
-    }
-
+    public class DoubleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<double> { }
+    public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float> { }
     public class HalfGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<Half>
     {
-        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanInt16;
         protected override void AssertEqualTolerance(Half expected, Half actual, Half? tolerance = null) =>
             base.AssertEqualTolerance(expected, actual, tolerance ?? Half.CreateTruncating(0.001));
     }
 
     [OuterLoop]
-    public class NFloatGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<NFloat>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => null;
-    }
+    public class NFloatGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<NFloat> { }
 
     [OuterLoop]
-    public class SByteGenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<sbyte>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanByte;
-    }
-
-    public class Int16GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<short>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanInt16;
-    }
-
+    public class SByteGenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<sbyte> { }
+    public class Int16GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<short> { }
     [OuterLoop]
-    public class Int32GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<int>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => null;
-    }
-
-    public class Int64GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<long>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => null;
-    }
-
+    public class Int32GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<int> { }
+    public class Int64GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<long> { }
     [OuterLoop]
-    public class IntPtrGenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<nint>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => null;
-    }
+    public class IntPtrGenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<nint> { }
+    public class Int128GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<Int128> { }
 
-    public class Int128GenericTensorPrimitives : GenericSignedIntegerTensorPrimitivesTests<Int128>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => null;
-    }
-
-    public class ByteGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<byte>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanByte;
-    }
-
+    public class ByteGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<byte> { }
     [OuterLoop]
-    public class UInt16GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<ushort>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanInt16;
-    }
-
+    public class UInt16GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<ushort> { }
     [OuterLoop]
-    public class CharGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<char>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => Helpers.SizeGraterThanInt16;
-    }
-
-    public class UInt32GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<uint>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => null;
-    }
-
+    public class CharGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<char> { }
+    public class UInt32GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<uint> { }
     [OuterLoop]
-    public class UInt64GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<ulong>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => null;
-    }
+    public class UInt64GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<ulong> { }
 
-    public class UIntPtrGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<nuint>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => null;
-    }
-
+    public class UIntPtrGenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<nuint> { }
     [OuterLoop]
-    public class UInt128GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<UInt128>
-    {
-        protected override int? IndexOfSizeExceedingMaxValue() => null;
-    }
+    public class UInt128GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<UInt128> { }
 
     public unsafe abstract class GenericFloatingPointNumberTensorPrimitivesTests<T> : GenericNumberTensorPrimitivesTests<T>
         where T : unmanaged, IFloatingPointIeee754<T>, IMinMaxValue<T>
