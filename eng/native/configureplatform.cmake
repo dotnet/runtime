@@ -396,6 +396,14 @@ if(CLR_CMAKE_TARGET_OS STREQUAL tvos OR CLR_CMAKE_TARGET_OS STREQUAL tvossimulat
     set(CLR_CMAKE_TARGET_TVOS 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL tvos OR CLR_CMAKE_TARGET_OS STREQUAL tvossimulator)
 
+# Umbrella variable for Apple mobile platforms (iOS, tvOS, MacCatalyst).
+# These share the same runtime constraints: static linking, no fork(),
+# no build tools, hybrid globalization, etc. Use per-platform variables
+# only where they genuinely differ (compiler targets, gssapi, Swift).
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(CLR_CMAKE_TARGET_APPLE_MOBILE 1)
+endif()
+
 if(CLR_CMAKE_TARGET_OS STREQUAL freebsd)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_FREEBSD 1)
@@ -486,7 +494,11 @@ if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     # The default linker on Solaris also does not support PIE.
     if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_SUNOS AND NOT CLR_CMAKE_TARGET_APPLE AND NOT MSVC)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
-        add_compile_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:-fPIE>)
+        if(CLR_CMAKE_TARGET_HAIKU)
+            add_compile_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:-fPIC>)
+        else()
+            add_compile_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:-fPIE>)
+        endif()
         add_compile_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:-fPIC>)
     endif()
 
@@ -496,7 +508,7 @@ else()
         if(CLR_CMAKE_TARGET_BROWSER)
             add_link_options(-fwasm-exceptions)
             add_link_options(-Wno-unused-command-line-argument)
-            add_link_options(-Wl,-error-limit=0)
+            add_link_options(-Wl,--error-limit=0)
 
             add_link_options(-nostdlib)
             add_link_options(-lbulkmemory)
@@ -534,14 +546,14 @@ if(LOWERCASE_CMAKE_BUILD_TYPE STREQUAL debug)
     string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 endif()
 
-if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_HOST_ARCH_ARMV6)
+if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_APPLE_MOBILE OR CLR_CMAKE_HOST_ARCH_ARMV6)
     # Some platforms are opted-out from using the in-tree zlib-ng by default:
     # - Android and iOS-like platforms: concerns about extra binary size
     # - Armv6: zlib-ng has build breaks
     set(CLR_CMAKE_USE_SYSTEM_ZLIB 1)
 endif()
 
-if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
+if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     # opt into building tools like ildasm/ilasm
     set(CLR_CMAKE_BUILD_TOOLS 1)
 endif()

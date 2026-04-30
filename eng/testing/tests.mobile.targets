@@ -46,13 +46,13 @@
   </PropertyGroup>
 
   <!-- When trimming non-exe projects, root the whole intermediate assembly.
-       The SDK settings root only the entry point by default. These targets are used not only for standard
-       console apps, but also for test projects without an entry point. -->
+       The SDK no longer creates a TrimmerRootAssembly item for Library projects (see
+       Microsoft.NET.ILLink.targets), so replace any existing item and create it when
+       absent to ensure RootMode="all". -->
   <Target Name="RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" Condition="'$(OutputType)' != 'Exe'">
     <ItemGroup>
-      <TrimmerRootAssembly Condition="'%(Identity)' == '$(AssemblyName)'">
-        <RootMode>all</RootMode>
-      </TrimmerRootAssembly>
+      <TrimmerRootAssembly Remove="@(IntermediateAssembly->'%(Filename)')" />
+      <TrimmerRootAssembly Include="@(IntermediateAssembly->'%(Filename)')" RootMode="all" />
     </ItemGroup>
   </Target>
 

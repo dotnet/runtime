@@ -46,6 +46,17 @@
         ;; x11 holds the indirection cell address. Load the cache pointer.
         ldr     x9, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
+        ;; Validate x9 is a cache pointer matching the expected cache size.
+        ;; This compensates for a race where the stub was updated to expect a larger cache
+        ;; but we loaded a stale (smaller or non-cache) m_pCache value.
+        ;; On detection, re-dispatch through the indirection cell to retry with the current
+        ;; stub and cache pair.
+        tst     x9, #IDC_CACHE_POINTER_MASK
+        bne     CidRaceRetry_$entries
+        ldr     w12, [x9, #OFFSETOF__InterfaceDispatchCache__m_cEntries]
+        cmp     w12, #$entries
+        bne     CidRaceRetry_$entries
+
         ;; Load the MethodTable from the object instance in x0.
         ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation$entries
         ldr     x10, [x0]
@@ -68,6 +79,11 @@ CurrentEntry SETA CurrentEntry + 1
 
         ;; x11 still contains the indirection cell address.
         b RhpInterfaceDispatchSlow
+
+CidRaceRetry_$entries
+        ;; Race detected: re-dispatch through the indirection cell
+        ldr     x9, [x11]
+        br      x9
 
     NESTED_END RhpInterfaceDispatch$entries
 

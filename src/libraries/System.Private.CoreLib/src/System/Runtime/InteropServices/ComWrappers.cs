@@ -998,7 +998,7 @@ namespace System.Runtime.InteropServices
             // we know how to interpret the IUnknown.
             IntPtr knownQI = ((IntPtr*)((IntPtr*)comObject)[0])[0];
             if (knownQI != ((IntPtr*)DefaultIUnknownVftblPtr)[0]
-                || knownQI != ((IntPtr*)DefaultIReferenceTrackerTargetVftblPtr)[0])
+                && knownQI != ((IntPtr*)DefaultIReferenceTrackerTargetVftblPtr)[0])
             {
                 // It is possible the user has defined their own IUnknown impl so
                 // we fallback to the tagged interface approach to be sure.

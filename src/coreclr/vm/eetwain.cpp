@@ -1899,6 +1899,7 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
 #else
     // For WASM, create the TransitionBlock in C++ and call the worker directly
     TransitionBlock transitionBlock{};
+    transitionBlock.m_StackPointer = 0;
     transitionBlock.m_ReturnAddress = (TADDR)&CallInterpreterFuncletWorker;
     return CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, &transitionBlock);
 #endif
@@ -2103,6 +2104,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     pFrame = pFrame->pParent;
     if (pFrame != NULL)
     {
+        // The parent frame's IP points past the call instruction (the resumption point).
         SetIP(pContext, (TADDR)pFrame->ip);
         SetSP(pContext, dac_cast<TADDR>(pFrame));
         SetFP(pContext, (TADDR)pFrame->pStack);

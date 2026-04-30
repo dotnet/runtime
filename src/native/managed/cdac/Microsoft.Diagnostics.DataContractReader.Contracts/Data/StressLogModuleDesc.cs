@@ -12,8 +12,8 @@ internal sealed class StressLogModuleDesc : IData<StressLogModuleDesc>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.StressLogModuleDesc);
 
-        BaseAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(BaseAddress)].Offset);
-        Size = target.ReadNUInt(address + (ulong)type.Fields[nameof(Size)].Offset);
+        BaseAddress = target.ReadPointerField(address, type, nameof(BaseAddress));
+        Size = target.ReadNUIntField(address, type, nameof(Size));
     }
 
     public TargetPointer BaseAddress { get; init; }
