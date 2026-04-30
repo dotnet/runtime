@@ -167,6 +167,21 @@ public unsafe class LoaderTests
         [LoaderAllocatorHeapType.CacheEntry] = new(0x9000),
     };
 
+    private static LoaderAllocatorHeapType HeapNameToType(string name) => name switch
+    {
+        "LowFrequencyHeap" => LoaderAllocatorHeapType.LowFrequency,
+        "HighFrequencyHeap" => LoaderAllocatorHeapType.HighFrequency,
+        "StaticsHeap" => LoaderAllocatorHeapType.Statics,
+        "StubHeap" => LoaderAllocatorHeapType.Stub,
+        "ExecutableHeap" => LoaderAllocatorHeapType.Executable,
+        "FixupPrecodeHeap" => LoaderAllocatorHeapType.FixupPrecode,
+        "NewStubPrecodeHeap" => LoaderAllocatorHeapType.NewStubPrecode,
+        "DynamicHelpersStubHeap" => LoaderAllocatorHeapType.DynamicHelpers,
+        "IndcellHeap" => LoaderAllocatorHeapType.Indcell,
+        "CacheEntryHeap" => LoaderAllocatorHeapType.CacheEntry,
+        _ => throw new ArgumentException($"Unknown heap name: {name}"),
+    };
+
     private static ISOSDacInterface13 CreateSOSDacInterface13ForHeapTests(MockTarget.Architecture arch)
     {
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
@@ -235,11 +250,10 @@ public unsafe class LoaderTests
 
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal(MockHeapDictionary.Count, needed);
-        HashSet<string> expectedNames = new(MockHeapDictionary.Keys);
         for (int i = 0; i < needed; i++)
         {
             string actual = Marshal.PtrToStringAnsi((nint)names[i])!;
-            Assert.Contains(actual, expectedNames);
+            Assert.Contains(HeapNameToType(actual), MockHeapDictionary.Keys);
         }
     }
 
@@ -255,11 +269,10 @@ public unsafe class LoaderTests
 
         Assert.Equal(HResults.S_FALSE, hr);
         Assert.Equal(MockHeapDictionary.Count, needed);
-        HashSet<string> expectedNames = new(MockHeapDictionary.Keys);
         for (int i = 0; i < 2; i++)
         {
             string actual = Marshal.PtrToStringAnsi((nint)names[i])!;
-            Assert.Contains(actual, expectedNames);
+            Assert.Contains(HeapNameToType(actual), MockHeapDictionary.Keys);
         }
     }
 
@@ -293,21 +306,23 @@ public unsafe class LoaderTests
         ISOSDacInterface13 impl = CreateSOSDacInterface13ForHeapTests(arch);
 
         int needed;
-        ClrDataAddress* heaps = stackalloc ClrDataAddress[MockHeapDictionary.Count];
-        int* kinds = stackalloc int[MockHeapDictionary.Count];
-        int hr = impl.GetLoaderAllocatorHeaps(new ClrDataAddress(0x100), MockHeapDictionary.Count, heaps, kinds, &needed);
+        impl.GetLoaderAllocatorHeapNames(0, null, &needed);
+
+        char** names = stackalloc char*[needed];
+        impl.GetLoaderAllocatorHeapNames(needed, names, &needed);
+
+        ClrDataAddress* heaps = stackalloc ClrDataAddress[needed];
+        int* kinds = stackalloc int[needed];
+        int hr = impl.GetLoaderAllocatorHeaps(new ClrDataAddress(0x100), needed, heaps, kinds, &needed);
 
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal(MockHeapDictionary.Count, needed);
-        int i = 0;
-        foreach (LoaderAllocatorHeapType heapType in Enum.GetValues<LoaderAllocatorHeapType>())
+        for (int i = 0; i < needed; i++)
         {
-            if (MockHeapDictionary.TryGetValue(heapType, out TargetPointer expected))
-            {
-                Assert.Equal((ulong)expected, (ulong)heaps[i]);
-                Assert.Equal(0, kinds[i]); // LoaderHeapKindNormal
-                i++;
-            }
+            string name = Marshal.PtrToStringAnsi((nint)names[i])!;
+            LoaderAllocatorHeapType heapType = HeapNameToType(name);
+            Assert.Equal((ulong)MockHeapDictionary[heapType], (ulong)heaps[i]);
+            Assert.Equal(0, kinds[i]); // LoaderHeapKindNormal
         }
     }
 

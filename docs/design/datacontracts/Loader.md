@@ -60,18 +60,19 @@ readonly struct LoaderHeapBlockData
     TargetPointer NextBlock { get; init; }
 }
 
-enum LoaderAllocatorHeapType : uint
+enum LoaderAllocatorHeapType
 {
-    LowFrequency = 0,
-    HighFrequency = 1,
-    Statics = 2,
-    Stub = 3,
-    Executable = 4,
-    FixupPrecode = 5,
-    NewStubPrecode = 6,
-    DynamicHelpers = 7,
-    Indcell = 8,
-    CacheEntry = 9,
+    Unknown,
+    LowFrequency,
+    HighFrequency,
+    Statics,
+    Stub,
+    Executable,
+    FixupPrecode,
+    NewStubPrecode,
+    DynamicHelpers,
+    Indcell,
+    CacheEntry,
 }
 ```
 

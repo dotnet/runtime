@@ -6371,15 +6371,15 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
     {
-        if (loaderAllocator == 0)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (loaderAllocator == 0)
+                throw new ArgumentException("loaderAllocator cannot be zero.", nameof(loaderAllocator));
             Contracts.ILoader contract = _target.Contracts.Loader;
             IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
-            int loaderHeapCount = heaps.Count;
+            var filteredEntries = GetFilteredHeapNameEntries();
+            int loaderHeapCount = filteredEntries.Length;
 
             if (pNeeded != null)
                 *pNeeded = loaderHeapCount;
@@ -6388,19 +6388,16 @@ public sealed unsafe partial class SOSDacImpl
             {
                 if (count < loaderHeapCount)
                 {
-                    hr = HResults.E_INVALIDARG;
+                    throw new ArgumentException($"The count parameter ({count}) is less than the number of loader heaps ({loaderHeapCount}).", nameof(count));
                 }
                 else
                 {
-                    int i = 0;
-                    foreach (LoaderAllocatorHeapType heapType in Enum.GetValues<LoaderAllocatorHeapType>())
+                    for (int i = 0; i < loaderHeapCount; i++)
                     {
-                        if (heaps.TryGetValue(heapType, out TargetPointer heapAddr))
-                        {
-                            pLoaderHeaps[i] = heapAddr.ToClrDataAddress(_target);
-                            pKinds[i] = 0; // LoaderHeapKindNormal
-                            i++;
-                        }
+                        pLoaderHeaps[i] = heaps.TryGetValue(GetEnumForName(filteredEntries[i].Name), out TargetPointer heapAddr)
+                            ? heapAddr.ToClrDataAddress(_target)
+                            : 0;
+                        pKinds[i] = 0; // LoaderHeapKindNormal
                     }
                 }
             }
@@ -6435,6 +6432,25 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
+
+    private static LoaderAllocatorHeapType GetEnumForName(string name)
+    {
+        return name switch
+        {
+            "LowFrequencyHeap" => LoaderAllocatorHeapType.LowFrequency,
+            "HighFrequencyHeap" => LoaderAllocatorHeapType.HighFrequency,
+            "StaticsHeap" => LoaderAllocatorHeapType.Statics,
+            "StubHeap" => LoaderAllocatorHeapType.Stub,
+            "ExecutableHeap" => LoaderAllocatorHeapType.Executable,
+            "FixupPrecodeHeap" => LoaderAllocatorHeapType.FixupPrecode,
+            "NewStubPrecodeHeap" => LoaderAllocatorHeapType.NewStubPrecode,
+            "DynamicHelpersStubHeap" => LoaderAllocatorHeapType.DynamicHelpers,
+            "IndcellHeap" => LoaderAllocatorHeapType.Indcell,
+            "CacheEntryHeap" => LoaderAllocatorHeapType.CacheEntry,
+            _ => LoaderAllocatorHeapType.Unknown,
+        };
+    }
+
     int ISOSDacInterface13.GetHandleTableMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
     {
         int hr = HResults.S_OK;
