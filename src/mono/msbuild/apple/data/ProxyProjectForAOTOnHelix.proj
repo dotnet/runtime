@@ -50,17 +50,13 @@
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
 
-  <!-- Pre-built NativeAOT static library from the host publish step. Defined after the
-       .props import so $(AssemblyName) is available. -->
+  <!-- Pre-built NativeAOT static library from the host publish step. -->
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(IncludesTestRunner)' != 'false'">
     <_PrebuiltNativeAOTLib>$(OriginalPublishDir)lib$(AssemblyName).a</_PrebuiltNativeAOTLib>
   </PropertyGroup>
 
-  <!-- ILC has already run on the host. Replace _AppleNativeAotCompile with a no-op and
-       fully rewrite AppleBuildDependsOn. -->
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(IncludesTestRunner)' != 'false'">
     <_AotCompileTargetName>_NoOpNativeAotCompileOnHelix</_AotCompileTargetName>
-    <AppleBuildDependsOn>PrepareForAppleBuild;_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;_RunR2RCompilationOnHelix;_InitializeCommonProperties;_BeforeAppleBuild;_AppleResolveReferences;_NoOpNativeAotCompileOnHelix;_AppleGenerateAppBundle;_AfterAppleBuild;_AfterAppleBuildOnHelix</AppleBuildDependsOn>
     <SkipIlcCompile>true</SkipIlcCompile>
   </PropertyGroup>
 

@@ -53,6 +53,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestSingleFile)' == 'true' and '$(TargetsAppleMobile)' != 'true'">
+    <!-- Pass the results file -->
     <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
   </PropertyGroup>
 

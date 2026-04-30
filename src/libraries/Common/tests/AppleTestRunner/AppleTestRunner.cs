@@ -169,8 +169,8 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
                 return path;
             }
 
-            // On NativeAOT maccatalyst the binary lives in .app/Contents/MacOS/ but
-            // xunit-excludes.txt is bundled under .app/Contents/Resources/.
+            // On NativeAOT maccatalyst the binary lives in .app/Contents/MacOS/
+            // but xunit-excludes.txt is bundled under .app/Contents/Resources/.
             string? appBase = Path.GetDirectoryName(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
             if (appBase is not null)
             {

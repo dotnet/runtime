@@ -3,9 +3,8 @@
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestAppleApp</BundleTestAppTargets>
   </PropertyGroup>
 
-  <!-- NativeAOT library tests: host publish runs trim + ILC and produces a static lib;
-       AppleAppBuilder consumes it in library mode. Functional tests with their own Main
-       (IncludesTestRunner=false) stay on the legacy proxy-on-Helix ILC path. -->
+  <!-- NativeAOT library tests: host publish runs trim + ILC and produces a static lib. AppleAppBuilder consumes it in library mode.
+       Functional tests with their own Main stay on the Helix ILC path. -->
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
     <TestNativeAot>true</TestNativeAot>
     <TestSingleFile Condition="'$(TestSingleFile)' == ''">true</TestSingleFile>
@@ -16,15 +15,10 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
-    <Compile Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.cs"
-             Link="Common\AppleTestRunner\AppleTestRunner.cs" />
-    <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Xunit"
-                      Version="$(MicrosoftDotNetXHarnessTestRunnersXunitVersion)" />
-  </ItemGroup>
+    <Compile Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.cs" Link="Common\AppleTestRunner\AppleTestRunner.cs" />
+    <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="$(MicrosoftDotNetXHarnessTestRunnersXunitVersion)" />
 
-  <!-- DirectPInvoke for __Internal so ILC emits static references to symbols in the
-       AppleAppBuilder-generated objc main (e.g. mono_ios_set_summary). -->
-  <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
+    <!-- DirectPInvoke for __Internal so ILC emits static references to symbols in the AppleAppBuilder-generated objc main. -->
     <DirectPInvoke Include="__Internal" />
     <TrimmerRootAssembly Include="Microsoft.DotNet.XUnitExtensions" />
     <TrimmerRootAssembly Include="xunit.core" />
@@ -108,15 +102,12 @@
                    Include="@(AppleAssembliesToBundle)"          TargetDir="extraFiles\%(AppleAssembliesToBundle.RecursiveDir)" />
     </ItemGroup>
 
-    <!-- Ship NativeAOT link inputs (PAL static libs from the runtime pack and ILC
-         aotsdk libs/objects) for the Helix-side Xcode link step. lib$(AssemblyName).a
-         is already in AppleNativeFilesToBundle. -->
+    <!-- Ship NativeAOT link inputs for the Helix-side Xcode link step. lib$(AssemblyName).a is already in AppleNativeFilesToBundle. -->
     <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
       <_NativeAotHelixLinkInputs Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/*.a" />
       <_NativeAotHelixLinkInputs Include="$(CoreCLRAotSdkDir)*.a" />
       <_NativeAotHelixLinkInputs Include="$(CoreCLRAotSdkDir)*.o" />
-      <BundleFiles Include="@(_NativeAotHelixLinkInputs)"
-                   TargetDir="publish\nativeaot-link-inputs" />
+      <BundleFiles Include="@(_NativeAotHelixLinkInputs)" TargetDir="publish\nativeaot-link-inputs" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(HybridGlobalization)' == 'false'" >
