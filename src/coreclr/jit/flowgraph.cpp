@@ -3163,8 +3163,9 @@ PhaseStatus Compiler::fgCreateFunclets()
 #endif
     assert(funcInfo[0].funKind == FUNC_ROOT);
 
-    unsigned short* ehClauseOrderMap = nullptr;
-    unsigned short  funcIdx          = 1;
+    unsigned short* vmClauseOrderToEHTabOrder = nullptr;
+    unsigned short* ehTabOrderToVMClauseOrder = nullptr;
+    unsigned short  funcIdx                   = 1;
 
     if (compHndBBtabCount > 0)
     {
@@ -3176,19 +3177,20 @@ PhaseStatus Compiler::fgCreateFunclets()
         //
         // (todo: persist this and reuse in emission)
         //
-        ehClauseOrderMap = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
+        vmClauseOrderToEHTabOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
+        ehTabOrderToVMClauseOrder = new (this, CMK_BasicBlock) unsigned short[compHndBBtabCount];
 
         unsigned XTnum;
 
         for (XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
-            ehClauseOrderMap[XTnum] = (unsigned short)XTnum;
+            vmClauseOrderToEHTabOrder[XTnum] = (unsigned short)XTnum;
         }
 
         // The JIT's ordering of EH clauses does not guarantee that clauses covering the same try region are contiguous.
         // We need this property to hold true so the CORINFO_EH_CLAUSE_SAMETRY flag is accurate.
         //
-        jitstd::sort(ehClauseOrderMap, ehClauseOrderMap + compHndBBtabCount,
+        jitstd::sort(vmClauseOrderToEHTabOrder, vmClauseOrderToEHTabOrder + compHndBBtabCount,
                      [this](const unsigned short& leftIndex, const unsigned short& rightIndex) {
             const unsigned short leftTryIndex  = ehGetDsc(leftIndex)->ebdTryBeg->bbTryIndex;
             const unsigned short rightTryIndex = ehGetDsc(rightIndex)->ebdTryBeg->bbTryIndex;
@@ -3207,7 +3209,7 @@ PhaseStatus Compiler::fgCreateFunclets()
         //
         for (unsigned orderNum = 0; orderNum < compHndBBtabCount; orderNum++)
         {
-            XTnum                 = ehClauseOrderMap[orderNum];
+            XTnum                 = vmClauseOrderToEHTabOrder[orderNum];
             EHblkDsc* const HBtab = ehGetDsc(XTnum);
             if (HBtab->HasFilter())
             {
@@ -3223,16 +3225,23 @@ PhaseStatus Compiler::fgCreateFunclets()
             funcIdx++;
             fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
         }
+
+        // Fill in the inverse mapping.
+        for (unsigned i = 0; i < compHndBBtabCount; i++)
+        {
+            ehTabOrderToVMClauseOrder[vmClauseOrderToEHTabOrder[i]] = (unsigned short)i;
+        }
     }
 
     // We better have populated all of them by now
     assert(funcIdx == funcCnt);
 
     // Publish
-    compCurrFuncIdx   = 0;
-    compFuncInfos     = funcInfo;
-    compFuncInfoCount = (unsigned short)funcCnt;
-    compEHorderTab    = ehClauseOrderMap;
+    compCurrFuncIdx               = 0;
+    compFuncInfos                 = funcInfo;
+    compFuncInfoCount             = (unsigned short)funcCnt;
+    compVMClauseOrderToEHTabOrder = vmClauseOrderToEHTabOrder;
+    compEHTabOrderToVMClauseOrder = ehTabOrderToVMClauseOrder;
 
     fgFuncletsCreated = true;
 

@@ -9462,7 +9462,8 @@ public:
     FuncInfoDsc*    compFuncInfos;
     unsigned short  compCurrFuncIdx;
     unsigned short  compFuncInfoCount;
-    unsigned short* compEHorderTab;
+    unsigned short* compVMClauseOrderToEHTabOrder;
+    unsigned short* compEHTabOrderToVMClauseOrder;
 
     unsigned short compFuncCount()
     {

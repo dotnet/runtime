@@ -2552,31 +2552,12 @@ void CodeGen::genReportEH()
 
     EHClauseInfo* clauses = new (m_compiler, CMK_Codegen) EHClauseInfo[m_compiler->compHndBBtabCount];
 
-    INDEBUG(unsigned lastFuncletIndex = 0);
-
     // Set up EH clause table, but don't report anything to the VM, yet.
     //
-    for (unsigned int i = 0; i < m_compiler->compHndBBtabCount; i++)
+    for (unsigned int XTnum = 0; XTnum < m_compiler->compHndBBtabCount; XTnum++)
     {
-        unsigned const  XTNum = m_compiler->compEHorderTab[i];
-        EHblkDsc* const HBtab = &m_compiler->compHndBBtab[XTNum];
-
-#ifdef DEBUG
-        // We should be seeing funclet numbers increase predictably
-        // as we go through the EH table in VM order.
-        //
-        if (HBtab->HasFilter())
-        {
-            assert(HBtab->ebdFuncIndex == (lastFuncletIndex + 2));
-        }
-        else
-        {
-            assert(HBtab->ebdFuncIndex == (lastFuncletIndex + 1));
-        }
-        lastFuncletIndex = HBtab->ebdFuncIndex;
-#endif
-
-        UNATIVE_OFFSET tryBeg, tryEnd, hndBeg, hndEnd, hndTyp;
+        EHblkDsc* const HBtab = &m_compiler->compHndBBtab[XTnum];
+        UNATIVE_OFFSET  tryBeg, tryEnd, hndBeg, hndEnd, hndTyp;
 
         tryBeg = m_compiler->ehCodeOffset(HBtab->ebdTryBeg);
         hndBeg = m_compiler->ehCodeOffset(HBtab->ebdHndBeg);
@@ -2605,7 +2586,10 @@ void CodeGen::genReportEH()
         clause.TryLength     = tryEnd;
         clause.HandlerOffset = hndBeg;
         clause.HandlerLength = hndEnd;
-        clauses[i]           = {clause, HBtab};
+
+        unsigned const vmIndex = m_compiler->compEHTabOrderToVMClauseOrder[XTnum];
+
+        clauses[vmIndex] = {clause, HBtab};
     }
 
     genReportEHClauses(clauses);
@@ -2621,25 +2605,39 @@ void CodeGen::genReportEH()
 //
 void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
 {
-    // Now, report EH clauses to the VM in the proper order.
-    // It may differ from the order in the EH table.
+    // Now, report EH clauses to the VM
     //
-    // We computed this order in fgCreateFunclets.
-    //
-    for (unsigned i = 0; i < m_compiler->compHndBBtabCount; i++)
-    {
-        unsigned           XTnum  = m_compiler->compEHorderTab[i];
-        CORINFO_EH_CLAUSE& clause = clauses[XTnum].clause;
-        EHblkDsc* const    HBtab  = clauses[XTnum].HBtab;
+    INDEBUG(unsigned lastFuncletIndex = 0);
 
-        if (XTnum > 0)
+    for (unsigned vmIndex = 0; vmIndex < m_compiler->compHndBBtabCount; vmIndex++)
+    {
+        CORINFO_EH_CLAUSE& clause = clauses[vmIndex].clause;
+        unsigned const     XTnum  = m_compiler->compVMClauseOrderToEHTabOrder[vmIndex];
+        EHblkDsc* const    HBtab  = &m_compiler->compHndBBtab[XTnum];
+
+#ifdef DEBUG
+        // We should be seeing funclet numbers increase predictably
+        // as we go through the EH table in VM order.
+        //
+        if (HBtab->HasFilter())
+        {
+            assert(HBtab->ebdFuncIndex == (lastFuncletIndex + 2));
+        }
+        else
+        {
+            assert(HBtab->ebdFuncIndex == (lastFuncletIndex + 1));
+        }
+        lastFuncletIndex = HBtab->ebdFuncIndex;
+#endif
+
+        if (vmIndex > 0)
         {
             // CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
             // try block as the previous one. The runtime cannot reliably infer this information from
             // native code offsets because of different try blocks can have same offsets. Alternative
             // solution to this problem would be inserting extra nops to ensure that different try
             // blocks have different offsets.
-            if (EHblkDsc::ebdIsSameTry(HBtab, clauses[XTnum - 1].HBtab))
+            if (EHblkDsc::ebdIsSameTry(HBtab, clauses[vmIndex - 1].HBtab))
             {
                 // The SAMETRY bit should only be set on catch clauses. This is ensured in IL, where only 'catch' is
                 // allowed to be mutually-protect. E.g., the C# "try {} catch {} catch {} finally {}" actually exists in
@@ -2649,7 +2647,7 @@ void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
             }
         }
 
-        m_compiler->eeSetEHinfo(XTnum, &clause);
+        m_compiler->eeSetEHinfo(vmIndex, &clause);
     }
 }
 
@@ -6680,9 +6678,9 @@ void CodeGen::genIPmappingGen()
                 DebugInfo rootInfo = stmt->GetDebugInfo().GetRoot();
                 if (rootInfo.IsValid())
                 {
-                    for (unsigned i = 0; i < m_compiler->eeBoundariesCount; ++i)
+                    for (unsigned vmIndex = 0; vmIndex < m_compiler->eeBoundariesCount; ++vmIndex)
                     {
-                        if (m_compiler->eeBoundaries[i].ilOffset == rootInfo.GetLocation().GetOffset())
+                        if (m_compiler->eeBoundaries[vmIndex].ilOffset == rootInfo.GetLocation().GetOffset())
                         {
                             found = true;
                             break;
@@ -7928,7 +7926,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // Should consider the padding, empty struct fields, etc within a struct.
-            offset = returnTypeDesc->GetReturnFieldOffset(i);
+            offset = returnTypeDesc->GetReturnFieldOffset(vmIndex);
 #endif
 #ifdef SWIFT_SUPPORT
             if (offsets != nullptr)

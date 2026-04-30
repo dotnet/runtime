@@ -2490,10 +2490,10 @@ PhaseStatus Compiler::fgWasmVirtualIP()
     {
         clauses = new (this, CMK_WasmEH) EHClauseInfo[compHndBBtabCount];
 
-        for (unsigned i = 0; i < compHndBBtabCount; i++)
+        for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
-            unsigned const    index = compEHorderTab[i];
-            EHblkDsc* const   dsc   = ehGetDsc(index);
+            unsigned const    vmIndex = compEHTabOrderToVMClauseOrder[XTnum];
+            EHblkDsc* const   dsc     = ehGetDsc(vmIndex);
             CORINFO_EH_CLAUSE clause;
             clause.ClassToken    = dsc->HasFilter() ? 0 : dsc->ebdTyp;
             clause.Flags         = ToCORINFO_EH_CLAUSE_FLAGS(dsc->ebdHandlerType);
@@ -2501,7 +2501,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             clause.TryLength     = 0;
             clause.HandlerOffset = 0;
             clause.HandlerLength = 0;
-            clauses[index]       = {clause, dsc};
+            clauses[vmIndex]     = {clause, dsc};
         }
     }
 
@@ -2594,7 +2594,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 virtualIP++;
 
                 const unsigned tryIndex               = block->getTryIndex();
-                const unsigned clauseIndex            = compEHorderTab[tryIndex];
+                const unsigned clauseIndex            = compEHTabOrderToVMClauseOrder[tryIndex];
                 clauses[clauseIndex].clause.TryOffset = virtualIP;
 
                 // Multiple try regions can begin at the same block.
@@ -2607,8 +2607,8 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                         // These should be mutual-protect trys.
                         //
                         assert(EHblkDsc::ebdIsSameTry(tryDsc, enclosingDsc));
-                        const unsigned enclosingTryIndex               = ehGetIndex(enclosingDsc);
-                        const unsigned enclosingClauseIndex            = compEHorderTab[enclosingTryIndex];
+                        const unsigned enclosingTryIndex    = ehGetIndex(enclosingDsc);
+                        const unsigned enclosingClauseIndex = compEHTabOrderToVMClauseOrder[enclosingTryIndex];
                         clauses[enclosingClauseIndex].clause.TryOffset = virtualIP;
                     }
                 }
@@ -2618,7 +2618,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             {
                 virtualIP++;
                 const unsigned hndIndex                   = block->getHndIndex();
-                const unsigned clauseIndex                = compEHorderTab[hndIndex];
+                const unsigned clauseIndex                = compEHTabOrderToVMClauseOrder[hndIndex];
                 clauses[clauseIndex].clause.HandlerOffset = virtualIP;
             }
 
@@ -2628,7 +2628,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 // For filters we store the offset in the class token field.
                 //
                 const unsigned filterIndex             = block->getHndIndex();
-                const unsigned clauseIndex             = compEHorderTab[filterIndex];
+                const unsigned clauseIndex             = compEHTabOrderToVMClauseOrder[filterIndex];
                 clauses[clauseIndex].clause.ClassToken = virtualIP;
             }
 
@@ -2648,7 +2648,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             {
                 virtualIP++;
                 const unsigned tryIndex    = block->getTryIndex();
-                const unsigned clauseIndex = compEHorderTab[tryIndex];
+                const unsigned clauseIndex = compEHTabOrderToVMClauseOrder[tryIndex];
                 assert(virtualIP > clauses[clauseIndex].clause.TryOffset);
                 clauses[clauseIndex].clause.TryLength = virtualIP;
 
@@ -2662,7 +2662,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                     if (enclosingDsc->ebdTryLast == block)
                     {
                         const unsigned enclosingTryIndex    = ehGetIndex(enclosingDsc);
-                        const unsigned enclosingClauseIndex = compEHorderTab[enclosingTryIndex];
+                        const unsigned enclosingClauseIndex = compEHTabOrderToVMClauseOrder[enclosingTryIndex];
                         assert(virtualIP > clauses[enclosingClauseIndex].clause.TryOffset);
                         clauses[enclosingClauseIndex].clause.TryLength = virtualIP;
                     }
@@ -2673,7 +2673,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             {
                 virtualIP++;
                 const unsigned hndIndex    = block->getHndIndex();
-                const unsigned clauseIndex = compEHorderTab[hndIndex];
+                const unsigned clauseIndex = compEHTabOrderToVMClauseOrder[hndIndex];
                 assert(virtualIP > clauses[clauseIndex].clause.HandlerOffset);
                 clauses[clauseIndex].clause.HandlerLength = virtualIP;
             }
