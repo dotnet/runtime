@@ -20,7 +20,7 @@ namespace ILCompiler.PEWriter
         FreeBSD = 0xADC4,
         NetBSD = 0x1993,
         SunOS = 0x1992,
-        Haiku = 0x0B05,
+        Haiku = 0x5038,
     }
 
     /// <summary>
