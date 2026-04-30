@@ -1158,6 +1158,7 @@ And the following enumeration definitions
         HasMethodImpl = 0x0010,
         HasNativeCodeSlot = 0x0020,
         HasAsyncMethodData = 0x0040,
+        Static = 0x0080,
         // Mask for the above flags
         MethodDescAdditionalPointersMask = 0x0038,
         #endredion Additional pointers
@@ -1605,6 +1606,57 @@ Determining if a method is an async thunk method:
 
         Data.AsyncMethodData asyncData = // Read AsyncMethodData from the address of the async method data optional slot
         return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.Thunk);
+    }
+```
+
+Determining if a method requires a hidden instantiation argument (generic context parameter):
+
+```csharp
+    public bool RequiresInstArg(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+
+        // RequiresInstArg = IsSharedByGenericInstantiations && (HasMethodInstantiation || IsStatic || IsValueType || IsInterface)
+        if (!IsSharedByGenericInstantiations(md))
+            return false;
+
+        if (HasMethodInstantiation(md))
+            return true;
+
+        // md.IsStatic reads from MethodDescFlags.Static (0x0080)
+        if (md.IsStatic)
+            return true;
+
+        MethodTable mt = _methodTables[md.MethodTable];
+        return mt.Flags.IsInterface || mt.Flags.IsValueType;
+    }
+
+    private bool IsSharedByGenericInstantiations(MethodDesc md)
+    {
+        if (md.Classification == MethodClassification.Instantiated)
+        {
+            InstantiatedMethodDesc imd = AsInstantiatedMethodDesc(md);
+            if (imd.IsWrapperStubWithInstantiations)
+                return false;
+            if (/* Flags2 of InstantiatedMethodDesc has SharedMethodInstantiation set */)
+                return true;
+        }
+        MethodTable mt = _methodTables[md.MethodTable];
+        return mt.IsCanonMT && mt.Flags.HasInstantiation;
+    }
+```
+
+Determining if a method uses the async calling convention:
+
+```csharp
+    public bool IsAsyncMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        if (!md.HasAsyncMethodData)
+            return false;
+
+        Data.AsyncMethodData asyncData = // Read AsyncMethodData from the async method data optional slot
+        return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.AsyncCall);
     }
 ```
 

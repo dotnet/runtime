@@ -173,6 +173,7 @@ internal class GcScanner
         TargetPointer gcRefMapBlob,
         GcScanContext scanContext)
     {
+        Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
         GCRefMapDecoder decoder = new(_target, gcRefMapBlob);
 
         if (_target.PointerSize == 4)
@@ -182,8 +183,7 @@ internal class GcScanner
         {
             int pos = decoder.CurrentPos;
             GCRefMapToken token = decoder.ReadToken();
-            uint offset = OffsetFromGCRefMapPos(pos);
-            TargetPointer slotAddress = new(transitionBlock.Value + offset);
+            TargetPointer slotAddress = AddressFromGCRefMapPos(tb, pos);
 
             switch (token)
             {
@@ -216,18 +216,17 @@ internal class GcScanner
         const int DynamicHelperFrameFlags_ObjectArg = 1;
         const int DynamicHelperFrameFlags_ObjectArg2 = 2;
 
-        Target.TypeInfo tbType = _target.GetTypeInfo(DataType.TransitionBlock);
-        uint argRegOffset = (uint)tbType.Fields[nameof(Data.TransitionBlock.ArgumentRegistersOffset)].Offset;
+        Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
+        TargetPointer argRegStart = tb.ArgumentRegisters;
 
         if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg) != 0)
         {
-            TargetPointer argAddr = new(transitionBlock.Value + argRegOffset);
-            scanContext.GCReportCallback(argAddr, GcScanFlags.None);
+            scanContext.GCReportCallback(argRegStart, GcScanFlags.None);
         }
 
         if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg2) != 0)
         {
-            TargetPointer argAddr = new(transitionBlock.Value + argRegOffset + (uint)_target.PointerSize);
+            TargetPointer argAddr = new(argRegStart.Value + (uint)_target.PointerSize);
             scanContext.GCReportCallback(argAddr, GcScanFlags.None);
         }
     }
@@ -395,6 +394,8 @@ internal class GcScanner
         bool isValueTypeThis,
         GcScanContext scanContext)
     {
+        Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
+
         int numRegistersUsed = 0;
         if (hasThis)
             numRegistersUsed++;
@@ -412,8 +413,7 @@ internal class GcScanner
         if (hasThis)
         {
             int thisPos = isArm64 ? 1 : 0;
-            uint thisOffset = OffsetFromGCRefMapPos(thisPos);
-            TargetPointer thisAddr = new(transitionBlock.Value + thisOffset);
+            TargetPointer thisAddr = AddressFromGCRefMapPos(tb, thisPos);
             GcScanFlags thisFlags = isValueTypeThis ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None;
             scanContext.GCReportCallback(thisAddr, thisFlags);
         }
@@ -421,8 +421,7 @@ internal class GcScanner
         int pos = numRegistersUsed;
         foreach (GcTypeKind kind in methodSig.ParameterTypes)
         {
-            uint offset = OffsetFromGCRefMapPos(pos);
-            TargetPointer slotAddress = new(transitionBlock.Value + offset);
+            TargetPointer slotAddress = AddressFromGCRefMapPos(tb, pos);
 
             switch (kind)
             {
@@ -471,11 +470,9 @@ internal class GcScanner
         return blobReader.ReadBytes(blobReader.Length);
     }
 
-    private uint OffsetFromGCRefMapPos(int pos)
+    private TargetPointer AddressFromGCRefMapPos(Data.TransitionBlock tb, int pos)
     {
-        Target.TypeInfo tbType = _target.GetTypeInfo(DataType.TransitionBlock);
-        uint firstSlotOffset = (uint)tbType.Fields[nameof(Data.TransitionBlock.FirstGCRefMapSlot)].Offset;
-        return firstSlotOffset + (uint)(pos * _target.PointerSize);
+        return new TargetPointer(tb.FirstGCRefMapSlot.Value + (ulong)(pos * _target.PointerSize));
     }
 
     private bool IsTargetArm64()

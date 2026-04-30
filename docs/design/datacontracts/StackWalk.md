@@ -69,9 +69,8 @@ This contract depends on the following descriptors:
 | `DynamicHelperFrame` | `DynamicHelperFrameFlags` | Flags indicating which argument registers contain GC references |
 | `TransitionBlock` | `ReturnAddress` | Return address associated with the TransitionBlock |
 | `TransitionBlock` | `CalleeSavedRegisters` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
-| `TransitionBlock` (arm) | `ArgumentRegisters` | ARM specific `ArgumentRegisters` struct |
 | `TransitionBlock` | `OffsetOfArgs` | Byte offset of stack arguments (first arg after registers) = `sizeof(TransitionBlock)` |
-| `TransitionBlock` | `ArgumentRegistersOffset` | Byte offset of the ArgumentRegisters within the TransitionBlock |
+| `TransitionBlock` | `ArgumentRegisters` | Byte offset of the argument registers area within the TransitionBlock |
 | `TransitionBlock` | `FirstGCRefMapSlot` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
 | `ReadyToRunInfo` | `ImportSections` | Pointer to array of `READYTORUN_IMPORT_SECTION` structs for GCRefMap resolution |
 | `ReadyToRunInfo` | `NumImportSections` | Count of import sections in the array |

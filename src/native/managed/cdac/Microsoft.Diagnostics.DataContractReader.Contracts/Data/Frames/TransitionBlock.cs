@@ -14,32 +14,21 @@ internal class TransitionBlock : IData<TransitionBlock>
         ReturnAddress = target.ReadPointerField(address, type, nameof(ReturnAddress));
         CalleeSavedRegisters = address + (ulong)type.Fields[nameof(CalleeSavedRegisters)].Offset;
 
-        if (type.Fields.ContainsKey(nameof(ArgumentRegisters)))
-        {
-            ArgumentRegisters = address + (ulong)type.Fields[nameof(ArgumentRegisters)].Offset;
-        }
-
-        // These are offsets relative to the TransitionBlock pointer, stored as field "offsets"
-        // in the data descriptor. They represent computed layout positions, not actual memory reads.
-        FirstGCRefMapSlot = (uint)type.Fields[nameof(FirstGCRefMapSlot)].Offset;
-        ArgumentRegistersOffset = (uint)type.Fields[nameof(ArgumentRegistersOffset)].Offset;
+        // These are computed positions within the TransitionBlock.
+        ArgumentRegisters = address + (ulong)type.Fields[nameof(ArgumentRegisters)].Offset;
+        FirstGCRefMapSlot = address + (ulong)type.Fields[nameof(FirstGCRefMapSlot)].Offset;
     }
 
     public TargetPointer ReturnAddress { get; }
     public TargetPointer CalleeSavedRegisters { get; }
 
     /// <summary>
-    /// Only available on ARM targets.
+    /// Address of the argument registers area within this TransitionBlock.
     /// </summary>
-    public TargetPointer? ArgumentRegisters { get; }
+    public TargetPointer ArgumentRegisters { get; }
 
     /// <summary>
-    /// Offset to the first slot covered by the GCRefMap, relative to the TransitionBlock pointer.
+    /// Address of the first slot covered by the GCRefMap within this TransitionBlock.
     /// </summary>
-    public uint FirstGCRefMapSlot { get; }
-
-    /// <summary>
-    /// Offset to the argument registers area, relative to the TransitionBlock pointer.
-    /// </summary>
-    public uint ArgumentRegistersOffset { get; }
+    public TargetPointer FirstGCRefMapSlot { get; }
 }

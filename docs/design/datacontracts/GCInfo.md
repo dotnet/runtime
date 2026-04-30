@@ -4,7 +4,6 @@ This contract is for fetching information related to GCInfo associated with nati
 
 The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is not currently supported by this contract.
 
-
 ## APIs of contract
 
 ```csharp

@@ -315,6 +315,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         internal bool HasStableEntryPoint => HasFlags(MethodDescFlags_1.MethodDescFlags3.HasStableEntryPoint);
         internal bool HasPrecode => HasFlags(MethodDescFlags_1.MethodDescFlags3.HasPrecode);
+        internal bool IsStatic => HasFlags(MethodDescFlags_1.MethodDescFlags.Static);
 
         internal TargetPointer GetAddressOfNonVtableSlot() => MethodDescOptionalSlots.GetAddressOfNonVtableSlot(Address, Classification, _desc.Flags, _target);
         internal TargetPointer GetAddressOfNativeCodeSlot() => MethodDescOptionalSlots.GetAddressOfNativeCodeSlot(Address, Classification, _desc.Flags, _target);
@@ -1342,46 +1343,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (HasMethodInstantiation(methodDesc))
             return true;
 
+        if (methodDesc.IsStatic)
+            return true;
+
         MethodTable mt = _methodTables[methodDesc.MethodTable];
         if (mt.Flags.IsInterface)
             return true;
 
         if (mt.Flags.IsValueType)
             return true;
-
-        if (IsStaticMethod(methodDesc))
-            return true;
-
-        return false;
-    }
-
-    /// <summary>
-    /// Matches native MethodDesc::IsStatic().
-    /// </summary>
-    private bool IsStaticMethod(MethodDesc methodDesc)
-    {
-        try
-        {
-            uint token = methodDesc.Token;
-            if (token != 0x06000000)
-            {
-                TypeHandle typeHandle = GetTypeHandle(methodDesc.MethodTable);
-                TargetPointer modulePtr = GetModule(typeHandle);
-                ILoader loader = _target.Contracts.Loader;
-                ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-                MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
-                if (mdReader is not null)
-                {
-                    MethodDefinitionHandle methodDefHandle =
-                        MetadataTokens.MethodDefinitionHandle((int)(token & 0x00FFFFFF));
-                    MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-                    return (methodDef.Attributes & MethodAttributes.Static) != 0;
-                }
-            }
-        }
-        catch
-        {
-        }
 
         return false;
     }

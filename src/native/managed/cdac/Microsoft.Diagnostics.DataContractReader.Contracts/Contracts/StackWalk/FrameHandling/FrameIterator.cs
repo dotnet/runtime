@@ -146,7 +146,7 @@ internal sealed class FrameIterator
             // InlinedCallFrame: returns 0 if inactive, else m_pCallerReturnAddress
             case FrameType.InlinedCallFrame:
                 Data.InlinedCallFrame icf = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(currentFramePointer);
-                return InlinedCallFrameHasActiveCall(icf) ? new TargetPointer(icf.CallerReturnAddress) : TargetPointer.Null;
+                return InlinedCallFrameHasActiveCall(icf) ? icf.CallerReturnAddress : TargetPointer.Null;
 
             // TransitionFrame types: read return address from the transition block
             case FrameType.FramedMethodFrame:

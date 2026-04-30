@@ -59,8 +59,6 @@ struct CodeBlockHandle
     bool IsFilterFunclet(CodeBlockHandle codeInfoHandle);
 
     // Finds the ReadyToRun module that contains the given address.
-    // Used to resolve the containing module from an import section address
-    // during GCRefMap lookup in the StackWalk contract.
     TargetPointer FindReadyToRunModule(TargetPointer address);
 ```
 
@@ -508,7 +506,7 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 
 ### FindReadyToRunModule
 
-`FindReadyToRunModule` locates the ReadyToRun module whose PE image contains the given address. Unlike `GetCodeBlockHandle` (which only matches code regions), this API matches against the full PE image range — including data sections such as import tables. This is necessary because GCRefMap resolution requires finding the module that owns an import section indirection address, which is in the data section rather than the code section.
+`FindReadyToRunModule` locates the ReadyToRun module whose PE image contains the given address. Unlike `GetCodeBlockHandle` (which only matches code regions), this API matches against the full PE image range - including data sections such as import tables. This is used in GCRefMap resolution as it requires finding the module that owns an import section indirection address, which is in the data section rather than the code section.
 
 ```csharp
 TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)
